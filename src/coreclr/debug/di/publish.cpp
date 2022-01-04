@@ -928,7 +928,7 @@ HRESULT CorpubProcess::GetDisplayName(ULONG32 cchName,
 // CorpubAppDomain
 // ******************************************
 
-CorpubAppDomain::CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id)
+CorpubAppDomain::CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id)
     : CordbCommonBase (0, enumCorpubAppDomain),
     m_pNext (NULL),
     m_szAppDomainName (szAppDomainName),

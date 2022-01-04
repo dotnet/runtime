@@ -41,7 +41,7 @@ public:
 
     HRESULT link();
     HRESULT fixup(CeeGenTokenMapper *pMapper);
-    HRESULT write(__in LPCWSTR fileName);
+    HRESULT write(_In_ LPCWSTR fileName);
     HRESULT write(void **ppImage);
 
     // calling these functions is optional
@@ -174,7 +174,7 @@ private:
     HRESULT linkPlaceSections(entry * entries, unsigned iEntries);
     void setSectionIndex(IMAGE_SECTION_HEADER * h, unsigned sectionIndex);
 
-    HRESULT Open(__in LPCWSTR fileName);
+    HRESULT Open(_In_ LPCWSTR fileName);
     HRESULT Write(const void *data, int size);
     HRESULT Seek(int offset);
     HRESULT Pad(int align);
@@ -257,8 +257,8 @@ public:
     int getDirEntry() { _ASSERTE(!"PESeedSection"); return 0; }
     HRESULT directoryEntry(unsigned num) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
     char * computePointer(unsigned offset) const { _ASSERTE(!"PESeedSection"); return NULL; }
-    BOOL containsPointer(__in char *ptr) const { _ASSERTE(!"PESeedSection"); return FALSE; }
-    unsigned computeOffset(__in char *ptr) const { _ASSERTE(!"PESeedSection"); return 0; }
+    BOOL containsPointer(_In_ char *ptr) const { _ASSERTE(!"PESeedSection"); return FALSE; }
+    unsigned computeOffset(_In_ char *ptr) const { _ASSERTE(!"PESeedSection"); return 0; }
     HRESULT cloneInstance(PESection *destination) { _ASSERTE(!"PESeedSection"); return E_FAIL; }
 
     // PEWriterSection

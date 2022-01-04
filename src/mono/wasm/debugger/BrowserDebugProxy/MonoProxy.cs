@@ -411,7 +411,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             case "scope":
                                 return await OnSetVariableValue(id,
-                                    int.Parse(objectId.Value),
+                                    objectId.Value,
                                     args?["variableName"]?.Value<string>(),
                                     args?["newValue"],
                                     token);
@@ -449,7 +449,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             case "scope":
                                 return await OnEvaluateOnCallFrame(id,
-                                    int.Parse(objectId.Value),
+                                    objectId.Value,
                                     args?["expression"]?.Value<string>(), token);
                             default:
                                 return false;
@@ -586,16 +586,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             switch (objectId.Scheme)
             {
                 case "object":
-                    args["details"]  = await context.SdbAgent.GetObjectProxy(int.Parse(objectId.Value), token);
+                case "methodId":
+                    args["details"]  = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
-                    args["details"]  = await context.SdbAgent.GetValueTypeProxy(int.Parse(objectId.Value), token);
+                    args["details"]  = await context.SdbAgent.GetValueTypeProxy(objectId.Value, token);
                     break;
                 case "pointer":
-                    args["details"]  = await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token);
+                    args["details"]  = await context.SdbAgent.GetPointerContent(objectId.Value, token);
                     break;
                 case "array":
-                    args["details"]  = await context.SdbAgent.GetArrayValuesProxy(int.Parse(objectId.Value), token);
+                    args["details"]  = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
                 {
@@ -680,20 +681,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     case "scope":
                     {
-                        var res = await GetScopeProperties(id, int.Parse(objectId.Value), token);
+                        var res = await GetScopeProperties(id, objectId.Value, token);
                         return res.Value?["result"];
                     }
                     case "valuetype":
-                        return await context.SdbAgent.GetValueTypeValues(int.Parse(objectId.Value), accessorPropertiesOnly, token);
+                        return await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
                     case "array":
-                        return await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
+                        return await context.SdbAgent.GetArrayValues(objectId.Value, token);
+                    case "methodId":
+                    {
+                        var objRet = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, "", token);
+                        return new JArray(objRet);
+                    }
                     case "object":
-                        return await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), objectValuesOpt, token);
+                        return await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token);
                     case "pointer":
-                        return new JArray{await context.SdbAgent.GetPointerContent(int.Parse(objectId.Value), token)};
+                        return new JArray{await context.SdbAgent.GetPointerContent(objectId.Value, token)};
                     case "cfo_res":
                     {
-                        Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, int.Parse(objectId.Value), args), token);
+                        Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                         return value_json_str != null ? JArray.Parse(value_json_str) : null;
                     }

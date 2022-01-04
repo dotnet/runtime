@@ -5671,7 +5671,7 @@ VOID ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
 /****************************************************************************/
 /* This is called by the runtime when a Strong Name Verification Starts */
 /****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName)
+VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -5680,7 +5680,7 @@ VOID ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR 
 /****************************************************************************/
 /* This is called by the runtime when a Strong Name Verification Ends */
 /****************************************************************************/
-VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName)
+VOID ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
 }
@@ -6091,8 +6091,8 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
 ETW_INLINE
     ULONG
     ETW::LoaderLog::SendModuleRange(
-    __in Module *pModule,
-    __in DWORD dwEventOptions)
+    _In_ Module *pModule,
+    _In_ DWORD dwEventOptions)
 
 {
     ULONG Result = ERROR_SUCCESS;

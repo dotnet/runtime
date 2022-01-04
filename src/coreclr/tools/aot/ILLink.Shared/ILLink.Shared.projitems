@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>ff598e93-8e9e-4091-9f50-61a7572663ae</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>ILLink.Shared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)DiagnosticCategory.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DiagnosticId.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DiagnosticString.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MessageFormat.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)SharedStrings.resx">
+      <GenerateSource>true</GenerateSource>
+      <Namespace>ILLink.Shared</Namespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+</Project>

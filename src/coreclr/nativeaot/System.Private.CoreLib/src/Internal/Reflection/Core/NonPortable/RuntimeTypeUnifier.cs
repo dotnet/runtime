@@ -112,7 +112,8 @@ namespace Internal.Reflection.Core.NonPortable
             }
             else
             {
-                throw new ArgumentException(SR.Arg_InvalidRuntimeTypeHandle);
+                Debug.Fail("Invalid RuntimeTypeHandle");
+                throw new ArgumentException(SR.Arg_InvalidHandle);
             }
         }
     }

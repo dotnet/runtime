@@ -81,6 +81,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "CalliMarshallingMethodThunk";
+            }
+        }
+
         public bool UseRuntimeMarshalling { get; }
 
         public override PInvokeMetadata GetPInvokeMethodMetadata()

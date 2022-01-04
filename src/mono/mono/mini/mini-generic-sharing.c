@@ -672,11 +672,11 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
 		ERROR_DECL (error);
 		MonoClassField *field = (MonoClassField *)data;
-		MonoType *inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (field->parent), context, error);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (m_field_get_parent (field)), context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 		MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
-		int i = field - m_class_get_fields (field->parent);
+		int i = field - m_class_get_fields (m_field_get_parent (field));
 		gpointer dummy = NULL;
 
 		mono_metadata_free_type (inflated_type);
@@ -2316,7 +2316,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		if (mono_class_field_is_special_static (field)) {
 			gpointer addr;
 
-			mono_class_vtable_checked (field->parent, error);
+			mono_class_vtable_checked (m_field_get_parent (field), error);
 			mono_error_assert_ok (error);
 
 			/* Return the TLS offset */
@@ -2326,7 +2326,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		}
 
 		/* The value is offset by 1 */
-		if (m_class_is_valuetype (field->parent) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		if (m_class_is_valuetype (m_field_get_parent (field)) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
 			return GUINT_TO_POINTER (field->offset + 1);

@@ -437,6 +437,40 @@ arch_unwind_frame (MonoJitTlsData *jit_tls,
 				}
 			} else if (ext->kind == MONO_LMFEXT_JIT_ENTRY) {
 				frame->type = FRAME_TYPE_JIT_ENTRY;
+			} else if (ext->kind == MONO_LMFEXT_IL_STATE) {
+				frame->type = FRAME_TYPE_IL_STATE;
+				frame->method = ext->il_state->method;
+				frame->actual_method = ext->il_state->method;
+				frame->il_state = ext->il_state;
+
+				// FIXME: Do this somewhere else ?
+				ERROR_DECL (error);
+				frame->ji = mini_get_interp_callbacks ()->compile_interp_method (frame->method, error);
+				mono_error_assert_ok (error);
+				g_assert (frame->ji);
+
+				MonoMethodHeader *header = mono_method_get_header_checked (frame->method, error);
+				mono_error_assert_ok (error);
+
+				/* Find try clause containing IL offset */
+				int il_offset = ((MonoMethodILState*)frame->il_state)->il_offset;
+				int clause_index = -1;
+				for (int i = 0; i < header->num_clauses; ++i) {
+					if (il_offset >= header->clauses [i].try_offset && il_offset < header->clauses [i].try_offset + header->clauses [i].try_len) {
+						clause_index = i;
+						break;
+					}
+				}
+
+				mono_metadata_free_mh (header);
+
+				if (clause_index == -1) {
+					frame->native_offset = 0xffffff;
+				} else {
+					/* Set ctx->ip to the beginning of the corresponding interpreter try clause */
+					g_assert (clause_index < frame->ji->num_clauses);
+					frame->native_offset = (guint8*)frame->ji->clauses [clause_index].try_start - (guint8*)frame->ji->code_start;
+				}
 			} else {
 				g_assert_not_reached ();
 			}
@@ -663,7 +697,8 @@ mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
 		frame->method = NULL;
 	}
 
-	frame->native_offset = -1;
+	if (frame->type != FRAME_TYPE_IL_STATE)
+		frame->native_offset = -1;
 	frame->async_context = async;
 	frame->frame_addr = MONO_CONTEXT_GET_SP (ctx);
 
@@ -682,10 +717,12 @@ mono_find_jit_info_ext (MonoJitTlsData *jit_tls,
 			/* ctx->ip points into native code */
 			real_ip = (const char*)MONO_CONTEXT_GET_IP (new_ctx);
 
-		if ((real_ip >= start) && (real_ip <= start + ji->code_size))
-			frame->native_offset = real_ip - start;
-		else {
-			frame->native_offset = -1;
+		if (frame->type != FRAME_TYPE_IL_STATE) {
+			if ((real_ip >= start) && (real_ip <= start + ji->code_size))
+				frame->native_offset = real_ip - start;
+			else {
+				frame->native_offset = -1;
+			}
 		}
 
 		if (trace)
@@ -1855,12 +1892,14 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		case FRAME_TYPE_INTERP:
 		case FRAME_TYPE_MANAGED:
 			break;
+		case FRAME_TYPE_IL_STATE:
+			break;
 		default:
 			g_assert_not_reached ();
 			break;
 		}
 
-		in_interp = frame.type == FRAME_TYPE_INTERP;
+		in_interp = (frame.type == FRAME_TYPE_INTERP) || (frame.type == FRAME_TYPE_IL_STATE);
 		ji = frame.ji;
 
 		gpointer ip;
@@ -1900,8 +1939,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
 			result = MONO_FIRST_PASS_CALLBACK_TO_NATIVE;
 		}
-				
-				
+
 		for (i = clause_index_start; i < ji->num_clauses; i++) {
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
@@ -2285,6 +2323,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				jit_tls->abort_func (obj);
 				g_assert_not_reached ();
 			}
+			in_interp = FALSE;
 			switch (frame.type) {
 			case FRAME_TYPE_DEBUGGER_INVOKE:
 			case FRAME_TYPE_MANAGED_TO_NATIVE:
@@ -2296,14 +2335,16 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				continue;
 			case FRAME_TYPE_INTERP_TO_MANAGED:
 				continue;
-			case FRAME_TYPE_INTERP:
 			case FRAME_TYPE_MANAGED:
+				break;
+			case FRAME_TYPE_INTERP:
+			case FRAME_TYPE_IL_STATE:
+				in_interp = TRUE;
 				break;
 			default:
 				g_assert_not_reached ();
 				break;
 			}
-			in_interp = frame.type == FRAME_TYPE_INTERP;
 			ji = frame.ji;
 		}
 
@@ -2514,7 +2555,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						return 0;
 					} else {
 						mini_set_abort_threshold (&frame);
-						if (in_interp) {
+						if (frame.type == FRAME_TYPE_IL_STATE) {
+							if (mono_trace_is_enabled () && mono_trace_eval (method))
+								g_print ("EXCEPTION: clause found in AOTed code, running clause with interpreter.\n");
+							mini_get_interp_callbacks ()->run_finally_with_il_state (frame.il_state, i, ei->handler_start, ei->data.handler_end);
+						} else if (in_interp) {
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start, ei->data.handler_end);
 							if (has_ex) {
 								/*
@@ -3398,6 +3443,20 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 void
 mono_llvm_throw_exception (MonoObject *ex)
 {
+	g_assert (mono_llvm_only);
+
+	/*
+	 * There are native frames above us, possibly followed by
+	 * interpreter frames. Handle the exception here to
+	 * allow the finally clauses in the native frames to be ran.
+	 * Then throw the c++ exception to unwind back to the interpreter.
+	 */
+	MonoContext ctx;
+	memset (&ctx, 0, sizeof (MonoContext));
+	MONO_CONTEXT_SET_SP (&ctx, &ctx);
+
+	mono_handle_exception (&ctx, (MonoObject*)ex);
+
 	throw_exception (ex, FALSE);
 }
 

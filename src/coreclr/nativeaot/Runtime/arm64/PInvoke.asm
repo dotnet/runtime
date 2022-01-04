@@ -5,8 +5,6 @@
 
         TEXTAREA
 
-        IMPORT RhpReversePInvokeBadTransition
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn
