@@ -1795,7 +1795,7 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
 
     mdToken token;
-    if (SUCCEEDED(mdImport->GetAssemblyFromScope(&token)))
+    if (SUCCEEDED(hr = mdImport->GetAssemblyFromScope(&token)))
     {
         const BYTE *pVal;
         ULONG       cbVal;
