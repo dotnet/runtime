@@ -8346,17 +8346,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             break;
 
-            case GT_FTN_ADDR:
-                // Use the value of the function pointer (actually, a method handle.)
-                tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->AsFptrVal()->gtFptrMethod), GTF_ICON_METHOD_HDL));
-                break;
-
-            // This group passes through a value from a child node.
-            case GT_RET_EXPR:
-                tree->SetVNsFromNode(tree->AsRetExpr()->gtInlineCandidate);
-                break;
-
             case GT_LCL_FLD:
             {
                 GenTreeLclFld* lclFld = tree->AsLclFld();
@@ -8401,7 +8390,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             break;
 
-            // The ones below here all get a new unique VN -- but for various reasons, explained after each.
             case GT_CATCH_ARG:
                 // We know nothing about the value of a caught expression.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
@@ -8472,6 +8460,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_MEMORYBARRIER: // Leaf
                 // For MEMORYBARRIER add an arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(tree DEBUGARG("MEMORYBARRIER"));
+                tree->gtVNPair = vnStore->VNPForVoid();
                 break;
 
             // These do not represent values.
@@ -8481,19 +8470,19 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 #if !defined(FEATURE_EH_FUNCLETS)
             case GT_END_LFIN: // Control flow
 #endif
+                tree->gtVNPair = vnStore->VNPForVoid();
+                break;
+
             case GT_ARGPLACE:
                 // This node is a standin for an argument whose value will be computed later.  (Perhaps it's
                 // a register argument, and we don't want to preclude use of the register in arg evaluation yet.)
-                // We give this a "fake" value number now; if the call in which it occurs cares about the
-                // value (e.g., it's a helper call whose result is a function of argument values) we'll reset
-                // this later, when the later args have been assigned VNs.
-                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                // We defer giving this a value number now; we'll reset it later, when numbering the call.
                 break;
 
             case GT_PHI_ARG:
                 // This one is special because we should never process it in this method: it should
                 // always be taken care of, when needed, during pre-processing of a blocks phi definitions.
-                assert(false);
+                assert(!"PHI_ARG in fgValueNumberTree");
                 break;
 
             default:
