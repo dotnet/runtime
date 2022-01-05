@@ -74,6 +74,9 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.Aot.cs">
       <Link>Interop\IL\Marshaller.Aot.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs">
+      <Link>Interop\IL\MarshallerKind.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.Sorting.cs">
       <Link>TypeSystem\Interop\IL\NativeStructType.Sorting.cs</Link>
     </Compile>
