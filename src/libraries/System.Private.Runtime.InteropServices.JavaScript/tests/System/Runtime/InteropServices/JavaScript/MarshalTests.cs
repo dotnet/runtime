@@ -909,9 +909,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 @"globalThis.__test_promise_resolved = false; " +
                 @"globalThis.__test_promise_failed = false; " +
                 $@"var t = App.call_test_method ('{helperMethodName}', [ {helperMethodArgs} ], 'i'); " +
-                "t.finally(result => { globalThis.__test_promise_completed = true; }); " + 
-                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " }); " + 
-                "t.catch(e => { globalThis.__test_promise_failed = true; }); "
+                "t.then(result => { globalThis.__test_promise_resolved = true; " + resolvedBody + " })" + 
+                " .catch(e => { globalThis.__test_promise_failed = true; })" +
+                " .finally(result => { globalThis.__test_promise_completed = true; }); " + 
+                ""
             );
 
             await Task.Delay(1);

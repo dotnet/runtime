@@ -33,7 +33,6 @@ namespace ILCompiler
         private string _perfMapPath;
         private int _perfMapFormatVersion;
         private bool _generateProfileFile;
-        private int _parallelism;
         Func<MethodDesc, string> _printReproInstructions;
         private InstructionSetSupport _instructionSetSupport;
         private ProfileDataManager _profileData;
@@ -167,12 +166,6 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseProfileFile(bool generateProfileFile)
         {
             _generateProfileFile = generateProfileFile;
-            return this;
-        }
-
-        public ReadyToRunCodegenCompilationBuilder UseParallelism(int parallelism)
-        {
-            _parallelism = parallelism;
             return this;
         }
 

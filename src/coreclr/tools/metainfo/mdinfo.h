@@ -170,15 +170,15 @@ private:
 
     int DumpHex(const char *szPrefix, const void *pvData, ULONG cbData, int bText=true, ULONG nLine=16);
 
-    int Write(__in_z __in const char *str);
-    int WriteLine(__in_z __in const char *str);
+    int Write(__in_z _In_ const char *str);
+    int WriteLine(__in_z _In_ const char *str);
 
-    int VWrite(__in_z __in const char *str, ...);
-    int VWriteLine(__in_z __in const char *str, ...);
-    int VWriteMarker(__in_z __in const char *str, va_list marker);
+    int VWrite(__in_z _In_ const char *str, ...);
+    int VWriteLine(__in_z _In_ const char *str, ...);
+    int VWriteMarker(__in_z _In_ const char *str, va_list marker);
 
     void InitSigBuffer();
-    HRESULT AddToSigBuffer(__in_z __in const char *string);
+    HRESULT AddToSigBuffer(__in_z _In_ const char *string);
 
     IMetaDataImport2 *m_pRegImport;
     IMetaDataImport2 *m_pImport;

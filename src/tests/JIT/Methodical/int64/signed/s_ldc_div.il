@@ -13,11 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldc_div'// as "ldc_div"
+.assembly 's_ldc_div'// as "ldc_div"
 {
 }
 .assembly extern xunit.core {}
-.module 'ldc_div.exe'
 // MVID: {907922FB-D56B-4407-A016-0118205F2F38}
 .namespace JitTest
 {

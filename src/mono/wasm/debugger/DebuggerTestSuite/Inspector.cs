@@ -42,7 +42,11 @@ namespace DebuggerTests
             Token = _cancellationTokenSource.Token;
 
             _loggerFactory = LoggerFactory.Create(builder =>
-                    builder.AddSimpleConsole(options => options.SingleLine = true)
+                    builder.AddSimpleConsole(options =>
+                            {
+                                options.SingleLine = true;
+                                options.TimestampFormat = "[HH:mm:ss] ";
+                            })
                            .AddFilter(null, LogLevel.Trace));
 
             Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
@@ -175,6 +179,7 @@ namespace DebuggerTests
             }
             else if (fail)
             {
+                args["__forMethod"] = method;
                 FailAllWaiters(new ArgumentException(args.ToString()));
             }
         }
@@ -198,7 +203,7 @@ namespace DebuggerTests
                             break;
 
                         case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
-                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds}"));
+                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
                             break;
 
                         default:

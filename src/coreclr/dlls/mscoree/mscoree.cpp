@@ -252,7 +252,7 @@ HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) 
 }
 
 
-LPCWSTR GetInternalSystemDirectory(__out DWORD* pdwLength)
+LPCWSTR GetInternalSystemDirectory(_Out_ DWORD* pdwLength)
 {
     LIMITED_METHOD_CONTRACT;
 

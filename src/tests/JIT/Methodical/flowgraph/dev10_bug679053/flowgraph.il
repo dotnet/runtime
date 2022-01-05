@@ -3,7 +3,7 @@
 
 
 
-.assembly ILGEN_0x97f1b6bf {}
+.assembly 'flowgraph' {}
 .assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 

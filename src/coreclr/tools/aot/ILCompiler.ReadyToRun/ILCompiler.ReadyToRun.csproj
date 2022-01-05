@@ -20,7 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
-    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -273,9 +273,6 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\JitInterface\CorInfoImpl.Intrinsics.cs">
-      <Link>JitInterface\CorInfoImpl.Intrinsics.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\JitInterface\MemoryHelper.cs">
       <Link>JitInterface\MemoryHelper.cs</Link>

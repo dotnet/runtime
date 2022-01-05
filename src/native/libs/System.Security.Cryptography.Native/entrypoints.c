@@ -211,7 +211,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_NewX509Stack)
     DllImportEntry(CryptoNative_ObjNid2Obj)
     DllImportEntry(CryptoNative_ObjObj2Txt)
-    DllImportEntry(CryptoNative_ObjSn2Nid)
     DllImportEntry(CryptoNative_ObjTxt2Nid)
     DllImportEntry(CryptoNative_ObjTxt2Obj)
     DllImportEntry(CryptoNative_OcspRequestDestroy)
@@ -280,7 +279,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EnsureOpenSslInitialized)
     DllImportEntry(CryptoNative_OpenSslGetProtocolSupport)
     DllImportEntry(CryptoNative_OpenSslVersionNumber)
-    DllImportEntry(CryptoNative_BioWrite)
     DllImportEntry(CryptoNative_EnsureLibSslInitialized)
     DllImportEntry(CryptoNative_GetOpenSslCipherSuiteName)
     DllImportEntry(CryptoNative_SslRenegotiate)
@@ -297,7 +295,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslCtxSetAlpnSelectCb)
     DllImportEntry(CryptoNative_SslCtxSetProtocolOptions)
     DllImportEntry(CryptoNative_SslCtxSetQuietShutdown)
-    DllImportEntry(CryptoNative_SslCtxSetVerify)
     DllImportEntry(CryptoNative_SslCtxUseCertificate)
     DllImportEntry(CryptoNative_SslCtxUsePrivateKey)
     DllImportEntry(CryptoNative_SslDestroy)
@@ -324,11 +321,9 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslShutdown)
     DllImportEntry(CryptoNative_SslV2_3Method)
     DllImportEntry(CryptoNative_SslWrite)
-    DllImportEntry(CryptoNative_X509StoreCtxGetTargetCert)
     DllImportEntry(CryptoNative_Tls13Supported)
     DllImportEntry(CryptoNative_X509Duplicate)
     DllImportEntry(CryptoNative_SslGet0AlpnSelected)
-    DllImportEntry(CryptoNative_Asn1StringFree)
 };
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name);

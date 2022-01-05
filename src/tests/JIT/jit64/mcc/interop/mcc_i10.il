@@ -4,8 +4,7 @@
 
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly MCCTest {}
-.module mcc_i10.exe
+.assembly 'mcc_i10' {}
 
 
 .namespace MCCTest

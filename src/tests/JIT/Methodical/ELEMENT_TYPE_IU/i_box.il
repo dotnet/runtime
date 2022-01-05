@@ -16,11 +16,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'avg'// as "avg"
+.assembly 'i_box'// as "avg"
 {
 }
 .assembly extern xunit.core {}
-.module 'avg.exe'
 .namespace BoxTest
 {
   .class private auto ansi Test extends [mscorlib]System.Object

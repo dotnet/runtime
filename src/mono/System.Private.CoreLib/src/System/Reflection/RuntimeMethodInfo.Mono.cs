@@ -377,7 +377,7 @@ namespace System.Reflection
         private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
         {
             Exception? exc;
-            object? o = null;
+            object? o;
 
             if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
@@ -541,9 +541,8 @@ namespace System.Reflection
         private Attribute GetDllImportAttribute()
         {
             string entryPoint;
-            string? dllName = null;
-            int token = MetadataToken;
-            PInvokeAttributes flags = 0;
+            string? dllName;
+            PInvokeAttributes flags;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
@@ -624,8 +623,8 @@ namespace System.Reflection
                 return null;
 
             string entryPoint;
-            string? dllName = null;
-            PInvokeAttributes flags = 0;
+            string? dllName;
+            PInvokeAttributes flags;
 
             GetPInvoke(out flags, out entryPoint, out dllName);
 
@@ -885,7 +884,7 @@ namespace System.Reflection
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {
             Exception exc;
-            object? o = null;
+            object? o;
 
             if (wrapExceptions)
             {

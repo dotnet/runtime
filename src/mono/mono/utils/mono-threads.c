@@ -265,7 +265,7 @@ mono_threads_begin_global_suspend (void)
 }
 
 void
-mono_threads_end_global_suspend (void) 
+mono_threads_end_global_suspend (void)
 {
 	size_t ps = pending_suspends;
 	if (G_UNLIKELY (ps != 0))
@@ -298,9 +298,9 @@ dump_threads (void)
 		char thread_name [256] = { 0 };
 		pthread_getname_np (mono_thread_info_get_tid (info), thread_name, 255);
 
-		g_async_safe_printf ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+		g_async_safe_printf ("--thread %p id %p [%p] (%s) state %x  %s\n", info, (gpointer)(gsize) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, thread_name, info->thread_state.raw, info == cur ? "GC INITIATOR" : "" );
 #else
-		g_async_safe_printf ("--thread %p id %p [%p] state %x  %s\n", info, (void *) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state, info == cur ? "GC INITIATOR" : "" );
+		g_async_safe_printf ("--thread %p id %p [%p] state %x  %s\n", info, (gpointer)(gsize) mono_thread_info_get_tid (info), (void*)(size_t)info->native_handle, info->thread_state.raw, info == cur ? "GC INITIATOR" : "" );
 #endif
 	} FOREACH_THREAD_SAFE_END
 }
@@ -363,7 +363,7 @@ mono_thread_info_lookup (MonoNativeThreadId id)
 	if (!mono_lls_find (&thread_list, hp, (uintptr_t)id)) {
 		mono_hazard_pointer_clear_all (hp, -1);
 		return NULL;
-	} 
+	}
 
 	mono_hazard_pointer_clear_all (hp, 1);
 	return (MonoThreadInfo *) mono_hazard_pointer_get_val (hp, 1);
@@ -377,7 +377,7 @@ mono_thread_info_insert (MonoThreadInfo *info)
 	if (!mono_lls_insert (&thread_list, hp, (MonoLinkedListSetNode*)info)) {
 		mono_hazard_pointer_clear_all (hp, -1);
 		return FALSE;
-	} 
+	}
 
 	mono_hazard_pointer_clear_all (hp, -1);
 	return TRUE;
@@ -892,7 +892,7 @@ mono_thread_info_wait_inited (void)
 			break;
 		} else if (old_read == GINT_TO_POINTER (MONO_END_INIT_CB)) {
 			// Is inited
-			return; 
+			return;
 		} else {
 			// We raced with another writer
 			wait_request.next = (GSList *) old_read;
@@ -1324,7 +1324,7 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 
 		if (suspend_result != BeginSuspendOkNoWait)
 			mono_threads_wait_pending_operations ();
-		
+
 		if (!check_async_suspend (info, suspend_result)) {
 			mono_thread_info_core_resume (info);
 			mono_threads_wait_pending_operations ();
@@ -1453,7 +1453,7 @@ mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(voi
 /*
 The suspend lock is held during any suspend in progress.
 A GC that has safepoints must take this lock as part of its
-STW to make sure no unsafe pending suspend is in progress.   
+STW to make sure no unsafe pending suspend is in progress.
 */
 
 static void
@@ -1605,7 +1605,7 @@ mono_thread_info_is_async_context (void)
 /*
  * mono_thread_info_get_stack_bounds:
  *
- *   Return the address and size of the current threads stack. Return NULL as the 
+ *   Return the address and size of the current threads stack. Return NULL as the
  * stack address if the stack address cannot be determined.
  */
 void

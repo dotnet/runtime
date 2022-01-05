@@ -822,7 +822,7 @@ namespace ETW
         friend class ETW::EnumerationLog;
 #if defined(FEATURE_EVENT_TRACE)
         static VOID SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL bFireDomainModuleEvents=FALSE);
-        static ULONG SendModuleRange(__in Module *pModule, __in DWORD dwEventOptions);
+        static ULONG SendModuleRange(_In_ Module *pModule, _In_ DWORD dwEventOptions);
         static VOID SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions);
         static VOID SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptions, LPCWSTR wszFriendlyName=NULL);
     public:
@@ -960,8 +960,8 @@ namespace ETW
     {
 #ifdef FEATURE_EVENT_TRACE
     public:
-        static VOID StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName);
-        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName);
+        static VOID StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName);
+        static VOID StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName);
 
         static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
                                                           LPCWSTR wszModuleName,
@@ -1322,10 +1322,10 @@ EXTERN_C DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DO
 ETW_INLINE
 ULONG
 CoMofTemplate_h(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
     __in_opt LPCGUID EventGuid,
-    __in const unsigned short  ClrInstanceID
+    _In_ const unsigned short  ClrInstanceID
     )
 {
 #define ARGUMENT_COUNT_h 1
@@ -1388,8 +1388,8 @@ public:
 FORCEINLINE
 BOOLEAN __stdcall
 McGenEventTracingEnabled(
-    __in PMCGEN_TRACE_CONTEXT EnableInfo,
-    __in PCEVENT_DESCRIPTOR EventDescriptor
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor
     )
 {
 
@@ -1483,9 +1483,9 @@ struct CallStackFrame
 FORCEINLINE
 BOOLEAN __stdcall
 McGenEventProviderEnabled(
-    __in PMCGEN_TRACE_CONTEXT Context,
-    __in UCHAR Level,
-    __in ULONGLONG Keyword
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG Keyword
     )
 {
     if(!Context) {

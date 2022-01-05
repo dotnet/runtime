@@ -9,7 +9,7 @@
 }
 .assembly extern mscorlib { auto }
 .assembly extern System { auto }
-.assembly EHTest {}
+.assembly 'regionLive' {}
 .assembly extern xunit.core {}
 .class public EHTest
 {

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly jumper{}
+.assembly 'test_25'{}
 .assembly extern xunit.core {}
 
   .class private sequential ansi sealed beforefieldinit VT

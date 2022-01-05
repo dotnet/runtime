@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using System.IO.Pipes;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
@@ -68,36 +67,6 @@ namespace System.IO.Tests
             Assert.True(File.WriteAllBytesAsync(path, new byte[0], token).IsCanceled);
             return Assert.ThrowsAsync<TaskCanceledException>(
                 async () => await File.WriteAllBytesAsync(path, new byte[0], token));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public async Task ReadFileOver2GBAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public async Task ReadFileOverMaxArrayLengthAsync()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytesAsync at once
-            await Assert.ThrowsAsync<IOException>(async () => await File.ReadAllBytesAsync(path));
         }
 
         [Fact]

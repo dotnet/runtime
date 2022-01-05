@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module simple.exe
 // MVID: {0B8FCFD0-673A-4DEB-90CC-B96749DE09C8}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -201,10 +201,19 @@ struct MonoJitTlsData {
 #endif
 };
 
+typedef struct {
+	MonoMethod *method;
+	/* Either the IL offset of the currently executing code, or -1 */
+	int il_offset;
+	/* For every arg+local, either its address on the stack, or NULL */
+	gpointer data [1];
+} MonoMethodILState;
+
 #define MONO_LMFEXT_DEBUGGER_INVOKE 1
 #define MONO_LMFEXT_INTERP_EXIT 2
 #define MONO_LMFEXT_INTERP_EXIT_WITH_CTX 3
 #define MONO_LMFEXT_JIT_ENTRY 4
+#define MONO_LMFEXT_IL_STATE 5
 
 /*
  * The MonoLMF structure is arch specific, it includes at least these fields.
@@ -232,6 +241,7 @@ typedef struct {
 	int kind;
 	MonoContext ctx; /* valid if kind == DEBUGGER_INVOKE || kind == INTERP_EXIT_WITH_CTX */
 	gpointer interp_exit_data; /* valid if kind == INTERP_EXIT || kind == INTERP_EXIT_WITH_CTX */
+	MonoMethodILState *il_state; /* valid if kind == IL_STATE */
 #if defined (_MSC_VER)
 	gboolean interp_exit_label_set;
 #endif

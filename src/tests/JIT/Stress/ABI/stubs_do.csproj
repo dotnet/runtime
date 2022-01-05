@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <IlasmRoundTrip>true</IlasmRoundTrip>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <GCStressIncompatible>true</GCStressIncompatible>

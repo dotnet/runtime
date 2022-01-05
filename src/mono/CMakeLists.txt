@@ -7,6 +7,7 @@ endif()
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")

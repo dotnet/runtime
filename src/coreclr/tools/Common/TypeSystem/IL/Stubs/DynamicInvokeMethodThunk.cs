@@ -308,6 +308,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return Name;
+            }
+        }
+
         public override MethodIL EmitIL()
         {
             ILEmitter emitter = new ILEmitter();

@@ -1023,10 +1023,10 @@ namespace Internal.JitInterface
             return (TypeSystemEntity)HandleToObject((IntPtr)((ulong)contextStruct & ~(ulong)CorInfoContextFlags.CORINFO_CONTEXTFLAGS_MASK));
         }
 
-        private bool isJitIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
+        private bool isIntrinsic(CORINFO_METHOD_STRUCT_* ftn)
         {
             MethodDesc method = HandleToObject(ftn);
-            return method.IsIntrinsic;
+            return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
         private uint getMethodAttribsInternal(MethodDesc method)
@@ -1041,7 +1041,7 @@ namespace Internal.JitInterface
             if (method.IsSynchronized)
                 result |= CorInfoFlag.CORINFO_FLG_SYNCH;
             if (method.IsIntrinsic)
-                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC | CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
             if (method.IsAbstract)
@@ -1115,7 +1115,7 @@ namespace Internal.JitInterface
             // Check for hardware intrinsics
             if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
             {
-                result |= CorInfoFlag.CORINFO_FLG_JIT_INTRINSIC;
+                result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             }
 
             return (uint)result;
@@ -2744,6 +2744,22 @@ namespace Internal.JitInterface
                 rank = (uint)td.Rank;
             }
             return rank;
+        }
+
+        private CorInfoArrayIntrinsic getArrayIntrinsicID(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            CorInfoArrayIntrinsic kind = CorInfoArrayIntrinsic.ILLEGAL;
+            if (HandleToObject(ftn) is ArrayMethod am)
+            {
+                kind = am.Kind switch
+                {
+                    ArrayMethodKind.Get => CorInfoArrayIntrinsic.GET,
+                    ArrayMethodKind.Set => CorInfoArrayIntrinsic.SET,
+                    ArrayMethodKind.Address => CorInfoArrayIntrinsic.ADDRESS,
+                    _ => CorInfoArrayIntrinsic.ILLEGAL
+                };
+            }
+            return kind;
         }
 
         private void* getArrayInitializationData(CORINFO_FIELD_STRUCT_* field, uint size)

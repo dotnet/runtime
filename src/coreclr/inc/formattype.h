@@ -68,14 +68,14 @@ const char* PrettyPrintClass(
 
 bool IsNameToQuote(const char *name);
 bool IsLocalToQuote(const char *name);
-const char* UnquotedProperName(__in __nullterminated const char* name, unsigned len=(unsigned)-1);
-const char* ProperName(__in __nullterminated const char* name, bool isLocalName = false);
+const char* UnquotedProperName(_In_ __nullterminated const char* name, unsigned len=(unsigned)-1);
+const char* ProperName(_In_ __nullterminated const char* name, bool isLocalName = false);
 #define ProperLocalName(x) ProperName(x, true)
 const char* KEYWORD(__in_opt __nullterminated const char* szOrig);
 const char* COMMENT(__in_opt __nullterminated const char* szOrig);
 const char* ERRORMSG(__in_opt __nullterminated const char* szOrig);
-const char* ANCHORPT(__in __nullterminated const char* szOrig, mdToken tk);
-const char* JUMPPT(__in __nullterminated const char* szOrig, mdToken tk);
+const char* ANCHORPT(_In_ __nullterminated const char* szOrig, mdToken tk);
+const char* JUMPPT(_In_ __nullterminated const char* szOrig, mdToken tk);
 const char* SCOPE(void);
 const char* UNSCOPE(void);
 const char* LTN(void);
