@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Tracing.Tests.Common;
 using System.Threading;
@@ -297,6 +298,79 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
+                }
+            );
+
+            fSuccess &= await subprocessTask;
+
+            return fSuccess;
+        }
+
+        public static async Task<bool> TEST_ProcessInfoBeforeAndAfterSuspension()
+        {
+            // This test only applies to platforms where the PAL is used
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return true;
+
+            bool fSuccess = true;
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName);
+            using var memoryStream1 = new MemoryStream();
+            using var memoryStream2 = new MemoryStream();
+            using var memoryStream3 = new MemoryStream();
+            Task<bool> subprocessTask = Utils.RunSubprocess(
+                currentAssembly: Assembly.GetExecutingAssembly(),
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
+                duringExecution: async (pid) =>
+                {
+                    Stream stream = await server.AcceptAsync();
+                    IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    Logger.logger.Log($"Get ProcessInfo while process is suspended");
+                    // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+                    var message = new IpcMessage(0x04, 0x04);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    IpcMessage response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+
+                    ProcessInfo2 pi2Before = ProcessInfo2.TryParse(response.Payload);
+
+                    // recycle
+                    stream = await server.AcceptAsync();
+                    advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    message = new IpcMessage(0x04,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+
+                    // recycle
+                    stream = await server.AcceptAsync();
+                    advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    // wait a little bit to make sure the runtime of the target is fully up, i.e., g_EEStarted == true
+                    // on resource constrained CI machines this may not be instantaneous
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+
+                    Logger.logger.Log($"Get ProcessInfo after resumption");
+                    // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+                    message = new IpcMessage(0x04, 0x04);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+
+                    ProcessInfo2 pi2After = ProcessInfo2.TryParse(response.Payload);
+
+                    Process currentProcess = Process.GetCurrentProcess();
+
+                    Utils.Assert(pi2Before.Commandline.Equals(currentProcess.MainModule.FileName), $"Before resuming, the commandline should be the mock value of the host executable path '{currentProcess.MainModule.FileName}'. Observed: '{pi2Before.Commandline}'");
+                    Utils.Assert(!pi2After.Commandline.Equals(pi2Before.Commandline), $"After resuming, the commandline should be the correct value. Observed: Before='{pi2Before.Commandline}' After='{pi2After.Commandline}'");
                 }
             );
 
