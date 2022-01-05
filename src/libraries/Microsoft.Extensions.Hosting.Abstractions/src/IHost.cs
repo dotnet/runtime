@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Hosting
         IServiceProvider Services { get; }
 
         /// <summary>
-        /// Start the <see cref="IHostedService" /> objects configured for the program.
+        /// Starts the <see cref="IHostedService" /> objects configured for the program.
         /// The application will run until interrupted or until <see cref="M:IHostApplicationLifetime.StopApplication()" /> is called.
         /// </summary>
         /// <param name="cancellationToken">Used to abort program start.</param>
