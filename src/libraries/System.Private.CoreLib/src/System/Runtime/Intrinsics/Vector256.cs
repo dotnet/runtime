@@ -2456,6 +2456,28 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAny<T>(Vector256<T> left, Vector256<T> right)
             where T : struct => Equals(left, right).As<T, ulong>() != Vector256<ulong>.Zero;
 
+        /// <summary>Extracts the most significant bit from each element in a vector.</summary>
+        /// <param name="vector">The vector whose elements should have their most significant bit extracted.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The packed most significant bits extracted from the elements in <paramref name="vector" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint ExtractMostSignificantBits<T>(this Vector256<T> vector)
+            where T : struct
+        {
+            uint result = 0;
+
+            for (int index = 0; index < Vector256<T>.Count; index++)
+            {
+                uint value = Scalar<T>.ExtractMostSignificantBit(vector.GetElementUnsafe(index));
+                value <<= index;
+                result |= value;
+            }
+
+            return result;
+        }
+
         /// <summary>Computes the floor of each element in a vector.</summary>
         /// <param name="vector">The vector that will have its floor computed.</param>
         /// <returns>A vector whose elements are the floor of the elements in <paramref name="vector" />.</returns>

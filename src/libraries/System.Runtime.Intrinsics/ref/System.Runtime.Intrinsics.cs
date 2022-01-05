@@ -146,6 +146,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Equals<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Double> Floor(System.Runtime.Intrinsics.Vector128<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> Floor(System.Runtime.Intrinsics.Vector128<System.Single> vector) { throw null; }
         public static T GetElement<T>(this System.Runtime.Intrinsics.Vector128<T> vector, int index) where T : struct { throw null; }
@@ -418,6 +420,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Equals<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Double> Floor(System.Runtime.Intrinsics.Vector256<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Single> Floor(System.Runtime.Intrinsics.Vector256<System.Single> vector) { throw null; }
         public static T GetElement<T>(this System.Runtime.Intrinsics.Vector256<T> vector, int index) where T : struct { throw null; }
@@ -664,6 +668,8 @@ namespace System.Runtime.Intrinsics
         public static bool EqualsAll<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static bool EqualsAny<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Equals<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint ExtractMostSignificantBits<T>(this System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Double> Floor(System.Runtime.Intrinsics.Vector64<System.Double> vector) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Single> Floor(System.Runtime.Intrinsics.Vector64<System.Single> vector) { throw null; }
         public static T GetElement<T>(this System.Runtime.Intrinsics.Vector64<T> vector, int index) where T : struct { throw null; }

@@ -1035,6 +1035,39 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_ExtractMostSignificantBits:
+        case NI_Vector256_ExtractMostSignificantBits:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op1 = impSIMDPopStack(simdType);
+
+                NamedIntrinsic moveMaskIntrinsic = NI_Illegal;
+
+                if (simdBaseType == TYP_FLOAT)
+                {
+                    moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE_MoveMask;
+                }
+                else if (simdBaseType == TYP_DOUBLE)
+                {
+                    moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE2_MoveMask;
+                }
+                else
+                {
+                    moveMaskIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_SSE2_MoveMask;
+                    simdBaseJitType   = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, moveMaskIntrinsic, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector128_Floor:
         case NI_Vector256_Floor:
         {

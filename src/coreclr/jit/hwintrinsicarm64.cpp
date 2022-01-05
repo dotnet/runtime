@@ -332,7 +332,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     assert(numArgs >= 0);
 
-    const var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
     GenTree* retNode = nullptr;
@@ -649,6 +649,189 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
                                             /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_ExtractMostSignificantBits:
+        case NI_Vector128_ExtractMostSignificantBits:
+        {
+            assert(sig->numArgs == 1);
+
+            // ARM64 doesn't have a single instruction that performs the behavior so we'll emulate it instead.
+            // To do this, we effectively perform the following steps:
+            // 1. tmp = input & 0x80         ; and the input to clear all but the most significant bit
+            // 2. tmp = tmp >> index         ; right shift each element by its index
+            // 3. tmp = sum(tmp)             ; sum the elements together
+
+            // For byte/sbyte, we also need to handle the fact that we can only shift by up to 8
+            // but for Vector128, we have 16 elements to handle. In that scenario, we will simply
+            // extract both scalars, and combine them via: (upper << 8) | lower
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op1 = impSIMDPopStack(simdType);
+
+            GenTree*    vectorCreateOp1  = nullptr;
+            GenTree*    vectorCreateOp2  = nullptr;
+            CorInfoType vectorCreateType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    op2             = gtNewIconNode(0x80);
+                    vectorCreateOp1 = gtNewLconNode(0x00FFFEFDFCFBFAF9);
+
+                    if (simdSize == 16)
+                    {
+                        vectorCreateOp2 = gtNewLconNode(0x00FFFEFDFCFBFAF9);
+                    }
+                    break;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    op2             = gtNewIconNode(0x8000);
+                    vectorCreateOp1 = gtNewLconNode(0xFFF4FFF3FFF2FFF1);
+
+                    if (simdSize == 16)
+                    {
+                        vectorCreateOp2 = gtNewLconNode(0xFFF8FFF7FFF6FFF5);
+                    }
+                    break;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    op2             = gtNewIconNode(0x80000000);
+                    vectorCreateOp1 = gtNewLconNode(0xFFFFFFE2FFFFFFE1);
+
+                    if (simdSize == 16)
+                    {
+                        vectorCreateOp2 = gtNewLconNode(0xFFFFFFE4FFFFFFE3);
+                    }
+                    break;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    op2             = gtNewLconNode(0x8000000000000000);
+                    vectorCreateOp1 = gtNewLconNode(0xFFFFFFFFFFFFFFC1);
+
+                    if (simdSize == 16)
+                    {
+                        vectorCreateOp2 = gtNewLconNode(0xFFFFFFFFFFFFFFC2);
+                    }
+                    break;
+                }
+
+                case TYP_FLOAT:
+                {
+                    op2             = gtNewIconNode(0x80000000);
+                    simdBaseType    = TYP_INT;
+                    simdBaseJitType = CORINFO_TYPE_INT;
+                    vectorCreateOp1 = gtNewLconNode(0xFFFFFFE2FFFFFFE1);
+
+                    if (simdSize == 16)
+                    {
+                        vectorCreateOp2 = gtNewLconNode(0xFFFFFFE4FFFFFFE3);
+                    }
+                    break;
+                }
+
+                case TYP_DOUBLE:
+                {
+                    op2             = gtNewLconNode(0x8000000000000000);
+                    simdBaseType    = TYP_LONG;
+                    simdBaseJitType = CORINFO_TYPE_LONG;
+                    vectorCreateOp1 = gtNewLconNode(0xFFFFFFFFFFFFFFC1);
+
+                    if (simdSize == 16)
+                    {
+                        vectorCreateOp2 = gtNewLconNode(0xFFFFFFFFFFFFFFC2);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            if (simdSize == 16)
+            {
+                op3 = gtNewSimdHWIntrinsicNode(simdType, vectorCreateOp1, vectorCreateOp2, NI_Vector128_Create,
+                                               vectorCreateType, simdSize);
+            }
+            else
+            {
+                op3 = gtNewSimdHWIntrinsicNode(simdType, vectorCreateOp1, NI_Vector64_Create, vectorCreateType,
+                                               simdSize);
+            }
+
+            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, NI_AdvSimd_And, simdBaseJitType, simdSize,
+                                           /* isSimdAsHWIntrinsic */ false);
+
+            op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op3, NI_AdvSimd_ShiftLogical, simdBaseJitType, simdSize,
+                                           /* isSimdAsHWIntrinsic */ false);
+
+            if (varTypeIsByte(simdBaseType) && (simdSize == 16))
+            {
+                CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
+
+                op1 = impCloneExpr(op1, &op2, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                   nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
+
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ false);
+                op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8,
+                                               /* isSimdAsHWIntrinsic */ false);
+                op1 = gtNewSimdHWIntrinsicNode(simdBaseType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8,
+                                               /* isSimdAsHWIntrinsic */ false);
+                op1 = gtNewCastNode(TYP_INT, retNode, /* isUnsigned */ true, simdBaseType);
+
+                GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, simdBaseJitType, simdSize);
+                ssize_t  index = 8 / genTypeSize(simdBaseType);
+
+                op2 = gtNewSimdHWIntrinsicNode(simdType, op2, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                                               simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, NI_Vector128_GetLower, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ false);
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8,
+                                               /* isSimdAsHWIntrinsic */ false);
+                op2 = gtNewSimdHWIntrinsicNode(simdBaseType, op2, NI_Vector64_ToScalar, simdBaseJitType, 8,
+                                               /* isSimdAsHWIntrinsic */ false);
+                op2 = gtNewCastNode(TYP_INT, retNode, /* isUnsigned */ true, simdBaseType);
+
+                op2     = gtNewOperNode(GT_LSH, TYP_INT, op2, gtNewIconNode(8));
+                retNode = gtNewOperNode(GT_OR, TYP_INT, op1, op2);
+            }
+            else
+            {
+                if (!varTypeIsLong(simdBaseType))
+                {
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType,
+                                                   simdSize, /* isSimdAsHWIntrinsic */ false);
+                }
+                else if (simdSize == 16)
+                {
+                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
+                                                   simdSize, /* isSimdAsHWIntrinsic */ false);
+                }
+
+                retNode = gtNewSimdHWIntrinsicNode(simdBaseType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8,
+                                                   /* isSimdAsHWIntrinsic */ false);
+
+                if ((simdBaseType != TYP_INT) && (simdBaseType != TYP_UINT))
+                {
+                    retNode = gtNewCastNode(TYP_INT, retNode, /* isUnsigned */ true, simdBaseType);
+                }
+            }
             break;
         }
 

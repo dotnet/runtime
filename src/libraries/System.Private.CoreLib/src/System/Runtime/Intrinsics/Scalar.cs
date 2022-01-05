@@ -356,6 +356,91 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static uint ExtractMostSignificantBit(T value)
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                uint bits = (byte)(object)value;
+                return bits >> 7;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                ulong bits = BitConverter.DoubleToUInt64Bits((double)(object)value);
+                return (uint)(bits >> 63);
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                uint bits = (ushort)(short)(object)value;
+                return bits >> 15;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                uint bits = (uint)(int)(object)value;
+                return bits >> 31;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                ulong bits = (ulong)(long)(object)value;
+                return (uint)(bits >> 63);
+            }
+            else if (typeof(T) == typeof(nint))
+            {
+                if (Environment.Is64BitProcess)
+                {
+                    uint bits = (uint)(nint)(object)value;
+                    return bits >> 31;
+                }
+                else
+                {
+                    ulong bits = (ulong)(nint)(object)value;
+                    return (uint)(bits >> 63);
+                }
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                if (Environment.Is64BitProcess)
+                {
+                    uint bits = (uint)(nuint)(object)value;
+                    return bits >> 31;
+                }
+                else
+                {
+                    ulong bits = (ulong)(nuint)(object)value;
+                    return (uint)(bits >> 63);
+                }
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                uint bits = (byte)(sbyte)(object)value;
+                return bits >> 7;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                uint bits = BitConverter.SingleToUInt32Bits((float)(object)value);
+                return bits >> 31;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                uint bits = (ushort)(object)value;
+                return bits >> 15;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                uint bits = (uint)(object)value;
+                return bits >> 31;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                ulong bits = (ulong)(object)value;
+                return (uint)(bits >> 63);
+            }
+            else
+            {
+                throw new NotSupportedException(SR.Arg_TypeNotSupported);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Floor(T value)
         {
             if (typeof(T) == typeof(double))
