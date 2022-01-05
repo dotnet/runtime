@@ -2035,9 +2035,24 @@ void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node) {
 
     assert(targetReg != REG_NA);
 
-    // TODO: Generate SHA Intrinsic
-
     genConsumeMultiOpOperands(node);
+
+    switch (intrinsicId)
+    {
+        case NI_Sha1_MessageSchedule1:
+        case NI_Sha1_MessageSchedule2:
+        case NI_Sha1_NextE:
+        case NI_Sha1_FourRounds:
+        case NI_Sha256_MessageSchedule1:
+        case NI_Sha256_MessageSchedule2:
+        case NI_Sha256_TwoRounds:
+        {
+            // TODO
+            //assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+            genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()));
+            break;
+        }
+    }
 
     genProduceReg(node);
 }
