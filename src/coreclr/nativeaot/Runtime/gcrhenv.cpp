@@ -187,9 +187,6 @@ bool RedhawkGCInterface::InitializeSubsystems()
     // g_gcDacGlobals.
     volatile void* _dummy = g_gcDacGlobals;
 
-    // Initialize CurrentThread which is required for GC Regions
-    ThreadStore::AttachCurrentThread();
-
     // Initialize the GC subsystem.
     hr = g_pGCHeap->Initialize();
     if (FAILED(hr))
@@ -926,7 +923,7 @@ void GCToEEInterface::DisablePreemptiveGC()
 Thread* GCToEEInterface::GetThread()
 {
 #ifndef DACCESS_COMPILE
-    return ThreadStore::GetCurrentThread();
+    return ThreadStore::GetCurrentThreadIfAvailable();
 #else
     return NULL;
 #endif
