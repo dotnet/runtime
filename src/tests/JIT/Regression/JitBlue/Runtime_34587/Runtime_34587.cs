@@ -6,6 +6,12 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
+using ArmSha1 = System.Runtime.Intrinsics.Arm.Sha1;
+using X86Sha1 = System.Runtime.Intrinsics.X86.Sha1;
+
+using ArmSha256 = System.Runtime.Intrinsics.Arm.Sha256;
+using X86Sha256 = System.Runtime.Intrinsics.X86.Sha256;
+
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
 
@@ -29,6 +35,8 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  SSE4.1:        {Sse41.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE4.2:        {Sse42.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSSE3:         {Ssse3.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha1:          {X86Sha1.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha256:        {X86Sha256.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  X86Base:       {X86Base.IsSupported}");
 
         TestLibrary.TestFramework.LogInformation("Supported x64 ISAs:");
@@ -56,8 +64,8 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  Crc32:         {Crc32.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  Dp:            {Dp.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  Rdm:           {Rdm.IsSupported}");
-        TestLibrary.TestFramework.LogInformation($"  Sha1:          {Sha1.IsSupported}");
-        TestLibrary.TestFramework.LogInformation($"  Sha256:        {Sha256.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha1:          {ArmSha1.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha256:        {ArmSha256.IsSupported}");
 
         TestLibrary.TestFramework.LogInformation("Supported Arm64 ISAs:");
         TestLibrary.TestFramework.LogInformation($"  AdvSimd.Arm64: {AdvSimd.Arm64.IsSupported}");
@@ -66,8 +74,8 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  Crc32.Arm64:   {Crc32.Arm64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  Dp.Arm64:      {Dp.Arm64.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  Rdm.Arm64:     {Rdm.Arm64.IsSupported}");
-        TestLibrary.TestFramework.LogInformation($"  Sha1.Arm64:    {Sha1.Arm64.IsSupported}");
-        TestLibrary.TestFramework.LogInformation($"  Sha256.Arm64:  {Sha256.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha1.Arm64:    {ArmSha1.Arm64.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  Sha256.Arm64:  {ArmSha256.Arm64.IsSupported}");
 
         bool succeeded = true;
 
@@ -204,12 +212,12 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sha1.IsSupported)
+            if (ArmSha1.IsSupported)
             {
                 succeeded &= ArmBase.IsSupported;
             }
 
-            if (Sha1.Arm64.IsSupported)
+            if (ArmSha1.Arm64.IsSupported)
             {
                 succeeded &= Sha1.IsSupported;
                 succeeded &= ArmBase.Arm64.IsSupported;
@@ -222,14 +230,14 @@ class Runtime_34587
         {
             bool succeeded = true;
 
-            if (Sha256.IsSupported)
+            if (ArmSha256.IsSupported)
             {
                 succeeded &= ArmBase.IsSupported;
             }
 
-            if (Sha256.Arm64.IsSupported)
+            if (ArmSha256.Arm64.IsSupported)
             {
-                succeeded &= Sha256.IsSupported;
+                succeeded &= ArmSha256.IsSupported;
                 succeeded &= ArmBase.Arm64.IsSupported;
             }
 
@@ -257,6 +265,8 @@ class Runtime_34587
         succeeded &= ValidateLzcnt();
         succeeded &= ValidatePclmulqdq();
         succeeded &= ValidatePopcnt();
+        succeeded &= ValidateSha1();
+        succeeded &= ValidateSha256();
 
         return succeeded;
 
@@ -543,6 +553,30 @@ class Runtime_34587
             {
                 succeeded &= Popcnt.IsSupported;
                 succeeded &= Sse42.X64.IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateSha1()
+        {
+            bool succeeded = true;
+
+            if (X86Sha1.IsSupported)
+            {
+                succeeded &= X86Sha1.IsSupported;
+            }
+
+            return succeeded;
+        }
+
+        static bool ValidateSha256()
+        {
+            bool succeeded = true;
+
+            if (X86Sha256.IsSupported)
+            {
+                succeeded &= X86Sha256.IsSupported;
             }
 
             return succeeded;
