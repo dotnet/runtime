@@ -127,6 +127,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 int connectCount = 0;
 
+                TaskCompletionSource tcsFirstConnectionInitiated = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 TaskCompletionSource tcsFirstRequestCanceled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 using (var handler = CreateHttpClientHandler())
@@ -136,10 +137,26 @@ namespace System.Net.Http.Functional.Tests
                     var socketsHandler = GetUnderlyingSocketsHttpHandler(handler);
                     socketsHandler.ConnectCallback = async (context, token) =>
                     {
+                        // Note we force serialization of connection creation by waiting on tcsFirstConnectionInitiated below,
+                        // so we don't need to worry about concurrent access to connectCount.
+                        bool isFirstConnection = connectCount == 0;
+                        connectCount++;
+
+                        Assert.True(connectCount <= 2);
+
+                        if (isFirstConnection)
+                        {
+                            tcsFirstConnectionInitiated.SetResult();
+                        }
+                        else
+                        {
+                            Assert.True(tcsFirstConnectionInitiated.Task.IsCompletedSuccessfully);
+                        }
+
                         // Wait until first request is cancelled and has completed
                         await tcsFirstRequestCanceled.Task;
 
-                        if (Interlocked.Increment(ref connectCount) == 1)
+                        if (isFirstConnection)
                         {
                             // Fail the first connection attempt
                             throw new Exception("Failing first connection");
@@ -155,6 +172,9 @@ namespace System.Net.Http.Functional.Tests
 
                     using CancellationTokenSource cts = new CancellationTokenSource();
                     Task<HttpResponseMessage> t1 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, cts.Token);
+
+                    // Wait for the connection attempt to be initiated before we send the second request, to avoid races in connection creation
+                    await tcsFirstConnectionInitiated.Task;
                     Task<HttpResponseMessage> t2 = client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion, VersionPolicy = HttpVersionPolicy.RequestVersionExact }, default);
 
                     // Cancel the first message and wait for it to complete
