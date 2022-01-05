@@ -18223,8 +18223,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             else
             {
                 op2 = gtNewOperNode(GT_AND, simdBaseType, op2, gtNewIconNode(shiftCountMask));
-                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_SSE2_ConvertScalarToVector128Int32,
-                                               CORINFO_TYPE_INT, 16, isSimdAsHWIntrinsic);
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_SSE2_ConvertScalarToVector128Int32, CORINFO_TYPE_INT,
+                                               16, isSimdAsHWIntrinsic);
             }
 
             if (simdSize == 32)
@@ -20792,8 +20792,7 @@ GenTree* Compiler::gtNewSimdSumNode(
 
     for (int i = 0; i < haddCount; i++)
     {
-        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                           nullptr DEBUGARG("Clone op1 for vector sum"));
+        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for vector sum"));
         op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -20801,8 +20800,7 @@ GenTree* Compiler::gtNewSimdSumNode(
     {
         intrinsic = (simdBaseType == TYP_FLOAT) ? NI_SSE_Add : NI_SSE2_Add;
 
-        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                           nullptr DEBUGARG("Clone op1 for vector sum"));
+        op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for vector sum"));
         op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0x01, TYP_INT), NI_AVX_ExtractVector128,
                                          simdBaseJitType, simdSize);
 
