@@ -380,8 +380,11 @@ namespace System.Text.RegularExpressions
                 // we can only consider unbounded loops, as to be able to start at the end of the loop we need the loop to have consumed all possible matches;
                 // otherwise, you could end up with a pattern like "a{1,3}b" matching against "aaaabc", which should match, but if we pre-emptively stop consuming
                 // after the first three a's and re-start from that position, we'll end up failing the match even though it should have succeeded.  We can also
-                // apply this optimization to non-atomic loops. Even though backtracking could be necessary, such backtracking would be handled within the processing
-                // of a single starting position.
+                // apply this optimization to non-atomic loops: even though backtracking could be necessary, such backtracking would be handled within the processing
+                // of a single starting position.  Lazy loops similarly benefit, as a failed match will result in exploring the exact same search space as with
+                // a greedy loop, just in the opposite order (and a successful match will overwrite the bumpalong position); we need to avoid atomic lazy loops,
+                // however, as they will only end up as a repeater for the minimum length and thus will effectively end up with a non-infinite upper bound, which
+                // we've already outlined is problematic.
                 {
                     RegexNode node = rootNode.Child(0); // skip implicit root capture node
                     while (true)
@@ -394,6 +397,7 @@ namespace System.Text.RegularExpressions
                                 continue;
 
                             case Oneloop or Oneloopatomic or Notoneloop or Notoneloopatomic or Setloop or Setloopatomic when node.N == int.MaxValue:
+                            case Onelazy or Notonelazy or Setlazy when node.N == int.MaxValue && !node.IsAtomicByParent():
                                 RegexNode? parent = node.Next;
                                 if (parent != null && parent.Type == Concatenate)
                                 {
