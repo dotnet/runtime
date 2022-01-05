@@ -872,10 +872,11 @@ namespace Internal.JitInterface
             sig->sigInst.methInst = null; // Not used by the JIT
             sig->sigInst.methInstCount = (uint)signature.GenericParameterCount;
 
+            MethodILScope scope = _compilation.GetMethodIL(MethodBeingCompiled);
             sig->pSig = null;
             sig->cbSig = 0; // Not used by the JIT
             sig->methodSignature = ObjectToHandle(signature);
-            sig->scope = ObjectToHandle(_compilation.GetMethodIL(MethodBeingCompiled));
+            sig->scope = scope is not null ? ObjectToHandle(scope) : null; // scope can be null for internal calls and COM methods.
             sig->token = 0; // Not used by the JIT
         }
 
