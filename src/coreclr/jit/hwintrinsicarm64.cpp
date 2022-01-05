@@ -793,7 +793,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op1 = gtNewSimdHWIntrinsicNode(simdBaseType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8,
                                                /* isSimdAsHWIntrinsic */ false);
-                op1 = gtNewCastNode(TYP_INT, retNode, /* isUnsigned */ true, simdBaseType);
+                op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, simdBaseType);
 
                 GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, simdBaseJitType, simdSize);
                 ssize_t  index = 8 / genTypeSize(simdBaseType);
@@ -806,7 +806,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op2 = gtNewSimdHWIntrinsicNode(simdBaseType, op2, NI_Vector64_ToScalar, simdBaseJitType, 8,
                                                /* isSimdAsHWIntrinsic */ false);
-                op2 = gtNewCastNode(TYP_INT, retNode, /* isUnsigned */ true, simdBaseType);
+                op2 = gtNewCastNode(TYP_INT, op2, /* isUnsigned */ true, simdBaseType);
 
                 op2     = gtNewOperNode(GT_LSH, TYP_INT, op2, gtNewIconNode(8));
                 retNode = gtNewOperNode(GT_OR, TYP_INT, op1, op2);
