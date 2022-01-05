@@ -74,6 +74,22 @@ public unsafe class DisabledRuntimeMarshallingNative
     public class LayoutClass
     {}
 
+    [StructLayout(LayoutKind.Auto)]
+    public struct AutoLayoutStruct
+    {
+        int i;
+    }
+
+    public struct SequentialWithAutoLayoutField
+    {
+        AutoLayoutStruct auto;
+    }
+
+    public struct SequentialWithAutoLayoutNestedField
+    {
+        SequentialWithAutoLayoutField field;
+    }
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern bool CheckStructWithShortAndBool(StructWithShortAndBool str, short s, bool b);
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
@@ -99,6 +115,15 @@ public unsafe class DisabledRuntimeMarshallingNative
     public static extern void CallWithLCID();
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", PreserveSig = false)]
     public static extern int CallWithHResultSwap();
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(AutoLayoutStruct s);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutField s);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutNestedField s);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();

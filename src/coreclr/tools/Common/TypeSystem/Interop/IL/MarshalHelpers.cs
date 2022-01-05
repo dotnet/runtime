@@ -860,9 +860,13 @@ namespace Internal.TypeSystem.Interop
             {
                 return MarshallerKind.BlittableValue;
             }
-            else if (type.IsValueType && !((DefType)type).ContainsGCPointers)
+            else if (type.IsValueType)
             {
-                return MarshallerKind.BlittableValue;
+                var defType = (DefType)type;
+                if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
+                {
+                    return MarshallerKind.BlittableValue;
+                }
             }
             return MarshallerKind.Invalid;
         }

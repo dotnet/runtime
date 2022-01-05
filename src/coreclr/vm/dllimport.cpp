@@ -3342,7 +3342,10 @@ BOOL NDirect::MarshalingRequired(
 
                 // When the built-in runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
-                if (!builtInMarshallingEnabled && hndArgType.GetMethodTable()->ContainsPointers())
+                // as long as they aren't auto-layout and don't have any auto-layout fields.
+                if (!builtInMarshallingEnabled &&
+                    (hndArgType.GetMethodTable()->ContainsPointers()
+                        || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {
                     return TRUE;
                 }

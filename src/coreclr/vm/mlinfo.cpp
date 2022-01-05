@@ -1113,6 +1113,11 @@ namespace
                 *errorResIDOut = IDS_EE_BADMARSHAL_MARSHAL_DISABLED;
                 return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
             }
+            if (pMT->IsAutoLayoutOrHasAutoLayoutField())
+            {
+                *errorResIDOut = IDS_EE_BADMARSHAL_AUTOLAYOUT;
+                return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+            }
             *pMTOut = pMT;
             return MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASS;
         }
@@ -2258,7 +2263,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
-                if (!m_pMT->HasLayout())
+                if (m_pMT->IsAutoLayoutOrHasAutoLayoutField())
                 {
                     m_resID = IDS_EE_BADMARSHAL_AUTOLAYOUT;
                     IfFailGoto(E_FAIL, lFail);

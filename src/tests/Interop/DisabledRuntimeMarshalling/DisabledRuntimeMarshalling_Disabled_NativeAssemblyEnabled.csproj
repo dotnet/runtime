@@ -4,8 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="PInvokeAssemblyMarshallingEnabled/*.cs" />
-    <Compile Include="FunctionPointers.cs" />
-    <Compile Include="RuntimeMarshallingDisabledAttribute.cs" />
+    <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Native_Default/DisabledRuntimeMarshallingNative_Default.csproj" />

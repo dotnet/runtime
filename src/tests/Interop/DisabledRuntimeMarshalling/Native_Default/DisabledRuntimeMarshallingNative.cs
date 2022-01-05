@@ -75,6 +75,22 @@ public unsafe class DisabledRuntimeMarshallingNative
     public class LayoutClass
     {}
 
+    [StructLayout(LayoutKind.Auto)]
+    public struct AutoLayoutStruct
+    {
+        int i;
+    }
+
+    public struct SequentialWithAutoLayoutField
+    {
+        AutoLayoutStruct auto;
+    }
+
+    public struct SequentialWithAutoLayoutNestedField
+    {
+        SequentialWithAutoLayoutField field;
+    }
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     [return:MarshalAs(UnmanagedType.U1)]
     public static extern bool CheckStructWithShortAndBool(StructWithShortAndBool str, short s, bool b);
@@ -97,6 +113,15 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
     [return:MarshalAs(UnmanagedType.U1)]
     public static extern bool GetByteAsBool(byte b);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(AutoLayoutStruct s);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutField s);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutNestedField s);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     [return:MarshalAs(UnmanagedType.U1)]

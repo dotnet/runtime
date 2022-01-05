@@ -875,7 +875,7 @@ namespace Internal.JitInterface
             sig->pSig = null;
             sig->cbSig = 0; // Not used by the JIT
             sig->methodSignature = ObjectToHandle(signature);
-            sig->scope = null;
+            sig->scope = ObjectToHandle(_compilation.GetMethodIL(MethodBeingCompiled));
             sig->token = 0; // Not used by the JIT
         }
 
