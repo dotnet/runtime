@@ -488,7 +488,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }            
         }
 
@@ -512,7 +512,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -539,7 +539,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -564,7 +564,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -588,7 +588,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -620,7 +620,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -652,7 +652,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -683,7 +683,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -708,7 +708,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -735,7 +735,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -760,7 +760,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -784,7 +784,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -815,7 +815,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -839,7 +839,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -866,7 +866,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -891,7 +891,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -915,7 +915,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -947,7 +947,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -979,7 +979,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -1010,7 +1010,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -1035,7 +1035,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -1062,7 +1062,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -1087,7 +1087,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -1111,7 +1111,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2206,7 +2206,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2230,7 +2230,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2257,7 +2257,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2282,7 +2282,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2306,7 +2306,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2338,7 +2338,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2370,7 +2370,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2401,7 +2401,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2426,7 +2426,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2453,7 +2453,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2478,7 +2478,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2502,7 +2502,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2533,7 +2533,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2557,7 +2557,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2584,7 +2584,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2609,7 +2609,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2633,7 +2633,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2665,7 +2665,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2697,7 +2697,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2728,7 +2728,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2753,7 +2753,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2780,7 +2780,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2805,7 +2805,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
@@ -2829,7 +2829,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
             finally
             {
-                NativeMemory.Free(value);
+                NativeMemory.AlignedFree(value);
             }
         }
 
