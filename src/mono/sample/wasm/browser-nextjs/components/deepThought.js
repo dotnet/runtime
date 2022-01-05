@@ -21,7 +21,7 @@ function createRuntime() {
                     successCallback(arrayBufferResult.instance);
                 } catch (err) {
                     console.error(err);
-                    throw ex;
+                    throw err;
                 }
             }
         });
