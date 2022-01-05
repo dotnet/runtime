@@ -2207,33 +2207,28 @@ namespace System.Text.RegularExpressions.Generator
                 if (expressionHasCaptures)
                 {
                     EmitUncaptureUntil(StackPop());
-                    EmitStackPop(endingPos, startingPos);
                 }
-                else
-                {
-                    EmitStackPop(endingPos, startingPos);
-                }
+                EmitStackPop(endingPos, startingPos);
+                writer.WriteLine();
 
-                string originalDoneLabel = doneLabel;
-                using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                if (subsequent?.FindStartingCharacterOrString() is (char, string) literal)
                 {
-                    writer.WriteLine($"goto {originalDoneLabel};");
-                }
-                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
-
-                if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
-                {
-                    writer.WriteLine();
-                    writer.WriteLine($"{endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(subsequentCharacter)});");
-                    using (EmitBlock(writer, $"if ({endingPos} < 0)"))
+                    writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+                    using (EmitBlock(writer, literal.String is not null ?
+                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.String.Length - 1}) - {startingPos}), {Literal(literal.String)})) < 0)" :
+                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Char)})) < 0)"))
                     {
-                        writer.WriteLine($"goto {originalDoneLabel};");
+                        writer.WriteLine($"goto {doneLabel};");
                     }
                     writer.WriteLine($"{endingPos} += {startingPos};");
                     writer.WriteLine($"pos = {endingPos};");
                 }
                 else
                 {
+                    using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
                     writer.WriteLine($"pos = --{endingPos};");
                 }
 
@@ -2244,6 +2239,8 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPush(expressionHasCaptures ?
                     new[] { startingPos, endingPos, "base.Crawlpos()" } :
                     new[] { startingPos, endingPos });
+
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
 
             void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)

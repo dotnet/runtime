@@ -51,6 +51,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
@@ -58,6 +59,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
+        private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
 
         /// <summary>The ILGenerator currently in use.</summary>
         protected ILGenerator? _ilg;
@@ -2391,32 +2393,48 @@ namespace System.Text.RegularExpressions
                 EmitStackPop();
                 Stloc(startingPos);
 
-                // if (startingPos >= endingPos) goto originalDoneLabel;
-                Label originalDoneLabel = doneLabel;
+                // if (startingPos >= endingPos) goto doneLabel;
                 Ldloc(startingPos);
                 Ldloc(endingPos);
-                BgeFar(originalDoneLabel);
-                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
+                BgeFar(doneLabel);
 
-                if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
+                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
                 {
-                    // endingPos = inputSpan.Slice(startingPos, endingPos - startingPos).LastIndexOf(subsequentCharacter);
+                    // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
                     // {
-                    //     goto originalDoneLabel;
+                    //     goto doneLabel;
                     // }
                     Ldloca(inputSpan);
                     Ldloc(startingPos);
-                    Ldloc(endingPos);
-                    Ldloc(startingPos);
-                    Sub();
-                    Call(s_spanSliceIntIntMethod);
-                    Ldc(subsequentCharacter);
-                    Call(s_spanLastIndexOfChar);
+                    if (literal.Item2 is not null)
+                    {
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        Ldloc(endingPos);
+                        Ldc(literal.Item2.Length - 1);
+                        Add();
+                        Call(s_mathMinIntInt);
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(s_spanSliceIntIntMethod);
+                        Ldstr(literal.Item2);
+                        Call(s_stringAsSpanMethod);
+                        Call(s_spanLastIndexOfSpan);
+                    }
+                    else
+                    {
+                        Ldloc(endingPos);
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(s_spanSliceIntIntMethod);
+                        Ldc(literal.Item1);
+                        Call(s_spanLastIndexOfChar);
+                    }
                     Stloc(endingPos);
                     Ldloc(endingPos);
                     Ldc(0);
-                    BltFar(originalDoneLabel);
+                    BltFar(doneLabel);
 
                     // endingPos += startingPos;
                     Ldloc(endingPos);
@@ -2448,6 +2466,8 @@ namespace System.Text.RegularExpressions
                 {
                     EmitStackPush(() => Ldloc(capturepos!));
                 }
+
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
 
             void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
