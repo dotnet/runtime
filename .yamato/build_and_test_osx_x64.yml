@@ -6,8 +6,20 @@ agent:
   flavor: m1.mac
 
 commands:
-  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs+libs.tests -test -a x64 -c release -ci -ninja
-  - ./build.sh -subset host+packs -a x64 -c release
+  - mkdir artifacts
+  - curl https://public-stevedore.unity3d.com/r/public/7za-mac-x64/e6c75fb7ffda_5bd76652986a0e3756d1cfd7e84ce056a9e1dbfc5f70f0514a001f724c0fbad2.zip --output artifacts/7za-mac-x64.zip
+  - unzip artifacts/7za-mac-x64.zip -d artifacts/7za-mac-x64
+  - |
+    cd unity/unitygc
+    mkdir release
+    cd release
+    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake --build .
+  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset clr+libs -a x64 -c release -ci -ninja
+  - cp unity/unitygc/release/libunitygc.dylib artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/native
+  - artifacts/7za-mac-x64/7za a artifacts/unity/dotnet-runtime-unity-osx-x64.7z ./artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64
+# build/run tests
+  - LD_LIBRARY_PATH=/usr/local/opt/openssl/lib ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
   - ./src/tests/build.sh x64 release ci
   - ./src/tests/run.sh x64 release
   - ./build.sh clr.paltests
@@ -22,4 +34,4 @@ triggers:
 artifacts: 
   osx64:
     paths:
-      - artifacts/packages/Release/Shipping/dotnet-runtime-7.0.0-dev-osx-x64.tar.gz
+      - artifacts/unity/dotnet-runtime-unity-osx-x64.7z

@@ -6,8 +6,20 @@ agent:
   flavor: b1.large
 
 commands:
-  - ./build.sh -subset clr+libs+libs.tests -test -a x64 -c release -ci -ninja
-  - ./build.sh -subset host+packs -a x64 -c release
+  - mkdir artifacts
+  - curl https://public-stevedore.unity3d.com/r/public/7za-linux-x64/e6c75fb7ffda_e6a295cdcae3f74d315361883cf53f75141be2e739c020035f414a449d4876af.zip --output artifacts/7za-linux-x64.zip
+  - unzip artifacts/7za-linux-x64.zip -d artifacts/7za-linux-x64
+  - |
+    cd unity/unitygc
+    mkdir release
+    cd release
+    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake --build .
+  - ./build.sh -subset clr+libs+libs -a x64 -c release -ci -ninja
+  - cp unity/unitygc/release/libunitygc.so artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native
+  - artifacts/7za-linux-x64/7za a artifacts/unity/dotnet-runtime-unity-linux-x64.7z ./artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64
+# build/run tests
+  - ./build.sh -subset libs.tests -test -a x64 -c release -ci -ninja
   - command: ./src/tests/build.sh x64 release ci
     retries: 1
   - ./src/tests/run.sh x64 release
@@ -23,4 +35,4 @@ triggers:
 artifacts: 
   linux64:
     paths:
-      - artifacts/packages/Release/Shipping/dotnet-runtime-7.0.0-dev-linux-x64.tar.gz
+      - artifacts/unity/dotnet-runtime-unity-linux-x64.7z
