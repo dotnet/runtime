@@ -8,6 +8,106 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector128Tests
     {
+        [Fact]
+        public void Vector128ByteSumTest()
+        {
+            Vector128<byte> vector = Vector128.Create((byte)0x01);
+            Assert.Equal(16, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128DoubleSumTest()
+        {
+            Vector128<double> vector = Vector128.Create((double)0x01);
+            Assert.Equal(2.0, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128Int16SumTest()
+        {
+            Vector128<short> vector = Vector128.Create((short)0x01);
+            Assert.Equal(8, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128Int32SumTest()
+        {
+            Vector128<int> vector = Vector128.Create((int)0x01);
+            Assert.Equal(4, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128Int64SumTest()
+        {
+            Vector128<long> vector = Vector128.Create((long)0x01);
+            Assert.Equal(2, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128NIntSumTest()
+        {
+            Vector128<nint> vector = Vector128.Create((nint)0x01);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(2, Vector128.Sum(vector));
+            }
+            else
+            {
+                Assert.Equal(4, Vector128.Sum(vector));
+            }
+        }
+
+        [Fact]
+        public void Vector128NUIntSumTest()
+        {
+            Vector128<nuint> vector = Vector128.Create((nuint)0x01);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(2, Vector128.Sum(vector));
+            }
+            else
+            {
+                Assert.Equal(4, Vector128.Sum(vector));
+            }
+        }
+
+        [Fact]
+        public void Vector128SByteSumTest()
+        {
+            Vector128<sbyte> vector = Vector128.Create((sbyte)0x01);
+            Assert.Equal(16, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128SingleSumTest()
+        {
+            Vector128<float> vector = Vector128.Create((float)0x01);
+            Assert.Equal(4.0f, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128UInt16SumTest()
+        {
+            Vector128<ushort> vector = Vector128.Create((ushort)0x01);
+            Assert.Equal(8, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128UInt32SumTest()
+        {
+            Vector128<uint> vector = Vector128.Create((uint)0x01);
+            Assert.Equal(4, Vector128.Sum(vector));
+        }
+
+        [Fact]
+        public void Vector128UInt64SumTest()
+        {
+            Vector128<ulong> vector = Vector128.Create((ulong)0x01);
+            Assert.Equal(2, Vector128.Sum(vector));
+        }
+
         [Theory]
         [InlineData(0, 0, 0, 0)]
         [InlineData(1, 1, 1, 1)]
