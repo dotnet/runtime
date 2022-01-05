@@ -13,7 +13,7 @@ using Internal.Reflection.Augments;
 namespace System
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct RuntimeMethodHandle : ISerializable
+    public struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         private IntPtr _value;
 

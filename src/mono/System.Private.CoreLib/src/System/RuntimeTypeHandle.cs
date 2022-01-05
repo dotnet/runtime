@@ -40,7 +40,7 @@ using System.Threading;
 namespace System
 {
     [Serializable]
-    public struct RuntimeTypeHandle : ISerializable
+    public struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         private readonly IntPtr value;
 
