@@ -1,14 +1,1392 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Runtime.Intrinsics.Tests.Vectors
 {
     public sealed class Vector64Tests
     {
+        [Fact]
+        public unsafe void Vector64ByteLoadTest()
+        {
+            byte* value = stackalloc byte[8] {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+            };
+
+            Vector64<byte> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                Assert.Equal((byte)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64DoubleLoadTest()
+        {
+            double* value = stackalloc double[1] {
+                0,
+            };
+
+            Vector64<double> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal((double)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int16LoadTest()
+        {
+            short* value = stackalloc short[4] {
+                0,
+                1,
+                2,
+                3,
+            };
+
+            Vector64<short> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<short>.Count; index++)
+            {
+                Assert.Equal((short)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int32LoadTest()
+        {
+            int* value = stackalloc int[2] {
+                0,
+                1,
+            };
+
+            Vector64<int> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal((int)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int64LoadTest()
+        {
+            long* value = stackalloc long[1] {
+                0,
+            };
+
+            Vector64<long> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<long>.Count; index++)
+            {
+                Assert.Equal((long)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NIntLoadTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                nint* value = stackalloc nint[1] {
+                    0,
+                };
+
+                Vector64<nint> vector = Vector64.Load(value);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)index, vector.GetElement(index));
+                }
+            }
+            else
+            {
+                nint* value = stackalloc nint[2] {
+                    0,
+                    1,
+                };
+
+                Vector64<nint> vector = Vector64.Load(value);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)index, vector.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NUIntLoadTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                nuint* value = stackalloc nuint[1] {
+                    0,
+                };
+
+                Vector64<nuint> vector = Vector64.Load(value);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)index, vector.GetElement(index));
+                }
+            }
+            else
+            {
+                nuint* value = stackalloc nuint[2] {
+                    0,
+                    1,
+                };
+
+                Vector64<nuint> vector = Vector64.Load(value);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)index, vector.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SByteLoadTest()
+        {
+            sbyte* value = stackalloc sbyte[8] {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+            };
+
+            Vector64<sbyte> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SingleLoadTest()
+        {
+            float* value = stackalloc float[2] {
+                0,
+                1,
+            };
+
+            Vector64<float> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                Assert.Equal((float)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt16LoadTest()
+        {
+            ushort* value = stackalloc ushort[4] {
+                0,
+                1,
+                2,
+                3,
+            };
+
+            Vector64<ushort> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt32LoadTest()
+        {
+            uint* value = stackalloc uint[2] {
+                0,
+                1,
+            };
+
+            Vector64<uint> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<uint>.Count; index++)
+            {
+                Assert.Equal((uint)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt64LoadTest()
+        {
+            ulong* value = stackalloc ulong[1] {
+                0,
+            };
+
+            Vector64<ulong> vector = Vector64.Load(value);
+
+            for (int index = 0; index < Vector64<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64ByteLoadAlignedTest()
+        {
+            byte* value = null;
+
+            try
+            {
+                value = (byte*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+                value[4] = 4;
+                value[5] = 5;
+                value[6] = 6;
+                value[7] = 7;
+
+                Vector64<byte> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<byte>.Count; index++)
+                {
+                    Assert.Equal((byte)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }            
+        }
+
+        [Fact]
+        public unsafe void Vector64DoubleLoadAlignedTest()
+        {
+            double* value = null;
+
+            try
+            {
+                value = (double*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+
+                Vector64<double> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<double>.Count; index++)
+                {
+                    Assert.Equal((double)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int16LoadAlignedTest()
+        {
+            short* value = null;
+
+            try
+            {
+                value = (short*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+
+                Vector64<short> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<short>.Count; index++)
+                {
+                    Assert.Equal((short)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int32LoadAlignedTest()
+        {
+            int* value = null;
+
+            try
+            {
+                value = (int*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+
+                Vector64<int> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<int>.Count; index++)
+                {
+                    Assert.Equal((int)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int64LoadAlignedTest()
+        {
+            long* value = null;
+
+            try
+            {
+                value = (long*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+
+                Vector64<long> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<long>.Count; index++)
+                {
+                    Assert.Equal((long)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NIntLoadAlignedTest()
+        {
+            nint* value = null;
+
+            try
+            {
+                value = (nint*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                if (Environment.Is64BitProcess)
+                {
+                    value[0] = 0;
+                }
+                else
+                {
+                    value[0] = 0;
+                    value[1] = 1;
+                }
+
+                Vector64<nint> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NUIntLoadAlignedTest()
+        {
+            nuint* value = null;
+
+            try
+            {
+                value = (nuint*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                if (Environment.Is64BitProcess)
+                {
+                    value[0] = 0;
+                }
+                else
+                {
+                    value[0] = 0;
+                    value[1] = 1;
+                }
+
+                Vector64<nuint> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SByteLoadAlignedTest()
+        {
+            sbyte* value = null;
+
+            try
+            {
+                value = (sbyte*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+                value[4] = 4;
+                value[5] = 5;
+                value[6] = 6;
+                value[7] = 7;
+
+                Vector64<sbyte> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<sbyte>.Count; index++)
+                {
+                    Assert.Equal((sbyte)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SingleLoadAlignedTest()
+        {
+            float* value = null;
+
+            try
+            {
+                value = (float*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+
+                Vector64<float> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<float>.Count; index++)
+                {
+                    Assert.Equal((float)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt16LoadAlignedTest()
+        {
+            ushort* value = null;
+
+            try
+            {
+                value = (ushort*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+
+                Vector64<ushort> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<ushort>.Count; index++)
+                {
+                    Assert.Equal((ushort)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt32LoadAlignedTest()
+        {
+            uint* value = null;
+
+            try
+            {
+                value = (uint*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+
+                Vector64<uint> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<uint>.Count; index++)
+                {
+                    Assert.Equal((uint)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt64LoadAlignedTest()
+        {
+            ulong* value = null;
+
+            try
+            {
+                value = (ulong*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+
+                Vector64<ulong> vector = Vector64.LoadAligned(value);
+
+                for (int index = 0; index < Vector64<ulong>.Count; index++)
+                {
+                    Assert.Equal((ulong)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64ByteLoadAlignedNonTemporalTest()
+        {
+            byte* value = null;
+
+            try
+            {
+                value = (byte*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+                value[4] = 4;
+                value[5] = 5;
+                value[6] = 6;
+                value[7] = 7;
+
+                Vector64<byte> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<byte>.Count; index++)
+                {
+                    Assert.Equal((byte)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64DoubleLoadAlignedNonTemporalTest()
+        {
+            double* value = null;
+
+            try
+            {
+                value = (double*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+
+                Vector64<double> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<double>.Count; index++)
+                {
+                    Assert.Equal((double)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int16LoadAlignedNonTemporalTest()
+        {
+            short* value = null;
+
+            try
+            {
+                value = (short*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+
+                Vector64<short> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<short>.Count; index++)
+                {
+                    Assert.Equal((short)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int32LoadAlignedNonTemporalTest()
+        {
+            int* value = null;
+
+            try
+            {
+                value = (int*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+
+                Vector64<int> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<int>.Count; index++)
+                {
+                    Assert.Equal((int)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int64LoadAlignedNonTemporalTest()
+        {
+            long* value = null;
+
+            try
+            {
+                value = (long*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+
+                Vector64<long> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<long>.Count; index++)
+                {
+                    Assert.Equal((long)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NIntLoadAlignedNonTemporalTest()
+        {
+            nint* value = null;
+
+            try
+            {
+                value = (nint*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                if (Environment.Is64BitProcess)
+                {
+                    value[0] = 0;
+                }
+                else
+                {
+                    value[0] = 0;
+                    value[1] = 1;
+                }
+
+                Vector64<nint> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NUIntLoadAlignedNonTemporalTest()
+        {
+            nuint* value = null;
+
+            try
+            {
+                value = (nuint*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                if (Environment.Is64BitProcess)
+                {
+                    value[0] = 0;
+                }
+                else
+                {
+                    value[0] = 0;
+                    value[1] = 1;
+                }
+
+                Vector64<nuint> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SByteLoadAlignedNonTemporalTest()
+        {
+            sbyte* value = null;
+
+            try
+            {
+                value = (sbyte*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+                value[4] = 4;
+                value[5] = 5;
+                value[6] = 6;
+                value[7] = 7;
+
+                Vector64<sbyte> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<sbyte>.Count; index++)
+                {
+                    Assert.Equal((sbyte)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SingleLoadAlignedNonTemporalTest()
+        {
+            float* value = null;
+
+            try
+            {
+                value = (float*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+
+                Vector64<float> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<float>.Count; index++)
+                {
+                    Assert.Equal((float)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt16LoadAlignedNonTemporalTest()
+        {
+            ushort* value = null;
+
+            try
+            {
+                value = (ushort*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+                value[2] = 2;
+                value[3] = 3;
+
+                Vector64<ushort> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<ushort>.Count; index++)
+                {
+                    Assert.Equal((ushort)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt32LoadAlignedNonTemporalTest()
+        {
+            uint* value = null;
+
+            try
+            {
+                value = (uint*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+                value[1] = 1;
+
+                Vector64<uint> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<uint>.Count; index++)
+                {
+                    Assert.Equal((uint)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt64LoadAlignedNonTemporalTest()
+        {
+            ulong* value = null;
+
+            try
+            {
+                value = (ulong*)NativeMemory.AlignedAlloc(byteCount: 8, alignment: 8);
+
+                value[0] = 0;
+
+                Vector64<ulong> vector = Vector64.LoadAlignedNonTemporal(value);
+
+                for (int index = 0; index < Vector64<ulong>.Count; index++)
+                {
+                    Assert.Equal((ulong)index, vector.GetElement(index));
+                }
+            }
+            finally
+            {
+                NativeMemory.Free(value);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64ByteLoadUnsafeTest()
+        {
+            byte* value = stackalloc byte[8] {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+            };
+
+            Vector64<byte> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                Assert.Equal((byte)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64DoubleLoadUnsafeTest()
+        {
+            double* value = stackalloc double[1] {
+                0,
+            };
+
+            Vector64<double> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal((double)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int16LoadUnsafeTest()
+        {
+            short* value = stackalloc short[4] {
+                0,
+                1,
+                2,
+                3,
+            };
+
+            Vector64<short> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<short>.Count; index++)
+            {
+                Assert.Equal((short)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int32LoadUnsafeTest()
+        {
+            int* value = stackalloc int[2] {
+                0,
+                1,
+            };
+
+            Vector64<int> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal((int)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int64LoadUnsafeTest()
+        {
+            long* value = stackalloc long[1] {
+                0,
+            };
+
+            Vector64<long> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<long>.Count; index++)
+            {
+                Assert.Equal((long)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NIntLoadUnsafeTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                nint* value = stackalloc nint[1] {
+                    0,
+                };
+
+                Vector64<nint> vector = Vector64.LoadUnsafe(ref value[0]);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)index, vector.GetElement(index));
+                }
+            }
+            else
+            {
+                nint* value = stackalloc nint[2] {
+                    0,
+                    1,
+                };
+
+                Vector64<nint> vector = Vector64.LoadUnsafe(ref value[0]);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)index, vector.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NUIntLoadUnsafeTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                nuint* value = stackalloc nuint[1] {
+                    0,
+                };
+
+                Vector64<nuint> vector = Vector64.LoadUnsafe(ref value[0]);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)index, vector.GetElement(index));
+                }
+            }
+            else
+            {
+                nuint* value = stackalloc nuint[2] {
+                    0,
+                    1,
+                };
+
+                Vector64<nuint> vector = Vector64.LoadUnsafe(ref value[0]);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)index, vector.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SByteLoadUnsafeTest()
+        {
+            sbyte* value = stackalloc sbyte[8] {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+            };
+
+            Vector64<sbyte> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SingleLoadUnsafeTest()
+        {
+            float* value = stackalloc float[2] {
+                0,
+                1,
+            };
+
+            Vector64<float> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                Assert.Equal((float)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt16LoadUnsafeTest()
+        {
+            ushort* value = stackalloc ushort[4] {
+                0,
+                1,
+                2,
+                3,
+            };
+
+            Vector64<ushort> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt32LoadUnsafeTest()
+        {
+            uint* value = stackalloc uint[2] {
+                0,
+                1,
+            };
+
+            Vector64<uint> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<uint>.Count; index++)
+            {
+                Assert.Equal((uint)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt64LoadUnsafeTest()
+        {
+            ulong* value = stackalloc ulong[1] {
+                0,
+            };
+
+            Vector64<ulong> vector = Vector64.LoadUnsafe(ref value[0]);
+
+            for (int index = 0; index < Vector64<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)index, vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64ByteLoadUnsafeIndexTest()
+        {
+            byte* value = stackalloc byte[8 + 1] {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+            };
+
+            Vector64<byte> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64DoubleLoadUnsafeIndexTest()
+        {
+            double* value = stackalloc double[1 + 1] {
+                0,
+                1,
+            };
+
+            Vector64<double> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<double>.Count; index++)
+            {
+                Assert.Equal((double)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int16LoadUnsafeIndexTest()
+        {
+            short* value = stackalloc short[4 + 1] {
+                0,
+                1,
+                2,
+                3,
+                4,
+            };
+
+            Vector64<short> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<short>.Count; index++)
+            {
+                Assert.Equal((short)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int32LoadUnsafeIndexTest()
+        {
+            int* value = stackalloc int[2 + 1] {
+                0,
+                1,
+                2,
+            };
+
+            Vector64<int> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<int>.Count; index++)
+            {
+                Assert.Equal((int)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64Int64LoadUnsafeIndexTest()
+        {
+            long* value = stackalloc long[1 + 1] {
+                0,
+                1,
+            };
+
+            Vector64<long> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<long>.Count; index++)
+            {
+                Assert.Equal((long)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NIntLoadUnsafeIndexTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                nint* value = stackalloc nint[1 + 1] {
+                    0,
+                    1,
+                };
+
+                Vector64<nint> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)(index + 1), vector.GetElement(index));
+                }
+            }
+            else
+            {
+                nint* value = stackalloc nint[2 + 1] {
+                    0,
+                    1,
+                    2,
+                };
+
+                Vector64<nint> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+                for (int index = 0; index < Vector64<nint>.Count; index++)
+                {
+                    Assert.Equal((nint)(index + 1), vector.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64NUIntLoadUnsafeIndexTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                nuint* value = stackalloc nuint[1 + 1] {
+                    0,
+                    1,
+                };
+
+                Vector64<nuint> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)(index + 1), vector.GetElement(index));
+                }
+            }
+            else
+            {
+                nuint* value = stackalloc nuint[2 + 1] {
+                    0,
+                    1,
+                    2,
+                };
+
+                Vector64<nuint> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+                for (int index = 0; index < Vector64<nuint>.Count; index++)
+                {
+                    Assert.Equal((nuint)(index + 1), vector.GetElement(index));
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SByteLoadUnsafeIndexTest()
+        {
+            sbyte* value = stackalloc sbyte[8 + 1] {
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+            };
+
+            Vector64<sbyte> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64SingleLoadUnsafeIndexTest()
+        {
+            float* value = stackalloc float[2 + 1] {
+                0,
+                1,
+                2,
+            };
+
+            Vector64<float> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<float>.Count; index++)
+            {
+                Assert.Equal((float)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt16LoadUnsafeIndexTest()
+        {
+            ushort* value = stackalloc ushort[4 + 1] {
+                0,
+                1,
+                2,
+                3,
+                4,
+            };
+
+            Vector64<ushort> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt32LoadUnsafeIndexTest()
+        {
+            uint* value = stackalloc uint[2 + 1] {
+                0,
+                1,
+                2,
+            };
+
+            Vector64<uint> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(index + 1), vector.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector64UInt64LoadUnsafeIndexTest()
+        {
+            ulong* value = stackalloc ulong[1 + 1] {
+                0,
+                1,
+            };
+
+            Vector64<ulong> vector = Vector64.LoadUnsafe(ref value[0], 1);
+
+            for (int index = 0; index < Vector64<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(index + 1), vector.GetElement(index));
+            }
+        }
+
         [Fact]
         public void Vector64ByteShiftLeftTest()
         {
