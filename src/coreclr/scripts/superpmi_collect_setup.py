@@ -409,11 +409,13 @@ def main(main_args):
     print('Copying {} -> {}'.format(superpmi_src_directory, superpmi_dst_directory))
     copy_directory(superpmi_src_directory, superpmi_dst_directory, verbose_output=True, match_func=lambda path: any(path.endswith(extension) for extension in [".py"]))
 
-    if is_windows:
+    if platform_name == "windows":
         acceptable_copy = lambda path: any(path.endswith(extension) for extension in [".py", ".dll", ".exe", ".json"])
     else:
+        acceptable_extensions = [".py", ".dll", ".json"]
+        acceptable_extensions.append(".so" if platform_name == "linux" else ".dylib")
         # Need to accept files without any extension, which is how executable file's names look.
-        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in [".py", ".dll", ".so", ".json"])
+        acceptable_copy = lambda path: (os.path.basename(path).find(".") == -1) or any(path.endswith(extension) for extension in acceptable_extensions)
 
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, superpmi_dst_directory))
     copy_directory(coreclr_args.core_root_directory, superpmi_dst_directory, verbose_output=True, match_func=acceptable_copy)
