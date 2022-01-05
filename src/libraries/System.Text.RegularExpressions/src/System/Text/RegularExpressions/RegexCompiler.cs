@@ -3615,17 +3615,17 @@ namespace System.Text.RegularExpressions
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
             if (!invariant && !RegexCharClass.IsNegated(charClass))
             {
-                Span<char> setChars = stackalloc char[4];
+                Span<char> setChars = stackalloc char[3];
                 int numChars = RegexCharClass.GetSetChars(charClass, setChars);
                 if (numChars is 2 or 3)
                 {
-                    if ((setChars[0] | 0x20) == setChars[1]) // special-case common case of an upper and lowercase ASCII letter combination
+                    if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out int mask)) // special-case common case of an upper and lowercase ASCII letter combination
                     {
-                        // ((ch | 0x20) == setChars[1])
+                        // ((ch | mask) == setChars[1])
                         Ldloc(tempLocal);
-                        Ldc(0x20);
+                        Ldc(mask);
                         Or();
-                        Ldc(setChars[1]);
+                        Ldc(setChars[1] | mask);
                         Ceq();
                     }
                     else
@@ -3649,27 +3649,6 @@ namespace System.Text.RegularExpressions
                         Or();
                     }
 
-                    return;
-                }
-                else if (numChars == 4 &&
-                         (setChars[0] | 0x20) == setChars[1] &&
-                         (setChars[2] | 0x20) == setChars[3])
-                {
-                    // ((ch | 0x20) == setChars[1])
-                    Ldloc(tempLocal);
-                    Ldc(0x20);
-                    Or();
-                    Ldc(setChars[1]);
-                    Ceq();
-
-                    // ((ch | 0x20) == setChars[3])
-                    Ldloc(tempLocal);
-                    Ldc(0x20);
-                    Or();
-                    Ldc(setChars[3]);
-                    Ceq();
-
-                    Or();
                     return;
                 }
             }

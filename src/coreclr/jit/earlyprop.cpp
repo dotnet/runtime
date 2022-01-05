@@ -288,13 +288,13 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
                 return nullptr;
             }
 
-            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
+            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_BOUNDS_CHECK
             // nodes that have constant operands and thus can be trivially proved to be useless. It's
             // better to remove these range checks here, otherwise they'll pass through assertion prop
             // (creating useless (c1 < c2)-like assertions) and reach RangeCheck where they are finally
             // removed. Common patterns like new int[] { x, y, z } benefit from this.
 
-            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_ARR_BOUNDS_CHECK))
+            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_BOUNDS_CHECK))
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 

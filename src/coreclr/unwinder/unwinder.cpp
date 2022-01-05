@@ -25,7 +25,7 @@ EXTERN_C void GetRuntimeStackWalkInfo(IN  ULONG64   ControlPc,
 //
 
 HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
-                                          __out PDWORD64 pdwBase)
+                                          _Out_ PDWORD64 pdwBase)
 {
     GetRuntimeStackWalkInfo(address, reinterpret_cast<UINT_PTR *>(pdwBase), NULL);
     return ((*pdwBase == NULL) ? E_FAIL : S_OK);

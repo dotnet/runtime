@@ -1354,19 +1354,19 @@ public:
     // Returns S_OK or error code. Fills *pcbStringsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetStringHeapSize.
     STDMETHODIMP GetStringHeapSize(
-        __out ULONG *pcbStringsHeapSize);       // [OUT] Size of the string heap.
+        _Out_ ULONG *pcbStringsHeapSize);       // [OUT] Size of the string heap.
 
     // Fills size (*pcbBlobsHeapSize) of blobs heap (#Blob).
     // Returns S_OK or error code. Fills *pcbBlobsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetBlobHeapSize.
     STDMETHODIMP GetBlobHeapSize(
-        __out ULONG *pcbBlobsHeapSize);         // [OUT] Size of the blob heap.
+        _Out_ ULONG *pcbBlobsHeapSize);         // [OUT] Size of the blob heap.
 
     // Fills size (*pcbGuidsHeapSize) of guids heap (#GUID).
     // Returns S_OK or error code. Fills *pcbGuidsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetGuidHeapSize.
     STDMETHODIMP GetGuidHeapSize(
-        __out ULONG *pcbGuidsHeapSize);         // [OUT] Size of the Guid heap.
+        _Out_ ULONG *pcbGuidsHeapSize);         // [OUT] Size of the Guid heap.
 
     // Fills size (*pcbUserStringsHeapSize) of user strings heap (#US) (referenced from IL).
     // Returns S_OK or error code. Fills *pcbUserStringsHeapSize with 0 on error.
@@ -1374,16 +1374,16 @@ public:
     // Backward compatibility: returns S_OK even if the string doesn't have odd number of bytes as specified
     // in CLI ECMA specification.
     STDMETHODIMP GetUserStringHeapSize(
-        __out ULONG *pcbUserStringsHeapSize);   // [OUT] Size of the user string heap.
+        _Out_ ULONG *pcbUserStringsHeapSize);   // [OUT] Size of the user string heap.
 
     // Implements public API code:IMetaDataTables::GetNumTables.
     STDMETHODIMP GetNumTables(
-        __out ULONG *pcTables);         // [OUT] Count of tables.
+        _Out_ ULONG *pcTables);         // [OUT] Count of tables.
 
     // Implements public API code:IMetaDataTables::GetNumTables.
     STDMETHODIMP GetTableIndex(
               ULONG  token,             // [IN] Token for which to get table index.
-        __out ULONG *pixTbl);           // [OUT] Put table index here.
+        _Out_ ULONG *pixTbl);           // [OUT] Put table index here.
 
     // Implements public API code:IMetaDataTables::GetTableInfo.
     STDMETHODIMP GetTableInfo(
@@ -1458,7 +1458,7 @@ public:
     // Implements public API code:IMetaDataTables::GetUserString.
     STDMETHODIMP GetUserString(
                         ULONG        ixUserString,  // [IN] Value from a UserString column.
-        __out           ULONG       *pcbData,       // [OUT] Put size of the UserString here.
+        _Out_           ULONG       *pcbData,       // [OUT] Put size of the UserString here.
         __deref_out_opt const void **ppData);       // [OUT] Put a pointer to the UserString here.
 
     //#GetNextString_IMetaDataTables
@@ -1468,7 +1468,7 @@ public:
     // Implements public API code:IMetaDataTables::.GetNextString.
     STDMETHODIMP GetNextString(
               ULONG  ixString,                  // [IN] Value from a string column.
-        __out ULONG *pixNextString);            // [OUT] Put the index of the next string here.
+        _Out_ ULONG *pixNextString);            // [OUT] Put the index of the next string here.
 
     //#GetNextBlob_IMetaDataTables
     // Fills index of blob (*pixNextBlob) from the blobs heap (#Blob) starting behind blob at index ixBlob.
@@ -1476,7 +1476,7 @@ public:
     // Implements public API code:IMetaDataTables::GetNextString.
     STDMETHODIMP GetNextBlob(
               ULONG  ixBlob,                    // [IN] Value from a blob column.
-        __out ULONG *pixNextBlob);              // [OUT] Put the index of the next blob here.
+        _Out_ ULONG *pixNextBlob);              // [OUT] Put the index of the next blob here.
 
     //#GetNextGuid_IMetaDataTables
     // Fills index of guid (*pixNextGuid) from the guids heap (#GUID) starting behind guid at index ixGuid.
@@ -1486,7 +1486,7 @@ public:
     // specified in CLI ECMA specification.
     STDMETHODIMP GetNextGuid(
               ULONG  ixGuid,                    // [IN] Value from a guid column.
-        __out ULONG *pixNextGuid);              // [OUT] Put the index of the next guid here.
+        _Out_ ULONG *pixNextGuid);              // [OUT] Put the index of the next guid here.
 
     //#GetNextUserString_IMetaDataTables
     // Fills index of user string (*pixNextUserString) from the user strings heap (#US) starting behind string
@@ -1497,7 +1497,7 @@ public:
     // in CLI ECMA specification.
     STDMETHODIMP GetNextUserString(
               ULONG  ixUserString,              // [IN] Value from a UserString column.
-        __out ULONG *ixpNextUserString);        // [OUT] Put the index of the next user string here.
+        _Out_ ULONG *ixpNextUserString);        // [OUT] Put the index of the next user string here.
 
     // Implements public API code:IMetaDataTables2::GetMetaDataStorage.
     STDMETHODIMP GetMetaDataStorage(

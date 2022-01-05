@@ -222,7 +222,7 @@ struct METH_EXTENTS
     CLRDATA_ADDRESS_RANGE extents[1];
 };
 
-HRESULT ConvertUtf8(__in LPCUTF8 utf8,
+HRESULT ConvertUtf8(_In_ LPCUTF8 utf8,
                     ULONG32 bufLen,
                     ULONG32* nameLen,
                     __out_ecount_part_opt(bufLen, *nameLen) PWSTR buffer);
@@ -247,7 +247,7 @@ enum SplitSyntax
     SPLIT_NO_NAME,
 };
 
-HRESULT SplitFullName(__in_z __in PCWSTR fullName,
+HRESULT SplitFullName(__in_z _In_ PCWSTR fullName,
                       SplitSyntax syntax,
                       ULONG32 memberDots,
                       __deref_out_opt LPUTF8* namespaceName,
@@ -255,7 +255,7 @@ HRESULT SplitFullName(__in_z __in PCWSTR fullName,
                       __deref_out_opt LPUTF8* memberName,
                       __deref_out_opt LPUTF8* params);
 
-int CompareUtf8(__in LPCUTF8 str1, __in LPCUTF8 str2, __in ULONG32 nameFlags);
+int CompareUtf8(_In_ LPCUTF8 str1, _In_ LPCUTF8 str2, _In_ ULONG32 nameFlags);
 
 #define INH_STATIC \
     (CLRDATA_VALUE_ALL_KINDS | \

@@ -131,13 +131,7 @@ void StackLevelSetter::SetThrowHelperBlocks(GenTree* node, BasicBlock* block)
     // Check that it uses throw block, find its kind, find the block, set level.
     switch (node->OperGet())
     {
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
         {
             GenTreeBoundsChk* bndsChk = node->AsBoundsChk();
             SetThrowHelperBlock(bndsChk->gtThrowKind, block);

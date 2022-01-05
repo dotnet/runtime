@@ -196,7 +196,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     // If we are not looking at array bounds check, bail.
     GenTree* tree = isComma ? treeParent->AsOp()->gtOp1 : treeParent;
-    if (!tree->OperIsBoundsCheck())
+    if (!tree->OperIs(GT_BOUNDS_CHECK))
     {
         return;
     }
@@ -222,13 +222,6 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         }
     }
     else
-#ifdef FEATURE_SIMD
-        if (tree->gtOper != GT_SIMD_CHK
-#ifdef FEATURE_HW_INTRINSICS
-            && tree->gtOper != GT_HW_INTRINSIC_CHK
-#endif // FEATURE_HW_INTRINSICS
-            )
-#endif // FEATURE_SIMD
     {
         arrSize = GetArrLength(arrLenVn);
 

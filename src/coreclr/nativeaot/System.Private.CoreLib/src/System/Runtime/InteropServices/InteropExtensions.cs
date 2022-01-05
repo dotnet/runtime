@@ -69,9 +69,7 @@ namespace System.Runtime.InteropServices
             if (!del.IsOpenStatic)
                 return IntPtr.Zero;
 
-            RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-
-            IntPtr funcPtr = del.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
+            IntPtr funcPtr = del.GetFunctionPointer(out RuntimeTypeHandle _, out bool _, out bool _);
             return funcPtr;
         }
 

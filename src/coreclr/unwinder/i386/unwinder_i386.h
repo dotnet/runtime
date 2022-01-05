@@ -19,13 +19,13 @@ class OOPStackUnwinderX86 : public OOPStackUnwinder
 public:
     static BOOL Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
 
-    static HRESULT VirtualUnwind(__in DWORD HandlerType,
-        __in DWORD ImageBase,
-        __in DWORD ControlPc,
-        __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    static HRESULT VirtualUnwind(_In_ DWORD HandlerType,
+        _In_ DWORD ImageBase,
+        _In_ DWORD ControlPc,
+        _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
         __inout PCONTEXT ContextRecord,
-        __out PVOID *HandlerData,
-        __out PDWORD EstablisherFrame,
+        _Out_ PVOID *HandlerData,
+        _Out_ PDWORD EstablisherFrame,
         __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
         __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine);
 };

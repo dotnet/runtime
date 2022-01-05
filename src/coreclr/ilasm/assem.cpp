@@ -1039,7 +1039,7 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
     return TRUE;
 }
 
-Class *Assembler::FindCreateClass(__in __nullterminated const char *pszFQN)
+Class *Assembler::FindCreateClass(_In_ __nullterminated const char *pszFQN)
 {
     Class *pSearch = NULL;
 
@@ -1186,7 +1186,7 @@ BOOL Assembler::DoGlobalFixups()
     return TRUE;
 }
 
-state_t Assembler::AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTION section)
+state_t Assembler::AddGlobalLabel(_In_ __nullterminated char *pszName, HCEESECTION section)
 {
     if (FindGlobalLabel(pszName) != NULL)
     {
@@ -1213,7 +1213,7 @@ state_t Assembler::AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTI
     return m_State;
 }
 
-void Assembler::AddLabel(DWORD CurPC, __in __nullterminated char *pszName)
+void Assembler::AddLabel(DWORD CurPC, _In_ __nullterminated char *pszName)
 {
     if (m_pCurMethod->FindLabel(pszName) != NULL)
     {
