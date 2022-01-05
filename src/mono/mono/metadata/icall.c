@@ -3554,57 +3554,51 @@ write_enum_value (void *mem, int type, guint64 value)
 	return;
 }
 
-MonoObjectHandle
-ves_icall_System_Enum_ToObject (MonoReflectionTypeHandle enumType, guint64 value, MonoError *error)
+void
+ves_icall_System_Enum_InternalBoxEnum (MonoQCallTypeHandle enum_handle, MonoObjectHandleOnStack res, guint64 value, MonoError *error)
 {
 	MonoClass *enumc;
 	MonoObjectHandle resultHandle;
 	MonoType *etype;
 
-	enumc = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (enumType, type));
+	enumc = mono_class_from_mono_type_internal (enum_handle.type);
 
 	mono_class_init_checked (enumc, error);
-	goto_if_nok (error, return_null);
+	return_if_nok (error);
 
 	etype = mono_class_enum_basetype_internal (enumc);
 
 	resultHandle = mono_object_new_handle (enumc, error);
-	goto_if_nok (error, return_null);
+	return_if_nok (error);
 
 	write_enum_value (mono_handle_unbox_unsafe (resultHandle), etype->type, value);
 
-	return resultHandle;
-
-return_null:
-	return MONO_HANDLE_NEW (MonoObject, NULL);
+	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (resultHandle));
 }
 
-MonoReflectionTypeHandle
-ves_icall_System_Enum_get_underlying_type (MonoReflectionTypeHandle type, MonoError *error)
+void
+ves_icall_System_Enum_InternalGetUnderlyingType (MonoQCallTypeHandle type_handle, MonoObjectHandleOnStack res, MonoError *error)
 {
 	MonoType *etype;
 	MonoClass *klass;
 
-	klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (type, type));
+	klass = mono_class_from_mono_type_internal (type_handle.type);
 	mono_class_init_checked (klass, error);
-	goto_if_nok (error, return_null);
+	return_if_nok (error);
 
 	etype = mono_class_enum_basetype_internal (klass);
 	if (!etype) {
 		mono_error_set_argument (error, "enumType", "Type provided must be an Enum.");
-		goto return_null;
+		return;
 	}
 
-	return mono_type_get_object_handle (etype, error);
-
-return_null:
-	return MONO_HANDLE_NEW (MonoReflectionType, NULL);
+	HANDLE_ON_STACK_SET (res, mono_type_get_object_checked (etype, error));
 }
 
 int
-ves_icall_System_Enum_InternalGetCorElementType (MonoObjectHandle this_handle, MonoError *error)
+ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle)
 {
-	MonoClass *klass = MONO_HANDLE_GETVAL (this_handle, vtable)->klass;
+	MonoClass *klass = mono_class_from_mono_type_internal (type_handle.type);
 
 	return (int)m_class_get_byval_arg (m_class_get_element_class (klass))->type;
 }
@@ -3645,9 +3639,9 @@ leave:
 }
 
 MonoBoolean
-ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionTypeHandle type, MonoArrayHandleOut values, MonoArrayHandleOut names, MonoError *error)
+ves_icall_System_Enum_GetEnumValuesAndNames (MonoQCallTypeHandle type_handle, MonoArrayHandleOut values, MonoArrayHandleOut names, MonoError *error)
 {
-	MonoClass *enumc = mono_class_from_mono_type_internal (MONO_HANDLE_RAW(type)->type);
+	MonoClass *enumc = mono_class_from_mono_type_internal (type_handle.type);
 	guint j = 0, nvalues;
 	gpointer iter;
 	MonoClassField *field;
@@ -3655,7 +3649,6 @@ ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionTypeHandle type, Mono
 	guint64 previous_value = 0;
 	gboolean sorted = TRUE;
 
-	error_init (error);
 	mono_class_init_checked (enumc, error);
 	return_val_if_nok (error, FALSE);
 
