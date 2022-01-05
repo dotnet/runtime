@@ -19699,7 +19699,9 @@ int gc_heap::generation_to_condemn (int n_initial,
 
     if (dt_low_ephemeral_space_p (check_only_p ?
                                   tuning_deciding_full_gc :
-                                  tuning_deciding_condemned_gen))
+                                  tuning_deciding_condemned_gen) &&
+        (generation_free_list_space (generation_of (0)) < 1000000)
+       )
     {
         low_ephemeral_space = TRUE;
 
