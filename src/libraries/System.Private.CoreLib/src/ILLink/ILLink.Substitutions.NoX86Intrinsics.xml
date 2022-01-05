@@ -36,6 +36,12 @@
     <type fullname="System.Runtime.Intrinsics.X86.Bmi2/X64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Sha1">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.X86.Sha256">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.X86.Fma">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
