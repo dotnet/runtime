@@ -1897,7 +1897,7 @@ namespace System.Text.RegularExpressions.Generator
 
                             if (i < exclusiveEnd)
                             {
-                                EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: false);
+                                EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: false);
                                 if (i < childCount - 1)
                                 {
                                     writer.WriteLine();
@@ -1911,11 +1911,27 @@ namespace System.Text.RegularExpressions.Generator
                         continue;
                     }
 
-                    EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: emitLengthChecksIfRequired);
+                    EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: emitLengthChecksIfRequired);
                     if (i < childCount - 1)
                     {
                         writer.WriteLine();
                     }
+                }
+
+                // Gets the node to treat as the subsequent one to node.Child(index)
+                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                {
+                    int childCount = node.ChildCount();
+                    for (int i = index + 1; i < childCount; i++)
+                    {
+                        RegexNode next = node.Child(i);
+                        if (next.Type is not RegexNode.UpdateBumpalong) // skip node types that don't have a semantic impact
+                        {
+                            return next;
+                        }
+                    }
+
+                    return subsequent;
                 }
             }
 
@@ -2211,12 +2227,12 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop(endingPos, startingPos);
                 writer.WriteLine();
 
-                if (subsequent?.FindStartingCharacterOrString() is (char, string) literal)
+                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
-                    using (EmitBlock(writer, literal.String is not null ?
-                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.String.Length - 1}) - {startingPos}), {Literal(literal.String)})) < 0)" :
-                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Char)})) < 0)"))
+                    using (EmitBlock(writer, literal.Item2 is not null ?
+                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}), {Literal(literal.Item2)})) < 0)" :
+                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item1)})) < 0)"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
                     }

@@ -2023,14 +2023,30 @@ namespace System.Text.RegularExpressions
                         EmitSpanLengthCheck(requiredLength);
                         for (; i < exclusiveEnd; i++)
                         {
-                            EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: false);
+                            EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: false);
                         }
 
                         i--;
                         continue;
                     }
 
-                    EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent);
+                    EmitNode(node.Child(i), GetSubsequent(i, node, subsequent));
+                }
+
+                // Gets the node to treat as the subsequent one to node.Child(index)
+                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                {
+                    int childCount = node.ChildCount();
+                    for (int i = index + 1; i < childCount; i++)
+                    {
+                        RegexNode next = node.Child(i);
+                        if (next.Type is not RegexNode.UpdateBumpalong) // skip node types that don't have a semantic impact
+                        {
+                            return next;
+                        }
+                    }
+
+                    return subsequent;
                 }
             }
 
