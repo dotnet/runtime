@@ -1783,6 +1783,89 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(Vector64<T> left, Vector64<T> right)
             where T : struct => LessThanOrEqual(left, right).As<T, ulong>() != Vector64<ulong>.Zero;
 
+        /// <summary>Loads a vector from the given source.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<T> Load<T>(T* source)
+            where T : unmanaged
+        {
+            return *(Vector64<T>*)source;
+        }
+
+        /// <summary>Loads a vector from the given aligned source.</summary>
+        /// <param name="source">The aligned source from which the vector will be loaded.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<T> LoadAligned<T>(T* source)
+            where T : unmanaged
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+            if (((nuint)source % 8) != 0)
+            {
+                throw new AccessViolationException();
+            }
+
+            return *(Vector64<T>*)source;
+        }
+
+        /// <summary>Loads a vector from the given aligned source.</summary>
+        /// <param name="source">The aligned source from which the vector will be loaded.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        /// <remarks>This method may bypass the cache on certain platforms.</remarks>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector64<T> LoadAlignedNonTemporal<T>(T* source)
+            where T : unmanaged
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+            if (((nuint)source % 8) != 0)
+            {
+                throw new AccessViolationException();
+            }
+
+            return *(Vector64<T>*)source;
+        }
+
+        /// <summary>Loads a vector from the given source.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> LoadUnsafe<T>(ref T source)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref source));
+        }
+
+        /// <summary>Loads a vector from the given source and element offset.</summary>
+        /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            source = ref Unsafe.Add(ref source, (nint)elementOffset);
+            return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref source));
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>

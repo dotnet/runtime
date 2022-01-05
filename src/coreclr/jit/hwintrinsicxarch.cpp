@@ -1326,6 +1326,173 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Load:
+        case NI_Vector256_Load:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            NamedIntrinsic loadIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                loadIntrinsic = NI_AVX_LoadVector256;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                loadIntrinsic = NI_SSE2_LoadVector128;
+            }
+            else
+            {
+                loadIntrinsic = NI_SSE_LoadVector128;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_LoadAligned:
+        case NI_Vector256_LoadAligned:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            NamedIntrinsic loadIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                loadIntrinsic = NI_AVX_LoadAlignedVector256;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                loadIntrinsic = NI_SSE2_LoadAlignedVector128;
+            }
+            else
+            {
+                loadIntrinsic = NI_SSE_LoadAlignedVector128;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_LoadAlignedNonTemporal:
+        case NI_Vector256_LoadAlignedNonTemporal:
+        {
+            assert(sig->numArgs == 1);
+
+            if ((simdSize == 16) && !compOpportunisticallyDependsOn(InstructionSet_SSE41))
+            {
+                // Vector128 requires at least SSE4.1
+                break;
+            }
+            else if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // Vector256 requires at least AVX2
+                break;
+            }
+
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            NamedIntrinsic loadIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                loadIntrinsic = NI_AVX2_LoadAlignedVector256NonTemporal;
+            }
+            else
+            {
+                loadIntrinsic = NI_SSE41_LoadAlignedVector128NonTemporal;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_LoadUnsafe:
+        case NI_Vector256_LoadUnsafe:
+        {
+            if (sig->numArgs == 2)
+            {
+                op2 = impPopStack().val;
+            }
+            else
+            {
+                assert(sig->numArgs == 1);
+            }
+
+            op1 = impPopStack().val;
+
+            if (op1->OperIs(GT_CAST))
+            {
+                // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                // we really want, so throw away the cast.
+                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                {
+                    op1 = op1->gtGetOp1();
+                }
+            }
+
+            if (sig->numArgs == 2)
+            {
+                op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
+            }
+
+            NamedIntrinsic loadIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                loadIntrinsic = NI_AVX_LoadVector256;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                loadIntrinsic = NI_SSE2_LoadVector128;
+            }
+            else
+            {
+                loadIntrinsic = NI_SSE_LoadVector128;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector128_Max:
         case NI_Vector256_Max:
         {

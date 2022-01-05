@@ -163,6 +163,15 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> LessThan<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector128<T> Load<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Max<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Min<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Multiply<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
@@ -417,6 +426,15 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> LessThan<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector256<T> Load<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Max<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Min<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Multiply<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
@@ -643,6 +661,15 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> LessThan<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector64<T> Load<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Max<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Min<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Multiply<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
