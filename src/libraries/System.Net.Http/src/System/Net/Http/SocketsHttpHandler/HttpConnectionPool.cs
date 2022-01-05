@@ -1829,16 +1829,19 @@ namespace System.Net.Http
                         {
                             Debug.Assert((_availableHttp2Connections?.Count ?? 0) == 0, $"With {(_availableHttp2Connections?.Count ?? 0)} available HTTP2 connections, we shouldn't have a waiter.");
                         }
-                        else if (!_disposed)
+                        else if (_disposed)
+                        {
+                            // The pool has been disposed. We will dispose this connection below outside the lock.
+                            // We do this check after processing the request queue so that any queued requests will be handled by existing connections if possible.
+                            _associatedHttp2ConnectionCount--;
+                        }
+                        else
                         {
                             // Add connection to the pool.
                             added = true;
                             _availableHttp2Connections ??= new List<Http2Connection>();
                             _availableHttp2Connections.Add(connection);
                         }
-
-                        // If the pool has been disposed of, we will dispose the connection below outside the lock.
-                        // We do this after processing the queue above so that any queued requests will be handled by existing connections if possible.
                     }
 
                     if (waiter is not null)
