@@ -6080,10 +6080,10 @@ ves_icall_RuntimeType_make_pointer_type (MonoQCallTypeHandle type_handle, MonoOb
 }
 
 MonoObjectHandle
-ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_type, MonoObjectHandle target,
+ves_icall_System_Delegate_CreateDelegate_internal (MonoQCallTypeHandle type_handle, MonoObjectHandle target,
 						   MonoReflectionMethodHandle info, MonoBoolean throwOnBindFailure, MonoError *error)
 {
-	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoType *type = type_handle.type;
 	MonoClass *delegate_class = mono_class_from_mono_type_internal (type);
 	MonoMethod *method = MONO_HANDLE_GETVAL (info, method);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
