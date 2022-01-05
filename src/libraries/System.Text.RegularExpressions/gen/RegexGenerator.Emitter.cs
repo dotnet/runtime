@@ -3472,8 +3472,8 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Prevent => $"Zero-width negative lookahead assertion.",
                 RegexNode.Ref => $"Match the same text as matched by the {DescribeCapture(node.M, regexCode)}.",
                 RegexNode.Require => $"Zero-width positive lookahead assertion.",
-                RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
-                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoop(node)}.",
+                RegexNode.Set => $"Match {DescribeSet(node.Str!)}.",
+                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node)}.",
                 RegexNode.Start => "Match if at the start position.",
                 RegexNode.Testgroup => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
                 RegexNode.Testref => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, regexCode)} matched.",
@@ -3507,6 +3507,26 @@ namespace System.Text.RegularExpressions.Generator
 
             return $"{name} capture group";
         }
+
+        /// <summary>Gets a textual description of what characters match a set.</summary>
+        private static string DescribeSet(string charClass) =>
+            charClass switch
+            {
+                RegexCharClass.AnyClass => "any character",
+                RegexCharClass.DigitClass => "a Unicode digit",
+                RegexCharClass.ECMADigitClass => "'0' through '9'",
+                RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
+                RegexCharClass.ECMAWordClass => "a word character (ECMA)",
+                RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
+                RegexCharClass.NotECMADigitClass => "any character other than '0' through '9'",
+                RegexCharClass.NotECMASpaceClass => "any character other than a space character (ECMA)",
+                RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
+                RegexCharClass.NotSpaceClass => "any character other than a space character",
+                RegexCharClass.NotWordClass => "any character other than a word character",
+                RegexCharClass.SpaceClass => "a whitespace character",
+                RegexCharClass.WordClass => "a word character",
+                _ => $"a character in the set {RegexCharClass.SetDescription(charClass)}",
+            };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
         /// <param name="writer">The writer to which the description should be written.</param>
