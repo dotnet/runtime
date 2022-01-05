@@ -9,6 +9,226 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
     public sealed class Vector128Tests
     {
         [Fact]
+        public unsafe void Vector128ByteExtractMostSignificantBitsTest()
+        {
+            Vector128<byte> vector = Vector128.Create(
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80
+            );
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10101010_10101010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128DoubleExtractMostSignificantBitsTest()
+        {
+            Vector128<double> vector = Vector128.Create(
+                +1.0,
+                -0.0
+            );
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128Int16ExtractMostSignificantBitsTest()
+        {
+            Vector128<short> vector = Vector128.Create(
+                0x0001,
+                0x8000,
+                0x0001,
+                0x8000,
+                0x0001,
+                0x8000,
+                0x0001,
+                0x8000
+            ).AsInt16();
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10101010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128Int32ExtractMostSignificantBitsTest()
+        {
+            Vector128<int> vector = Vector128.Create(
+                0x00000001U,
+                0x80000000U,
+                0x00000001U,
+                0x80000000U
+            ).AsInt32();
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b1010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128Int64ExtractMostSignificantBitsTest()
+        {
+            Vector128<long> vector = Vector128.Create(
+                0x0000000000000001UL,
+                0x8000000000000000UL
+            ).AsInt64();
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128NIntExtractMostSignificantBitsTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Vector128<nint> vector = Vector128.Create(
+                    0x0000000000000001UL,
+                    0x8000000000000000UL
+                ).AsNInt();
+
+                uint result = Vector128.ExtractMostSignificantBits(vector);
+                Assert.Equal(0b10u, result);
+            }
+            else
+            {
+                Vector128<nint> vector = Vector128.Create(
+                    0x00000001U,
+                    0x80000000U,
+                    0x00000001U,
+                    0x80000000U
+                ).AsNInt();
+
+                uint result = Vector128.ExtractMostSignificantBits(vector);
+                Assert.Equal(0b1010u, result);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector128NUIntExtractMostSignificantBitsTest()
+        {
+            if (Environment.Is64BitProcess)
+            {
+                Vector128<nuint> vector = Vector128.Create(
+                    0x0000000000000001UL,
+                    0x8000000000000000UL
+                ).AsNUInt();
+
+                uint result = Vector128.ExtractMostSignificantBits(vector);
+                Assert.Equal(0b10u, result);
+            }
+            else
+            {
+                Vector128<nuint> vector = Vector128.Create(
+                    0x00000001U,
+                    0x80000000U,
+                    0x00000001U,
+                    0x80000000U
+                ).AsNUInt();
+
+                uint result = Vector128.ExtractMostSignificantBits(vector);
+                Assert.Equal(0b1010u, result);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector128SByteExtractMostSignificantBitsTest()
+        {
+            Vector128<sbyte> vector = Vector128.Create(
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80,
+                0x01,
+                0x80
+            ).AsSByte();
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10101010_10101010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128SingleExtractMostSignificantBitsTest()
+        {
+            Vector128<float> vector = Vector128.Create(
+                +1.0f,
+                -0.0f,
+                +1.0f,
+                -0.0f
+            );
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b1010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128UInt16ExtractMostSignificantBitsTest()
+        {
+            Vector128<ushort> vector = Vector128.Create(
+                0x0001,
+                0x8000,
+                0x0001,
+                0x8000,
+                0x0001,
+                0x8000,
+                0x0001,
+                0x8000
+            );
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10101010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128UInt32ExtractMostSignificantBitsTest()
+        {
+            Vector128<uint> vector = Vector128.Create(
+                0x00000001U,
+                0x80000000U,
+                0x00000001U,
+                0x80000000U
+            );
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b1010u, result);
+        }
+
+        [Fact]
+        public unsafe void Vector128UInt64ExtractMostSignificantBitsTest()
+        {
+            Vector128<ulong> vector = Vector128.Create(
+                0x0000000000000001UL,
+                0x8000000000000000UL
+            );
+
+            uint result = Vector128.ExtractMostSignificantBits(vector);
+            Assert.Equal(0b10u, result);
+        }
+
+        [Fact]
         public unsafe void Vector128ByteLoadTest()
         {
             byte* value = stackalloc byte[16] {
