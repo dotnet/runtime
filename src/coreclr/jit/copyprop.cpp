@@ -137,11 +137,8 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
     }
 
     // If not local nothing to do.
-    if (!tree->IsLocal())
-    {
-        return;
-    }
-    if (tree->OperGet() == GT_PHI_ARG || tree->OperGet() == GT_LCL_FLD)
+    // TODO-CQ: allow LCL_FLDs too.
+    if (!tree->OperIs(GT_LCL_VAR))
     {
         return;
     }
@@ -151,6 +148,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
     {
         return;
     }
+
     const unsigned lclNum = optIsSsaLocal(tree);
 
     // Skip non-SSA variables.
@@ -165,17 +163,20 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
     {
         unsigned newLclNum = iter.Get();
 
-        GenTree* op = iter.GetValue()->Top();
-
         // Nothing to do if same.
         if (lclNum == newLclNum)
         {
             continue;
         }
 
+        LclVarDsc* varDsc        = lvaGetDesc(lclNum);
+        LclVarDsc* newLclVarDsc  = lvaGetDesc(newLclNum);
+        GenTree*   newLclDefNode = iter.GetValue()->Top(); // Note that this "def" node can actually be a use (for
+                                                           // parameters and other use-before-def locals).
+
         // Skip variables with assignments embedded in the statement (i.e., with a comma). Because we
         // are not currently updating their SSA names as live in the copy-prop pass of the stmt.
-        if (VarSetOps::IsMember(this, optCopyPropKillSet, lvaTable[newLclNum].lvVarIndex))
+        if (VarSetOps::IsMember(this, optCopyPropKillSet, newLclVarDsc->lvVarIndex))
         {
             continue;
         }
@@ -186,34 +187,39 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // However, in addition, it may not be profitable to propagate a 'doNotEnregister' lclVar to an
         // existing use of an enregisterable lclVar.
 
-        if (lvaTable[lclNum].lvDoNotEnregister != lvaTable[newLclNum].lvDoNotEnregister)
+        if (varDsc->lvDoNotEnregister != newLclVarDsc->lvDoNotEnregister)
         {
             continue;
         }
 
-        if (op->gtFlags & GTF_VAR_CAST)
+        if (newLclDefNode->gtFlags & GTF_VAR_CAST)
         {
             continue;
         }
-        if (gsShadowVarInfo != nullptr && lvaTable[newLclNum].lvIsParam &&
-            gsShadowVarInfo[newLclNum].shadowCopy == lclNum)
+
+        if ((gsShadowVarInfo != nullptr) && newLclVarDsc->lvIsParam &&
+            (gsShadowVarInfo[newLclNum].shadowCopy == lclNum))
         {
             continue;
         }
-        ValueNum opVN = GetUseAsgDefVNOrTreeVN(op);
-        if (opVN == ValueNumStore::NoVN)
+
+        ValueNum newLclDefVN = GetUseAsgDefVNOrTreeVN(newLclDefNode);
+        if (newLclDefVN == ValueNumStore::NoVN)
         {
             continue;
         }
-        if (op->TypeGet() != tree->TypeGet())
+
+        if (newLclDefNode->TypeGet() != tree->TypeGet())
         {
             continue;
         }
-        if (opVN != tree->gtVNPair.GetConservative())
+
+        if (newLclDefVN != tree->gtVNPair.GetConservative())
         {
             continue;
         }
-        if (optCopyProp_LclVarScore(lvaGetDesc(lclNum), lvaGetDesc(newLclNum), true) <= 0)
+
+        if (optCopyProp_LclVarScore(varDsc, newLclVarDsc, true) <= 0)
         {
             continue;
         }
@@ -230,34 +236,25 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // node x2 = phi(x0, x1) which can then be used to substitute 'c' with. But because of pruning
         // there would be no such phi node. To solve this we'll check if 'x' is live, before replacing
         // 'c' with 'x.'
-        if (!lvaTable[newLclNum].lvVerTypeInfo.IsThisPtr())
+
+        // We compute liveness only on tracked variables. And all SSA locals are tracked.
+        assert(lvaGetDesc(newLclNum)->lvTracked);
+
+        // Because of this dependence on live variable analysis, CopyProp phase is immediately
+        // after Liveness, SSA and VN.
+        if ((newLclNum != info.compThisArg) && !VarSetOps::IsMember(this, compCurLife, newLclVarDsc->lvVarIndex))
         {
-            if (lvaTable[newLclNum].IsAddressExposed())
-            {
-                continue;
-            }
-
-            // We compute liveness only on tracked variables. So skip untracked locals.
-            if (!lvaTable[newLclNum].lvTracked)
-            {
-                continue;
-            }
-
-            // Because of this dependence on live variable analysis, CopyProp phase is immediately
-            // after Liveness, SSA and VN.
-            if (!VarSetOps::IsMember(this, compCurLife, lvaTable[newLclNum].lvVarIndex))
-            {
-                continue;
-            }
+            continue;
         }
+
         unsigned newSsaNum = SsaConfig::RESERVED_SSA_NUM;
-        if (op->gtFlags & GTF_VAR_DEF)
+        if (newLclDefNode->gtFlags & GTF_VAR_DEF)
         {
-            newSsaNum = GetSsaNumForLocalVarDef(op);
+            newSsaNum = GetSsaNumForLocalVarDef(newLclDefNode);
         }
         else // parameters, this pointer etc.
         {
-            newSsaNum = op->AsLclVarCommon()->GetSsaNum();
+            newSsaNum = newLclDefNode->AsLclVarCommon()->GetSsaNum();
         }
 
         if (newSsaNum == SsaConfig::RESERVED_SSA_NUM)
@@ -271,25 +268,25 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
             JITDUMP("VN based copy assertion for ");
             printTreeID(tree);
             printf(" V%02d " FMT_VN " by ", lclNum, tree->GetVN(VNK_Conservative));
-            printTreeID(op);
-            printf(" V%02d " FMT_VN ".\n", newLclNum, op->GetVN(VNK_Conservative));
-            gtDispTree(tree, nullptr, nullptr, true);
+            printTreeID(newLclDefNode);
+            printf(" V%02d " FMT_VN ".\n", newLclNum, newLclDefNode->GetVN(VNK_Conservative));
+            DISPNODE(tree);
         }
 #endif
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
         gtUpdateSideEffects(stmt, tree);
+
 #ifdef DEBUG
         if (verbose)
         {
             printf("copy propagated to:\n");
-            gtDispTree(tree, nullptr, nullptr, true);
+            DISPNODE(tree);
         }
 #endif
         break;
     }
-    return;
 }
 
 //------------------------------------------------------------------------------
