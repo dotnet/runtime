@@ -14,6 +14,9 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    
+    <!-- Avoids having to include InteropStateManager.cs to get files in Common/TypeSystem/Interop/IL building -->
+    <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>    
@@ -23,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
     <!-- Make sure the test data gets built -->
     <ProjectReference Include="CoreTestAssembly\CoreTestAssembly.csproj">
@@ -40,6 +42,11 @@
   <ItemGroup>
     <Compile Include="../../Common/TypeSystem/MetadataEmitter/TypeSystemMetadataEmitter.cs" />
     <Compile Include="../../Common/TypeSystem/IL/ILReader.cs" />
+    <Compile Include="../../Common/TypeSystem/Interop/IL/MarshalUtils.cs" Link="TypeSystem/Interop/IL/MarshalUtils.cs" />
+    <Compile Include="../../Common/TypeSystem/Interop/IL/MarshalHelpers.cs" Link="TypeSystem/Interop/IL/MarshalHelpers.cs" />
+    <Compile Include="../../Common/TypeSystem/Interop/IL/MarshallerKind.cs" Link="TypeSystem/Interop/IL/MarshallerKind.cs" />
+    <Compile Include="../../Common/TypeSystem/Interop/InteropTypes.cs" Link="TypeSystem/Interop/InteropTypes.cs" />
+    <Compile Include="../../Common/TypeSystem/IL/HelperExtensions.cs" Link="TypeSystem/IL/HelperExtensions" />
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
     <Compile Include="CanonicalizationTests.cs" />
     <Compile Include="ConstraintsValidationTest.cs" />
