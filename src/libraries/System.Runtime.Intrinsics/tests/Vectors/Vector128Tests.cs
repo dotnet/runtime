@@ -2015,7 +2015,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = 0; index < Vector128<short>.Count; index++)
             {
-                Assert.Equal((short)0x08, vector.GetElement(index));
+                Assert.Equal((short)0x0800, vector.GetElement(index));
             }
         }
 

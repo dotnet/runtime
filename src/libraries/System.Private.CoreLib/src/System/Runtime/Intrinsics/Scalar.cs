@@ -387,26 +387,26 @@ namespace System.Runtime.Intrinsics
             {
                 if (Environment.Is64BitProcess)
                 {
-                    uint bits = (uint)(nint)(object)value;
-                    return bits >> 31;
+                    ulong bits = (ulong)(nint)(object)value;
+                    return (uint)(bits >> 63);
                 }
                 else
                 {
-                    ulong bits = (ulong)(nint)(object)value;
-                    return (uint)(bits >> 63);
+                    uint bits = (uint)(nint)(object)value;
+                    return bits >> 31;
                 }
             }
             else if (typeof(T) == typeof(nuint))
             {
                 if (Environment.Is64BitProcess)
                 {
-                    uint bits = (uint)(nuint)(object)value;
-                    return bits >> 31;
+                    ulong bits = (ulong)(nuint)(object)value;
+                    return (uint)(bits >> 63);
                 }
                 else
                 {
-                    ulong bits = (ulong)(nuint)(object)value;
-                    return (uint)(bits >> 63);
+                    uint bits = (uint)(nuint)(object)value;
+                    return bits >> 31;
                 }
             }
             else if (typeof(T) == typeof(sbyte))
