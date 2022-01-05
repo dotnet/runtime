@@ -353,43 +353,24 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
-                        Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
-                        Avx.Store(leftPtr + i, Avx2.And(leftVec, rightVec));
-                    }
+                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) & Vector256.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
-                        Sse2.Store(leftPtr + i, Sse2.And(leftVec, rightVec));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.And(leftVec, rightVec));
-                    }
+                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) & Vector128.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
 
@@ -439,43 +420,24 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
-                        Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
-                        Avx.Store(leftPtr + i, Avx2.Or(leftVec, rightVec));
-                    }
+                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) | Vector256.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
-                        Sse2.Store(leftPtr + i, Sse2.Or(leftVec, rightVec));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.Or(leftVec, rightVec));
-                    }
+                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) | Vector128.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
 
@@ -525,43 +487,24 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = m_array)
-                fixed (int* rightPtr = value.m_array)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
-                        Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
-                        Avx.Store(leftPtr + i, Avx2.Xor(leftVec, rightVec));
-                    }
+                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) ^ Vector256.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
-                        Sse2.Store(leftPtr + i, Sse2.Xor(leftVec, rightVec));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.Xor(leftVec, rightVec));
-                    }
+                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) ^ Vector128.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
 
@@ -603,39 +546,23 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                Vector256<int> ones = Vector256.Create(-1);
-                fixed (int* ptr = thisArray)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> vec = Avx.LoadVector256(ptr + i);
-                        Avx.Store(ptr + i, Avx2.Xor(vec, ones));
-                    }
+                    Vector256<int> result = ~Vector256.LoadUnsafe(ref value, i);
+                    result.StoreUnsafe(ref value, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<int> ones = Vector128.Create(-1);
-                fixed (int* ptr = thisArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> vec = Sse2.LoadVector128(ptr + i);
-                        Sse2.Store(ptr + i, Sse2.Xor(vec, ones));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.Not(leftVec));
-                    }
+                    Vector128<int> result = ~Vector128.LoadUnsafe(ref value, i);
+                    result.StoreUnsafe(ref value, i);
                 }
             }
 
