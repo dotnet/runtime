@@ -9950,6 +9950,22 @@ DONE_CALL:
             }
             else
             {
+                // If the call is virtual, and has a generics context, and is not going to have a class probe,
+                // record the context for possible use during late devirt.
+                //
+                // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
+                // important devirtualizations, we'll want to allow both a class probe and a captured context.
+                //
+                if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
+                    (origCall->gtClassProfileCandidateInfo == nullptr))
+                {
+                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    origCall->gtCallMoreFlags |= GTF_CALL_M_LATE_DEVIRT;
+                    LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
+                    info->exactContextHnd                = exactContextHnd;
+                    origCall->gtLateDevirtualizationInfo = info;
+                }
+
                 if (isFatPointerCandidate)
                 {
                     // fatPointer candidates should be in statements of the form call() or var = call().
