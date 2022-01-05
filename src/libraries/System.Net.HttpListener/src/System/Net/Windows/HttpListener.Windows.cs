@@ -624,7 +624,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "Start()"));
                 }
-                
+
                 HttpListenerSession? session = _currentSession;
 
                 // Because there is no synchronization, the listener can be stopped or closed while the method is executing,
