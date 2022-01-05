@@ -2263,7 +2263,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
-                if (m_pMT->IsAutoLayoutOrHasAutoLayoutField())
+                if (!m_pMT->HasLayout())
                 {
                     m_resID = IDS_EE_BADMARSHAL_AUTOLAYOUT;
                     IfFailGoto(E_FAIL, lFail);
