@@ -2052,6 +2052,12 @@ void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node) {
             genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()));
             break;
         }
+
+        default:
+        {
+            unreached();
+            break;
+        }
     }
 
     genProduceReg(node);
