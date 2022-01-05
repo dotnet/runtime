@@ -28,7 +28,7 @@ namespace System.Reflection
 
         private static AssemblyName GetFileInformationCore(string assemblyFile)
         {
-            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported_AssemblyName_GetAssemblyName);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_AssemblyName_GetAssemblyName);
         }
     }
 }

@@ -8089,6 +8089,19 @@ NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
     return retVal;
 }
 
+int MethodTable::GetFieldAlignmentRequirement()
+{
+    if (HasLayout())
+    {
+        return GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+    }
+    else if (GetClass()->HasCustomFieldAlignment())
+    {
+        return GetClass()->GetOverriddenFieldAlignmentRequirement();
+    }
+    return min(GetNumInstanceFieldBytes(), TARGET_POINTER_SIZE);
+}
+
 UINT32 MethodTable::GetNativeSize()
 {
     CONTRACTL

@@ -1829,7 +1829,7 @@ HRESULT PEWriter::fixup(CeeGenTokenMapper *pMapper)
     return(S_OK);   // SUCCESS
 }
 
-HRESULT PEWriter::Open(__in LPCWSTR fileName)
+HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
 {
     _ASSERTE(m_file == INVALID_HANDLE_VALUE);
     HRESULT hr = NOERROR;
@@ -1913,7 +1913,7 @@ HRESULT PEWriter::Close()
 }
 
 /******************************************************************/
-HRESULT PEWriter::write(__in LPCWSTR fileName) {
+HRESULT PEWriter::write(_In_ LPCWSTR fileName) {
 
     HRESULT hr;
 

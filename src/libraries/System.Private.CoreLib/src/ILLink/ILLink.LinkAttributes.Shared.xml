@@ -235,6 +235,9 @@
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresAssemblyFilesAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
     <type fullname="System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
@@ -260,6 +263,9 @@
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Runtime.InteropServices.GeneratedDllImportAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
 

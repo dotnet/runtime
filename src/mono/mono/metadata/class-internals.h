@@ -146,7 +146,8 @@ struct _MonoClassField {
 	const char      *name;
 
 	/* Type where the field was defined */
-	MonoClass       *parent;
+	/* Do not access directly, use m_field_get_parent */
+	MonoClass       *parent_;
 
 	/*
 	 * Offset where this field is stored; if it is an instance
@@ -1535,10 +1536,19 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
 		}								\
 	}									\
 
+static inline MonoClass *
+m_field_get_parent (MonoClassField *field)
+{
+	return field->parent_;
+}
+
+void
+m_field_set_parent (MonoClassField *field, MonoClass *klass);
+
 static inline gboolean
 m_field_get_offset (MonoClassField *field)
 {
-	g_assert (m_class_is_fields_inited (field->parent));
+	g_assert (m_class_is_fields_inited (m_field_get_parent (field)));
 	return field->offset;
 }
 

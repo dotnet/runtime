@@ -986,7 +986,7 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 		mono_error_cleanup (error);
 	} else
 		str = NULL;
-	g_print ("xdomain reference in %p (%s.%s) at offset %d (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
+	g_print ("xdomain reference in %p (%s.%s) at offset %zu (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
 			obj, m_class_get_name_space (obj->vtable->klass), m_class_get_name (obj->vtable->klass),
 			offset, field ? field->name : "",
 			ref, m_class_get_name_space (ref->vtable->klass), m_class_get_name (ref->vtable->klass), str ? str : "");

@@ -204,7 +204,7 @@ void MDInfo::InitSigBuffer()
 
 // helper to append a string into the signature buffer. If size of signature buffer is not big enough,
 // we will grow it.
-HRESULT MDInfo::AddToSigBuffer(__in_z __in const char *string)
+HRESULT MDInfo::AddToSigBuffer(__in_z _In_ const char *string)
 {
     HRESULT     hr;
     size_t LL = strlen((LPSTR)m_sigBuf.Ptr()) + strlen(string) + 1;
@@ -368,7 +368,7 @@ void MDInfo::DisplayMD()
     WriteLine("===========================================================");
 } // MDVEHandlerClass()
 
-int MDInfo::WriteLine(__in_z __in const char *str)
+int MDInfo::WriteLine(__in_z _In_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -377,7 +377,7 @@ int MDInfo::WriteLine(__in_z __in const char *str)
     return count;
 } // int MDInfo::WriteLine()
 
-int MDInfo::Write(__in_z __in const char *str)
+int MDInfo::Write(__in_z _In_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -385,7 +385,7 @@ int MDInfo::Write(__in_z __in const char *str)
     return count;
 } // int MDInfo::Write()
 
-int MDInfo::VWriteLine(__in_z __in const char *str, ...)
+int MDInfo::VWriteLine(__in_z _In_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -397,7 +397,7 @@ int MDInfo::VWriteLine(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWriteLine()
 
-int MDInfo::VWrite(__in_z __in const char *str, ...)
+int MDInfo::VWrite(__in_z _In_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -408,7 +408,7 @@ int MDInfo::VWrite(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWrite()
 
-int MDInfo::VWriteMarker(__in_z __in const char *str, va_list marker)
+int MDInfo::VWriteMarker(__in_z _In_ const char *str, va_list marker)
 {
     HRESULT hr;
     int count = -1;

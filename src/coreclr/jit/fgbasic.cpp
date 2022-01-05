@@ -35,7 +35,8 @@ void Compiler::fgInit()
     fgCalledCount            = BB_ZERO_WEIGHT;
 
     /* We haven't yet computed the dominator sets */
-    fgDomsComputed = false;
+    fgDomsComputed         = false;
+    fgReturnBlocksComputed = false;
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -4701,7 +4702,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             {
                 loopAlignCandidates++;
                 succBlock->bbFlags |= BBF_LOOP_ALIGN;
-                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for loop# %d.\n", block->bbNum,
+                JITDUMP("Propagating LOOP_ALIGN flag from " FMT_BB " to " FMT_BB " for " FMT_LP "\n ", block->bbNum,
                         succBlock->bbNum, block->bbNatLoopNum);
             }
 

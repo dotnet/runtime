@@ -704,9 +704,6 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
                     id = ReadyToRunHelper.NewMultiDimArr;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_NONVARARG:
-                    id = ReadyToRunHelper.NewMultiDimArr_NonVarArg;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;
                     break;
@@ -2338,17 +2335,6 @@ namespace Internal.JitInterface
             return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !((MetadataType)type).IsNonVersionable());
         }
 
-        private bool HasLayoutMetadata(TypeDesc type)
-        {
-            if (type.IsValueType && (MarshalUtils.IsBlittableType(type) || ReadyToRunMetadataFieldLayoutAlgorithm.IsManagedSequentialType(type)))
-            {
-                // Sequential layout
-                return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// Throws if the JIT inlines a method outside the current version bubble and that inlinee accesses
         /// fields also outside the version bubble. ReadyToRun currently cannot encode such references.
@@ -2409,17 +2395,6 @@ namespace Internal.JitInterface
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                 }
                 // ENCODE_NONE
-            }
-            else if (HasLayoutMetadata(pMT))
-            {
-                PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
-
-                // We won't try to be smart for classes with layout.
-                // They are complex to get right, and very rare anyway.
-                // ENCODE_FIELD_OFFSET
-                pResult->offset = 0;
-                pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(field));
             }
             else
             {

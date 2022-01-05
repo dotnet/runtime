@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.Shared;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -897,9 +898,8 @@ namespace ILCompiler.Dataflow
                                         if (hasUncheckedAnnotation)
                                         {
                                             reflectionContext.RecordUnrecognizedPattern(
-                                                    2055,
-                                                    $"Call to '{calledMethod.GetDisplayName()}' can not be statically analyzed. " +
-                                                    $"It's not possible to guarantee the availability of requirements of the generic type.");
+                                                    (int)DiagnosticId.MakeGenericType,
+                                                    new DiagnosticString(DiagnosticId.MakeGenericType).GetMessage(calledMethod.GetDisplayName()));
                                         }
                                     }
 
@@ -912,9 +912,8 @@ namespace ILCompiler.Dataflow
                                 {
                                     // We have no way to "include more" to fix this if we don't know, so we have to warn
                                     reflectionContext.RecordUnrecognizedPattern(
-                                        2055,
-                                        $"Call to '{calledMethod.GetDisplayName()}' can not be statically analyzed. " +
-                                        $"It's not possible to guarantee the availability of requirements of the generic type.");
+                                        (int)DiagnosticId.MakeGenericType,
+                                        new DiagnosticString(DiagnosticId.MakeGenericType).GetMessage(calledMethod.GetDisplayName()));
                                 }
                             }
 
@@ -1030,8 +1029,8 @@ namespace ILCompiler.Dataflow
                                                 // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                                 // that the method may have requirements which we can't fullfil -> warn.
                                                 reflectionContext.RecordUnrecognizedPattern(
-                                                    2060, string.Format(Resources.Strings.IL2060,
-                                                        DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
+                                                    (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
+                                                    new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                             }
 
                                             RequireDynamicallyAccessedMembers(
@@ -1049,8 +1048,8 @@ namespace ILCompiler.Dataflow
                                         // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                         // that the method may have requirements which we can't fullfil -> warn.
                                         reflectionContext.RecordUnrecognizedPattern(
-                                            2060, string.Format(Resources.Strings.IL2060,
-                                                DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
+                                            (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
+                                            new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                     }
 
                                     RequireDynamicallyAccessedMembers(
@@ -1093,7 +1092,8 @@ namespace ILCompiler.Dataflow
                                 // In all other cases we may not even know which type this is about, so there's nothing we can do
                                 // report it as a warning.
                                 reflectionContext.RecordUnrecognizedPattern(
-                                    2103, string.Format(Resources.Strings.IL2103,
+                                    (int)DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined,
+                                    new DiagnosticString(DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined).GetMessage(
                                         DiagnosticUtilities.GetParameterNameForErrorMessage(new ParameterOrigin(calledMethod, 1)),
                                         DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                             }
@@ -2162,7 +2162,8 @@ namespace ILCompiler.Dataflow
                                     // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                     // that the method may have requirements which we can't fullfil -> warn.
                                     reflectionContext.RecordUnrecognizedPattern(
-                                        2060, string.Format(Resources.Strings.IL2060,
+                                        (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
+                                        new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(
                                             DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                 }
                             }
@@ -2221,25 +2222,14 @@ namespace ILCompiler.Dataflow
                         if (shouldEnableReflectionWarnings &&
                             calledMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute"))
                         {
-                            string attributeMessage = DiagnosticUtilities.GetRequiresUnreferencedCodeAttributeMessage(calledMethod);
+                            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresUnreferencedCodeAttribute"));
+                            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresUnreferencedCodeAttribute"));
+                            string message = new DiagnosticString(DiagnosticId.RequiresUnreferencedCode).GetMessage(calledMethod.GetDisplayName(), arg1, arg2);
 
-                            if (attributeMessage != null && attributeMessage.Length > 0 && !attributeMessage.EndsWith('.'))
-                                attributeMessage += '.';
-
-                            string message =
-                                $"Using method '{calledMethod.GetDisplayName()}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. {attributeMessage}";
-
-                            //if (requiresUnreferencedCode.Url != null)
-                            //{
-                            //    message += " " + requiresUnreferencedCode.Url;
-                            //}
-
-                            _logger.LogWarning(message, 2026, callingMethodBody, offset, MessageSubCategory.TrimAnalysis);
+                            _logger.LogWarning(message, (int)DiagnosticId.RequiresUnreferencedCode, callingMethodBody, offset, MessageSubCategory.TrimAnalysis);
                         }
 
-                        
-
-                        if (shouldEnableAotWarnings &&                            
+                        if (shouldEnableAotWarnings &&
                             calledMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute"))
                         {
                             LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
@@ -2247,19 +2237,11 @@ namespace ILCompiler.Dataflow
 
                         static void LogDynamicCodeWarning(Logger logger, MethodIL callingMethodBody, int offset, MethodDesc calledMethod)
                         {
-                            string attributeMessage = DiagnosticUtilities.GetRequiresDynamicCodeAttributeMessage(calledMethod);
+                            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresDynamicCodeAttribute"));
+                            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresDynamicCodeAttribute"));
+                            string message = new DiagnosticString(DiagnosticId.RequiresDynamicCode).GetMessage(calledMethod.GetDisplayName(), arg1, arg2);
 
-                            if (attributeMessage != null && attributeMessage.Length > 0 && !attributeMessage.EndsWith('.'))
-                                attributeMessage += '.';
-
-                            string message = $"{String.Format(Resources.Strings.IL3050, calledMethod.GetDisplayName())} {attributeMessage}";
-
-                            //if (requiresUnreferencedCode.Url != null)
-                            //{
-                            //    message += " " + requiresUnreferencedCode.Url;
-                            //}
-
-                            logger.LogWarning(message, 3050, callingMethodBody, offset, MessageSubCategory.AotAnalysis);
+                            logger.LogWarning(message, (int)DiagnosticId.RequiresDynamicCode, callingMethodBody, offset, MessageSubCategory.AotAnalysis);
                         }
 
                         // To get good reporting of errors we need to track the origin of the value for all method calls
@@ -2591,7 +2573,8 @@ namespace ILCompiler.Dataflow
                         switch ((valueWithDynamicallyAccessedMember.SourceContext, targetContext))
                         {
                             case (ParameterOrigin sourceParameter, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern(2067, string.Format(Resources.Strings.IL2067,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter).GetMessage(
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
@@ -2599,21 +2582,24 @@ namespace ILCompiler.Dataflow
                                     missingMemberTypes));
                                 break;
                             case (ParameterOrigin sourceParameter, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern(2068, string.Format(Resources.Strings.IL2068,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType).GetMessage(
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
                                     missingMemberTypes));
                                 break;
                             case (ParameterOrigin sourceParameter, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern(2069, string.Format(Resources.Strings.IL2069,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField).GetMessage(
                                     targetField.GetDisplayName(),
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
                                     missingMemberTypes));
                                 break;
                             case (ParameterOrigin sourceParameter, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern(2070, string.Format(Resources.Strings.IL2070,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter).GetMessage(
                                     targetMethod.GetDisplayName(),
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
@@ -2621,7 +2607,8 @@ namespace ILCompiler.Dataflow
                                 break;
                             case (ParameterOrigin sourceParameter, GenericParameterOrigin targetGenericParameter):
                                 // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern(2071, string.Format(Resources.Strings.IL2071,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter).GetMessage(
                                     targetGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
@@ -2630,33 +2617,38 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case (MethodReturnOrigin sourceMethodReturnType, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern(2072, string.Format(Resources.Strings.IL2072,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter).GetMessage(
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
                                     missingMemberTypes));
                                 break;
                             case (MethodReturnOrigin sourceMethodReturnType, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern(2073, string.Format(Resources.Strings.IL2073,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType).GetMessage(
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
                                     missingMemberTypes));
                                 break;
                             case (MethodReturnOrigin sourceMethodReturnType, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern(2074, string.Format(Resources.Strings.IL2074,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField).GetMessage(
                                     targetField.GetDisplayName(),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
                                     missingMemberTypes));
                                 break;
                             case (MethodReturnOrigin sourceMethodReturnType, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern(2075, string.Format(Resources.Strings.IL2075,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter).GetMessage(
                                     targetMethod.GetDisplayName(),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
                                     missingMemberTypes));
                                 break;
                             case (MethodReturnOrigin sourceMethodReturnType, GenericParameterOrigin targetGenericParameter):
                                 // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern(2076, string.Format(Resources.Strings.IL2076,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter).GetMessage(
                                     targetGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
@@ -2664,33 +2656,38 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case (FieldOrigin sourceField, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern(2077, string.Format(Resources.Strings.IL2077,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter).GetMessage(
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
                                     sourceField.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (FieldOrigin sourceField, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern(2078, string.Format(Resources.Strings.IL2078,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType).GetMessage(
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
                                     sourceField.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (FieldOrigin sourceField, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern(2079, string.Format(Resources.Strings.IL2079,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField).GetMessage(
                                     targetField.GetDisplayName(),
                                     sourceField.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (FieldOrigin sourceField, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern(2080, string.Format(Resources.Strings.IL2080,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter).GetMessage(
                                     targetMethod.GetDisplayName(),
                                     sourceField.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (FieldOrigin sourceField, GenericParameterOrigin targetGenericParameter):
                                 // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern(2081, string.Format(Resources.Strings.IL2081,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter).GetMessage(
                                     targetGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
                                     sourceField.GetDisplayName(),
@@ -2698,33 +2695,38 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case (MethodOrigin sourceMethod, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern(2082, string.Format(Resources.Strings.IL2082,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter).GetMessage(
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
                                     sourceMethod.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (MethodOrigin sourceMethod, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern(2083, string.Format(Resources.Strings.IL2083,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType).GetMessage(
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
                                     sourceMethod.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (MethodOrigin sourceMethod, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern(2084, string.Format(Resources.Strings.IL2084,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField).GetMessage(
                                     targetField.GetDisplayName(),
                                     sourceMethod.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (MethodOrigin sourceMethod, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern(2085, string.Format(Resources.Strings.IL2085,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter).GetMessage(
                                     targetMethod.GetDisplayName(),
                                     sourceMethod.GetDisplayName(),
                                     missingMemberTypes));
                                 break;
                             case (MethodOrigin sourceMethod, GenericParameterOrigin targetGenericParameter):
                                 // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern(2086, string.Format(Resources.Strings.IL2086,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter).GetMessage(
                                     targetGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
                                     sourceMethod.GetDisplayName(),
@@ -2732,7 +2734,8 @@ namespace ILCompiler.Dataflow
                                 break;
 
                             case (GenericParameterOrigin sourceGenericParameter, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern(2087, string.Format(Resources.Strings.IL2087,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter).GetMessage(
                                     DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
                                     sourceGenericParameter.Name,
@@ -2740,14 +2743,16 @@ namespace ILCompiler.Dataflow
                                     missingMemberTypes));
                                 break;
                             case (GenericParameterOrigin sourceGenericParameter, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern(2088, string.Format(Resources.Strings.IL2088,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType).GetMessage(
                                     DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
                                     sourceGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
                                     missingMemberTypes));
                                 break;
                             case (GenericParameterOrigin sourceGenericParameter, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern(2089, string.Format(Resources.Strings.IL2089,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField).GetMessage(
                                     targetField.GetDisplayName(),
                                     sourceGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
@@ -2761,14 +2766,16 @@ namespace ILCompiler.Dataflow
                                 //    // This passes the T as the "this" parameter to Type.GetMethods()
                                 //    typeof(Type).GetMethod("GetMethods").Invoke(typeof(T), new object[] {});
                                 // }
-                                reflectionContext.RecordUnrecognizedPattern(2090, string.Format(Resources.Strings.IL2090,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter).GetMessage(
                                     targetMethod.GetDisplayName(),
                                     sourceGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
                                     missingMemberTypes));
                                 break;
                             case (GenericParameterOrigin sourceGenericParameter, GenericParameterOrigin targetGenericParameter):
-                                reflectionContext.RecordUnrecognizedPattern(2091, string.Format(Resources.Strings.IL2091,
+                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter,
+                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter).GetMessage(
                                     targetGenericParameter.Name,
                                     DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
                                     sourceGenericParameter.Name,
@@ -3057,8 +3064,8 @@ namespace ILCompiler.Dataflow
             if (!AnalyzeGenericInstantiationTypeArray(genericParametersArray, ref reflectionContext, reflectionMethod, genericMethod.GetMethodDefinition().Instantiation))
             {
                 reflectionContext.RecordUnrecognizedPattern(
-                    2060,
-                    string.Format(Resources.Strings.IL2060, DiagnosticUtilities.GetMethodSignatureDisplayName(reflectionMethod)));
+                    (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
+                    new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(reflectionMethod)));
             }
             else
             {
@@ -3103,49 +3110,5 @@ namespace ILCompiler.Dataflow
             GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods(bindingFlags) |
             GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties(bindingFlags) |
             GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes(bindingFlags);
-
-        private static class Resources
-        {
-            public static class Strings
-            {
-                public const string IL2060 = "Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.";
-                public const string IL2067 = "'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2068 = "'{0}' method return value does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2069 = "value stored in field '{0}' does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2070 = "'this' argument does not satisfy {3} in call to '{0}'. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2071 = "'{0}' generic argument does not satisfy {4} in '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2072 = "'{0}' argument does not satisfy {3} in call to '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2073 = "'{0}' method return value does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2074 = "value stored in field '{0}' does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2075 = "'this' argument does not satisfy {2} in call to '{0}'. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2076 = "'{0}' generic argument does not satisfy {3} in '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2077 = "'{0}' argument does not satisfy {3} in call to '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2078 = "'{0}' method return value does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2079 = "value stored in field '{0}' does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2080 = "'this' argument does not satisfy {2} in call to '{0}'. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2081 = "'{0}' generic argument does not satisfy {3} in '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2082 = "'{0}' argument does not satisfy {3} in call to '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2083 = "'{0}' method return value does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2084 = "value stored in field '{0}' does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2085 = "'this' argument does not satisfy {2} in call to '{0}'. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2086 = "'{0}' generic argument does not satisfy {3} in '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2087 = "'{0}' argument does not satisfy {4} in call to '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2088 = "'{0}' method return value does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2089 = "value stored in field '{0}' does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2090 = "'this' argument does not satisfy {3} in call to '{0}'. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2091 = "'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.";
-                public const string IL2103 = "Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.";
-
-                // Error codes > 6000 are reserved for custom steps and illink doesn't claim ownership of them
-
-
-                public const string IL3050 = "Using member '{0}' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling.";
-                // IL3051 - mismatched RequiresDynamicCode on virtuals
-                // TODO: these are all unique to NativeAOT - mono/linker repo is not aware this error code is used.
-                // IL3052 - COM
-                // IL3053 - AOT analysis warnings
-                // IL3054 - Generic cycle
-            }
-        }
     }
 }

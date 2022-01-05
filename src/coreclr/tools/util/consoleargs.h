@@ -35,7 +35,7 @@ public:
     };
 
     // returns false if there are errors
-    bool ExpandResponseFiles(__in int argc, __deref_in_ecount(argc) const LPCWSTR * argv, int * pargc2, __deref_out_ecount(*pargc2) LPWSTR ** pppargv2);
+    bool ExpandResponseFiles(_In_ int argc, __deref_in_ecount(argc) const LPCWSTR * argv, int * pargc2, __deref_out_ecount(*pargc2) LPWSTR ** pppargv2);
 
     // Frees all memory used by the arg list and the argv/argc array
     void CleanUpArgs();
@@ -53,7 +53,7 @@ public:
     }
 
 private:
-    void SetErrorMessage(__in LPCWSTR pwzMessage);
+    void SetErrorMessage(_In_ LPCWSTR pwzMessage);
     b_tree * MakeLeaf( LPCWSTR szText);
     void CleanupTree( b_tree * root);
     HRESULT TreeAdd( b_tree ** root, LPCWSTR szAdd);

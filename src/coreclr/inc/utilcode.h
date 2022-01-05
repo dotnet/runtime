@@ -976,18 +976,18 @@ void    SplitPath(const WCHAR *path,
 // A much more sensible version that just points to each section of the string.
 //*******************************************************************************
 void    SplitPathInterior(
-    __in      LPCWSTR wszPath,
+    _In_      LPCWSTR wszPath,
     __out_opt LPCWSTR *pwszDrive,    __out_opt size_t *pcchDrive,
     __out_opt LPCWSTR *pwszDir,      __out_opt size_t *pcchDir,
     __out_opt LPCWSTR *pwszFileName, __out_opt size_t *pcchFileName,
     __out_opt LPCWSTR *pwszExt,      __out_opt size_t *pcchExt);
 
 
-void    MakePath(__out CQuickWSTR &path,
-                 __in LPCWSTR drive,
-                 __in LPCWSTR dir,
-                 __in LPCWSTR fname,
-                 __in LPCWSTR ext);
+void    MakePath(_Out_ CQuickWSTR &path,
+                 _In_ LPCWSTR drive,
+                 _In_ LPCWSTR dir,
+                 _In_ LPCWSTR fname,
+                 _In_ LPCWSTR ext);
 
 WCHAR * FullPath(__out_ecount (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
 
@@ -996,7 +996,7 @@ WCHAR * FullPath(__out_ecount (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t
 // SString version of the path functions.
 //
 //*****************************************************************************
-void    SplitPath(__in SString const &path,
+void    SplitPath(_In_ SString const &path,
                   __inout_opt SString *drive,
                   __inout_opt SString *dir,
                   __inout_opt SString *fname,
@@ -3469,7 +3469,7 @@ private:
 //*****************************************************************************
 // Checks if string length exceeds the specified limit
 //*****************************************************************************
-inline BOOL IsStrLongerThan(__in __in_z char* pstr, unsigned N)
+inline BOOL IsStrLongerThan(_In_ __in_z char* pstr, unsigned N)
 {
     LIMITED_METHOD_CONTRACT;
     unsigned i = 0;
@@ -3505,7 +3505,7 @@ public:
         return m_pNames == 0;
     }
 
-    AssemblyNamesList(__in LPWSTR list);
+    AssemblyNamesList(_In_ LPWSTR list);
     ~AssemblyNamesList();
 };
 
@@ -3536,7 +3536,7 @@ public:
         pNames = 0;
     }
 
-    void Init(__in __in_z LPWSTR list)
+    void Init(_In_ __in_z LPWSTR list)
     {
         WRAPPER_NO_CONTRACT;
         pNames = 0;
@@ -3545,7 +3545,7 @@ public:
 
     void Destroy();
 
-    void Insert(__in __in_z LPWSTR list);
+    void Insert(_In_ __in_z LPWSTR list);
 
     bool IsInList(LPCUTF8 methodName, LPCUTF8 className, PCCOR_SIGNATURE sig = NULL);
     bool IsInList(LPCUTF8 methodName, LPCUTF8 className, CORINFO_SIG_INFO* pSigInfo);
@@ -3565,7 +3565,7 @@ public:
         Init();
     }
 
-    MethodNamesList(__in LPWSTR list)
+    MethodNamesList(_In_ LPWSTR list)
     {
         WRAPPER_NO_CONTRACT;
         Init(list);

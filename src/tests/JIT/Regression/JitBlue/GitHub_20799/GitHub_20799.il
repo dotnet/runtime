@@ -5,7 +5,6 @@
 .assembly extern System.Console { }
 .assembly GitHub_20799 { }
 .assembly extern xunit.core {}
-.module GitHub_20799.exe
 
 // GitHub 20799: a bug is reproduced when
 // 1) a method requires GSSecurityCookie (e.g. when allocating unsafe buffer using localloc)

@@ -47,6 +47,7 @@
       <_CoreClrBuildArg Condition="'$(ClrPalTestsSubset)' == 'true'" Include="-component paltests" />
       <_CoreClrBuildArg Condition="'$(ClrAllJitsSubset)' == 'true'" Include="-component alljits" />
       <_CoreClrBuildArg Condition="'$(ClrILToolsSubset)' == 'true'" Include="-component iltools" />
+      <_CoreClrBuildArg Condition="'$(ClrNativeAotSubset)' == 'true'" Include="-component nativeaot" />
     </ItemGroup>
 
     <PropertyGroup>

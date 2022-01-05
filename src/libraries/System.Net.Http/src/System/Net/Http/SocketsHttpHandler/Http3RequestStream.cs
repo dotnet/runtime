@@ -19,7 +19,7 @@ namespace System.Net.Http
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
-    internal sealed class Http3RequestStream : IHttpHeadersHandler, IAsyncDisposable, IDisposable
+    internal sealed class Http3RequestStream : IHttpStreamHeadersHandler, IAsyncDisposable, IDisposable
     {
         private readonly HttpRequestMessage _request;
         private Http3Connection _connection;
@@ -859,7 +859,7 @@ namespace System.Net.Http
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
 
-        void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        void IHttpStreamHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
             Debug.Assert(name.Length > 0);
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
@@ -870,16 +870,21 @@ namespace System.Net.Http
             OnHeader(staticIndex: null, descriptor, staticValue: default, literalValue: value);
         }
 
-        void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
+        void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index)
         {
             GetStaticQPackHeader(index, out HeaderDescriptor descriptor, out string? knownValue);
             OnHeader(index, descriptor, knownValue, literalValue: default);
         }
 
-        void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+        void IHttpStreamHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
         {
             GetStaticQPackHeader(index, out HeaderDescriptor descriptor, knownValue: out _);
             OnHeader(index, descriptor, staticValue: null, literalValue: value);
+        }
+
+        void IHttpStreamHeadersHandler.OnDynamicIndexedHeader(int? index, ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        {
+            ((IHttpStreamHeadersHandler)this).OnHeader(name, value);
         }
 
         private void GetStaticQPackHeader(int index, out HeaderDescriptor descriptor, out string? knownValue)
@@ -1017,7 +1022,7 @@ namespace System.Net.Http
             }
         }
 
-        void IHttpHeadersHandler.OnHeadersComplete(bool endStream)
+        void IHttpStreamHeadersHandler.OnHeadersComplete(bool endStream)
         {
             Debug.Fail($"This has no use in HTTP/3 and should never be called by {nameof(QPackDecoder)}.");
         }

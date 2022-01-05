@@ -10,9 +10,8 @@
 }
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly tryfinally {}
+.assembly 'tryfinallywith2endfinally' {}
 .assembly extern xunit.core {}
-.module tryfinally.exe
 
 .namespace hello
 {

@@ -4360,7 +4360,7 @@ SIZE_T GetSetFrameHelper::GetValueClassSize(MetaSig* pSig)
     // - but we don't care if it's shared (since it will be the same size either way)
     _ASSERTE(!vcType.IsNull() && vcType.IsValueType());
 
-    return (vcType.GetMethodTable()->GetAlignedNumInstanceFieldBytes());
+    return (vcType.GetMethodTable()->GetNumInstanceFieldBytes());
 }
 
 //

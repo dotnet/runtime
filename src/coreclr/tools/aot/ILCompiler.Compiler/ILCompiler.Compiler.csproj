@@ -23,6 +23,147 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
+      <Link>IL\DelegateInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
+      <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\EnumThunks.cs">
+      <Link>IL\Stubs\EnumThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\EnumThunks.Sorting.cs">
+      <Link>IL\Stubs\EnumThunks.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeLazyFixupField.cs">
+      <Link>IL\Stubs\PInvokeLazyFixupField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeLazyFixupField.Sorting.cs">
+      <Link>IL\Stubs\PInvokeLazyFixupField.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs">
+      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs">
+      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs">
+      <Link>Interop\IL\MarshalHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.Aot.cs">
+      <Link>Interop\IL\MarshalHelpers.Aot.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalUtils.cs">
+      <Link>Interop\IL\MarshalUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs">
+      <Link>Interop\IL\Marshaller.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.Aot.cs">
+      <Link>Interop\IL\Marshaller.Aot.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs">
+      <Link>Interop\IL\MarshallerKind.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeILEmitterConfiguration.cs">
+      <Link>Interop\IL\PInvokeILEmitterConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
+      <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs">
+      <Link>IL\Stubs\PInvokeILCodeStreams.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DebuggerSteppingHelpers.cs">
+      <Link>IL\Stubs\DebuggerSteppingHelpers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
+      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.cs">
+      <Link>IL\Stubs\ForwardDelegateCreationThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.Mangling.cs">
+      <Link>IL\Stubs\ForwardDelegateCreationThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.Sorting.cs">
+      <Link>IL\Stubs\ForwardDelegateCreationThunk.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateThunks.cs">
+      <Link>IL\Stubs\DelegateThunks.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.Mangling.cs">
+      <Link>IL\Stubs\StructMarshallingThunk.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
+      <Link>TypeSystem\Interop\IL\NativeStructType.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.Sorting.cs">
+      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.Sorting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.cs">
+      <Link>TypeSystem\Interop\IL\InlineArrayType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs">
+      <Link>TypeSystem\Interop\InteropTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Interop\InteropStateManager.cs">
+      <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\CodeGen\INonEmittableType.cs">
+      <Link>TypeSystem\CodeGen\INonEmittableType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
+      <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Compiler\Logging\CompilerGeneratedState.cs">
       <Link>Compiler\Logging\CompilerGeneratedState.cs</Link>
     </Compile>
@@ -179,6 +320,12 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.IntefaceThunks.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Mangling.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Sorting.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.DelegateInfo.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.DynamicInvoke.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.GeneratedAssembly.Sorting.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.EnumMethods.cs" />
+    <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
     <Compile Include="Compiler\Dataflow\EcmaExtensions.cs" />
@@ -204,6 +351,7 @@
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ObjectGetTypeFlowDependenciesNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StructMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64TentativeMethodNode.cs" />
@@ -263,7 +411,7 @@
     <Compile Include="Compiler\DependencyAnalysis\CallingConventionConverterKey.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CodeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingStubMapNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />    
+    <Compile Include="Compiler\DependencyAnalysis\StructMarshallingStubMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceGenericVirtualMethodTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\IObjectDumper.cs" />
@@ -477,4 +625,21 @@
       <Link>Pgo\PgoFormat.cs</Link>
     </Compile>
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>

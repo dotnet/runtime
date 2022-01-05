@@ -55,11 +55,10 @@ namespace System.Reflection
         }
 
         //
-        // KEEP IN SYNC WITH mcs/class/corlib/System.Reflection/RuntimeAssembly.cs
+        // KEEP IN SYNC WITH _MonoReflectionAssembly in /mono/mono/metadata/object-internals.h
         //
         #region VM dependency
         private IntPtr _mono_assembly;
-        private object? _evidence;       // Unused, kept for layout compatibility
         #endregion
 
         internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }

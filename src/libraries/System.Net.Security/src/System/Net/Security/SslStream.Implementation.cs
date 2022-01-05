@@ -459,12 +459,7 @@ namespace System.Net.Security
         private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
                  where TIOAdapter : IReadWriteAdapter
         {
-            int readBytes = await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
-            if (readBytes == 0)
-            {
-                throw new IOException(SR.net_io_eof);
-            }
-
+            await FillHandshakeBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
             if (_framing == Framing.Unified || _framing == Framing.Unknown)
             {
                 _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
@@ -1061,13 +1056,13 @@ namespace System.Net.Security
 
         // This function tries to make sure buffer has at least minSize bytes available.
         // If we have enough data, it returns synchronously. If not, it will try to read
-        // remaining bytes from given stream.
-        private ValueTask<int> FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
+        // remaining bytes from given stream. It will throw if unable to fulfill minSize.
+        private ValueTask FillHandshakeBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
              where TIOAdapter : IReadWriteAdapter
         {
             if (_handshakeBuffer.ActiveLength >= minSize)
             {
-                return new ValueTask<int>(minSize);
+                return ValueTask.CompletedTask;
             }
 
             int bytesNeeded = minSize - _handshakeBuffer.ActiveLength;
@@ -1083,15 +1078,15 @@ namespace System.Net.Security
                 int bytesRead = t.Result;
                 if (bytesRead == 0)
                 {
-                    return new ValueTask<int>(0);
+                    throw new IOException(SR.net_io_eof);
                 }
 
                 _handshakeBuffer.Commit(bytesRead);
             }
 
-            return new ValueTask<int>(minSize);
+            return ValueTask.CompletedTask;
 
-            async ValueTask<int> InternalFillHandshakeBufferAsync(TIOAdapter adap,  ValueTask<int> task, int minSize)
+            async ValueTask InternalFillHandshakeBufferAsync(TIOAdapter adap,  ValueTask<int> task, int minSize)
             {
                 while (true)
                 {
@@ -1104,29 +1099,11 @@ namespace System.Net.Security
                     _handshakeBuffer.Commit(bytesRead);
                     if (_handshakeBuffer.ActiveLength >= minSize)
                     {
-                        return minSize;
+                        return;
                     }
 
                     task = adap.ReadAsync(_handshakeBuffer.AvailableMemory);
                 }
-            }
-        }
-
-        private async ValueTask FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int numBytesRequired)
-            where TIOAdapter : IReadWriteAdapter
-        {
-            Debug.Assert(_internalBufferCount > 0);
-            Debug.Assert(_internalBufferCount < numBytesRequired);
-
-            while (_internalBufferCount < numBytesRequired)
-            {
-                int bytesRead = await adapter.ReadAsync(_internalBuffer.AsMemory(_internalBufferCount)).ConfigureAwait(false);
-                if (bytesRead == 0)
-                {
-                    throw new IOException(SR.net_io_eof);
-                }
-
-                _internalBufferCount += bytesRead;
             }
         }
 

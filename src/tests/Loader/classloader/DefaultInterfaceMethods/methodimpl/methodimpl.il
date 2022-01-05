@@ -25,7 +25,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module methodimpl.exe
 // MVID: {F249A85F-3FD2-488F-B084-97B542AD68D6}
 .imagebase 0x00400000
 .file alignment 0x00000200

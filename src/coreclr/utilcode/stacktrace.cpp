@@ -956,7 +956,7 @@ void MagicDeinit(void)
 *       support this, so we need it for CoreCLR 4, if we require Win2K support
 ****************************************************************************/
 extern "C" __declspec(naked) void __stdcall
-ClrCaptureContext(__out PCONTEXT ctx)
+ClrCaptureContext(_Out_ PCONTEXT ctx)
 {
     __asm {
         push ebx;
