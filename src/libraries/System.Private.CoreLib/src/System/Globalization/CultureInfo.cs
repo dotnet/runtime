@@ -580,6 +580,8 @@ namespace System.Globalization
         /// </summary>
         internal string SortName => _sortName ??= _cultureData.SortName;
 
+        internal string? InteropName => _cultureData.InteropName;
+
         public string IetfLanguageTag =>
                 // special case the compatibility cultures
                 Name switch

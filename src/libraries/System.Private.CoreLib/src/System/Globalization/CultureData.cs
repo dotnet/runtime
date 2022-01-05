@@ -413,6 +413,8 @@ namespace System.Globalization
         private static volatile Dictionary<string, CultureData>? s_cachedRegions;
         private static volatile Dictionary<string, string>? s_regionNames;
 
+        internal string? InteropName => _sWindowsName;
+
         internal static CultureData? GetCultureDataForRegion(string? cultureName, bool useUserOverride)
         {
             // First do a shortcut for Invariant
