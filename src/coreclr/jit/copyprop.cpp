@@ -192,11 +192,6 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
             continue;
         }
 
-        if (newLclDefNode->gtFlags & GTF_VAR_CAST)
-        {
-            continue;
-        }
-
         if ((gsShadowVarInfo != nullptr) && newLclVarDsc->lvIsParam &&
             (gsShadowVarInfo[newLclNum].shadowCopy == lclNum))
         {
