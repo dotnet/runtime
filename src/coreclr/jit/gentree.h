@@ -4729,10 +4729,11 @@ struct GenTreeCall final : public GenTree
 
     void ResetArgInfo();
 
-    GenTreeCallFlags     gtCallMoreFlags;  // in addition to gtFlags
-    gtCallTypes          gtCallType : 3;   // value from the gtCallTypes enumeration
-    var_types            gtReturnType : 5; // exact return type
-    CORINFO_CLASS_HANDLE gtRetClsHnd;      // The return type handle of the call if it is a struct; always available
+    GenTreeCallFlags     gtCallMoreFlags;    // in addition to gtFlags
+    gtCallTypes          gtCallType : 3;     // value from the gtCallTypes enumeration
+    var_types            gtReturnType : 5;   // exact return type
+    CORINFO_CLASS_HANDLE gtRetClsHnd;        // The return type handle of the call if it is a struct; always available
+    void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
 
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
@@ -4741,7 +4742,7 @@ struct GenTreeCall final : public GenTree
         InlineCandidateInfo*                  gtInlineCandidateInfo;
         GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
         ClassProfileCandidateInfo*            gtClassProfileCandidateInfo;
-        void*                                 gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
+
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
