@@ -293,6 +293,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
+    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -306,7 +308,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        unsigned initBlockUnrollLimit = INITBLK_UNROLL_LIMIT;
+
+#ifdef TARGET_ARM64
+        if (isDstAddrLocal)
+        {
+            // Since dstAddr points to the stack CodeGen can use more optimal
+            // quad-word store SIMD instructions for InitBlock.
+            initBlockUnrollLimit = INITBLK_LCL_UNROLL_LIMIT;
+        }
+#endif
+
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= initBlockUnrollLimit) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
