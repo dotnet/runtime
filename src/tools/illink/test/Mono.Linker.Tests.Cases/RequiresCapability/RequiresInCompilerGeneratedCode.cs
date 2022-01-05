@@ -789,6 +789,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction<TUnknown> ();
 
 				[ExpectedWarning ("IL2087", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2087", ProducedBy = ProducedBy.Trimmer)]
 				void LocalFunction<TSecond> ()
 				{
 					typeof (TUnknown).RequiresPublicMethods ();
@@ -1259,6 +1260,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				MethodWithRequires ();
 			}
 
+			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
