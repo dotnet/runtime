@@ -197,7 +197,7 @@ declare type DotnetModuleConfig = {
     onConfigLoaded?: () => void;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
-} & EmscriptenModule;
+} & Partial<EmscriptenModule>;
 declare type DotnetModuleConfigImports = {
     require?: (name: string) => any;
     fetch?: (url: string) => Promise<Response>;
