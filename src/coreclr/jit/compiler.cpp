@@ -2362,6 +2362,11 @@ void Compiler::compSetProcessor()
 #endif // TARGET_AMD64
     }
 
+    if(!JitConfig.EnableSHA())
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_SHA);
+    }
+
 #endif // TARGET_XARCH
 #if defined(TARGET_ARM64)
     if (JitConfig.EnableHWIntrinsic())
