@@ -18071,7 +18071,15 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
     assert(op1->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
 
     assert(op2 != nullptr);
-    assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
+
+    if ((op == GT_LSH) || (op == GT_RSH) || (op == GT_RSZ))
+    {
+        assert(op2->TypeIs(TYP_INT));
+    }
+    else
+    {
+        assert(op2->TypeIs(type, simdBaseType, genActualType(simdBaseType)));
+    }
 
     NamedIntrinsic       intrinsic = NI_Illegal;
     CORINFO_CLASS_HANDLE clsHnd    = gtGetStructHandleForSIMD(type, simdBaseJitType);

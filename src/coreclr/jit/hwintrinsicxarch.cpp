@@ -1472,6 +1472,18 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 loadIntrinsic = NI_SSE41_LoadAlignedVector128NonTemporal;
             }
 
+            // float and double don't have actual instructions for non-temporal loads
+            // so we'll just use the equivalent integer instruction instead.
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseJitType = CORINFO_TYPE_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+
             retNode =
                 gtNewSimdHWIntrinsicNode(retType, op1, loadIntrinsic, simdBaseJitType, simdSize);
             break;
@@ -1503,6 +1515,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 2)
             {
+                op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
+                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
                 op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
@@ -1714,9 +1728,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            if (varTypeIsByte(simdBaseType))
+            if (varTypeIsByte(simdBaseType) || varTypeIsLong(simdBaseType))
             {
-                // byte and sbyte would require more work to support
+                // byte, sbyte, long, and ulong would require more work to support
                 break;
             }
 
@@ -1867,6 +1881,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
+                op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
+                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
                 op2 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 

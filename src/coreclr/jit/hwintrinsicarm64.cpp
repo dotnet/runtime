@@ -1198,6 +1198,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 2)
             {
+                op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
+                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
                 op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 
@@ -1468,6 +1470,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
+                op3 = gtNewIconNode(genTypeSize(simdBaseType), op2->TypeGet());
+                op2 = gtNewOperNode(GT_MUL, op2->TypeGet(), op2, op3);
                 op2 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
             }
 

@@ -369,7 +369,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (byte*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (byte*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -424,7 +424,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (double*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (double*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -451,7 +451,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (short*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (short*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -490,7 +490,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (int*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (int*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -521,7 +521,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (long*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (long*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -548,7 +548,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (nint*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (nint*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 if (Environment.Is64BitProcess)
                 {
@@ -589,7 +589,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (nuint*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (nuint*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 if (Environment.Is64BitProcess)
                 {
@@ -630,7 +630,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (sbyte*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (sbyte*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -685,7 +685,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (float*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (float*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -716,7 +716,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (ushort*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (ushort*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -755,7 +755,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (uint*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (uint*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -786,7 +786,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (ulong*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (ulong*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -813,7 +813,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (byte*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (byte*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -868,7 +868,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (double*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (double*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -895,7 +895,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (short*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (short*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -934,7 +934,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (int*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (int*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -965,7 +965,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (long*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (long*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -992,7 +992,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (nint*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (nint*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 if (Environment.Is64BitProcess)
                 {
@@ -1033,7 +1033,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (nuint*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (nuint*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 if (Environment.Is64BitProcess)
                 {
@@ -1074,7 +1074,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (sbyte*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (sbyte*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -1129,7 +1129,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (float*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (float*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -1160,7 +1160,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (ushort*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (ushort*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -1199,7 +1199,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (uint*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (uint*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
@@ -1230,7 +1230,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             try
             {
-                value = (ulong*)NativeMemory.AlignedAlloc(byteCount: 16, alignment: 16);
+                value = (ulong*)NativeMemory.AlignedAlloc(byteCount: 32, alignment: 32);
 
                 value[0] = 0;
                 value[1] = 1;
