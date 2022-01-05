@@ -10,12 +10,6 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class FileLoadExceptionContext
     {
-        public FileLoadExceptionContext(FileConfigurationProvider provider, Exception exception)
-        {
-            Provider = provider;
-            Exception = exception;
-        }
-
         /// <summary>
         /// The <see cref="FileConfigurationProvider"/> that caused the exception.
         /// </summary>

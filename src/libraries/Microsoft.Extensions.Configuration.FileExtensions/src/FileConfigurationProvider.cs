@@ -136,7 +136,11 @@ namespace Microsoft.Extensions.Configuration
             bool ignoreException = false;
             if (Source.OnLoadException != null)
             {
-                var exceptionContext = new FileLoadExceptionContext(this, info.SourceException);
+                var exceptionContext = new FileLoadExceptionContext
+                {
+                    Provider = this,
+                    Exception = info.SourceException
+                };
                 Source.OnLoadException.Invoke(exceptionContext);
                 ignoreException = exceptionContext.Ignore;
             }
