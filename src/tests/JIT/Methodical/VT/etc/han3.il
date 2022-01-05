@@ -13,7 +13,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module han3.exe
 .namespace JitTest
 {
   .class value private auto ansi sealed Ring

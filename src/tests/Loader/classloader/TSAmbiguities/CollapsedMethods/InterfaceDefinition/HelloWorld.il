@@ -23,7 +23,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module HelloWorld.exe
 // MVID: {CA3A864B-A75E-4A75-9454-0BEF07F1FCF4}
 .imagebase 0x00400000
 .file alignment 0x00000200

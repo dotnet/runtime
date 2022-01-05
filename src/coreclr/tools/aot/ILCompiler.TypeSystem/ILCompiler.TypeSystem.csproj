@@ -9,6 +9,8 @@
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDiaSymReaderUse Condition="'$(DotNetBuildFromSource)' != 'true'">true</EnableDiaSymReaderUse>
+    <DefineConstants Condition="'$(EnableDiaSymReaderUse)' != 'true'">$(DefineConstants);DISABLE_UNMANAGED_PDB_SYMBOLS</DefineConstants>
 
     <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
          the same bits tests expect to see in artifacts/ilc. That way we never need to wonder which
@@ -24,18 +26,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.IO.MemoryMappedFiles">
-      <Version>4.3.0</Version>
-    </PackageReference>
     <PackageReference Include="System.Reflection.Metadata">
       <Version>$(SystemReflectionMetadataVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DiaSymReader">
+    <PackageReference Condition = "'$(EnableDiaSymReaderUse)' == 'true'" Include="Microsoft.DiaSymReader">
       <Version>1.3.0</Version>
     </PackageReference>
   </ItemGroup>
-
   <ItemGroup>
+    <Compile Include="..\..\Common\TypeSystem\Common\ArrayMethod.Diagnostic.cs">
+      <Link>TypeSystem\Common\ArrayMethod.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\ArrayType.Canon.cs">
       <Link>TypeSystem\Canon\ArrayType.Canon.cs</Link>
     </Compile>
@@ -44,6 +45,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.Diagnostic.cs">
+      <Link>TypeSystem\Canon\CanonTypes.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.Interop.cs">
       <Link>TypeSystem\Canon\CanonTypes.Interop.cs</Link>
@@ -96,9 +100,6 @@
     <Compile Include="..\..\Common\TypeSystem\Canon\TypeSystemContext.Canon.cs">
       <Link>TypeSystem\Canon\TypeSystemContext.Canon.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Aot\TargetDetails.Aot.cs">
-      <Link>TypeSystem\Aot\TargetDetails.Aot.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\CodeGen\FieldDesc.CodeGen.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.CodeGen.cs</Link>
     </Compile>
@@ -117,17 +118,26 @@
     <Compile Include="..\..\Common\TypeSystem\Common\AlignmentHelper.cs">
       <Link>Utilities\AlignmentHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs">
+      <Link>Utilities\ArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\CastingHelper.cs">
       <Link>TypeSystem\Common\CastingHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ConstructedTypeRewritingHelpers.cs">
       <Link>TypeSystem\Common\ConstructedTypeRewritingHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\ExplicitLayoutValidator.cs">
+      <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\FunctionPointerType.cs">
       <Link>TypeSystem\Common\FunctionPointerType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\IAssemblyDesc.cs">
       <Link>TypeSystem\Common\IAssemblyDesc.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\IModuleResolver.cs">
+      <Link>TypeSystem\Common\IModuleResolver.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Instantiation.cs">
       <Link>TypeSystem\Common\Instantiation.cs</Link>
@@ -156,32 +166,29 @@
     <Compile Include="..\..\Common\TypeSystem\Common\ThrowHelper.Common.cs">
       <Link>TypeSystem\Common\ThrowHelper.Common.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
+      <Link>TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameFormatter.cs">
       <Link>Utilities\CustomAttributeTypeNameFormatter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\CustomAttributeTypeNameParser.cs">
       <Link>Utilities\CustomAttributeTypeNameParser.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
-      <Link>Utilities\DebugNameFormatter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.Algorithm.cs">
       <Link>Utilities\GCPointerMap.Algorithm.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.Aot.cs">
-      <Link>Utilities\GCPointerMap.Aot.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\GCPointerMap.cs">
       <Link>Utilities\GCPointerMap.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\Utilities\DebugNameFormatter.cs">
+      <Link>Utilities\DebugNameFormatter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ArrayType.cs">
       <Link>TypeSystem\Common\ArrayType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs">
-      <Link>TypeSystem\Common\ArrayOfTRuntimeInterfacesAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\BaseTypeRuntimeInterfacesAlgorithm.cs</Link>
@@ -192,8 +199,8 @@
     <Compile Include="..\..\Common\TypeSystem\Common\GenericParameterDesc.cs">
       <Link>TypeSystem\Common\GenericParameterDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs">
-      <Link>TypeSystem\Common\GenericParameterDesc.Dummy.Diagnostic.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\Common\GenericParameterDesc.Diagnostic.cs">
+      <Link>TypeSystem\Common\GenericParameterDesc.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ExceptionStringID.cs">
       <Link>TypeSystem\Common\ExceptionStringID.cs</Link>
@@ -213,17 +220,17 @@
     <Compile Include="..\..\Common\TypeSystem\Common\FieldLayoutAlgorithm.cs">
       <Link>TypeSystem\Common\FieldLayoutAlgorithm.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\ExplicitLayoutValidator.cs">
-      <Link>TypeSystem\Common\ExplicitLayoutValidator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\IModuleResolver.cs">
-      <Link>TypeSystem\Common\IModuleResolver.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.cs">
       <Link>TypeSystem\Common\InstantiatedMethod.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedMethod.Diagnostic.cs">
+      <Link>TypeSystem\Common\InstantiatedMethod.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.cs">
       <Link>TypeSystem\Common\InstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.Diagnostic.cs">
+      <Link>TypeSystem\Common\InstantiatedType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.Interfaces.cs">
       <Link>TypeSystem\Common\InstantiatedType.Interfaces.cs</Link>
@@ -234,8 +241,14 @@
     <Compile Include="..\..\Common\TypeSystem\Common\LayoutInt.cs">
       <Link>TypeSystem\Common\LayoutInt.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\LinqPoison.cs">
+      <Link>TypeSystem\Common\LinqPoison.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MetadataType.cs">
       <Link>TypeSystem\Common\MetadataType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\DefType.Diagnostic.cs">
+      <Link>TypeSystem\Common\DefType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MetadataType.Interfaces.cs">
       <Link>TypeSystem\Common\MetadataType.Interfaces.cs</Link>
@@ -254,6 +267,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodForInstantiatedType.cs">
       <Link>TypeSystem\Common\MethodForInstantiatedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\MethodForInstantiatedType.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodForInstantiatedType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\ParameterizedType.cs">
       <Link>TypeSystem\Common\ParameterizedType.cs</Link>
@@ -285,17 +301,14 @@
     <Compile Include="..\..\Common\TypeSystem\Common\TypeHashingAlgorithms.cs">
       <Link>TypeSystem\Common\TypeHashingAlgorithms.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
+      <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemConstraintsHelpers.cs">
-      <Link>TypeSystem\Common\TypeSystemConstraintsHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs">
-      <Link>TypeSystem\Common\UniversalCanonLayoutAlgorithm.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\Utilities\ExceptionTypeNameFormatter.cs">
       <Link>Utilities\ExceptionTypeNameFormatter.cs</Link>
@@ -315,11 +328,14 @@
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.cs">
       <Link>TypeSystem\Common\MethodDelegator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\MethodDelegator.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDelegator.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.cs">
       <Link>TypeSystem\Common\MethodDesc.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs">
-      <Link>TypeSystem\Common\MethodDesc.Dummy.Diagnostic.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.Diagnostic.cs">
+      <Link>TypeSystem\Common\MethodDesc.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\MethodDesc.ToString.cs">
       <Link>TypeSystem\Common\MethodDesc.ToString.cs</Link>
@@ -338,9 +354,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\DefType.cs">
       <Link>TypeSystem\Common\DefType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Common\DefType.Dummy.Diagnostic.cs">
-      <Link>TypeSystem\Common\DefType.Dummy.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\DefType.FieldLayout.cs">
       <Link>TypeSystem\Common\DefType.FieldLayout.cs</Link>
@@ -402,7 +415,13 @@
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaGenericParameter.cs">
       <Link>Ecma\EcmaGenericParameter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaGenericParameter.Diagnostic.cs">
+      <Link>Ecma\EcmaGenericParameter.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaMethod.cs">
+      <Link>Ecma\EcmaMethod.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaMethod.Diagnostic.cs">
       <Link>Ecma\EcmaMethod.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaModule.cs">
@@ -413,6 +432,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.cs">
       <Link>Ecma\EcmaType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.Diagnostic.cs">
+      <Link>Ecma\EcmaType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaType.MethodImpls.cs">
       <Link>Ecma\EcmaType.MethodImpls.cs</Link>
@@ -429,62 +451,11 @@
     <Compile Include="..\..\Common\TypeSystem\Ecma\CachingMetadataStringDecoder.cs">
       <Link>Ecma\CachingMetadataStringDecoder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
-      <Link>IL\DelegateInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateThunks.Sorting.cs">
-      <Link>IL\Stubs\DelegateThunks.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.cs">
-      <Link>IL\Stubs\DynamicInvokeMethodThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\DynamicInvokeMethodThunk.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\EnumThunks.cs">
-      <Link>IL\Stubs\EnumThunks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\EnumThunks.Sorting.cs">
-      <Link>IL\Stubs\EnumThunks.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeLazyFixupField.cs">
-      <Link>IL\Stubs\PInvokeLazyFixupField.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeLazyFixupField.Sorting.cs">
-      <Link>IL\Stubs\PInvokeLazyFixupField.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
-      <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.Sorting.cs">
-      <Link>IL\Stubs\StructMarshallingThunk.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs">
-      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs">
-      <Link>IL\Stubs\ValueTypeGetFieldHelperMethodOverride.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\TypeSystemContext.DelegateInfo.cs">
-      <Link>IL\TypeSystemContext.DelegateInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\TypeSystemContext.DynamicInvoke.cs">
-      <Link>IL\TypeSystemContext.DynamicInvoke.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.cs">
-      <Link>IL\TypeSystemContext.GeneratedAssembly.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\TypeSystemContext.GeneratedAssembly.Sorting.cs">
-      <Link>IL\TypeSystemContext.GeneratedAssembly.Sorting.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\EcmaMethodIL.cs">
       <Link>IL\EcmaMethodIL.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\EcmaMethodIL.Symbols.cs">
       <Link>IL\EcmaMethodIL.Symbols.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs">
-      <Link>IL\HelperExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\MethodIL.cs">
       <Link>IL\MethodIL.cs</Link>
@@ -510,92 +481,20 @@
     <Compile Include="..\..\Common\TypeSystem\IL\ILOpcodeHelper.cs">
       <Link>IL\ILOpcodeHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\TypeSystemContext.EnumMethods.cs">
-      <Link>IL\TypeSystemContext.EnumMethods.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\TypeSystemContext.ValueTypeMethods.cs">
-      <Link>IL\TypeSystemContext.ValueTypeMethods.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.Sorting.cs">
-      <Link>TypeSystem\Interop\IL\InlineArrayType.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs">
-      <Link>Interop\IL\MarshalHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.Aot.cs">
-      <Link>Interop\IL\MarshalHelpers.Aot.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalUtils.cs">
-      <Link>Interop\IL\MarshalUtils.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs">
-      <Link>Interop\IL\Marshaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.Aot.cs">
-      <Link>Interop\IL\Marshaller.Aot.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.Sorting.cs">
-      <Link>TypeSystem\Interop\IL\NativeStructType.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeILEmitterConfiguration.cs">
-      <Link>Interop\IL\PInvokeILEmitterConfiguration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILEmitter.cs">
-      <Link>IL\Stubs\PInvokeILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs">
-      <Link>IL\Stubs\PInvokeILCodeStreams.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ILEmitter.cs">
+      <Link>IL\Stubs\ILEmitter.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Diagnostic.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Diagnostic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs">
       <Link>IL\Stubs\PInvokeTargetNativeMethod.Mangling.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ILEmitter.cs">
-      <Link>IL\Stubs\ILEmitter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DebuggerSteppingHelpers.cs">
-      <Link>IL\Stubs\DebuggerSteppingHelpers.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.cs">
-      <Link>IL\Stubs\CalliMarshallingMethodThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs">
-      <Link>IL\Stubs\CalliMarshallingMethodThunk.Mangling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\CalliMarshallingMethodThunk.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.cs">
-      <Link>IL\Stubs\DelegateMarshallingMethodThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs">
-      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Mangling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs">
-      <Link>IL\Stubs\DelegateMarshallingMethodThunk.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.cs">
-      <Link>IL\Stubs\ForwardDelegateCreationThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.Mangling.cs">
-      <Link>IL\Stubs\ForwardDelegateCreationThunk.Mangling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\ForwardDelegateCreationThunk.Sorting.cs">
-      <Link>IL\Stubs\ForwardDelegateCreationThunk.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\DelegateThunks.cs">
-      <Link>IL\Stubs\DelegateThunks.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.cs">
-      <Link>IL\Stubs\StructMarshallingThunk.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\StructMarshallingThunk.Mangling.cs">
-      <Link>IL\Stubs\StructMarshallingThunk.Mangling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.cs">
-      <Link>TypeSystem\Interop\IL\NativeStructType.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs">
+      <Link>IL\Stubs\PInvokeTargetNativeMethod.Sorting.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Serialization\FieldDesc.Serialization.cs">
       <Link>TypeSystem\CodeGen\FieldDesc.Serialization.cs</Link>
@@ -617,33 +516,6 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs">
       <Link>TypeSystem\Sorting\MethodForInstantiatedType.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\NativeStructType.Mangling.cs">
-      <Link>TypeSystem\Interop\IL\NativeStructType.Mangling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Mangling.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapper.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.Sorting.cs">
-      <Link>TypeSystem\Interop\IL\PInvokeDelegateWrapperConstructor.Sorting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\IL\InlineArrayType.cs">
-      <Link>TypeSystem\Interop\IL\InlineArrayType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs">
-      <Link>TypeSystem\Interop\InteropTypes.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\Interop\InteropStateManager.cs">
-      <Link>TypeSystem\Interop\InteropStateManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Interop\FieldDesc.Interop.cs">
       <Link>TypeSystem\Interop\FieldDesc.Interop.cs</Link>
@@ -678,12 +550,6 @@
     <Compile Include="..\..\Common\TypeSystem\Common\LocalVariableDefinition.cs">
       <Link>TypeSystem\Common\LocalVariableDefinition.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\CodeGen\INonEmittableType.cs">
-      <Link>TypeSystem\CodeGen\INonEmittableType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Common\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
-      <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
-    </Compile>
     <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs">
       <Link>TypeSystem\RuntimeDetermined\ArrayType.RuntimeDetermined.cs</Link>
     </Compile>
@@ -703,6 +569,9 @@
       <Link>TypeSystem\RuntimeDetermined\PointerType.RuntimeDetermined.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs">
+      <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Diagnostic.cs">
       <Link>TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\MethodForRuntimeDeterminedType.Sorting.cs">
@@ -725,6 +594,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Diagnostic.cs">
+      <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Diagnostic.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Sorting.cs">
       <Link>TypeSystem\RuntimeDetermined\RuntimeDeterminedType.Sorting.cs</Link>
@@ -771,6 +643,5 @@
     <Compile Include="..\..\Common\TypeSystem\Sorting\TypeSystemComparer.cs">
       <Link>TypeSystem\Sorting\TypeSystemComparer.cs</Link>
     </Compile>
-    <Compile Include="Utilities\UniqueTypeNameFormatter.cs" />
   </ItemGroup>
 </Project>

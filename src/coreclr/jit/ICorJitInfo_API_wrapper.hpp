@@ -12,12 +12,12 @@
 // clang-format off
 /**********************************************************************************/
 
-bool WrapICorJitInfo::isJitIntrinsic(
+bool WrapICorJitInfo::isIntrinsic(
           CORINFO_METHOD_HANDLE ftn)
 {
-    API_ENTER(isJitIntrinsic);
-    bool temp = wrapHnd->isJitIntrinsic(ftn);
-    API_LEAVE(isJitIntrinsic);
+    API_ENTER(isIntrinsic);
+    bool temp = wrapHnd->isIntrinsic(ftn);
+    API_LEAVE(isIntrinsic);
     return temp;
 }
 
@@ -188,16 +188,6 @@ void WrapICorJitInfo::expandRawHandleIntrinsic(
     API_ENTER(expandRawHandleIntrinsic);
     wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
     API_LEAVE(expandRawHandleIntrinsic);
-}
-
-CorInfoIntrinsics WrapICorJitInfo::getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand)
-{
-    API_ENTER(getIntrinsicID);
-    CorInfoIntrinsics temp = wrapHnd->getIntrinsicID(method, pMustExpand);
-    API_LEAVE(getIntrinsicID);
-    return temp;
 }
 
 bool WrapICorJitInfo::isIntrinsicType(
@@ -833,6 +823,15 @@ unsigned WrapICorJitInfo::getArrayRank(
     API_ENTER(getArrayRank);
     unsigned temp = wrapHnd->getArrayRank(cls);
     API_LEAVE(getArrayRank);
+    return temp;
+}
+
+CorInfoArrayIntrinsic WrapICorJitInfo::getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(getArrayIntrinsicID);
+    CorInfoArrayIntrinsic temp = wrapHnd->getArrayIntrinsicID(ftn);
+    API_LEAVE(getArrayIntrinsicID);
     return temp;
 }
 

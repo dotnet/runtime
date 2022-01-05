@@ -292,16 +292,6 @@ X509Stack* CryptoNative_X509StoreCtxGetSharedUntrusted(X509_STORE_CTX* ctx)
     return NULL;
 }
 
-X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx)
-{
-    if (ctx)
-    {
-        return X509_STORE_CTX_get0_cert(ctx);
-    }
-
-    return NULL;
-}
-
 int32_t CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx)
 {
     return (int32_t)X509_STORE_CTX_get_error(ctx);

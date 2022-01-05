@@ -30,7 +30,7 @@
 
 #define ALLOW_PARTIAL_SHARING TRUE
 //#define ALLOW_PARTIAL_SHARING FALSE
- 
+
 #if 0
 #define DEBUG(...) __VA_ARGS__
 #else
@@ -672,11 +672,11 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	case MONO_RGCTX_INFO_FIELD_OFFSET: {
 		ERROR_DECL (error);
 		MonoClassField *field = (MonoClassField *)data;
-		MonoType *inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (field->parent), context, error);
+		MonoType *inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (m_field_get_parent (field)), context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 		MonoClass *inflated_class = mono_class_from_mono_type_internal (inflated_type);
-		int i = field - m_class_get_fields (field->parent);
+		int i = field - m_class_get_fields (m_field_get_parent (field));
 		gpointer dummy = NULL;
 
 		mono_metadata_free_type (inflated_type);
@@ -767,7 +767,7 @@ free_inflated_info (MonoRgctxInfoType info_type, gpointer info)
 
 static MonoRuntimeGenericContextInfoTemplate
 class_get_rgctx_template_oti (MonoClass *klass, int type_argc, guint32 slot, gboolean temporary, gboolean shared, gboolean *do_free);
- 
+
 static MonoClass*
 class_uninstantiated (MonoClass *klass)
 {
@@ -2316,7 +2316,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		if (mono_class_field_is_special_static (field)) {
 			gpointer addr;
 
-			mono_class_vtable_checked (field->parent, error);
+			mono_class_vtable_checked (m_field_get_parent (field), error);
 			mono_error_assert_ok (error);
 
 			/* Return the TLS offset */
@@ -2326,7 +2326,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		}
 
 		/* The value is offset by 1 */
-		if (m_class_is_valuetype (field->parent) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
+		if (m_class_is_valuetype (m_field_get_parent (field)) && !(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			return GUINT_TO_POINTER (field->offset - MONO_ABI_SIZEOF (MonoObject) + 1);
 		else
 			return GUINT_TO_POINTER (field->offset + 1);
@@ -2503,7 +2503,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {
 				sig = mono_method_signature_internal (method);
-				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji)); 
+				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji));
 
 				addr = mini_get_gsharedvt_wrapper (TRUE, jinfo_get_ftnptr (callee_ji), sig, gsig, -1, FALSE);
 
@@ -2541,7 +2541,7 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 					align = sizeof (gpointer);
 				if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
 					align = 2 * sizeof (gpointer);
-			
+
 				// FIXME: Do the same things as alloc_stack_slots
 				offset += align - 1;
 				offset &= ~(align - 1);
@@ -3528,7 +3528,7 @@ mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_va
 
 		g_assert (inflated->declaring);
 
-#if FALSE
+#if 0
 		if (inflated->declaring->is_generic) {
 			if (has_constraints (mono_method_get_generic_container (inflated->declaring))) {
 			}
@@ -3891,7 +3891,7 @@ mini_type_stack_size_full (MonoType *t, guint32 *align, gboolean pinvoke)
 			size = mini_type_stack_size (t, NULL);
 		}
 	}
-	
+
 	return size;
 }
 

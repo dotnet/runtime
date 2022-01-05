@@ -13,13 +13,12 @@
 {
 }
 .assembly extern common {}
-.assembly test
+.assembly 'deadEHregionacrossBB'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module test.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512

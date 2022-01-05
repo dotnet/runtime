@@ -30,7 +30,7 @@
 #include <mono/utils/mono-logger-internals.h>
 
 #if HOST_WIN32 || HOST_WASM
-#include "../zlib/zlib.h"
+#include <external/zlib/zlib.h>
 #elif HAVE_SYS_ZLIB
 #include <zlib.h>
 #endif
@@ -85,7 +85,7 @@ get_pe_debug_info (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 		debug_dir.size_of_data    = read32(data + 16);
 		debug_dir.address         = read32(data + 20);
 		debug_dir.pointer         = read32(data + 24);
-		
+
 		if (debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir.major_version == 0x100 && debug_dir.minor_version == 0x504d) {
 			/* This is a 'CODEVIEW' debug directory */
 			CodeviewDebugDirectory dir;
@@ -593,7 +593,7 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 	return n_seqs;
 }
 
-gboolean 
+gboolean
 mono_ppdb_get_seq_points_enc (MonoDebugMethodInfo *minfo, MonoPPDBFile *ppdb_file, int idx, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points)
 {
 	MonoMethod *method = minfo->method;
@@ -610,7 +610,7 @@ mono_ppdb_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrAr
 	MonoMethod *method = minfo->method;
 
 	int method_idx = mono_metadata_token_index (method->token);
-	
+
 	mono_ppdb_get_seq_points_internal (image, ppdb, method, method_idx, source_file, source_file_list, source_files, seq_points, n_seq_points);
 }
 
@@ -622,7 +622,7 @@ mono_ppdb_lookup_locals_internal (MonoImage *image, int method_idx)
 
 	guint32 cols [MONO_LOCALSCOPE_SIZE];
 	guint32 locals_cols [MONO_LOCALVARIABLE_SIZE];
-	
+
 	int i, lindex, sindex, locals_idx, locals_end_idx, nscopes, start_scope_idx, scope_idx;
 
 	start_scope_idx = mono_metadata_localscope_from_methoddef (image, method_idx);
@@ -733,7 +733,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 
 	method_idx = mono_metadata_token_index (method->token);
 
-	
+
 	return mono_ppdb_lookup_locals_internal (image, method_idx);
 }
 

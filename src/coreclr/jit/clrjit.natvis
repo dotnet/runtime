@@ -22,6 +22,7 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
 
   <Type Name="BasicBlock">
     <DisplayString Condition="bbJumpKind==BBJ_COND || bbJumpKind==BBJ_ALWAYS || bbJumpKind==BBJ_LEAVE || bbJumpKind==BBJ_EHCATCHRET || bbJumpKind==BBJ_CALLFINALLY">BB{bbNum,d}->BB{bbJumpDest->bbNum,d}; {bbJumpKind,en}</DisplayString>
+    <DisplayString Condition="bbJumpKind==BBJ_SWITCH">BB{bbNum,d}; {bbJumpKind,en}; {bbJumpSwt->bbsCount} cases</DisplayString>
     <DisplayString>BB{bbNum,d}; {bbJumpKind,en}</DisplayString>
   </Type>
 

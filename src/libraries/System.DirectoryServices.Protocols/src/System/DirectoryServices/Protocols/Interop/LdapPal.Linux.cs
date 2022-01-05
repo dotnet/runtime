@@ -111,7 +111,7 @@ namespace System.DirectoryServices.Protocols
                 passwordPtr = LdapPal.StringToPtr(passwd);
                 BerVal passwordBerval = new BerVal
                 {
-                    bv_len = passwd.Length,
+                    bv_len = passwd?.Length ?? 0,
                     bv_val = passwordPtr,
                 };
 

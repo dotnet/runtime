@@ -524,14 +524,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildLclHeap(tree);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-
+        case GT_BOUNDS_CHECK:
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
             srcCount = BuildOperandUses(tree->AsBoundsChk()->GetIndex());
@@ -1960,54 +1953,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             break;
 
         case SIMDIntrinsicCast:
-            break;
-
-        case SIMDIntrinsicConvertToSingle:
-            if (simdTree->GetSimdBaseType() == TYP_UINT)
-            {
-                // We need an internal register different from targetReg.
-                setInternalRegsDelayFree = true;
-                buildInternalFloatRegisterDefForNode(simdTree);
-                buildInternalFloatRegisterDefForNode(simdTree);
-                // We also need an integer register.
-                buildInternalIntRegisterDefForNode(simdTree);
-            }
-            break;
-
-        case SIMDIntrinsicConvertToInt32:
-            break;
-
-        case SIMDIntrinsicConvertToInt64:
-            // We need an internal register different from targetReg.
-            setInternalRegsDelayFree = true;
-            buildInternalFloatRegisterDefForNode(simdTree);
-            if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
-            {
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            // We also need an integer register.
-            buildInternalIntRegisterDefForNode(simdTree);
-            break;
-
-        case SIMDIntrinsicConvertToDouble:
-            // We need an internal register different from targetReg.
-            setInternalRegsDelayFree = true;
-            buildInternalFloatRegisterDefForNode(simdTree);
-#ifdef TARGET_X86
-            if (simdTree->GetSimdBaseType() == TYP_LONG)
-            {
-                buildInternalFloatRegisterDefForNode(simdTree);
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            else
-#endif
-                if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) ||
-                    (simdTree->GetSimdBaseType() == TYP_ULONG))
-            {
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            // We also need an integer register.
-            buildInternalIntRegisterDefForNode(simdTree);
             break;
 
         case SIMDIntrinsicShuffleSSE2:

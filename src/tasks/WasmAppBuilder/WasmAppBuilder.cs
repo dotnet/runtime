@@ -373,9 +373,9 @@ public class WasmAppBuilder : Task
 
             return true;
         }
-        catch (IOException ioex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ioex.Message}");
+            throw new LogAsErrorException($"{label} Failed to copy {src} to {dst} because {ex.Message}");
         }
     }
 }

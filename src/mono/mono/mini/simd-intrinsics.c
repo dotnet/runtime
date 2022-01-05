@@ -73,7 +73,7 @@ void
 mono_simd_intrinsics_init (void)
 {
 	register_size = 16;
-#if FALSE
+#if 0
 	if ((mini_get_cpu_features () & MONO_CPU_X86_AVX) != 0)
 		register_size = 32;
 #endif

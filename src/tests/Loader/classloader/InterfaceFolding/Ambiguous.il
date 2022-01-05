@@ -23,7 +23,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Ambiguous.exe
 // MVID: {7CFDE9D8-A5B3-4D83-86E7-E48FE93FEB09}
 .imagebase 0x00400000
 .file alignment 0x00000200

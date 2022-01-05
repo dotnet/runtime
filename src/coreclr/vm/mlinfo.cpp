@@ -2180,7 +2180,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
-                UINT managedSize = m_pMT->GetAlignedNumInstanceFieldBytes();
+                UINT managedSize = m_pMT->GetNumInstanceFieldBytes();
                 UINT  nativeSize = 0;
 
                 if ( nativeSize > 0xfff0 ||

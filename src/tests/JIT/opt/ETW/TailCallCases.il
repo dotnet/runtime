@@ -30,7 +30,6 @@
   .hash algorithm 0x00008004
   .ver 4:0:20225:0
 }
-.module TailCallCases.exe
 // MVID: {E63A46BE-A0B6-41DA-82A6-56B3E895EC8C}
 .imagebase 0x00400000
 .file alignment 0x00000200

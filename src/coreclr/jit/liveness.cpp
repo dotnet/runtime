@@ -2042,16 +2042,10 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_STOREIND:
-            case GT_ARR_BOUNDS_CHECK:
+            case GT_BOUNDS_CHECK:
             case GT_STORE_OBJ:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
-#if defined(FEATURE_SIMD)
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
             case GT_JCMP:
             case GT_CMP:
             case GT_JCC:

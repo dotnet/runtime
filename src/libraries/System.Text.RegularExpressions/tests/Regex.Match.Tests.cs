@@ -279,6 +279,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (".[abc]", "xYZAbC", RegexOptions.IgnoreCase, 0, 6, true, "ZA");
                 yield return (".[abc]", "xYzXyZx", RegexOptions.IgnoreCase, 0, 6, false, "");
 
+                // Sets containing characters that differ by a bit
+                yield return ("123[Aa]", "123a", RegexOptions.None, 0, 4, true, "123a");
+                yield return ("123[0p]", "123p", RegexOptions.None, 0, 4, true, "123p");
+                yield return ("123[Aa@]", "123@", RegexOptions.None, 0, 4, true, "123@");
+
                 // "\D+"
                 yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
 
@@ -1516,7 +1521,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [OuterLoop("Can take over 10 seconds")]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, RegexOptions options, string input, int pattern_repetition, int input_repetition)
         {

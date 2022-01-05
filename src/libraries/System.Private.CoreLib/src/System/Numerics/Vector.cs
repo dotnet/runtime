@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
@@ -311,17 +312,19 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector<double> ConvertToDouble(Vector<long> value)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int i = 0; i < Vector<double>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var element = (double)value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{UInt64}" /> to a <see cref="Vector{Double}" />.</summary>
@@ -329,17 +332,19 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int i = 0; i < Vector<double>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var element = (double)value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" />.</summary>
@@ -398,17 +403,19 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector<float> ConvertToSingle(Vector<uint> value)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int i = 0; i < Vector<float>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var element = (float)value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                Debug.Assert(Vector<float>.Count == Vector256<float>.Count);
+                return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(Vector<float>.Count == Vector128<float>.Count);
+                return Vector128.ConvertToSingle(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" />.</summary>
