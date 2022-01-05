@@ -89,6 +89,7 @@ static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
+static bool IsSHAInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
