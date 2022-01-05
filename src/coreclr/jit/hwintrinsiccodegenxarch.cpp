@@ -2026,7 +2026,8 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
     genProduceReg(node);
 }
 
-void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node) {
+void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node)
+{
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     regNumber      targetReg   = node->GetRegNum();
     var_types      targetType  = node->TypeGet();
@@ -2048,7 +2049,7 @@ void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node) {
         case NI_Sha256_TwoRounds:
         {
             // TODO
-            //assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+            // assert((targetType == TYP_INT) || (targetType == TYP_LONG));
             genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()));
             break;
         }

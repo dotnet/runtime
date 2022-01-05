@@ -2362,7 +2362,7 @@ void Compiler::compSetProcessor()
 #endif // TARGET_AMD64
     }
 
-    if(!JitConfig.EnableSHA())
+    if (!JitConfig.EnableSHA())
     {
         instructionSetFlags.RemoveInstructionSet(InstructionSet_SHA);
     }
