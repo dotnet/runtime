@@ -14,6 +14,8 @@
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    
+    <!-- Avoids having to include InteropStateManager.cs to get files in Common/TypeSystem/Interop/IL building -->
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
