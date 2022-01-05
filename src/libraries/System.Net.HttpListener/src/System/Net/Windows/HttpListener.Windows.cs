@@ -508,7 +508,7 @@ namespace System.Net
                 uint size = 4096;
                 ulong requestId = 0;
                 memoryBlob = new SyncRequestContext((int)size);
-                HttpListenerSession session = _currentSession;
+                HttpListenerSession? session = _currentSession;
 
                 // Because there is no synchronization, the listener can be stopped or closed while the method is executing,
                 // resulting in a null session
@@ -625,7 +625,7 @@ namespace System.Net
                     throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "Start()"));
                 }
                 
-                HttpListenerSession session = _currentSession;
+                HttpListenerSession? session = _currentSession;
 
                 // Because there is no synchronization, the listener can be stopped or closed while the method is executing,
                 // resulting in a null session
