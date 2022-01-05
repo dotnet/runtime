@@ -1101,10 +1101,16 @@ namespace System.Text.RegularExpressions
                     case RegexCode.UpdateBumpalong:
                         // UpdateBumpalong should only exist in the code stream at such a point where the root
                         // of the backtracking stack contains the runtextpos from the start of this Go call. Replace
-                        // that tracking value with the current runtextpos value.
-                        runtrack![runtrack.Length - 1] = runtextpos;
-                        advance = 0;
-                        continue;
+                        // that tracking value with the current runtextpos value if it's greater.
+                        {
+                            ref int trackingpos = ref runtrack![runtrack.Length - 1];
+                            if (trackingpos < runtextpos)
+                            {
+                                trackingpos = runtextpos;
+                            }
+                            advance = 0;
+                            continue;
+                        }
 
                     default:
                         Debug.Fail($"Unimplemented state: {_operator:X8}");
