@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <Target Name="InstallNpmPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build">
+    <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)"/>
     <Exec Command="npm install $(MicrosoftNetCoreAppRuntimePackNativeDir) --no-save" WorkingDirectory="$(MSBuildProjectDirectory)"/>
   </Target>
 

@@ -1,4 +1,5 @@
 {
+  "name": "browser-webpack",
   "private": true,
   "license": "MIT",
   "scripts": {
