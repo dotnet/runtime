@@ -1309,6 +1309,8 @@ void EEJitManager::SetCpuInfo()
     //      BMI1 - EBX bit 3
     //   CORJIT_FLAG_USE_BMI2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      BMI2 - EBX bit 8
+    //   CORJIT_FLAG_USE_SHA if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+    //      SHA - EBX bit 29
     //   CORJIT_FLAG_USE_LZCNT if the following feature bits are set (input EAX of 80000001H)
     //      LZCNT - ECX bit 5
     // synchronously updating VM and JIT.
@@ -1421,6 +1423,11 @@ void EEJitManager::SetCpuInfo()
             if ((cpuidInfo[EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
                 CPUCompileFlags.Set(InstructionSet_BMI2);
+            }
+
+            if ((cpuidInfo[EBX] & (1 << 29)) != 0)                                                          // SHA
+            {
+                CPUCompileFlags.Set(InstructionSet_SHA);
             }
         }
     }

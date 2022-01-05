@@ -41,6 +41,9 @@ instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
 instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
+instructionset     ,X86   ,          ,        ,   ,Sha1     ,
+instructionset     ,X86   ,          ,        ,   ,Sha256   ,
+instructionset     ,X86   ,Sha       ,        ,26 ,SHA      ,sha
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -59,6 +62,7 @@ instructionset64bit,X86   ,LZCNT
 instructionset64bit,X86   ,PCLMULQDQ
 instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
+instructionset64bit,X86   ,SHA
 
 implication        ,X86   ,SSE       ,X86Base
 implication        ,X86   ,SSE2      ,SSE
@@ -75,6 +79,8 @@ implication        ,X86   ,FMA       ,AVX
 implication        ,X86   ,PCLMULQDQ ,SSE2
 implication        ,X86   ,POPCNT    ,SSE42
 implication        ,X86   ,Vector256 ,AVX
+implication        ,X86   ,Sha1      ,SHA
+implication        ,X86   ,Sha256    ,SHA
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64

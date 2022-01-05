@@ -303,6 +303,7 @@ CONFIG_INTEGER(EnableFMA, W("EnableFMA"), 1)                 // Enable FMA
 CONFIG_INTEGER(EnableAES, W("EnableAES"), 1)                 // Enable AES
 CONFIG_INTEGER(EnableBMI1, W("EnableBMI1"), 1)               // Enable BMI1
 CONFIG_INTEGER(EnableBMI2, W("EnableBMI2"), 1)               // Enable BMI2
+CONFIG_INTEGER(EnableSHA, W("EnableSHA"), 1)                 // Enable SHA
 CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)             // Enable AES
 CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1)     // Enable PCLMULQDQ
 CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT

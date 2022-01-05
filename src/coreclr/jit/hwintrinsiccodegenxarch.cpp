@@ -397,6 +397,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_BMI2_X64:
             genBMI1OrBMI2Intrinsic(node);
             break;
+        case InstructionSet_SHA:
+            genSHAIntrinsic(node);
+            break;
         case InstructionSet_FMA:
             genFMAIntrinsic(node);
             break;
@@ -2019,6 +2022,22 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
     }
+
+    genProduceReg(node);
+}
+
+void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node) {
+        NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    regNumber      targetReg   = node->GetRegNum();
+    var_types      targetType  = node->TypeGet();
+    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+    emitter*       emit        = GetEmitter();
+
+    assert(targetReg != REG_NA);
+
+    // TODO: Generate SHA Intrinsic
+
+    genConsumeMultiOpOperands(node);
 
     genProduceReg(node);
 }

@@ -88,6 +88,10 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_Vector256: return null;
                             case InstructionSet.X64_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_AVXVNNI_X64: return ReadyToRunInstructionSet.AvxVnni;
+                            case InstructionSet.X64_Sha1: return null;
+                            case InstructionSet.X64_Sha256: return null;
+                            case InstructionSet.X64_SHA: return ReadyToRunInstructionSet.Sha;
+                            case InstructionSet.X64_SHA_X64: return ReadyToRunInstructionSet.Sha;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -133,6 +137,10 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_Vector256: return null;
                             case InstructionSet.X86_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X86_AVXVNNI_X64: return null;
+                            case InstructionSet.X86_Sha1: return null;
+                            case InstructionSet.X86_Sha256: return null;
+                            case InstructionSet.X86_SHA: return ReadyToRunInstructionSet.Sha;
+                            case InstructionSet.X86_SHA_X64: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }
