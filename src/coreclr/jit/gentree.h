@@ -4730,6 +4730,8 @@ struct GenTreeCall final : public GenTree
     void ResetArgInfo();
 
     GenTreeCallFlags     gtCallMoreFlags;    // in addition to gtFlags
+    gtCallTypes          gtCallType : 3;     // value from the gtCallTypes enumeration
+    var_types            gtReturnType : 5;   // exact return type
     CORINFO_CLASS_HANDLE gtRetClsHnd;        // The return type handle of the call if it is a struct; always available
     void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
 
@@ -4757,9 +4759,6 @@ struct GenTreeCall final : public GenTree
     // Call target lookup info for method call from a Ready To Run module
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
-
-    gtCallTypes gtCallType : 3;   // value from the gtCallTypes enumeration
-    var_types   gtReturnType : 5; // exact return type
 
 #if defined(DEBUG) || defined(INLINE_DATA)
     // For non-inline candidates, track the first observation
