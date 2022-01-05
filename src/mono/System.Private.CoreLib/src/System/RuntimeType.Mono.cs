@@ -1347,7 +1347,7 @@ namespace System
             MakeGenericType(this, instantiationRuntimeType, ObjectHandleOnStack.Create(ref ret));
             if (ret == null)
                 throw new TypeLoadException();
-            return ret;
+            return ret!;
         }
 
         public override int GenericParameterPosition
@@ -1986,14 +1986,13 @@ namespace System
         private static extern void MakeGenericType(Type gt, Type[] types, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetMethodsByName_native(QCallTypeHandle type, IntPtr namePtr, BindingFlags bindingAttr, MemberListType listType);
+        internal extern IntPtr GetMethodsByName_native(IntPtr namePtr, BindingFlags bindingAttr, MemberListType listType);
 
         internal RuntimeMethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
         {
-            var this_type = this;
             var refh = new RuntimeTypeHandle(reflectedType);
             using (var namePtr = new Mono.SafeStringMarshal(name))
-            using (var h = new Mono.SafeGPtrArrayHandle(GetMethodsByName_native(new QCallTypeHandle(ref this_type), namePtr.Value, bindingAttr, listType)))
+            using (var h = new Mono.SafeGPtrArrayHandle(GetMethodsByName_native(namePtr.Value, bindingAttr, listType)))
             {
                 int n = h.Length;
                 var a = new RuntimeMethodInfo[n];
@@ -2065,10 +2064,9 @@ namespace System
                 throw new ArgumentException("Argument must be an interface.", nameof(ifaceType));
             if (IsInterface)
                 throw new ArgumentException("'this' type cannot be an interface itself");
-            var this_type = this;
             res.TargetType = this;
             res.InterfaceType = ifaceType;
-            GetInterfaceMapData(new QCallTypeHandle(ref this_type), new QCallTypeHandle(ref ifaceRtType), out res.TargetMethods, out res.InterfaceMethods);
+            GetInterfaceMapData(this, ifaceType, out res.TargetMethods, out res.InterfaceMethods);
             if (res.TargetMethods == null)
                 throw new ArgumentException("Interface not found", nameof(ifaceType));
 
@@ -2076,7 +2074,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetInterfaceMapData(QCallTypeHandle t, QCallTypeHandle iface, out MethodInfo[] targets, out MethodInfo[] methods);
+        private static extern void GetInterfaceMapData(Type t, Type iface, out MethodInfo[] targets, out MethodInfo[] methods);
 
         public override Guid GUID
         {
@@ -2090,13 +2088,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetPacking(QCallTypeHandle type, out int packing, out int size);
-
-        internal void GetPacking(out int packing, out int size)
-        {
-            var this_type = this;
-            GetPacking(new QCallTypeHandle(ref this_type), out packing, out size);
-        }
+        internal extern void GetPacking(out int packing, out int size);
 
         public override string ToString()
         {
@@ -2106,18 +2098,10 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CreateInstanceInternal(QCallTypeHandle type);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetDeclaringMethod(QCallTypeHandle type, ObjectHandleOnStack res);
-
-        public override MethodBase? DeclaringMethod
+        public extern override MethodBase? DeclaringMethod
         {
-            get
-            {
-                var this_type = this;
-                MethodBase? res = null;
-                GetDeclaringMethod(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
-                return res;
-            }
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            get;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -2184,17 +2168,9 @@ namespace System
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetInterfaces(QCallTypeHandle type, ObjectHandleOnStack res);
-
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces()
-        {
-            var this_type = this;
-            Type[]? res = null;
-            GetInterfaces(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
-            return res!;
-        }
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern override Type[] GetInterfaces();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetNestedTypes_native(QCallTypeHandle type, IntPtr name, BindingFlags bindingAttr, MemberListType listType);
@@ -2227,46 +2203,22 @@ namespace System
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetDeclaringType(QCallTypeHandle type, ObjectHandleOnStack res);
-
-        public override Type? DeclaringType
+        public extern override Type? DeclaringType
         {
-            get
-            {
-                var this_type = this;
-                Type? res = null;
-                GetDeclaringType(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
-                return res;
-            }
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            get;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetName(QCallTypeHandle type, ObjectHandleOnStack res);
-
-        public override string Name
+        public extern override string Name
         {
-            get
-            {
-                var this_type = this;
-                string? res = null;
-                GetName(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
-                return res!;
-            }
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            get;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern void GetNamespace(QCallTypeHandle type, ObjectHandleOnStack res);
-
-        public override string Namespace
+        public extern override string? Namespace
         {
-            get
-            {
-                var this_type = this;
-                string? res = null;
-                GetNamespace(new QCallTypeHandle(ref this_type), ObjectHandleOnStack.Create(ref res));
-                return res!;
-            }
+            [MethodImplAttribute(MethodImplOptions.InternalCall)]
+            get;
         }
 
         public override string? FullName

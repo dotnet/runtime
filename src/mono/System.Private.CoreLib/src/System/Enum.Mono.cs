@@ -9,36 +9,16 @@ namespace System
     public partial class Enum
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool GetEnumValuesAndNames(QCallTypeHandle enumType, out ulong[] values, out string[] names);
+        private static extern bool GetEnumValuesAndNames(RuntimeType enumType, out ulong[] values, out string[] names);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalBoxEnum(QCallTypeHandle enumType, ObjectHandleOnStack res, long value);
+        private static extern object InternalBoxEnum(RuntimeType enumType, long value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern CorElementType InternalGetCorElementType(QCallTypeHandle enumType);
+        private extern CorElementType InternalGetCorElementType();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void InternalGetUnderlyingType(QCallTypeHandle enumType, ObjectHandleOnStack res);
-
-        private static object InternalBoxEnum(RuntimeType enumType, long value)
-        {
-            object? res = null;
-            InternalBoxEnum(new QCallTypeHandle(ref enumType), ObjectHandleOnStack.Create(ref res), value);
-            return res!;
-        }
-
-        private CorElementType InternalGetCorElementType()
-        {
-            RuntimeType this_type = (RuntimeType)GetType();
-            return InternalGetCorElementType(new QCallTypeHandle(ref this_type));
-        }
-
-        internal static RuntimeType InternalGetUnderlyingType(RuntimeType enumType)
-        {
-            RuntimeType? res = null;
-            InternalGetUnderlyingType(new QCallTypeHandle(ref enumType), ObjectHandleOnStack.Create(ref res));
-            return res!;
-        }
+        internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
 
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
@@ -46,7 +26,7 @@ namespace System
 
             if (entry == null || (getNames && entry.Names == null))
             {
-                if (!GetEnumValuesAndNames(new QCallTypeHandle(ref enumType), out ulong[]? values, out string[]? names))
+                if (!GetEnumValuesAndNames(enumType, out ulong[]? values, out string[]? names))
                     Array.Sort(values, names, Collections.Generic.Comparer<ulong>.Default);
 
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);

@@ -39,14 +39,13 @@ namespace System.Runtime.InteropServices
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsPinnableType(QCallTypeHandle type);
+        private static extern bool IsPinnableType(Type type);
 
         internal static bool IsPinnable(object? obj)
         {
             if (obj == null || obj is string)
                 return true;
-            var type = (obj.GetType() as RuntimeType)!;
-            return IsPinnableType(new QCallTypeHandle(ref type));
+            return IsPinnableType(obj.GetType());
             //Type type = obj.GetType ();
             //return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
         }
@@ -74,30 +73,16 @@ namespace System.Runtime.InteropServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void GetDelegateForFunctionPointerInternal(QCallTypeHandle t, IntPtr ptr, ObjectHandleOnStack res);
+        private static extern Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
-
-        private static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
-        {
-            RuntimeType rttype = (RuntimeType)t;
-            Delegate? res = null;
-            GetDelegateForFunctionPointerInternal(new QCallTypeHandle(ref rttype), ptr, ObjectHandleOnStack.Create(ref res));
-            return res!;
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void PrelinkInternal(MethodInfo m);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int SizeOfHelper(QCallTypeHandle t, bool throwIfNotMarshalable);
-
-        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
-        {
-            RuntimeType rttype = (RuntimeType)t;
-            return SizeOfHelper(new QCallTypeHandle(ref rttype), throwIfNotMarshalable);
-        }
+        private static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
 
         public static IntPtr GetExceptionPointers()
         {
