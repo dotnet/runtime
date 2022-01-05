@@ -22,7 +22,6 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Microsoft.VisualBasic;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
