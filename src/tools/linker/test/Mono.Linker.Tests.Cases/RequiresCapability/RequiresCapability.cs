@@ -309,6 +309,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		// The second attribute is added through link attribute XML
 		[RequiresUnreferencedCode ("Message for --MethodWithDuplicateRequiresAttribute--")]
 		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2027", "RequiresUnreferencedCodeAttribute", nameof (MethodWithDuplicateRequiresAttribute), ProducedBy = ProducedBy.Trimmer)]
 		static void MethodWithDuplicateRequiresAttribute ()
 		{
 		}
@@ -623,6 +624,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--")]
+		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL3002", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer)]
 		[ExpectedWarning ("IL3050", "--RequiresInDynamicDependency--", ProducedBy = ProducedBy.Analyzer)]
 		[DynamicDependency ("RequiresInDynamicDependency")]
@@ -902,6 +904,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class OnEventMethod
 		{
 			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Trimmer)]
 			static event EventHandler EventToTestRemove {
 				add { }
 				[RequiresUnreferencedCode ("Message for --EventToTestRemove.remove--")]
@@ -910,6 +913,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				remove { }
 			}
 
+			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Trimmer)]
 			static event EventHandler EventToTestAdd {
 				[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
@@ -990,6 +994,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--")]
+			[ExpectedWarning ("IL2026", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = ProducedBy.Analyzer)]
 			public static void Test ()
@@ -1389,9 +1394,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualPropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "BaseClassWithRequires.VirtualMethod()", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "IBaseWithRequires.PropertyAnnotationInAccesor.get", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "IBaseWithRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "VirtualPropertyAnnotationInPropertyAndAccessor.get", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2026", "PropertyAnnotationInPropertyAndAccessor.set", ProducedBy = ProducedBy.Trimmer)]
 
@@ -1788,6 +1799,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				// These should not be reported https://github.com/mono/linker/issues/2218
 				[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = ProducedBy.Trimmer)]
 				public static event EventHandler Event;
 			}
@@ -1805,6 +1818,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			class ReflectionAccessOnMethod
 			{
 				// Analyzer still dont understand RUC on type
+				[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "BaseWithoutRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method(Int32)", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "InterfaceWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
@@ -1887,7 +1901,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
@@ -1951,6 +1967,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
@@ -1978,6 +1996,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
 				[DynamicDependency (nameof (WithRequires.StaticField), typeof (WithRequires))]
 				[DynamicDependency (nameof (WithRequires.InstanceField), typeof (WithRequires))] // Doesn't warn
 				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRequires))] // Doesn't warn
@@ -2030,6 +2050,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					// These should be reported only in TestDirectReflectionAccess
 					// https://github.com/mono/linker/issues/2218
 					[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
 					[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
 					public static event EventHandler StaticEvent;
 				}
@@ -2075,6 +2099,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
@@ -2106,6 +2134,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 
 				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				[DynamicDependency (nameof (WithRequires.StaticProperty), typeof (WithRequires))]
 				[DynamicDependency (nameof (WithRequires.InstanceProperty), typeof (WithRequires))] // Doesn't warn
