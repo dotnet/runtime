@@ -1737,7 +1737,7 @@ namespace System.Text.RegularExpressions.Generator
                         case RegexNode.Onelazy:
                         case RegexNode.Notonelazy:
                         case RegexNode.Setlazy:
-                            EmitSingleCharLazy(node, emitLengthChecksIfRequired);
+                            EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
                             break;
 
                         case RegexNode.Oneloopatomic:
@@ -2259,7 +2259,7 @@ namespace System.Text.RegularExpressions.Generator
                 doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
 
-            void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
+            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(node.Type is RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy, $"Unexpected type: {node.Type}");
 
@@ -2346,6 +2346,45 @@ namespace System.Text.RegularExpressions.Generator
                 SliceInputSpan(writer);
                 EmitSingleChar(node);
                 TransferSliceStaticPosToPos();
+
+                // Now that we've appropriately advanced by one character and are set for what comes after the loop,
+                // see if we can skip ahead more iterations by doing a search for a following literal.
+                if (iterationCount is null &&
+                    node.Type is RegexNode.Notonelazy &&
+                    !IsCaseInsensitive(node) &&
+                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal &&
+                    (literal.Item2?[0] ?? literal.Item1) != node.Ch)
+                {
+                    // e.g. "<[^>]*?>"
+                    // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
+                    // We can implement it to search for either that char or the literal, whichever comes first.
+                    // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
+                    writer.WriteLine($"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item2?[0] ?? literal.Item1)});");
+                    using (EmitBlock(writer, $"if ((uint){startingPos} >= (uint){sliceSpan}.Length || {sliceSpan}[{startingPos}] == {Literal(node.Ch)})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine($"pos += {startingPos};");
+                    SliceInputSpan(writer);
+                }
+                else if (iterationCount is null &&
+                    node.Type is RegexNode.Setlazy &&
+                    node.Str == RegexCharClass.AnyClass &&
+                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal2)
+                {
+                    // e.g. ".*?string" with RegexOptions.Singleline
+                    // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
+                    // isn't found, the loop fails. We can implement it to just search for that literal.
+                    writer.WriteLine($"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {(literal2.Item2 is not null ? Literal(literal2.Item2) : Literal(literal2.Item1))});");
+                    using (EmitBlock(writer, $"if ({startingPos} < 0)"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine($"pos += {startingPos};");
+                    SliceInputSpan(writer);
+                }
+
+                // Store the position we've left off at in case we need to iterate again.
                 writer.WriteLine($"{startingPos} = pos;");
 
                 // Update the done label for everything that comes after this node.  This is done after we emit the single char
