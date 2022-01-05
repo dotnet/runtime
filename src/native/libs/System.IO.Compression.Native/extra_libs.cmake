@@ -1,6 +1,6 @@
 
 macro(append_extra_compression_libs NativeLibsExtra)
-  # TODO: remove the mono-style HOST_ variable checks once Mono is using eng/native/cofigureplatform.cmake to define the CLR_CMAKE_TARGET_ defines
+  # TODO: remove the mono-style HOST_ variable checks once Mono is using eng/native/configureplatform.cmake to define the CLR_CMAKE_TARGET_ defines
   if (CLR_CMAKE_TARGET_BROWSER OR HOST_BROWSER)
       # nothing special to link
   elseif (CLR_CMAKE_TARGET_ANDROID OR HOST_ANDROID)

@@ -443,7 +443,7 @@ endif()
 # Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
 if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
   if(NOT INTERNAL_ZLIB)
-    # if we're not on a platform wheere we use the in-tree zlib, require system zlib
+    # if we're not on a platform where we use the in-tree zlib, require system zlib
     include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     set(Z_LIBS)
     append_extra_compression_libs(Z_LIBS)
