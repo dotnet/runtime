@@ -6763,6 +6763,18 @@ mb_emit_exception_for_error_ilgen (MonoMethodBuilder *mb, const MonoError *error
 }
 
 static void
+emit_marshal_directive_exception_ilgen (EmitMarshalContext *m, int argnum, const char* msg)
+{
+	const char* fullmsg = NULL;
+	if (argnum == 0)
+		fullmsg = g_strdup_printf("Error marshalling return value: %s", msg);
+	else 
+		fullmsg = g_strdup_printf("Error marshalling parameter #%d: %s", argnum, msg);
+
+	mono_mb_emit_exception_marshal_directive (m->mb, fullmsg);
+}
+
+static void
 emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type)
 {
 	for (int i = 0; i < param_count; i++)
@@ -6850,6 +6862,7 @@ mono_marshal_ilgen_init (void)
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
+	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_ilgen;
 #ifdef DISABLE_NONBLITTABLE
 	mono_marshal_noilgen_init_blittable (&cb);
 #endif
