@@ -2,4 +2,14 @@
   <PropertyGroup>
     <WasmMainJSPath>index.html</WasmMainJSPath>
   </PropertyGroup>
+
+  <Target Name="WebPack" AfterTargets="WasmBuildApp" DependsOnTargets="Build">
+    <Exec Command="npm install $(MicrosoftNetCoreAppRuntimePackNativeDir) --no-save" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <Exec Command="npm run webpack -- --env Configuration=$(Configuration) --env WasmAppDir=$(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+  </Target>
+
+  <Target Name="RunSample" DependsOnTargets="WebPack">
+    <Exec Command="dotnet serve --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+  </Target>
+
 </Project>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import createDotnetRuntime from 'dotnet'
+import createDotnetRuntime from '@microsoft/dotnet-runtime'
 
 let dotnetRuntime = undefined;
 let meaningFunction = undefined;

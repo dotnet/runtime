@@ -1,10 +1,9 @@
-import createDotnetRuntime from 'dotnet'
+import createDotnetRuntime from '@microsoft/dotnet-runtime'
 
 let dotnetRuntime = undefined;
 let meaningFunction = undefined;
 
 async function dotnetMeaning() {
-    console.log('dotnetMeaning')
     if (!dotnetRuntime) {
         try {
             const { BINDING } = await createDotnetRuntime({

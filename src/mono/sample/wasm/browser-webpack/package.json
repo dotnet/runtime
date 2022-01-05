@@ -1,21 +1,16 @@
 {
   "name": "browser-webpack",
-  "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "build:dotnet": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
-    "build:webpack": "webpack",
-    "build": "npm run build:dotnet && npm run build:webpack"
+    "build": "dotnet build /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Debug",
+    "webpack": "webpack"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "webpack": "5.65.0",
     "webpack-cli": "4.9.1"
   },
   "dependencies": {
-    "dotnet": "file:../../../../../artifacts/bin/native/net7.0-Browser-Debug-wasm/"
   }
 }
