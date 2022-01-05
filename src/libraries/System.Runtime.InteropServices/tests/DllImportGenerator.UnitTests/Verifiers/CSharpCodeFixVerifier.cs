@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -71,8 +70,12 @@ namespace DllImportGenerator.UnitTests.Verifiers
         {
             public Test()
             {
-                var (refAssem, ancillary) = TestUtils.GetReferenceAssemblies();
-                ReferenceAssemblies = refAssem;
+                // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+                // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
+
                 SolutionTransforms.Add((solution, projectId) =>
                 {
                     var project = solution.GetProject(projectId)!;
@@ -106,9 +109,9 @@ namespace DllImportGenerator.UnitTests.Verifiers
                     compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(
                         compilationOptions.SpecificDiagnosticOptions
                             .SetItems(CSharpVerifierHelper.NullableWarnings)
-                            .AddRange(enableAnalyzersOptions));
+                            .AddRange(enableAnalyzersOptions)
+                            .AddRange(TestUtils.BindingRedirectWarnings));
                     solution = solution.WithProjectCompilationOptions(projectId, compilationOptions);
-                    solution = solution.WithProjectMetadataReferences(projectId, project.MetadataReferences.Concat(ImmutableArray.Create(ancillary)));
                     solution = solution.WithProjectParseOptions(projectId, ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview));
                     return solution;
                 });
