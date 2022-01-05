@@ -18222,7 +18222,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             }
             else
             {
-                op2 = gtNewOperNode(GT_AND, simdBaseType, op2, gtNewIconNode(shiftCountMask));
+                op2 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(shiftCountMask));
                 op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_SSE2_ConvertScalarToVector128Int32, CORINFO_TYPE_INT,
                                                16, isSimdAsHWIntrinsic);
             }
@@ -18571,11 +18571,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             }
             else
             {
-                op2 = gtNewOperNode(GT_AND, simdBaseType, op2, gtNewIconNode(shiftCountMask));
+                op2 = gtNewOperNode(GT_AND, TYP_INT, op2, gtNewIconNode(shiftCountMask));
 
                 if (op != GT_LSH)
                 {
-                    op2 = gtNewOperNode(GT_NEG, simdBaseType, op2);
+                    op2 = gtNewOperNode(GT_NEG, TYP_INT, op2);
                 }
 
                 op2 = gtNewSimdCreateBroadcastNode(type, op2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
