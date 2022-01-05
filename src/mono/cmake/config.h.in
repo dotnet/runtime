@@ -952,10 +952,10 @@
 #cmakedefine DISABLE_QCALLS 1
 
 /* Embedded PDB support disabled */
-#cmakedefine DISABLE_EMBEDDED_PDB 1
+#cmakedefine DISABLE_EMBEDDED_PDB
 
 /* log profiler compressed output disabled */
-#cmakedefine DISABLE_LOG_PROFILER_GZ 1
+#cmakedefine DISABLE_LOG_PROFILER_GZ
 
 /* Have __thread keyword */
 #cmakedefine MONO_KEYWORD_THREAD @MONO_KEYWORD_THREAD@
