@@ -8,6 +8,6 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="64sizeof64.il" />
+    <Compile Include="sizeof_Target_64Bit_and_arm.il" />
   </ItemGroup>
 </Project>

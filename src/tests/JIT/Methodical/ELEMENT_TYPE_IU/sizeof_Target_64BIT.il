@@ -13,12 +13,12 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'sizeof-i386'// as "avg"
+.assembly 'sizeof_Target_64BIT'// as "avg"
 {
 }
 .assembly extern xunit.core {}
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
-.namespace AvgTest
+.namespace AvgTest_sizeof_Target_64BIT
 {
   .class private auto ansi Test
          extends [mscorlib]System.Object
@@ -31,10 +31,10 @@
 		.entrypoint
 		// Code size       48 (0x30)
 		.maxstack  5
-		ldc.i4.4
-		dup 
-		dup
-		dup
+		ldc.i4.8
+		ldc.i4.8
+		ldc.i4.8
+		ldc.i4.8
 		sizeof native int
 		ceq
 		brfalse pop3
@@ -73,6 +73,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'AvgTest'
+} // end of namespace 'AvgTest_sizeof_Target_64BIT'
 
 //*********** DISASSEMBLY COMPLETE ***********************
