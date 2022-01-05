@@ -187,6 +187,9 @@ bool RedhawkGCInterface::InitializeSubsystems()
     // g_gcDacGlobals.
     volatile void* _dummy = g_gcDacGlobals;
 
+    // Initialize CurrentThread which is required for GC Regions
+    ThreadStore::AttachCurrentThread();
+
     // Initialize the GC subsystem.
     hr = g_pGCHeap->Initialize();
     if (FAILED(hr))
