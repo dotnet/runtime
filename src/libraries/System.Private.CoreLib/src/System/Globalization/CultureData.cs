@@ -414,7 +414,7 @@ namespace System.Globalization
         private static volatile Dictionary<string, string>? s_regionNames;
 
         /// <summary>
-        /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs. 
+        /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs.
         /// For example, we can have the name de_DE@collation=phonebook when using ICU for the German culture de-DE with the phonebook sorting behavior.
         /// </summary>
         internal string? InteropName => _sWindowsName;
