@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="FourRounds.Byte.cs" />
+    <Compile Include="MessageSchedule1.Byte.cs" />
+    <Compile Include="MessageSchedule2.Byte.cs" />
+    <Compile Include="NextE.Byte.cs" />
+    <Compile Include="Program.Sha1.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>
