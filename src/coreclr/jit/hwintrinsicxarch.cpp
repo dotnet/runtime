@@ -1733,6 +1733,130 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_Store:
+        case NI_Vector256_Store:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            NamedIntrinsic storeIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                storeIntrinsic = NI_AVX_Store;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                storeIntrinsic = NI_SSE2_Store;
+            }
+            else
+            {
+                storeIntrinsic = NI_SSE_Store;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_StoreAligned:
+        case NI_Vector256_StoreAligned:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            NamedIntrinsic storeIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                storeIntrinsic = NI_AVX_StoreAligned;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                storeIntrinsic = NI_SSE2_StoreAligned;
+            }
+            else
+            {
+                storeIntrinsic = NI_SSE_StoreAligned;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_StoreAlignedNonTemporal:
+        case NI_Vector256_StoreAlignedNonTemporal:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            NamedIntrinsic storeIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                storeIntrinsic = NI_AVX_StoreAlignedNonTemporal;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                storeIntrinsic = NI_SSE2_StoreAlignedNonTemporal;
+            }
+            else
+            {
+                storeIntrinsic = NI_SSE_StoreAlignedNonTemporal;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector128_StoreUnsafe:
+        case NI_Vector256_StoreUnsafe:
+        {
+            if (sig->numArgs == 3)
+            {
+                op3 = impPopStack().val;
+            }
+            else
+            {
+                assert(sig->numArgs == 2);
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            if (sig->numArgs == 3)
+            {
+                op2 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
+            }
+
+            NamedIntrinsic storeIntrinsic = NI_Illegal;
+
+            if (simdSize == 32)
+            {
+                storeIntrinsic = NI_AVX_Store;
+            }
+            else if (simdBaseType != TYP_FLOAT)
+            {
+                storeIntrinsic = NI_SSE2_Store;
+            }
+            else
+            {
+                storeIntrinsic = NI_SSE_Store;
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, storeIntrinsic, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector128_Sum:
         case NI_Vector256_Sum:
         {

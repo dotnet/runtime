@@ -227,6 +227,15 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.UInt64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Sqrt<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Subtract<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
@@ -490,6 +499,15 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.UInt64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Sqrt<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Subtract<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
@@ -725,6 +743,15 @@ namespace System.Runtime.Intrinsics
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.UInt64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Sqrt<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination) where T : struct { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Subtract<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }

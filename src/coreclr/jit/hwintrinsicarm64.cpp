@@ -1213,6 +1213,86 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_Store:
+        case NI_Vector128_Store:
+        {
+            assert(sig->numArgs == 2);
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_StoreAligned:
+        case NI_Vector128_StoreAligned:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!opts.MinOpts())
+            {
+                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // aligned during minopts, so only skip the intrinsic handling if we're minopts
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_StoreAlignedNonTemporal:
+        case NI_Vector128_StoreAlignedNonTemporal:
+        {
+            assert(sig->numArgs == 2);
+
+            if (!opts.MinOpts())
+            {
+                // ARM64 doesn't have aligned stores, but aligned stores are only validated to be
+                // aligned during minopts, so only skip the intrinsic handling if we're minopts
+                break;
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            // ARM64 has non-temporal stores (STNP) but we don't currently support them
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_Vector64_StoreUnsafe:
+        case NI_Vector128_StoreUnsafe:
+        {
+            if (sig->numArgs == 3)
+            {
+                op3 = impPopStack().val;
+            }
+            else
+            {
+                assert(sig->numArgs == 2);
+            }
+
+            op2 = impPopStack().val;
+            op1 = impSIMDPopStack(retType);
+
+            if (sig->numArgs == 3)
+            {
+                op2 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, op2);
+            }
+
+            retNode =
+                gtNewSimdHWIntrinsicNode(retType, op2, op1, NI_AdvSimd_Store, simdBaseJitType, simdSize);
+            break;
+        }
+
         case NI_Vector64_Sum:
         case NI_Vector128_Sum:
         {

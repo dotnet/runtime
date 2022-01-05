@@ -34,6 +34,12 @@ namespace System.Runtime.Intrinsics
     {
         internal const int Size = 16;
 
+#if TARGET_ARM
+        internal const int Alignment = 8;
+#else
+        internal const int Alignment = 16;
+#endif
+
         /// <summary>Gets a value that indicates whether 128-bit vector operations are subject to hardware acceleration through JIT intrinsic support.</summary>
         /// <value><see langword="true" /> if 128-bit vector operations are subject to hardware acceleration; otherwise, <see langword="false" />.</value>
         /// <remarks>128-bit vector operations are subject to hardware acceleration on systems that support Single Instruction, Multiple Data (SIMD) instructions for 128-bit vectors and the RyuJIT just-in-time compiler is used to compile managed code.</remarks>
@@ -2600,7 +2606,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
-            if (((nuint)source % 8) != 0)
+            if (((nuint)source % Alignment) != 0)
             {
                 throw new AccessViolationException();
             }
@@ -2621,7 +2627,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
-            if (((nuint)source % 8) != 0)
+            if (((nuint)source % Alignment) != 0)
             {
                 throw new AccessViolationException();
             }
@@ -3421,6 +3427,89 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <summary>Stores a vector at the given destination.</summary>
+        /// <param name="source">The vector that will be stored.</param>
+        /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void Store<T>(this Vector128<T> source, T* destination)
+            where T : unmanaged
+        {
+            *(Vector128<T>*)destination = source;
+        }
+
+        /// <summary>Stores a vector at the given aligned destination.</summary>
+        /// <param name="source">The vector that will be stored.</param>
+        /// <param name="destination">The aligned destination at which <paramref name="source" /> will be stored.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void StoreAligned<T>(this Vector128<T> source, T* destination)
+            where T : unmanaged
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+
+            if (((nuint)destination % Alignment) != 0)
+            {
+                throw new AccessViolationException();
+            }
+
+            *(Vector128<T>*)destination = source;
+        }
+
+        /// <summary>Stores a vector at the given aligned destination.</summary>
+        /// <param name="source">The vector that will be stored.</param>
+        /// <param name="destination">The aligned destination at which <paramref name="source" /> will be stored.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <remarks>This method may bypass the cache on certain platforms.</remarks>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void StoreAlignedNonTemporal<T>(this Vector128<T> source, T* destination)
+            where T : unmanaged
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+
+            if (((nuint)destination % Alignment) != 0)
+            {
+                throw new AccessViolationException();
+            }
+
+            *(Vector128<T>*)destination = source;
+        }
+
+        /// <summary>Stores a vector at the given destination.</summary>
+        /// <param name="source">The vector that will be stored.</param>
+        /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+            Unsafe.WriteUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref destination), source);
+        }
+
+        /// <summary>Stores a vector at the given destination.</summary>
+        /// <param name="source">The vector that will be stored.</param>
+        /// <param name="destination">The destination to which <paramref name="elementOffset" /> will be added before the vector will be stored.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="destination" /> from which the vector will be stored.</param>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+            destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
+            Unsafe.WriteUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
