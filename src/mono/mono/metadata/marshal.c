@@ -3092,7 +3092,7 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
 			return conv_arg;
 		}
-		if (m_class_is_auto_layout(c) && !m_class_is_enumtype(c)) {
+		if (m_class_any_field_has_auto_layout(c)) {
 			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled.");
 			return conv_arg;
 		}
