@@ -145,7 +145,7 @@ mono_mb_strdup (MonoMethodBuilder *mb, const char *s)
  *   This function assumes ownership of MSG, which should be malloc-ed.
  */
 static void
-mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, char *msg)
+mono_mb_emit_exception_marshal_directive (MonoMethodBuilder *mb, const char *msg)
 {
 	char *s = mono_mb_strdup (mb, msg);
 	g_free (msg);
