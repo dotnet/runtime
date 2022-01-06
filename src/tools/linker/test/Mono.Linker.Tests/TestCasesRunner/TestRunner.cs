@@ -145,7 +145,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return customizations;
 		}
 
-		private T GetResultOfTaskThatMakesNUnitAssertions<T> (Task<T> task)
+		private static T GetResultOfTaskThatMakesNUnitAssertions<T> (Task<T> task)
 		{
 			try {
 				return task.Result;

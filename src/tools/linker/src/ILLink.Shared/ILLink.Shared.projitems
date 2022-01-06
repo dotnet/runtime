@@ -18,6 +18,7 @@
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)SharedStrings.resx">
       <GenerateSource>true</GenerateSource>
       <Namespace>ILLink.Shared</Namespace>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

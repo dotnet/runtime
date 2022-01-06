@@ -45,13 +45,13 @@ namespace Mono.Linker.Tests.Extensions
 		public NPath (string path)
 		{
 			if (path == null)
-				throw new ArgumentNullException ();
+				throw new ArgumentNullException (nameof (path));
 
 			path = ParseDriveLetter (path, out _driveLetter);
 
 			if (path == "/") {
 				_isRelative = false;
-				_elements = new string[] { };
+				_elements = Array.Empty<string> ();
 			} else {
 				var split = path.Split ('/', '\\');
 
@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.Extensions
 			return stack.Count > 0 && stack[stack.Count - 1] != "..";
 		}
 
-		private string ParseDriveLetter (string path, out string driveLetter)
+		private static string ParseDriveLetter (string path, out string driveLetter)
 		{
 			if (path.Length >= 2 && path[1] == ':') {
 				driveLetter = path[0].ToString ();
@@ -433,7 +433,7 @@ namespace Mono.Linker.Tests.Extensions
 			ThrowIfRelative ();
 			ThrowIfRoot ();
 			EnsureParentDirectoryExists ();
-			File.WriteAllBytes (ToString (), new byte[0]);
+			File.WriteAllBytes (ToString (), Array.Empty<byte> ());
 			return this;
 		}
 

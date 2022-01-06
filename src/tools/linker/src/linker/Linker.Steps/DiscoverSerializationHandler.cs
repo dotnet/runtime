@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Mono.Cecil;
-using Mono.Linker.Dataflow;
-using Mono.Linker.Steps;
 
 namespace Mono.Linker.Steps
 {

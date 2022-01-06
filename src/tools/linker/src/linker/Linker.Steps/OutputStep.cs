@@ -31,8 +31,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Json;
+using ILLink.Shared;
 using Mono.Cecil;
-using Mono.Cecil.Cil;
 
 namespace Mono.Linker.Steps
 {
@@ -130,7 +130,7 @@ namespace Mono.Linker.Steps
 			try {
 				assembly.Write (outputName, writerParameters);
 			} catch (Exception e) {
-				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Failed to write '{outputName}'.", 1011), e);
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (null, DiagnosticId.FailedToWriteOutput, outputName), e);
 			}
 		}
 

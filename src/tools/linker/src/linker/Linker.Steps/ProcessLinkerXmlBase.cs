@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -91,7 +92,7 @@ namespace Mono.Linker.Steps
 					ProcessAssembly (_resource.Value.Assembly, nav, warnOnUnresolvedTypes: true);
 
 			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
-				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Error processing '{_xmlDocumentLocation}'", 1013), ex);
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (null, DiagnosticId.ErrorProcessingXmlLocation, _xmlDocumentLocation), ex);
 			}
 		}
 
@@ -171,7 +172,7 @@ namespace Mono.Linker.Steps
 				if (type == null && assembly.MainModule.HasExportedTypes) {
 					foreach (var exported in assembly.MainModule.ExportedTypes) {
 						if (fullname == exported.FullName) {
-							var resolvedExternal = ProcessExportedType (exported, assembly);
+							var resolvedExternal = ProcessExportedType (exported, assembly, typeNav);
 							if (resolvedExternal != null) {
 								type = resolvedExternal;
 								break;
@@ -190,7 +191,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => exported.Resolve ();
+		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => exported.Resolve ();
 
 		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
 		{
@@ -215,7 +216,7 @@ namespace Mono.Linker.Steps
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var exported in assembly.MainModule.ExportedTypes) {
 					if (regex.Match (exported.FullName).Success) {
-						var type = ProcessExportedType (exported, assembly);
+						var type = ProcessExportedType (exported, assembly, nav);
 						if (type != null) {
 							ProcessType (type, nav);
 						}
@@ -468,8 +469,8 @@ namespace Mono.Linker.Steps
 		protected MessageOrigin GetMessageOriginForPosition (XPathNavigator position)
 		{
 			return (position is IXmlLineInfo lineInfo)
-					? new MessageOrigin (_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition)
-					: new MessageOrigin (_xmlDocumentLocation);
+					? new MessageOrigin (_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition, _resource?.Assembly)
+					: new MessageOrigin (_xmlDocumentLocation, 0, 0, _resource?.Assembly);
 		}
 		protected void LogWarning (string message, int warningCode, XPathNavigator position)
 		{

@@ -103,6 +103,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.FunctionPointersTests))]
+		public void FunctionPointerTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.GenericsTests))]
 		public void GenericsTests (TestCase testCase)
 		{

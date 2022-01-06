@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.RegularExpressions;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -395,7 +393,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
 		}
 
-		void VerifyCopyAssemblyIsKeptUnmodified (NPath outputDirectory, string assemblyName)
+		static void VerifyCopyAssemblyIsKeptUnmodified (NPath outputDirectory, string assemblyName)
 		{
 			string inputAssemblyPath = Path.Combine (Directory.GetParent (outputDirectory).ToString (), "input", assemblyName);
 			string outputAssemblyPath = Path.Combine (outputDirectory, assemblyName);
@@ -580,7 +578,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
 		{
-			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition _originalMethod, out MethodDefinition _linkedMethod);
+			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out _, out _);
 		}
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)
@@ -602,7 +600,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments[0].Value.ToString ());
 			var expectedReferenceNames = ((CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments[1].Value).Select (attr => (string) attr.Value).ToList ();
-			for (int i = 0; i < expectedReferenceNames.Count (); i++)
+			for (int i = 0; i < expectedReferenceNames.Count; i++)
 				if (expectedReferenceNames[i].EndsWith (".dll"))
 					expectedReferenceNames[i] = expectedReferenceNames[i].Substring (0, expectedReferenceNames[i].LastIndexOf ("."));
 
@@ -651,12 +649,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		bool IsProducedByLinker (CustomAttribute attr)
+		static bool IsProducedByLinker (CustomAttribute attr)
 		{
 			var producedBy = attr.GetPropertyValue ("ProducedBy");
 			return producedBy is null ? true : ((ProducedBy) producedBy).HasFlag (ProducedBy.Trimmer);
 		}
-		IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
+
+		static IEnumerable<ICustomAttributeProvider> GetAttributeProviders (AssemblyDefinition assembly)
 		{
 			foreach (var testType in assembly.AllDefinedTypes ()) {
 				foreach (var provider in testType.AllMembers ())
@@ -726,30 +725,38 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 							int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 							string expectedOrigin = null;
+							bool expectedWarningFound = false;
 
-							var matchedMessages = loggedMessages.Where (mc => {
-								if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
-									return false;
+							foreach (var loggedMessage in loggedMessages) {
 
-								foreach (var expectedMessage in expectedMessageContains)
-									if (!mc.Text.Contains (expectedMessage))
-										return false;
+								if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
+									continue;
+
+								bool messageNotFound = false;
+								foreach (var expectedMessage in expectedMessageContains) {
+									if (!loggedMessage.Text.Contains (expectedMessage)) {
+										messageNotFound = true;
+										break;
+									}
+								}
+								if (messageNotFound)
+									continue;
 
 								if (fileName != null) {
-									if (mc.Origin == null)
-										return false;
+									if (loggedMessage.Origin == null)
+										continue;
 
-									var actualOrigin = mc.Origin.Value;
+									var actualOrigin = loggedMessage.Origin.Value;
 									if (actualOrigin.FileName != null) {
 										// Note: string.Compare(string, StringComparison) doesn't exist in .NET Framework API set
 										if (actualOrigin.FileName.IndexOf (fileName, StringComparison.OrdinalIgnoreCase) < 0)
-											return false;
+											continue;
 
-										if (sourceLine != null && mc.Origin?.SourceLine != sourceLine.Value)
-											return false;
+										if (sourceLine != null && loggedMessage.Origin?.SourceLine != sourceLine.Value)
+											continue;
 
-										if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
-											return false;
+										if (sourceColumn != null && loggedMessage.Origin?.SourceColumn != sourceColumn.Value)
+											continue;
 									} else {
 										// The warning was logged with member/ILoffset, so it didn't have line/column info filled
 										// but it will be computed from PDBs, so instead compare it in a string representation
@@ -763,35 +770,50 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											}
 										}
 
-										if (!actualOrigin.ToString ().EndsWith (expectedOrigin, StringComparison.OrdinalIgnoreCase))
-											return false;
+										string actualOriginString = actualOrigin.ToString () ?? "";
+										if (!actualOriginString.EndsWith (expectedOrigin, StringComparison.OrdinalIgnoreCase))
+											continue;
 									}
 								} else if (isCompilerGeneratedCode == true) {
-									MethodDefinition methodDefinition = mc.Origin?.Provider as MethodDefinition;
-									if (methodDefinition != null) {
+									if (loggedMessage.Origin?.Provider is MethodDefinition methodDefinition) {
 										if (attrProvider is not IMemberDefinition expectedMember)
-											return false;
+											continue;
 
 										string actualName = methodDefinition.DeclaringType.FullName + "." + methodDefinition.Name;
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains ("<" + expectedMember.Name + ">"))
-											return true;
+											actualName.Contains ("<" + expectedMember.Name + ">")) {
+											expectedWarningFound = true;
+											loggedMessages.Remove (loggedMessage);
+											break;
+										}
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition))
-											return true;
+											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
+											expectedWarningFound = true;
+											loggedMessages.Remove (loggedMessage);
+											break;
+										}
 										if (methodDefinition.Name == ".ctor" &&
-											methodDefinition.DeclaringType.FullName == expectedMember.FullName)
-											return true;
+										methodDefinition.DeclaringType.FullName == expectedMember.FullName) {
+											expectedWarningFound = true;
+											loggedMessages.Remove (loggedMessage);
+											break;
+										}
 									}
-
-									return false;
+									continue;
 								} else {
-									return LogMessageHasSameOriginMember (mc, attrProvider);
+									if (LogMessageHasSameOriginMember (loggedMessage, attrProvider)) {
+										expectedWarningFound = true;
+										loggedMessages.Remove (loggedMessage);
+										break;
+									}
+									continue;
 								}
 
-								return true;
-							}).ToList ();
+								expectedWarningFound = true;
+								loggedMessages.Remove (loggedMessage);
+								break;
+							}
 
 							var expectedOriginString = fileName == null
 								? attrProvider switch {
@@ -802,15 +824,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								} + ": "
 								: "";
 
-							Assert.IsTrue (
-								matchedMessages.Count > 0,
+							Assert.IsTrue (expectedWarningFound,
 								$"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
 								$"warning {expectedWarningCode}: {expectedOriginString}" +
 								$"and message containing {string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}, " +
 								$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
-
-							foreach (var matchedMessage in matchedMessages)
-								loggedMessages.Remove (matchedMessage);
 						}
 						break;
 
@@ -946,7 +964,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								$"{expectedSourceMember}: Usage of {expectedReflectionMember} unrecognized " +
 								$"{(expectedMessageParts == null ? string.Empty : "and message contains " + string.Join (" ", expectedMessageParts.Select (p => "'" + p + "'")))}";
 
-							Assert.AreEqual (matchedMessages.Count (), matchedPatterns.Count (),
+							Assert.AreEqual (matchedMessages.Count, matchedPatterns.Count,
 								$"Inconsistency between logged messages and recorded patterns.{Environment.NewLine}{expectedUnrecognizedPatternMessage}{Environment.NewLine}" +
 								$"Matched messages: {Environment.NewLine}{string.Join (Environment.NewLine, matchedMessages.Select (mc => "\t" + mc.Text))}{Environment.NewLine}" +
 								$"Matched unrecognized patterns: {Environment.NewLine}{string.Join (Environment.NewLine, matchedPatterns.Select (p => "\t" + RecognizedReflectionAccessPatternToString (p)))}{Environment.NewLine}");
@@ -1224,7 +1242,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member)
 		{
-			return GetFullMemberNameFromDefinition (member, out string genericMember);
+			return GetFullMemberNameFromDefinition (member, out _);
 		}
 
 		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member, out string genericMember)
@@ -1346,7 +1364,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return attr.AttributeType.Resolve ()?.DerivesFrom (nameof (BaseInAssemblyAttribute)) ?? false;
 		}
 
-		bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
+		static bool HasAttribute (ICustomAttributeProvider caProvider, string attributeName)
 		{
 			if (caProvider is AssemblyDefinition assembly && assembly.EntryPoint != null)
 				return assembly.EntryPoint.DeclaringType.CustomAttributes

@@ -86,6 +86,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("FeatureSettings");
 		}
 
+		public static IEnumerable<TestCaseData> FunctionPointersTests ()
+		{
+			return NUnitCasesBySuiteName ("FunctionPointers");
+		}
+
 		public static IEnumerable<TestCaseData> GenericsTests ()
 		{
 			return NUnitCasesBySuiteName ("Generics");
