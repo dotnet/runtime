@@ -1811,7 +1811,7 @@ namespace Internal.JitInterface
 
             pResult->wrapperDelegateInvoke = false;
 
-            Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, useInstantiatingStub);
+            Get_CORINFO_SIG_INFO(methodToCall, &pResult->sig, scope: null, useInstantiatingStub);
         }
 
         private uint getMethodAttribs(CORINFO_METHOD_STRUCT_* ftn)
