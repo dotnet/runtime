@@ -34,7 +34,7 @@ namespace ILCompiler.Compiler.Tests
         public static IEnumerable<object[]> GetTestMethods()
         {
             var target = new TargetDetails(TargetArchitecture.X64, TargetOS.Windows, TargetAbi.CoreRT);
-            var context = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All);
+            var context = new CompilerTypeSystemContext(target, SharedGenericsMode.CanonicalReferenceTypes, DelegateFeature.All, 4);
 
             context.InputFilePaths = new Dictionary<string, string> {
                 { "Test.CoreLib", @"Test.CoreLib.dll" },

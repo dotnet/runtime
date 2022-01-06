@@ -61,6 +61,16 @@ namespace ILCompiler
         private string _instructionSet;
         private string _guard;
 
+        // Chosen rather arbitrarily. For the app that I was looking at, cutoff point of 7 compiled
+        // more than 10 minutes on a release build of the compiler, and I lost patience.
+        // Cutoff point of 5 produced an 1.7 GB object file.
+        // Cutoff point of 4 produced an 830 MB object file.
+        // Cutoff point of 3 produced an 470 MB object file.
+        // We want this to be high enough so that it doesn't cut off too early. But also not too
+        // high because things that are recursive often end up expanding laterally as well
+        // through various other generic code the deep code calls into.
+        private int _maxGenericCycle = 4;
+
         private string _singleMethodTypeName;
         private string _singleMethodName;
         private IReadOnlyList<string> _singleMethodGenericArgs;
@@ -216,7 +226,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("nosinglewarnassembly", ref _singleWarnDisabledAssemblies, "Expand AOT/trimming warnings for given assembly");
                 syntax.DefineOptionList("directpinvoke", ref _directPInvokes, "PInvoke to call directly");
                 syntax.DefineOptionList("directpinvokelist", ref _directPInvokeLists, "File with list of PInvokes to call directly");
-
+                syntax.DefineOption("maxgenericcycle", ref _maxGenericCycle, "Max depth of generic cycle");
                 syntax.DefineOptionList("root", ref _rootedAssemblies, "Fully generate given assembly");
                 syntax.DefineOptionList("conditionalroot", ref _conditionallyRootedAssemblies, "Fully generate given assembly if it's used");
                 syntax.DefineOptionList("trim", ref _trimmedAssemblies, "Trim the specified assembly");
@@ -460,7 +470,7 @@ namespace ILCompiler
             var targetAbi = TargetAbi.CoreRT;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext = 
-                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0);
+                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since

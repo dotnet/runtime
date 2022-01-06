@@ -28,7 +28,7 @@ namespace ILCompiler
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataType _arrayOfTType;
 
-        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures)
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures, int genericCycleCutoffPoint)
             : base(details)
         {
             _genericsMode = genericsMode;
@@ -37,6 +37,8 @@ namespace ILCompiler
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
             _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
+
+            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleCutoffPoint);
 
             GenericsConfig = new SharedGenericsConfiguration();
         }
@@ -181,7 +183,7 @@ namespace ILCompiler
             return (DefType)type;
         }
 
-        private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector();
+        private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
 
         public void DetectGenericCycles(TypeSystemEntity owner, TypeSystemEntity referent)
         {
