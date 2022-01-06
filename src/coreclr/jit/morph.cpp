@@ -14147,30 +14147,26 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 //
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
+    int constArgCount = 0;
     gtUpdateNodeOperSideEffects(multiOp);
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
         multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
 
-#if defined(FEATURE_HW_INTRINSICS)
-        if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC) && (*use)->OperIsConst())
+        if ((*use)->OperIsConst())
         {
-            // Never do CSE for constant arguments of HWINTRINSICS node such as
-            // MoveMask(vec, 0x...) or Vector.Create(1f,2f,3f,3f)
-            // The only case that might suffer from this is `Vector.Create(1f, x, 3f, 3f)` but this specific
-            // one is rare and needs a better treatment anyway (e.g. loading '1,0,3,3` from .data and then do insert)
-            (*use)->SetDoNotCSE();
+            constArgCount++;
         }
-#endif
     }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
         switch (hw->GetHWIntrinsicId())
         {
+#if defined(TARGET_XARCH)
             case NI_SSE_Xor:
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
@@ -14195,6 +14191,28 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                     }
                 }
                 break;
+            }
+#endif
+
+            case NI_Vector128_Create:
+            case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+            case NI_Vector256_CreateScalarUnsafe:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+            case NI_Vector64_CreateScalarUnsafe:
+#endif
+            {
+                // Avoid unexpected CSE for constant arguments here
+                // https://github.com/dotnet/runtime/issues/63432
+                if (constArgCount == multiOp->GetOperandCount())
+                {
+                    for (GenTree** use : multiOp->UseEdges())
+                    {
+                        (*use)->SetDoNotCSE();
+                    }
+                }
             }
 
             default:
