@@ -256,23 +256,17 @@ void Compiler::optCopyProp(Statement*               stmt,
 // optIsSsaLocal : helper to check if the tree is a local that participates in SSA numbering.
 //
 // Arguments:
-//    tree        -  The tree to perform the check on;
+//    lclNode - The local tree to perform the check on;
 //
 // Returns:
 //    - lclNum if the local is participating in SSA;
 //    - fieldLclNum if the parent local can be replaced by its only field;
 //    - BAD_VAR_NUM otherwise.
 //
-unsigned Compiler::optIsSsaLocal(GenTree* tree)
+unsigned Compiler::optIsSsaLocal(GenTreeLclVarCommon* lclNode)
 {
-    if (!tree->IsLocal())
-    {
-        return BAD_VAR_NUM;
-    }
-
-    GenTreeLclVarCommon* lclNode = tree->AsLclVarCommon();
-    unsigned             lclNum  = lclNode->GetLclNum();
-    LclVarDsc*           varDsc  = lvaGetDesc(lclNum);
+    unsigned   lclNum = lclNode->GetLclNum();
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     if (!lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(this))
     {
@@ -343,7 +337,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curS
             // TODO-CQ: propagate on LCL_FLDs too.
             else if (tree->OperIs(GT_LCL_VAR) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
             {
-                const unsigned lclNum = optIsSsaLocal(tree);
+                const unsigned lclNum = optIsSsaLocal(tree->AsLclVarCommon());
 
                 if (lclNum == BAD_VAR_NUM)
                 {
