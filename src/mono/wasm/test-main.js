@@ -363,7 +363,7 @@ if (is_node) {
             let message = `Loading npm '${parts[0]}'`;
             const moduleExport = require(parts[0]);
             if (parts.length == 2) {
-                message += ` attaching to global as '${parts[1]}'.`;
+                message += ` and attaching to global as '${parts[1]}'.`;
                 globalThis[parts[1]] = moduleExport;
             }
 
