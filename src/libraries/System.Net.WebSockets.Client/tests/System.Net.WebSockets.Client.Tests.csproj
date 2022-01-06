@@ -10,15 +10,20 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <WasmXHarnessMonoArgs>--setenv=NPM_MODULES=ws:WebSocket</WasmXHarnessMonoArgs>
   </PropertyGroup>
 
   <Import Condition="'$(TargetOS)' == 'Browser'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
-  <!-- Browser specific files -->
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <PropertyGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS'">
+    <WasmXHarnessMonoArgs>--setenv=NPM_MODULES=ws:WebSocket</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS'">
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
+  </ItemGroup>
+
+  <!-- Browser specific files -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/NetCoreServer/NetCoreServer.csproj" ReferenceOutputAssembly="false"/>
     <ProjectReference Include="$(CommonTestPath)System/Net/Prerequisites/RemoteLoopServer/RemoteLoopServer.csproj" ReferenceOutputAssembly="false"/>
     <Compile Include="$(CommonTestPath)System\Net\WebSockets\WebSocketStream.cs"
