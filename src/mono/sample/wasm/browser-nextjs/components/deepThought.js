@@ -1,22 +1,19 @@
 import { useState, useEffect } from 'react'
 import createDotnetRuntime from '@microsoft/dotnet-runtime'
 
-let dotnetRuntime = undefined;
+let dotnetRuntimePromise = undefined;
 let meaningFunction = undefined;
 
-function createRuntime() {
-    if (dotnetRuntime) {
-        return dotnetRuntime;
-    }
+async function createRuntime() {
     try {
-        dotnetRuntime = createDotnetRuntime({
+        const response = await fetch('dotnet.wasm');
+        const arrayBuffer = await response.arrayBuffer();
+        return createDotnetRuntime({
             configSrc: "./mono-config.json",
             disableDotnet6Compatibility: true,
             scriptDirectory: "/",
             instantiateWasm: async (imports, successCallback) => {
                 try {
-                    const response = await fetch('dotnet.wasm');
-                    const arrayBuffer = await response.arrayBuffer();
                     const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, imports);
                     successCallback(arrayBufferResult.instance);
                 } catch (err) {
@@ -25,7 +22,6 @@ function createRuntime() {
                 }
             }
         });
-        return dotnetRuntime;
     } catch (err) {
         console.error(err);
         throw err;
@@ -33,8 +29,11 @@ function createRuntime() {
 }
 
 async function dotnetMeaning() {
-    const { BINDING } = await createRuntime();
-    meaningFunction = BINDING.bind_static_method("[Wasm.Browser.NextJs.Sample] Sample.Test:TestMeaning");
+    if (!dotnetRuntimePromise) {
+        dotnetRuntimePromise = createRuntime();
+    }
+    const { BINDING } = await dotnetRuntimePromise;
+    meaningFunction = BINDING.bind_static_method("[Wasm.Browser.NextJs.Sample] Sample.Test:Main");
     return meaningFunction();
 }
 

@@ -12,5 +12,7 @@
     "webpack-cli": "4.9.1"
   },
   "dependencies": {
+    "@microsoft/dotnet-runtime": "file:bin/dotnet-runtime",
+    "underscore": "1.13.2"
   }
 }
