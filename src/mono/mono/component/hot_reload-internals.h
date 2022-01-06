@@ -10,6 +10,13 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/class-internals.h"
 
+/* Execution-time info for an updated class.  */
+typedef struct _MonoClassRuntimeMetadataUpdateInfo {
+	MonoCoopMutex static_fields_lock; /* protects the static_fields hashtable.  Values can be used outside the lock (since they're allocated pinned).  */
+	MonoGHashTable *static_fields; /* key is field token, value is a pinned managed object: either a boxed valuetype (the static field address is the value address) or a Mono.HotReload.FieldStore object (in which case the static field address is the address of the _loc field in the object.) */
+	gboolean inited;
+} MonoClassRuntimeMetadataUpdateInfo;
+
 /* Class-specific metadata update info.  See
  * mono_class_get_metadata_update_info() Note that this info is associated with
  * class _definitions_ that can be edited, so primitives, generic instances,
@@ -22,11 +29,9 @@ struct _MonoClassMetadataUpdateInfo {
 
 	GPtrArray *added_fields; /* a set of MonoClassMetadataUpdateField* values for every added field. */
 
-	struct _MonoClassRuntimeMetadataUpdateInfo {
-		MonoCoopMutex *static_fields_lock; /* protects the static_fields hashtable.  Values can be used outside the lock (since they're allocated pinned).  */
-		MonoGHashTable *static_fields; /* key is field token, value is a pinned managed object: either a boxed valuetype (the static field address is the value address) or a Mono.HotReload.FieldStore object (in which case the static field address is the address of the _loc field in the object.) */
-	} runtime;
+	MonoClassRuntimeMetadataUpdateInfo runtime;
 };
+
 
 /* Keep in sync with Mono.HotReload.FieldStore in managed */
 typedef struct _MonoHotReloadFieldStoreObject {

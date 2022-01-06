@@ -12,6 +12,7 @@
 
 #include <glib.h>
 #include "mono/metadata/assembly-internals.h"
+#include "mono/metadata/mono-hash-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/metadata-update.h"
 #include "mono/metadata/object-internals.h"
@@ -2447,15 +2448,101 @@ metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, Basel
 	return field;
 }
 
+static void
+ensure_class_runtime_info_inited (MonoClass *klass, MonoClassRuntimeMetadataUpdateInfo *runtime_info)
+{
+	if (runtime_info->inited)
+		return;
+	mono_loader_lock ();
+	if (runtime_info->inited) {
+		mono_loader_unlock ();
+		return;
+	}
+
+	mono_coop_mutex_init (&runtime_info->static_fields_lock);
+
+	/* FIXME: is it ok to re-use MONO_ROOT_SOURCE_STATIC here? */
+	runtime_info->static_fields = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_STATIC, NULL, "Hot Reload Static Fields");
+
+	runtime_info->inited = TRUE;
+
+	mono_loader_unlock ();
+}
+
+static void
+class_runtime_info_static_fields_lock (MonoClassRuntimeMetadataUpdateInfo *runtime_info)
+{
+	mono_coop_mutex_lock (&runtime_info->static_fields_lock);
+}
+
+static void
+class_runtime_info_static_fields_unlock (MonoClassRuntimeMetadataUpdateInfo *runtime_info)
+{
+	mono_coop_mutex_unlock (&runtime_info->static_fields_lock);
+}
+
+static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_field_store);
+
+GENERATE_GET_CLASS_WITH_CACHE(hot_reload_field_store, "Mono.HotReload", "FieldStore");
+
+
+static MonoObject*
+create_static_field_storage (MonoType *t, MonoError *error)
+{
+	MonoClass *klass;
+	if (!mono_type_is_reference (t))
+		klass = mono_class_from_mono_type_internal (t);
+	else
+		klass = mono_class_get_hot_reload_field_store_class ();
+
+	return mono_object_new_pinned (klass, error);
+}
+
 static gpointer
 hot_reload_get_static_field_addr (MonoClassField *field)
 {
 	g_assert (m_field_is_from_update (field));
 	MonoClassMetadataUpdateField *f = (MonoClassMetadataUpdateField *)field;
 	g_assert ((f->field.type->attrs & FIELD_ATTRIBUTE_STATIC) != 0);
-	// FIXME: this needs to be GC-visible
+	g_assert (!m_type_is_byref(f->field.type)); // byref fields only in ref structs, which aren't allowed in EnC updates
 
-	g_assert_not_reached (); // FIXME: finish me
+	MonoClass *parent = m_field_get_parent (&f->field);
+	MonoClassMetadataUpdateInfo *parent_info = mono_class_get_or_add_metadata_update_info (parent);
+	MonoClassRuntimeMetadataUpdateInfo *runtime_info = &parent_info->runtime;
 
-	return NULL;
+	ensure_class_runtime_info_inited (parent, runtime_info);
+
+	MonoObject *obj = NULL;
+	class_runtime_info_static_fields_lock (runtime_info);
+	obj = (MonoObject*) mono_g_hash_table_lookup (runtime_info->static_fields, GUINT_TO_POINTER (f->token));
+	class_runtime_info_static_fields_unlock (runtime_info);
+	if (!obj) {
+		ERROR_DECL (error);
+		obj = create_static_field_storage (f->field.type, error);
+		class_runtime_info_static_fields_lock (runtime_info);
+		mono_error_assert_ok (error);
+		MonoObject *obj2 = (MonoObject*) mono_g_hash_table_lookup (runtime_info->static_fields, GUINT_TO_POINTER (f->token));
+		if (!obj2) {
+			// Noone else created it, use ours
+			mono_g_hash_table_insert_internal (runtime_info->static_fields, GUINT_TO_POINTER (f->token), obj);
+		} else {
+			/* beaten by another thread, silently drop our storage object and use theirs */
+			obj = obj2;
+		}
+		class_runtime_info_static_fields_unlock (runtime_info);
+	}
+	g_assert (obj);
+
+	gpointer addr = NULL;
+	if (!mono_type_is_reference (f->field.type)) {
+		// object is just the boxed value
+		addr = mono_object_unbox_internal (obj);
+	} else {
+		// object is a Mono.HotReload.FieldStore, and the static field value is obj._loc
+		MonoHotReloadFieldStoreObject *store = (MonoHotReloadFieldStoreObject *)obj;
+		addr = (gpointer)&store->_loc;
+	}
+	g_assert (addr);
+
+	return addr;
 }

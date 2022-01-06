@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Mono.HotReload;
 
@@ -35,11 +36,11 @@ internal class InstanceFieldTable
     internal static FieldStore GetInstanceFieldFieldStore(object inst, RuntimeTypeHandle type, uint fielddef_token)
         => _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(type, fielddef_token);
 
-    private static HotReloadInstanceFieldTable _singleton = new();
+    private static InstanceFieldTable _singleton = new();
 
     private ConditionalWeakTable<object, InstanceFields> _table;
 
-    private HotReloadInstanceFieldTable()
+    private InstanceFieldTable()
     {
         _table = new();
     }
@@ -57,7 +58,7 @@ internal class InstanceFieldTable
             _fields = new();
             _lock = new();
         }
-x1
+
         public FieldStore LookupOrAdd(RuntimeTypeHandle type, uint key)
         {
             if (_fields.TryGetValue(key, out FieldStore? v))
@@ -81,6 +82,7 @@ x1
 // and EnCSyncBlockInfo::ResolveOrAllocateField), the logic is in managed.
 //
 // Additionally Mono uses this for storing added static fields.
+[StructLayout(LayoutKind.Sequential)]
 internal class FieldStore
 {
     // keep in sync with hot_reload-internals.h
@@ -107,4 +109,3 @@ internal class FieldStore
         return new FieldStore(loc);
     }
 }
-
