@@ -59,5 +59,50 @@ namespace System.Reflection.Emit.Tests
             module.CreateGlobalFunctions();
             Assert.Throws<InvalidOperationException>(() => module.DefineInitializedData("MyField2", new byte[] { 1, 0, 1 }, FieldAttributes.Public));
         }
+
+        [Fact]
+        public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
+        {
+            ModuleBuilder module = Helpers.DynamicModule();
+
+            // Create static field data in a variety of orders that requires the runtime to actively apply alignment
+            // RuntimeHelpers.CreateSpan requires data to be naturally aligned within the "PE" file. At this time CreateSpan only
+            // requires alignments up to 8 bytes.
+            FieldBuilder field1Byte = module.DefineInitializedData("Field1Byte", new byte[] { 1 }, FieldAttributes.Public);
+            FieldBuilder field4Byte_1 = module.DefineInitializedData("Field4Bytes_1", new byte[] { 1, 2, 3, 4 }, FieldAttributes.Public);
+            FieldBuilder field8Byte_1 = module.DefineInitializedData("Field8Bytes_1", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, FieldAttributes.Public);
+            FieldBuilder field4Byte_2 = module.DefineInitializedData("Field4Bytes_2", new byte[] { 5, 6, 7, 8 }, FieldAttributes.Public);
+            FieldBuilder field8Byte_2 = module.DefineInitializedData("Field8Bytes_2", new byte[] { 9, 10, 11, 12, 13, 14, 15, 16 }, FieldAttributes.Public);
+            module.CreateGlobalFunctions();
+
+            var checkTypeBuilder = module.DefineType("CheckType", TypeAttributes.Public);
+            CreateLoadAddressMethod("LoadAddress1", field1Byte);
+            CreateLoadAddressMethod("LoadAddress4_1", field4Byte_1);
+            CreateLoadAddressMethod("LoadAddress4_2", field4Byte_2);
+            CreateLoadAddressMethod("LoadAddress8_1", field8Byte_1);
+            CreateLoadAddressMethod("LoadAddress8_2", field8Byte_2);
+
+            var checkType = checkTypeBuilder.CreateType();
+
+            CheckMethod("LoadAddress4_1", 4);
+            CheckMethod("LoadAddress4_2", 4);
+            CheckMethod("LoadAddress8_1", 8);
+            CheckMethod("LoadAddress8_2", 8);
+
+            void CreateLoadAddressMethod(string name, FieldBuilder fieldBuilder)
+            {
+                var loadAddressMethod = checkTypeBuilder.DefineMethod(name, MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), null);
+                var methodIL = loadAddressMethod.GetILGenerator();
+                methodIL.Emit(OpCodes.Ldsflda, fieldBuilder);
+                methodIL.Emit(OpCodes.Ret);
+            }
+
+            void CheckMethod(string name, int minAlignmentRequired)
+            {
+                var methodToCall = checkType.GetMethod(name);
+                long address = Math.Abs((long)(IntPtr)methodToCall.Invoke(null, null));
+                Assert.Equal(name + "_0", name + "_" + (address % minAlignmentRequired).ToString());
+            }
+        }
     }
 }

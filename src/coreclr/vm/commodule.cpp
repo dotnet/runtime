@@ -500,8 +500,10 @@ extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle p
         IfFailThrow( pGen->GetSectionCreate (".sdata", sdReadWrite, &pReflectionModule->m_sdataSection) );
 
     // Define the alignment that the rva will be set to. Since the CoreCLR runtime only has hard alignment requirements
-    // up to 8 bytes, just align everything to an 8 byte alignment
-    DWORD alignment = 8; 
+    // up to 8 bytes, the highest alignment we may need is 8 byte alignment. This hard alignment requirement is only needed
+    // by Runtime.Helpers.CreateSpan<T>. Since the previous alignment was 4 bytes before CreateSpan was implemented, if the
+    // data isn't itself of size divisible by 8, just align to 4 to the memory cost of excess alignment.
+    DWORD alignment = (length % 8 == 0) ? 8 : 4;
 
     // Get the size of current .sdata section. This will be the RVA for this field within the section
     DWORD dwRVA = 0;
