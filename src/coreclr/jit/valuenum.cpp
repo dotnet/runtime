@@ -9116,8 +9116,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     if (newVN != ValueNumStore::NoVN)
                     {
                         // We don't care about differences between liberal and conservative for pointer values.
-                        newVN = vnStore->VNWithExc(newVN, excSetPair.GetLiberal());
-                        tree->gtVNPair.SetBoth(newVN);
+                        tree->gtVNPair = vnStore->VNPWithExc(ValueNumPair(newVN, newVN), excSetPair);
                     }
                     else
                     {
