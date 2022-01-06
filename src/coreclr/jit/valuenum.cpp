@@ -6793,6 +6793,7 @@ void Compiler::fgValueNumber()
 
 #ifdef DEBUG
     JitTestCheckVN();
+    fgDebugCheckExceptionSets();
 #endif // DEBUG
 
     fgVNPassesCompleted++;
@@ -10956,6 +10957,51 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// fgDebugCheckExceptionSets: Verify the exception sets on trees.
+//
+// This function checks that the node's exception set is a superset of
+// the exception sets of its operands.
+//
+void Compiler::fgDebugCheckExceptionSets()
+{
+    struct ExceptionSetsChecker
+    {
+        static void CheckTree(GenTree* tree, ValueNumStore* vnStore)
+        {
+            assert(tree->gtVNPair.BothDefined());
+
+            ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
+            tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+
+                CheckTree(operand, vnStore);
+                operandsExcSet = vnStore->VNPUnionExcSet(operand->gtVNPair, operandsExcSet);
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            // Currently, we fail to properly maintain the exception sets for trees with user
+            // calls or assignments.
+            if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) != 0)
+            {
+                return;
+            }
+
+            ValueNumPair nodeExcSet = vnStore->VNPExceptionSet(tree->gtVNPair);
+            assert(vnStore->VNExcIsSubset(nodeExcSet.GetLiberal(), operandsExcSet.GetLiberal()));
+            assert(vnStore->VNExcIsSubset(nodeExcSet.GetConservative(), operandsExcSet.GetConservative()));
+        }
+    };
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            ExceptionSetsChecker::CheckTree(stmt->GetRootNode(), vnStore);
+        }
+    }
+}
+
 // This method asserts that SSA name constraints specified are satisfied.
 // Until we figure out otherwise, all VN's are assumed to be liberal.
 // TODO-Cleanup: new JitTestLabels for lib vs cons vs both VN classes?

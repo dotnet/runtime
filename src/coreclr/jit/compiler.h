@@ -5560,6 +5560,10 @@ public:
     // Adds the exception sets for the current tree node
     void fgValueNumberAddExceptionSet(GenTree* tree);
 
+#ifdef DEBUG
+    void fgDebugCheckExceptionSets();
+#endif
+
     // These are the current value number for the memory implicit variables while
     // doing value numbering.  These are the value numbers under the "liberal" interpretation
     // of memory values; the "conservative" interpretation needs no VN, since every access of
