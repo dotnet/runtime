@@ -15,13 +15,6 @@ for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 
-call %__RepoRootDir%\eng\native\init-vs-env.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
-
-if defined VCINSTALLDIR (
-    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
-)
-
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
@@ -226,6 +219,13 @@ if not defined NumberOfCores (
     set NumberOfCores=!TotalNumberOfCores!
 )
 echo %__MsgPrefix%Number of processor cores %NumberOfCores%
+
+call %__RepoRootDir%\eng\native\init-vs-env.cmd
+if NOT '%ERRORLEVEL%' == '0' exit /b 1
+
+if defined VCINSTALLDIR (
+    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
+)
 
 set __VCBuildArch=x86_amd64
 if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
