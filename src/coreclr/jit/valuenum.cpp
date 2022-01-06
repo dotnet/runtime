@@ -10986,13 +10986,17 @@ void Compiler::fgDebugCheckExceptionSets()
     {
         static void CheckTree(GenTree* tree, ValueNumStore* vnStore)
         {
-            assert(tree->gtVNPair.BothDefined());
+            // We will fail to VN some PHI_ARGs - their values may not
+            // be known at the point we number them because of loops.
+            assert(tree->gtVNPair.BothDefined() || tree->OperIs(GT_PHI_ARG));
 
             ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
             tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
 
                 CheckTree(operand, vnStore);
-                operandsExcSet = vnStore->VNPUnionExcSet(operand->gtVNPair, operandsExcSet);
+
+                ValueNumPair operandVNP = operand->gtVNPair.BothDefined() ? operand->gtVNPair : vnStore->VNPForVoid();
+                operandsExcSet          = vnStore->VNPUnionExcSet(operandVNP, operandsExcSet);
 
                 return GenTree::VisitResult::Continue;
             });
