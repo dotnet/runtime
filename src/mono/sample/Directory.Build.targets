@@ -2,8 +2,6 @@
   <UsingTask TaskName="GenerateRunScript" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
 
   <PropertyGroup>
-    <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(RepositoryEngineeringDir)testing\$(RunScriptInputName)</RunScriptInputPath>
-
     <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
   </PropertyGroup>
@@ -15,6 +13,7 @@
   -->
   <Target Name="GenerateRunScriptForRunningSampleOnHelix" Condition="'$(GenerateRunScriptForSample)' == 'true'">
     <PropertyGroup>
+      <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(RepositoryEngineeringDir)testing\$(RunScriptInputName)</RunScriptInputPath>
       <RunScriptOutputPath Condition="'$(RunScriptOutputPath)' == ''">$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     </PropertyGroup>
 
