@@ -3082,6 +3082,10 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoType **conv_arg_type, MarshalAction action)
 {
 	switch (t->type) {
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			break;
+	// fallthrough
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass* c = mono_class_from_mono_type_internal (t);
 		if (m_class_has_references(c)) {
@@ -3112,9 +3116,11 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MONO_TYPE_FNPTR:
 		return get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	default:
-		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
-		return conv_arg;
+		break;
 	}
+	
+	get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
+	return conv_arg;
 }
 
 int
@@ -3866,6 +3872,10 @@ static gboolean
 type_is_usable_when_marshalling_disabled (MonoType *type)
 {
 	switch (type->type) {
+	case MONO_TYPE_GENERICINST:
+		if (!mono_type_generic_inst_is_valuetype (t))
+			return FALSE;
+	// fallthrough
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass* c = mono_class_from_mono_type_internal (type);
 		if (m_class_has_references(c) || (m_class_is_auto_layout(c) && !m_class_is_enumtype(c))) {
@@ -3873,6 +3883,7 @@ type_is_usable_when_marshalling_disabled (MonoType *type)
 		}
 	}
 	// fallthrough
+	case MONO_TYPE_VOID:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_CHAR:
