@@ -9949,14 +9949,12 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 {
     // First: do value numbering of any argument placeholder nodes in the argument list
     // (by transferring from the VN of the late arg that they are standing in for...)
-    unsigned i = 0;
-    for (GenTreeCall::Use& use : call->Args())
-    {
-        GenTree* arg = use.GetNode();
+
+    auto updateArgVN = [=](GenTree* arg, unsigned argIndex) {
         if (arg->OperGet() == GT_ARGPLACE)
         {
             // Find the corresponding late arg.
-            GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
+            GenTree* lateArg = call->fgArgInfo->GetArgNode(argIndex);
             assert(lateArg->gtVNPair.BothDefined());
             arg->gtVNPair = lateArg->gtVNPair;
 #ifdef DEBUG
@@ -9970,7 +9968,19 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
             }
 #endif
         }
-        i++;
+    };
+
+    unsigned argIndex = 0;
+    if (call->gtCallThisArg != nullptr)
+    {
+        updateArgVN(call->gtCallThisArg->GetNode(), argIndex);
+        argIndex++;
+    }
+
+    for (GenTreeCall::Use& use : call->Args())
+    {
+        updateArgVN(use.GetNode(), argIndex);
+        argIndex++;
     }
 
     if (call->gtCallType == CT_HELPER)
