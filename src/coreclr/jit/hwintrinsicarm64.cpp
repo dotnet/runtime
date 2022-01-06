@@ -1347,7 +1347,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            op2 = impSIMDPopStack(retType);
+            op2 = impPopStack().val;
             op1 = impSIMDPopStack(retType);
 
             retNode = gtNewSimdBinOpNode(GT_LSH, retType, op1, op2, simdBaseJitType, simdSize,
@@ -1360,7 +1360,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            op2 = impSIMDPopStack(retType);
+            op2 = impPopStack().val;
             op1 = impSIMDPopStack(retType);
 
             retNode = gtNewSimdBinOpNode(GT_RSH, retType, op1, op2, simdBaseJitType, simdSize,
@@ -1373,7 +1373,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            op2 = impSIMDPopStack(retType);
+            op2 = impPopStack().val;
             op1 = impSIMDPopStack(retType);
 
             retNode = gtNewSimdBinOpNode(GT_RSZ, retType, op1, op2, simdBaseJitType, simdSize,
