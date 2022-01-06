@@ -6812,10 +6812,11 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         assert(asg->OperIs(GT_ASG));
 
         GenTreeLclVar* newSsaDef = asg->AsOp()->gtGetOp1()->AsLclVar();
+        GenTreePhi*    phiNode   = asg->AsOp()->gtGetOp2()->AsPhi();
         ValueNumPair   phiVNP;
         ValueNumPair   sameVNP;
 
-        for (GenTreePhi::Use& use : asg->AsOp()->gtGetOp2()->AsPhi()->Uses())
+        for (GenTreePhi::Use& use : phiNode->Uses())
         {
             GenTreePhiArg* phiArg         = use.GetNode()->AsPhiArg();
             ValueNum       phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
@@ -6880,6 +6881,10 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
         }
 #endif // DEBUG
+
+        newSsaDef->gtVNPair = vnStore->VNPForVoid();
+        phiNode->gtVNPair   = newSsaDefVNP;
+        asg->gtVNPair       = vnStore->VNPForVoid();
     }
 
     // Now do the same for each MemoryKind.
