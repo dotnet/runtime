@@ -2985,7 +2985,7 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 	}
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE (disable_runtime_marshalling_attr, "System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (disable_runtime_marshalling_attr, "System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute")
 
 /*
  * runtime_marshalling_enabled:
@@ -2999,27 +2999,34 @@ runtime_marshalling_enabled (MonoImage *img)
 	MonoAssembly *ass = img->assembly;
 	MonoCustomAttrInfo* attrs;
 	MonoClass *klass;
-	gboolean val = FALSE;
+	int i;
+	gboolean runtime_marshalling_enabled = TRUE;
 
 	g_assert (ass);
 	if (ass->runtime_marshalling_enabled_inited)
 		return ass->runtime_marshalling_enabled;
 
-	klass = mono_class_get_disable_runtime_marshalling_attr_class ();
-
+	klass = mono_class_try_get_disable_runtime_marshalling_attr_class ();
 	attrs = mono_custom_attrs_from_assembly_checked (ass, FALSE, error);
 	mono_error_cleanup (error); /* FIXME don't swallow the error */
-	if (attrs) {
-		ass->runtime_marshalling_enabled = FALSE;
-		mono_custom_attrs_free (attrs);
-	} else {
-		ass->runtime_marshalling_enabled = TRUE;
+	if (attrs && klass) {
+		for (i = 0; i < attrs->num_attrs; ++i) {
+			MonoCustomAttrEntry *attr = &attrs->attrs [i];
+			if (attr->ctor && attr->ctor->klass == klass) {
+				runtime_marshalling_enabled = FALSE;
+				break;
+			}
+		}
 	}
 
+	if (attrs)
+		mono_custom_attrs_free (attrs);
+
+	ass->runtime_marshalling_enabled = runtime_marshalling_enabled;
 	mono_memory_barrier ();
 	ass->runtime_marshalling_enabled_inited = TRUE;
 
-	return val;
+	return ass->runtime_marshalling_enabled;
 }
 
 
