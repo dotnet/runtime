@@ -54,12 +54,10 @@ namespace System.Drawing
     {
         protected Brush() { }
         public abstract object Clone();
-        public System.IntPtr Handle { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~Brush() { }
         protected internal void SetNativeBrush(System.IntPtr brush) { }
-        public static System.Drawing.Brush FromHandle(System.IntPtr handle) { throw null; }
     }
     public static partial class Brushes
     {
@@ -404,7 +402,6 @@ namespace System.Drawing
     public sealed partial class Graphics : System.MarshalByRefObject, System.Drawing.IDeviceContext, System.IDisposable
     {
         internal Graphics() { }
-        public System.IntPtr Handle { get { throw null;  } }
         public System.Drawing.Region Clip { get { throw null; } set { } }
         public System.Drawing.RectangleF ClipBounds { get { throw null; } }
         public System.Drawing.Drawing2D.CompositingMode CompositingMode { get { throw null; } set { } }
@@ -586,7 +583,6 @@ namespace System.Drawing
         ~Graphics() { }
         public void Flush() { }
         public void Flush(System.Drawing.Drawing2D.FlushIntention intention) { }
-        public static System.Drawing.Graphics FromHandle(System.IntPtr handle) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHdc(System.IntPtr hdc) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -677,8 +673,6 @@ namespace System.Drawing
         public Icon(string fileName, int width, int height) { }
         public Icon(System.Type type, string resource) { }
         [System.ComponentModel.BrowsableAttribute(false)]
-        public System.IntPtr Handle { get { throw null; } }
-        [System.ComponentModel.BrowsableAttribute(false)]
         public int Height { get { throw null; } }
         public System.Drawing.Size Size { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -687,7 +681,6 @@ namespace System.Drawing
         public void Dispose() { }
         public static System.Drawing.Icon? ExtractAssociatedIcon(string filePath) { throw null; }
         ~Icon() { }
-        public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }
@@ -772,8 +765,6 @@ namespace System.Drawing
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
-        public System.IntPtr Handle { get { throw null; } }
-        public static System.Drawing.Image FromHandle(System.IntPtr handle) { throw null; }
     }
     public sealed partial class ImageAnimator
     {
@@ -841,8 +832,6 @@ namespace System.Drawing
         public void SetLineCap(System.Drawing.Drawing2D.LineCap startCap, System.Drawing.Drawing2D.LineCap endCap, System.Drawing.Drawing2D.DashCap dashCap) { }
         public void TranslateTransform(float dx, float dy) { }
         public void TranslateTransform(float dx, float dy, System.Drawing.Drawing2D.MatrixOrder order) { }
-        public System.IntPtr Handle { get { throw null; } }
-        public static System.Drawing.Pen FromHandle(System.IntPtr handle) { throw null; }
     }
     public static partial class Pens
     {
@@ -1047,8 +1036,6 @@ namespace System.Drawing
         public void Xor(System.Drawing.Rectangle rect) { }
         public void Xor(System.Drawing.RectangleF rect) { }
         public void Xor(System.Drawing.Region region) { }
-        public System.IntPtr Handle { get { throw null; } }
-        public static System.Drawing.Region FromHandle(System.IntPtr handle) { throw null; }
     }
     public enum RotateFlipType
     {
@@ -1495,8 +1482,6 @@ namespace System.Drawing.Drawing2D
         public void Widen(System.Drawing.Pen pen) { }
         public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix? matrix) { }
         public void Widen(System.Drawing.Pen pen, System.Drawing.Drawing2D.Matrix? matrix, float flatness) { }
-        public System.IntPtr Handle { get { throw null; } }
-        public static System.Drawing.Drawing2D.GraphicsPath FromHandle(System.IntPtr handle) { throw null; }
     }
     public sealed partial class GraphicsPathIterator : System.MarshalByRefObject, System.IDisposable
     {

@@ -17,10 +17,47 @@ namespace System.Drawing
         public void GetContextInfo(out PointF offset) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Graphics FromHandle(System.IntPtr handle) { throw null; }
+    }
+
+    public abstract partial class Brush
+    {
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Brush FromHandle(System.IntPtr handle) { throw null; }
+    }
+
+    public sealed partial class Icon
+    {
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
+    }
+
+    public abstract partial class Image
+    {
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Image FromHandle(System.IntPtr handle) { throw null; }
+    }
+
+    public sealed partial class Pen
+    {
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Pen FromHandle(System.IntPtr handle) { throw null; }
+    }
+
+    public sealed partial class Region
+    {
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Region FromHandle(System.IntPtr handle) { throw null; }
     }
 }
 namespace System.Drawing.Drawing2D
 {
+    public sealed partial class GraphicsPath
+    {
+        public System.IntPtr Handle { get { throw null; } }
+        public static System.Drawing.Drawing2D.GraphicsPath FromHandle(System.IntPtr handle) { throw null; }
+    }
     public sealed partial class Matrix
     {
         public Matrix(System.Numerics.Matrix3x2 matrix) { }
