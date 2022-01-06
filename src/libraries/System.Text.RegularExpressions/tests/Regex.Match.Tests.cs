@@ -357,12 +357,17 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
                     yield return ("(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty);
                     yield return ("(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty);
+                    yield return ("(?(cat)cat|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
+                    yield return ("(?((?=cat))cat|dog)", "cat", RegexOptions.None, 0, 3, true, "cat");
                     yield return ("(?(cat)|dog)", "cat", RegexOptions.None, 0, 3, true, string.Empty);
                     yield return ("(?(cat)|dog)", "catdog", RegexOptions.None, 0, 6, true, string.Empty);
                     yield return ("(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty);
                     yield return ("(?(cat)dog1|dog2)", "catdog1", RegexOptions.None, 0, 7, false, string.Empty);
                     yield return ("(?(cat)dog1|dog2)", "catdog2", RegexOptions.None, 0, 7, true, "dog2");
                     yield return ("(?(cat)dog1|dog2)", "catdog1dog2", RegexOptions.None, 0, 11, true, "dog2");
+                    yield return (@"(?(\w+)\w+)dog", "catdog", RegexOptions.None, 0, 6, true, "catdog");
+                    yield return (@"(?(abc)\w+|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
+                    yield return (@"(?(abc)cat|\w{0,2})dog", "catdog", RegexOptions.None, 0, 6, true, "atdog");
                     yield return (@"(\w+|\d+)a+[ab]+", "123123aa", RegexOptions.None, 0, 8, true, "123123aa");
                     yield return ("(a|ab|abc|abcd)d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);

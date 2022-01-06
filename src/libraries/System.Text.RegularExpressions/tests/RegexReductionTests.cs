@@ -371,6 +371,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("xyz(?:(?i:abcde)|(?i:abcdf))", "xyz(?i:abcd[ef])")]
         [InlineData("bonjour|hej|ciao|shalom|zdravo|pozdrav|hallo|hola|hello|hey|witam|tere|bonjou|salam|helo|sawubona", "(?>bonjou(?>r|)|h(?>e(?>j|(?>l(?>lo|o)|y))|allo|ola)|ciao|s(?>halom|a(?>lam|wubona))|zdravo|pozdrav|witam|tere)")]
         [InlineData("\\w\\d123|\\w\\dabc", "\\w\\d(?:123|abc)")]
+        [InlineData("(a)(?(1)b)", "(a)(?(1)b|)")]
+        [InlineData("(?(a)a)", "(?(a)a|)")]
+        [InlineData("(?(\\w)\\d)", "(?(\\w)\\d|)")]
         // Auto-atomicity
         [InlineData("a*b", "(?>a*)b")]
         [InlineData("a*b+", "(?>a*)b+")]

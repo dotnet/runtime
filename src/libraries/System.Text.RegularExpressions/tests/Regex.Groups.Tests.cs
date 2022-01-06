@@ -833,7 +833,7 @@ namespace System.Text.RegularExpressions.Tests
                     yield return new object[] { engine, null, @"abcd(.*)f", @"abcabcdefg", options, new string[] { "abcdef", "e" } };
                 }
 
-                // Grouping Constructs Invalid Regular Expressions
+                // Grouping Constructs
                 yield return new object[] { engine, null, @"()", "cat", RegexOptions.None, new string[] { string.Empty, string.Empty } };
                 yield return new object[] { engine, null, @"(?<cat>)", "cat", RegexOptions.None, new string[] { string.Empty, string.Empty } };
                 yield return new object[] { engine, null, @"(?'cat')", "cat", RegexOptions.None, new string[] { string.Empty, string.Empty } };
@@ -844,7 +844,7 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, null, @"(?<=)", "cat", RegexOptions.None, new string[] { string.Empty } };
                 yield return new object[] { engine, null, @"(?>)", "cat", RegexOptions.None, new string[] { string.Empty } };
 
-                // Alternation construct Invalid Regular Expressions
+                // Alternation construct
                 yield return new object[] { engine, null, @"(?()|)", "(?()|)", RegexOptions.None, new string[] { "" } };
 
                 yield return new object[] { engine, null, @"(?(cat)|)", "cat", RegexOptions.None, new string[] { "" } };
@@ -858,6 +858,9 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, null, @"(?(cat)|catdog)", "cat", RegexOptions.None, new string[] { "" } };
                 yield return new object[] { engine, null, @"(?(cat)|catdog)", "catdog", RegexOptions.None, new string[] { "" } };
                 yield return new object[] { engine, null, @"(?(cat)|dog)", "dog", RegexOptions.None, new string[] { "dog" } };
+
+                yield return new object[] { engine, null, @"(?((\w{3}))\1\1|no)", "dogdogdog", RegexOptions.None, new string[] { "dogdog", "dog" } };
+                yield return new object[] { engine, null, @"(?((\w{3}))\1\1|no)", "no", RegexOptions.None, new string[] { "no", "" } };
 
                 // Invalid unicode
                 yield return new object[] { engine, null, "([\u0000-\uFFFF-[azAZ09]]|[\u0000-\uFFFF-[^azAZ09]])+", "azAZBCDE1234567890BCDEFAZza", RegexOptions.None, new string[] { "azAZBCDE1234567890BCDEFAZza", "a" } };

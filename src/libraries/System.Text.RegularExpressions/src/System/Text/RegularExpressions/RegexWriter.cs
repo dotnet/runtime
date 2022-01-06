@@ -288,13 +288,7 @@ namespace System.Text.RegularExpressions
                                 Emit(RegexCode.Goto, 0);
                                 PatchJump(Branchpos, _emitted.Length);
                                 Emit(RegexCode.Forejump);
-                                if (node.ChildCount() > 1)
-                                {
-                                    break;
-                                }
-
-                                // else fallthrough
-                                goto case 1;
+                                break;
                             }
                         case 1:
                             PatchJump(_intStack.Pop(), _emitted.Length);
@@ -328,11 +322,7 @@ namespace System.Text.RegularExpressions
                             PatchJump(Branchpos, _emitted.Length);
                             Emit(RegexCode.Getmark);
                             Emit(RegexCode.Forejump);
-
-                            if (node.ChildCount() > 2)
-                                break;
-                            // else fallthrough
-                            goto case 2;
+                            break;
                         case 2:
                             PatchJump(_intStack.Pop(), _emitted.Length);
                             break;
