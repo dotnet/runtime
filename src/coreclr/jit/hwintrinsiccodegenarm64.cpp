@@ -502,7 +502,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
                     assert(intrin.op1->IsVectorZero());
 
-                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
                 }
                 else if (intrin.op2->isContained())
                 {
