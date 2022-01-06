@@ -5,6 +5,7 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <!-- This test requires GCStress to trigger the regression. Set COMPlus_GCStress here. However,
