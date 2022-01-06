@@ -299,6 +299,19 @@ export function _compile_converter_for_marshal_string(typePtr: MonoType, method:
     const js = _generate_args_marshaler(typePtr, method, args_marshal);
     const csFunc = new Function("get_api", "get_type_converter", js);
     csFuncResult = csFunc(_get_api, _pick_automatic_converter_for_type);
+
+    if (csFuncResult.contains_auto) {
+        let map = <Map<MonoMethod, SignatureConverter>>_signature_converters.get(args_marshal);
+        if (!map) {
+            map = new Map();
+            _signature_converters.set(args_marshal, map);
+        }
+
+        map.set(method, csFuncResult);
+    } else {
+        _signature_converters.set(args_marshal, csFuncResult);
+    }
+
     return csFuncResult;
 }
 
