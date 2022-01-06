@@ -239,41 +239,32 @@ namespace System.Net.Http.Headers
 
             var vsb = new ValueStringBuilder(stackalloc char[512]);
 
-            if (GetEntries() is HeaderEntry[] entries)
+            foreach (HeaderEntry entry in GetEntries())
             {
-                foreach (HeaderEntry entry in entries)
+                vsb.Append(entry.Key.Name);
+                vsb.Append(": ");
+
+                GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
+                Debug.Assert(singleValue is not null ^ multiValue is not null);
+
+                if (singleValue is not null)
                 {
-                    if (!entry.Key.HasValue)
-                    {
-                        // An entry without a value indicates the end of the header collection
-                        break;
-                    }
-
-                    vsb.Append(entry.Key.Name);
-                    vsb.Append(": ");
-
-                    GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
-                    Debug.Assert(singleValue is not null ^ multiValue is not null);
-
-                    if (singleValue is not null)
-                    {
-                        vsb.Append(singleValue);
-                    }
-                    else
-                    {
-                        // Note that if we get multiple values for a header that doesn't support multiple values, we'll
-                        // just separate the values using a comma (default separator).
-                        string separator = entry.Key.Separator;
-
-                        for (int i = 0; i < multiValue!.Length; i++)
-                        {
-                            if (i != 0) vsb.Append(separator);
-                            vsb.Append(multiValue[i]);
-                        }
-                    }
-
-                    vsb.Append(Environment.NewLine);
+                    vsb.Append(singleValue);
                 }
+                else
+                {
+                    // Note that if we get multiple values for a header that doesn't support multiple values, we'll
+                    // just separate the values using a comma (default separator).
+                    string separator = entry.Key.Separator;
+
+                    for (int i = 0; i < multiValue!.Length; i++)
+                    {
+                        if (i != 0) vsb.Append(separator);
+                        vsb.Append(multiValue[i]);
+                    }
+                }
+
+                vsb.Append(Environment.NewLine);
             }
 
             return vsb.ToString();
@@ -307,27 +298,19 @@ namespace System.Net.Http.Headers
 
         private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
         {
-            HeaderEntry[] entries = GetEntriesGroupedByName()!;
+            HeaderEntry[] entries = GetEntriesGroupedByName(out int numberOfEntries)!;
 
-            for (int i = 0; i < entries.Length; i++)
+            for (int i = 0; i < numberOfEntries && i < entries.Length; i++)
             {
                 HeaderEntry entry = entries[i];
-                HeaderDescriptor descriptor = entry.Key;
-                if (!descriptor.HasValue)
-                {
-                    // An entry without a value indicates the end of the header collection
-                    break;
-                }
 
-                object value = entry.Value;
-
-                if (value is not HeaderStoreItemInfo info)
+                if (entry.Value is not HeaderStoreItemInfo info)
                 {
                     // To retain consistent semantics, we need to upgrade a raw string to a HeaderStoreItemInfo
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
                     // to reflect that parsing.
-                    info = new HeaderStoreItemInfo() { RawValue = value };
+                    info = new HeaderStoreItemInfo() { RawValue = entry.Value };
 
                     if (EntriesAreLiveView)
                     {
@@ -335,15 +318,15 @@ namespace System.Net.Http.Headers
                     }
                     else
                     {
-                        Debug.Assert(ContainsEntry(descriptor));
-                        ((Dictionary<HeaderDescriptor, object>)_headerStore!)[descriptor] = info;
+                        Debug.Assert(ContainsEntry(entry.Key));
+                        ((Dictionary<HeaderDescriptor, object>)_headerStore!)[entry.Key] = info;
                     }
                 }
 
                 // Make sure we parse all raw values before returning the result. Note that this has to be
                 // done before we calculate the array length (next line): A raw value may contain a list of
                 // values.
-                if (!ParseRawHeaderValues(descriptor, info))
+                if (!ParseRawHeaderValues(entry.Key, info))
                 {
                     // We saw an invalid header value (contains newline chars) and deleted it.
 
@@ -351,12 +334,13 @@ namespace System.Net.Http.Headers
                     if (EntriesAreLiveView)
                     {
                         i--;
+                        numberOfEntries--;
                     }
                 }
                 else
                 {
-                    string[] values = GetStoreValuesAsStringArray(descriptor, info);
-                    yield return new KeyValuePair<string, IEnumerable<string>>(descriptor.Name, values);
+                    string[] values = GetStoreValuesAsStringArray(entry.Key, info);
+                    yield return new KeyValuePair<string, IEnumerable<string>>(entry.Key.Name, values);
                 }
             }
         }
@@ -537,29 +521,20 @@ namespace System.Net.Http.Headers
             Debug.Assert(sourceHeaders != null);
             Debug.Assert(GetType() == sourceHeaders.GetType(), "Can only copy headers from an instance of the same type.");
 
-            if (sourceHeaders.GetEntriesGroupedByName() is HeaderEntry[] sourceEntries)
+            foreach (HeaderEntry entry in sourceHeaders.GetEntriesGroupedByName())
             {
-                foreach (HeaderEntry entry in sourceEntries)
+                // Only add header values if they're not already set on the message. Note that we don't merge
+                // collections: If both the default headers and the message have set some values for a certain
+                // header, then we don't try to merge the values.
+                if (!ContainsEntry(entry.Key))
                 {
-                    if (!entry.Key.HasValue)
+                    object value = entry.Value;
+                    if (value is HeaderStoreItemInfo info)
                     {
-                        // An entry without a value indicates the end of the header collection
-                        break;
+                        value = CloneHeaderInfo(entry.Key, info);
                     }
 
-                    // Only add header values if they're not already set on the message. Note that we don't merge
-                    // collections: If both the default headers and the message have set some values for a certain
-                    // header, then we don't try to merge the values.
-                    if (!ContainsEntry(entry.Key))
-                    {
-                        object value = entry.Value;
-                        if (value is HeaderStoreItemInfo info)
-                        {
-                            value = CloneHeaderInfo(entry.Key, info);
-                        }
-
-                        AddEntryToStore(new HeaderEntry(entry.Key, value));
-                    }
+                    AddEntryToStore(new HeaderEntry(entry.Key, value));
                 }
             }
         }
@@ -1263,8 +1238,10 @@ namespace System.Net.Http.Headers
         private const int InitialCapacity = 4;
         internal const int ArrayThreshold = 64; // Above this threshold, header ordering will not be preserved
 
-        internal HeaderEntry[]? GetEntries()
+        internal HeaderEntry[]? GetEntries(out int numberOfEntries)
         {
+            numberOfEntries = _count;
+
             object? store = _headerStore;
             if (store is null)
             {
@@ -1276,11 +1253,12 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                return GetEntriesFromDictionary(Unsafe.As<Dictionary<HeaderDescriptor, object>>(store));
+                return GetEntriesFromDictionary();
             }
 
-            static HeaderEntry[] GetEntriesFromDictionary(Dictionary<HeaderDescriptor, object> dictionary)
+            HeaderEntry[] GetEntriesFromDictionary()
             {
+                var dictionary = (Dictionary<HeaderDescriptor, object>)_headerStore!;
                 var entries = new HeaderEntry[dictionary.Count];
                 int i = 0;
                 foreach (KeyValuePair<HeaderDescriptor, object> entry in dictionary)
@@ -1295,7 +1273,18 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal HeaderEntry[]? GetEntriesGroupedByName()
+        internal ReadOnlySpan<HeaderEntry> GetEntries()
+        {
+            return new ReadOnlySpan<HeaderEntry>(GetEntries(out int numberOfEntries), 0, numberOfEntries);
+        }
+
+        internal HeaderEntry[]? GetEntriesGroupedByName(out int numberOfEntries)
+        {
+            GroupAllEntriesByName();
+            return GetEntries(out numberOfEntries);
+        }
+
+        internal ReadOnlySpan<HeaderEntry> GetEntriesGroupedByName()
         {
             GroupAllEntriesByName();
             return GetEntries();
@@ -1318,23 +1307,13 @@ namespace System.Net.Http.Headers
             {
                 _entriesMayBeUngrouped = false;
 
-                for (int i = 0; i < entries.Length; i++)
+                for (int i = 0; i < _count && i < entries.Length; i++)
                 {
                     HeaderDescriptor key = entries[i].Key;
-                    if (!key.HasValue)
-                    {
-                        break;
-                    }
 
-                    for (int j = i + 1; j < entries.Length; j++)
+                    for (int j = i + 1; j < _count && (uint)j < (uint)entries.Length; j++)
                     {
-                        HeaderDescriptor secondKey = entries[j].Key;
-                        if (!secondKey.HasValue)
-                        {
-                            break;
-                        }
-
-                        if (secondKey.Equals(key))
+                        if (key.Equals(entries[j].Key))
                         {
                             MergeEntryValues(ref entries[i].Value, entries[j].Value);
                             RemoveAt(entries, j);
@@ -1383,36 +1362,16 @@ namespace System.Net.Http.Headers
             {
                 if (store is HeaderEntry[] entries)
                 {
-                    for (int i = 0; i < entries.Length; i++)
+                    for (int i = 0; i < _count && i < entries.Length; i++)
                     {
-                        ref HeaderEntry entry = ref entries[i];
-                        if (!entry.Key.HasValue)
-                        {
-                            break;
-                        }
-
-                        if (entry.Key.Equals(key))
+                        if (key.Equals(entries[i].Key))
                         {
                             if (_entriesMayBeUngrouped)
                             {
-                                for (int j = i + 1; j < entries.Length; j++)
-                                {
-                                    HeaderDescriptor secondKey = entries[j].Key;
-                                    if (!secondKey.HasValue)
-                                    {
-                                        break;
-                                    }
-
-                                    if (secondKey.Equals(key))
-                                    {
-                                        MergeEntryValues(ref entry.Value, entries[j].Value);
-                                        RemoveAt(entries, j);
-                                        j--;
-                                    }
-                                }
+                                MergeEntriesAfter(entries, i);
                             }
 
-                            return ref entry.Value;
+                            return ref entries[i].Value;
                         }
                     }
                 }
@@ -1423,6 +1382,25 @@ namespace System.Net.Http.Headers
             }
 
             return ref Unsafe.NullRef<object>();
+
+            void MergeEntriesAfter(HeaderEntry[] entries, int i)
+            {
+                if ((uint)i < (uint)entries.Length)
+                {
+                    ref HeaderEntry entry = ref entries[i];
+                    HeaderDescriptor key = entry.Key;
+
+                    for (i++; i < _count && (uint)i < (uint)entries.Length; i++)
+                    {
+                        if (key.Equals(entries[i].Key))
+                        {
+                            MergeEntryValues(ref entry.Value, entries[i].Value);
+                            RemoveAt(entries, i);
+                            i--;
+                        }
+                    }
+                }
+            }
         }
 
         private void AddEntryToStore(HeaderEntry entry)
@@ -1463,6 +1441,7 @@ namespace System.Net.Http.Headers
             void GrowAndAddEntry(ref HeaderEntry entry)
             {
                 var entries = (HeaderEntry[])_headerStore!;
+                Debug.Assert(entries.Length == _count);
                 if (entries.Length == ArrayThreshold)
                 {
                     _headerStore = new Dictionary<HeaderDescriptor, object>(ArrayThreshold);
@@ -1505,14 +1484,9 @@ namespace System.Net.Http.Headers
             {
                 if (store is HeaderEntry[] entries)
                 {
-                    for (int i = 0; i < entries.Length; i++)
+                    for (int i = 0; i < _count && i < entries.Length; i++)
                     {
-                        HeaderDescriptor entryKey = entries[i].Key;
-                        if (!entryKey.HasValue)
-                        {
-                            break;
-                        }
-                        else if (entryKey.Equals(key))
+                        if (key.Equals(entries[i].Key))
                         {
                             return true;
                         }
@@ -1546,50 +1520,41 @@ namespace System.Net.Http.Headers
 
         internal bool Remove(HeaderDescriptor key)
         {
+            bool removedAny = false;
+
             object? store = _headerStore;
             if (store is not null)
             {
                 if (store is HeaderEntry[] entries)
                 {
-                    bool removedAny = false;
-
-                    for (int i = 0; i < entries.Length; i++)
+                    for (int i = _count - 1; i >= 0 && (uint)i < (uint)entries.Length; i--)
                     {
-                        HeaderDescriptor entryKey = entries[i].Key;
-                        if (!entryKey.HasValue)
-                        {
-                            break;
-                        }
-
-                        if (entryKey.Equals(key))
+                        if (key.Equals(entries[i].Key))
                         {
                             removedAny = true;
                             RemoveAt(entries, i);
-                            i--;
                         }
                     }
-
-                    return removedAny;
                 }
                 else if (Unsafe.As<Dictionary<HeaderDescriptor, object>>(store).Remove(key))
                 {
                     _count--;
-                    return true;
+                    removedAny = true;
                 }
             }
 
-            return false;
+            return removedAny;
         }
 
-        private void RemoveAt(HeaderEntry[] entries, int index)
+        private void RemoveAt(HeaderEntry[] entries, int i)
         {
             int count = _count--;
-            while ((uint)(index + 1) < (uint)entries.Length && index + 1 < count)
+            while ((uint)(i + 1) < (uint)entries.Length && i + 1 < count)
             {
-                entries[index] = entries[index + 1];
-                index++;
+                entries[i] = entries[i + 1];
+                i++;
             }
-            entries[index] = default;
+            entries[i] = default;
         }
 
         #endregion // _headerStore implementation

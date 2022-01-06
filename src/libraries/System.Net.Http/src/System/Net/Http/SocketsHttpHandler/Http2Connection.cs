@@ -1337,22 +1337,11 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("");
 
-            if (headers.GetEntries() is not HeaderEntry[] entries)
-            {
-                return;
-            }
-
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _pool.Settings._requestHeaderEncodingSelector;
 
             ref string[]? tmpHeaderValuesArray = ref t_headerValues;
-            foreach (HeaderEntry header in entries)
+            foreach (HeaderEntry header in headers.GetEntries())
             {
-                if (!header.Key.HasValue)
-                {
-                    // An entry without a value indicates the end of the header collection
-                    break;
-                }
-
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref tmpHeaderValuesArray);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = tmpHeaderValuesArray.AsSpan(0, headerValuesCount);

@@ -62,12 +62,6 @@ namespace System.Net.Http.Unit.Tests.HPack
 
             foreach (HeaderEntry header in headers.GetEntries())
             {
-                if (!header.Key.HasValue)
-                {
-                    // An entry without a value indicates the end of the header collection
-                    break;
-                }
-
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref headerValues);
                 Assert.InRange(headerValuesCount, 0, int.MaxValue);
                 ReadOnlySpan<string> headerValuesSpan = headerValues.AsSpan(0, headerValuesCount);

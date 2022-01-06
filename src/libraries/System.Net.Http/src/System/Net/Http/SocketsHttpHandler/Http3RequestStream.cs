@@ -622,21 +622,10 @@ namespace System.Net.Http
         // TODO: special-case Content-Type for static table values values?
         private void BufferHeaderCollection(HttpHeaders headers)
         {
-            if (headers.GetEntries() is not HeaderEntry[] entries)
-            {
-                return;
-            }
-
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
 
-            foreach (HeaderEntry header in entries)
+            foreach (HeaderEntry header in headers.GetEntries())
             {
-                if (!header.Key.HasValue)
-                {
-                    // An entry without a value indicates the end of the header collection
-                    break;
-                }
-
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
                 ReadOnlySpan<string> headerValues = _headerValues.AsSpan(0, headerValuesCount);

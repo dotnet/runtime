@@ -83,8 +83,8 @@ namespace System.Net.Http.Headers
         /// <summary>Gets an enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</summary>
         /// <returns>An enumerator that iterates through the <see cref="HttpHeadersNonValidated"/>.</returns>
         public Enumerator GetEnumerator() =>
-            _headers is HttpHeaders headers && headers.GetEntriesGroupedByName() is HeaderEntry[] entries ?
-                new Enumerator(entries) :
+            _headers is HttpHeaders headers && headers.GetEntriesGroupedByName(out int numberOfEntries) is HeaderEntry[] entries ?
+                new Enumerator(entries, numberOfEntries) :
                 default;
 
         /// <inheritdoc/>
@@ -121,14 +121,14 @@ namespace System.Net.Http.Headers
         public struct Enumerator : IEnumerator<KeyValuePair<string, HeaderStringValues>>
         {
             private readonly HeaderEntry[] _entries;
+            private readonly int _numberOfEntries;
             private int _index;
             private KeyValuePair<string, HeaderStringValues> _current;
 
-            /// <summary>Initializes the enumerator.</summary>
-            /// <param name="entries">The underlying header entries.</param>
-            internal Enumerator(HeaderEntry[] entries)
+            internal Enumerator(HeaderEntry[] entries, int numberOfEntries)
             {
                 _entries = entries;
+                _numberOfEntries = numberOfEntries;
                 _index = 0;
                 _current = default;
             }
@@ -137,21 +137,18 @@ namespace System.Net.Http.Headers
             public bool MoveNext()
             {
                 int index = _index;
-                if (_entries is HeaderEntry[] entries && (uint)index < (uint)entries.Length)
+                if (_entries is HeaderEntry[] entries && index < _numberOfEntries && (uint)index < (uint)entries.Length)
                 {
                     HeaderEntry entry = entries[index];
                     _index++;
 
-                    if (entry.Key.HasValue) // An entry without a value indicates the end of the header collection
-                    {
-                        HttpHeaders.GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
-                        Debug.Assert(singleValue is not null ^ multiValue is not null);
+                    HttpHeaders.GetStoreValuesAsStringOrStringArray(entry.Key, entry.Value, out string? singleValue, out string[]? multiValue);
+                    Debug.Assert(singleValue is not null ^ multiValue is not null);
 
-                        _current = new KeyValuePair<string, HeaderStringValues>(
-                            entry.Key.Name,
-                            singleValue is not null ? new HeaderStringValues(entry.Key, singleValue) : new HeaderStringValues(entry.Key, multiValue!));
-                        return true;
-                    }
+                    _current = new KeyValuePair<string, HeaderStringValues>(
+                        entry.Key.Name,
+                        singleValue is not null ? new HeaderStringValues(entry.Key, singleValue) : new HeaderStringValues(entry.Key, multiValue!));
+                    return true;
                 }
 
                 _current = default;

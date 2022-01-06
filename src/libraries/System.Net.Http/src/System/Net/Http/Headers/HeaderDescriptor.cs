@@ -18,10 +18,8 @@ namespace System.Net.Http.Headers
     {
         /// <summary>
         /// Either a <see cref="KnownHeader"/> or <see cref="string"/>.
-        /// Marked as nullable since a default (uninitialized) instance of this struct is also used in practice
-        /// to indicate the end of the header collection.
         /// </summary>
-        private readonly object? _descriptor;
+        private readonly object _descriptor;
 
         public HeaderDescriptor(KnownHeader knownHeader)
         {
@@ -34,23 +32,19 @@ namespace System.Net.Http.Headers
             _descriptor = headerName;
         }
 
-        public bool HasValue => _descriptor is not null;
-
         public string Name
         {
             get
             {
-                Debug.Assert(_descriptor is not null);
                 object descriptor = _descriptor;
-                return descriptor is KnownHeader knownHeader ?
-                    knownHeader.Name :
+                return descriptor.GetType() == typeof(KnownHeader) ?
+                    Unsafe.As<KnownHeader>(descriptor).Name :
                     Unsafe.As<string>(descriptor);
             }
         }
 
         public bool IsKnownHeader([NotNullWhen(true)] out KnownHeader? knownHeader, [NotNullWhen(false)] out string? headerName)
         {
-            Debug.Assert(_descriptor is not null);
             object descriptor = _descriptor;
             if (descriptor.GetType() == typeof(KnownHeader))
             {
@@ -66,7 +60,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public HttpHeaderParser? Parser => _descriptor is KnownHeader knownHeader ? knownHeader.Parser : null;
+        public HttpHeaderParser? Parser => (_descriptor as KnownHeader)?.Parser;
         public HttpHeaderType HeaderType => _descriptor is KnownHeader knownHeader ? knownHeader.HeaderType : HttpHeaderType.Custom;
         public string Separator => _descriptor is KnownHeader knownHeader ? knownHeader.Separator : HttpHeaderParser.DefaultSeparator;
 
@@ -74,26 +68,23 @@ namespace System.Net.Http.Headers
 
         public bool Equals(HeaderDescriptor other)
         {
-            object? descriptor = _descriptor;
-            object? otherDescriptor = other._descriptor;
-
-            if (descriptor is string headerName)
+            object descriptor = _descriptor;
+            if (descriptor.GetType() == typeof(string))
             {
-                return string.Equals(headerName, otherDescriptor as string, StringComparison.OrdinalIgnoreCase);
+                return string.Equals(Unsafe.As<string>(descriptor), other._descriptor as string, StringComparison.OrdinalIgnoreCase);
             }
             else
             {
-                return ReferenceEquals(descriptor, otherDescriptor);
+                return ReferenceEquals(descriptor, other._descriptor);
             }
         }
 
         public override int GetHashCode()
         {
-            Debug.Assert(_descriptor is not null);
             object descriptor = _descriptor;
-            if (descriptor is string headerName)
+            if (descriptor.GetType() == typeof(string))
             {
-                return StringComparer.OrdinalIgnoreCase.GetHashCode(headerName);
+                return StringComparer.OrdinalIgnoreCase.GetHashCode(Unsafe.As<string>(descriptor));
             }
             else
             {

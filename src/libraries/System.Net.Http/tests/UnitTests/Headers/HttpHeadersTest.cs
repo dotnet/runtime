@@ -1711,7 +1711,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetEnumerator_InvalidValueBetweenValidHeaders_EnumeratorReturnsAllValidValuesAndRemovedInvalidValue()
+        public void GetEnumerator_InvalidValueBetweenValidHeaders_EnumeratorReturnsAllValidValuesAndRemovesInvalidValue()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation("foo", "fooValue");
@@ -1725,7 +1725,7 @@ namespace System.Net.Http.Tests
             Assert.Equal("barValue", Assert.Single(Assert.Contains("bar", dict)));
 
             Assert.Equal(2, headers.Count);
-            Assert.DoesNotContain("invalid", dict);
+            Assert.False(headers.NonValidated.Contains("invalid"));
         }
 
         [Fact]

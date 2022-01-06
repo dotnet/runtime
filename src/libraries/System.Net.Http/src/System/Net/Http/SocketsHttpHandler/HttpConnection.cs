@@ -258,15 +258,11 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null);
 
-            if (headers.GetEntries() is HeaderEntry[] entries)
+            if (headers.GetEntries(out int numberOfEntries) is HeaderEntry[] entries)
             {
-                foreach (HeaderEntry header in entries)
+                for (int i = 0; i < numberOfEntries; i++)
                 {
-                    if (!header.Key.HasValue)
-                    {
-                        // An entry without a value indicates the end of the header collection
-                        break;
-                    }
+                    HeaderEntry header = entries[i];
 
                     if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
                     {
@@ -299,10 +295,10 @@ namespace System.Net.Http
                         {
                             string separator = header.Key.Separator;
 
-                            for (int i = 1; i < headerValuesCount; i++)
+                            for (int j = 1; j < headerValuesCount; j++)
                             {
                                 await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[i], async, valueEncoding).ConfigureAwait(false);
+                                await WriteStringAsync(_headerValues[j], async, valueEncoding).ConfigureAwait(false);
                             }
                         }
                     }
