@@ -1521,7 +1521,7 @@ namespace Internal.JitInterface
 
             targetIsFatFunctionPointer |= (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT) != 0 && !(pResult->kind == CORINFO_CALL_KIND.CORINFO_CALL);
 
-            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, targetIsFatFunctionPointer);
+            Get_CORINFO_SIG_INFO(targetMethod, &pResult->sig, scope: null, targetIsFatFunctionPointer);
             if (useFatCallTransform)
             {
                 pResult->sig.flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_FAT_CALL;
@@ -1532,7 +1532,7 @@ namespace Internal.JitInterface
                 if (pResult->hMethod != pResolvedToken.hMethod)
                 {
                     pResult->verMethodFlags = getMethodAttribsInternal(targetMethod);
-                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig);
+                    Get_CORINFO_SIG_INFO(targetMethod, &pResult->verSig, scope: null);
                 }
                 else
                 {
