@@ -11,20 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
-                ["ShiftRightAndInsert.Vector128.Int64"] = ShiftRightAndInsert_Vector128_Int64,
-                ["ShiftRightAndInsert.Vector128.SByte"] = ShiftRightAndInsert_Vector128_SByte,
-                ["ShiftRightAndInsert.Vector128.UInt16"] = ShiftRightAndInsert_Vector128_UInt16,
-                ["ShiftRightAndInsert.Vector128.UInt32"] = ShiftRightAndInsert_Vector128_UInt32,
-                ["ShiftRightAndInsert.Vector128.UInt64"] = ShiftRightAndInsert_Vector128_UInt64,
-                ["ShiftRightAndInsertScalar.Vector64.Int64"] = ShiftRightAndInsertScalar_Vector64_Int64,
-                ["ShiftRightAndInsertScalar.Vector64.UInt64"] = ShiftRightAndInsertScalar_Vector64_UInt64,
-                ["ShiftRightArithmetic.Vector64.Int16.1"] = ShiftRightArithmetic_Vector64_Int16_1,
-                ["ShiftRightArithmetic.Vector64.Int32.1"] = ShiftRightArithmetic_Vector64_Int32_1,
-                ["ShiftRightArithmetic.Vector64.SByte.1"] = ShiftRightArithmetic_Vector64_SByte_1,
-                ["ShiftRightArithmetic.Vector128.Int16.1"] = ShiftRightArithmetic_Vector128_Int16_1,
-                ["ShiftRightArithmetic.Vector128.Int32.1"] = ShiftRightArithmetic_Vector128_Int32_1,
-                ["ShiftRightArithmetic.Vector128.Int64.1"] = ShiftRightArithmetic_Vector128_Int64_1,
-                ["ShiftRightArithmetic.Vector128.SByte.1"] = ShiftRightArithmetic_Vector128_SByte_1,
                 ["ShiftRightArithmeticAdd.Vector64.Int16.1"] = ShiftRightArithmeticAdd_Vector64_Int16_1,
                 ["ShiftRightArithmeticAdd.Vector64.Int32.1"] = ShiftRightArithmeticAdd_Vector64_Int32_1,
                 ["ShiftRightArithmeticAdd.Vector64.SByte.1"] = ShiftRightArithmeticAdd_Vector64_SByte_1,
@@ -111,6 +97,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["ShiftRightLogicalNarrowingLower.Vector64.UInt16.1"] = ShiftRightLogicalNarrowingLower_Vector64_UInt16_1,
                 ["ShiftRightLogicalNarrowingLower.Vector64.UInt32.1"] = ShiftRightLogicalNarrowingLower_Vector64_UInt32_1,
                 ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Byte.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Byte_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int16_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int32.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int32_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.SByte.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_SByte_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_UInt16_1,
+                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt32.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_UInt32_1,
+                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.Byte.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_Byte_1,
+                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int16.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_Int16_1,
+                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int32.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_Int32_1,
+                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.SByte.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_SByte_1,
+                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt16.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_UInt16_1,
+                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt32.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_UInt32_1,
+                ["ShiftRightLogicalNarrowingUpper.Vector128.Byte.1"] = ShiftRightLogicalNarrowingUpper_Vector128_Byte_1,
+                ["ShiftRightLogicalNarrowingUpper.Vector128.Int16.1"] = ShiftRightLogicalNarrowingUpper_Vector128_Int16_1,
+                ["ShiftRightLogicalNarrowingUpper.Vector128.Int32.1"] = ShiftRightLogicalNarrowingUpper_Vector128_Int32_1,
             };
         }
     }

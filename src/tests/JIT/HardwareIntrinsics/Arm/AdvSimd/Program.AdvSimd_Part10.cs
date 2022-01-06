@@ -11,20 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
-                ["Not.Vector64.Byte"] = Not_Vector64_Byte,
-                ["Not.Vector64.Double"] = Not_Vector64_Double,
-                ["Not.Vector64.Int16"] = Not_Vector64_Int16,
-                ["Not.Vector64.Int32"] = Not_Vector64_Int32,
-                ["Not.Vector64.Int64"] = Not_Vector64_Int64,
-                ["Not.Vector64.SByte"] = Not_Vector64_SByte,
-                ["Not.Vector64.Single"] = Not_Vector64_Single,
-                ["Not.Vector64.UInt16"] = Not_Vector64_UInt16,
-                ["Not.Vector64.UInt32"] = Not_Vector64_UInt32,
-                ["Not.Vector64.UInt64"] = Not_Vector64_UInt64,
-                ["Not.Vector128.Byte"] = Not_Vector128_Byte,
-                ["Not.Vector128.Double"] = Not_Vector128_Double,
-                ["Not.Vector128.Int16"] = Not_Vector128_Int16,
-                ["Not.Vector128.Int32"] = Not_Vector128_Int32,
                 ["Not.Vector128.Int64"] = Not_Vector128_Int64,
                 ["Not.Vector128.SByte"] = Not_Vector128_SByte,
                 ["Not.Vector128.Single"] = Not_Vector128_Single,
@@ -111,6 +97,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["ReverseElement8.Vector64.Int32"] = ReverseElement8_Vector64_Int32,
                 ["ReverseElement8.Vector64.Int64"] = ReverseElement8_Vector64_Int64,
                 ["ReverseElement8.Vector64.UInt16"] = ReverseElement8_Vector64_UInt16,
+                ["ReverseElement8.Vector64.UInt32"] = ReverseElement8_Vector64_UInt32,
+                ["ReverseElement8.Vector64.UInt64"] = ReverseElement8_Vector64_UInt64,
+                ["ReverseElement8.Vector128.Int16"] = ReverseElement8_Vector128_Int16,
+                ["ReverseElement8.Vector128.Int32"] = ReverseElement8_Vector128_Int32,
+                ["ReverseElement8.Vector128.Int64"] = ReverseElement8_Vector128_Int64,
+                ["ReverseElement8.Vector128.UInt16"] = ReverseElement8_Vector128_UInt16,
+                ["ReverseElement8.Vector128.UInt32"] = ReverseElement8_Vector128_UInt32,
+                ["ReverseElement8.Vector128.UInt64"] = ReverseElement8_Vector128_UInt64,
+                ["RoundAwayFromZero.Vector64.Single"] = RoundAwayFromZero_Vector64_Single,
+                ["RoundAwayFromZero.Vector128.Single"] = RoundAwayFromZero_Vector128_Single,
+                ["RoundAwayFromZeroScalar.Vector64.Double"] = RoundAwayFromZeroScalar_Vector64_Double,
+                ["RoundAwayFromZeroScalar.Vector64.Single"] = RoundAwayFromZeroScalar_Vector64_Single,
+                ["RoundToNearest.Vector64.Single"] = RoundToNearest_Vector64_Single,
+                ["RoundToNearest.Vector128.Single"] = RoundToNearest_Vector128_Single,
             };
         }
     }

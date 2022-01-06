@@ -11,20 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
-                ["ExtractVector128.Double.1"] = ExtractVector128_Double_1,
-                ["ExtractVector128.Int16.1"] = ExtractVector128_Int16_1,
-                ["ExtractVector128.Int32.1"] = ExtractVector128_Int32_1,
-                ["ExtractVector128.Int64.1"] = ExtractVector128_Int64_1,
-                ["ExtractVector128.SByte.1"] = ExtractVector128_SByte_1,
-                ["ExtractVector128.Single.1"] = ExtractVector128_Single_1,
-                ["ExtractVector128.UInt16.1"] = ExtractVector128_UInt16_1,
-                ["ExtractVector128.UInt32.1"] = ExtractVector128_UInt32_1,
-                ["ExtractVector128.UInt64.1"] = ExtractVector128_UInt64_1,
-                ["Floor.Vector64.Single"] = Floor_Vector64_Single,
-                ["Floor.Vector128.Single"] = Floor_Vector128_Single,
-                ["FloorScalar.Vector64.Double"] = FloorScalar_Vector64_Double,
-                ["FloorScalar.Vector64.Single"] = FloorScalar_Vector64_Single,
-                ["FusedAddHalving.Vector64.Byte"] = FusedAddHalving_Vector64_Byte,
                 ["FusedAddHalving.Vector64.Int16"] = FusedAddHalving_Vector64_Int16,
                 ["FusedAddHalving.Vector64.Int32"] = FusedAddHalving_Vector64_Int32,
                 ["FusedAddHalving.Vector64.SByte"] = FusedAddHalving_Vector64_SByte,
@@ -111,6 +97,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["LeadingZeroCount.Vector128.UInt16"] = LeadingZeroCount_Vector128_UInt16,
                 ["LeadingZeroCount.Vector128.UInt32"] = LeadingZeroCount_Vector128_UInt32,
                 ["LoadAndInsertScalar.Vector64.Byte.7"] = LoadAndInsertScalar_Vector64_Byte_7,
+                ["LoadAndInsertScalar.Vector64.Int16.3"] = LoadAndInsertScalar_Vector64_Int16_3,
+                ["LoadAndInsertScalar.Vector64.Int32.1"] = LoadAndInsertScalar_Vector64_Int32_1,
+                ["LoadAndInsertScalar.Vector64.SByte.7"] = LoadAndInsertScalar_Vector64_SByte_7,
+                ["LoadAndInsertScalar.Vector64.Single.1"] = LoadAndInsertScalar_Vector64_Single_1,
+                ["LoadAndInsertScalar.Vector64.UInt16.3"] = LoadAndInsertScalar_Vector64_UInt16_3,
+                ["LoadAndInsertScalar.Vector64.UInt32.1"] = LoadAndInsertScalar_Vector64_UInt32_1,
+                ["LoadAndInsertScalar.Vector128.Byte.15"] = LoadAndInsertScalar_Vector128_Byte_15,
+                ["LoadAndInsertScalar.Vector128.Double.1"] = LoadAndInsertScalar_Vector128_Double_1,
+                ["LoadAndInsertScalar.Vector128.Int16.7"] = LoadAndInsertScalar_Vector128_Int16_7,
+                ["LoadAndInsertScalar.Vector128.Int32.3"] = LoadAndInsertScalar_Vector128_Int32_3,
+                ["LoadAndInsertScalar.Vector128.Int64.1"] = LoadAndInsertScalar_Vector128_Int64_1,
+                ["LoadAndInsertScalar.Vector128.SByte.15"] = LoadAndInsertScalar_Vector128_SByte_15,
+                ["LoadAndInsertScalar.Vector128.Single.3"] = LoadAndInsertScalar_Vector128_Single_3,
+                ["LoadAndInsertScalar.Vector128.UInt16.7"] = LoadAndInsertScalar_Vector128_UInt16_7,
             };
         }
     }

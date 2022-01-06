@@ -8,20 +8,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="DuplicateSelectedScalarToVector64.Vector128.Single.2.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector64.Vector128.UInt16.4.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector64.Vector128.UInt32.2.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.Byte.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.Int16.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.Int32.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.SByte.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.Single.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.UInt16.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector64.UInt32.1.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector128.Byte.8.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector128.Int16.4.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector128.Int32.2.cs" />
-    <Compile Include="DuplicateSelectedScalarToVector128.Vector128.SByte.8.cs" />
     <Compile Include="DuplicateSelectedScalarToVector128.Vector128.Single.2.cs" />
     <Compile Include="DuplicateSelectedScalarToVector128.Vector128.UInt16.4.cs" />
     <Compile Include="DuplicateSelectedScalarToVector128.Vector128.UInt32.2.cs" />
@@ -108,6 +94,20 @@
     <Compile Include="ExtractVector64.UInt16.1.cs" />
     <Compile Include="ExtractVector64.UInt32.1.cs" />
     <Compile Include="ExtractVector128.Byte.1.cs" />
+    <Compile Include="ExtractVector128.Double.1.cs" />
+    <Compile Include="ExtractVector128.Int16.1.cs" />
+    <Compile Include="ExtractVector128.Int32.1.cs" />
+    <Compile Include="ExtractVector128.Int64.1.cs" />
+    <Compile Include="ExtractVector128.SByte.1.cs" />
+    <Compile Include="ExtractVector128.Single.1.cs" />
+    <Compile Include="ExtractVector128.UInt16.1.cs" />
+    <Compile Include="ExtractVector128.UInt32.1.cs" />
+    <Compile Include="ExtractVector128.UInt64.1.cs" />
+    <Compile Include="Floor.Vector64.Single.cs" />
+    <Compile Include="Floor.Vector128.Single.cs" />
+    <Compile Include="FloorScalar.Vector64.Double.cs" />
+    <Compile Include="FloorScalar.Vector64.Single.cs" />
+    <Compile Include="FusedAddHalving.Vector64.Byte.cs" />
     <Compile Include="Program.AdvSimd_Part4.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />

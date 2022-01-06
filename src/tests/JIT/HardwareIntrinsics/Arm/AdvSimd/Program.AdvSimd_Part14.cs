@@ -11,20 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int16_1,
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.Int32.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_Int32_1,
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.SByte.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_SByte_1,
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt16.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_UInt16_1,
-                ["ShiftRightLogicalNarrowingSaturateLower.Vector64.UInt32.1"] = ShiftRightLogicalNarrowingSaturateLower_Vector64_UInt32_1,
-                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.Byte.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_Byte_1,
-                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int16.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_Int16_1,
-                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.Int32.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_Int32_1,
-                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.SByte.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_SByte_1,
-                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt16.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_UInt16_1,
-                ["ShiftRightLogicalNarrowingSaturateUpper.Vector128.UInt32.1"] = ShiftRightLogicalNarrowingSaturateUpper_Vector128_UInt32_1,
-                ["ShiftRightLogicalNarrowingUpper.Vector128.Byte.1"] = ShiftRightLogicalNarrowingUpper_Vector128_Byte_1,
-                ["ShiftRightLogicalNarrowingUpper.Vector128.Int16.1"] = ShiftRightLogicalNarrowingUpper_Vector128_Int16_1,
-                ["ShiftRightLogicalNarrowingUpper.Vector128.Int32.1"] = ShiftRightLogicalNarrowingUpper_Vector128_Int32_1,
                 ["ShiftRightLogicalNarrowingUpper.Vector128.SByte.1"] = ShiftRightLogicalNarrowingUpper_Vector128_SByte_1,
                 ["ShiftRightLogicalNarrowingUpper.Vector128.UInt16.1"] = ShiftRightLogicalNarrowingUpper_Vector128_UInt16_1,
                 ["ShiftRightLogicalNarrowingUpper.Vector128.UInt32.1"] = ShiftRightLogicalNarrowingUpper_Vector128_UInt32_1,
@@ -111,6 +97,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["Store.Vector128.Int64"] = Store_Vector128_Int64,
                 ["Store.Vector128.SByte"] = Store_Vector128_SByte,
                 ["Store.Vector128.Single"] = Store_Vector128_Single,
+                ["Store.Vector128.UInt16"] = Store_Vector128_UInt16,
+                ["Store.Vector128.UInt32"] = Store_Vector128_UInt32,
+                ["Store.Vector128.UInt64"] = Store_Vector128_UInt64,
+                ["StoreSelectedScalar.Vector64.Byte.7"] = StoreSelectedScalar_Vector64_Byte_7,
+                ["StoreSelectedScalar.Vector64.Int16.3"] = StoreSelectedScalar_Vector64_Int16_3,
+                ["StoreSelectedScalar.Vector64.Int32.1"] = StoreSelectedScalar_Vector64_Int32_1,
+                ["StoreSelectedScalar.Vector64.SByte.7"] = StoreSelectedScalar_Vector64_SByte_7,
+                ["StoreSelectedScalar.Vector64.Single.1"] = StoreSelectedScalar_Vector64_Single_1,
+                ["StoreSelectedScalar.Vector64.UInt16.3"] = StoreSelectedScalar_Vector64_UInt16_3,
+                ["StoreSelectedScalar.Vector64.UInt32.1"] = StoreSelectedScalar_Vector64_UInt32_1,
+                ["StoreSelectedScalar.Vector128.Byte.15"] = StoreSelectedScalar_Vector128_Byte_15,
+                ["StoreSelectedScalar.Vector128.Double.1"] = StoreSelectedScalar_Vector128_Double_1,
+                ["StoreSelectedScalar.Vector128.Int16.7"] = StoreSelectedScalar_Vector128_Int16_7,
+                ["StoreSelectedScalar.Vector128.Int32.3"] = StoreSelectedScalar_Vector128_Int32_3,
             };
         }
     }

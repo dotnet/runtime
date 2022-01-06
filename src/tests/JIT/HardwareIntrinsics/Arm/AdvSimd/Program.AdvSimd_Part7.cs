@@ -11,20 +11,6 @@ namespace JIT.HardwareIntrinsics.Arm
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
-                ["Multiply.Vector64.Byte"] = Multiply_Vector64_Byte,
-                ["Multiply.Vector64.Int16"] = Multiply_Vector64_Int16,
-                ["Multiply.Vector64.Int32"] = Multiply_Vector64_Int32,
-                ["Multiply.Vector64.SByte"] = Multiply_Vector64_SByte,
-                ["Multiply.Vector64.Single"] = Multiply_Vector64_Single,
-                ["Multiply.Vector64.UInt16"] = Multiply_Vector64_UInt16,
-                ["Multiply.Vector64.UInt32"] = Multiply_Vector64_UInt32,
-                ["Multiply.Vector128.Byte"] = Multiply_Vector128_Byte,
-                ["Multiply.Vector128.Int16"] = Multiply_Vector128_Int16,
-                ["Multiply.Vector128.Int32"] = Multiply_Vector128_Int32,
-                ["Multiply.Vector128.SByte"] = Multiply_Vector128_SByte,
-                ["Multiply.Vector128.Single"] = Multiply_Vector128_Single,
-                ["Multiply.Vector128.UInt16"] = Multiply_Vector128_UInt16,
-                ["Multiply.Vector128.UInt32"] = Multiply_Vector128_UInt32,
                 ["MultiplyScalar.Vector64.Double"] = MultiplyScalar_Vector64_Double,
                 ["MultiplyScalar.Vector64.Single"] = MultiplyScalar_Vector64_Single,
                 ["MultiplyAdd.Vector64.Byte"] = MultiplyAdd_Vector64_Byte,
@@ -111,6 +97,20 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["MultiplyBySelectedScalarWideningLowerAndAdd.Vector64.UInt32.Vector128.UInt32.3"] = MultiplyBySelectedScalarWideningLowerAndAdd_Vector64_UInt32_Vector128_UInt32_3,
                 ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.Int16.Vector64.Int16.3"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_Int16_Vector64_Int16_3,
                 ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.Int16.Vector128.Int16.7"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_Int16_Vector128_Int16_7,
+                ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.Int32.Vector64.Int32.1"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_Int32_Vector64_Int32_1,
+                ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.Int32.Vector128.Int32.3"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_Int32_Vector128_Int32_3,
+                ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.UInt16.Vector64.UInt16.3"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_UInt16_Vector64_UInt16_3,
+                ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.UInt16.Vector128.UInt16.7"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_UInt16_Vector128_UInt16_7,
+                ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.UInt32.Vector64.UInt32.1"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_UInt32_Vector64_UInt32_1,
+                ["MultiplyBySelectedScalarWideningLowerAndSubtract.Vector64.UInt32.Vector128.UInt32.3"] = MultiplyBySelectedScalarWideningLowerAndSubtract_Vector64_UInt32_Vector128_UInt32_3,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.Int16.Vector64.Int16.3"] = MultiplyBySelectedScalarWideningUpper_Vector128_Int16_Vector64_Int16_3,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.Int16.Vector128.Int16.7"] = MultiplyBySelectedScalarWideningUpper_Vector128_Int16_Vector128_Int16_7,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.Int32.Vector64.Int32.1"] = MultiplyBySelectedScalarWideningUpper_Vector128_Int32_Vector64_Int32_1,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.Int32.Vector128.Int32.3"] = MultiplyBySelectedScalarWideningUpper_Vector128_Int32_Vector128_Int32_3,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.UInt16.Vector64.UInt16.3"] = MultiplyBySelectedScalarWideningUpper_Vector128_UInt16_Vector64_UInt16_3,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.UInt16.Vector128.UInt16.7"] = MultiplyBySelectedScalarWideningUpper_Vector128_UInt16_Vector128_UInt16_7,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.UInt32.Vector64.UInt32.1"] = MultiplyBySelectedScalarWideningUpper_Vector128_UInt32_Vector64_UInt32_1,
+                ["MultiplyBySelectedScalarWideningUpper.Vector128.UInt32.Vector128.UInt32.3"] = MultiplyBySelectedScalarWideningUpper_Vector128_UInt32_Vector128_UInt32_3,
             };
         }
     }

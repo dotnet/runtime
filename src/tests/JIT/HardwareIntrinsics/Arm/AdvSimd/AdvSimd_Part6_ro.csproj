@@ -8,20 +8,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="LoadAndInsertScalar.Vector64.Int16.3.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector64.Int32.1.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector64.SByte.7.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector64.Single.1.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector64.UInt16.3.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector64.UInt32.1.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.Byte.15.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.Double.1.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.Int16.7.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.Int32.3.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.Int64.1.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.SByte.15.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.Single.3.cs" />
-    <Compile Include="LoadAndInsertScalar.Vector128.UInt16.7.cs" />
     <Compile Include="LoadAndInsertScalar.Vector128.UInt32.3.cs" />
     <Compile Include="LoadAndInsertScalar.Vector128.UInt64.1.cs" />
     <Compile Include="LoadAndReplicateToVector64.Byte.cs" />
@@ -108,6 +94,20 @@
     <Compile Include="MinPairwise.Vector64.Single.cs" />
     <Compile Include="MinPairwise.Vector64.UInt16.cs" />
     <Compile Include="MinPairwise.Vector64.UInt32.cs" />
+    <Compile Include="Multiply.Vector64.Byte.cs" />
+    <Compile Include="Multiply.Vector64.Int16.cs" />
+    <Compile Include="Multiply.Vector64.Int32.cs" />
+    <Compile Include="Multiply.Vector64.SByte.cs" />
+    <Compile Include="Multiply.Vector64.Single.cs" />
+    <Compile Include="Multiply.Vector64.UInt16.cs" />
+    <Compile Include="Multiply.Vector64.UInt32.cs" />
+    <Compile Include="Multiply.Vector128.Byte.cs" />
+    <Compile Include="Multiply.Vector128.Int16.cs" />
+    <Compile Include="Multiply.Vector128.Int32.cs" />
+    <Compile Include="Multiply.Vector128.SByte.cs" />
+    <Compile Include="Multiply.Vector128.Single.cs" />
+    <Compile Include="Multiply.Vector128.UInt16.cs" />
+    <Compile Include="Multiply.Vector128.UInt32.cs" />
     <Compile Include="Program.AdvSimd_Part6.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
     <Compile Include="..\Shared\Program.cs" />
