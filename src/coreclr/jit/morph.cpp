@@ -14147,7 +14147,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 //
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
-    int constArgCount = 0;
+    size_t constArgCount = 0;
     gtUpdateNodeOperSideEffects(multiOp);
     for (GenTree** use : multiOp->UseEdges())
     {
