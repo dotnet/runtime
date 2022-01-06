@@ -369,34 +369,16 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    CONTEXT *contextRecord;
-    EXCEPTION_RECORD *exceptionRecord;
-    AllocateExceptionRecords(&exceptionRecord, &contextRecord);
+    CONTEXT *contextRecord = pContext;
+    g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
 
-    *contextRecord = *pContext;
-    *exceptionRecord = *pExRecord;
+    pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
 
-    contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-    bool continueExecution;
+    PAL_SEHException exception(pExRecord, pContext, true);
 
-    {
-        // The exception object takes ownership of the exceptionRecord and contextRecord
-        PAL_SEHException exception(exceptionRecord, contextRecord);
+    TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
 
-        TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
-
-        continueExecution = SEHProcessException(&exception);
-        if (continueExecution)
-        {
-            // Make a copy of the exception records so that we can free them before restoring the context
-            *pContext = *contextRecord;
-            *pExRecord = *exceptionRecord;
-        }
-
-        // The exception records are destroyed by the PAL_SEHException destructor now.
-    }
-
-    if (continueExecution)
+    if (SEHProcessException(&exception))
     {
 #if defined(HOST_ARM64)
         // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
