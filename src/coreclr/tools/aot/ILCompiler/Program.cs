@@ -60,16 +60,7 @@ namespace ILCompiler
         private int _parallelism = Environment.ProcessorCount;
         private string _instructionSet;
         private string _guard;
-
-        // Chosen rather arbitrarily. For the app that I was looking at, cutoff point of 7 compiled
-        // more than 10 minutes on a release build of the compiler, and I lost patience.
-        // Cutoff point of 5 produced an 1.7 GB object file.
-        // Cutoff point of 4 produced an 830 MB object file.
-        // Cutoff point of 3 produced an 470 MB object file.
-        // We want this to be high enough so that it doesn't cut off too early. But also not too
-        // high because things that are recursive often end up expanding laterally as well
-        // through various other generic code the deep code calls into.
-        private int _maxGenericCycle = 4;
+        private int _maxGenericCycle = CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
