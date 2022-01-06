@@ -1422,25 +1422,50 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
 
 #if defined(TARGET_ARM64)
 
-inline static bool
-ReadCompactEncodingRegister(const libunwindInfo* info, unw_word_t* addr, DWORD64* reg)
+#define ARM64_SYSCALL_OPCODE 0xd4001001
+
+static bool
+StepWithCompactNoEncoding(const libunwindInfo* info)
 {
-    *addr -= sizeof(uint64_t);
-    if (!ReadValue64(info, addr, (uint64_t*)reg)) {
+    // Check that the function is a syscall "wrapper" and assume there is no frame and pop the return address.
+    uint32_t opcode;
+    unw_word_t addr = info->Context->Pc - sizeof(opcode);
+    if (!ReadValue32(info, &addr, &opcode)) {
+        ERROR("StepWithCompactNoEncoding: can read opcode %p\n", (void*)addr);
         return false;
     }
+    // Is the IP pointing just after a "syscall" opcode?
+    if (opcode != ARM64_SYSCALL_OPCODE) {
+        ERROR("StepWithCompactNoEncoding: not in syscall wrapper function\n");
+        return false;
+    }
+    // Pop the return address from the stack
+    info->Context->Pc = info->Context->Lr;
+    TRACE("StepWithCompactNoEncoding: SUCCESS new pc %p sp %p\n", (void*)info->Context->Pc, (void*)info->Context->Sp);
     return true;
 }
 
-inline static bool
-ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, DWORD64*second, DWORD64* first)
+static bool
+ReadCompactEncodingRegister(const libunwindInfo* info, unw_word_t* addr, DWORD64* reg)
+{
+    uint64_t value;
+    if (!info->ReadMemory((PVOID)*addr, &value, sizeof(value))) {
+        return false;
+    }
+    *reg = VAL64(value);
+    *addr -= sizeof(uint64_t);
+    return true;
+}
+
+static bool
+ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, DWORD64* first, DWORD64* second)
 {
     // Registers are effectively pushed in pairs
     //
+    // *first = **addr
     // *addr -= 8
-    // **addr = *first
+    // *second= **addr
     // *addr -= 8
-    // **addr = *second
     if (!ReadCompactEncodingRegister(info, addr, first)) {
         return false;
     }
@@ -1450,8 +1475,8 @@ ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, DWO
     return true;
 }
 
-inline static bool
-ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, NEON128*second, NEON128* first)
+static bool
+ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, NEON128* first, NEON128* second)
 {
     if (!ReadCompactEncodingRegisterPair(info, addr, &first->Low, &second->Low)) {
         return false;
@@ -1484,30 +1509,28 @@ static bool
 StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, bool hasFrame)
 {
     CONTEXT* context = info->Context;
+    unw_word_t addr;
 
-    unw_word_t callerSp;
-
-    if (hasFrame) {
-        // caller Sp is callee Fp plus saved FP and LR
-        callerSp = context->Fp + 2 * sizeof(uint64_t);
-    } else {
+    if (hasFrame)
+    {
+        context->Sp = context->Fp + 16;
+        addr = context->Fp + 8;
+        if (!ReadCompactEncodingRegisterPair(info, &addr, &context->Lr, &context->Fp)) {
+            return false;
+        }
+        // Strip pointer authentication bits 
+        context->Lr &= 0x7fffffffffffull;
+    }
+    else
+    {
         // Get the leat significant bit in UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK
         uint64_t stackSizeScale = UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK & ~(UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK - 1);
-        uint64_t stackSize = (compactEncoding & UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK) / stackSizeScale * 16;
+        uint64_t stackSize = ((compactEncoding & UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK) / stackSizeScale) * 16;
 
-        callerSp = context->Sp + stackSize;
+        addr = context->Sp + stackSize;
     }
 
-    context->Sp = callerSp;
-
-    unw_word_t addr = callerSp;
-
-    if (hasFrame &&
-        !ReadCompactEncodingRegisterPair(info, &addr, &context->Lr, &context->Fp)) {
-            return false;
-    }
-
-    // unwound return address is stored in Lr
+    // Unwound return address is stored in Lr
     context->Pc = context->Lr;
 
     if (compactEncoding & UNWIND_ARM64_FRAME_X19_X20_PAIR &&
@@ -1546,7 +1569,10 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
         !ReadCompactEncodingRegisterPair(info, &addr, &context->V[14], &context->V[15])) {
             return false;
     }
-
+    if (!hasFrame)
+    {
+        context->Sp = addr;
+    }
     TRACE("SUCCESS: compact step encoding %08x pc %p sp %p fp %p lr %p\n",
         compactEncoding, (void*)context->Pc, (void*)context->Sp, (void*)context->Fp, (void*)context->Lr);
     return true;
@@ -1557,11 +1583,11 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
 static bool
 StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
 {
-#if defined(TARGET_AMD64)
     if (compactEncoding == 0)
     {
         return StepWithCompactNoEncoding(info);
     }
+#if defined(TARGET_AMD64)
     switch (compactEncoding & UNWIND_X86_64_MODE_MASK)
     {
         case UNWIND_X86_64_MODE_RBP_FRAME:
@@ -1575,11 +1601,6 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
             return false;
     }
 #elif defined(TARGET_ARM64)
-    if (compactEncoding == 0)
-    {
-        TRACE("Compact unwind missing for %p\n", (void*)info->Context->Pc);
-        return false;
-    }
     switch (compactEncoding & UNWIND_ARM64_MODE_MASK)
     {
         case UNWIND_ARM64_MODE_FRAME:
@@ -1717,6 +1738,12 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_AARCH64_X28, (unw_word_t *) &winContext->X28);
     unw_get_reg(cursor, UNW_AARCH64_X29, (unw_word_t *) &winContext->Fp);
     unw_get_reg(cursor, UNW_AARCH64_X30, (unw_word_t *) &winContext->Lr);
+#ifdef __APPLE__
+    // Strip pointer authentication bits which seem to be leaking out of libunwind
+    // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
+    // errors with "this target does not support pointer authentication"
+    winContext->Pc = winContext->Pc & 0x7fffffffffffull;
+#endif // __APPLE__
     TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
 #elif defined(TARGET_S390X)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
@@ -2126,6 +2153,16 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
 #elif defined(TARGET_ARM64)
     TRACE("Unwind: pc %p sp %p fp %p\n", (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
     result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
+    if (result && step)
+    {
+        // If the PC is at the start of the function and the unwind encoding is frameless, back up PC by 1 to the previous
+        // function and get the unwind info for that function. This for functions that have been optimized to tail call.
+        if ((context->Pc == procInfo.start_ip) && (procInfo.format & UNWIND_ARM64_MODE_MASK) == UNWIND_ARM64_MODE_FRAMELESS)
+        {
+            TRACE("Getting unwind info for PC - 1\n");
+            result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step, false);
+        }
+    }
 #else
 #error Unexpected architecture
 #endif
