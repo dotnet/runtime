@@ -7,7 +7,7 @@ setlocal enabledelayedexpansion
 
 set EXECUTION_DIR=%~dp0
 
-if exist "package.json" (
+if exist "%EXECUTION_DIR%\package-lock.json" (
     cmd /c "cd %EXECUTION_DIR% && npm ci"
 )
 
