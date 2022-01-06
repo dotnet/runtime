@@ -9230,8 +9230,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
 
                     case GT_JTRUE:
-                        // These nodes never need to have a ValueNumber
-                        tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
+                        // This node does not produce values.
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
+                                                             vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
                         break;
 
                     case GT_BOX:
