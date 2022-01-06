@@ -47,7 +47,5 @@ namespace System.Net.Http.Headers
         public string[]? KnownValues { get; }
         public byte[] AsciiBytesWithColonSpace { get; }
         public HeaderDescriptor Descriptor => new HeaderDescriptor(this);
-
-        public string Separator => Parser is HttpHeaderParser parser ? parser.Separator : HttpHeaderParser.DefaultSeparator;
     }
 }

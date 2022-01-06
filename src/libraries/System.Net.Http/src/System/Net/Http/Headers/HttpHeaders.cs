@@ -255,7 +255,7 @@ namespace System.Net.Http.Headers
                 {
                     // Note that if we get multiple values for a header that doesn't support multiple values, we'll
                     // just separate the values using a comma (default separator).
-                    string separator = entry.Key.Separator;
+                    string? separator = entry.Key.Parser is HttpHeaderParser parser && parser.SupportsMultipleValues ? parser.Separator : HttpHeaderParser.DefaultSeparator;
 
                     for (int i = 0; i < multiValue!.Length; i++)
                     {
@@ -284,7 +284,8 @@ namespace System.Net.Http.Headers
 
                 // Note that if we get multiple values for a header that doesn't support multiple values, we'll
                 // just separate the values using a comma (default separator).
-                return string.Join(descriptor.Separator, multiValue!);
+                string? separator = descriptor.Parser != null && descriptor.Parser.SupportsMultipleValues ? descriptor.Parser.Separator : HttpHeaderParser.DefaultSeparator;
+                return string.Join(separator, multiValue!);
             }
 
             return string.Empty;

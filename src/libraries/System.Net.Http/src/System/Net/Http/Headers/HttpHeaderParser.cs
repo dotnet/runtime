@@ -12,14 +12,21 @@ namespace System.Net.Http.Headers
         internal const string DefaultSeparator = ", ";
 
         private readonly bool _supportsMultipleValues;
-        private readonly string _separator;
+        private readonly string? _separator;
 
         public bool SupportsMultipleValues
         {
             get { return _supportsMultipleValues; }
         }
 
-        public string Separator => _separator;
+        public string? Separator
+        {
+            get
+            {
+                Debug.Assert(_supportsMultipleValues);
+                return _separator;
+            }
+        }
 
         // If ValueType implements Equals() as required, there is no need to provide a comparer. A comparer is needed
         // e.g. if we want to compare strings using case-insensitive comparison.
@@ -29,8 +36,14 @@ namespace System.Net.Http.Headers
         }
 
         protected HttpHeaderParser(bool supportsMultipleValues)
-            : this(supportsMultipleValues, DefaultSeparator)
-        { }
+        {
+            _supportsMultipleValues = supportsMultipleValues;
+
+            if (supportsMultipleValues)
+            {
+                _separator = DefaultSeparator;
+            }
+        }
 
         protected HttpHeaderParser(bool supportsMultipleValues, string separator)
         {

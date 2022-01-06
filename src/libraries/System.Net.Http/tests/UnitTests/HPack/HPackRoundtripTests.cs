@@ -66,19 +66,31 @@ namespace System.Net.Http.Unit.Tests.HPack
                 Assert.InRange(headerValuesCount, 0, int.MaxValue);
                 ReadOnlySpan<string> headerValuesSpan = headerValues.AsSpan(0, headerValuesCount);
 
-                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
+                KnownHeader knownHeader = header.Key.KnownHeader;
+                if (knownHeader != null)
                 {
                     // For all other known headers, send them via their pre-encoded name and the associated value.
                     WriteBytes(knownHeader.Http2EncodedName);
-
-                    string? separator = headerValuesSpan.Length > 1 ? knownHeader.Separator : null;
+                    string separator = null;
+                    if (headerValuesSpan.Length > 1)
+                    {
+                        HttpHeaderParser parser = header.Key.Parser;
+                        if (parser != null && parser.SupportsMultipleValues)
+                        {
+                            separator = parser.Separator;
+                        }
+                        else
+                        {
+                            separator = HttpHeaderParser.DefaultSeparator;
+                        }
+                    }
 
                     WriteLiteralHeaderValues(headerValuesSpan, separator);
                 }
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(headerName, headerValuesSpan);
+                    WriteLiteralHeader(header.Key.Name, headerValuesSpan);
                 }
             }
 

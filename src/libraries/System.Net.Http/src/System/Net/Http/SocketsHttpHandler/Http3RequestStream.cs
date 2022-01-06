@@ -632,7 +632,8 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
-                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
+                KnownHeader? knownHeader = header.Key.KnownHeader;
+                if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP/3 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -656,8 +657,19 @@ namespace System.Net.Http
 
                         // For all other known headers, send them via their pre-encoded name and the associated value.
                         BufferBytes(knownHeader.Http3EncodedName);
-
-                        string? separator = headerValues.Length > 1 ? knownHeader.Separator : null;
+                        string? separator = null;
+                        if (headerValues.Length > 1)
+                        {
+                            HttpHeaderParser? parser = header.Key.Parser;
+                            if (parser != null && parser.SupportsMultipleValues)
+                            {
+                                separator = parser.Separator;
+                            }
+                            else
+                            {
+                                separator = HttpHeaderParser.DefaultSeparator;
+                            }
+                        }
 
                         BufferLiteralHeaderValues(headerValues, separator, valueEncoding);
                     }
@@ -665,7 +677,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(headerName, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
+                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
         }
@@ -888,7 +900,7 @@ namespace System.Net.Http
         {
             if (descriptor.Name[0] == ':')
             {
-                if (!descriptor.Equals(KnownHeaders.PseudoStatus))
+                if (descriptor.KnownHeader != KnownHeaders.PseudoStatus)
                 {
                     if (NetEventSource.Log.IsEnabled()) Trace($"Received unknown pseudo-header '{descriptor.Name}'.");
                     throw new Http3ConnectionException(Http3ErrorCode.ProtocolError);
