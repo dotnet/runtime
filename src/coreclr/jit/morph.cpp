@@ -14147,17 +14147,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 //
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
-    size_t constArgCount = 0;
     gtUpdateNodeOperSideEffects(multiOp);
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
         multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
-
-        if ((*use)->OperIsConst())
-        {
-            constArgCount++;
-        }
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
@@ -14204,9 +14198,19 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
             case NI_Vector64_CreateScalarUnsafe:
 #endif
             {
+                bool hwAllArgsAreConst = true;
+                for (GenTree** use : multiOp->UseEdges())
+                {
+                    if (!(*use)->OperIsConst())
+                    {
+                        hwAllArgsAreConst = false;
+                        break;
+                    }
+                }
+
                 // Avoid unexpected CSE for constant arguments here
                 // https://github.com/dotnet/runtime/issues/63432
-                if (constArgCount == multiOp->GetOperandCount())
+                if (hwAllArgsAreConst)
                 {
                     for (GenTree** use : multiOp->UseEdges())
                     {
