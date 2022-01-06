@@ -839,9 +839,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      +=======================+ <---- Caller's SP
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -866,9 +866,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      +=======================+ <---- Caller's SP
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -896,9 +896,9 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      +=======================+ <---- Caller's SP
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
- *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
  *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |-----------------------|
+ *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
@@ -917,11 +917,11 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  * it is possible that we will need to add alignment to both changes to SP, leading to 16 bytes of alignment. Remember that the stack
  * pointer needs to be 16 byte aligned at all times. The size of the PSP slot plus callee-saved registers space is a maximum of 240 bytes:
  *
+ *     1 PSP slot
  *     FP,LR registers
  *     10 int callee-saved register x19-x28
  *     8 float callee-saved registers v8-v15
  *     8 saved integer argument registers x0-x7, if varargs function
- *     1 PSP slot
  *     1 alignment slot
  *     == 30 slots * 8 bytes = 240 bytes.
  *
@@ -960,13 +960,13 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      +=======================+ <---- Caller's SP
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |-----------------------|
  *      |      Saved LR         | // 8 bytes
  *      |-----------------------|
  *      |      Saved FP         | // 8 bytes
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -997,13 +997,13 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      +=======================+ <---- Caller's SP
  *      |  Varargs regs space   | // Only for varargs main functions; 64 bytes
  *      |-----------------------|
+ *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |-----------------------|
  *      |      Saved LR         | // 8 bytes
  *      |-----------------------|
  *      |      Saved FP         | // 8 bytes
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
- *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
@@ -1411,16 +1411,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     unsigned const PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? REGSIZE_BYTES : 0;
 
-    // Because a method and funclets must have the same caller-relative PSPSym offset,
-    // if there is a PSPSym, we have to pad the funclet frame size for OSR.
-    //
-    unsigned osrPad = 0;
-    if (compiler->opts.IsOSR() && (PSPSize > 0))
-    {
-        osrPad = compiler->info.compPatchpointInfo->TotalFrameSize();
-    }
-
-    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
+    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta();
 
     regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
     assert((rsMaskSaveRegs & RBM_LR) != 0);
@@ -1428,11 +1419,14 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
     unsigned saveRegsCount       = genCountBits(rsMaskSaveRegs);
     unsigned saveRegsPlusPSPSize = saveRegsCount * REGSIZE_BYTES + PSPSize;
+    unsigned homedArgSize        = 0;
+
     if (compiler->info.compIsVarArgs)
     {
         // For varargs we always save all of the integer register arguments
         // so that they are contiguous with the incoming stack arguments.
-        saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
+        homedArgSize = MAX_REG_ARG * REGSIZE_BYTES;
+        saveRegsPlusPSPSize += homedArgSize;
     }
 
     unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
@@ -1440,40 +1434,36 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
     unsigned const outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
-    unsigned const maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + osrPad + outgoingArgSpaceAligned;
+    unsigned const maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
     assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
 
-    int SP_to_FPLR_save_delta;
-    int SP_to_PSP_slot_delta;
-    int CallerSP_to_PSP_slot_delta;
-
-    unsigned const funcletFrameSize        = saveRegsPlusPSPSize + osrPad + compiler->lvaOutgoingArgSpaceSize;
+    unsigned const funcletFrameSize        = saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
     unsigned const funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
     assert(funcletFrameSizeAligned <= maxFuncletFrameSizeAligned);
 
     unsigned const funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
     assert((funcletFrameAlignmentPad == 0) || (funcletFrameAlignmentPad == REGSIZE_BYTES));
 
+    // PSPSym is always at 0 or -(MAX_REG_ARG * REGSIZE_BYTES), independent of frame type.
+    // SP is always at bottom of frame, independent of frame type.
+    //
+    const int CallerSP_to_PSP_slot_delta = -(int)homedArgSize;
+    const int SP_to_PSP_slot_delta       = funcletFrameSizeAligned - homedArgSize;
+
+    // SP to FPLR save delta can vary depending on frame type.
+    //
+    int SP_to_FPLR_save_delta;
+
     if (maxFuncletFrameSizeAligned <= 512)
     {
         if (genSaveFpLrWithAllCalleeSavedRegisters)
         {
-            SP_to_FPLR_save_delta = funcletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES);
-            if (compiler->info.compIsVarArgs)
-            {
-                SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
-            }
-
-            SP_to_PSP_slot_delta       = compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + osrPad;
-            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
-
+            SP_to_FPLR_save_delta      = funcletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES) - homedArgSize;
             genFuncletInfo.fiFrameType = 4;
         }
         else
         {
             SP_to_FPLR_save_delta = compiler->lvaOutgoingArgSpaceSize;
-            SP_to_PSP_slot_delta  = SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + funcletFrameAlignmentPad;
-            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize - 2 /* FP, LR */ * REGSIZE_BYTES);
 
             if (compiler->lvaOutgoingArgSpaceSize == 0)
             {
@@ -1497,29 +1487,18 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
         if (genSaveFpLrWithAllCalleeSavedRegisters)
         {
-            SP_to_FPLR_save_delta = funcletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES);
-            if (compiler->info.compIsVarArgs)
-            {
-                SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
-            }
-
-            SP_to_PSP_slot_delta =
-                compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + saveRegsPlusPSPAlignmentPad;
-            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
+            SP_to_FPLR_save_delta = funcletFrameSizeAligned - (2 /* FP, LR */ * REGSIZE_BYTES) - homedArgSize;
 
             genFuncletInfo.fiFrameType = 5;
         }
         else
         {
             SP_to_FPLR_save_delta = outgoingArgSpaceAligned;
-            SP_to_PSP_slot_delta = SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + saveRegsPlusPSPAlignmentPad;
-            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSizeAligned - 2 /* FP, LR */ * REGSIZE_BYTES -
-                                                saveRegsPlusPSPAlignmentPad);
 
             genFuncletInfo.fiFrameType = 3;
         }
 
-        genFuncletInfo.fiSpDelta1 = -(int)(osrPad + saveRegsPlusPSPSizeAligned);
+        genFuncletInfo.fiSpDelta1 = -(int)(saveRegsPlusPSPSizeAligned);
         genFuncletInfo.fiSpDelta2 = -(int)outgoingArgSpaceAligned;
 
         assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 == -(int)maxFuncletFrameSizeAligned);
@@ -1541,10 +1520,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(genFuncletInfo.fiSaveRegs);
         printf("\n");
-        if (compiler->opts.IsOSR())
-        {
-            printf("                          OSR Pad: %d\n", osrPad);
-        }
         printf("  SP to FP/LR save location delta: %d\n", genFuncletInfo.fiSP_to_FPLR_save_delta);
         printf("             SP to PSP slot delta: %d\n", genFuncletInfo.fiSP_to_PSP_slot_delta);
         printf("    SP to callee-saved area delta: %d\n", genFuncletInfo.fiSP_to_CalleeSave_delta);
