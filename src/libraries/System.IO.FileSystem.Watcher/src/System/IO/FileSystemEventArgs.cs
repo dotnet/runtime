@@ -19,9 +19,7 @@ namespace System.IO
         {
             _changeType = changeType;
             _name = name;
-
-            string joinedPath = Path.Join(directory, name);
-            _fullPath = string.IsNullOrWhiteSpace(joinedPath) ? string.Empty : Path.GetFullPath(joinedPath);
+            _fullPath = Path.Join(Path.GetFullPath(directory), name);
         }
 
         /// <devdoc>
