@@ -591,6 +591,15 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     InlineContext*         inlinersContext;
 };
 
+// LateDevirtualizationInfo
+//
+// Used to fill in missing contexts during late devirtualization.
+//
+struct LateDevirtualizationInfo
+{
+    CORINFO_CONTEXT_HANDLE exactContextHnd;
+};
+
 // InlArgInfo describes inline candidate argument properties.
 
 struct InlArgInfo
