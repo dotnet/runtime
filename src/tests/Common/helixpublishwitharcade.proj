@@ -102,6 +102,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <TargetHasHelixXHarnessSdkSupport>false</TargetHasHelixXHarnessSdkSupport>
+    <TargetHasHelixXHarnessSdkSupport Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">true</TargetHasHelixXHarnessSdkSupport>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
@@ -201,7 +206,7 @@
       <ReducedLegacyPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(TargetsMobile)' == 'true' or '$(TargetsBrowser)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
       <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
       <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
       <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)AppBundle/**')</PublishedMergedPayloadsToExclude>
@@ -393,7 +398,7 @@
 
   <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktop;PrepareMergedTestPayloadDirectoryForAndroid;PrepareMergedTestPayloadDirectoryForWasm;PrepareMergedTestPayloadDirectoryForAppleMobile" />
 
-  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <ItemGroup>
       <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
       <LegacyPayloads Update="@(LegacyPayloads)">
@@ -494,8 +499,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <XUnitRunnerDll Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
-    <XUnitRunnerDll Condition="'$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true'">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
+    <!-- When the target has XHarness support in the Helix SDK, the script runs in a powershell context. Otherwise it runs in a Batch context. -->
+    <XUnitRunnerDll Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
@@ -545,13 +551,13 @@
     </MergedPayloads>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
     <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TestWrapperTargetsWindows)' != 'true'">
       <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand)%0A%(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
@@ -560,14 +566,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition=" '$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true' ">
+    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
-    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition=" '$(TargetsMobile)' != 'true' or '$(TargetsBrowser)' == 'true' ">
+    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>%(MergedTestHelixCommand)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
