@@ -1011,40 +1011,49 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     if (intrin.op1 != nullptr)
     {
-        bool simdRegToSimdRegMove = false;
-
-        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+        // Do not give a register to the second operand if it is contained.
+        if (!hasImmediateOperand && intrin.op1->isContained())
         {
-            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
-        }
-        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
-        {
-            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
-        }
-        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
-        {
-            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
-        }
-
-        // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
-        // we want to preference op1Reg to the target if op1 is not contained.
-        if (isRMW || simdRegToSimdRegMove)
-        {
-            tgtPrefOp1 = !intrin.op1->isContained();
-        }
-
-        if (intrinsicTree->OperIsMemoryLoadOrStore())
-        {
-            srcCount += BuildAddrUses(intrin.op1);
-        }
-        else if (tgtPrefOp1)
-        {
-            tgtPrefUse = BuildUse(intrin.op1);
-            srcCount++;
+            assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+            assert(intrin.op1->IsVectorZero());
         }
         else
         {
-            srcCount += BuildOperandUses(intrin.op1);
+            bool simdRegToSimdRegMove = false;
+
+            if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+            }
+            else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+            {
+                simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+            }
+            else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+            }
+
+            // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
+            // we want to preference op1Reg to the target if op1 is not contained.
+            if (isRMW || simdRegToSimdRegMove)
+            {
+                tgtPrefOp1 = !intrin.op1->isContained();
+            }
+
+            if (intrinsicTree->OperIsMemoryLoadOrStore())
+            {
+                srcCount += BuildAddrUses(intrin.op1);
+            }
+            else if (tgtPrefOp1)
+            {
+                tgtPrefUse = BuildUse(intrin.op1);
+                srcCount++;
+            }
+            else
+            {
+                srcCount += BuildOperandUses(intrin.op1);
+            }
         }
     }
 
