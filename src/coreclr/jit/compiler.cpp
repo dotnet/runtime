@@ -2241,11 +2241,29 @@ void Compiler::compSetProcessor()
 #endif // TARGET_X86
 
     // The VM will set the ISA flags depending on actual hardware support
-    // and any specified config switches specified by the user.
+    // and any specified config switches specified by the user. The exception
+    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
+    // don't actually exist. The JIT is in charge of adding those and ensuring
+    // the total sum of flags is still valid.
 
-    opts.setSupportedISAs(jitFlags.GetInstructionSetFlags());
+    CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
+
+    opts.compSupportsISA         = 0;
     opts.compSupportsISAReported = 0;
     opts.compSupportsISAExactly  = 0;
+
+#if defined(TARGET_XARCH)
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#endif // TARGET_ARM64
+
+    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+    opts.setSupportedISAs(instructionSetFlags);
 
 #ifdef TARGET_XARCH
     if (!compIsForInlining())

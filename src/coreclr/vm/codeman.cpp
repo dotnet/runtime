@@ -1331,7 +1331,6 @@ void EEJitManager::SetCpuInfo()
         {
             CPUCompileFlags.Set(InstructionSet_SSE);
             CPUCompileFlags.Set(InstructionSet_SSE2);
-            CPUCompileFlags.Set(InstructionSet_Vector128);
 
             if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
             {
@@ -1369,7 +1368,6 @@ void EEJitManager::SetCpuInfo()
                                 if(DoesOSSupportAVX() && (xmmYmmStateSupport() == 1))                       // XGETBV == 11
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX);
-                                    CPUCompileFlags.Set(InstructionSet_Vector256);
 
                                     if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
                                     {
@@ -1471,8 +1469,6 @@ void EEJitManager::SetCpuInfo()
     // FP and SIMD support are enabled by default
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
-    CPUCompileFlags.Set(InstructionSet_Vector64);
-    CPUCompileFlags.Set(InstructionSet_Vector128);
 
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
@@ -1642,7 +1638,7 @@ void EEJitManager::SetCpuInfo()
     // These calls are very important as it ensures the flags are consistent with any
     // removals specified above. This includes removing corresponding 64-bit ISAs
     // and any other implications such as SSE2 depending on SSE or AdvSimd on ArmBase
-    
+
     CPUCompileFlags.Set64BitInstructionSetVariants();
     CPUCompileFlags.EnsureValidInstructionSetSupport();
 
