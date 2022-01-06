@@ -139,7 +139,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            return LowerBinaryArithmetic(node->AsOp());
+            return LowerBinaryArithmeticCommon(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -5122,7 +5122,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBinaryArithmetic: lowers the given binary arithmetic node.
+// LowerBinaryArithmeticCommon: lowers the given binary arithmetic node.
 //
 // Recognizes opportunities for using target-independent "combined" nodes
 // (currently AND_NOT on ARMArch). Performs containment checks.
@@ -5133,41 +5133,9 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 // Returns:
 //    The next node to lower.
 //
-GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* node)
+GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* node)
 {
-    // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
-    // this logic on the support for the instruction set on XArch.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef TARGET_ARMARCH
-    if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
-    {
-        GenTree* opNode  = nullptr;
-        GenTree* notNode = nullptr;
-        if (node->gtGetOp1()->OperIs(GT_NOT))
-        {
-            notNode = node->gtGetOp1();
-            opNode  = node->gtGetOp2();
-        }
-        else if (node->gtGetOp2()->OperIs(GT_NOT))
-        {
-            notNode = node->gtGetOp2();
-            opNode  = node->gtGetOp1();
-        }
-
-        if (notNode != nullptr)
-        {
-            node->gtOp1 = opNode;
-            node->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            node->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
-        }
-    }
-#endif // TARGET_ARMARCH
-
-    ContainCheckBinary(node);
-
-    return node->gtNext;
+    return LowerBinaryArithmetic(node);
 }
 
 //------------------------------------------------------------------------
