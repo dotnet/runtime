@@ -36,6 +36,11 @@ extern "C" DLL_EXPORT CheckStructWithShortAndBoolCallback STDMETHODCALLTYPE GetS
     return &CheckStructWithShortAndBool;
 }
 
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE CallCheckStructWithShortAndBoolCallback(CheckStructWithShortAndBoolCallback cb, StructWithShortAndBool str, short s, bool b)
+{
+    return cb(str, s, b);
+}
+
 extern "C" DLL_EXPORT BYTE PassThrough(BYTE b)
 {
     return b;

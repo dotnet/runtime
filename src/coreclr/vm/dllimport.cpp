@@ -3349,7 +3349,7 @@ BOOL NDirect::MarshalingRequired(
                 {
                     return TRUE;
                 }
-                else if (!hndArgType.IsBlittable() && !hndArgType.IsEnum())
+                else if (builtInMarshallingEnabled && !hndArgType.IsBlittable() && !hndArgType.IsEnum())
                 {
                     // When the built-in runtime marshalling system is enabled, we do special handling
                     // for any types that aren't blittable or enums.

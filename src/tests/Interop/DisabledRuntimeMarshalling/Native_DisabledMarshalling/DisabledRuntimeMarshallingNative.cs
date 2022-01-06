@@ -9,8 +9,8 @@ public unsafe class DisabledRuntimeMarshallingNative
 {
     public struct StructWithShortAndBool
     {
-        bool b;
-        short s;
+        public bool b;
+        public short s;
         int padding;
 
         public StructWithShortAndBool(short s, bool b)
@@ -60,6 +60,18 @@ public unsafe class DisabledRuntimeMarshallingNative
         }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StructWithShortAndGeneric<T>
+    {
+        short s;
+        T t;
+        public StructWithShortAndGeneric(short s, T t)
+        {
+            this.s = s;
+            this.t = t;
+        }
+    }
+
     public struct StructWithString
     {
         string s;
@@ -97,7 +109,13 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShort str, short s, char c);
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, [MarshalAs(UnmanagedType.U1)] char c);
+    public static extern bool CheckStructWithWCharAndShort(StructWithWCharAndShortWithMarshalAs str, short s, char c);
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern bool CheckStructWithWCharAndShort(StructWithShortAndGeneric<char> str, short s, char c);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern bool CheckStructWithWCharAndShort(StructWithShortAndGeneric<short> str, short s, short c);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Ansi)]
     public static extern void CheckStringWithAnsiCharSet(string s);
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid", CharSet = CharSet.Unicode)]
@@ -125,11 +143,17 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWithAutoLayoutStruct(SequentialWithAutoLayoutNestedField s);
 
-    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithByRef(ref int i);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
-    public static extern delegate*<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
+    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolWithVariantBoolCallback();
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative))]
+    public static extern bool CallCheckStructWithShortAndBoolCallback(delegate* unmanaged<StructWithShortAndBool, short, bool, bool> cb, StructWithShortAndBool str, short s, bool b);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
     public static extern bool GetByteAsBool(byte b);
@@ -140,4 +164,10 @@ public unsafe class DisabledRuntimeMarshallingNative
 
     public delegate bool CheckStructWithShortAndBoolCallback(StructWithShortAndBool str, short s, bool b);
     public delegate bool CheckStructWithShortAndBoolWithVariantBoolCallback(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
+
+    [UnmanagedCallersOnly]
+    public static bool CheckStructWithShortAndBoolManaged(StructWithShortAndBool str, short s, bool b)
+    {
+        return str.s == s && str.b == b;
+    }
 }

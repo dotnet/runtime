@@ -60,6 +60,16 @@ public class PInvokes
     }
 
     [Fact]
+    public static void ByRef_Args_Not_Supported()
+    {
+        Assert.Throws<MarshalDirectiveException>(() =>
+        {
+           int i = 0;
+           DisabledRuntimeMarshallingNative.CallWithByRef(ref i);
+        });
+    }
+
+    [Fact]
     public static void NoBooleanNormalization()
     {
         byte byteVal = 42;
@@ -80,5 +90,25 @@ public class PInvokes
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShort(s, c), s, c));
 
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBoolWithVariantBool_FailureExpected(new StructWithShortAndBool(s, b), s, b));
+    }
+
+    [Fact]
+    public static void StructWithNonBlittableGenericInstantiation()
+    {
+        short s = 42;
+        // We use a the "green check mark" character so that we use both bytes and
+        // have a value that can't be accidentally round-tripped.
+        char c = '✅';
+        Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<char>(s, c), s, c));
+    }
+
+    [Fact]
+    public static void StructWithBlittableGenericInstantiation()
+    {
+        short s = 42;
+        // We use a the "green check mark" character so that we use both bytes and
+        // have a value that can't be accidentally round-tripped.
+        char c = '✅';
+        Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
     }
 }

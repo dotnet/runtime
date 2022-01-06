@@ -41,6 +41,24 @@ public class PInvokes
     }
 
     [Fact]
+    public static void StructWithNonBlittableGenericInstantiation_Fails()
+    {
+        short s = 41;
+        char c = '✅';
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<char>(s, c), s, c));
+    }
+
+    [Fact]
+    public static void StructWithBlittableGenericInstantiation()
+    {
+        short s = 42;
+        // We use a the "green check mark" character so that we use both bytes and
+        // have a value that can't be accidentally round-tripped.
+        char c = '✅';
+        Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
+    }
+
+    [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo_WindowsOnly()
     {
