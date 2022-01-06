@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using ILLink.Shared;
 
 namespace Mono.Linker.Steps
 {
@@ -37,7 +38,7 @@ namespace Mono.Linker.Steps
 				// to determine the action.
 				var assembly = Context.TryResolve (assemblyName);
 				if (assembly == null) {
-					Context.LogError ($"Reference assembly '{assemblyPath}' could not be loaded.", 1039);
+					Context.LogError (null, DiagnosticId.ReferenceAssemblyCouldNotBeLoaded, assemblyPath);
 					continue;
 				}
 

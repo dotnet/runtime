@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -36,7 +37,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.Link:
 				break;
 			default:
-				Context.LogError ($"Root assembly '{assembly.Name}' cannot use action '{action}'.", 1035);
+				Context.LogError (null, DiagnosticId.RootAssemblyCannotUseAction, assembly.Name.ToString (), action.ToString ());
 				return;
 			}
 
@@ -49,7 +50,7 @@ namespace Mono.Linker.Steps
 			case AssemblyRootMode.EntryPoint:
 				var ep = assembly.MainModule.EntryPoint;
 				if (ep == null) {
-					Context.LogError ($"Root assembly '{assembly.Name}' does not have entry point.", 1034);
+					Context.LogError (null, DiagnosticId.RootAssemblyDoesNotHaveEntryPoint, assembly.Name.ToString ());
 					return;
 				}
 
@@ -117,7 +118,7 @@ namespace Mono.Linker.Steps
 			//
 			assembly = Context.TryResolve (fileName);
 			if (assembly == null)
-				Context.LogError ($"Root assembly '{fileName}' could not be found.", 1032);
+				Context.LogError (null, DiagnosticId.RootAssemblyCouldNotBeFound, fileName);
 
 			return assembly;
 		}
