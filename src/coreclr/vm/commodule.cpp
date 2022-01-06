@@ -499,14 +499,18 @@ extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle p
     if (pReflectionModule->m_sdataSection == 0)
         IfFailThrow( pGen->GetSectionCreate (".sdata", sdReadWrite, &pReflectionModule->m_sdataSection) );
 
+    // Define the alignment that the rva will be set to. Since the CoreCLR runtime only has hard alignment requirements
+    // up to 8 bytes, just align everything to an 8 byte alignment
+    DWORD alignment = 8; 
+
     // Get the size of current .sdata section. This will be the RVA for this field within the section
     DWORD dwRVA = 0;
     IfFailThrow( pGen->GetSectionDataLen(pReflectionModule->m_sdataSection, &dwRVA) );
-    dwRVA = (dwRVA + sizeof(DWORD)-1) & ~(sizeof(DWORD)-1);
+    dwRVA = (dwRVA + alignment-1) & ~(alignment-1);
 
     // allocate the space in .sdata section
     void * pvBlob;
-    IfFailThrow( pGen->GetSectionBlock(pReflectionModule->m_sdataSection, length, sizeof(DWORD), (void**) &pvBlob) );
+    IfFailThrow( pGen->GetSectionBlock(pReflectionModule->m_sdataSection, length, alignment, (void**) &pvBlob) );
 
     // copy over the initialized data if specified
     if (pContent != NULL)
