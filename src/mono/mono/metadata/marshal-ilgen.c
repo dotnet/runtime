@@ -6765,7 +6765,7 @@ mb_emit_exception_for_error_ilgen (MonoMethodBuilder *mb, const MonoError *error
 static void
 emit_marshal_directive_exception_ilgen (EmitMarshalContext *m, int argnum, const char* msg)
 {
-	const char* fullmsg = NULL;
+	char* fullmsg = NULL;
 	if (argnum == 0)
 		fullmsg = g_strdup_printf("Error marshalling return value: %s", msg);
 	else 
