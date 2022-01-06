@@ -763,17 +763,17 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                     sb.Append($@"
     {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}> {infoVarName} = new {JsonPropertyInfoValuesTypeRef}<{memberTypeCompilableName}>()
     {{
-        IsProperty = {ToCSharpKeyword(memberMetadata.IsProperty)},
-        IsPublic = {ToCSharpKeyword(memberMetadata.IsPublic)},
-        IsVirtual = {ToCSharpKeyword(memberMetadata.IsVirtual)},
+        IsProperty = {FormatBool(memberMetadata.IsProperty)},
+        IsPublic = {FormatBool(memberMetadata.IsPublic)},
+        IsVirtual = {FormatBool(memberMetadata.IsVirtual)},
         DeclaringType = typeof({memberMetadata.DeclaringTypeRef}),
         PropertyTypeInfo = {memberTypeFriendlyName},
         Converter = {converterValue},
         Getter = {getterValue},
         Setter = {setterValue},
         IgnoreCondition = {ignoreConditionNamedArg},
-        HasJsonInclude = {ToCSharpKeyword(memberMetadata.HasJsonInclude)},
-        IsExtensionData = {ToCSharpKeyword(memberMetadata.IsExtensionData)},
+        HasJsonInclude = {FormatBool(memberMetadata.HasJsonInclude)},
+        IsExtensionData = {FormatBool(memberMetadata.IsExtensionData)},
         NumberHandling = {GetNumberHandlingAsStr(memberMetadata.NumberHandling)},
         PropertyName = ""{clrPropertyName}"",
         JsonPropertyName = {jsonPropertyNameValue}
@@ -821,7 +821,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
         Name = ""{reflectionInfo.Name!}"",
         ParameterType = typeof({parameterTypeRef}),
         Position = {reflectionInfo.Position},
-        HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)},
+        HasDefaultValue = {FormatBool(reflectionInfo.HasDefaultValue)},
         DefaultValue = {defaultValueAsStr}
     }};
     {parametersVarName}[{i}] = {InfoVarName};
@@ -1194,10 +1194,10 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} options) : base(options)
 private static {JsonSerializerOptionsTypeRef} {DefaultOptionsStaticVarName} {{ get; }} = new {JsonSerializerOptionsTypeRef}()
 {{
     DefaultIgnoreCondition = {JsonIgnoreConditionTypeRef}.{options.DefaultIgnoreCondition},
-    IgnoreReadOnlyFields = {ToCSharpKeyword(options.IgnoreReadOnlyFields)},
-    IgnoreReadOnlyProperties = {ToCSharpKeyword(options.IgnoreReadOnlyProperties)},
-    IncludeFields = {ToCSharpKeyword(options.IncludeFields)},
-    WriteIndented = {ToCSharpKeyword(options.WriteIndented)},{namingPolicyInit}
+    IgnoreReadOnlyFields = {FormatBool(options.IgnoreReadOnlyFields)},
+    IgnoreReadOnlyProperties = {FormatBool(options.IgnoreReadOnlyProperties)},
+    IncludeFields = {FormatBool(options.IncludeFields)},
+    WriteIndented = {FormatBool(options.WriteIndented)},{namingPolicyInit}
 }};";
             }
 
@@ -1319,7 +1319,7 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
-            private static string ToCSharpKeyword(bool value) => value.ToString().ToLowerInvariant();
+            private static string FormatBool(bool value) => value ? "true" : "false";
 
             private string GetParamDefaultValueAsString(object? value, Type type, string typeRef)
             {
@@ -1337,15 +1337,15 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
 #endif
 
                     // Return the numeric value.
-                    return $"({typeRef})({value.ToString()})";
+                    return FormatNumber();
                 }
 
                 switch (value)
                 {
                     case string @string:
-                        return QuoteString(@string);
+                        return SymbolDisplay.FormatLiteral(@string, quote: true); ;
                     case char @char:
-                        return String.Format("'{0}'", EscapeChar((char)value, inString: false));
+                        return SymbolDisplay.FormatLiteral(@char, quote: true);
                     case double.NegativeInfinity:
                         return "double.NegativeInfinity";
                     case double.PositiveInfinity:
@@ -1369,59 +1369,13 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
                     case decimal @decimal:
                         return @decimal.ToString(CultureInfo.InvariantCulture);
                     case bool @bool:
-                        return ToCSharpKeyword(@bool);
+                        return FormatBool(@bool);
                     default:
                         // Assume this is a number.
-                        return $"({typeRef})({value.ToString()})";
-                }
-            }
-
-            // The following logic to quote string constants with proper escaping is copied from the WriteMetadataConstant method from
-            // https://github.com/dotnet/arcade/blob/0cd94b1d02c03377d99f3739beb191591f6abee5/src/Microsoft.Cci.Extensions/Writers/CSharp/CSDeclarationWriter.Attributes.cs#L241
-
-            private static string QuoteString(string str)
-            {
-                StringBuilder sb = new StringBuilder("\"");
-
-                foreach (char ch in str)
-                {
-                    sb.Append(EscapeChar(ch, inString: true));
+                        return FormatNumber();
                 }
 
-                sb.Append("\"");
-
-                return sb.ToString();
-            }
-
-            private static string EscapeChar(char c, bool inString)
-            {
-                switch (c)
-                {
-                    case '\r': return @"\r";
-                    case '\n': return @"\n";
-                    case '\f': return @"\f";
-                    case '\t': return @"\t";
-                    case '\v': return @"\v";
-                    case '\0': return @"\0";
-                    case '\a': return @"\a";
-                    case '\b': return @"\b";
-                    case '\\': return @"\\";
-                    case '\'': return inString ? "'" : @"\'";
-                    case '"': return inString ? "\\\"" : "\"";
-                }
-
-                var cat = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (cat == UnicodeCategory.Control ||
-                  cat == UnicodeCategory.LineSeparator ||
-                  cat == UnicodeCategory.Format ||
-                  cat == UnicodeCategory.Surrogate ||
-                  cat == UnicodeCategory.PrivateUse ||
-                  cat == UnicodeCategory.OtherNotAssigned)
-                {
-                    return String.Format("\\u{0:X4}", (int)c);
-                }
-
-                return c.ToString();
+                string FormatNumber() => $"({typeRef})({Convert.ToString(value, CultureInfo.InvariantCulture)})";
             }
         }
     }

@@ -1386,12 +1386,6 @@ namespace System.Text.Json.Serialization.Tests
             public long A;
             public StructWithExplicitParameterlessCtor() => A = 42;
         }
-        
-        public async Task TestClassWithEmptyStringDefaultCtorParam()
-        {
-            ClassWithDefaultCtorParams obj = new ClassWithDefaultCtorParams("value", "val", 'v', 1, 2, 3, 4, 5, 6);
-            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
-        }
 
         public async Task TestClassWithDefaultCtorParams()
         {
