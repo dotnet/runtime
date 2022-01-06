@@ -30,7 +30,7 @@ file_entry_t file_entry_t::read(reader_t &reader, uint32_t bundle_major_version,
         reader.read(&fixed_data.compressedSize, sizeof(int64_t));
     }
 
-    fixed_data.type   = *(file_type_t*)reader.read_direct(sizeof(file_type_t));
+    fixed_data.type   = (file_type_t)reader.read_byte();
 
     file_entry_t entry(&fixed_data, force_extraction);
 
