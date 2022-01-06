@@ -14214,6 +14214,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                     }
                 }
             }
+            break;
 
             default:
                 break;
