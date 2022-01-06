@@ -4,18 +4,18 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Threading;
+using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.IL;
 using Internal.IL.Stubs;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
 using Debug = System.Diagnostics.Debug;
-using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -26,8 +26,7 @@ namespace ILCompiler
     /// </summary>
     internal sealed class ILScanner : Compilation, IILScanner
     {
-        private CountdownEvent _compilationCountdown;
-        private readonly bool _singleThreaded;
+        private readonly int _parallelism;
 
         internal ILScanner(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
@@ -36,11 +35,11 @@ namespace ILCompiler
             ILProvider ilProvider,
             DebugInformationProvider debugInformationProvider,
             Logger logger,
-            bool singleThreaded)
+            int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, null, nodeFactory.CompilationModuleGroup, logger)
         {
             _helperCache = new HelperCache(this);
-            _singleThreaded = singleThreaded;
+            _parallelism = parallelism;
         }
 
         protected override void CompileInternal(string outputFile, ObjectDumper dumper)
@@ -78,7 +77,7 @@ namespace ILCompiler
                 methodsToCompile.Add(methodCodeNodeNeedingCode);
             }
 
-            if (_singleThreaded)
+            if (_parallelism == 1)
             {
                 CompileSingleThreaded(methodsToCompile);
             }
@@ -95,18 +94,10 @@ namespace ILCompiler
                 Logger.Writer.WriteLine($"Scanning {methodsToCompile.Count} methods...");
             }
 
-            WaitCallback compileSingleMethodDelegate = m => CompileSingleMethod((ScannedMethodNode)m);
-
-            using (_compilationCountdown = new CountdownEvent(methodsToCompile.Count))
-            {
-                foreach (ScannedMethodNode methodCodeNodeNeedingCode in methodsToCompile)
-                {
-                    ThreadPool.QueueUserWorkItem(compileSingleMethodDelegate, methodCodeNodeNeedingCode);
-                }
-
-                _compilationCountdown.Wait();
-                _compilationCountdown = null;
-            }
+            Parallel.ForEach(
+                methodsToCompile,
+                new ParallelOptions { MaxDegreeOfParallelism = _parallelism },
+                CompileSingleMethod);
         }
 
         private void CompileSingleThreaded(List<ScannedMethodNode> methodsToCompile)
@@ -141,11 +132,6 @@ namespace ILCompiler
             catch (Exception ex)
             {
                 throw new CodeGenerationFailedException(method, ex);
-            }
-            finally
-            {
-                if (_compilationCountdown != null)
-                    _compilationCountdown.Signal();
             }
         }
 

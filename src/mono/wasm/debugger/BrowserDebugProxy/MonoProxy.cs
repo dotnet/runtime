@@ -461,12 +461,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        var ret = await RuntimeGetPropertiesInternal(id, objectId, args, token);
+                        var ret = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
                         if (ret == null) {
                             SendResponse(id, Result.Err($"Unable to RuntimeGetProperties '{objectId}'"), token);
                         }
                         else
-                            SendResponse(id, Result.OkFromObject(new { result = ret }), token);
+                            SendResponse(id, Result.OkFromObject(ret), token);
                         return true;
                     }
 
@@ -658,7 +658,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token)
+        internal async Task<JToken> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
             var accessorPropertiesOnly = false;
@@ -675,33 +675,48 @@ namespace Microsoft.WebAssembly.Diagnostics
                     objectValuesOpt |= GetObjectCommandOptions.OwnProperties;
                 }
             }
-            //Console.WriteLine($"RuntimeGetProperties - {args}");
             try {
                 switch (objectId.Scheme)
                 {
                     case "scope":
                     {
-                        var res = await GetScopeProperties(id, objectId.Value, token);
-                        return res.Value?["result"];
+                        var resScope = await GetScopeProperties(id, objectId.Value, token);
+                        if (sortByAccessLevel)
+                            return resScope.Value;
+                        return resScope.Value?["result"];
                     }
                     case "valuetype":
-                        return await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
+                    {
+                        var resValType = await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
+                    }
                     case "array":
-                        return await context.SdbAgent.GetArrayValues(objectId.Value, token);
+                    {
+                        var resArr = await context.SdbAgent.GetArrayValues(objectId.Value, token);
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr;
+                    }
                     case "methodId":
                     {
-                        var objRet = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, "", token);
-                        return new JArray(objRet);
+                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, null, token);
+                        return sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod);
                     }
                     case "object":
-                        return await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token);
+                    {
+                        var resObj = (await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel));
+                        return sortByAccessLevel ? resObj[0] : resObj;
+                    }
                     case "pointer":
-                        return new JArray{await context.SdbAgent.GetPointerContent(objectId.Value, token)};
+                    {
+                        var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
+                        return sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer;
+                    }
                     case "cfo_res":
                     {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
-                        return value_json_str != null ? JArray.Parse(value_json_str) : null;
+                        return value_json_str != null ?
+                                (sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str)) :
+                                null;
                     }
                     default:
                         return null;

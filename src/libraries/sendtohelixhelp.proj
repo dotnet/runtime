@@ -523,7 +523,7 @@
         <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
 
         <!-- FIXME: workaround for https://github.com/dotnet/runtime/issues/62660 -->
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter &quot;FullyQualifiedName~%(Identity)^&amp;Category!=windows-failing&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter &quot;FullyQualifiedName~%(Identity)&amp;Category^!=windows-failing&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;--filter FullyQualifiedName~%(Identity)&amp;Category!=linux-failing&quot;</PreCommands>
 
         <Command>$(HelixCommand)</Command>

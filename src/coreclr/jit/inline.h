@@ -554,7 +554,6 @@ struct ClassProfileCandidateInfo
 {
     IL_OFFSET ilOffset;
     unsigned  probeIndex;
-    void*     stubAddr;
 };
 
 // GuardedDevirtualizationCandidateInfo provides information about

@@ -1338,7 +1338,7 @@ void ConfigString::init(const CLRConfig::ConfigStringInfo & info)
 // MyAssembly;mscorlib;System
 // MyAssembly;mscorlib System
 
-AssemblyNamesList::AssemblyNamesList(__in LPWSTR list)
+AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {
     CONTRACTL {
         THROWS;
@@ -1430,7 +1430,7 @@ bool AssemblyNamesList::IsInList(LPCUTF8 assemblyName)
 // "MyClass:foo2 MyClass:*" will match under _DEBUG
 //
 
-void MethodNamesListBase::Insert(__in_z LPWSTR str)
+void MethodNamesListBase::Insert(_In_z_ LPWSTR str)
 {
     CONTRACTL {
         THROWS;
@@ -3083,7 +3083,7 @@ namespace Reg
         }
     }
 
-    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKey, LPCWSTR wszName, __deref_out __deref_out_z LPWSTR* pwszValue)
+    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKey, LPCWSTR wszName, _Outptr_ _Outptr_result_z_ LPWSTR* pwszValue)
     {
         CONTRACTL {
             NOTHROW;

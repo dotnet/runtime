@@ -1506,7 +1506,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (patch_info->data.field), error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {

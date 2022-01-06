@@ -627,7 +627,7 @@ namespace DebuggerTests
                         if (expectedValue.Type != JTokenType.Null)
                         {
                             var valueAfterRunGet = await GetProperties(get["objectId"]?.Value<string>());
-                            await CheckValue(valueAfterRunGet[0]?["value"], expectedValue, exp_val["type_name"]?.Value<string>());
+                            await CheckValue(valueAfterRunGet[0]["value"], expectedValue, exp_val["type_name"]?.Value<string>());
                         }
                         break;
                     }
@@ -670,10 +670,8 @@ namespace DebuggerTests
                     if (exp_i != null)
                         await CheckValue(act_i["value"], exp_i, $"{label}-{i}th value");
                 }
-
                 return;
             }
-
             // Not an array
             var exp = exp_o as JObject;
             if (exp == null)
@@ -839,6 +837,13 @@ namespace DebuggerTests
                 return null;
 
             var locals = frame_props.Value["result"];
+            var locals_internal = frame_props.Value["internalProperties"];
+            var locals_private = frame_props.Value["privateProperties"];
+
+            if (locals_internal != null)
+                locals = new JArray(locals.Union(locals_internal));
+            if (locals_private != null)
+                locals = new JArray(locals.Union(locals_private));
             // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)
@@ -854,6 +859,65 @@ namespace DebuggerTests
             }
 
             return locals;
+        }
+
+        internal async Task<(JToken, JToken, JToken)> GetPropertiesSortedByProtectionLevels(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
+        {
+            if (UseCallFunctionOnBeforeGetProperties && !id.StartsWith("dotnet:scope:"))
+            {
+                var fn_decl = "function () { return this; }";
+                var cfo_args = JObject.FromObject(new
+                {
+                    functionDeclaration = fn_decl,
+                    objectId = id
+                });
+                if (fn_args != null)
+                    cfo_args["arguments"] = fn_args;
+
+                var result = await cli.SendCommand("Runtime.callFunctionOn", cfo_args, token);
+                AssertEqual(expect_ok, result.IsOk, $"Runtime.getProperties returned {result.IsOk} instead of {expect_ok}, for {cfo_args.ToString()}, with Result: {result}");
+                if (!result.IsOk)
+                    return (null, null, null);
+                id = result.Value["result"]?["objectId"]?.Value<string>();
+            }
+
+            var get_prop_req = JObject.FromObject(new
+            {
+                objectId = id
+            });
+            if (own_properties.HasValue)
+            {
+                get_prop_req["ownProperties"] = own_properties.Value;
+            }
+            if (accessors_only.HasValue)
+            {
+                get_prop_req["accessorPropertiesOnly"] = accessors_only.Value;
+            }
+
+            var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
+            AssertEqual(expect_ok, frame_props.IsOk, $"Runtime.getProperties returned {frame_props.IsOk} instead of {expect_ok}, for {get_prop_req}, with Result: {frame_props}");
+            if (!frame_props.IsOk)
+                return (null, null, null);;
+
+            var locals = frame_props.Value["result"];
+            var locals_internal = frame_props.Value["internalProperties"];
+            var locals_private = frame_props.Value["privateProperties"];
+            
+            // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
+            //        whether to remove it, and how to do it correctly.
+            if (locals is JArray)
+            {
+                foreach (var p in locals)
+                {
+                    if (p["name"]?.Value<string>() == "length" && p["enumerable"]?.Value<bool>() != true)
+                    {
+                        p.Remove();
+                        break;
+                    }
+                }
+            }
+
+            return (locals, locals_internal, locals_private);
         }
 
         internal async Task<(JToken, Result)> EvaluateOnCallFrame(string id, string expression, bool expect_ok = true)

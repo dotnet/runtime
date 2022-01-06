@@ -259,7 +259,8 @@ namespace ILCompiler
             public override string Name => "Boxed_" + ValueTypeRepresented.Name;
 
             public override string Namespace => ValueTypeRepresented.Namespace;
-
+            public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
+            public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
@@ -411,6 +412,14 @@ namespace ILCompiler
                 }
             }
 
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _targetMethod.DiagnosticName + "_Unbox";
+                }
+            }
+
             public override MethodIL EmitIL()
             {
                 if (_owningType.ValueTypeRepresented.IsByRefLike)
@@ -484,6 +493,14 @@ namespace ILCompiler
                 get
                 {
                     return _targetMethod.Name + "_Unbox";
+                }
+            }
+
+            public override string DiagnosticName
+            {
+                get
+                {
+                    return _targetMethod.DiagnosticName + "_Unbox";
                 }
             }
 
@@ -574,6 +591,7 @@ namespace ILCompiler
             public override TypeDesc OwningType => _methodRepresented.OwningType;
 
             public override string Name => _methodRepresented.Name;
+            public override string DiagnosticName => _methodRepresented.DiagnosticName;
 
             public override MethodSignature Signature
             {
