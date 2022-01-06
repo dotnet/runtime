@@ -721,7 +721,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
             unsigned               methodFlags            = 0;
             const bool             isLateDevirtualization = true;
-            const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
             if ((call->gtCallMoreFlags & GTF_CALL_M_LATE_DEVIRT) != 0)
             {
