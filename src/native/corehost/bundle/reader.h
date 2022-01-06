@@ -81,7 +81,7 @@ namespace bundle
             return m_ptr;
         }
 
-        int8_t read()
+        int8_t read_byte()
         {
             bounds_check();
             return *m_ptr++;
@@ -98,12 +98,6 @@ namespace bundle
             bounds_check(len);
             memcpy(dest, m_ptr, to_size_t_dbgchecked(len));
             m_ptr += len;
-        }
-
-        uint8_t read_byte()
-        {
-            bounds_check(1);
-            return (uint8_t)*m_ptr++;
         }
 
         size_t read_path_length();
