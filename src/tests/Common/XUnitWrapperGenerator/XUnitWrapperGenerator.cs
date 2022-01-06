@@ -149,7 +149,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = args.Length != 0 ? new XUnitWrapperLibrary.TestFilter(args[0]) : null;");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
 
         foreach (ITestInfo test in testInfos)
         {
