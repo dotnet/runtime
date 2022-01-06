@@ -845,6 +845,15 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
+
+#ifdef __APPLE__
+    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+    if (status == ENOTSUP)
+    {
+        return ERROR_NOT_SUPPORTED;
+    }
+#endif
+
     if ((status != 0) && (status != EAGAIN))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
