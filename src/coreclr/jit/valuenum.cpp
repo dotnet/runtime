@@ -11018,6 +11018,12 @@ void Compiler::fgDebugCheckExceptionSets()
     {
         for (Statement* const stmt : block->Statements())
         {
+            // Exclude statements VN hasn't visited for whichever reason...
+            if (stmt->GetRootNode()->GetVN(VNK_Liberal) == ValueNumStore::NoVN)
+            {
+                continue;
+            }
+
             ExceptionSetsChecker::CheckTree(stmt->GetRootNode(), vnStore);
         }
     }
