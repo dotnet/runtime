@@ -1,6 +1,7 @@
 // Licensed to the.NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -27,7 +28,7 @@ namespace Mono.Linker.Steps
 			TypeDefinition type = exportedType.Resolve ();
 			if (type == null) {
 				if (!context.IgnoreUnresolved)
-					context.LogError ($"Exported type '{exportedType.Name}' cannot be resolved.", 1038);
+					context.LogError (null, DiagnosticId.ExportedTypeCannotBeResolved, exportedType.Name);
 
 				return;
 			}

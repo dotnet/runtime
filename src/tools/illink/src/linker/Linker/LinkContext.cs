@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
@@ -613,6 +614,19 @@ namespace Mono.Linker
 			LogMessage (error);
 		}
 
+		/// <summary>
+		/// Display an error message to the end user.
+		/// </summary>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md and https://github.com/dotnet/linker/blob/main/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Error' category</returns>
+		public void LogError (MessageOrigin? origin, DiagnosticId id, params string[] args)
+		{
+			var error = MessageContainer.CreateErrorMessage (origin, id, args);
+			LogMessage (error);
+		}
+
 		public void FlushCachedWarnings ()
 		{
 			_cachedWarningMessageContainers.Sort ();
@@ -813,19 +827,19 @@ namespace Mono.Linker
 		protected virtual void ReportUnresolved (FieldReference fieldReference)
 		{
 			if (unresolved_reported.Add (fieldReference))
-				LogError ($"Field '{fieldReference.FullName}' reference could not be resolved.", 1040);
+				LogError (string.Format (SharedStrings.FailedToResolveFieldElementMessage, fieldReference.FullName), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 
 		protected virtual void ReportUnresolved (MethodReference methodReference)
 		{
 			if (unresolved_reported.Add (methodReference))
-				LogError ($"Method '{methodReference.GetDisplayName ()}' reference could not be resolved.", 1040);
+				LogError (string.Format (SharedStrings.FailedToResolveMethodElementMessage, methodReference.GetDisplayName ()), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 
 		protected virtual void ReportUnresolved (TypeReference typeReference)
 		{
 			if (unresolved_reported.Add (typeReference))
-				LogError ($"Type '{typeReference.GetDisplayName ()}' reference could not be resolved.", 1040);
+				LogError (string.Format (SharedStrings.FailedToResolveTypeElementMessage, typeReference.GetDisplayName ()), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 	}
 

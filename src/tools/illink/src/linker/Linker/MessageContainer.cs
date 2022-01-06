@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -52,6 +53,22 @@ namespace Mono.Linker
 				throw new ArgumentOutOfRangeException (nameof (code), $"The provided code '{code}' does not fall into the error category, which is in the range of 1000 to 2000 (inclusive).");
 
 			return new MessageContainer (MessageCategory.Error, text, code, subcategory, origin);
+		}
+
+		/// <summary>
+		/// Create an error message.
+		/// </summary>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// for the list of errors and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Error' category</returns>
+		internal static MessageContainer CreateErrorMessage (MessageOrigin? origin, DiagnosticId id, params string[] args)
+		{
+			if (!((int) id >= 1000 && (int) id <= 2000))
+				throw new ArgumentOutOfRangeException (nameof (id), $"The provided code '{(int) id}' does not fall into the error category, which is in the range of 1000 to 2000 (inclusive).");
+
+			return new MessageContainer (MessageCategory.Error, id, origin: origin, args: args);
 		}
 
 		/// <summary>
@@ -214,6 +231,15 @@ namespace Mono.Linker
 			Origin = origin;
 			SubCategory = subcategory;
 			Text = text;
+		}
+
+		private MessageContainer (MessageCategory category, DiagnosticId id, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null, params string[] args)
+		{
+			Code = (int) id;
+			Category = category;
+			Origin = origin;
+			SubCategory = subcategory;
+			Text = new DiagnosticString (id).GetMessage (args);
 		}
 
 		public override string ToString () => ToMSBuildString ();
