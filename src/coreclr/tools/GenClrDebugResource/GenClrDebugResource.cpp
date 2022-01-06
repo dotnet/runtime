@@ -28,7 +28,7 @@ struct ClrDebugResource
 };
 
 BOOL
-GetBinFileData(__in_z char* binFileName, DWORD* pTimeStamp, DWORD* pSizeOfImage)
+GetBinFileData(_In_z_ char* binFileName, DWORD* pTimeStamp, DWORD* pSizeOfImage)
 {
     HANDLE binFileHandle;
     DWORD peHeaderOffset;
@@ -111,7 +111,7 @@ Usage(void)
 }
 
 void __cdecl
-main(int argc, __in_z char** argv)
+main(int argc, _In_z_ char** argv)
 {
     char* outFile = NULL;
     char* dacFile = NULL;

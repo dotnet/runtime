@@ -6202,7 +6202,7 @@ unsigned adler32(unsigned adler, char* buf, unsigned int len)
 }
 #endif
 
-unsigned getMethodBodyChecksum(__in_z char* code, int size)
+unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
 {
 #ifdef PSEUDORANDOM_NOP_INSERTION
     return adler32(0, code, size);

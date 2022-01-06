@@ -727,7 +727,7 @@ public:
 
     //--------------------------------------------------------------
     // Init the ComClassFactory
-    void Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT);
+    void Init(_In_opt_ PCWSTR wszServer, MethodTable* pClassMT);
 
     //-------------------------------------------------------------
     // create instance, calls IClassFactory::CreateInstance

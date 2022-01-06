@@ -640,7 +640,7 @@ OOPStackUnwinderAMD64::UnwindPrologue(
     _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PCONTEXT ContextRecord,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    __deref_out _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
+    _Outptr_ _PIMAGE_RUNTIME_FUNCTION_ENTRY *FinalFunctionEntry
     )
 
 /*++
@@ -1020,7 +1020,7 @@ OOPStackUnwinderAMD64::VirtualUnwind(
     _Out_ PVOID *HandlerData,
     _Out_ PULONG64 EstablisherFrame,
     __inout_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine
     )
 
 /*++

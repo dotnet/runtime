@@ -33,7 +33,7 @@ protected:
 
     // Given a control PC, return the function entry of the functoin it is in.
     static HRESULT GetFunctionEntry(                       DWORD64 address,
-                                    __out_ecount(cbBuffer) PVOID   pBuffer,
+                                    _Out_writes_(cbBuffer) PVOID   pBuffer,
                                                            DWORD   cbBuffer);
 };
 

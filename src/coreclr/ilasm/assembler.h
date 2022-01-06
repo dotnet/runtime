@@ -65,7 +65,7 @@ class PermissionDecl;
 class PermissionSetDecl;
 
 unsigned hash(                // defined in assem.cpp
-     __in_ecount(length) const BYTE *k,        /* the key */
+     _In_reads_(length) const BYTE *k,        /* the key */
      unsigned  length,   /* the length of the key */
      unsigned  initval);  /* the previous hash, or an arbitrary value */
 
@@ -676,7 +676,7 @@ struct TypeDefDescr
         CustomDescr* m_pCA;
     };
     mdToken m_tkTypeSpec;
-    TypeDefDescr(__in_opt __nullterminated char *pszName, BinStr* pbsTypeSpec, mdToken tkTypeSpec)
+    TypeDefDescr(_In_opt_z_ char *pszName, BinStr* pbsTypeSpec, mdToken tkTypeSpec)
     {
         m_szName = pszName;
         m_pbsTypeSpec = pbsTypeSpec;
@@ -696,7 +696,7 @@ struct Indx
     {
         for(int i = 1; i < 128; i++) delete ((Indx*)(table[i]));
     };
-    void IndexString(__in_z _In_ char* psz, void* pkywd)
+    void IndexString(_In_z_ char* psz, void* pkywd)
     {
         int i = (int) *psz;
         if(i == 0)
@@ -834,7 +834,7 @@ public:
     void    ClearBoundList(void);
     //--------------------------------------------------------------------------------
     BOOL Init(BOOL generatePdb);
-    void ProcessLabel(__in_z _In_ char *pszName);
+    void ProcessLabel(_In_z_ char *pszName);
     GlobalLabel *FindGlobalLabel(LPCUTF8 pszName);
     GlobalFixup *AddDeferredGlobalFixup(_In_ __nullterminated char *pszLabel, BYTE* reference);
     //void AddDeferredDescrFixup(_In_ __nullterminated char *pszLabel);
@@ -853,8 +853,8 @@ public:
     HRESULT CreateDebugDirectory();
     HRESULT InitMetaData();
     Class *FindCreateClass(_In_ __nullterminated const char *pszFQN);
-    BOOL EmitFieldRef(__in_z _In_ char *pszArg, int opcode);
-    BOOL EmitSwitchData(__in_z _In_ char *pszArg);
+    BOOL EmitFieldRef(_In_z_ char *pszArg, int opcode);
+    BOOL EmitSwitchData(_In_z_ char *pszArg);
     mdToken ResolveClassRef(mdToken tkResScope, _In_ __nullterminated const char *pszClassName, Class** ppClass);
     mdToken ResolveTypeSpec(BinStr* typeSpec);
     mdToken GetBaseAsmRef();
@@ -898,7 +898,7 @@ public:
     void SetImplAttr(unsigned short attrval);
 
     // Emits zeros if the buffer parameter is NULL.
-    void EmitData(__in_opt void *buffer, unsigned len);
+    void EmitData(_In_opt_ void *buffer, unsigned len);
 
     void EmitDD(_In_ __nullterminated char *str);
     void EmitDataString(BinStr* str);
@@ -934,7 +934,7 @@ public:
 
     // named args/vars paraphernalia:
 public:
-    void addArgName(__in_opt __nullterminated char *szNewName, BinStr* pbSig, BinStr* pbMarsh, DWORD dwAttr)
+    void addArgName(_In_opt_z_ char *szNewName, BinStr* pbSig, BinStr* pbMarsh, DWORD dwAttr)
     {
         if(pbSig && (*(pbSig->ptr()) == ELEMENT_TYPE_VOID))
             report->error("Illegal use of type 'void'\n");
@@ -1191,7 +1191,7 @@ private:
     MethodImplDList m_MethodImplDList;
 public:
     void AddMethodImpl(mdToken tkImplementedTypeSpec, _In_ __nullterminated char* szImplementedName, BinStr* pImplementedSig,
-                    mdToken tkImplementingTypeSpec, __in_opt __nullterminated char* szImplementingName, BinStr* pImplementingSig);
+                    mdToken tkImplementingTypeSpec, _In_opt_z_ char* szImplementingName, BinStr* pImplementingSig);
     BOOL EmitMethodImpls();
     // source file name paraphernalia
     BOOL m_fSourceFileSet;
@@ -1223,21 +1223,21 @@ public:
 private:
     TypeDefDList m_TypeDefDList;
 public:
-    void AddTypeDef(BinStr* pbsTypeSpec, __in_z _In_ char* szName)
+    void AddTypeDef(BinStr* pbsTypeSpec, _In_z_ char* szName)
     {
         m_TypeDefDList.PUSH(new TypeDefDescr(szName, pbsTypeSpec, ResolveTypeSpec(pbsTypeSpec)));
     };
-    void AddTypeDef(mdToken tkTypeSpec, __in_z _In_ char* szName)
+    void AddTypeDef(mdToken tkTypeSpec, _In_z_ char* szName)
     {
         m_TypeDefDList.PUSH(new TypeDefDescr(szName, NULL, tkTypeSpec));
     };
-    void AddTypeDef(CustomDescr* pCA, __in_z _In_ char* szName)
+    void AddTypeDef(CustomDescr* pCA, _In_z_ char* szName)
     {
         TypeDefDescr* pNew = new TypeDefDescr(szName,NULL,mdtCustomAttribute);
         pNew->m_pCA = pCA;
         m_TypeDefDList.PUSH(pNew);
     };
-    TypeDefDescr* FindTypeDef(__in_z _In_ char* szName)
+    TypeDefDescr* FindTypeDef(_In_z_ char* szName)
     {
         CHECK_LOCAL_STATIC_VAR(static TypeDefDescr X(NULL, NULL, 0));
 
