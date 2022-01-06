@@ -317,8 +317,12 @@ namespace
         {
             return FALSE;
         }
-        _ASSERTE(!pNestedType.IsNull());
-        return pNestedType.IsEnum() || pNestedType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField();
+        if (corElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!pNestedType.IsNull());
+            return pNestedType.IsEnum() || pNestedType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField();
+        }
+        return FALSE;
     }
 
 #ifdef UNIX_AMD64_ABI
@@ -516,7 +520,7 @@ namespace
                 MetaSig fsig(pCOMSignature, cbCOMSignature, pModule, pTypeContext, MetaSig::sigField);
                 CorElementType corElemType = fsig.NextArgNormalized();
                 TypeHandle typeHandleMaybe;
-                if (!CorTypeInfo::IsPrimitiveType(corElemType) && corElemType != ELEMENT_TYPE_PTR && corElemType != ELEMENT_TYPE_FNPTR)
+                if (corElemType == ELEMENT_TYPE_VALUETYPE) // Only look up the next element in the signature if it is a value type to avoid causing recursive type loads in valid scenarios.
                 {
                     typeHandleMaybe = fsig.GetLastTypeHandleThrowing(ClassLoader::LoadTypes,
                         CLASS_LOAD_APPROXPARENTS,
