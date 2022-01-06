@@ -1808,7 +1808,7 @@ BOOL Module::IsRuntimeMarshallingEnabled()
     FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
         (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
 
-    return FAILED(hr);
+    return hr != S_OK;
 }
 
 BOOL Module::IsPreV4Assembly()
