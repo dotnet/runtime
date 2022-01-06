@@ -14152,6 +14152,17 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     {
         *use = fgMorphTree(*use);
         multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
+
+#if defined(FEATURE_HW_INTRINSICS)
+        if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC) && (*use)->OperIsConst())
+        {
+            // Never do CSE for constant arguments of HWINTRINSICS node such as
+            // MoveMask(vec, 0x...) or Vector.Create(1f,2f,3f,3f)
+            // The only case that might suffer from this is `Vector.Create(1f, x, 3f, 3f)` but this specific
+            // one is rare and needs a better treatment anyway (e.g. loading '1,0,3,3` from .data and then do insert)
+            (*use)->SetDoNotCSE();
+        }
+#endif
     }
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
