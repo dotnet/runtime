@@ -7798,7 +7798,7 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     else
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
-        copy->gtInlineCandidateInfo = nullptr;
+        copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
     }
 
     copy->gtCallType   = tree->gtCallType;
