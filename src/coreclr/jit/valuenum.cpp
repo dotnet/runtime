@@ -9229,18 +9229,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
-                    case GT_NULLCHECK:
-                    {
-                        // An Explicit null check, produces no value
-                        // But we do persist any execeptions produced by op1
-                        //
-                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
-                                                             vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair));
-                        // The exception set with VNF_NullPtrExc will be added below
-                        // by fgValueNumberAddExceptionSet
-                    }
-                    break;
-
                     case GT_LOCKADD: // Binop
                         noway_assert("LOCKADD should not appear before lowering");
                         break;
@@ -9275,10 +9263,20 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         break;
                     }
 
+                    // These unary nodes do not produce values. Note theat for NULLCHECK the
+                    // additional exception will be added below by "fgValueNumberAddExceptionSet".
                     case GT_JTRUE:
-                        // This node does not produce values.
-                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
-                                                             vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+                    case GT_RETURN:
+                    case GT_NULLCHECK:
+                        if (tree->gtGetOp1() != nullptr)
+                        {
+                            tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
+                                                                 vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+                        }
+                        else
+                        {
+                            tree->gtVNPair = vnStore->VNPForVoid();
+                        }
                         break;
 
                     case GT_BOX:
