@@ -3,7 +3,7 @@
 > see: `src/vm/autotrace.h|cpp` for the code
 
 AutoTrace is used to run automated testing of the Diagnostic Server based tracing and specifically
-EventPipe.  The feature itself is enabled via the feature flag `-DFEATURE_AUTO_TRACE`.
+EventPipe.  The feature itself is enabled via the feature flag `FEATURE_AUTO_TRACE` in [clrfeatures.cmake](../../../../src/coreclr/clrfeatures.cmake)
 
 ## Mechanism:
 
