@@ -80,9 +80,9 @@ jobs:
       # Building the llvm backend is fairly slow, so we don't want to build it unless required.
       - name: _EnableLLVMParameter
         value: /p:MonoEnableLLVM=false
-        ${{ if or( eq(parameters.runtimevariant, 'llvmaot'),  eq(parameters.runtimevariant, 'llvmfullaot') }}:
+        ${{ if or( eq(parameters.runtimevariant, 'llvmaot'),  eq(parameters.runtimevariant, 'llvmfullaot')) }}:
           value: /p:MonoEnableLLVM=true
-     
+
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
