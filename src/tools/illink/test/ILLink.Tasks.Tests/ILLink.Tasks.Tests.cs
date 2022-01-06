@@ -369,7 +369,7 @@ namespace ILLink.Tasks.Tests
 			using (var driver = task.CreateDriver ()) {
 				var actualWarnAsError = driver.Context.WarnAsError;
 				var actualGeneralWarnAsError = driver.Context.GeneralWarnAsError;
-				Assert.Equal (warnAsError.Count () + warnNotAsError.Count (), actualWarnAsError.Count);
+				Assert.Equal (warnAsError.Length + warnNotAsError.Length, actualWarnAsError.Count);
 				Assert.Equal (treatWarningsAsErrors, actualGeneralWarnAsError);
 				if (warnAsError.Length > 0) {
 					foreach (var warningCode in warnAsError)
@@ -753,9 +753,27 @@ namespace ILLink.Tasks.Tests
 		public void TestErrorHandling ()
 		{
 			var task = new MockTask () {
-				RootAssemblyNames = new ITaskItem[0]
+				RootAssemblyNames = Array.Empty<ITaskItem> ()
 			};
 			task.BuildEngine = new MockBuildEngine ();
+
+			// This won't work in single-file, but it's the simplest way for now
+			string corelibPath = typeof (object).Assembly.Location;
+			if (corelibPath == null)
+				throw new NotSupportedException ("Running this test in single-file mode is not yet supported.");
+
+			string dotnetToolName = OperatingSystem.IsWindows () ? "dotnet.exe" : "dotnet";
+
+			// The path to corelib should be something like <dotnetroot>/shared/Microsoft.NETCore.App/version/System.Private.CoreLib.dll
+			// So get the dotnetroot from this
+			string dotnetRootPath = Path.GetDirectoryName (Path.GetDirectoryName (Path.GetDirectoryName (Path.GetDirectoryName (corelibPath))));
+			string dotnetPath = Path.Combine (dotnetRootPath, dotnetToolName);
+			if (!File.Exists (dotnetPath))
+				throw new NotSupportedException ("Running test in a configuration where we can't figure out dotnet root path.");
+
+			task.ToolPath = dotnetRootPath;
+			task.ToolExe = dotnetToolName;
+
 			Assert.False (task.Execute ());
 			Assert.Contains (task.Messages, message =>
 				message.Line.Contains ("No input files were specified"));

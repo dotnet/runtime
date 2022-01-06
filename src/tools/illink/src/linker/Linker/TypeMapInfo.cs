@@ -369,6 +369,9 @@ namespace Mono.Linker
 			if (a is IModifierType mta)
 				return TypeMatch (mta, (IModifierType) b);
 
+			if (a is FunctionPointerType fpta)
+				return TypeMatch (fpta, (FunctionPointerType) b);
+
 			return TypeMatch (a.ElementType, b.ElementType);
 		}
 
@@ -403,6 +406,39 @@ namespace Mono.Linker
 
 			if (a.Type != b.Type)
 				return false;
+
+			return true;
+		}
+
+		static bool TypeMatch (FunctionPointerType a, FunctionPointerType b)
+		{
+			if (a.HasParameters != b.HasParameters)
+				return false;
+
+			if (a.CallingConvention != b.CallingConvention)
+				return false;
+
+			// we need to track what the generic parameter represent - as we cannot allow it to
+			// differ between the return type or any parameter
+			if (a.ReturnType is not TypeReference aReturnType ||
+				b.ReturnType is not TypeReference bReturnType ||
+				!TypeMatch (aReturnType, bReturnType))
+				return false;
+
+			if (!a.HasParameters)
+				return true;
+
+			var ap = a.Parameters;
+			var bp = b.Parameters;
+			if (ap.Count != bp.Count)
+				return false;
+
+			for (int i = 0; i < ap.Count; i++) {
+				if (a.Parameters[i].ParameterType is not TypeReference aParameterType ||
+					b.Parameters[i].ParameterType is not TypeReference bParameterType ||
+					!TypeMatch (aParameterType, bParameterType))
+					return false;
+			}
 
 			return true;
 		}

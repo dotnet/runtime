@@ -16,11 +16,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 		{
 			[RequiresUnreferencedCode ("Message")]
 			[RequiresAssemblyFiles ("Message")]
+			[RequiresDynamicCode ("Message")]
 			public void Method ();
 
 			public string PropertyAnnotationInAccesor {
 				[RequiresUnreferencedCode ("Message")]
 				[RequiresAssemblyFiles ("Message")]
+				[RequiresDynamicCode ("Message")]
 				get;
 				set;
 			}

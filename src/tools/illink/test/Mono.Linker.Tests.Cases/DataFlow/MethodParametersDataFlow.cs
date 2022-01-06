@@ -36,6 +36,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			instance.WriteToParameterOnInstanceMethod (null);
 			instance.LongWriteToParameterOnInstanceMethod (0, 0, 0, 0, null);
 			instance.UnsupportedParameterType (null);
+
+			TestParameterOverwrite (typeof (TestType));
 		}
 
 		// Validate the error message when annotated parameter is passed to another annotated parameter
@@ -221,6 +223,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			Type type,
 			Type type2)
 		{
+		}
+
+		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
+		static Type _fieldWithMethods;
+
+		[ExpectedWarning ("IL2077", nameof (_fieldWithMethods))]
+		static void TestParameterOverwrite ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type)
+		{
+			type = _fieldWithMethods;
+			type.GetFields ();
 		}
 
 		class TestType

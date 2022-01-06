@@ -12,18 +12,30 @@ namespace Mono.Linker
 {
 	readonly struct LinkerAttributesInformation
 	{
-		readonly Dictionary<Type, List<Attribute>>? _linkerAttributes;
+		readonly List<(Type Type, List<Attribute> Attributes)>? _linkerAttributes;
 
-		private LinkerAttributesInformation (Dictionary<Type, List<Attribute>>? cache)
+		private LinkerAttributesInformation (List<(Type Type, List<Attribute> Attributes)>? cache)
 		{
 			this._linkerAttributes = cache;
+		}
+
+		private static bool TryFindAttributeList (List<(Type Type, List<Attribute> Attributes)> list, Type type, [NotNullWhen (returnValue: true)] out List<Attribute>? foundAttributes)
+		{
+			foreach (var item in list) {
+				if (item.Type == type) {
+					foundAttributes = item.Attributes;
+					return true;
+				}
+			}
+			foundAttributes = null;
+			return false;
 		}
 
 		public static LinkerAttributesInformation Create (LinkContext context, ICustomAttributeProvider provider)
 		{
 			Debug.Assert (context.CustomAttributes.HasAny (provider));
 
-			Dictionary<Type, List<Attribute>>? cache = null;
+			List<(Type Type, List<Attribute> Attributes)>? cache = null;
 
 			foreach (var customAttribute in context.CustomAttributes.GetCustomAttributes (provider)) {
 				var attributeType = customAttribute.AttributeType;
@@ -54,12 +66,13 @@ namespace Mono.Linker
 					continue;
 
 				if (cache == null)
-					cache = new Dictionary<Type, List<Attribute>> ();
+					cache = new List<(Type Type, List<Attribute> Attributes)> ();
 
 				Type attributeValueType = attributeValue.GetType ();
-				if (!cache.TryGetValue (attributeValueType, out var attributeList)) {
+
+				if (!TryFindAttributeList (cache, attributeValueType, out var attributeList)) {
 					attributeList = new List<Attribute> ();
-					cache.Add (attributeValueType, attributeList);
+					cache.Add ((attributeValueType, attributeList));
 				}
 
 				attributeList.Add (attributeValue);
@@ -70,15 +83,18 @@ namespace Mono.Linker
 
 		public bool HasAttribute<T> () where T : Attribute
 		{
-			return _linkerAttributes != null && _linkerAttributes.ContainsKey (typeof (T));
+			return _linkerAttributes != null && TryFindAttributeList (_linkerAttributes, typeof (T), out _);
 		}
 
 		public IEnumerable<T> GetAttributes<T> () where T : Attribute
 		{
-			if (_linkerAttributes == null || !_linkerAttributes.TryGetValue (typeof (T), out var attributeList))
+			if (_linkerAttributes == null)
 				return Enumerable.Empty<T> ();
 
-			if (attributeList == null || attributeList.Count == 0)
+			if (!TryFindAttributeList (_linkerAttributes, typeof (T), out var attributeList))
+				return Enumerable.Empty<T> ();
+
+			if (attributeList.Count == 0)
 				throw new InvalidOperationException ("Unexpected list of attributes.");
 
 			return attributeList.Cast<T> ();

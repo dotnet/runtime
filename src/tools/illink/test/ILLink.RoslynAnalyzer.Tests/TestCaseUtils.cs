@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
@@ -31,7 +30,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
 		private static ImmutableArray<MetadataReference> s_net6Refs;
-		public async static ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
+		public static async ValueTask<ImmutableArray<MetadataReference>> GetNet6References ()
 		{
 			if (s_net6Refs.IsDefault) {
 				var refs = await Net6PreviewAssemblies.ResolveAsync (null, default);
