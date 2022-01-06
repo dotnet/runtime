@@ -100,14 +100,10 @@ namespace bundle
             m_ptr += len;
         }
 
-        // Return a pointer to the requested bytes within the memory-mapped file.
-        // Skip over len bytes.
-        const char* read_direct(int64_t len)
+        uint8_t read_byte()
         {
-            bounds_check(len);
-            const char *ptr = m_ptr;
-            m_ptr += len;
-            return ptr;
+            bounds_check(1);
+            return (uint8_t)*m_ptr++;
         }
 
         size_t read_path_length();
