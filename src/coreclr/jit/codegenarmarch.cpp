@@ -4627,9 +4627,9 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      +=======================+ <---- Caller's SP
     //      |  Varargs regs space   | // Only for varargs functions; 64 bytes
     //      |-----------------------|
-    //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
-    //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |-----------------------|
+    //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -4658,9 +4658,9 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |      Saved FP         | // 8 bytes
     //      |-----------------------|
-    //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
-    //      |-----------------------|
     //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |-----------------------|
+    //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|

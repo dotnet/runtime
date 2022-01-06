@@ -4961,10 +4961,10 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |     optional homed    | // this is only needed if reg argument need to be homed, e.g., for varargs
  *      |   register arguments  |
  *      |-----------------------| <---- Virtual '0'
+ *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
+ *      |-----------------------|
  *      |Callee saved registers |
  *      |   except fp/lr        |
- *      |-----------------------|
- *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
  *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
@@ -5006,13 +5006,13 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |     optional homed    | // this is only needed if reg argument need to be homed, e.g., for varargs
  *      |   register arguments  |
  *      |-----------------------| <---- Virtual '0'
+ *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
+ *      |-----------------------|
  *      |      Saved LR         |
  *      |-----------------------|
  *      |      Saved FP         | <---- Frame pointer
  *      |-----------------------|
  *      |Callee saved registers |
- *      |-----------------------|
- *      |        PSPSym         | // Only for frames with EH, which requires FP-based frames
  *      |-----------------------|
  *      |   security object     |
  *      |-----------------------|
@@ -6095,6 +6095,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= initialStkOffs;
     }
 
+#if defined(FEATURE_EH_FUNCLETS)
+    if (lvaPSPSym != BAD_VAR_NUM)
+    {
+        // If we need a PSPSym, allocate it next.
+        noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaPSPSym, TARGET_POINTER_SIZE, stkOffs);
+    }
+#endif // FEATURE_EH_FUNCLETS
+
     if (codeGen->IsSaveFpLrWithAllCalleeSavedRegisters() ||
         !isFramePointerUsed()) // Note that currently we always have a frame pointer
     {
@@ -6172,10 +6181,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 #endif // TARGET_AMD64
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARMARCH)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (lvaPSPSym != BAD_VAR_NUM)
     {
-        // On ARM/ARM64, if we need a PSPSym, allocate it first, before anything else, including
+        // On ARM, if we need a PSPSym, allocate it first, before anything else, including
         // padding (so we can avoid computing the same padding in the funclet
         // frame). Note that there is no special padding requirement for the PSPSym.
         noway_assert(codeGen->isFramePointerUsed()); // We need an explicit frame pointer
