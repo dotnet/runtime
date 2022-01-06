@@ -388,6 +388,7 @@
       <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(AspNetCoreAppCurrent)-$(Configuration)'))</RemoteLoopMiddleware>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
     </PropertyGroup>
 
     <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
