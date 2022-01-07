@@ -44,22 +44,20 @@ namespace DllImportGenerator.UnitTests.Verifiers
         }
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, string fixedSource, string? codeActionEquivalenceKey = null)
-            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource, codeActionEquivalenceKey);
+        public static async Task VerifyCodeFixAsync(string source, string fixedSource)
+            => await VerifyCodeFixAsync(source, DiagnosticResult.EmptyDiagnosticResults, fixedSource);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult, string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource, string? codeActionEquivalenceKey = null)
-            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource, codeActionEquivalenceKey);
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult expected, string fixedSource)
+            => await VerifyCodeFixAsync(source, new[] { expected }, fixedSource);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
-        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, string? codeActionEquivalenceKey = null)
+        public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource)
         {
             var test = new Test
             {
                 TestCode = source,
                 FixedCode = fixedSource,
-                CodeActionEquivalenceKey = codeActionEquivalenceKey,
-                CodeActionValidationMode = CodeActionValidationMode.None,
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
@@ -116,9 +114,6 @@ namespace DllImportGenerator.UnitTests.Verifiers
                     return solution;
                 });
             }
-
-            protected override ParseOptions CreateParseOptions()
-                => ((CSharpParseOptions)base.CreateParseOptions()).WithPreprocessorSymbols("DLLIMPORTGENERATOR_ENABLED");
 
             protected override async Task RunImplAsync(CancellationToken cancellationToken)
             {
