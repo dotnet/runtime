@@ -657,11 +657,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, reader.BytesConsumed);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61995
         [Theory]
         [InlineData(JsonUnknownTypeHandling.JsonElement, typeof(JsonElement))]
         [InlineData(JsonUnknownTypeHandling.JsonNode, typeof(JsonNode))]
-        public static void ReadObjectWithNumberHandling(JsonUnknownTypeHandling unknownTypeHandling, Type expectedType)
+        public static void ReadSystemObjectWithNumberHandling(JsonUnknownTypeHandling unknownTypeHandling, Type expectedType)
         {
             var options = new JsonSerializerOptions
             {
