@@ -3405,6 +3405,11 @@
         "unix"
       ]
     },
+    "unix-loongarch64": {
+      "#import": [
+        "unix"
+      ]
+    },
     "unix-mips64": {
       "#import": [
         "unix"
@@ -3421,11 +3426,6 @@
       ]
     },
     "unix-x86": {
-      "#import": [
-        "unix"
-      ]
-    },
-    "unix-loongarch64": {
       "#import": [
         "unix"
       ]
