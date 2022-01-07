@@ -9228,9 +9228,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         break;
                     }
 
-                    // These unary nodes do not produce values. Note theat for NULLCHECK the
+                    // These unary nodes do not produce values. Note that for NULLCHECK the
                     // additional exception will be added below by "fgValueNumberAddExceptionSet".
                     case GT_JTRUE:
+                    case GT_SWITCH:
                     case GT_RETURN:
                     case GT_NULLCHECK:
                         if (tree->gtGetOp1() != nullptr)
