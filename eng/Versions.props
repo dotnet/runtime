@@ -166,7 +166,7 @@
     <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>1.0.2-alpha.0.22053.3</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <XUnitVersion>2.4.2-pre.9</XUnitVersion>
     <XUnitRunnerVisualStudioVersion>2.4.2</XUnitRunnerVisualStudioVersion>
-    <CoverletCollectorVersion>1.3.0</CoverletCollectorVersion>
+    <CoverletCollectorVersion>3.1.0</CoverletCollectorVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
     <SQLitePCLRawbundle_greenVersion>2.0.4</SQLitePCLRawbundle_greenVersion>
     <MoqVersion>4.12.0</MoqVersion>
