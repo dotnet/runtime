@@ -15,7 +15,7 @@ namespace System.Text.Json.SourceGeneration.Tests.NETStandard
         /// <summary>
         /// Tests that we can serialize and deserialize a type defined in a NETStandard assembly.
         /// This tests an issue where we were emitting source-gen logic that caused the compiler
-        /// to emit a reference to an internal definition of IsExtIsExternalInit that was missing
+        /// to emit a reference to an internal definition of IsExternalInit that was missing
         /// on later versions of .NET (since it was defined by the framework).
         /// </summary>
         [Fact]
