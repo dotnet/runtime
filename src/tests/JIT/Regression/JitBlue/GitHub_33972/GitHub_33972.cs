@@ -197,7 +197,7 @@ class Program
         return succeeded;
     }
 
-    unsafe static bool ValidateResult_Vector128<T>(Vector128<T> result, T expectedElementValue) where T : unmanaged
+    unsafe static bool ValidateResult_Vector128<T>(Vector128<T> result, T expectedElementValue) where T: unmanaged
     {
         var succeeded = true;
 
