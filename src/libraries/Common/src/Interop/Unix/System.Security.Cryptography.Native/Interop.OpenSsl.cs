@@ -78,6 +78,8 @@ internal static partial class Interop
         // This is helper function to adjust requested protocols based on CipherSuitePolicy and system capability.
         private static SslProtocols CalculateEffectiveProtocols(SslAuthenticationOptions sslAuthenticationOptions)
         {
+            // make sure low bit is not set since we use it in context dictionary to distinguish use with ALPN
+            Debug.Assert(((int)sslAuthenticationOptions.EnabledSslProtocols & 1) == 0);
             SslProtocols protocols = sslAuthenticationOptions.EnabledSslProtocols & ~((SslProtocols)1);
 
             if (!Interop.Ssl.Tls13Supported)
