@@ -1641,8 +1641,10 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 			/* if there are updates, the new custom attributes are not sorted, so we have to go until the end. */
 			if (G_LIKELY (!image->has_updates))
 				break;
-			else
+			else {
+				++i;
 				continue;
+			}
 		}
 		attr_array = g_array_append_val (attr_array, i);
 		++i;
