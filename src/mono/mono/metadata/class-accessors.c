@@ -619,7 +619,7 @@ mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateIn
 		g_assertf (0, "%s: EnC metadata update info on generic types is not supported", __func__);
 		break;
 	case MONO_CLASS_DEF:
-		return set_pointer_property (klass, PROP_METADATA_UPDATE_INFO, value);
+		set_pointer_property (klass, PROP_METADATA_UPDATE_INFO, value);
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
 	case MONO_CLASS_POINTER:
