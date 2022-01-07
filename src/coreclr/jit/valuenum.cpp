@@ -8382,29 +8382,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     }
 #endif // FEATURE_SIMD
 
-#ifdef FEATURE_HW_INTRINSICS
-    if ((JitConfig.JitDisableSimdVN() & 2) == 2)
-    {
-        // This Jit Config forces the previous behavior of value numbering for HW Intrinsic nodes
-        if (oper == GT_HWINTRINSIC)
-        {
-            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
-
-            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-            assert(hwIntrinsicNode != nullptr);
-
-            // For safety/correctness we must mutate the global heap valuenumber
-            //  for any HW intrinsic that performs a memory store operation
-            if (hwIntrinsicNode->OperIsMemoryStore())
-            {
-                fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
-            }
-
-            return;
-        }
-    }
-#endif // FEATURE_HW_INTRINSICS
-
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
@@ -9594,12 +9571,17 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    if (tree->GetOperandCount() > 2)
+    if ((tree->GetOperandCount() > 2) || ((JitConfig.JitDisableSimdVN() & 2) == 2))
     {
         // TODO-CQ: allow intrinsics with > 2 operands to be properly VN'ed, it will
         // allow use to process things like Vector128.Create(1,2,3,4) etc.
-        // Generate unique VN for now to retaing previois behavior.
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+        // Generate unique VN for now to retaing previous behavior.
+        ValueNumPair vnpExcSet = vnStore->VNPForEmptyExcSet();
+        for (GenTree* operand : tree->Operands())
+        {
+            vnpExcSet = vnStore->VNPUnionExcSet(operand->gtVNPair, vnpExcSet);
+        }
+        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), vnpExcSet);
         return;
     }
 
