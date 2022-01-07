@@ -76,10 +76,10 @@ void SplitPath(
 //*******************************************************************************
 void    SplitPathInterior(
     _In_      LPCWSTR wszPath,
-    __out_opt LPCWSTR *pwszDrive,    __out_opt size_t *pcchDrive,
-    __out_opt LPCWSTR *pwszDir,      __out_opt size_t *pcchDir,
-    __out_opt LPCWSTR *pwszFileName, __out_opt size_t *pcchFileName,
-    __out_opt LPCWSTR *pwszExt,      __out_opt size_t *pcchExt)
+    _Out_opt_ LPCWSTR *pwszDrive,    _Out_opt_ size_t *pcchDrive,
+    _Out_opt_ LPCWSTR *pwszDir,      _Out_opt_ size_t *pcchDir,
+    _Out_opt_ LPCWSTR *pwszFileName, _Out_opt_ size_t *pcchFileName,
+    _Out_opt_ LPCWSTR *pwszExt,      _Out_opt_ size_t *pcchExt)
 {
     LIMITED_METHOD_CONTRACT;
 

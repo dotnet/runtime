@@ -11,11 +11,9 @@ public class TestSummary
 {
     readonly record struct TestResult(string Name, string ContainingTypeName, string MethodName, TimeSpan Duration, Exception? Exception, string? SkipReason);
 
-    private int _numPassed = 0;
-
-    private int _numFailed = 0;
-
-    private int _numSkipped = 0;
+    public int PassedTests { get; private set; } = 0;
+    public int FailedTests { get; private set; } = 0;
+    public int SkippedTests { get; private set; } = 0;
 
     private readonly List<TestResult> _testResults = new();
 
@@ -23,19 +21,19 @@ public class TestSummary
 
     public void ReportPassedTest(string name, string containingTypeName, string methodName, TimeSpan duration)
     {
-        _numPassed++;
+        PassedTests++;
         _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, null));
     }
 
     public void ReportFailedTest(string name, string containingTypeName, string methodName, TimeSpan duration, Exception ex)
     {
-        _numFailed++;
+        FailedTests++;
         _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, ex, null));
     }
 
     public void ReportSkippedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string reason)
     {
-        _numSkipped++;
+        SkippedTests++;
         _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, reason));
     }
 
@@ -53,9 +51,9 @@ public class TestSummary
     run-time=""{_testRunStart.ToString("hh:mm:ss")}""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""
-    passed=""{_numPassed}""
-    failed=""{_numFailed}""
-    skipped=""{_numSkipped}""
+    passed=""{PassedTests}""
+    failed=""{FailedTests}""
+    skipped=""{SkippedTests}""
     errors=""0"">");
 
         resultsFile.AppendLine($@"
@@ -63,15 +61,15 @@ public class TestSummary
     name=""Collection""
     time=""{totalRunSeconds}""
     total=""{_testResults.Count}""
-    passed=""{_numPassed}""
-    failed=""{_numFailed}""
-    skipped=""{_numSkipped}""
+    passed=""{PassedTests}""
+    failed=""{FailedTests}""
+    skipped=""{SkippedTests}""
     errors=""0""
 >");
 
         foreach (var test in _testResults)
         {
-            resultsFile.Append($@"<test name=""{test.Name}"" type=""{test.ContainingTypeName}"" method=""{test.MethodName}"" time=""{test.Duration.TotalSeconds}"" ");
+            resultsFile.Append($@"<test name=""{test.Name}"" type=""{test.ContainingTypeName}"" method=""{test.MethodName}"" time=""{test.Duration.TotalSeconds:F6}"" ");
             if (test.Exception is not null)
             {
                 resultsFile.AppendLine($@"result=""Fail""><failure exception-type=""{test.Exception.GetType()}""><message><![CDATA[{test.Exception.Message}]]></message><stack-trace><![CDATA[{test.Exception.StackTrace}]]></stack-trace></failure></test>");

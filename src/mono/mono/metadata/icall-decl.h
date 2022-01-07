@@ -60,7 +60,6 @@ typedef enum {
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
-ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
 ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
@@ -189,5 +188,19 @@ ICALL_EXPORT void ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int
 
 ICALL_EXPORT void ves_icall_AssemblyExtensions_ApplyUpdate (MonoAssembly *assm, gconstpointer dmeta_bytes, int32_t dmeta_len, gconstpointer dil_bytes, int32_t dil_len, gconstpointer dpdb_bytes, int32_t dpdb_len);
 ICALL_EXPORT gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_check);
+
+ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetCorElementType (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_HasInstantiation (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT guint32 ves_icall_RuntimeTypeHandle_GetAttributes (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
+
+ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__
