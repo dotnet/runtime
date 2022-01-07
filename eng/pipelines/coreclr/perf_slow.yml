@@ -141,7 +141,7 @@ jobs:
       platforms:
       - Linux_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
         nameSuffix: AOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
