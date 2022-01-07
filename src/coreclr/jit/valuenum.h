@@ -494,6 +494,8 @@ public:
     // Both arguments must be either VNForEmptyExcSet() or applications of VNF_ExcSetCons.
     bool VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet);
 
+    bool VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCandidateSet);
+
     // Returns "true" iff "vn" is an application of "VNF_ValWithExc".
     bool VNHasExc(ValueNum vn)
     {

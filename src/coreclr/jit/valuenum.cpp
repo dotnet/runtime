@@ -1266,6 +1266,17 @@ bool ValueNumStore::VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet)
     }
 }
 
+//----------------------------------------------------------------------------------------
+// VNPExcIsSubset     - Given two exception sets, returns true when both the liberal and
+//                      conservative value numbers of vnpCandidateSet represent subsets of
+//                      the corresponding numbers in vnpFullSet (see VNExcIsSubset).
+//
+bool ValueNumStore::VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCandidateSet)
+{
+    return VNExcIsSubset(vnpFullSet.GetLiberal(), vnpCandidateSet.GetLiberal()) &&
+           VNExcIsSubset(vnpFullSet.GetConservative(), vnpCandidateSet.GetConservative());
+}
+
 //-------------------------------------------------------------------------------------
 // VNUnpackExc: - Given a ValueNum 'vnWx, return via write back parameters both
 //                the normal and the exception set components.
@@ -10574,19 +10585,16 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     // Create baseVNP, from the values we just computed,
     baseVNP = ValueNumPair(baseLVN, baseCVN);
 
-    // Unpack, Norm,Exc for the tree's op1 VN
-    ValueNumPair vnpBaseNorm;
-    ValueNumPair vnpBaseExc;
-    vnStore->VNPUnpackExc(baseVNP, &vnpBaseNorm, &vnpBaseExc);
+    // The exceptions in "baseVNP" should have been added to the "tree"'s set already.
+    assert(vnStore->VNPExcIsSubset(vnStore->VNPExceptionSet(tree->gtVNPair), vnStore->VNPExceptionSet(baseVNP)));
 
-    // The Norm VN for op1 is used to create the NullPtrExc
+    // The normal VN for base address is used to create the NullPtrExc
+    ValueNumPair vnpBaseNorm = vnStore->VNPNormalPair(baseVNP);
+
     ValueNumPair excChkSet = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm));
 
-    // Combine the excChkSet with exception set of op1
-    ValueNumPair excSetBoth = vnStore->VNPExcSetUnion(excChkSet, vnpBaseExc);
-
-    // Retrieve the Normal VN for tree and combine it with the final exception set.
-    tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPNormalPair(tree->gtVNPair), excSetBoth);
+    // Add the NullPtrExc to "tree"'s value numbers.
+    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excChkSet);
 }
 
 //--------------------------------------------------------------------------------
