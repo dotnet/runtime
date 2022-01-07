@@ -659,6 +659,7 @@ struct _MonoMethodSignature {
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
 	unsigned int  suppress_gc_transition : 1;
+	unsigned int  marshalling_disabled : 1;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 

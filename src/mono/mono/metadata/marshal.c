@@ -4009,6 +4009,9 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
+	if (!marshalling_enabled)
+		csig->marshalling_disabled = 1;
+
 	memset (&m, 0, sizeof (m));
 	m.mb = mb;
 	m.sig = sig;
@@ -4141,6 +4144,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		MonoMethodSignature *csig;
 		MonoMarshalSpec **mspecs;
 		EmitMarshalContext m;
+		gboolean marshalling_enabled = runtime_marshalling_enabled(image);
 
 		sig = mono_method_signature_internal (method);
 		g_assert (!sig->hasthis);
@@ -4152,6 +4156,8 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		csig = mono_metadata_signature_dup_full (image, sig);
 		csig->hasthis = 0;
 		csig->pinvoke = 1;
+		if (!marshalling_enabled)
+			csig->marshalling_disabled = 1;
 
 		memset (&m, 0, sizeof (m));
 		m.mb = mb;
@@ -4160,7 +4166,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		m.retobj_var = 0;
 		m.csig = csig;
 		m.image = image;
-		m.runtime_marshalling_enabled = runtime_marshalling_enabled(image);
+		m.runtime_marshalling_enabled = marshalling_enabled;
 
 		mono_marshal_set_callconv_from_modopt (method, csig, TRUE);
 

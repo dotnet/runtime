@@ -193,7 +193,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		MonoInst *temp = mono_compile_create_var (cfg, sig_ret, OP_LOCAL);
 		MonoInst *loada;
 
-		temp->backend.is_pinvoke = sig->pinvoke;
+		temp->backend.is_pinvoke = sig->pinvoke && !sig->marshalling_disabled;
 
 		/*
 		 * We use a new opcode OP_OUTARG_VTRETADDR instead of LDADDR for emitting the

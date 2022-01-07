@@ -2018,6 +2018,8 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	}
 	csig = mono_metadata_signature_dup_full (get_method_image (mb->method), sig);
 	csig->pinvoke = 1;
+	if (!runtime_marshalling_enabled)
+		csig->marshalling_disabled = 1;
 	m.csig = csig;
 	m.image = image;
 
