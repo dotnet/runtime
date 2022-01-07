@@ -3090,10 +3090,14 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoClass* c = mono_class_from_mono_type_internal (t);
 		if (m_class_has_references(c)) {
 			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
+			// Emit the scalar marshalling after the exception so we still have valid IL.
+			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 			return conv_arg;
 		}
 		if (m_class_any_field_has_auto_layout(c)) {
 			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled.");
+			// Emit the scalar marshalling after the exception so we still have valid IL.
+			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 			return conv_arg;
 		}
 	}
@@ -3120,6 +3124,8 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 	
 	get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
+	// Emit the scalar marshalling after the exception so we still have valid IL.
+	get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	return conv_arg;
 }
 
@@ -3873,7 +3879,7 @@ type_is_usable_when_marshalling_disabled (MonoType *type)
 {
 	switch (type->type) {
 	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (t))
+		if (!mono_type_generic_inst_is_valuetype (type))
 			return FALSE;
 	// fallthrough
 	case MONO_TYPE_VALUETYPE: {
