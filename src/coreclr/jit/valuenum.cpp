@@ -8369,20 +8369,8 @@ bool Compiler::fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLcl
 void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
+    var_types  typ  = tree->TypeGet();
 
-#ifdef FEATURE_SIMD
-    if ((JitConfig.JitDisableSimdVN() & 1) == 1)
-    {
-        // This Jit Config forces the previous behavior of value numbering for SIMD nodes
-        if (oper == GT_SIMD)
-        {
-            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
-            return;
-        }
-    }
-#endif // FEATURE_SIMD
-
-    var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
         // If this is a struct assignment, with a constant rhs, (i,.e. an initBlk),
@@ -9434,18 +9422,24 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
+    if ((tree->GetOperandCount() > 2) || ((JitConfig.JitDisableSimdVN() & 1) == 1))
+    {
+        // We have a SIMD node with 3 or more args. To retain the
+        // previous behavior, we will generate a unique VN for this case.
+        excSetPair = ValueNumStore::VNPForEmptyExcSet();
+        for (GenTree* operand : tree->Operands())
+        {
+            excSetPair = vnStore->VNPUnionExcSet(operand->gtVNPair, excSetPair);
+        }
+        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), excSetPair);
+        return;
+    }
+
     // There are some SIMD operations that have zero args, i.e.  NI_Vector128_Zero
     if (tree->GetOperandCount() == 0)
     {
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
-    }
-    else if (tree->GetOperandCount() > 2)
-    {
-        // We have a SIMD node with 3 or more args. To retain the
-        // previous behavior, we will generate a unique VN for this case.
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-        return;
     }
     else // SIMD unary or binary operator.
     {
