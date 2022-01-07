@@ -159,7 +159,7 @@ namespace System.Net.Security
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
-                var errorCode = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
+                SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
@@ -214,7 +214,7 @@ namespace System.Net.Security
                     outputSize == output!.Length ? output :
                     new Span<byte>(output, 0, outputSize).ToArray();
 
-                return  new SecurityStatusPal(errorCode);
+                return new SecurityStatusPal(errorCode);
             }
             catch (Exception exc)
             {
