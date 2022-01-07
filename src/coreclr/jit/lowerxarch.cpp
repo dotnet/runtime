@@ -174,17 +174,23 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     // this logic on the support for the instruction set on XArch.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+    GenTree* replacement = nullptr;
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
-        if (!LowerAndOpToResetLowestSetBit(binOp))
-        {
-            // if the node was lowered to a HWIntrinsic skip the containment check
-            ContainCheckBinary(binOp);
-        }
+        replacement = LowerAndOpToResetLowestSetBit(binOp);
     }
 
-    return binOp->gtNext;
+    if (replacement == nullptr)
+    {
+        ContainCheckBinary(binOp);
+        return binOp->gtNext;
+    }
+    else
+    {
+        return replacement->gtNext;
+    }
 }
+
 
 //------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
@@ -3723,12 +3729,12 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 
 //----------------------------------------------------------------------------------------------
 // Lowering::LowerHWIntrinsicToScalar: Lowers a tree AND(X, SUB(X, 1) to HWIntrinsic::ResetLowestSetBit
-//     Returns true if the node has been replaced
+//     Returns the recplacement node if one is created else nullptr indicating no replacement
 //
 // Parameters
 //     tree   -   GentreePtr of binOp
 // 
-bool Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
+GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
@@ -3739,13 +3745,15 @@ bool Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
         if (op22->IsCnsIntOrI() && op22->AsIntCon()->IconValue() == -1 && op21->OperIs(GT_LCL_VAR) &&
             !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed() &&
             op21->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum() &&
-            ((op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
-             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))) // if op1->TypeGet()!=TYP_LONG then it must be TYP_INT
+            (
+                (op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
+                comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))// if op1->TypeGet()!=TYP_LONG then it must be TYP_INT
+            ) 
         {
             GenTreeHWIntrinsic* replacementNode =
-                comp->gtNewScalarHWIntrinsicNode(node->TypeGet(), op1, NamedIntrinsic::NI_BMI1_ResetLowestSetBit);
+                comp->gtNewScalarHWIntrinsicNode(op1->TypeGet(), op1, op1->TypeGet()==TYP_INT ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
 
-            JITDUMP("Lower: optimize AND(X, SUB(X, 1): ");
+            JITDUMP("Lower: optimize AND(X, SUB(X, 1)): ");
             DISPNODE(node);
             JITDUMP("Replaced with: ");
             DISPNODE(replacementNode);
@@ -3758,16 +3766,20 @@ bool Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
             {
                 op1->SetUnusedValue();
             }
+            op1->ClearContained();
             BlockRange().InsertBefore(node, replacementNode);
             BlockRange().Remove(node);
             BlockRange().Remove(op2);
             BlockRange().Remove(op21);
             BlockRange().Remove(op22);
             JITDUMP("Remove [%06u], [%06u]\n", node->gtTreeID, node->gtTreeID);
-            return true;
+
+            ContainCheckHWIntrinsic(replacementNode);
+
+            return replacementNode;
         }
     }
-    return false;
+    return nullptr;
 }
 
 #endif // FEATURE_HW_INTRINSICS
