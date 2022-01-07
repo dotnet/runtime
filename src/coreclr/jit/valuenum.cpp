@@ -9594,15 +9594,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     //
     if (isMemoryLoad)
     {
-        ValueNumPair op1vnp;
-        ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
+        ValueNumPair op1vnp = vnStore->VNPNormalPair(tree->Op(1)->gtVNPair);
 
         // The addrVN incorporates both op1's ValueNumber and the func operation
         // The func is used because operations such as LoadLow and LoadHigh perform
         // different operations, thus need to compute different ValueNumbers
         // We don't need to encode the result type as it will be encoded by the opcode in 'func'
-        //
+        // TODO-Bug: some HWI loads have more than one operand, we need to encode the rest.
         ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, func, op1vnp.GetLiberal());
 
         // The address could point anywhere, so it is an ByrefExposed load.
@@ -9610,7 +9608,11 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
         tree->gtVNPair.SetLiberal(loadVN);
         tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, op1Xvnp);
+
+        for (GenTree* operand : tree->Operands())
+        {
+            tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(operand->gtVNPair));
+        }
         fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
         return;
     }
