@@ -32,11 +32,6 @@ namespace System
                 return IndexOf(ref searchSpace, value, searchSpaceLength);
             }
 
-            // Avx2 implies Sse2
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) &&
-                searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
-                goto SEARCH_TWO_CHARS;
-
             ref char valueTail = ref Unsafe.Add(ref value, 1);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
@@ -64,11 +59,19 @@ namespace System
 
                 remainingSearchSpaceLength--;
                 index++;
+
+                // Since we've just hit a false-positive let's switch to "Algorithm 1: Generic SIMD"
+                // as described in http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd
+                // Avx2 implies Sse2
+                if ((Sse2.IsSupported || AdvSimd.IsSupported) && remainingSearchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
+                {
+                    goto SEARCH_TWO_CHARS;
+                }
             }
             return -1;
 
-        // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
-        // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
+            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
+            // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
             if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<ushort>.Count)
             {
