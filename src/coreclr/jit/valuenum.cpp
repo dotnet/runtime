@@ -9257,17 +9257,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
                         break;
 
-                    // BOX is a passthrough node (like NOP).
+                    // BOX and CKFINITE are passthrough nodes (like NOP). We'll add the exception for the latter later.
                     case GT_BOX:
-                        tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
-                        break;
-
-                    // CKFINITE is a passthrough node just like BOX. We number it conservatively to preserve previous
-                    // behavior. Note that we'll add the exception for it later.
                     case GT_CKFINITE:
-                        tree->gtVNPair =
-                            vnStore->VNPUniqueWithExc(tree->TypeGet(),
-                                                      vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+                        tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
                         break;
 
                     // These unary nodes will receive a unique VN.
