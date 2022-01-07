@@ -873,12 +873,10 @@ namespace System.Diagnostics
 
         private EventLogEntry GetEntryWithOldest(int index)
         {
-            EventLogEntry entry = null;
             int entryPos = GetCachedEntryPos(index);
             if (entryPos >= 0)
             {
-                entry = new EventLogEntry(cache, entryPos, this);
-                return entry;
+                return new EventLogEntry(cache, entryPos, this);
             }
 
             string currentMachineName = this.machineName;

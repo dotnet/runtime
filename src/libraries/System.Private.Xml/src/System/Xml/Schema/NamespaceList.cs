@@ -341,12 +341,14 @@ namespace System.Xml.Schema
             }
             else if (o1._type == ListType.Set && o2._type == ListType.Set)
             { //clause 4
-                nslist = o1.Clone();
+                nslist = new NamespaceList();
+                nslist._type = ListType.Set;
+                nslist._set = new Hashtable();
                 foreach (string? ns in o1._set!.Keys)
                 {
                     if (o2._set!.Contains(ns!))
                     {
-                        nslist._set!.Add(ns!, ns);
+                        nslist._set.Add(ns!, ns);
                     }
                 }
             }

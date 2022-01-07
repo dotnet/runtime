@@ -198,7 +198,7 @@ namespace System.Net
 
         internal byte[]? GetOutgoingBlob(byte[]? incomingBlob, bool thrownOnError)
         {
-            return GetOutgoingBlob(incomingBlob, thrownOnError);
+            return GetOutgoingBlob(incomingBlob, thrownOnError, out _);
         }
 
         // Accepts an incoming binary security blob and returns an outgoing binary security blob.
