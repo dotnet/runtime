@@ -716,5 +716,36 @@ namespace System.Text.Json.Serialization
             Assert.Equal(1, types.Count);
             Assert.Equal("HelloWorld.MyType", types.Keys.First());
         }
+
+        [Fact]
+        public static void NoWarningsDueToObsoleteMembers()
+        {
+                string source = @"using System;
+using System.Text.Json.Serialization;
+
+namespace Test
+{
+    [JsonSerializable(typeof(ClassWithObsolete))]
+    public partial class JsonContext : JsonSerializerContext { }
+
+    public class ClassWithObsolete
+    {
+        [Obsolete(""This is a test"")]
+        public bool Test { get; set; }
+    }
+}
+";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out _, generator);
+            ImmutableArray<Diagnostic> generatorDiags = newCompilation.GetDiagnostics();
+
+            // No diagnostics expected.
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
     }
 }
