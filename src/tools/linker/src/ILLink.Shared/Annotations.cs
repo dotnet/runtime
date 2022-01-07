@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.Shared.TrimAnalysis;
 
 namespace ILLink.Shared
 {
@@ -85,6 +86,44 @@ namespace ILLink.Shared
 			if (!values.Contains (DynamicallyAccessedMemberTypesOverlay.Interfaces))
 				values.Add (DynamicallyAccessedMemberTypesOverlay.Interfaces);
 			return values.ToArray ();
+		}
+
+		public static (DiagnosticId Id, string[] Arguments) GetDiagnosticForAnnotationMismatch (ValueWithDynamicallyAccessedMembers source, ValueWithDynamicallyAccessedMembers target, string missingAnnotations)
+		{
+			DiagnosticId diagnosticId = (source, target) switch {
+				(MethodParameterValue, MethodParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter,
+				(MethodParameterValue, MethodReturnValue) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType,
+				(MethodParameterValue, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField,
+				(MethodParameterValue, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter,
+				(MethodParameterValue, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter,
+				(MethodReturnValue, MethodParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter,
+				(MethodReturnValue, MethodReturnValue) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType,
+				(MethodReturnValue, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField,
+				(MethodReturnValue, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter,
+				(MethodReturnValue, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter,
+				(FieldValue, MethodParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter,
+				(FieldValue, MethodReturnValue) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType,
+				(FieldValue, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField,
+				(FieldValue, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter,
+				(FieldValue, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter,
+				(MethodThisParameterValue, MethodParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter,
+				(MethodThisParameterValue, MethodReturnValue) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType,
+				(MethodThisParameterValue, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField,
+				(MethodThisParameterValue, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter,
+				(MethodThisParameterValue, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter,
+				(GenericParameterValue, MethodParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter,
+				(GenericParameterValue, MethodReturnValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType,
+				(GenericParameterValue, FieldValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField,
+				(GenericParameterValue, MethodThisParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter,
+				(GenericParameterValue, GenericParameterValue) => DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter,
+				_ => throw new NotImplementedException ($"Unsupported source context {source} or target context {target}.")
+			};
+
+			var args = new List<string> ();
+			args.AddRange (target.GetDiagnosticArgumentsForAnnotationMismatch ());
+			args.AddRange (source.GetDiagnosticArgumentsForAnnotationMismatch ());
+			args.Add (missingAnnotations);
+			return (diagnosticId, args.ToArray ());
 		}
 	}
 }

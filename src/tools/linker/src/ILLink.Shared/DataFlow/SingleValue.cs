@@ -3,7 +3,6 @@
 
 namespace ILLink.Shared.DataFlow
 {
-	// Similar to ValueNode, and a candidate for future code sharing.
 	// This is a sum type over the various kinds of values we track:
 	// - dynamicallyaccessedmembertypes-annotated locations (types or strings)
 	// - known typeof values and similar
