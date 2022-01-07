@@ -9286,6 +9286,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
                         break;
 
+                    case GT_LCLHEAP:
+                        // We will not be modelling the StackOverflowException for LCLHEAP, just
+                        // give this a new and unique VN and pass through the exceptions.
+                        tree->gtVNPair =
+                            vnStore->VNPUniqueWithExc(tree->TypeGet(),
+                                                      vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+                        break;
+
                     default:
                         assert(!"Unhandled node in fgValueNumberTree");
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
