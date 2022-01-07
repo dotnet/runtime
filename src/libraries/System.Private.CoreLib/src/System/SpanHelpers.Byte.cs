@@ -58,7 +58,7 @@ namespace System
                 // Since we've just hit a false-positive let's switch to "Algorithm 1: Generic SIMD"
                 // as described in http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd
                 // Avx2 implies Sse2
-                if ((Sse2.IsSupported || AdvSimd.IsSupported) && remainingSearchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
+                if ((Sse2.IsSupported || AdvSimd.IsSupported) && remainingSearchSpaceLength - valueTailLength >= Vector128<byte>.Count)
                 {
                     goto SEARCH_TWO_BYTES;
                 }
