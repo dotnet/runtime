@@ -5,11 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 
-using MultiValue = ILLink.Shared.DataFlow.ValueSet<Mono.Linker.Dataflow.ValueNode>;
+using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace Mono.Linker.Dataflow
 {
@@ -31,7 +32,7 @@ namespace Mono.Linker.Dataflow
 			IsByRef = false;
 		}
 
-		public StackSlot (ValueNode value, bool isByRef = false)
+		public StackSlot (SingleValue value, bool isByRef = false)
 		{
 			Value = new MultiValue (value);
 			IsByRef = isByRef;
@@ -47,7 +48,7 @@ namespace Mono.Linker.Dataflow
 	abstract partial class MethodBodyScanner
 	{
 		protected readonly LinkContext _context;
-		protected static ValueSetLattice<ValueNode> MultiValueLattice => default;
+		protected static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
 		protected MethodBodyScanner (LinkContext context)
 		{
@@ -640,7 +641,7 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		protected abstract ValueNode GetMethodParameterValue (MethodDefinition method, int parameterIndex);
+		protected abstract SingleValue GetMethodParameterValue (MethodDefinition method, int parameterIndex);
 
 		private void ScanLdarg (Instruction operation, Stack<StackSlot> currentStack, MethodDefinition thisMethod, MethodBody methodBody)
 		{
@@ -854,7 +855,7 @@ namespace Mono.Linker.Dataflow
 			MethodReference methodCalled,
 			MethodBody containingMethodBody,
 			bool isNewObj, int ilOffset,
-			out ValueNode? newObjValue)
+			out SingleValue? newObjValue)
 		{
 			newObjValue = null;
 
@@ -887,7 +888,7 @@ namespace Mono.Linker.Dataflow
 
 			bool isNewObj = operation.OpCode.Code == Code.Newobj;
 
-			ValueNode? newObjValue;
+			SingleValue? newObjValue;
 			ValueNodeList methodParams = PopCallArguments (currentStack, calledMethod, callingMethodBody, isNewObj,
 														   operation.Offset, out newObjValue);
 

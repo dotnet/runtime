@@ -3,6 +3,7 @@
 
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TrimAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Operations;
@@ -38,7 +39,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// TODO: don't track values for unsupported types. Can be done when adding warnings
 			// for annotations on unsupported types.
 			// https://github.com/dotnet/linker/issues/2273
-			return new MultiValue (new SymbolValue (operation.TargetMethod, isMethodReturn: true));
+			return new MethodReturnValue (operation.TargetMethod);
 		}
 
 		// Just like VisitInvocation for a method call, we need to visit a property method invocation
@@ -51,7 +52,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var propertyMethod = GetPropertyMethod (operation);
 			// Only the getter has a return value that may be annotated.
 			if (propertyMethod.MethodKind == MethodKind.PropertyGet)
-				return new MultiValue (new SymbolValue (propertyMethod, isMethodReturn: true));
+				return new MethodReturnValue (propertyMethod);
 
 			return TopValue;
 		}
@@ -61,14 +62,17 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var value = base.VisitConversion (operation, state);
 
 			if (operation.OperatorMethod != null)
-				return new MultiValue (new SymbolValue (operation.OperatorMethod, isMethodReturn: true));
+				return new MethodReturnValue (operation.OperatorMethod);
+
+			// TODO - is it possible to have annotation on the operator method parameters?
+			// if so, will these be checked here?
 
 			return value;
 		}
 
 		public override MultiValue VisitParameterReference (IParameterReferenceOperation paramRef, StateValue state)
 		{
-			return new MultiValue (new SymbolValue (paramRef.Parameter));
+			return new MethodParameterValue (paramRef.Parameter);
 		}
 
 		public override MultiValue VisitInstanceReference (IInstanceReferenceOperation instanceRef, StateValue state)
@@ -79,13 +83,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// The instance reference operation represents a 'this' or 'base' reference to the containing type,
 			// so we get the annotation from the containing method.
 			// TODO: Check whether the Context.OwningSymbol is the containing type in case we are in a lambda.
-			var value = new MultiValue (new SymbolValue ((IMethodSymbol) Context.OwningSymbol, isMethodReturn: false));
+			var value = new MethodThisParameterValue ((IMethodSymbol) Context.OwningSymbol);
 			return value;
 		}
 
 		public override MultiValue VisitFieldReference (IFieldReferenceOperation fieldRef, StateValue state)
 		{
-			return new MultiValue (new SymbolValue (fieldRef.Field));
+			return new FieldValue (fieldRef.Field);
 		}
 
 		public override MultiValue VisitTypeOf (ITypeOfOperation typeOfOperation, StateValue state)
@@ -93,7 +97,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// TODO: track known types too!
 
 			if (typeOfOperation.TypeOperand is ITypeParameterSymbol typeParameter)
-				return new MultiValue (new SymbolValue (typeParameter));
+				return new GenericParameterValue (typeParameter);
 
 			return TopValue;
 		}
@@ -123,7 +127,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			if (operation.Parameter == null)
 				return;
 
-			var parameter = new MultiValue (new SymbolValue (operation.Parameter));
+			var parameter = new MethodParameterValue (operation.Parameter);
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
 				argumentValue,
@@ -135,7 +139,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// Similar to HandleArgument, for an assignment operation that is really passing an argument to a property setter.
 		public override void HandlePropertySetterArgument (MultiValue value, IMethodSymbol setMethod, ISimpleAssignmentOperation operation)
 		{
-			var parameter = new MultiValue (new SymbolValue (setMethod.Parameters[0]));
+			var parameter = new MethodParameterValue (setMethod.Parameters[0]);
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (value, parameter, operation));
 		}
@@ -144,7 +148,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// where the receiver is not null (so an instance method/property).
 		public override void HandleReceiverArgument (MultiValue receiverValue, IMethodSymbol targetMethod, IOperation operation)
 		{
-			MultiValue thisParameter = new MultiValue (new SymbolValue (targetMethod!, isMethodReturn: false));
+			MultiValue thisParameter = new MethodThisParameterValue (targetMethod!);
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
 				receiverValue,
@@ -155,7 +159,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
-			var returnParameter = new MultiValue (new SymbolValue ((IMethodSymbol) Context.OwningSymbol, isMethodReturn: true));
+			var returnParameter = new MethodReturnValue ((IMethodSymbol) Context.OwningSymbol);
 
 			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
 				returnValue,
