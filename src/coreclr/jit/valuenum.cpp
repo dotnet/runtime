@@ -9270,9 +9270,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                                       vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
                         break;
 
+                    // These unary nodes will receive a unique VN.
+                    // TODO-CQ: model INIT_VAL properly.
                     case GT_LCLHEAP:
-                        // We will not be modelling the StackOverflowException for LCLHEAP, just
-                        // give this a new and unique VN and pass through the exceptions.
+                    case GT_INIT_VAL:
                         tree->gtVNPair =
                             vnStore->VNPUniqueWithExc(tree->TypeGet(),
                                                       vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
