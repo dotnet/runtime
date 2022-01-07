@@ -614,7 +614,7 @@ protected:
 #endif
 
 #if defined(DEBUG) && defined(TARGET_LOONGARCH64)
-    void genLOONGARCH64EmitterUnitTests();
+    void genLoongArch64EmitterUnitTests();
 #endif
 
 #if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)

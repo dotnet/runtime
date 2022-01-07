@@ -12205,6 +12205,20 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
+#ifdef TARGET_LOONGARCH64
+        var_types type = retTypeDesc.GetReturnRegType(0);
+        regNumber toReg  = retTypeDesc.GetABIReturnReg(0);
+        GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
+        if (regCount > 1)
+        {
+            assert(regCount == 2);
+            int offset = genTypeSize(type);
+            type = retTypeDesc.GetReturnRegType(1);
+            offset = offset < genTypeSize(type) ? genTypeSize(type) : offset;
+            toReg  = retTypeDesc.GetABIReturnReg(1);
+            GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
+        }
+#else
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
         {
@@ -12213,6 +12227,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
             offset += genTypeSize(type);
         }
+#endif
     }
     else
     {

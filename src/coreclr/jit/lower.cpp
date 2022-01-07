@@ -3649,10 +3649,16 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
     assert(!call->HasMultiRegRetVal());
 
     const ClassLayout* layout  = store->GetLayout();
-    const var_types    regType = layout->GetRegisterType();
+    var_types          regType = layout->GetRegisterType();
 
     if (regType != TYP_UNDEF)
     {
+#if defined(TARGET_LOONGARCH64)
+        if (varTypeIsFloating(call->TypeGet()))
+            regType = call->TypeGet();
+        assert(regType != TYP_UNDEF);
+        assert(regType != TYP_STRUCT);
+#endif
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
         LowerStoreIndirCommon(store->AsStoreInd());

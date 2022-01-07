@@ -87,12 +87,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif
+            case GT_BOUNDS_CHECK:
                 return ((-32768 <= immVal) && (immVal <= 32767));
             case GT_AND:
             case GT_OR:
@@ -1335,10 +1330,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
 //
 void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 {
-#if 0
-assert(!"unimplemented on LOONGARCH yet");
-#else
-
     GenTree* src = node->Data();
     if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
     {
@@ -1347,8 +1338,6 @@ assert(!"unimplemented on LOONGARCH yet");
     }
 
     ContainCheckIndir(node);
-
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -1547,7 +1536,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 //
 void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
-    assert(node->OperIsBoundsCheck());
+    assert(node->OperIs(GT_BOUNDS_CHECK));
     if (!CheckImmedAndMakeContained(node, node->GetIndex()))
     {
         CheckImmedAndMakeContained(node, node->GetArrayLength());

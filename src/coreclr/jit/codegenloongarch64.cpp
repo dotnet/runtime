@@ -3161,9 +3161,10 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
             case GT_MUL:
                 if ((attr == EA_8BYTE) || (attr == EA_BYREF))
                 {
-                    //if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
-                    //    ins = INS_mul_d;
-                    //else
+                    op2  = treeNode->gtGetOp2();
+                    if (genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
+                        ins = treeNode->IsUnsigned() ? INS_mulw_d_wu : INS_mulw_d_w;
+                    else
                         ins = INS_mul_d;
                 }
                 else
@@ -3442,8 +3443,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             dataReg = data->GetRegNum();
         }
 
-        var_types   type = tree->TypeGet();
-        instruction ins  = ins_Store(type);
+        var_types type = tree->TypeGet();
+        instruction ins = ins_Store(type);
 
         if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
         {
@@ -4361,7 +4362,7 @@ void CodeGen::genCodeForJumpTrue(GenTreeOp* jtrue)
                     switch (cmpSize)
                     {
                     case EA_4BYTE:
-                        if (op1->gtFlags & GTF_UNSIGNED)
+                        if (IsUnsigned || ((op2->gtFlags | op1->gtFlags) & GTF_UNSIGNED))
                             imm = static_cast<uint32_t>(imm);
                         else
                             imm = static_cast<int32_t>(imm);
@@ -4551,7 +4552,15 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
         if (op2->AsIntCon()->gtIconVal)
         {
             assert(reg != REG_R21);
-            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, op2->AsIntCon()->gtIconVal);
+            ssize_t imm = op2->AsIntCon()->gtIconVal;
+            if ((tree->gtFlags & GTF_UNSIGNED) && (attr == EA_4BYTE))
+            {
+                assert(reg != REG_RA);
+                imm = (int32_t)imm;
+                GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_RA, reg, 0);
+                reg = REG_RA;
+            }
+            GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, imm);
             regs = (int)reg << 5;
             regs |= (int)REG_R21;//REG_R21
             ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_beq : INS_bne;
@@ -5017,297 +5026,6 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
 #endif // FEATURE_SIMD
 
-#ifdef FEATURE_HW_INTRINSICS
-#include "hwintrinsic.h"
-
-instruction CodeGen::getOpForHWIntrinsic(GenTreeHWIntrinsic* node, var_types instrType)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-    return INS_invalid;
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsic: Produce code for a GT_HWINTRINSIC node.
-//
-// This is the main routine which in turn calls the genHWIntrinsicXXX() routines.
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicUnaryOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form UnaryOp.
-//
-// Consumes one scalar operand produces a scalar
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicCrcOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form CrcOp.
-//
-// Consumes two scalar operands and produces a scalar result
-//
-// This form differs from BinaryOp because the attr depends on the size of op2
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicCrcOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdBinaryOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdBinaryOp.
-//
-// Consumes two SIMD operands and produces a SIMD result
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdBinaryOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSwitchTable: generate the jump-table for imm-intrinsics
-//    with non-constant argument
-//
-// Arguments:
-//    swReg      - register containing the switch case to execute
-//    tmpReg     - temporary integer register for calculating the switch indirect branch target
-//    swMax      - the number of switch cases.
-//    emitSwCase - lambda to generate an individual switch case
-//
-// Notes:
-//    Used for cases where an instruction only supports immediate operands,
-//    but at jit time the operand is not a constant.
-//
-//    The importer is responsible for inserting an upstream range check
-//    (GT_HW_INTRINSIC_CHK) for swReg, so no range check is needed here.
-//
-template <typename HWIntrinsicSwitchCaseBody>
-void CodeGen::genHWIntrinsicSwitchTable(regNumber                 swReg,
-                                        regNumber                 tmpReg,
-                                        int                       swMax,
-                                        HWIntrinsicSwitchCaseBody emitSwCase)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdExtractOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdExtractOp.
-//
-// Consumes one SIMD operand and one scalar
-//
-// The element index operand is typically a const immediate
-// When it is not, a switch table is generated
-//
-// See genHWIntrinsicSwitchTable comments
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdExtractOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdInsertOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdInsertOp.
-//
-// Consumes one SIMD operand and two scalars
-//
-// The element index operand is typically a const immediate
-// When it is not, a switch table is generated
-//
-// See genHWIntrinsicSwitchTable comments
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdInsertOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdSelectOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdSelectOp.
-//
-// Consumes three SIMD operands and produces a SIMD result
-//
-// This intrinsic form requires one of the source registers to be the
-// destination register.  Inserts a INS_mov if this requirement is not met.
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdSelectOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdSetAllOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdSetAllOp.
-//
-// Consumes single scalar operand and produces a SIMD result
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdSetAllOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdUnaryOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdUnaryOp.
-//
-// Consumes single SIMD operand and produces a SIMD result
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdUnaryOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdBinaryRMWOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdBinaryRMWOp.
-//
-// Consumes two SIMD operands and produces a SIMD result.
-// First operand is both source and destination.
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdBinaryRMWOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicSimdTernaryRMWOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form SimdTernaryRMWOp
-//
-// Consumes three SIMD operands and produces a SIMD result.
-// First operand is both source and destination.
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicSimdTernaryRMWOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicShaHashOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form Sha1HashOp.
-// Used in LOONGARCH64 SHA1 Hash operations.
-//
-// Consumes three operands and returns a Simd result.
-// First Simd operand is both source and destination.
-// Second Operand is an unsigned int.
-// Third operand is a simd operand.
-
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicShaHashOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-//------------------------------------------------------------------------
-// genHWIntrinsicShaRotateOp:
-//
-// Produce code for a GT_HWINTRINSIC node with form Sha1RotateOp.
-// Used in LOONGARCH64 SHA1 Rotate operations.
-//
-// Consumes one integer operand and returns unsigned int result.
-//
-// Arguments:
-//    node - the GT_HWINTRINSIC node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genHWIntrinsicShaRotateOp(GenTreeHWIntrinsic* node)
-{
-    assert(!"unimplemented on LOONGARCH yet");
-}
-
-#endif // FEATURE_HW_INTRINSICS
-
 /*****************************************************************************
  * Unit testing of the LOONGARCH64 emitter: generate a bunch of instructions into the prolog
  * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
@@ -5319,7 +5037,7 @@ void CodeGen::genHWIntrinsicShaRotateOp(GenTreeHWIntrinsic* node)
 //#define ALL_LOONGARCH64_EMITTER_UNIT_TESTS
 
 #if defined(DEBUG)
-void CodeGen::genLOONGARCH64EmitterUnitTests()
+void CodeGen::genLoongArch64EmitterUnitTests()
 {
     if (!verbose)
     {
@@ -5333,9 +5051,9 @@ void CodeGen::genLOONGARCH64EmitterUnitTests()
     }
 
     // Mark the "fake" instructions in the output.
-    printf("*************** In genLOONGARCH64EmitterUnitTests()\n");
+    printf("*************** In genLoongArch64EmitterUnitTests()\n");
 
-    printf("*************** End of genLOONGARCH64EmitterUnitTests()\n");
+    printf("*************** End of genLoongArch64EmitterUnitTests()\n");
 }
 #endif // defined(DEBUG)
 
@@ -5758,13 +5476,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             instGen(INS_nop);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
             genRangeCheck(treeNode);
             break;
 
@@ -6571,11 +6283,11 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 }
 
 //------------------------------------------------------------------------
-// genRangeCheck: generate code for GT_ARR_BOUNDS_CHECK node.
+// genRangeCheck: generate code for GT_BOUNDS_CHECK node.
 //
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-    noway_assert(oper->OperIsBoundsCheck());
+    noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
     GenTree* arrLen    = bndsChk->GetArrayLength();

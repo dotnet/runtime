@@ -645,7 +645,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if defined(TARGET_LOONGARCH64)
         int flags = 0;
-        CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd, &flags);
+        CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType2(&info.compMethodInfo->args, argLst, &typeHnd, &flags);
 #else
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
 #endif

@@ -1135,7 +1135,8 @@ void emitter::emitIns_Mov(
 {//TODO: should amend for LoongArch64/LOONGARCH64.
     assert(IsMovInstruction(ins));
 
-    emitIns_R_R(ins, attr, dstReg, srcReg);
+    if (!canSkip || (dstReg != srcReg))
+        emitIns_R_R(ins, attr, dstReg, srcReg);
 }
 
 /*****************************************************************************
@@ -1605,8 +1606,8 @@ void emitter::emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, re
         //
         assert(!EA_IS_RELOC(attr));
         emitIns_I_la(attr, reg1, imm);
-        //codeGen->instGen_Set_Reg_To_Imm(attr, reg1, imm);
-        emitIns_R_R_R(ins, attr, reg1, reg2, reg1);
+        assert(ins == INS_ld_d);
+        emitIns_R_R_R(INS_ldx_d, attr, reg1, reg2, reg1);
     }
 }
 
@@ -6317,10 +6318,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 }
                 else
                 {
+                    assert(REG_RA != dst->GetRegNum());
+                    assert(REG_RA != src1->GetRegNum());
+                    assert(REG_RA != src2->GetRegNum());
                     size_t imm = (EA_SIZE(attr) == EA_8BYTE) ? 63 : 31;
-                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai_d : INS_srai_w, attr, REG_T0, dst->GetRegNum(), imm);
-                    //TODO: FIXME:should confirm reg REG_T0!
-                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, nullptr, REG_T0);
+                    emitIns_R_R_I(EA_SIZE(attr) == EA_8BYTE ? INS_srai_d : INS_srai_w, attr, REG_RA, dst->GetRegNum(), imm);
+                    codeGen->genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, nullptr, REG_RA);
                 }
             }
         }
