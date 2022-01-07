@@ -214,7 +214,7 @@ class Program
 
     static int Tests()
     {
-        var result = 0;
+        var result = 100;
 
         // Begin CompareEqual Tests
 
@@ -267,7 +267,7 @@ class Program
 
     static int Tests_Swapped()
     {
-        var result = 0;
+        var result = 100;
 
         // Begin CompareEqual Tests
 
@@ -320,7 +320,7 @@ class Program
 
     static int Main(string[] args)
     {
-        var result = 0;
+        var result = 100;
 
         if (AdvSimd.IsSupported)
         {
