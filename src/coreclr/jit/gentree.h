@@ -7708,7 +7708,8 @@ inline bool GenTree::IsFloatPositiveZero() const
 // with all its elements equal to zero.
 //
 // Returns:
-//     True if this represents an integral or floating-point const (SIMD or HW intrinsic) vector with all its elements equal to zero.
+//     True if this represents an integral or floating-point const (SIMD or HW intrinsic) vector with all its elements
+//     equal to zero.
 //
 // TODO: We already have IsSIMDZero() and IsIntegralConstVector(0),
 //       however, IsSIMDZero() does not cover hardware intrinsics, and IsIntegralConstVector(0) does not cover floating
@@ -7732,8 +7733,8 @@ inline bool GenTree::IsVectorZero() const
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        const GenTreeHWIntrinsic* node = AsHWIntrinsic();
-        const var_types simdBaseType = node->GetSimdBaseType();
+        const GenTreeHWIntrinsic* node         = AsHWIntrinsic();
+        const var_types           simdBaseType = node->GetSimdBaseType();
 
         if (varTypeIsIntegral(simdBaseType) || varTypeIsFloating(simdBaseType))
         {
@@ -7747,7 +7748,8 @@ inline bool GenTree::IsVectorZero() const
                 return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
             }
-            else if ((node->GetOperandCount() == 1) && (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
+            else if ((node->GetOperandCount() == 1) &&
+                     (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
             {
 #if defined(TARGET_XARCH)
                 return (intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create);
