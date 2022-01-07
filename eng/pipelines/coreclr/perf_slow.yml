@@ -137,7 +137,6 @@ jobs:
       buildConfig: release
       container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       runtimeFlavor: mono
-      runtimeVariant: 'llvmaot'
       platforms:
       - Linux_arm64
       jobParameters:
