@@ -376,6 +376,8 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     *contextRecord = *pContext;
     *exceptionRecord = *pExRecord;
 
+    g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
+
     contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     bool continueExecution;
 
@@ -907,13 +909,9 @@ HijackFaultingThread(
     ts64.__x[1] = (uint64_t)pExceptionRecord;
     ts64.__x[2] = (uint64_t)pMachExceptionInfo;
 
-    FramePointer = (void **)((ULONG_PTR)FramePointer - 2 * sizeof(void *));
     // Make sure it's aligned - SP has 16-byte alignment
     FramePointer = (void **)((ULONG_PTR)FramePointer - ((ULONG_PTR)FramePointer % 16));
-    FramePointer[0] = (void*)pContext->Fp;
-    FramePointer[1] = (void*)pContext->Lr;
     arm_thread_state64_set_sp(ts64, FramePointer);
-    arm_thread_state64_set_fp(ts64, FramePointer);
 
     // Make the call to DispatchException
     arm_thread_state64_set_lr_fptr(ts64, (uint64_t)PAL_DispatchExceptionWrapper + PAL_DispatchExceptionReturnOffset);
