@@ -92,7 +92,7 @@ namespace Microsoft.Workload.Build.Tasks
 
         private bool InstallWorkloadManifest(string name, string version, string nugetConfigContents, bool stopOnMissing)
         {
-            Log.LogMessage(MessageImportance.High, $"Installing workload manifest for {name}/{version}");
+            Log.LogMessage(MessageImportance.High, $"Installing workload manifest for {name}/{version} for sdk band {VersionBand}");
 
             // Find any existing directory with the manifest name, ignoring the case
             // Multiple directories for a manifest, differing only in case causes
@@ -145,7 +145,15 @@ namespace Microsoft.Workload.Build.Tasks
                 {
                     if (!InstallWorkloadManifest(depName, depVersion, nugetConfigContents, stopOnMissing: false))
                     {
-                        Log.LogWarning($"Could not install manifest {depName}/{depVersion}. This can be ignored if the workload {WorkloadId.ItemSpec} doesn't depend on it.");
+                        Log.LogMessage(MessageImportance.High,
+                                                $" ***** warning ******{Environment.NewLine}" +
+                                                Environment.NewLine +
+                                                $"Could not install a dependent manifest {depName}/{depVersion} for sdk band {VersionBand}.{Environment.NewLine}" +
+                                                $"If this is because this manifest doesn't have a package for sdk band {VersionBand}, " +
+                                                $"then the workload resolver will automatically fallback to the older one, and this message can be ignored.{Environment.NewLine}" +
+                                                $"This can also be safely ignored if the workload {WorkloadId.ItemSpec} doesn't use the dependency.{Environment.NewLine}" +
+                                                Environment.NewLine +
+                                                $" ********************{Environment.NewLine}");
                         continue;
                     }
                 }
