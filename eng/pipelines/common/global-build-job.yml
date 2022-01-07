@@ -77,12 +77,6 @@ jobs:
         ${{ if and(eq(parameters.osGroup, 'Linux'), not(eq(parameters.archType, 'arm64'))) }}:
           value: /p:MonoLLVMUseCxx11Abi=false
 
-      # Building the llvm backend is fairly slow, so we don't want to build it unless required.
-      - name: _EnableLLVMParameter
-        value: /p:MonoEnableLLVM=false
-        ${{ if or( eq(parameters.runtimevariant, 'llvmaot'),  eq(parameters.runtimevariant, 'llvmfullaot') }}:
-          value: /p:MonoEnableLLVM=true
-     
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
           value: /p:OfficialBuildId=$(Build.BuildNumber)
@@ -154,7 +148,7 @@ jobs:
 
     # Build
     - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_EnableLLVMParameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
+      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}
