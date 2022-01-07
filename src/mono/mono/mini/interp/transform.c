@@ -3576,6 +3576,12 @@ interp_field_from_token (MonoMethod *method, guint32 token, MonoClass **klass, M
 	return field;
 }
 
+static void 
+add_bb_to_basic_blocks(TransformData *td, InterpBasicBlock *bb)
+{
+	td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
+}
+
 static InterpBasicBlock*
 get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 {
@@ -3592,7 +3598,7 @@ get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 
                 /* Add the blocks in reverse order */
                 if (make_list)
-                        td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
+                        add_bb_to_basic_blocks (td, bb);
 	}
 
 	return bb;
@@ -4426,6 +4432,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	end = td->ip + header->code_size;
 
 	td->cbb = td->entry_bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
+	if (td->gen_sdb_seq_points)
+		add_bb_to_basic_blocks (td, td->cbb);
+
 	td->cbb->index = td->bb_count++;
 	td->cbb->native_offset = -1;
 	td->cbb->stack_height = td->sp - td->stack;
