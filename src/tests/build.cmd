@@ -189,6 +189,9 @@ set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary 
 
 echo Common MSBuild args: %__msbuildArgs%
 
+call %__RepoRootDir%\eng\native\init-vs-env.cmd %__BuildArch%
+if NOT '%ERRORLEVEL%' == '0' exit /b 1
+
 REM =========================================================================================
 REM ===
 REM === Native test build section
@@ -216,24 +219,6 @@ if not defined NumberOfCores (
 )
 echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 
-call %__RepoRootDir%\eng\native\init-vs-env.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
-
-if defined VCINSTALLDIR (
-    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
-)
-
-REM Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
-echo %__MsgPrefix%Using CMake from !CMakePath!
-
-set __VCBuildArch=x86_amd64
-if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
-if /i "%__BuildArch%" == "arm" ( set __VCBuildArch=x86_arm )
-if /i "%__BuildArch%" == "arm64" ( set __VCBuildArch=x86_arm64 )
-
-echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
-call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
 set __ExtraCmakeArgs=
