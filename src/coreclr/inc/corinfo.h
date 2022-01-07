@@ -186,11 +186,18 @@ TODO: Talk about initializing strutures before use
 
 #include "corhdr.h"
 
-#if !defined(__deref_inout_ecount)
+#if !defined(_In_)
 // Minimum set of SAL annotations so that non Windows builds work
-#define __deref_inout_ecount(size)
-#define __inout_ecount(size)
-#define __out_ecount(size)
+#define _In_
+#define _In_reads_(size)
+#define _Inout_updates_(size)
+#define _Out_
+#define _Out_writes_(size)
+#define _Outptr_
+#define _Outptr_opt_
+#define _Outptr_opt_result_maybenull_
+#define _Outptr_result_z_
+#define _Outptr_result_buffer_(size)
 #endif
 
 #include "jiteeversionguid.h"
@@ -362,8 +369,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-    CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
-    CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+    CORINFO_HELP_NEW_MDARR,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -622,7 +628,6 @@ enum CorInfoHelpSig
     CORINFO_HELP_SIG_8_STACK,
     CORINFO_HELP_SIG_12_STACK,
     CORINFO_HELP_SIG_16_STACK,
-    CORINFO_HELP_SIG_8_VA, //2 arguments plus varargs
 
     CORINFO_HELP_SIG_EBPCALL, //special calling convention that uses EDX and
                               //EBP as arguments
@@ -2258,7 +2263,7 @@ public:
     // If fAssembly=TRUE, suffix with a comma and the full assembly qualification
     // return size of representation
     virtual int appendClassName(
-            __deref_inout_ecount(*pnBufLen) char16_t** ppBuf,
+            _Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
             int* pnBufLen,
             CORINFO_CLASS_HANDLE    cls,
             bool fNamespace,
@@ -2740,7 +2745,7 @@ public:
     // Returns the size of the message (including terminating null). This can be
     // greater than bufferLength if the buffer is insufficient.
     virtual uint32_t GetErrorMessage(
-            __inout_ecount(bufferLength) char16_t *buffer,
+            _Inout_updates_(bufferLength) char16_t *buffer,
             uint32_t bufferLength
             ) = 0;
 
@@ -2838,7 +2843,7 @@ public:
     virtual size_t findNameOfToken (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             mdToken                     metaTOK,     /* IN  */
-            __out_ecount (FQNameCapacity) char * szFQName, /* OUT */
+            _Out_writes_ (FQNameCapacity) char * szFQName, /* OUT */
             size_t FQNameCapacity  /* IN */
             ) = 0;
 

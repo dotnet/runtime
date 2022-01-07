@@ -264,6 +264,11 @@ protected:
     void genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState);
 #endif
     void genEnregisterIncomingStackArgs();
+#if defined(TARGET_ARM64)
+    void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
+#else
+    void genEnregisterOSRArgsAndLocals();
+#endif
     void genCheckUseBlockInit();
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_SIMD)
     void genClearStackVec3ArgUpperBits();

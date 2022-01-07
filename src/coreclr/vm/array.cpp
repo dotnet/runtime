@@ -642,7 +642,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 }
                 else if (index == 0)
                 {
-                    skip = pElemMT->GetAlignedNumInstanceFieldBytes() - numPtrsInBytes;
+                    skip = pElemMT->GetNumInstanceFieldBytes() - numPtrsInBytes;
                 }
                 else
                 {

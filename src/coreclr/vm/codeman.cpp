@@ -1889,7 +1889,7 @@ CodeFragmentHeap::~CodeFragmentHeap()
 TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
                     ,unsigned  dwAlignment
 #ifdef _DEBUG
-                    ,__in __in_z const char *szFile
+                    ,_In_ _In_z_ const char *szFile
                     ,int  lineNum
 #endif
                     )
@@ -1963,9 +1963,9 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
 void CodeFragmentHeap::RealBackoutMem(void *pMem
                     , size_t dwSize
 #ifdef _DEBUG
-                    , __in __in_z const char *szFile
+                    , _In_ _In_z_ const char *szFile
                     , int lineNum
-                    , __in __in_z const char *szAllocFile
+                    , _In_ _In_z_ const char *szAllocFile
                     , int allocLineNum
 #endif
                     )

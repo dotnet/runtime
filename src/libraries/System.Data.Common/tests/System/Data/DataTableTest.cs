@@ -3566,6 +3566,7 @@ Assert.False(true);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62965", TestPlatforms.Browser)] // fails on NodeJS on windows
         public void Bug55978()
         {
             DataTable dt = new DataTable();

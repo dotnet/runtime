@@ -20,6 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
+#include "patchpointinfo.h"
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1113,9 +1114,20 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     if (genFuncletInfo.fiFrameType == 1)
     {
-        GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSpDelta1,
-                                      INS_OPTS_PRE_INDEX);
-        compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        // With OSR we may see large values for fiSpDelta1
+        // (we really need to probe the frame, sigh)
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+            compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSpDelta1,
+                                          INS_OPTS_PRE_INDEX);
+            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        }
 
         maskSaveRegsInt &= ~(RBM_LR | RBM_FP); // We've saved these now
 
@@ -1141,9 +1153,20 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
     else if (genFuncletInfo.fiFrameType == 3)
     {
-        GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSpDelta1,
-                                      INS_OPTS_PRE_INDEX);
-        compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        // With OSR we may see large values for fiSpDelta1
+        // (we really need to probe the frame, sigh)
+        if (compiler->opts.IsOSR())
+        {
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+            compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, genFuncletInfo.fiSpDelta1,
+                                          INS_OPTS_PRE_INDEX);
+            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        }
 
         maskSaveRegsInt &= ~(RBM_LR | RBM_FP); // We've saved these now
     }
@@ -1171,17 +1194,25 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     if ((genFuncletInfo.fiFrameType == 3) || (genFuncletInfo.fiFrameType == 5))
     {
-        // Note that genFuncletInfo.fiSpDelta2 is always a negative value
-        assert(genFuncletInfo.fiSpDelta2 < 0);
+        // Note that genFuncletInfo.fiSpDelta2 is always a non-positive value
+        assert(genFuncletInfo.fiSpDelta2 <= 0);
 
         // generate sub SP,SP,imm
-        genStackPointerAdjustment(genFuncletInfo.fiSpDelta2, REG_R2, nullptr, /* reportUnwindData */ true);
+        if (genFuncletInfo.fiSpDelta2 < 0)
+        {
+            genStackPointerAdjustment(genFuncletInfo.fiSpDelta2, REG_R2, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // we will only see fiSpDelta2 == 0 for osr funclets
+            assert(compiler->opts.IsOSR());
+        }
     }
 
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet frame.
+    // If there is no PSPSym (CoreRT ABI), we are done. Otherwise, we need to set up the PSPSym in the funclet frame.
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
         if (isFilter)
@@ -1252,11 +1283,19 @@ void CodeGen::genFuncletEpilog()
 
     if ((genFuncletInfo.fiFrameType == 3) || (genFuncletInfo.fiFrameType == 5))
     {
-        // Note that genFuncletInfo.fiSpDelta2 is always a negative value
-        assert(genFuncletInfo.fiSpDelta2 < 0);
+        // Note that genFuncletInfo.fiSpDelta2 is always a non-positive value
+        assert(genFuncletInfo.fiSpDelta2 <= 0);
 
         // generate add SP,SP,imm
-        genStackPointerAdjustment(-genFuncletInfo.fiSpDelta2, REG_R2, nullptr, /* reportUnwindData */ true);
+        if (genFuncletInfo.fiSpDelta2 < 0)
+        {
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta2, REG_R2, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            // we should only zee zero SpDelta2 with osr.
+            assert(compiler->opts.IsOSR());
+        }
     }
 
     regMaskTP regsToRestoreMask = maskRestoreRegsInt | maskRestoreRegsFloat;
@@ -1269,9 +1308,21 @@ void CodeGen::genFuncletEpilog()
 
     if (genFuncletInfo.fiFrameType == 1)
     {
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -genFuncletInfo.fiSpDelta1,
-                                      INS_OPTS_POST_INDEX);
-        compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        // With OSR we may see large values for fiSpDelta1
+        //
+        if (compiler->opts.IsOSR())
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+            compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -genFuncletInfo.fiSpDelta1,
+                                          INS_OPTS_POST_INDEX);
+            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        }
 
         assert(genFuncletInfo.fiSpDelta2 == 0);
         assert(genFuncletInfo.fiSP_to_FPLR_save_delta == 0);
@@ -1293,9 +1344,21 @@ void CodeGen::genFuncletEpilog()
     }
     else if (genFuncletInfo.fiFrameType == 3)
     {
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -genFuncletInfo.fiSpDelta1,
-                                      INS_OPTS_POST_INDEX);
-        compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        // With OSR we may see large values for fiSpDelta1
+        //
+        if (compiler->opts.IsOSR())
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, 0);
+            compiler->unwindSaveRegPair(REG_FP, REG_LR, 0);
+
+            genStackPointerAdjustment(-genFuncletInfo.fiSpDelta1, REG_SCRATCH, nullptr, /* reportUnwindData */ true);
+        }
+        else
+        {
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, -genFuncletInfo.fiSpDelta1,
+                                          INS_OPTS_POST_INDEX);
+            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, genFuncletInfo.fiSpDelta1);
+        }
     }
     else if (genFuncletInfo.fiFrameType == 4)
     {
@@ -1346,13 +1409,22 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     // The frame size and offsets must be finalized
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT);
 
-    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta();
+    unsigned const PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? REGSIZE_BYTES : 0;
+
+    // Because a method and funclets must have the same caller-relative PSPSym offset,
+    // if there is a PSPSym, we have to pad the funclet frame size for OSR.
+    //
+    unsigned osrPad = 0;
+    if (compiler->opts.IsOSR() && (PSPSize > 0))
+    {
+        osrPad = compiler->info.compPatchpointInfo->TotalFrameSize();
+    }
+
+    genFuncletInfo.fiFunction_CallerSP_to_FP_delta = genCallerSPtoFPdelta() - osrPad;
 
     regMaskTP rsMaskSaveRegs = regSet.rsMaskCalleeSaved;
     assert((rsMaskSaveRegs & RBM_LR) != 0);
     assert((rsMaskSaveRegs & RBM_FP) != 0);
-
-    unsigned PSPSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? REGSIZE_BYTES : 0;
 
     unsigned saveRegsCount       = genCountBits(rsMaskSaveRegs);
     unsigned saveRegsPlusPSPSize = saveRegsCount * REGSIZE_BYTES + PSPSize;
@@ -1362,23 +1434,24 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         // so that they are contiguous with the incoming stack arguments.
         saveRegsPlusPSPSize += MAX_REG_ARG * REGSIZE_BYTES;
     }
-    unsigned saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
+
+    unsigned const saveRegsPlusPSPSizeAligned = roundUp(saveRegsPlusPSPSize, STACK_ALIGN);
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
-    unsigned outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
+    unsigned const outgoingArgSpaceAligned = roundUp(compiler->lvaOutgoingArgSpaceSize, STACK_ALIGN);
 
-    unsigned maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + outgoingArgSpaceAligned;
+    unsigned const maxFuncletFrameSizeAligned = saveRegsPlusPSPSizeAligned + osrPad + outgoingArgSpaceAligned;
     assert((maxFuncletFrameSizeAligned % STACK_ALIGN) == 0);
 
     int SP_to_FPLR_save_delta;
     int SP_to_PSP_slot_delta;
     int CallerSP_to_PSP_slot_delta;
 
-    unsigned funcletFrameSize        = saveRegsPlusPSPSize + compiler->lvaOutgoingArgSpaceSize;
-    unsigned funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
+    unsigned const funcletFrameSize        = saveRegsPlusPSPSize + osrPad + compiler->lvaOutgoingArgSpaceSize;
+    unsigned const funcletFrameSizeAligned = roundUp(funcletFrameSize, STACK_ALIGN);
     assert(funcletFrameSizeAligned <= maxFuncletFrameSizeAligned);
 
-    unsigned funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
+    unsigned const funcletFrameAlignmentPad = funcletFrameSizeAligned - funcletFrameSize;
     assert((funcletFrameAlignmentPad == 0) || (funcletFrameAlignmentPad == REGSIZE_BYTES));
 
     if (maxFuncletFrameSizeAligned <= 512)
@@ -1391,8 +1464,8 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
                 SP_to_FPLR_save_delta -= MAX_REG_ARG * REGSIZE_BYTES;
             }
 
-            SP_to_PSP_slot_delta       = compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad;
-            CallerSP_to_PSP_slot_delta = -(int)saveRegsPlusPSPSize;
+            SP_to_PSP_slot_delta       = compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + osrPad;
+            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
 
             genFuncletInfo.fiFrameType = 4;
         }
@@ -1400,7 +1473,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             SP_to_FPLR_save_delta = compiler->lvaOutgoingArgSpaceSize;
             SP_to_PSP_slot_delta  = SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + funcletFrameAlignmentPad;
-            CallerSP_to_PSP_slot_delta = -(int)(saveRegsPlusPSPSize - 2 /* FP, LR */ * REGSIZE_BYTES);
+            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize - 2 /* FP, LR */ * REGSIZE_BYTES);
 
             if (compiler->lvaOutgoingArgSpaceSize == 0)
             {
@@ -1432,7 +1505,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 
             SP_to_PSP_slot_delta =
                 compiler->lvaOutgoingArgSpaceSize + funcletFrameAlignmentPad + saveRegsPlusPSPAlignmentPad;
-            CallerSP_to_PSP_slot_delta = -(int)saveRegsPlusPSPSize;
+            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSize);
 
             genFuncletInfo.fiFrameType = 5;
         }
@@ -1440,13 +1513,13 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         {
             SP_to_FPLR_save_delta = outgoingArgSpaceAligned;
             SP_to_PSP_slot_delta = SP_to_FPLR_save_delta + 2 /* FP, LR */ * REGSIZE_BYTES + saveRegsPlusPSPAlignmentPad;
-            CallerSP_to_PSP_slot_delta =
-                -(int)(saveRegsPlusPSPSizeAligned - 2 /* FP, LR */ * REGSIZE_BYTES - saveRegsPlusPSPAlignmentPad);
+            CallerSP_to_PSP_slot_delta = -(int)(osrPad + saveRegsPlusPSPSizeAligned - 2 /* FP, LR */ * REGSIZE_BYTES -
+                                                saveRegsPlusPSPAlignmentPad);
 
             genFuncletInfo.fiFrameType = 3;
         }
 
-        genFuncletInfo.fiSpDelta1 = -(int)saveRegsPlusPSPSizeAligned;
+        genFuncletInfo.fiSpDelta1 = -(int)(osrPad + saveRegsPlusPSPSizeAligned);
         genFuncletInfo.fiSpDelta2 = -(int)outgoingArgSpaceAligned;
 
         assert(genFuncletInfo.fiSpDelta1 + genFuncletInfo.fiSpDelta2 == -(int)maxFuncletFrameSizeAligned);
@@ -1468,7 +1541,10 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
         printf("                        Save regs: ");
         dspRegMask(genFuncletInfo.fiSaveRegs);
         printf("\n");
-        printf("    Function CallerSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_CallerSP_to_FP_delta);
+        if (compiler->opts.IsOSR())
+        {
+            printf("                          OSR Pad: %d\n", osrPad);
+        }
         printf("  SP to FP/LR save location delta: %d\n", genFuncletInfo.fiSP_to_FPLR_save_delta);
         printf("             SP to PSP slot delta: %d\n", genFuncletInfo.fiSP_to_PSP_slot_delta);
         printf("    SP to callee-saved area delta: %d\n", genFuncletInfo.fiSP_to_CalleeSave_delta);
@@ -3280,6 +3356,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             else
             {
                 // issue a full memory barrier before a volatile StInd
+                // Note: We cannot issue store barrier ishst because it is a weaker barrier.
+                // The loads can get rearranged around the barrier causing to read wrong
+                // value.
                 instGen_MemoryBarrier();
             }
         }
@@ -3887,10 +3966,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             break;
 
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt64:
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
@@ -3975,10 +4050,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicCast:
                 result = INS_mov;
                 break;
-            case SIMDIntrinsicConvertToInt32:
-            case SIMDIntrinsicConvertToInt64:
-                result = INS_fcvtzs;
-                break;
             case SIMDIntrinsicEqual:
                 result = INS_fcmeq;
                 break;
@@ -4004,10 +4075,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicCast:
                 result = INS_mov;
-                break;
-            case SIMDIntrinsicConvertToDouble:
-            case SIMDIntrinsicConvertToSingle:
-                result = isUnsigned ? INS_ucvtf : INS_scvtf;
                 break;
             case SIMDIntrinsicEqual:
                 result = INS_cmeq;
@@ -4156,11 +4223,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToSingle) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToInt32) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToDouble) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToInt64));
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast);
 
     GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();

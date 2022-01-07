@@ -422,13 +422,8 @@ public:
         ,
 #endif // FEATURE_MULTIREG_ARGS
         lvClassHnd(NO_CLASS_HANDLE)
-        ,
-#if ASSERTION_PROP
-        lvRefBlks(BlockSetOps::UninitVal())
-        ,
-#endif // ASSERTION_PROP
-        lvPerSsaData()
-
+        , lvRefBlks(BlockSetOps::UninitVal())
+        , lvPerSsaData()
     {
     }
 
@@ -483,9 +478,7 @@ public:
 #endif  // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH)
 
 
-#if OPT_BOOL_OPS
     unsigned char lvIsBoolean : 1; // set if variable is boolean
-#endif
     unsigned char lvSingleDef : 1; // variable has a single def
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates
                                    // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
@@ -504,10 +497,8 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-#if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
-#endif
 
 #ifndef TARGET_64BIT
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
@@ -1015,11 +1006,10 @@ private:
     ClassLayout* m_layout; // layout info for structs
 
 public:
-#if ASSERTION_PROP
     BlockSet   lvRefBlks;          // Set of blocks that contain refs
     Statement* lvDefStmt;          // Pointer to the statement with the single definition
     void       lvaDisqualifyVar(); // Call to disqualify a local variable from use in optAddCopies
-#endif
+
     var_types TypeGet() const
     {
         return (var_types)lvType;
@@ -3607,7 +3597,7 @@ public:
 // Functions to display the trees
 
 #ifdef DEBUG
-    void gtDispNode(GenTree* tree, IndentStack* indentStack, __in_z const char* msg, bool isLIR);
+    void gtDispNode(GenTree* tree, IndentStack* indentStack, _In_z_ const char* msg, bool isLIR);
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
@@ -3633,11 +3623,11 @@ public:
     void gtDispChild(GenTree*             child,
                      IndentStack*         indentStack,
                      IndentInfo           arcType,
-                     __in_opt const char* msg     = nullptr,
+                     _In_opt_ const char* msg     = nullptr,
                      bool                 topOnly = false);
     void gtDispTree(GenTree*             tree,
                     IndentStack*         indentStack = nullptr,
-                    __in_opt const char* msg         = nullptr,
+                    _In_opt_ const char* msg         = nullptr,
                     bool                 topOnly     = false,
                     bool                 isLIR       = false);
     void gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut);
@@ -6454,10 +6444,8 @@ public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
 private:
-#if LOCAL_ASSERTION_PROP
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-#endif
     void fgMorphTreeDone(GenTree* tree, GenTree* oldTree = nullptr DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
@@ -7606,7 +7594,6 @@ public:
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
 
-#if ASSERTION_PROP
     /**************************************************************************
      *               Value/Assertion propagation
      *************************************************************************/
@@ -7861,10 +7848,8 @@ public:
     AssertionDsc* optGetAssertion(AssertionIndex assertIndex);
     void optAssertionInit(bool isLocalProp);
     void optAssertionTraitsInit(AssertionIndex assertionCount);
-#if LOCAL_ASSERTION_PROP
     void optAssertionReset(AssertionIndex limit);
     void optAssertionRemove(AssertionIndex index);
-#endif
 
     // Assertion prop data flow functions.
     void       optAssertionPropMain();
@@ -7958,11 +7943,11 @@ public:
     void optDebugCheckAssertion(AssertionDsc* assertion);
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
+
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
 
     void optAddCopies();
-#endif // ASSERTION_PROP
 
     /**************************************************************************
      *                          Range checks

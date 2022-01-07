@@ -1539,12 +1539,10 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         varDsc->lvType = type;
     }
 
-#if OPT_BOOL_OPS
     if (type == TYP_BOOL)
     {
         varDsc->lvIsBoolean = true;
     }
-#endif
 
 #ifdef DEBUG
     varDsc->SetStackOffset(BAD_STK_OFFS);
@@ -3756,7 +3754,6 @@ void Compiler::lvaSortByRefCount()
 #endif
 }
 
-#if ASSERTION_PROP
 /*****************************************************************************
  *
  *  This is called by lvaMarkLclRefs to disqualify a variable from being
@@ -3768,7 +3765,6 @@ void LclVarDsc::lvaDisqualifyVar()
     this->lvSingleDef  = false;
     this->lvDefStmt    = nullptr;
 }
-#endif // ASSERTION_PROP
 
 #ifdef FEATURE_SIMD
 var_types LclVarDsc::GetSimdBaseType() const
@@ -4043,8 +4039,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             GenTree* op1 = tree->AsOp()->gtOp1;
             GenTree* op2 = tree->AsOp()->gtOp2;
 
-#if OPT_BOOL_OPS
-
             /* Is this an assignment to a local variable? */
 
             if (op1->gtOper == GT_LCL_VAR && op2->gtType != TYP_BOOL)
@@ -4092,7 +4086,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                         break;
                 }
             }
-#endif
         }
     }
 
@@ -4150,15 +4143,12 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         if (tree->gtOper == GT_LCL_FLD)
         {
-#if ASSERTION_PROP
             // variables that have uses inside a GT_LCL_FLD
             // cause problems, so we will disqualify them here
             varDsc->lvaDisqualifyVar();
-#endif // ASSERTION_PROP
             return;
         }
 
-#if ASSERTION_PROP
         if (fgDomsComputed && IsDominatedByExceptionalEntry(block))
         {
             SetVolatileHint(varDsc);
@@ -4248,8 +4238,6 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
                 }
             }
         }
-
-#endif // ASSERTION_PROP
 
         bool allowStructs = false;
 #ifdef UNIX_AMD64_ABI
@@ -4494,12 +4482,10 @@ void Compiler::lvaMarkLocalVars()
         lvaGetDesc(info.compTypeCtxtArg)->lvImplicitlyReferenced = reportParamTypeArg;
     }
 
-#if ASSERTION_PROP
     assert(PreciseRefCountsRequired());
 
     // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
     optAddCopies();
-#endif
 }
 
 //------------------------------------------------------------------------
@@ -5317,11 +5303,12 @@ void Compiler::lvaFixVirtualFrameOffsets()
         assert(!varDsc->lvMustInit);         // It is never "must init".
         varDsc->SetStackOffset(codeGen->genCallerSPtoInitialSPdelta() + lvaLclSize(lvaOutgoingArgSpaceVar));
 
-        // With OSR the new frame RBP points at the base of the new frame, but the virtual offsets
-        // are from the base of the old frame. Adjust.
         if (opts.IsOSR())
         {
-            varDsc->SetStackOffset(varDsc->GetStackOffset() - info.compPatchpointInfo->FpToSpDelta());
+            // With OSR RBP points at the base of the OSR frame, but the virtual offsets
+            // are from the base of the Tier0 frame. Adjust.
+            //
+            varDsc->SetStackOffset(varDsc->GetStackOffset() - info.compPatchpointInfo->TotalFrameSize());
         }
     }
 #endif
@@ -5356,7 +5343,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
     else
     {
         // FP is used.
-        JITDUMP("--- delta bump %d for RBP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
+        JITDUMP("--- delta bump %d for FP frame\n", codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta());
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
 #elif defined(TARGET_LOONGARCH64)
@@ -5368,12 +5355,14 @@ void Compiler::lvaFixVirtualFrameOffsets()
     }
 #endif // TARGET_LOONGARCH64
 
-    // For OSR, update the delta to reflect the current policy that
-    // RBP points at the base of the new frame, and RSP is relative to that RBP.
     if (opts.IsOSR())
     {
-        JITDUMP("--- delta bump %d for OSR\n", info.compPatchpointInfo->FpToSpDelta());
-        delta += info.compPatchpointInfo->FpToSpDelta();
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        // Stack offset includes Tier0 frame.
+        //
+        JITDUMP("--- delta bump %d for OSR + Tier0 frame\n", info.compPatchpointInfo->TotalFrameSize());
+        delta += info.compPatchpointInfo->TotalFrameSize();
+#endif
     }
 
     JITDUMP("--- virtual stack offset to actual stack offset delta is %d\n", delta);
@@ -6227,16 +6216,18 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         lvaTable[lvaRetAddrVar].SetStackOffset(stkOffs);
     }
+#endif
 
-    // If we are an OSR method, we "inherit" the frame of the original method,
-    // and the stack is already double aligned on entry (since the return address push
-    // and any special alignment push happened "before").
+    // If we are an OSR method, we "inherit" the frame of the original method
+    //
     if (opts.IsOSR())
     {
-        originalFrameSize    = info.compPatchpointInfo->FpToSpDelta();
+        originalFrameSize    = info.compPatchpointInfo->TotalFrameSize();
         originalFrameStkOffs = stkOffs;
         stkOffs -= originalFrameSize;
     }
+
+#ifdef TARGET_XARCH
     // TODO-AMD64-CQ: for X64 eventually this should be pushed with all the other
     // calleeregs.  When you fix this, you'll also need to fix
     // the assert at the bottom of this method
@@ -6244,7 +6235,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         stkOffs -= REGSIZE_BYTES;
     }
-#endif // TARGET_XARCH
+#endif
 
 #ifdef TARGET_LOONGARCH64
     // Decide where to save FP and RA registers. We store FP/RA registers at the bottom of the frame if there is
@@ -6462,9 +6453,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             int originalOffset = info.compPatchpointInfo->MonitorAcquiredOffset();
             int offset         = originalFrameStkOffs + originalOffset;
 
-            JITDUMP("---OSR--- V%02u (on old frame, monitor aquired) old rbp offset %d old frame offset %d new "
-                    "virt offset %d\n",
-                    lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
+            JITDUMP(
+                "---OSR--- V%02u (on tier0 frame, monitor aquired) tier0 FP-rel offset %d tier0 frame offset %d new "
+                "virt offset %d\n",
+                lvaMonAcquired, originalOffset, originalFrameStkOffs, offset);
 
             lvaTable[lvaMonAcquired].SetStackOffset(offset);
         }
@@ -6696,7 +6688,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 int originalOffset = info.compPatchpointInfo->Offset(lclNum);
                 int offset         = originalFrameStkOffs + originalOffset;
 
-                JITDUMP("---OSR--- V%02u (on old frame) old rbp offset %d old frame offset %d new virt offset %d\n",
+                JITDUMP("---OSR--- V%02u (on tier0 frame) tier0 FP-rel offset %d tier0 frame offset %d new virt offset "
+                        "%d\n",
                         lclNum, originalOffset, originalFrameStkOffs, offset);
 
                 lvaTable[lclNum].SetStackOffset(offset);
@@ -6731,7 +6724,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     int originalOffset = info.compPatchpointInfo->SecurityCookieOffset();
                     int offset         = originalFrameStkOffs + originalOffset;
 
-                    JITDUMP("---OSR--- V%02u (on old frame, security cookie) old rbp offset %d old frame offset %d new "
+                    JITDUMP("---OSR--- V%02u (on tier0 frame, security cookie) tier0 FP-rel offset %d tier0 frame "
+                            "offset %d new "
                             "virt offset %d\n",
                             lclNum, originalOffset, originalFrameStkOffs, offset);
 
@@ -7765,6 +7759,10 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     {
         printf(" single-def");
     }
+    if (lvaIsOSRLocal(lclNum) && varDsc->lvOnFrame)
+    {
+        printf(" tier0-frame");
+    }
 
 #ifndef TARGET_64BIT
     if (varDsc->lvStructDoubleAlign)
@@ -8087,23 +8085,30 @@ int Compiler::lvaToCallerSPRelativeOffset(int offset, bool isFpBased, bool forRo
         offset += codeGen->genCallerSPtoInitialSPdelta();
     }
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (forRootFrame && opts.IsOSR())
     {
+        const PatchpointInfo* const ppInfo = info.compPatchpointInfo;
+
+#if defined(TARGET_AMD64)
         // The offset computed above already includes the OSR frame adjustment, plus the
         // pop of the "pseudo return address" from the OSR frame.
         //
-        // To get to root method caller-SP, we need to subtract off the original frame
-        // size and the pushed return address and RBP for that frame (which we know is an
+        // To get to root method caller-SP, we need to subtract off the tier0 frame
+        // size and the pushed return address and RBP for the tier0 frame (which we know is an
         // RPB frame).
         //
-        // ppInfo's FpToSpDelta also accounts for the popped pseudo return address
-        // between the original method frame and the OSR frame. So the net adjustment
-        // is simply FpToSpDelta plus one register.
+        // ppInfo's TotalFrameSize also accounts for the popped pseudo return address
+        // between the tier0 method frame and the OSR frame. So the net adjustment
+        // is simply TotalFrameSize plus one register.
         //
+        const int adjustment = ppInfo->TotalFrameSize() + REGSIZE_BYTES;
 
-        const PatchpointInfo* const ppInfo     = info.compPatchpointInfo;
-        const int                   adjustment = ppInfo->FpToSpDelta() + REGSIZE_BYTES;
+#elif defined(TARGET_ARM64)
+
+        const int adjustment = ppInfo->TotalFrameSize();
+#endif
+
         offset -= adjustment;
     }
 #else

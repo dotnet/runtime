@@ -1111,7 +1111,7 @@ HRESULT ShimProcess::CreateProcess(
       Cordb * pCordb,
       ICorDebugRemoteTarget * pRemoteTarget,
       LPCWSTR szProgramName,
-      __in_z LPWSTR  szProgramArgs,
+      _In_z_ LPWSTR  szProgramArgs,
       LPSECURITY_ATTRIBUTES lpProcessAttributes,
       LPSECURITY_ATTRIBUTES lpThreadAttributes,
       BOOL fInheritHandles,
@@ -8624,7 +8624,7 @@ HRESULT CordbProcess::EnableLogMessages(BOOL fOnOff)
 /*
  * ModifyLogSwitch modifies the specified switch's severity level.
  */
-COM_METHOD CordbProcess::ModifyLogSwitch(__in_z WCHAR *pLogSwitchName, LONG lLevel)
+COM_METHOD CordbProcess::ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLevel)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -13674,7 +13674,7 @@ void CordbWin32EventThread::ForceDbgContinue(CordbProcess *pProcess, CordbUnmana
 HRESULT CordbWin32EventThread::SendCreateProcessEvent(
                                   MachineInfo machineInfo,
                                   LPCWSTR programName,
-                                  __in_z LPWSTR  programArgs,
+                                  _In_z_ LPWSTR  programArgs,
                                   LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                   LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                   BOOL bInheritHandles,

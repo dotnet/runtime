@@ -182,13 +182,6 @@ inline WORD MethodTable::GetNumIntroducedInstanceFields()
 }
 
 //==========================================================================================
-inline DWORD MethodTable::GetAlignedNumInstanceFieldBytes()
-{
-    WRAPPER_NO_CONTRACT;
-    return((GetNumInstanceFieldBytes() + 3) & (~3));
-}
-
-//==========================================================================================
 inline PTR_FieldDesc MethodTable::GetApproxFieldDescListRaw()
 {
     WRAPPER_NO_CONTRACT;

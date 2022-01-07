@@ -20,6 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 #include "gcinfo.h"
 #include "emit.h"
+#include "patchpointinfo.h"
 
 //------------------------------------------------------------------------
 // genStackPointerConstantAdjustment: add a specified constant value to the stack pointer.
@@ -462,13 +463,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             instGen(INS_nop);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
             genRangeCheck(treeNode);
             break;
 
@@ -581,6 +576,12 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 
     if (!compiler->getNeedsGSSecurityCookie())
     {
+        return;
+    }
+
+    if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasSecurityCookie())
+    {
+        // Security cookie is on original frame and was initialized there.
         return;
     }
 
@@ -1418,11 +1419,11 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 #endif // FEATURE_SIMD
 
 //------------------------------------------------------------------------
-// genRangeCheck: generate code for GT_ARR_BOUNDS_CHECK node.
+// genRangeCheck: generate code for GT_BOUNDS_CHECK node.
 //
 void CodeGen::genRangeCheck(GenTree* oper)
 {
-    noway_assert(oper->OperIsBoundsCheck());
+    noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
     GenTree* arrLen    = bndsChk->GetArrayLength();
@@ -1882,6 +1883,631 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     }
 }
 
+#ifdef TARGET_ARM64
+
+// The following classes
+//   - InitBlockUnrollHelper
+//   - CopyBlockUnrollHelper
+// encapsulate algorithms that produce instruction sequences for inlined equivalents of memset() and memcpy() functions.
+//
+// Each class has a private template function that accepts an "InstructionStream" as a template class argument:
+//   - InitBlockUnrollHelper::UnrollInitBlock<InstructionStream>(startDstOffset, byteCount, initValue)
+//   - CopyBlockUnrollHelper::UnrollCopyBlock<InstructionStream>(startSrcOffset, startDstOffset, byteCount)
+//
+// The design goal is to separate optimization approaches implemented by the algorithms
+// from the target platform specific details.
+//
+// InstructionStream is a "stream" of load/store instructions (i.e. ldr/ldp/str/stp) that represents an instruction
+// sequence that will initialize a memory region with some value or copy values from one memory region to another.
+//
+// As far as UnrollInitBlock and UnrollCopyBlock concerned, InstructionStream implements the following class member
+// functions:
+//   - LoadPairRegs(offset, regSizeBytes)
+//   - StorePairRegs(offset, regSizeBytes)
+//   - LoadReg(offset, regSizeBytes)
+//   - StoreReg(offset, regSizeBytes)
+//
+// There are three implementations of InstructionStream:
+//   - CountingStream that counts how many instructions were pushed out of the stream
+//   - VerifyingStream that validates that all the instructions in the stream are encodable on Arm64
+//   - ProducingStream that maps the function to corresponding emitter functions
+//
+// The idea behind the design is that decision regarding what instruction sequence to emit
+// (scalar instructions vs. SIMD instructions) is made by execution an algorithm producing an instruction sequence
+// while counting the number of produced instructions and verifying that all the instructions are encodable.
+//
+// For example, using SIMD instructions might produce a shorter sequence but require "spilling" a value of a starting
+// address
+// to an integer register (due to stricter offset alignment rules for 16-byte wide SIMD instructions).
+// This the CodeGen can take this fact into account before emitting an instruction sequence.
+//
+// Alternative design might have had VerifyingStream and ProducingStream fused into one class
+// that would allow to undo an instruction if the sequence is not fully encodable.
+
+class CountingStream
+{
+public:
+    CountingStream()
+    {
+        instrCount = 0;
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        instrCount++;
+    }
+
+    unsigned InstructionCount() const
+    {
+        return instrCount;
+    }
+
+private:
+    unsigned instrCount;
+};
+
+class VerifyingStream
+{
+public:
+    VerifyingStream()
+    {
+        canEncodeAllLoads  = true;
+        canEncodeAllStores = true;
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllLoads = canEncodeAllLoads && emitter::canEncodeLoadOrStorePairOffset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllStores =
+            canEncodeAllStores && emitter::canEncodeLoadOrStorePairOffset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllLoads =
+            canEncodeAllLoads && emitter::emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        canEncodeAllStores =
+            canEncodeAllStores && emitter::emitIns_valid_imm_for_ldst_offset(offset, EA_SIZE(regSizeBytes));
+    }
+
+    bool CanEncodeAllLoads() const
+    {
+        return canEncodeAllLoads;
+    }
+
+    bool CanEncodeAllStores() const
+    {
+        return canEncodeAllStores;
+    }
+
+private:
+    bool canEncodeAllLoads;
+    bool canEncodeAllStores;
+};
+
+class ProducingStreamBaseInstrs
+{
+public:
+    ProducingStreamBaseInstrs(regNumber intReg1, regNumber intReg2, regNumber addrReg, emitter* emitter)
+        : intReg1(intReg1), intReg2(intReg2), addrReg(addrReg), emitter(emitter)
+    {
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert(regSizeBytes == 8);
+
+        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert(regSizeBytes == 8);
+
+        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), intReg1, intReg2, addrReg, offset);
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_ldr;
+
+        if (regSizeBytes == 1)
+        {
+            ins = INS_ldrb;
+        }
+        else if (regSizeBytes == 2)
+        {
+            ins = INS_ldrh;
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), intReg1, addrReg, offset);
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_str;
+
+        if (regSizeBytes == 1)
+        {
+            ins = INS_strb;
+        }
+        else if (regSizeBytes == 2)
+        {
+            ins = INS_strh;
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), intReg1, addrReg, offset);
+    }
+
+private:
+    const regNumber intReg1;
+    const regNumber intReg2;
+    const regNumber addrReg;
+    emitter* const  emitter;
+};
+
+class ProducingStream
+{
+public:
+    ProducingStream(regNumber intReg1, regNumber simdReg1, regNumber simdReg2, regNumber addrReg, emitter* emitter)
+        : intReg1(intReg1), simdReg1(simdReg1), simdReg2(simdReg2), addrReg(addrReg), emitter(emitter)
+    {
+    }
+
+    void LoadPairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        emitter->emitIns_R_R_R_I(INS_ldp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
+    }
+
+    void StorePairRegs(int offset, unsigned regSizeBytes)
+    {
+        assert((regSizeBytes == 8) || (regSizeBytes == 16));
+
+        emitter->emitIns_R_R_R_I(INS_stp, EA_SIZE(regSizeBytes), simdReg1, simdReg2, addrReg, offset);
+    }
+
+    void LoadReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_ldr;
+
+        // Note that 'intReg1' can be unavailable.
+        // If that is the case, then use SIMD instruction ldr and
+        // 'simdReg1' as a temporary register.
+        regNumber tempReg;
+
+        if ((regSizeBytes == 16) || (intReg1 == REG_NA))
+        {
+            tempReg = simdReg1;
+        }
+        else
+        {
+            tempReg = intReg1;
+
+            if (regSizeBytes == 1)
+            {
+                ins = INS_ldrb;
+            }
+            else if (regSizeBytes == 2)
+            {
+                ins = INS_ldrh;
+            }
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
+    }
+
+    void StoreReg(int offset, unsigned regSizeBytes)
+    {
+        instruction ins = INS_str;
+
+        // Note that 'intReg1' can be unavailable.
+        // If that is the case, then use SIMD instruction ldr and
+        // 'simdReg1' as a temporary register.
+        regNumber tempReg;
+
+        if ((regSizeBytes == 16) || (intReg1 == REG_NA))
+        {
+            tempReg = simdReg1;
+        }
+        else
+        {
+            tempReg = intReg1;
+
+            if (regSizeBytes == 1)
+            {
+                ins = INS_strb;
+            }
+            else if (regSizeBytes == 2)
+            {
+                ins = INS_strh;
+            }
+        }
+
+        emitter->emitIns_R_R_I(ins, EA_SIZE(regSizeBytes), tempReg, addrReg, offset);
+    }
+
+private:
+    const regNumber intReg1;
+    const regNumber simdReg1;
+    const regNumber simdReg2;
+    const regNumber addrReg;
+    emitter* const  emitter;
+};
+
+class BlockUnrollHelper
+{
+public:
+    // The following function returns a 'size' bytes that
+    //   1) is greater or equal to 'byteCount' and
+    //   2) can be read or written by a single instruction on Arm64.
+    // For example, Arm64 ISA has ldrb/strb and ldrh/strh that
+    // load/store 1 or 2 bytes, correspondingly.
+    // However, there are no instructions that can load/store 3 bytes and
+    // the next "smallest" instruction is ldr/str that operates on 4 byte granularity.
+    static unsigned GetRegSizeAtLeastBytes(unsigned byteCount)
+    {
+        assert(byteCount != 0);
+        assert(byteCount < 16);
+
+        unsigned regSizeBytes = byteCount;
+
+        if (byteCount > 8)
+        {
+            regSizeBytes = 16;
+        }
+        else if (byteCount > 4)
+        {
+            regSizeBytes = 8;
+        }
+        else if (byteCount > 2)
+        {
+            regSizeBytes = 4;
+        }
+
+        return regSizeBytes;
+    }
+};
+
+class InitBlockUnrollHelper
+{
+public:
+    InitBlockUnrollHelper(int dstOffset, unsigned byteCount) : dstStartOffset(dstOffset), byteCount(byteCount)
+    {
+    }
+
+    int GetDstOffset() const
+    {
+        return dstStartOffset;
+    }
+
+    void SetDstOffset(int dstOffset)
+    {
+        dstStartOffset = dstOffset;
+    }
+
+    bool CanEncodeAllOffsets(int regSizeBytes) const
+    {
+        VerifyingStream instrStream;
+        UnrollInitBlock(instrStream, regSizeBytes);
+
+        return instrStream.CanEncodeAllStores();
+    }
+
+    unsigned InstructionCount(int regSizeBytes) const
+    {
+        CountingStream instrStream;
+        UnrollInitBlock(instrStream, regSizeBytes);
+
+        return instrStream.InstructionCount();
+    }
+
+    void Unroll(regNumber intReg, regNumber simdReg, regNumber addrReg, emitter* emitter) const
+    {
+        ProducingStream instrStream(intReg, simdReg, simdReg, addrReg, emitter);
+        UnrollInitBlock(instrStream, FP_REGSIZE_BYTES);
+    }
+
+    void UnrollBaseInstrs(regNumber intReg, regNumber addrReg, emitter* emitter) const
+    {
+        ProducingStreamBaseInstrs instrStream(intReg, intReg, addrReg, emitter);
+        UnrollInitBlock(instrStream, REGSIZE_BYTES);
+    }
+
+private:
+    template <class InstructionStream>
+    void UnrollInitBlock(InstructionStream& instrStream, int initialRegSizeBytes) const
+    {
+        assert((initialRegSizeBytes == 8) || (initialRegSizeBytes == 16));
+
+        int       offset    = dstStartOffset;
+        const int endOffset = offset + byteCount;
+
+        const int storePairRegsAlignment   = initialRegSizeBytes;
+        const int storePairRegsWritesBytes = 2 * initialRegSizeBytes;
+
+        const int offsetAligned           = AlignUp((UINT)offset, storePairRegsAlignment);
+        const int storePairRegsInstrCount = (endOffset - offsetAligned) / storePairRegsWritesBytes;
+
+        if (storePairRegsInstrCount > 0)
+        {
+            if (offset != offsetAligned)
+            {
+                const int firstRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(offsetAligned - offset);
+                instrStream.StoreReg(offset, firstRegSizeBytes);
+                offset = offsetAligned;
+            }
+
+            while (endOffset - offset >= storePairRegsWritesBytes)
+            {
+                instrStream.StorePairRegs(offset, initialRegSizeBytes);
+                offset += storePairRegsWritesBytes;
+            }
+
+            if (endOffset - offset >= initialRegSizeBytes)
+            {
+                instrStream.StoreReg(offset, initialRegSizeBytes);
+                offset += initialRegSizeBytes;
+            }
+
+            if (offset != endOffset)
+            {
+                const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
+                instrStream.StoreReg(endOffset - lastRegSizeBytes, lastRegSizeBytes);
+            }
+        }
+        else
+        {
+            bool isSafeToWriteBehind = false;
+
+            while (endOffset - offset >= initialRegSizeBytes)
+            {
+                instrStream.StoreReg(offset, initialRegSizeBytes);
+                offset += initialRegSizeBytes;
+                isSafeToWriteBehind = true;
+            }
+
+            assert(endOffset - offset < initialRegSizeBytes);
+
+            while (offset != endOffset)
+            {
+                if (isSafeToWriteBehind)
+                {
+                    assert(endOffset - offset < initialRegSizeBytes);
+                    const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endOffset - offset);
+                    instrStream.StoreReg(endOffset - lastRegSizeBytes, lastRegSizeBytes);
+                    break;
+                }
+
+                if (offset + initialRegSizeBytes > endOffset)
+                {
+                    initialRegSizeBytes = initialRegSizeBytes / 2;
+                }
+                else
+                {
+                    instrStream.StoreReg(offset, initialRegSizeBytes);
+                    offset += initialRegSizeBytes;
+                    isSafeToWriteBehind = true;
+                }
+            }
+        }
+    }
+
+    int            dstStartOffset;
+    const unsigned byteCount;
+};
+
+class CopyBlockUnrollHelper
+{
+public:
+    CopyBlockUnrollHelper(int srcOffset, int dstOffset, unsigned byteCount)
+        : srcStartOffset(srcOffset), dstStartOffset(dstOffset), byteCount(byteCount)
+    {
+    }
+
+    int GetSrcOffset() const
+    {
+        return srcStartOffset;
+    }
+
+    int GetDstOffset() const
+    {
+        return dstStartOffset;
+    }
+
+    void SetSrcOffset(int srcOffset)
+    {
+        srcStartOffset = srcOffset;
+    }
+
+    void SetDstOffset(int dstOffset)
+    {
+        dstStartOffset = dstOffset;
+    }
+
+    unsigned InstructionCount(int regSizeBytes) const
+    {
+        CountingStream instrStream;
+        UnrollCopyBlock(instrStream, instrStream, regSizeBytes);
+
+        return instrStream.InstructionCount();
+    }
+
+    bool CanEncodeAllOffsets(int regSizeBytes) const
+    {
+        bool canEncodeAllLoads  = true;
+        bool canEncodeAllStores = true;
+
+        TryEncodeAllOffsets(regSizeBytes, &canEncodeAllLoads, &canEncodeAllStores);
+        return canEncodeAllLoads && canEncodeAllStores;
+    }
+
+    void TryEncodeAllOffsets(int regSizeBytes, bool* pCanEncodeAllLoads, bool* pCanEncodeAllStores) const
+    {
+        assert(pCanEncodeAllLoads != nullptr);
+        assert(pCanEncodeAllStores != nullptr);
+
+        VerifyingStream instrStream;
+        UnrollCopyBlock(instrStream, instrStream, regSizeBytes);
+
+        *pCanEncodeAllLoads  = instrStream.CanEncodeAllLoads();
+        *pCanEncodeAllStores = instrStream.CanEncodeAllStores();
+    }
+
+    void Unroll(unsigned  initialRegSizeBytes,
+                regNumber intReg,
+                regNumber simdReg1,
+                regNumber simdReg2,
+                regNumber srcAddrReg,
+                regNumber dstAddrReg,
+                emitter*  emitter) const
+    {
+        ProducingStream loadStream(intReg, simdReg1, simdReg2, srcAddrReg, emitter);
+        ProducingStream storeStream(intReg, simdReg1, simdReg2, dstAddrReg, emitter);
+        UnrollCopyBlock(loadStream, storeStream, initialRegSizeBytes);
+    }
+
+    void UnrollBaseInstrs(
+        regNumber intReg1, regNumber intReg2, regNumber srcAddrReg, regNumber dstAddrReg, emitter* emitter) const
+    {
+        ProducingStreamBaseInstrs loadStream(intReg1, intReg2, srcAddrReg, emitter);
+        ProducingStreamBaseInstrs storeStream(intReg1, intReg2, dstAddrReg, emitter);
+        UnrollCopyBlock(loadStream, storeStream, REGSIZE_BYTES);
+    }
+
+private:
+    template <class InstructionStream>
+    void UnrollCopyBlock(InstructionStream& loadStream, InstructionStream& storeStream, int initialRegSizeBytes) const
+    {
+        assert((initialRegSizeBytes == 8) || (initialRegSizeBytes == 16));
+
+        int srcOffset = srcStartOffset;
+        int dstOffset = dstStartOffset;
+
+        const int endSrcOffset = srcOffset + byteCount;
+        const int endDstOffset = dstOffset + byteCount;
+
+        const int storePairRegsAlignment   = initialRegSizeBytes;
+        const int storePairRegsWritesBytes = 2 * initialRegSizeBytes;
+
+        const int dstOffsetAligned = AlignUp((UINT)dstOffset, storePairRegsAlignment);
+
+        if (endDstOffset - dstOffsetAligned >= storePairRegsWritesBytes)
+        {
+            const int dstBytesToAlign = dstOffsetAligned - dstOffset;
+
+            if (dstBytesToAlign != 0)
+            {
+                const int firstRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(dstBytesToAlign);
+
+                loadStream.LoadReg(srcOffset, firstRegSizeBytes);
+                storeStream.StoreReg(dstOffset, firstRegSizeBytes);
+
+                srcOffset = srcOffset + dstBytesToAlign;
+                dstOffset = dstOffsetAligned;
+            }
+
+            while (endDstOffset - dstOffset >= storePairRegsWritesBytes)
+            {
+                loadStream.LoadPairRegs(srcOffset, initialRegSizeBytes);
+                storeStream.StorePairRegs(dstOffset, initialRegSizeBytes);
+
+                srcOffset += storePairRegsWritesBytes;
+                dstOffset += storePairRegsWritesBytes;
+            }
+
+            if (endDstOffset - dstOffset >= initialRegSizeBytes)
+            {
+                loadStream.LoadReg(srcOffset, initialRegSizeBytes);
+                storeStream.StoreReg(dstOffset, initialRegSizeBytes);
+
+                srcOffset += initialRegSizeBytes;
+                dstOffset += initialRegSizeBytes;
+            }
+
+            if (dstOffset != endDstOffset)
+            {
+                const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
+
+                loadStream.LoadReg(endSrcOffset - lastRegSizeBytes, lastRegSizeBytes);
+                storeStream.StoreReg(endDstOffset - lastRegSizeBytes, lastRegSizeBytes);
+            }
+        }
+        else
+        {
+            bool isSafeToWriteBehind = false;
+
+            while (endDstOffset - dstOffset >= initialRegSizeBytes)
+            {
+                loadStream.LoadReg(srcOffset, initialRegSizeBytes);
+                storeStream.StoreReg(dstOffset, initialRegSizeBytes);
+
+                srcOffset += initialRegSizeBytes;
+                dstOffset += initialRegSizeBytes;
+                isSafeToWriteBehind = true;
+            }
+
+            assert(endSrcOffset - srcOffset < initialRegSizeBytes);
+
+            while (dstOffset != endDstOffset)
+            {
+                if (isSafeToWriteBehind)
+                {
+                    const int lastRegSizeBytes = BlockUnrollHelper::GetRegSizeAtLeastBytes(endDstOffset - dstOffset);
+
+                    loadStream.LoadReg(endSrcOffset - lastRegSizeBytes, lastRegSizeBytes);
+                    storeStream.StoreReg(endDstOffset - lastRegSizeBytes, lastRegSizeBytes);
+                    break;
+                }
+
+                if (dstOffset + initialRegSizeBytes > endDstOffset)
+                {
+                    initialRegSizeBytes = initialRegSizeBytes / 2;
+                }
+                else
+                {
+                    loadStream.LoadReg(srcOffset, initialRegSizeBytes);
+                    storeStream.StoreReg(dstOffset, initialRegSizeBytes);
+
+                    srcOffset += initialRegSizeBytes;
+                    dstOffset += initialRegSizeBytes;
+                    isSafeToWriteBehind = true;
+                }
+            }
+        }
+    }
+
+    int            srcStartOffset;
+    int            dstStartOffset;
+    const unsigned byteCount;
+};
+
+#endif // TARGET_ARM64
+
 //----------------------------------------------------------------------------------
 // genCodeForInitBlkUnroll: Generate unrolled block initialization code.
 //
@@ -1915,27 +2541,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
 
-    regNumber srcReg;
-    GenTree*  src = node->Data();
+    GenTree* src = node->Data();
 
     if (src->OperIs(GT_INIT_VAL))
     {
         assert(src->isContained());
         src = src->gtGetOp1();
-    }
-
-    if (!src->isContained())
-    {
-        srcReg = genConsumeReg(src);
-    }
-    else
-    {
-#ifdef TARGET_ARM64
-        assert(src->IsIntegralConst(0));
-        srcReg = REG_ZR;
-#else
-        unreached();
-#endif
     }
 
     if (node->IsVolatile())
@@ -1950,18 +2561,85 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
 #ifdef TARGET_ARM64
-    for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize; size -= regSize, dstOffset += regSize)
+    InitBlockUnrollHelper helper(dstOffset, size);
+
+    regNumber srcReg;
+
+    if (!src->isContained())
     {
-        if (dstLclNum != BAD_VAR_NUM)
-        {
-            emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, srcReg, srcReg, dstLclNum, dstOffset);
-        }
-        else
-        {
-            emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, srcReg, srcReg, dstAddrBaseReg, dstOffset);
-        }
+        srcReg = genConsumeReg(src);
     }
-#endif
+    else
+    {
+        assert(src->IsIntegralConst(0));
+        srcReg = REG_ZR;
+    }
+
+    regNumber dstReg                     = dstAddrBaseReg;
+    int       dstRegAddrAlignment        = 0;
+    bool      isDstRegAddrAlignmentKnown = false;
+
+    if (dstLclNum != BAD_VAR_NUM)
+    {
+        bool      fpBased;
+        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
+
+        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        isDstRegAddrAlignmentKnown = true;
+
+        helper.SetDstOffset(baseAddr + dstOffset);
+    }
+
+    if (!helper.CanEncodeAllOffsets(REGSIZE_BYTES))
+    {
+        // If dstRegAddrAlignment is known and non-zero the following ensures that the adjusted value of dstReg is at
+        // 16-byte aligned boundary.
+        // This is done to potentially allow more cases where the JIT can use 16-byte stores.
+        const int dstOffsetAdjustment = helper.GetDstOffset() - dstRegAddrAlignment;
+        dstRegAddrAlignment           = 0;
+
+        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
+        dstReg = tempReg;
+
+        helper.SetDstOffset(helper.GetDstOffset() - dstOffsetAdjustment);
+    }
+
+    bool shouldUse16ByteWideInstrs = false;
+
+    // Store operations that cross a 16-byte boundary reduce bandwidth or incur additional latency.
+    // The following condition prevents using 16-byte stores when dstRegAddrAlignment is:
+    //   1) unknown (i.e. dstReg is neither FP nor SP) or
+    //   2) non-zero (i.e. dstRegAddr is not 16-byte aligned).
+    const bool hasAvailableSimdReg = isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES);
+    const bool canUse16ByteWideInstrs =
+        hasAvailableSimdReg && (dstRegAddrAlignment == 0) && helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES);
+
+    if (canUse16ByteWideInstrs)
+    {
+        // The JIT would need to initialize a SIMD register with "movi simdReg.16B, #initValue".
+        const unsigned instrCount16ByteWide = helper.InstructionCount(FP_REGSIZE_BYTES) + 1;
+        shouldUse16ByteWideInstrs           = instrCount16ByteWide < helper.InstructionCount(REGSIZE_BYTES);
+    }
+
+    if (shouldUse16ByteWideInstrs)
+    {
+        const regNumber simdReg = node->GetSingleTempReg(RBM_ALLFLOAT);
+
+        const int initValue = (src->AsIntCon()->IconValue() & 0xFF);
+        emit->emitIns_R_I(INS_movi, EA_16BYTE, simdReg, initValue, INS_OPTS_16B);
+
+        helper.Unroll(srcReg, simdReg, dstReg, GetEmitter());
+    }
+    else
+    {
+        helper.UnrollBaseInstrs(srcReg, dstReg, GetEmitter());
+    }
+#endif // TARGET_ARM64
+
+#ifdef TARGET_ARM
+    const regNumber srcReg = genConsumeReg(src);
 
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, dstOffset += regSize)
     {
@@ -1984,9 +2662,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
                 attr     = EA_4BYTE;
                 break;
             case 4:
-#ifdef TARGET_ARM64
-            case 8:
-#endif
                 storeIns = INS_str;
                 attr     = EA_ATTR(regSize);
                 break;
@@ -2003,6 +2678,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             emit->emitIns_R_R_I(storeIns, attr, srcReg, dstAddrBaseReg, dstOffset);
         }
     }
+#endif // TARGET_ARM
 }
 
 //----------------------------------------------------------------------------------
@@ -2033,15 +2709,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        // TODO-ARM-CQ: If the local frame offset is too large to be encoded, the emitter automatically
-        // loads the offset into a reserved register (see CodeGen::rsGetRsvdReg()). If we generate
-        // multiple store instructions we'll also generate multiple offset loading instructions.
-        // We could try to detect such cases, compute the base destination address in this reserved
-        // and use it in all store instructions we generate. This would effectively undo the effect
-        // of local address containment done by lowering.
-        //
-        // The same issue also occurs in source address case below and in genCodeForInitBlkUnroll.
-
         assert(dstAddr->OperIsLocalAddr());
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
@@ -2094,36 +2761,232 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     assert(srcOffset < INT32_MAX - static_cast<int>(size));
     assert(dstOffset < INT32_MAX - static_cast<int>(size));
 
-    regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
-
 #ifdef TARGET_ARM64
-    if (size >= 2 * REGSIZE_BYTES)
+    CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
+
+    regNumber srcReg                     = srcAddrBaseReg;
+    int       srcRegAddrAlignment        = 0;
+    bool      isSrcRegAddrAlignmentKnown = false;
+
+    if (srcLclNum != BAD_VAR_NUM)
     {
-        regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
+        bool      fpBased;
+        const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        for (unsigned regSize = 2 * REGSIZE_BYTES; size >= regSize;
-             size -= regSize, srcOffset += regSize, dstOffset += regSize)
+        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        srcRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        isSrcRegAddrAlignmentKnown = true;
+
+        helper.SetSrcOffset(baseAddr + srcOffset);
+    }
+
+    regNumber dstReg                     = dstAddrBaseReg;
+    int       dstRegAddrAlignment        = 0;
+    bool      isDstRegAddrAlignmentKnown = false;
+
+    if (dstLclNum != BAD_VAR_NUM)
+    {
+        bool      fpBased;
+        const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
+
+        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstRegAddrAlignment        = fpBased ? (genSPtoFPdelta() % 16) : 0;
+        isDstRegAddrAlignmentKnown = true;
+
+        helper.SetDstOffset(baseAddr + dstOffset);
+    }
+
+    bool canEncodeAllLoads  = true;
+    bool canEncodeAllStores = true;
+    helper.TryEncodeAllOffsets(REGSIZE_BYTES, &canEncodeAllLoads, &canEncodeAllStores);
+
+    srcOffset = helper.GetSrcOffset();
+    dstOffset = helper.GetDstOffset();
+
+    int srcOffsetAdjustment = 0;
+    int dstOffsetAdjustment = 0;
+
+    if (!canEncodeAllLoads && !canEncodeAllStores)
+    {
+        srcOffsetAdjustment = srcOffset;
+        dstOffsetAdjustment = dstOffset;
+    }
+    else if (!canEncodeAllLoads)
+    {
+        srcOffsetAdjustment = srcOffset - dstOffset;
+    }
+    else if (!canEncodeAllStores)
+    {
+        dstOffsetAdjustment = dstOffset - srcOffset;
+    }
+
+    helper.SetSrcOffset(srcOffset - srcOffsetAdjustment);
+    helper.SetDstOffset(dstOffset - dstOffsetAdjustment);
+
+    // Quad-word load operations that are not 16-byte aligned, and store operations that cross a 16-byte boundary
+    // can reduce bandwidth or incur additional latency.
+    // Therefore, the JIT would attempt to use 16-byte variants of such instructions when both conditions are met:
+    //   1) the base address stored in dstReg has known alignment (modulo 16 bytes) and
+    //   2) the base address stored in srcReg has the same alignment as the address in dstReg.
+    //
+    // When both addresses are 16-byte aligned the CopyBlock instruction sequence looks like
+    //
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset]
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #dstOffset+32]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+32]
+    // ...
+    //
+    // When both addresses are not 16-byte aligned the CopyBlock instruction sequence starts with padding
+    // str instruction. For example, when both addresses are 8-byte aligned the instruction sequence looks like
+    //
+    // ldr D_simdReg1, [srcReg, #srcOffset]
+    // str D_simdReg1, [dstReg, #dstOffset]
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+8]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+8]
+    // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+40]
+    // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+40]
+    // ...
+
+    // LSRA allocates a pair of SIMD registers when alignments of both source and destination base addresses are
+    // known and the block size is larger than a single SIMD register size (i.e. when using SIMD instructions can
+    // be profitable).
+
+    const bool canUse16ByteWideInstrs = isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&
+                                        (size >= FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
+
+    bool shouldUse16ByteWideInstrs = false;
+
+    if (canUse16ByteWideInstrs)
+    {
+        bool canEncodeAll16ByteWideLoads  = false;
+        bool canEncodeAll16ByteWideStores = false;
+        helper.TryEncodeAllOffsets(FP_REGSIZE_BYTES, &canEncodeAll16ByteWideLoads, &canEncodeAll16ByteWideStores);
+
+        if (canEncodeAll16ByteWideLoads && canEncodeAll16ByteWideStores)
         {
-            if (srcLclNum != BAD_VAR_NUM)
-            {
-                emit->emitIns_R_R_S_S(INS_ldp, EA_8BYTE, EA_8BYTE, tempReg, tempReg2, srcLclNum, srcOffset);
-            }
-            else
-            {
-                emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tempReg, tempReg2, srcAddrBaseReg, srcOffset);
-            }
+            // No further adjustments for srcOffset and dstOffset are needed.
+            // The JIT should use 16-byte loads and stores when the resulting sequence has fewer number of instructions.
 
-            if (dstLclNum != BAD_VAR_NUM)
+            shouldUse16ByteWideInstrs =
+                (helper.InstructionCount(FP_REGSIZE_BYTES) < helper.InstructionCount(REGSIZE_BYTES));
+        }
+        else if (canEncodeAllLoads && canEncodeAllStores &&
+                 (canEncodeAll16ByteWideLoads || canEncodeAll16ByteWideStores))
+        {
+            // In order to use 16-byte instructions the JIT needs to adjust either srcOffset or dstOffset.
+            // The JIT should use 16-byte loads and stores when the resulting sequence (incl. an additional add
+            // instruction)
+            // has fewer number of instructions.
+
+            if (helper.InstructionCount(FP_REGSIZE_BYTES) + 1 < helper.InstructionCount(REGSIZE_BYTES))
             {
-                emit->emitIns_S_S_R_R(INS_stp, EA_8BYTE, EA_8BYTE, tempReg, tempReg2, dstLclNum, dstOffset);
-            }
-            else
-            {
-                emit->emitIns_R_R_R_I(INS_stp, EA_8BYTE, tempReg, tempReg2, dstAddrBaseReg, dstOffset);
+                shouldUse16ByteWideInstrs = true;
+
+                if (!canEncodeAll16ByteWideLoads)
+                {
+                    srcOffsetAdjustment = srcOffset - dstOffset;
+                }
+                else
+                {
+                    dstOffsetAdjustment = dstOffset - srcOffset;
+                }
+
+                helper.SetSrcOffset(srcOffset - srcOffsetAdjustment);
+                helper.SetDstOffset(dstOffset - dstOffsetAdjustment);
             }
         }
     }
+
+#ifdef DEBUG
+    if (shouldUse16ByteWideInstrs)
+    {
+        assert(helper.CanEncodeAllOffsets(FP_REGSIZE_BYTES));
+    }
+    else
+    {
+        assert(helper.CanEncodeAllOffsets(REGSIZE_BYTES));
+    }
 #endif
+
+    if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
+    {
+        const regNumber tempReg1 = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg1, srcReg, srcOffsetAdjustment, tempReg1);
+        srcReg = tempReg1;
+
+        const regNumber tempReg2 = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg2, dstReg, dstOffsetAdjustment, tempReg2);
+        dstReg = tempReg2;
+    }
+    else if (srcOffsetAdjustment != 0)
+    {
+        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, srcReg, srcOffsetAdjustment, tempReg);
+        srcReg = tempReg;
+    }
+    else if (dstOffsetAdjustment != 0)
+    {
+        const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, tempReg, dstReg, dstOffsetAdjustment, tempReg);
+        dstReg = tempReg;
+    }
+
+    regNumber intReg1 = REG_NA;
+    regNumber intReg2 = REG_NA;
+
+    const unsigned intRegCount = node->AvailableTempRegCount(RBM_ALLINT);
+
+    switch (intRegCount)
+    {
+        case 1:
+            intReg1 = node->GetSingleTempReg(RBM_ALLINT);
+            break;
+        case 2:
+            intReg1 = node->ExtractTempReg(RBM_ALLINT);
+            intReg2 = node->GetSingleTempReg(RBM_ALLINT);
+            break;
+        default:
+            break;
+    }
+
+    regNumber simdReg1 = REG_NA;
+    regNumber simdReg2 = REG_NA;
+
+    const unsigned simdRegCount = node->AvailableTempRegCount(RBM_ALLFLOAT);
+
+    switch (simdRegCount)
+    {
+        case 1:
+            simdReg1 = node->GetSingleTempReg(RBM_ALLFLOAT);
+            break;
+        case 2:
+            simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
+            simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
+            break;
+        default:
+            break;
+    }
+
+    if (shouldUse16ByteWideInstrs)
+    {
+        helper.Unroll(FP_REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
+    }
+    else
+    {
+        if (intReg2 == REG_NA)
+        {
+            helper.Unroll(REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
+        }
+        else
+        {
+            helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
+        }
+    }
+#endif // TARGET_ARM64
+
+#ifdef TARGET_ARM
+    const regNumber tempReg = node->ExtractTempReg(RBM_ALLINT);
 
     for (unsigned regSize = REGSIZE_BYTES; size > 0; size -= regSize, srcOffset += regSize, dstOffset += regSize)
     {
@@ -2149,9 +3012,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
                 attr     = EA_4BYTE;
                 break;
             case 4:
-#ifdef TARGET_ARM64
-            case 8:
-#endif
                 loadIns  = INS_ldr;
                 storeIns = INS_str;
                 attr     = EA_ATTR(regSize);
@@ -2178,6 +3038,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             emit->emitIns_R_R_I(storeIns, attr, tempReg, dstAddrBaseReg, dstOffset);
         }
     }
+#endif // TARGET_ARM
 
     if (node->IsVolatile())
     {
