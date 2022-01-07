@@ -1293,6 +1293,9 @@ namespace Mono.Linker.Dataflow
 
 									if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
 										propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicProperties;
+
+									if (dynamicallyAccessedMemberNode.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces))
+										propagatedMemberTypes |= DynamicallyAccessedMemberTypes.Interfaces;
 								}
 
 								methodReturnValue = MergePointValue.MergeValues (methodReturnValue, CreateMethodReturnValue (calledMethod, propagatedMemberTypes));
