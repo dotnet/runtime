@@ -9243,7 +9243,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         break;
 
                     default:
-                        // The default action is to give the node a new, unique VN.
+                        assert(!"Unhandled node in fgValueNumberTree");
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                         break;
                 }
@@ -9311,7 +9311,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
 
             default:
+                assert(!"Unhandled special node in fgValueNumberTree");
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                break;
         }
     }
 #ifdef DEBUG
