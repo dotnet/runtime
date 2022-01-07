@@ -659,7 +659,7 @@ void LoadScope(ISymUnmanagedScope       *pIScope,
 }
 //#define SHOW_LEXICAL_SCOPES
 void OpenScope(ISymUnmanagedScope                        *pIScope,
-               __inout_ecount(ulLocals) ParamDescriptor  *pLV,
+               _Inout_updates_(ulLocals) ParamDescriptor  *pLV,
                ULONG                                     ulLocals)
 {
     ULONG32 dummy;
@@ -726,7 +726,7 @@ void OpenScope(ISymUnmanagedScope                        *pIScope,
 
 char* DumpUnicodeString(void* GUICookie,
                         __inout __nullterminated char* szString,
-                        __in_ecount(cbString) WCHAR* pszString,
+                        _In_reads_(cbString) WCHAR* pszString,
                         ULONG cbString,
                         bool SwapString )
 {
@@ -795,7 +795,7 @@ DumpAsByteArray:
 }
 
 // helper to avoid mixing of SEH and stack objects with destructors
-BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, __out_ecount(nSize) WCHAR* pFileName, UINT nSize)
+BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize) WCHAR* pFileName, UINT nSize)
 {
     _ASSERTE(nSize > 0);
     memset(pFileName, 0, nSize * sizeof(WCHAR));

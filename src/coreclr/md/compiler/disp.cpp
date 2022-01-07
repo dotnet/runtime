@@ -369,7 +369,7 @@ ErrExit:
 //*****************************************************************************
 HRESULT
 Disp::GetCORSystemDirectory(
-    __out_ecount (cchBuffer) LPWSTR szBuffer,      // [out] Buffer for the directory name
+    _Out_writes_ (cchBuffer) LPWSTR szBuffer,      // [out] Buffer for the directory name
     DWORD                           cchBuffer,     // [in] Size of the buffer
     DWORD                          *pcchBuffer)    // [out] Number of characters returned
 {
@@ -401,7 +401,7 @@ HRESULT Disp::FindAssemblyModule(           // S_OK or error
     LPCWSTR     szGlobalBin,                // [IN] optional - can be NULL
     LPCWSTR     szAssemblyName,             // [IN] The assembly name or code base of the assembly
     LPCWSTR     szModuleName,               // [IN] required - the name of the module
-    __out_ecount (cchName) LPWSTR  szName,  // [OUT] buffer - to hold name
+    _Out_writes_ (cchName) LPWSTR  szName,  // [OUT] buffer - to hold name
     ULONG       cchName,                    // [IN]  the name buffer's size
     ULONG       *pcName)                    // [OUT] the number of characters returend in the buffer
 {

@@ -646,7 +646,7 @@ extern "C" {
 // These two functions are largely just for marking code
 // that is not fully converted.  DacWarning prints a debug
 // message, while DacNotImpl throws a not-implemented exception.
-void __cdecl DacWarning(_In_ __in_z char* format, ...);
+void __cdecl DacWarning(_In_ _In_z_ char* format, ...);
 void DacNotImpl(void);
 
 void    DacError(HRESULT err);

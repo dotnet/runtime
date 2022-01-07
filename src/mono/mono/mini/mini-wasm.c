@@ -40,44 +40,6 @@ struct CallInfo {
 	ArgInfo args [1];
 };
 
-/* Return whenever TYPE represents a vtype with only one scalar member */
-static gboolean
-is_scalar_vtype (MonoType *type)
-{
-	MonoClass *klass;
-	MonoClassField *field;
-	gpointer iter;
-
-	if (!MONO_TYPE_ISSTRUCT (type))
-		return FALSE;
-	klass = mono_class_from_mono_type_internal (type);
-	mono_class_init_internal (klass);
-
-	int size = mono_class_value_size (klass, NULL);
-	if (size == 0 || size >= 8)
-		return FALSE;
-
-	iter = NULL;
-	int nfields = 0;
-	field = NULL;
-	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-		nfields ++;
-		if (nfields > 1)
-			return FALSE;
-		MonoType *t = mini_get_underlying_type (field->type);
-		if (MONO_TYPE_ISSTRUCT (t)) {
-			if (!is_scalar_vtype (t))
-				return FALSE;
-		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t)))) {
-			return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
 // WASM ABI: https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
 
 static ArgStorage
@@ -117,7 +79,7 @@ get_storage (MonoType *type, gboolean is_return)
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
-		if (is_scalar_vtype (type))
+		if (mini_wasm_is_scalar_vtype (type))
 			return ArgVtypeAsScalar;
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
@@ -828,4 +790,42 @@ int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;
+}
+
+/* Return whenever TYPE represents a vtype with only one scalar member */
+gboolean
+mini_wasm_is_scalar_vtype (MonoType *type)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	gpointer iter;
+
+	if (!MONO_TYPE_ISSTRUCT (type))
+		return FALSE;
+	klass = mono_class_from_mono_type_internal (type);
+	mono_class_init_internal (klass);
+
+	int size = mono_class_value_size (klass, NULL);
+	if (size == 0 || size >= 8)
+		return FALSE;
+
+	iter = NULL;
+	int nfields = 0;
+	field = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		nfields ++;
+		if (nfields > 1)
+			return FALSE;
+		MonoType *t = mini_get_underlying_type (field->type);
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			if (!mini_wasm_is_scalar_vtype (t))
+				return FALSE;
+		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

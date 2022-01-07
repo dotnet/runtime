@@ -238,6 +238,10 @@
       <Uri>https://github.com/dotnet/linker</Uri>
       <Sha>1a6468ff722c8d362f37638989ec01ab9975ac28</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22053.2">
+      <Uri>https://github.com/dotnet/xharness</Uri>
+      <Sha>7c293e5b676eb5b57418f775587badad65ec07f5</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Xunit" Version="1.0.0-prerelease.22053.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
       <Sha>7c293e5b676eb5b57418f775587badad65ec07f5</Sha>

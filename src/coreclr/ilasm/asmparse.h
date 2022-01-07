@@ -24,7 +24,7 @@ public:
 
     // read at most 'buffLen' bytes into 'buff', Return the
         // number of characters read.  On EOF return 0
-    virtual unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen) = 0;
+    virtual unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen) = 0;
 
         // Return the name of the stream, (for error reporting).
     //virtual const char* name() = 0;
@@ -54,7 +54,7 @@ public:
         *ppbuff = m_pStart;
         return m_pBS->length();
     };
-    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen)
+    unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen)
     {
         _ASSERTE(m_pStart != NULL);
         unsigned Remainder = (unsigned)(m_pEnd - m_pCurr);
@@ -129,7 +129,7 @@ public:
         *pbuff = m_pStart;
         return m_FileSize;
     }
-    unsigned read(__out_ecount(buffLen) char* buff, unsigned buffLen)
+    unsigned read(_Out_writes_(buffLen) char* buff, unsigned buffLen)
     {
         _ASSERTE(m_pStart != NULL);
         unsigned Remainder = (unsigned)(m_pEnd - m_pCurr);
@@ -225,13 +225,13 @@ unsigned SymW(_In_ __nullterminated char* curPos);
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEWSTRFROMTOKEN)(char*,size_t);
 
-char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen);
-char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen);
+char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen);
+char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen);
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEWSTATICSTRFROMTOKEN)(char*,size_t,char*,size_t);
 
-char* NewStaticStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize);
-char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize);
+char* NewStaticStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize);
+char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize);
 /*--------------------------------------------------------------------------*/
 typedef unsigned(*PFN_GETDOUBLE)(char*,unsigned,double**);
 
@@ -298,7 +298,7 @@ private:
     BinStr* MakeTypeClass(CorElementType kind, mdToken tk);
     BinStr* MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds);
 
-    char* fillBuff(__in_opt __nullterminated char* curPos);   // refill the input buffer
+    char* fillBuff(_In_opt_z_ char* curPos);   // refill the input buffer
     HANDLE hstdout;
     HANDLE hstderr;
 
@@ -309,7 +309,7 @@ private:
     friend int yylex();
     friend Instr* SetupInstr(unsigned short opcode);
     friend int findKeyword(const char* name, size_t nameLen, unsigned short* opcode);
-    friend TypeDefDescr* findTypedef(__in_ecount(nameLen) char* name, size_t nameLen);
+    friend TypeDefDescr* findTypedef(_In_reads_(nameLen) char* name, size_t nameLen);
     friend char* skipBlanks(_In_ __nullterminated char*,unsigned*);
     friend char* nextBlank(_In_ __nullterminated char*);
     friend int ProcessEOF();

@@ -19,6 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)Interop\Unix\libc\Interop.GetParentPid.cs" Link="Common\Interop\Unix\libc\Interop.GetParentPid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Hosting\src\Microsoft.Extensions.Hosting.csproj" />
   </ItemGroup>
 

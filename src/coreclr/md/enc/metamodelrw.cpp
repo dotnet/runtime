@@ -3998,7 +3998,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::Impl_GetStringW(
                              ULONG  ix,
-    __out_ecount (cchBuffer) LPWSTR szOut,
+    _Out_writes_ (cchBuffer) LPWSTR szOut,
                              ULONG  cchBuffer,
                              ULONG *pcchBuffer)
 {

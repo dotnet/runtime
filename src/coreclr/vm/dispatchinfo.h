@@ -68,7 +68,7 @@ struct DispatchMemberInfo
     }
 
     // This method retrieves the ID's of the specified names.
-    HRESULT GetIDsOfParameters(__in_ecount(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive);
+    HRESULT GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astrNames, int NumNames, DISPID *aDispIds, BOOL bCaseSensitive);
 
     // Accessors.
     PTRARRAYREF GetParameters();

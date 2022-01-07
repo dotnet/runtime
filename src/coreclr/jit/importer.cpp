@@ -9950,6 +9950,22 @@ DONE_CALL:
             }
             else
             {
+                // If the call is virtual, and has a generics context, and is not going to have a class probe,
+                // record the context for possible use during late devirt.
+                //
+                // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
+                // important devirtualizations, we'll want to allow both a class probe and a captured context.
+                //
+                if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
+                    (origCall->gtClassProfileCandidateInfo == nullptr))
+                {
+                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    origCall->gtCallMoreFlags |= GTF_CALL_M_LATE_DEVIRT;
+                    LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
+                    info->exactContextHnd                = exactContextHnd;
+                    origCall->gtLateDevirtualizationInfo = info;
+                }
+
                 if (isFatPointerCandidate)
                 {
                     // fatPointer candidates should be in statements of the form call() or var = call().
@@ -19925,7 +19941,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pInfo->guardedClassHandle              = nullptr;
                 pInfo->guardedMethodHandle             = nullptr;
                 pInfo->guardedMethodUnboxedEntryHandle = nullptr;
-                pInfo->stubAddr                        = nullptr;
                 pInfo->likelihood                      = 0;
                 pInfo->requiresInstMethodTableArg      = false;
             }
@@ -20936,15 +20951,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             dspTreeID(call));
 
     call->ClearGuardedDevirtualizationCandidate();
-
-    // If we have a stub address, restore it back into the union that it shares
-    // with the candidate info.
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
-        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -21432,14 +21438,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             // Record some info needed for the class profiling probe.
             //
-            pInfo->ilOffset   = ilOffset;
-            pInfo->probeIndex = info.compClassProbeCount++;
-            pInfo->stubAddr   = call->gtStubCallStubAddr;
-
-            // note this overwrites gtCallStubAddr, so it needs to be undone
-            // during the instrumentation phase, or we won't generate proper
-            // code for vsd calls.
-            //
+            pInfo->ilOffset                   = ilOffset;
+            pInfo->probeIndex                 = info.compClassProbeCount++;
             call->gtClassProfileCandidateInfo = pInfo;
 
             // Flag block as needing scrutiny
@@ -22557,18 +22557,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
             pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
             pInfo->requiresInstMethodTableArg      = requiresInstMethodTableArg;
         }
-    }
-
-    // Save off the stub address since it shares a union with the candidate info.
-    //
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("Saving stub addr %p in candidate info\n", dspPtr(call->gtStubCallStubAddr));
-        pInfo->stubAddr = call->gtStubCallStubAddr;
-    }
-    else
-    {
-        pInfo->stubAddr = nullptr;
     }
 
     call->gtGuardedDevirtualizationCandidateInfo = pInfo;

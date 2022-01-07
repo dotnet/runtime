@@ -5,7 +5,13 @@
     <IsPackable>false</IsPackable>
     <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
+    <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
+             Link="Common\SourceGenerators\LiveReferencePack.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
