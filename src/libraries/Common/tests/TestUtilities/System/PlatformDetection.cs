@@ -72,6 +72,7 @@ namespace System
         public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
         public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
+        public static string Host => Environment.GetEnvironmentVariable("Host");
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
