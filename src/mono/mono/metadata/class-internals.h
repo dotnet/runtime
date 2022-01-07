@@ -1231,7 +1231,7 @@ mono_class_get_generic_container (MonoClass *klass);
 gpointer
 mono_class_alloc (MonoClass *klass, int size);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_class_alloc0 (MonoClass *klass, int size);
 
 #define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 ((klass), (size))))

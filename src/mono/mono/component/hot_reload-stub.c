@@ -21,7 +21,7 @@ static MonoComponentHotReload *
 component_hot_reload_stub_init (void);
 
 static void
-hot_reload_stub_set_fastpath_data (MonoMetadataUpdateData *ptr);
+hot_reload_stub_set_fastpath_data (MonoMetadataUpdateData *ptr, MonoDefaults *mono_defaults);
 
 static gboolean
 hot_reload_stub_update_enabled (int *modifiable_assemblies_out);
@@ -130,7 +130,7 @@ component_hot_reload_stub_init (void)
 }
 
 void
-hot_reload_stub_set_fastpath_data (MonoMetadataUpdateData *ptr)
+hot_reload_stub_set_fastpath_data (MonoMetadataUpdateData *ptr, MonoDefaults *mono_defaults)
 {
 }
 

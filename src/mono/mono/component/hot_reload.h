@@ -8,6 +8,7 @@
 #include <glib.h>
 #include "mono/metadata/object-forward.h"
 #include "mono/metadata/metadata-internals.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/metadata/metadata-update.h"
 #include "mono/utils/bsearch.h"
 #include "mono/utils/mono-error.h"
@@ -16,7 +17,7 @@
 
 typedef struct _MonoComponentHotReload {
 	MonoComponent component;
-	void (*set_fastpath_data) (MonoMetadataUpdateData *data);
+	void (*set_fastpath_data) (MonoMetadataUpdateData *data, MonoDefaults *mono_defaults);
 	gboolean (*update_enabled) (int *modifiable_assemblies_out);
 	gboolean (*no_inline) (MonoMethod *caller, MonoMethod *callee);
 	uint32_t (*thread_expose_published) (void);

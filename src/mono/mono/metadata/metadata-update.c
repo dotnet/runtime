@@ -12,6 +12,7 @@
 
 #include "mono/metadata/metadata-update.h"
 #include "mono/metadata/components.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/component/hot_reload.h"
 
 gboolean
@@ -27,7 +28,7 @@ mono_metadata_update_init (void)
 {
 	memset (&mono_metadata_update_data_private, 0, sizeof (mono_metadata_update_data_private));
 	MonoComponentHotReload *comp = mono_component_hot_reload ();
-	comp->set_fastpath_data (&mono_metadata_update_data_private);
+	comp->set_fastpath_data (&mono_metadata_update_data_private, &mono_defaults);
 }
 
 gboolean

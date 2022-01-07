@@ -46,7 +46,7 @@ static bool
 hot_reload_available (void);
 
 static void
-hot_reload_set_fastpath_data (MonoMetadataUpdateData *data);
+hot_reload_set_fastpath_data (MonoMetadataUpdateData *data, MonoDefaults *mono_defaults);
 
 static gboolean
 hot_reload_update_enabled (int *modifiable_assemblies_out);
@@ -151,6 +151,56 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_find_method_by_name,
 };
 
+static MonoDefaults *hr_mono_defaults;
+
+#define HR_GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
+MonoClass* mono_class_get_##shortname##_class (void);
+
+#define HR_GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(shortname) \
+MonoClass* mono_class_try_get_##shortname##_class (void);
+
+// GENERATE_GET_CLASS_WITH_CACHE attempts mono_class_load_from_name whenever
+// its cache is null. i.e. potentially repeatedly, though it is expected to succeed
+// the first time.
+//
+#define HR_GENERATE_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
+MonoClass*	\
+mono_class_get_##shortname##_class (void)	\
+{	\
+	static MonoClass *tmp_class;	\
+	MonoClass *klass = tmp_class;	\
+	if (!klass) {	\
+		klass = mono_class_load_from_name (hr_mono_defaults->corlib, name_space, name);	\
+		mono_memory_barrier ();	/* FIXME excessive? */ \
+		tmp_class = klass;	\
+	}	\
+	return klass;	\
+}
+
+// GENERATE_TRY_GET_CLASS_WITH_CACHE attempts mono_class_load_from_name approximately
+// only once. i.e. if it fails, it will return null and not retry.
+// In a race it might try a few times, but not indefinitely.
+//
+// FIXME This maybe has excessive volatile/barriers.
+//
+#define HR_GENERATE_TRY_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
+MonoClass*	\
+mono_class_try_get_##shortname##_class (void)	\
+{	\
+	static volatile MonoClass *tmp_class;	\
+	static volatile gboolean inited;	\
+	MonoClass *klass = (MonoClass *)tmp_class;	\
+	mono_memory_barrier ();	\
+	if (!inited) {	\
+		klass = mono_class_try_load_from_name (hr_mono_defaults->corlib, name_space, name);	\
+		tmp_class = klass;	\
+		mono_memory_barrier ();	\
+		inited = TRUE;	\
+	}	\
+	return klass;	\
+}
+
+
 MonoComponentHotReload *
 mono_component_hot_reload_init (void)
 {
@@ -167,9 +217,10 @@ hot_reload_available (void)
 static MonoMetadataUpdateData* metadata_update_data_ptr;
 
 static void
-hot_reload_set_fastpath_data (MonoMetadataUpdateData *ptr)
+hot_reload_set_fastpath_data (MonoMetadataUpdateData *ptr, MonoDefaults *mono_defaults)
 {
 	metadata_update_data_ptr = ptr;
+	hr_mono_defaults = mono_defaults;
 }
 
 /* TLS value is a uint32_t of the latest published generation that the thread can see */
@@ -2484,9 +2535,9 @@ class_runtime_info_static_fields_unlock (MonoClassRuntimeMetadataUpdateInfo *run
 	mono_coop_mutex_unlock (&runtime_info->static_fields_lock);
 }
 
-static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_field_store);
+static HR_GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_field_store);
 
-GENERATE_GET_CLASS_WITH_CACHE(hot_reload_field_store, "Mono.HotReload", "FieldStore");
+static HR_GENERATE_GET_CLASS_WITH_CACHE(hot_reload_field_store, "Mono.HotReload", "FieldStore");
 
 
 static MonoObject*
