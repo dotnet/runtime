@@ -5952,8 +5952,7 @@ void ValueNumStore::vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc)
     GetVNFunc(excVN, &excSeq);
 
     printf("norm=");
-    printf(FMT_VN, normVN);
-    vnDump(comp, normVN);
+    comp->vnPrint(normVN, 1);
     printf(", exc=");
     printf(FMT_VN, excVN);
     vnDumpExcSeq(comp, &excSeq, true);
