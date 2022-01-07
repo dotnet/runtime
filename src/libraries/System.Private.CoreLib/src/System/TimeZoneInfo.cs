@@ -1370,8 +1370,7 @@ namespace System
             DateTime startTime;
             if (rule.IsStartDateMarkerForBeginningOfYear() && daylightTime.Start.Year > DateTime.MinValue.Year)
             {
-                startTime = GetStartOfDstIfYearEndWithDst(daylightTime.Start.Year - 1, utc, zone);
-                if (startTime != default)
+                if (TryGetStartOfDstIfYearEndWithDst(daylightTime.Start.Year - 1, utc, zone, out startTime))
                 {
                     ignoreYearAdjustment = true;
                 }
@@ -1389,8 +1388,7 @@ namespace System
             DateTime endTime;
             if (rule.IsEndDateMarkerForEndOfYear() && daylightTime.End.Year < DateTime.MaxValue.Year)
             {
-                endTime = GetEndOfDstIfYearStartWithDst(daylightTime.End.Year + 1, utc, zone);
-                if (endTime != default)
+                if (TryGetEndOfDstIfYearStartWithDst(daylightTime.End.Year + 1, utc, zone, out endTime))
                 {
                     ignoreYearAdjustment = true;
                 }
@@ -1456,16 +1454,17 @@ namespace System
             return isDst;
         }
 
-        // This method checks if a specific year start with DST, if so, will return when the DST ends that year.
-        // Otherwise will return a default DateTime value.
-        private static DateTime GetEndOfDstIfYearStartWithDst(int nextYear, TimeSpan utc, TimeZoneInfo zone)
+        // This method checks if a specific year start with DST, if so, will get when the DST ends that year and return true.
+        // Otherwise will return false.
+        private static bool TryGetEndOfDstIfYearStartWithDst(int nextYear, TimeSpan utc, TimeZoneInfo zone, out DateTime dstEnd)
         {
             AdjustmentRule? nextYearRule = zone.GetAdjustmentRuleForTime(new DateTime(nextYear, 1, 1), out int? nextYearRuleIndex);
 
             // DST is not supported if the year doesn't have a rule.
             if (nextYearRule is null)
             {
-                return default;
+                dstEnd = default;
+                return false;
             }
 
             DaylightTimeStruct nextdaylightTime;
@@ -1479,11 +1478,13 @@ namespace System
                 // but also means the year not started with DST as we already checked that before.
                 if (nextdaylightTime.Start < nextdaylightTime.End || nextYearRule.IsEndDateMarkerForEndOfYear())
                 {
-                    return default;
+                    dstEnd = default;
+                    return false;
                 }
 
                 // It is the Southern sphere time zone. The year is started with DST on. Use the DST end to get the when DST ends that year.
-                return nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                dstEnd =  nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                return true;
             }
 
             // Comes here if not a southern sphere time zone.
@@ -1491,47 +1492,42 @@ namespace System
             // Check if DST ends specified as Jan 1st, 12:00 AM which means the year will end with DST on.
             if (nextYearRule.IsEndDateMarkerForEndOfYear())
             {
-                return new DateTime(nextYear, 12, 31) - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+                dstEnd = new DateTime(nextYear, 12, 31) - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+            }
+            else
+            {
+                // Not southern sphere time zone and, the year doesn't end with DST. Get the DST end date regularly as specified in the rule.
+                nextdaylightTime = zone.GetDaylightTime(nextYear, nextYearRule, nextYearRuleIndex);
+                dstEnd = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
             }
 
-            // Not southern sphere time zone and, the year doesn't end with DST. Get the DST end date regularly as specified in the rule.
-            nextdaylightTime = zone.GetDaylightTime(nextYear, nextYearRule, nextYearRuleIndex);
-            return nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
+            return true;
         }
 
-        // This method checks if a specific year end with DST, if so, will return when the DST starts that year.
-        // Otherwise will return a default DateTime value.
-        private static DateTime GetStartOfDstIfYearEndWithDst(int previousYear, TimeSpan utc, TimeZoneInfo zone)
+        // This method checks if a specific year end with DST, if so, will get when the DST starts that year and return true.
+        // Otherwise will return false.
+        private static bool TryGetStartOfDstIfYearEndWithDst(int previousYear, TimeSpan utc, TimeZoneInfo zone, out DateTime dstStart)
         {
             AdjustmentRule? previousYearRule = zone.GetAdjustmentRuleForTime(new DateTime(previousYear, 12, 31), out int? previousYearRuleIndex);
 
             // DST is not supported if the year doesn't have a rule.
             if (previousYearRule is null)
             {
-                return default;
+                dstStart = default;
+                return false;
             }
 
-            DaylightTimeStruct previousDaylightTime;
-            // Check if the rule not specifying the DST end as Jan 1st, 12:00 AM.
-            if (!previousYearRule.IsEndDateMarkerForEndOfYear())
+            DaylightTimeStruct previousDaylightTime = zone.GetDaylightTime(previousYear, previousYearRule, previousYearRuleIndex);
+
+            // If the rule is specifying that the year ends with DST on or DST starts after it ends for the year (i.e. it is in the Southern hemisphere), calculate the time DST started
+            if (previousYearRule.IsEndDateMarkerForEndOfYear() || previousDaylightTime.Start > previousDaylightTime.End)
             {
-                previousDaylightTime = zone.GetDaylightTime(previousYear, previousYearRule, previousYearRuleIndex);
-
-                // Check if we are dealing with a southern sphere time zone having a DST start date after the end date.
-                if (previousDaylightTime.Start < previousDaylightTime.End)
-                {
-                    return default;
-                }
-
-                // It is the Southern sphere time zone. Use the DST start to get the when DST started that year through the end of the year.
-                return previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
+                dstStart = previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
+                return true;
             }
 
-            // Comes here if not a southern sphere time zone.
-
-            // Not southern sphere time zone and, the year ends with DST. Get the DST start date regularly as specified in the rule.
-            previousDaylightTime = zone.GetDaylightTime(previousYear, previousYearRule, previousYearRuleIndex);
-            return previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
+            dstStart = default;
+            return false;
         }
 
         private static bool CheckIsDst(DateTime startTime, DateTime time, DateTime endTime, bool ignoreYearAdjustment, AdjustmentRule rule)
