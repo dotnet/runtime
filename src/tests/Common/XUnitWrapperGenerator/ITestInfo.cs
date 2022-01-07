@@ -331,11 +331,14 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 
         builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
+        builder.AppendLine($"System.Console.WriteLine(\"Running test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine(testExecutionExpression);
         builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart);");
+        builder.AppendLine($"System.Console.WriteLine(\"Passed test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine("}");
         builder.AppendLine("catch (System.Exception ex) {");
         builder.AppendLine($"{_summaryLocalIdentifier}.ReportFailedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, ex);");
+        builder.AppendLine($"System.Console.WriteLine(\"Failed test: {{0}}\", {test.TestNameExpression});");
         builder.AppendLine("}");
 
         builder.AppendLine("}");
