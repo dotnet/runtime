@@ -1423,6 +1423,34 @@ ValueNumPair ValueNumStore::VNPMakeNormalUniquePair(ValueNumPair vnp)
     return ValueNumPair(VNMakeNormalUnique(vnp.GetLiberal()), VNMakeNormalUnique(vnp.GetConservative()));
 }
 
+//------------------------------------------------------------------------------------
+// VNUniqueWithExc:
+//
+// Arguments:
+//    type       - The type for the unique Value Number
+//    vnExcSet   - The Value Number for the exception set.
+//
+// Return Value:
+//               - VN representing a "new, unique" value, with
+//                 the exceptions contained in "vnExcSet".
+//
+ValueNum ValueNumStore::VNUniqueWithExc(var_types type, ValueNum vnExcSet)
+{
+    ValueNum normVN = VNForExpr(m_pComp->compCurBB, type);
+
+    if (vnExcSet == VNForEmptyExcSet())
+    {
+        return normVN;
+    }
+
+#ifdef DEBUG
+    VNFuncApp excSetFunc;
+    assert(GetVNFunc(vnExcSet, &excSetFunc) && (excSetFunc.m_func == VNF_ExcSetCons));
+#endif // DEBUG
+
+    return VNWithExc(normVN, vnExcSet);
+}
+
 //--------------------------------------------------------------------------------
 // VNNormalValue: - Returns a Value Number that represents the result for the
 //                  normal (non-exceptional) evaluation for the expression.
