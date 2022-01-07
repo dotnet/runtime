@@ -4813,7 +4813,7 @@ void CodeGen::genPushCalleeSavedRegisters()
         }
         else
         {
-            // Case 5 or 6.
+            // Case 3 or 5.
             //
             // First, the callee-saved registers will be saved, and the callee-saved register code must use
             // pre-index to subtract from SP as the first instruction. It must also leave space for varargs
