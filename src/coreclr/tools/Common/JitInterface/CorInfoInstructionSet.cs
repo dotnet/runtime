@@ -615,8 +615,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X64_AVXVNNI, true);
-                    yield return new InstructionSetInfo("Sha1", "", InstructionSet.X64_Sha1, false);
-                    yield return new InstructionSetInfo("Sha256", "", InstructionSet.X64_Sha256, false);
+                    yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X64_Sha1, true);
+                    yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X64_Sha256, true);
                     yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X64_SHA, true);
                     break;
 
@@ -640,8 +640,8 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X86_AVXVNNI, true);
-                    yield return new InstructionSetInfo("Sha1", "", InstructionSet.X86_Sha1, false);
-                    yield return new InstructionSetInfo("Sha256", "", InstructionSet.X86_Sha256, false);
+                    yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X86_Sha1, true);
+                    yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X86_Sha256, true);
                     yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X86_SHA, true);
                     break;
 

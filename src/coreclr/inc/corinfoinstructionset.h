@@ -668,6 +668,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
         case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
         case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
+        case READYTORUN_INSTRUCTION_Sha: return InstructionSet_Sha1;
+        case READYTORUN_INSTRUCTION_Sha: return InstructionSet_Sha256;
         case READYTORUN_INSTRUCTION_Sha: return InstructionSet_SHA;
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
@@ -688,6 +690,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Pclmulqdq: return InstructionSet_PCLMULQDQ;
         case READYTORUN_INSTRUCTION_Popcnt: return InstructionSet_POPCNT;
         case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
+        case READYTORUN_INSTRUCTION_Sha: return InstructionSet_Sha1;
+        case READYTORUN_INSTRUCTION_Sha: return InstructionSet_Sha256;
         case READYTORUN_INSTRUCTION_Sha: return InstructionSet_SHA;
 #endif // TARGET_X86
 

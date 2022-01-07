@@ -41,8 +41,8 @@ instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
 instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
-instructionset     ,X86   ,          ,        ,   ,Sha1     ,
-instructionset     ,X86   ,          ,        ,   ,Sha256   ,
+instructionset     ,X86   ,Sha       ,        ,26 ,Sha1     ,sha
+instructionset     ,X86   ,Sha       ,        ,26 ,Sha256   ,sha
 instructionset     ,X86   ,Sha       ,        ,26 ,SHA      ,sha
 
 instructionset64bit,X86   ,X86Base
