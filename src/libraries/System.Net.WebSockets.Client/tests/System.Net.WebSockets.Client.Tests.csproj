@@ -21,6 +21,12 @@
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
   </ItemGroup>
+  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' != 'Windows_NT'">
+    <SetScriptCommands Condition="'$(Scenario)' != ''" Include="export NODE_TLS_REJECT_UNAUTHORIZED=0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' == 'Windows_NT'">
+    <SetScriptCommands Condition="'$(Scenario)' != ''" Include="set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot;" />
+  </ItemGroup>
 
   <!-- Browser specific files -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
