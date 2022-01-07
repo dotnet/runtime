@@ -9376,6 +9376,16 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                         vnStore->VNPExceptionSet(tree->AsDynBlk()->gtDynamicSize->gtVNPair));
                 break;
 
+            // FIELD_LIST is an R-value that we currently don't model.
+            case GT_FIELD_LIST:
+                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
+                {
+                    tree->gtVNPair =
+                        vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(use.GetNode()->gtVNPair));
+                }
+                break;
+
             default:
                 assert(!"Unhandled special node in fgValueNumberTree");
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
