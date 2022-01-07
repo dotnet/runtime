@@ -3,19 +3,11 @@
 
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Tests
 {
     public class ConsoleKeyInfoTests
     {
-        private readonly ITestOutputHelper _output;
-
-        public ConsoleKeyInfoTests(ITestOutputHelper output)
-        {
-            _output = output;
-        }
-
         [Fact]
         public void Ctor_DefaultCtor_PropertiesReturnDefaults()
         {
@@ -41,27 +33,17 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(SampleConsoleKeyInfos))]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/60240", RuntimeTestModes.JitStressRegs)]
         public void Equals_SameData(ConsoleKeyInfo cki)
         {
             ConsoleKeyInfo other = cki; // otherwise compiler warns about comparing the instance with itself
 
-            try
-            {
-                Assert.True(cki.Equals((object)other));
-                Assert.True(cki.Equals(other));
-                Assert.True(cki == other);
-                Assert.False(cki != other);
+            Assert.True(cki.Equals((object)other));
+            Assert.True(cki.Equals(other));
+            Assert.True(cki == other);
+            Assert.False(cki != other);
 
-                Assert.Equal(cki.GetHashCode(), other.GetHashCode());
-            }
-            catch
-            {
-                // Log more info in failure case to help investigate https://github.com/dotnet/runtime/issues/60240
-                _output.WriteLine($"ConsoleKeyInfo had KeyChar {cki.KeyChar} Key {cki.Key} Modifiers {cki.Modifiers}");
-                _output.WriteLine($"`cki.Equals(other)` gives {cki.Equals(other)} and `cki == other` gives {cki == other}");
-
-                throw;
-            }
+            Assert.Equal(cki.GetHashCode(), other.GetHashCode());
         }
 
         [Theory]

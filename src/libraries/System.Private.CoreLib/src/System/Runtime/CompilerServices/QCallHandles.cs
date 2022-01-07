@@ -75,7 +75,7 @@ namespace System.Runtime.CompilerServices
         internal QCallAssembly(ref System.Reflection.RuntimeAssembly assembly)
         {
             _ptr = Unsafe.AsPointer(ref assembly);
-            _assembly = assembly.GetUnderlyingNativeHandle();
+            _assembly = assembly?.GetUnderlyingNativeHandle() ?? IntPtr.Zero;
         }
     }
 
@@ -88,10 +88,7 @@ namespace System.Runtime.CompilerServices
         internal QCallTypeHandle(ref System.RuntimeType type)
         {
             _ptr = Unsafe.AsPointer(ref type);
-            if (type != null)
-                _handle = type.GetUnderlyingNativeHandle();
-            else
-                _handle = IntPtr.Zero;
+            _handle = type?.GetUnderlyingNativeHandle() ?? IntPtr.Zero;
         }
 
         internal QCallTypeHandle(ref System.RuntimeTypeHandle rth)

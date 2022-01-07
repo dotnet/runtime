@@ -1183,7 +1183,7 @@ namespace System.Xml.Xsl.XsltOld
             public override XPathExpression Clone() { return this; }
             public override void CheckErrors()
             {
-                throw new XsltException(SR.Xslt_InvalidXPath, new string[] { Expression }, _baseUri, _linePosition, _lineNumber, null);
+                throw new XsltException(SR.Xslt_InvalidXPath, new string[] { Expression }, _baseUri, _lineNumber, _linePosition, null);
             }
         }
     }

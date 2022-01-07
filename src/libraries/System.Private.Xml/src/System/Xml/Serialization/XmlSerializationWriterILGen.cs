@@ -121,11 +121,6 @@ namespace System.Xml.Serialization
                  argTypes.ToArray()
                  )!;
             ilg.Call(XmlSerializationWriter_WriteXXX);
-
-            if (hasDefault)
-            {
-                throw Globals.NotSupported("XmlQualifiedName DefaultValue not supported.  Fail in WriteValue()");
-            }
         }
 
         [RequiresUnreferencedCode("calls Load")]
