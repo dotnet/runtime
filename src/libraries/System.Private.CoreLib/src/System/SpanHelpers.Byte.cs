@@ -23,8 +23,15 @@ namespace System
                 return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
 
             byte valueHead = value;
-            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int valueTailLength = valueLength - 1;
+
+            if (valueTailLength == 0)
+            {
+                // for single-byte values use plain IndexOf
+                return IndexOf(ref searchSpace, value, searchSpaceLength);
+            }
+
+            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
             int offset = 0;
@@ -47,7 +54,151 @@ namespace System
 
                 remainingSearchSpaceLength--;
                 offset++;
+
+                // Since we've just hit a false-positive let's switch to "Algorithm 1: Generic SIMD"
+                // as described in http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd
+                // Avx2 implies Sse2
+                if ((Sse2.IsSupported || AdvSimd.IsSupported) && remainingSearchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
+                {
+                    goto SEARCH_TWO_BYTES;
+                }
             }
+            return -1;
+
+            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
+            // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
+        SEARCH_TWO_BYTES:
+            if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<byte>.Count)
+            {
+                // Find the last unique (which is not equal to ch1) byte
+                // the algorithm is fine if both are equal, just a little bit less efficient
+                byte ch2Val = Unsafe.Add(ref value, valueTailLength);
+                int ch1ch2Distance = valueTailLength;
+                while (ch2Val == value && ch1ch2Distance > 1)
+                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
+
+                Vector256<byte> ch1 = Vector256.Create(value);
+                Vector256<byte> ch2 = Vector256.Create(ch2Val);
+
+            NEXT_AVX:
+                uint mask = (uint)Avx2.MoveMask(
+                    Avx2.And(
+                        Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
+                        Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
+
+                while (mask != 0)
+                {
+                    int bitPos = BitOperations.TrailingZeroCount(mask);
+                    if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
+                        return offset + bitPos;
+                    mask &= mask - 1;
+                }
+                offset += Vector256<byte>.Count;
+
+                if (offset + valueTailLength == searchSpaceLength)
+                    return -1;
+
+                // Overlap with the current chunk if there is not enough room for the next one
+                if (offset + valueTailLength + Vector256<byte>.Count > searchSpaceLength)
+                    offset = searchSpaceLength - valueTailLength - Vector256<byte>.Count;
+
+                goto NEXT_AVX;
+            }
+            else if (Sse2.IsSupported)
+            {
+                // Find the last unique (which is not equal to ch1) byte
+                // the algorithm is fine if both are equal, just a little bit less efficient
+                byte ch2Val = Unsafe.Add(ref value, valueTailLength);
+                int ch1ch2Distance = valueTailLength;
+                while (ch2Val == value && ch1ch2Distance > 1)
+                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
+
+                Vector128<byte> ch1 = Vector128.Create(value);
+                Vector128<byte> ch2 = Vector128.Create(ch2Val);
+
+            NEXT_SSE:
+                uint mask = (uint)Sse2.MoveMask(
+                    Sse2.And(
+                        Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
+                        Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
+
+                while (mask != 0)
+                {
+                    int bitPos = BitOperations.TrailingZeroCount(mask);
+                    if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
+                        return offset + bitPos;
+                    mask &= mask - 1;
+                }
+                offset += Vector128<byte>.Count;
+
+                if (offset + valueTailLength == searchSpaceLength)
+                    return -1;
+
+                // Overlap with the current chunk if there is not enough room for the next one
+                if (offset + valueTailLength + Vector128<byte>.Count > searchSpaceLength)
+                    offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
+
+                goto NEXT_SSE;
+            }
+            else if (AdvSimd.IsSupported)
+            {
+                // Find the last unique (which is not equal to ch1) byte
+                // the algorithm is fine if both are equal, just a little bit less efficient
+                byte ch2Val = Unsafe.Add(ref value, valueTailLength);
+                int ch1ch2Distance = valueTailLength;
+                while (ch2Val == value && ch1ch2Distance > 1)
+                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
+
+                Vector128<byte> ch1 = Vector128.Create(value);
+                Vector128<byte> ch2 = Vector128.Create(ch2Val);
+
+            NEXT_ADVSIMD:
+                Vector128<ulong> bothEq = AdvSimd.And(
+                    AdvSimd.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
+                    AdvSimd.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))).AsUInt64();
+
+                ulong mask = AdvSimd.Extract(bothEq, 0);
+                if (mask != 0)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if ((mask & 0xFF) != 0 &&
+                            SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + i), ref value, (nuint)(uint)valueLength))
+                        {
+                            return offset + i;
+                        }
+                        mask >>= 8;
+                    }
+                }
+
+                // Inspect the second lane
+                mask = AdvSimd.Extract(bothEq, 1);
+                if (mask != 0)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        if ((mask & 0xFF) != 0 &&
+                            SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + i + 8), ref value, (nuint)(uint)valueLength))
+                        {
+                            return offset + i + 8;
+                        }
+                        mask >>= 8;
+                    }
+                }
+
+                offset += Vector128<byte>.Count;
+
+                if (offset + valueTailLength == searchSpaceLength)
+                    return -1;
+
+                // Overlap with the current chunk if there is not enough room for the next one
+                if (offset + valueTailLength + Vector128<byte>.Count > searchSpaceLength)
+                    offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
+
+                goto NEXT_ADVSIMD;
+            }
+
+            Debug.Fail("Unreachable");
             return -1;
         }
 
