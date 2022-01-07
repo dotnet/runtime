@@ -148,7 +148,7 @@
     <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
   </ItemGroup>
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' == 'true'">
-    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\emsdk\node\14.15.5_64bit\bin%3B%PATH%" />
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\14.15.5_64bit\bin%3B%PATH%" />
   </ItemGroup>
 
   <Choose>
