@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         /// <returns>The default <see cref="IFileProvider"/>.</returns>
-        public static IFileProvider? GetFileProvider(this IConfigurationBuilder builder)
+        public static IFileProvider GetFileProvider(this IConfigurationBuilder builder)
         {
             if (builder == null)
             {
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (builder.Properties.TryGetValue(FileProviderKey, out object? provider))
             {
-                return provider as IFileProvider;
+                return (IFileProvider)provider;
             }
 
             return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
