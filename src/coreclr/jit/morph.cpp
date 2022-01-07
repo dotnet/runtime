@@ -9485,6 +9485,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 //
 // Arguments:
 //    obj - the obj node.
+//    destroyNodes -- destroy nodes that are optimized away
 //
 // Return value:
 //    GenTreeLclVar if the obj can be replaced by it, null otherwise.
@@ -9495,7 +9496,7 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 //    for some platforms does not expect struct `LCL_VAR` as a source, so
 //    it needs more work.
 //
-GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj)
+GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes)
 {
     if (opts.OptimizationEnabled())
     {
@@ -9528,8 +9529,12 @@ GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj)
                     lclVar->gtFlags &= ~GTF_DONT_CSE;
                     lclVar->gtFlags |= (obj->gtFlags & GTF_DONT_CSE);
 
-                    DEBUG_DESTROY_NODE(obj);
-                    DEBUG_DESTROY_NODE(addr);
+                    if (destroyNodes)
+                    {
+                        DEBUG_DESTROY_NODE(obj);
+                        DEBUG_DESTROY_NODE(addr);
+                    }
+
                     return lclVar;
                 }
             }

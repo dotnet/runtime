@@ -2419,8 +2419,9 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             costEx = IND_COST_EX;
             costSz = 2;
 
-            GenTree* addr = hwTree->Op(1)->gtEffectiveVal();
-            level         = gtSetEvalOrder(addr);
+            GenTree* const addrNode = hwTree->Op(1);
+            level                   = gtSetEvalOrder(addrNode);
+            GenTree* const addr     = addrNode->gtEffectiveVal();
 
             // See if we can form a complex addressing mode.
             if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, hwTree->TypeGet()))
@@ -11764,8 +11765,9 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     }
 
     /* Currently we can only fold when the two subtrees exactly match */
+    /* ORDER_SIDEFF here covers volatile subtrees */
 
-    if ((tree->gtFlags & GTF_SIDE_EFFECT) || GenTree::Compare(op1, op2, true) == false)
+    if ((tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) || GenTree::Compare(op1, op2, true) == false)
     {
         return tree; /* return unfolded tree */
     }

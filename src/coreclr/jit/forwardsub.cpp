@@ -1,0 +1,392 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include "jitpch.h"
+
+#ifdef _MSC_VER
+#pragma hdrstop
+#endif
+
+// Simple Forward Substitution
+
+//------------------------------------------------------------------------
+// fgForwardSub: try forward substitution in this method
+//
+// Returns:
+//   suitable phase status
+//
+PhaseStatus Compiler::fgForwardSub()
+{
+    bool changed = false;
+    for (BasicBlock* const block : Blocks())
+    {
+        JITDUMP("\n\n===> " FMT_BB "\n", block->bbNum);
+        changed |= fgForwardSub(block);
+    }
+    return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// fgForwardSub(BasicBlock) -- try forward substitution in this block
+//
+// Arguments:
+//    block -- block to process
+//
+// Returns:
+//    true if any forward substitution took place
+//
+bool Compiler::fgForwardSub(BasicBlock* block)
+{
+    // Look for top-level ASG where the value defined is
+    // a local that's not address-exposed, and the local has
+    // exactly one use.
+
+    Statement* stmt     = block->firstStmt();
+    Statement* lastStmt = block->lastStmt();
+    bool       changed  = false;
+
+    while (stmt != lastStmt)
+    {
+        Statement* const prevStmt    = stmt->GetPrevStmt();
+        Statement* const nextStmt    = stmt->GetNextStmt();
+        bool const       substituted = fgForwardSub(stmt);
+
+        if (substituted)
+        {
+            fgRemoveStmt(block, stmt);
+            changed = true;
+        }
+
+        if (substituted && (prevStmt != lastStmt) && prevStmt->GetRootNode()->OperIs(GT_ASG))
+        {
+            stmt = prevStmt;
+        }
+        else
+        {
+            stmt = nextStmt;
+        }
+    }
+
+    return changed;
+}
+
+//------------------------------------------------------------------------
+// ForwardSubVisitor: tree visitor to locate uses of a local in a tree
+//
+// Also computes the set of side effects that happen "before" the use.
+//
+class ForwardSubVisitor final : public GenTreeVisitor<ForwardSubVisitor>
+{
+public:
+    enum
+    {
+        ComputeStack      = true,
+        DoPostOrder       = true,
+        UseExecutionOrder = true
+    };
+
+    ForwardSubVisitor(Compiler* compiler, unsigned lclNum)
+        : GenTreeVisitor<ForwardSubVisitor>(compiler)
+        , m_lclNum(lclNum)
+        , m_use(nullptr)
+        , m_node(nullptr)
+        , m_count(0)
+        , m_useFlags(0)
+        , m_accumulatedFlags(0)
+        , m_isCallArg(false)
+    {
+    }
+
+    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+
+        if (node->OperIs(GT_LCL_VAR))
+        {
+            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
+
+            if (lclNum == m_lclNum)
+            {
+                m_count++;
+
+                // Screen out contextual "uses"
+                //
+                GenTree* const parent = m_ancestors.Top(1);
+                bool const     isDef  = parent->OperIs(GT_ASG) && (parent->gtGetOp1() == node);
+                bool const     isAddr = parent->OperIs(GT_ADDR);
+
+                bool isCallTarget = false;
+
+                // Quirk:
+                //
+                // fgGetStubAddrArg cannot handle complex trees (it calls gtClone)
+                //
+                if (parent->IsCall())
+                {
+                    GenTreeCall* const parentCall = parent->AsCall();
+                    isCallTarget = (parentCall->gtCallType == CT_INDIRECT) && (parentCall->gtCallAddr == node);
+                }
+
+                if (!isDef && !isAddr && !isCallTarget)
+                {
+                    m_node      = node;
+                    m_use       = use;
+                    m_useFlags  = m_accumulatedFlags;
+                    m_isCallArg = parent->IsCall();
+                }
+            }
+        }
+
+        m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    int GetCount()
+    {
+        return m_count;
+    }
+
+    GenTree* GetNode()
+    {
+        return m_node;
+    }
+
+    GenTree** GetUse()
+    {
+        return m_use;
+    }
+
+    unsigned GetFlags()
+    {
+        return m_useFlags;
+    }
+
+    bool IsCallArg()
+    {
+        return m_isCallArg;
+    }
+
+private:
+    unsigned  m_lclNum;
+    GenTree** m_use;
+    GenTree*  m_node;
+    int       m_count;
+    unsigned  m_useFlags;
+    unsigned  m_accumulatedFlags;
+    bool      m_isCallArg;
+};
+
+//------------------------------------------------------------------------
+// fgForwardSub(Statement) -- forward sub this statement's computation
+//  to the next statement, if legal and profitable
+//
+// arguments:
+//    stmt - statement in question
+//
+// Returns:
+//    true if statement computation was forwarded.
+//    caller is responsible for removing the now-dead statement.
+//
+bool Compiler::fgForwardSub(Statement* stmt)
+{
+    // Is this tree a def of a single use, unaliased local?
+    //
+    GenTree* const rootNode = stmt->GetRootNode();
+
+    if (!rootNode->OperIs(GT_ASG))
+    {
+        return false;
+    }
+
+    GenTree* const lhsNode = rootNode->gtGetOp1();
+
+    if (!lhsNode->OperIs(GT_LCL_VAR))
+    {
+        return false;
+    }
+
+    JITDUMP("    [%06u]: ", dspTreeID(rootNode))
+
+    unsigned const   lclNum = lhsNode->AsLclVarCommon()->GetLclNum();
+    LclVarDsc* const varDsc = lvaGetDesc(lclNum);
+
+    // Leave pinned locals alone.
+    // This is just a perf opt -- we shouldn't find any uses.
+    //
+    if (varDsc->lvPinned)
+    {
+        JITDUMP(" pinned local\n");
+        return false;
+    }
+
+    // Only fwd sub if we expect no code duplication
+    // We expect one def and one use.
+    //
+    if (varDsc->lvRefCnt(RCS_EARLY) != 2)
+    {
+        JITDUMP(" not asg (single-use lcl)\n");
+        return false;
+    }
+
+    // And local is unalised
+    //
+    if (varDsc->IsAddressExposed())
+    {
+        JITDUMP(" not asg (unaliased single-use lcl)\n");
+        return false;
+    }
+
+    // Could handle this case --perhaps-- but we'd want to update ref counts.
+    //
+    if (lvaIsImplicitByRefLocal(lclNum))
+    {
+        JITDUMP(" implicit by-ref local\n");
+        return false;
+    }
+
+    // Local seems suitable. See if the next statement
+    // contains the one and only use.
+    //
+    Statement* const nextStmt = stmt->GetNextStmt();
+
+    // We often see stale flags, eg call flags after inlining.
+    // Try and clean these up.
+    //
+    gtUpdateStmtSideEffects(nextStmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    // Scan for the (single) use.
+    //
+    ForwardSubVisitor fsv(this, lclNum);
+    fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+
+    assert(fsv.GetCount() <= 1);
+
+    if ((fsv.GetCount() == 0) || (fsv.GetNode() == nullptr))
+    {
+        JITDUMP(" no next stmt use\n");
+        return false;
+    }
+
+    JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
+
+    // Next statement seems suitable.
+    // See if we can forward sub without changing semantics.
+    //
+    // We could just extract the value portion and forward sub that,
+    // but cleanup would be more complicated.
+    //
+    GenTree* const rhsNode      = rootNode->gtGetOp2();
+    GenTree* const nextRootNode = nextStmt->GetRootNode();
+    GenTree*       fwdSubNode   = rhsNode;
+
+    // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
+    // Can't substitute GT_CATCH_ARG.
+    //
+    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG))
+    {
+        JITDUMP(" node to sub is qmark or catch arg\n");
+        return false;
+    }
+
+    // Bail if sub node has embedded assignment.
+    //
+    if ((fwdSubNode->gtFlags & GTF_ASG) != 0)
+    {
+        JITDUMP(" node to sub has effects\n");
+        return false;
+    }
+
+    // Bail if types disagree.
+    //
+    if (fsv.GetNode()->TypeGet() != fwdSubNode->TypeGet())
+    {
+        JITDUMP(" mismatched types\n");
+        return false;
+    }
+
+    // We can forward sub if
+    //
+    // the value of the fwdSubNode can't change and its evaluation won't cause side effects,
+    //
+    // or,
+    //
+    // if the next tree can't change the value of fwdSubNode or be adversly impacted by fwdSubNode effects
+    //
+    const bool fwdSubNodeInvariant   = ((fwdSubNode->gtFlags & GTF_ALL_EFFECT) == 0);
+    const bool nextTreeIsPureUpToUse = ((fsv.GetFlags() & (GTF_EXCEPT | GTF_GLOB_REF | GTF_CALL)) == 0);
+    if (!fwdSubNodeInvariant && !nextTreeIsPureUpToUse)
+    {
+        // Fwd sub may impact global values and or reorder exceptions...
+        //
+        JITDUMP(" potentially interacting effects\n");
+        return false;
+    }
+
+    // Finally, profitability checks.
+    //
+    // These conditions can be checked earlier in the final version to save some throughput.
+    // Perhaps allowing for bypass with jit stress.
+    //
+    // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
+    // (maybe similar for dner?)
+    //
+    if (fwdSubNode->OperIs(GT_LCL_VAR))
+    {
+        unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
+
+        if (fwdVarDsc->IsAddressExposed())
+        {
+            JITDUMP(" V%02u is address exposed\n", fwdLclNum);
+            return false;
+        }
+    }
+
+    // Quirks:
+    //
+    // We may sometimes lose a simd type handle. Avoid substituting if so.
+    //
+    if (varTypeIsSIMD(fwdSubNode))
+    {
+        if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
+        {
+            JITDUMP(" would lose or gain struct handle\n");
+            return false;
+        }
+    }
+
+    // Optimization:
+    //
+    // If we are about to substitute GT_OBJ, see if we can simplify it first.
+    // Not doing so can lead to regressions...
+    //
+    // Hold off on doing this for call args for now (per issue #51569).
+    //
+    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg())
+    {
+        const bool     destroyNodes = false;
+        GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
+        if (optTree != nullptr)
+        {
+            JITDUMP(" -- folding OBJ(ADDR(LCL...)) -- ");
+            fwdSubNode = optTree;
+        }
+    }
+
+    // Looks good, forward sub!
+    //
+    GenTree** use = fsv.GetUse();
+    *use          = fwdSubNode;
+
+    if (!fwdSubNodeInvariant)
+    {
+        gtUpdateStmtSideEffects(nextStmt);
+    }
+
+    JITDUMP(" -- fwd subbing [%06u]; new next stmt is\n", dspTreeID(fwdSubNode));
+    DISPSTMT(nextStmt);
+
+    return true;
+}

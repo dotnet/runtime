@@ -6411,7 +6411,7 @@ private:
 
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
-    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
+    GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes = true);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
@@ -6549,6 +6549,10 @@ private:
 
     void fgMarkAddressExposedLocals();
     void fgMarkAddressExposedLocals(Statement* stmt);
+
+    PhaseStatus fgForwardSub();
+    bool fgForwardSub(BasicBlock* block);
+    bool fgForwardSub(Statement* statement);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
