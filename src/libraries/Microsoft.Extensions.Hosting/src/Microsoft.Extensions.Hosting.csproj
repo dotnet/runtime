@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netstandard2.1;net461</TargetFrameworks>
@@ -6,6 +6,8 @@
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <!-- ServicingVersion moved to ..\Directory.Build.props in order to share with test project. -->
   </PropertyGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
