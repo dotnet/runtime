@@ -262,7 +262,7 @@ hot_reload_stub_get_field (MonoClass *klass, uint32_t fielddef_token)
 }
 
 static gpointer
-hot_reload_get_static_field_addr (MonoClassField *field)
+hot_reload_stub_get_static_field_addr (MonoClassField *field)
 {
 	return NULL;
 }
