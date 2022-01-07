@@ -5720,6 +5720,14 @@ mono_find_method_in_metadata (MonoClass *klass, const char *name, int param_coun
 		}
 	}
 
+	if (G_UNLIKELY (!res && klass_image->has_updates)) {
+		if (mono_class_has_metadata_update_info (klass)) {
+			ERROR_DECL (error);
+			res = mono_metadata_update_find_method_by_name (klass, name, param_count, flags, error);
+			mono_error_cleanup (error);
+		}
+	}
+
 	return res;
 }
 
@@ -5782,7 +5790,8 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 		FIXME we should better report this error to the caller
 		 */
 		MonoMethod **klass_methods = m_class_get_methods (klass);
-		if (!klass_methods)
+		gboolean has_updates = m_class_get_image (klass)->has_updates;
+		if (!klass_methods && !has_updates)
 			return NULL;
 		int mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
@@ -5795,6 +5804,9 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 				res = method;
 				break;
 			}
+		}
+		if (G_UNLIKELY (!res && has_updates && mono_class_has_metadata_update_info (klass))) {
+			res = mono_metadata_update_find_method_by_name (klass, name, param_count, flags, error);
 		}
 	}
 	else {

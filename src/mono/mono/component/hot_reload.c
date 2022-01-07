@@ -117,9 +117,11 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token);
 static gpointer
 hot_reload_get_static_field_addr (MonoClassField *field);
 
+static MonoMethod *
+hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, MonoError *error);
-
 
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_available },
@@ -146,6 +148,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_field_idx,
 	&hot_reload_get_field,
 	&hot_reload_get_static_field_addr,
+	&hot_reload_find_method_by_name,
 };
 
 MonoComponentHotReload *
@@ -2545,4 +2548,50 @@ hot_reload_get_static_field_addr (MonoClassField *field)
 	g_assert (addr);
 
 	return addr;
+}
+
+static MonoMethod *
+hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
+{
+	GArray *arr = hot_reload_get_added_members (klass);
+	if (!arr)
+		return NULL;
+
+	/* FIXME: locking if the array grows? */
+
+	MonoImage *image = m_class_get_image (klass);
+	int count = arr->len;
+	MonoMethod *res = NULL;
+	for (int i = 0; i < count; i++) {
+		uint32_t token = g_array_index (arr, uint32_t, i);
+		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
+			continue;
+		uint32_t idx = mono_metadata_token_index (token);
+		uint32_t cols [MONO_METHOD_SIZE];
+		mono_metadata_decode_table_row (image, MONO_TABLE_METHOD, idx - 1, cols, MONO_METHOD_SIZE);
+
+		if (!strcmp (mono_metadata_string_heap (image, cols [MONO_METHOD_NAME]), name)) {
+			ERROR_DECL (local_error);
+			MonoMethod *method = mono_get_method_checked (image, MONO_TOKEN_METHOD_DEF | idx, klass, NULL, local_error);
+			if (!method) {
+				mono_error_cleanup (local_error);
+				continue;
+			}
+			if (param_count == -1) {
+				res = method;
+				break;
+			}
+			MonoMethodSignature *sig = mono_method_signature_checked (method, local_error);
+			if (!sig) {
+				mono_error_cleanup (error);
+				continue;
+			}
+			if ((method->flags & flags) == flags && sig->param_count == param_count) {
+				res = method;
+				break;
+			}
+		}
+	}
+
+	return res;
 }

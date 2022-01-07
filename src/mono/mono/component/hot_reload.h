@@ -39,6 +39,7 @@ typedef struct _MonoComponentHotReload {
 	uint32_t (*get_field_idx) (MonoClassField *field);
 	MonoClassField* (*get_field) (MonoClass *klass, uint32_t fielddef_token);
 	gpointer (*get_static_field_addr) (MonoClassField *field);
+	MonoMethod* (*find_method_by_name) (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 } MonoComponentHotReload;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

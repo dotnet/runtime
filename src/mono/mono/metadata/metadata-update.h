@@ -61,6 +61,9 @@ mono_metadata_update_delta_heap_lookup (MonoImage *base_image, MetadataHeapGette
 void*
 mono_metadata_update_metadata_linear_search (MonoImage *base_image, MonoTableInfo *base_table, const void *key, BinarySearchComparer comparer);
 
+MonoMethod*
+mono_metadata_update_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
 uint32_t
 mono_metadata_update_get_field_idx (MonoClassField *field);
 

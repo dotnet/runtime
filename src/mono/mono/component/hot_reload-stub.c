@@ -86,6 +86,9 @@ hot_reload_stub_get_field (MonoClass *klass, uint32_t fielddef_token);
 static gpointer
 hot_reload_stub_get_static_field_addr (MonoClassField *field);
 
+static MonoMethod *
+hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
 static MonoComponentHotReload fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &hot_reload_stub_available },
 	&hot_reload_stub_set_fastpath_data,
@@ -111,6 +114,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_field_idx,
 	&hot_reload_stub_get_field,
 	&hot_reload_stub_get_static_field_addr,
+	&hot_reload_stub_find_method_by_name,
 };
 
 static bool
@@ -262,6 +266,13 @@ hot_reload_get_static_field_addr (MonoClassField *field)
 {
 	return NULL;
 }
+
+static MonoMethod *
+hot_reload_stub_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
+{
+	return NULL;
+}
+
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT
 MonoComponentHotReload *

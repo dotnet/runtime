@@ -175,3 +175,9 @@ mono_metadata_update_get_static_field_addr (MonoClassField *field)
 {
 	return mono_component_hot_reload()->get_static_field_addr (field);
 }
+
+MonoMethod *
+mono_metadata_update_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
+{
+	return mono_component_hot_reload()->find_method_by_name (klass, name, param_count, flags, error);
+}
