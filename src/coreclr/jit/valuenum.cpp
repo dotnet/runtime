@@ -9362,6 +9362,24 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
             }
 
+            // ARR_ELEM is a bounds-checked address. TODO-CQ: model it precisely.
+            case GT_ARR_ELEM:
+            {
+                GenTreeArrElem* arrElem = tree->AsArrElem();
+
+                ValueNumPair vnpExcSet = vnStore->VNPExceptionSet(arrElem->gtArrObj->gtVNPair);
+                for (size_t i = 0; i < arrElem->gtArrRank; i++)
+                {
+                    vnpExcSet = vnStore->VNPUnionExcSet(arrElem->gtArrInds[i]->gtVNPair, vnpExcSet);
+                }
+
+                arrElem->gtVNPair = vnStore->VNPUniqueWithExc(arrElem->TypeGet(), vnpExcSet);
+
+                // TODO: model the IndexOutOfRangeException for this node.
+                fgValueNumberAddExceptionSetForIndirection(arrElem, arrElem->gtArrObj);
+            }
+            break;
+
             default:
                 assert(!"Unhandled special node in fgValueNumberTree");
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
