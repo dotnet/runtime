@@ -17,7 +17,7 @@ public unsafe class DisabledRuntimeMarshallingNative
         {
             this.s = s;
             this.b = b;
-            this.padding = 0;
+            this.padding = 0xdeadbee;
         }
     }
 
