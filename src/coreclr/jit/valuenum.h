@@ -531,6 +531,9 @@ public:
     // A new unique value with the given exception set.
     ValueNum VNUniqueWithExc(var_types type, ValueNum vnExcSet);
 
+    // A new unique VN pair with the given exception set pair.
+    ValueNumPair VNPUniqueWithExc(var_types type, ValueNumPair vnpExcSet);
+
     // If "vn" is a "VNF_ValWithExc(norm, excSet)" value, returns the "norm" argument; otherwise,
     // just returns "vn".
     // The Normal value is the value number of the expression when no exceptions occurred

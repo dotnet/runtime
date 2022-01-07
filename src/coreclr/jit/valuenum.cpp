@@ -1451,6 +1451,36 @@ ValueNum ValueNumStore::VNUniqueWithExc(var_types type, ValueNum vnExcSet)
     return VNWithExc(normVN, vnExcSet);
 }
 
+//------------------------------------------------------------------------------------
+// VNPUniqueWithExc:
+//
+// Arguments:
+//    type       - The type for the unique Value Numbers
+//    vnExcSet   - The Value Number Pair for the exception set.
+//
+// Return Value:
+//               - VN Pair representing a "new, unique" value (liberal and conservative
+//                 values will be equal), with the exceptions contained in "vnpExcSet".
+//
+// Notes:        - We use the same unique value number both for liberal and conservative
+//                 portions of the pair to save memory (it would not be useful to make
+//                 them different).
+//
+ValueNumPair ValueNumStore::VNPUniqueWithExc(var_types type, ValueNumPair vnpExcSet)
+{
+#ifdef DEBUG
+    VNFuncApp excSetFunc;
+    assert((GetVNFunc(vnpExcSet.GetLiberal(), &excSetFunc) && (excSetFunc.m_func == VNF_ExcSetCons)) ||
+           (vnpExcSet.GetLiberal() == VNForEmptyExcSet()));
+    assert((GetVNFunc(vnpExcSet.GetConservative(), &excSetFunc) && (excSetFunc.m_func == VNF_ExcSetCons)) ||
+           (vnpExcSet.GetConservative() == VNForEmptyExcSet()));
+#endif // DEBUG
+
+    ValueNum normVN = VNForExpr(m_pComp->compCurBB, type);
+
+    return VNPWithExc(ValueNumPair(normVN, normVN), vnpExcSet);
+}
+
 //--------------------------------------------------------------------------------
 // VNNormalValue: - Returns a Value Number that represents the result for the
 //                  normal (non-exceptional) evaluation for the expression.
