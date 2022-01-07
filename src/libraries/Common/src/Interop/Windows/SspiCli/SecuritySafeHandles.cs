@@ -228,10 +228,8 @@ namespace System.Net.Security
             ref SafeSspiAuthDataHandle authdata,
             out SafeFreeCredentials outCredential)
         {
-            int errorCode = -1;
-
             outCredential = new SafeFreeCredential_SECURITY();
-            errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
+            int errorCode = Interop.SspiCli.AcquireCredentialsHandleW(
                             null,
                             package,
                             (int)intent,

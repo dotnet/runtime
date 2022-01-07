@@ -1008,7 +1008,6 @@ namespace System.Security.AccessControl
         {
             GenericAce pivot;
             int leftHold, rightHold;
-            int pivotIndex;
 
             if (left >= right)
             {
@@ -1019,7 +1018,6 @@ namespace System.Security.AccessControl
             rightHold = right;
 
             pivot = _acl[left];
-            pivotIndex = left;
 
             while (left < right)
             {
@@ -1049,7 +1047,7 @@ namespace System.Security.AccessControl
             }
 
             _acl[left] = pivot;
-            pivotIndex = left;
+            int pivotIndex = left;
             left = leftHold;
             right = rightHold;
 

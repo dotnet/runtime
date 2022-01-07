@@ -26,7 +26,7 @@
     <Compile Include="System\Net\NetworkInformation\MulticastIPAddressInformationCollection.cs" />
     <Compile Include="System\Net\NetworkInformation\NetBiosNodeType.cs" />
     <Compile Include="System\Net\NetworkInformation\NetEventSource.NetworkInformation.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.cs" Condition="'$(Targetsillumos)' != 'true' and '$(TargetsSolaris)' != 'true'" />
     <Compile Include="System\Net\NetworkInformation\NetworkAvailabilityEventArgs.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkChangeDelegates.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterface.cs" />
