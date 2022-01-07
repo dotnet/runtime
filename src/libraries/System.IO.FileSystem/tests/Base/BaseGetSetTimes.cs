@@ -20,7 +20,9 @@ namespace System.IO.Tests
         protected static bool LowTemporalResolution => PlatformDetection.IsBrowser || isHFS;
         protected static bool HighTemporalResolution => !LowTemporalResolution;
 
-        protected abstract T GetExistingItem();
+        protected abstract bool CanBeReadOnly { get; }
+
+        protected abstract T GetExistingItem(bool readOnly = false);
         protected abstract T GetMissingItem();
 
         protected abstract string GetItemPath(T item);
@@ -42,11 +44,8 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        [Fact]
-        public void SettingUpdatesProperties()
+        private void SettingUpdatesPropertiesCore(T item)
         {
-            T item = GetExistingItem();
-
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
@@ -68,6 +67,25 @@ namespace System.IO.Tests
                     Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
             });
+        }
+
+        [Fact]
+        public void SettingUpdatesProperties()
+        {
+            T item = GetExistingItem();
+            SettingUpdatesPropertiesCore(item);
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesWhenReadOnly()
+        {
+            if (!CanBeReadOnly)
+            {
+                return; // directories can't be read only, so automatic pass
+            }
+
+            T item = GetExistingItem(readOnly: true);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
