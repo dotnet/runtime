@@ -1285,9 +1285,8 @@ namespace System.Net
             HttpListenerResponse response = context.Response;
 
             // We use the cached results from the delegates so that we don't have to call them again here.
-            NTAuthentication? newContext;
             ArrayList? challenges = BuildChallenge(context.AuthenticationSchemes, request._connectionId,
-                out newContext, context.ExtendedProtectionPolicy, request.IsSecureConnection);
+                out _, context.ExtendedProtectionPolicy, request.IsSecureConnection);
 
             // Setting 401 without setting WWW-Authenticate is a protocol violation
             // but throwing from HttpListener would be a breaking change.
