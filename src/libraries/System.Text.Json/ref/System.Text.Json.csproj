@@ -7,7 +7,10 @@
 
   <ItemGroup>
     <Compile Include="System.Text.Json.cs" />
-    <Compile Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
