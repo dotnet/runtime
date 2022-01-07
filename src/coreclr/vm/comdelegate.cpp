@@ -340,7 +340,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
         // We should have slots to shuffle in the destination at the same time as the source.
         _ASSERTE(iteratorDst.HasNextOfs());
 #if defined(TARGET_LOONGARCH64)
-        if (!sArgDst.m_byteStackSize && (sArgSrc.m_offs > 0))
+        if (!sArgDst.m_byteStackSize && (sArgSrc.m_flag > 0))
         {
             if (sArgSrc.m_byteStackSize > 0)
             {
@@ -351,7 +351,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
 
                 assert(sArgDst.m_cFloatReg > 0);
 
-                if ((sArgSrc.m_offs == 1) || (sArgSrc.m_offs == 4))
+                if ((sArgSrc.m_flag == 1) || (sArgSrc.m_flag == 4))
                 {//first float;   ||   second float;
                     assert(sArgDst.m_cGenReg == 1);
                     assert(sArgDst.m_cFloatReg == 1);
@@ -360,7 +360,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     entry.srcofs = iteratorSrc.GetNextOfs();
                     entry.dstofs = iteratorDst.GetNextOfs();
                     assert(entry.srcofs != entry.dstofs);
-                    entry.stackofs = sArgSrc.m_offs;
+                    entry.stackofs = sArgSrc.m_flag;
                     pShuffleEntryArray->Append(entry);
 
                     entry.dstofs = iteratorDst.GetNextOfs();
@@ -370,7 +370,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     assert(!iteratorSrc.HasNextOfs());
                     break;
                 }
-                else if ((sArgSrc.m_offs == 8) || (sArgSrc.m_offs == 7))
+                else if ((sArgSrc.m_flag == 8) || (sArgSrc.m_flag == 7))
                 {//second double.   ||    first double.
                     assert(sArgDst.m_cGenReg == 1);
                     assert(sArgDst.m_cFloatReg == 1);
@@ -379,7 +379,7 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
                     entry.srcofs = iteratorSrc.GetNextOfs();
                     entry.dstofs = iteratorDst.GetNextOfs();
                     assert(entry.srcofs != entry.dstofs);
-                    entry.stackofs = sArgSrc.m_offs;
+                    entry.stackofs = sArgSrc.m_flag;
                     pShuffleEntryArray->Append(entry);
 
                     entry.srcofs = iteratorSrc.GetNextOfs();

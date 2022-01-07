@@ -42,7 +42,8 @@ struct ArgLocDesc
     int     m_byteStackIndex;     // Stack offset in bytes (or -1)
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64)
-    int     m_offs;                 // offset within the struct which passed by registers.
+    int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
+    int     m_flag;               // flags for how the struct passed by registers.
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -97,7 +98,8 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64)
-        m_offs = 0;
+        m_flag = 0;
+        m_structFields = 0;
 #endif
 #if defined(UNIX_AMD64_ABI)
         m_eeClass = NULL;
@@ -878,12 +880,12 @@ public:
             {
                 if (GetArgType() == ELEMENT_TYPE_R4)
                 {
-                    pLoc->m_offs = 5;
+                    pLoc->m_flag = 5;
                     return;//float by integer-reg.
                 }
                 else if (GetArgType() == ELEMENT_TYPE_R8)
                 {
-                    pLoc->m_offs = 6;
+                    pLoc->m_flag = 6;
                     return;//float by integer-reg.
                 }
                 else if (!m_flags)
@@ -893,25 +895,25 @@ public:
 
                 if ((1 == m_flags) || (2 == m_flags))
                 {
-                    pLoc->m_offs = 7;//first double.
+                    pLoc->m_flag = 7;//first double.
                     return;
                 }
 
                 if ((cSlots == 1) && (m_flags == 0x5))
                 {
-                    pLoc->m_offs = 2;//two float;    ? not case ?
+                    pLoc->m_flag = 2;//two float;    ? not case ?
                     assert(!"----------two float;    ? not case ?------------");
                 }
                 else if ((cSlots == 1) && (m_flags & 0x1))
-                    pLoc->m_offs = 1;//first float;
+                    pLoc->m_flag = 1;//first float;
                 else if ((cSlots == 1) && (m_flags & 0x4))
-                    pLoc->m_offs = 4;//second float;
+                    pLoc->m_flag = 4;//second float;
                 else if ((m_flags & 0xc) && (m_flags & 0x3))
-                    pLoc->m_offs = 9;//two double.
+                    pLoc->m_flag = 9;//two double.
                 else if (m_flags & 0xc)
-                    pLoc->m_offs = 8;//second double.
+                    pLoc->m_flag = 8;//second double.
                 else if (m_flags & 0x3)
-                    pLoc->m_offs = 7;//first double.
+                    pLoc->m_flag = 7;//first double.
             }
         }
         else
@@ -929,13 +931,13 @@ public:
             assert(!((cSlots == 1) && (m_flags == 0x5)));
 
             if ((cSlots == 1) && (m_flags & 0x1))
-                pLoc->m_offs = 1;//first float;
+                pLoc->m_flag = 1;//first float;
             else if ((cSlots == 1) && (m_flags & 0x4))
-                pLoc->m_offs = 4;//second float;
+                pLoc->m_flag = 4;//second float;
             else if (m_flags & 0xc)
-                pLoc->m_offs = 8;//second double.
+                pLoc->m_flag = 8;//second double.
             else if (m_flags & 0x3)
-                pLoc->m_offs = 7;//first double.
+                pLoc->m_flag = 7;//first double.
         }
     }
 
@@ -1759,6 +1761,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                     int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
                     m_idxFPReg += 1;
 
+                    m_argLocDescForStructInRegs.m_structFields = flags;
+
                     m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                     m_argLocDescForStructInRegs.m_cGenReg = 1;
                     m_idxGenReg += 1;
@@ -1772,6 +1776,16 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+            if (flags == 5) // struct with two float-fields.
+            {
+                m_argLocDescForStructInRegs.Init();
+                m_hasArgLocDescForStructInRegs = true;
+                m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
+                assert(cFPRegs == 2);
+                m_argLocDescForStructInRegs.m_cFloatReg = 2;
+                assert(argSize == 8);
+                m_argLocDescForStructInRegs.m_structFields = 5;//flags=5;
+            }
             m_idxFPReg += cFPRegs;
             return argOfs;
         }
@@ -1791,14 +1805,15 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS);
+            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS)*8;
+            assert(m_ofsStack == 8);
             m_idxGenReg = NUM_ARGUMENT_REGISTERS;
             return argOfs;
         }
     }
 
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack * TARGET_POINTER_SIZE;
-    m_ofsStack += (ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE);
+    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
+    m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
     return argOfs;
 #else

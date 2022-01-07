@@ -93,16 +93,61 @@ public:
     void CopyStructToRegisters(void *src, int fieldBytes)
     {
         _ASSERTE(IsStructPassedInRegs());
-        _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
-        _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
         _ASSERTE(fieldBytes <= 16);
 
         int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_argLocDescForStructInRegs->m_idxFloatReg * 8;
-        *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
 
-        ////TODO:maybe optimize ?
-        argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
-        *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+        if (m_argLocDescForStructInRegs->m_structFields == 5)
+        {//struct with two floats.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 2);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 0);
+            *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
+            *(INT64*)((char*)m_base + argOfs + 8) = *((INT32*)src + 1);
+        }
+        else if (m_argLocDescForStructInRegs->m_structFields & 1)
+        {//the first field is float.
+            *(INT64*)((char*)m_base + argOfs) = *(INT32*)src;
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 6) == 0);//the second field is integer.
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+            if (m_argLocDescForStructInRegs->m_structFields & 0x40)
+                *(INT64*)((char*)m_base + argOfs) = *((INT32*)src + 1);//the second field is int32.
+            else
+                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+        }
+        else if (m_argLocDescForStructInRegs->m_structFields & 2)
+        {//the first field is double.
+            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 6) == 0);//the second field is integer.
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+            *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);//NOTE: here ignoring the size.
+        }
+        else if (m_argLocDescForStructInRegs->m_structFields & 4)
+        {//the second field is float.
+            if (m_argLocDescForStructInRegs->m_structFields & 0x40)
+                *(UINT64*)((char*)m_base + argOfs) = *((INT32*)src + 1);//the first field is int32.
+            else
+                *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 3) == 0);//the first field is integer.
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;//NOTE: here ignoring the size.
+        }
+        else if (m_argLocDescForStructInRegs->m_structFields & 8)
+        {//the second field is double.
+            *(UINT64*)((char*)m_base + argOfs) = *((UINT64*)src + 1);//NOTE: here ignoring the size.
+            _ASSERTE(m_argLocDescForStructInRegs->m_cFloatReg == 1);
+            _ASSERTE(m_argLocDescForStructInRegs->m_cGenReg == 1);
+            _ASSERTE((m_argLocDescForStructInRegs->m_structFields & 3) == 0);//the second field is integer.
+            argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_argLocDescForStructInRegs->m_idxGenReg * 8;
+            *(UINT64*)((char*)m_base + argOfs) = *(UINT64*)src;//NOTE: here ignoring the size.
+        }
+        else
+            _ASSERTE(!"---------UNReachable-------LoongArch64!!!");
     }
 #endif // !DACCESS_COMPILE
 

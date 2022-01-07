@@ -462,7 +462,13 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 argDest.CopyStructToRegisters(pSrc, th.AsMethodTable()->GetNumInstanceFieldBytes(), 0);
             }
             else
-#endif // UNIX_AMD64_ABI
+#elif defined(TARGET_LOONGARCH64)
+            if (argDest.IsStructPassedInRegs())
+            {
+                argDest.CopyStructToRegisters(pSrc, stackSize);
+            }
+            else
+#endif // TARGET_LOONGARCH64
             {
                 PVOID pDest = argDest.GetDestinationAddress();
 
