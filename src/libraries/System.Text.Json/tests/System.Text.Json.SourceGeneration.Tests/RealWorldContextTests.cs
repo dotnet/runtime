@@ -414,6 +414,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expected.ImageUrl, obj.ImageUrl);
             Assert.Equal(expected.Name, obj.Name);
             Assert.Equal(expected.StartDate, obj.StartDate);
+            Assert.Equal(expected.Offset, obj.Offset);
         }
 
         protected static CampaignSummaryViewModel CreateCampaignSummaryViewModel()
