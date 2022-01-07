@@ -9365,6 +9365,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             break;
 
+            // DYN_BLK is always an L-value.
+            case GT_DYN_BLK:
+                assert(!tree->CanCSE());
+                tree->gtVNPair = vnStore->VNPForVoid();
+                tree->gtVNPair =
+                    vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(tree->AsDynBlk()->Addr()->gtVNPair));
+                tree->gtVNPair =
+                    vnStore->VNPWithExc(tree->gtVNPair,
+                                        vnStore->VNPExceptionSet(tree->AsDynBlk()->gtDynamicSize->gtVNPair));
+                break;
+
             default:
                 assert(!"Unhandled special node in fgValueNumberTree");
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
