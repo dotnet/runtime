@@ -3,7 +3,10 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -103,6 +106,133 @@ namespace System.Security.Cryptography
             Debug.Assert(bytesWritten == HashSizeBytes);
 
             return true;
+        }
+
+        /// <summary>
+        /// Computes the hash of a stream using the MD5 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <p>
+        ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        ///   size. The MD5 algorithm always produces a 128-bit hash, or 16 bytes.
+        ///   </p>
+        ///   <p>-or-</p>
+        ///   <p>
+        ///   <paramref name="source" /> does not support reading.
+        ///   </p>
+        /// </exception>
+        public static int HashData(Stream source, Span<byte> destination)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < HashSizeBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeBytes, source, destination);
+        }
+
+        /// <summary>
+        /// Computes the hash of a stream using the MD5 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> does not support reading.
+        /// </exception>
+        public static byte[] HashData(Stream source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeBytes, source);
+        }
+
+        /// <summary>
+        /// Asynchronously computes the hash of a stream using the MD5 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> does not support reading.
+        /// </exception>
+        public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
+        {
+            if (source is null)
+                return ValueTask.FromException<byte[]>(new ArgumentNullException(nameof(source)));
+
+            if (!source.CanRead)
+                return ValueTask.FromException<byte[]>(
+                    new ArgumentException(SR.Argument_StreamNotReadable, nameof(source)));
+
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.MD5, HashSizeBytes, source, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously computes the hash of a stream using the MD5 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <p>
+        ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        ///   size. The MD5 algorithm always produces a 128-bit hash, or 16 bytes.
+        ///   </p>
+        ///   <p>-or-</p>
+        ///   <p>
+        ///   <paramref name="source" /> does not support reading.
+        ///   </p>
+        /// </exception>
+        public static ValueTask<int> HashDataAsync(
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken = default)
+        {
+            if (source is null)
+                return ValueTask.FromException<int>(new ArgumentNullException(nameof(source)));
+
+            if (destination.Length < HashSizeBytes)
+                return ValueTask.FromException<int>(
+                    new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination)));
+
+            if (!source.CanRead)
+                return ValueTask.FromException<int>(
+                    new ArgumentException(SR.Argument_StreamNotReadable, nameof(source)));
+
+            return LiteHashProvider.HashStreamAsync(
+                HashAlgorithmNames.MD5,
+                HashSizeBytes,
+                source,
+                destination,
+                cancellationToken);
         }
 
         private sealed class Implementation : MD5

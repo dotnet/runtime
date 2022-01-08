@@ -11,24 +11,15 @@ namespace System.Security.Cryptography
     {
         public static HashProvider CreateHashProvider(string hashAlgorithmId)
         {
-            Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+            Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
             return new AppleDigestProvider(algorithm);
         }
 
         public static HashProvider CreateMacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
-            Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+            Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
             return new AppleHmacProvider(algorithm, key);
         }
-
-        private static Interop.AppleCrypto.PAL_HashAlgorithm HashAlgorithmToPal(string hashAlgorithmId) => hashAlgorithmId switch {
-            HashAlgorithmNames.MD5 => Interop.AppleCrypto.PAL_HashAlgorithm.Md5,
-            HashAlgorithmNames.SHA1 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha1,
-            HashAlgorithmNames.SHA256 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha256,
-            HashAlgorithmNames.SHA384 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha384,
-            HashAlgorithmNames.SHA512 => Interop.AppleCrypto.PAL_HashAlgorithm.Sha512,
-            _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId))
-        };
 
         internal static class OneShotHashProvider
         {
@@ -38,7 +29,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 Span<byte> destination)
             {
-                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
 
                 fixed (byte* pKey = key)
                 fixed (byte* pSource = source)
@@ -69,7 +60,7 @@ namespace System.Security.Cryptography
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
-                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
 
                 fixed (byte* pSource = source)
                 fixed (byte* pDestination = destination)
@@ -144,7 +135,7 @@ namespace System.Security.Cryptography
 
             private void SetKey()
             {
-                if (Interop.AppleCrypto.HmacInit(_ctx, _key, _key.Length) != 1)
+                if (Interop.AppleCrypto.HmacInit(_ctx, new ReadOnlySpan<byte>(_key)) != 1)
                 {
                     throw new CryptographicException();
                 }

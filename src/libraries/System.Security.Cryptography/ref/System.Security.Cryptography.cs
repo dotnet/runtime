@@ -679,8 +679,14 @@ namespace System.Security.Cryptography
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
         public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -699,8 +705,14 @@ namespace System.Security.Cryptography
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
         public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -716,8 +728,14 @@ namespace System.Security.Cryptography
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
         public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -735,8 +753,14 @@ namespace System.Security.Cryptography
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
         public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -754,8 +778,14 @@ namespace System.Security.Cryptography
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
         public static byte[] HashData(byte[] key, byte[] source) { throw null; }
+        public static byte[] HashData(byte[] key, System.IO.Stream source) { throw null; }
+        public static byte[] HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source) { throw null; }
+        public static int HashData(System.ReadOnlySpan<byte> key, System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(byte[] key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.ReadOnlyMemory<byte> key, System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         protected override byte[] HashFinal() { throw null; }
         public override void Initialize() { }
         public static bool TryHashData(System.ReadOnlySpan<byte> key, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -822,8 +852,12 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.MD5? Create(string algName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public sealed partial class Oid
@@ -1183,8 +1217,12 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA1? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -1206,8 +1244,12 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA256? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -1229,8 +1271,12 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA384? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -1252,8 +1298,12 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static new System.Security.Cryptography.SHA512? Create(string hashName) { throw null; }
         public static byte[] HashData(byte[] source) { throw null; }
+        public static byte[] HashData(System.IO.Stream source) { throw null; }
+        public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     [System.ObsoleteAttribute("Derived cryptographic types are obsolete. Use the Create method on the base type instead.", DiagnosticId = "SYSLIB0021", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
