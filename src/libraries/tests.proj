@@ -448,8 +448,8 @@ Roslyn4.0.Tests.csproj" />
     <Samples_BuildInParallel Condition="'$(OS)' != 'Windows_NT'">true</Samples_BuildInParallel>
   </PropertyGroup>
 
-  <!-- Don't build samples, and functional tests on EAT, AOT, and WBT lanes -->
-  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestWasmBuildTests)' != 'true'">
+  <!-- Don't build samples, and functional tests on EAT, AOT, WBT, and Debugger lanes -->
+  <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(RunSmokeTestsOnly)' != 'true' and '$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' != 'true' and '$(TestWasmBuildTests)' != 'true' and '$(TestWasmDebuggerTests)' != 'true'">
     <ProjectReference Include="$(MonoProjectRoot)sample\wasm\**\*.Sample.csproj"
                       Exclude="@(ProjectExclusions)"
                       BuildInParallel="$(Samples_BuildInParallel)" />
