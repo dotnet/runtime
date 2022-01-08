@@ -574,7 +574,7 @@ namespace System
             }
 
             int offset = 0;
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
+            if ((Sse2.IsSupported/* || AdvSimd.IsSupported*/) && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
@@ -625,18 +625,14 @@ namespace System
                         Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
                         Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
 
-                // Unlike normal IndexOf, we need to find the last index even in the current chunk (there can be multiple results)
-                // Alternative solutions is to "reverse" the mask or use LZCNT?
-                int lastGoodPos = -1;
                 while (mask != 0)
                 {
-                    int bitPos = BitOperations.TrailingZeroCount(mask);
+                    // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                    int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
                     if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
-                        lastGoodPos = bitPos + offset;
-                    mask &= mask - 1;
+                        return bitPos + offset;
+                    mask &= ~(uint)(1 << bitPos); // clear the highest set bit.
                 }
-                if (lastGoodPos != -1)
-                    return lastGoodPos;
 
                 offset -= Vector256<byte>.Count;
                 if (offset == -Vector256<byte>.Count)
@@ -667,18 +663,14 @@ namespace System
                         Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
                         Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
 
-                // Unlike normal IndexOf, we need to find the last index even in the current chunk (there can be multiple results)
-                // Alternative solutions is to "reverse" the mask or use LZCNT?
-                int lastGoodPos = -1;
                 while (mask != 0)
                 {
-                    int bitPos = BitOperations.TrailingZeroCount(mask);
+                    // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                    int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
                     if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
-                        lastGoodPos = bitPos + offset;
-                    mask &= mask - 1;
+                        return bitPos + offset;
+                    mask &= ~(uint)(1 << bitPos); // clear the highest set bit.
                 }
-                if (lastGoodPos != -1)
-                    return lastGoodPos;
 
                 offset -= Vector128<byte>.Count;
                 if (offset == -Vector128<byte>.Count)
@@ -688,71 +680,6 @@ namespace System
                     offset = 0;
 
                 goto NEXT_SSE;
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
-
-                // Find the last unique (which is not equal to ch1) byte
-                // the algorithm is fine if both are equal, just a little bit less efficient
-                byte ch2Val = Unsafe.Add(ref value, valueTailLength);
-                int ch1ch2Distance = valueTailLength;
-                while (ch2Val == value && ch1ch2Distance > 1)
-                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
-
-                Vector128<byte> ch1 = Vector128.Create(value);
-                Vector128<byte> ch2 = Vector128.Create(ch2Val);
-
-            NEXT_ADVSIMD:
-                Vector128<ulong> bothEq = AdvSimd.And(
-                    AdvSimd.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
-                    AdvSimd.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))).AsUInt64();
-
-                ulong mask = AdvSimd.Extract(bothEq, 0);
-                int lastGoodPos = -1;
-
-                if (mask != 0)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if ((mask & 0xFF) != 0 &&
-                            SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + i), ref value, (nuint)(uint)valueLength))
-                        {
-                            lastGoodPos = offset + i;
-                        }
-                        mask >>= 8;
-                    }
-                }
-
-                if (lastGoodPos != -1)
-                    return lastGoodPos;
-
-                // Inspect the second lane
-                mask = AdvSimd.Extract(bothEq, 1);
-                if (mask != 0)
-                {
-                    for (int i = 0; i < 8; i++)
-                    {
-                        if ((mask & 0xFF) != 0 &&
-                            SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + i + 8), ref value, (nuint)(uint)valueLength))
-                        {
-                            lastGoodPos = offset + i + 8;
-                        }
-                        mask >>= 8;
-                    }
-                }
-
-                if (lastGoodPos != -1)
-                    return lastGoodPos;
-
-                offset -= Vector128<byte>.Count;
-                if (offset == -Vector128<byte>.Count)
-                    return -1;
-                // Overlap with the current chunk if there is not enough room for the next one
-                if (offset < 0)
-                    offset = 0;
-
-                goto NEXT_ADVSIMD;
             }
 
             Debug.Fail("Unreachable");
