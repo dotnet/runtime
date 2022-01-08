@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <!-- TODO: Turn this into a nuget package -->
+    <!--<IsPackable>true</IsPackable>-->
+    <PackageDescription>TODO</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System\Security\Cryptography\Cose\CoseHeaderLabel.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\CoseHeaderMap.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\CoseMessage.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\CoseSign1Message.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\KnownCoseAlgorithms.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\KnownHashAlgorithms.cs" />
+    <Compile Include="System\Security\Cryptography\Cose\KnownHeaders.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- TODO: Private version replace with an official one when available -->
+    <PackageReference Include="System.Formats.Cbor" Version="7.0.0-dev" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+  </ItemGroup>
+</Project>
