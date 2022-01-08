@@ -3728,7 +3728,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicToScalar: Lowers a tree AND(X, SUB(X, 1) to HWIntrinsic::ResetLowestSetBit
+// Lowering::LowerHWIntrinsicToScalar: Lowers a tree AND(X, ADD(X, -1) to HWIntrinsic::ResetLowestSetBit
 //     Returns the recplacement node if one is created else nullptr indicating no replacement
 //
 // Parameters
@@ -3738,13 +3738,12 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
-    if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_ADD))
+    if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_ADD) && !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed() )
     {
-        GenTree* op21 = op2->gtGetOp1();
-        GenTree* op22 = op2->gtGetOp2();
-        if (op22->IsCnsIntOrI() && op22->AsIntCon()->IconValue() == -1 && op21->OperIs(GT_LCL_VAR) &&
-            !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed() &&
-            op21->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum() &&
+        GenTree* addOp1 = op2->gtGetOp1();
+        GenTree* addOp2 = op2->gtGetOp2();
+        if (addOp2->IsIntegralConst(-1) && addOp1->OperIs(GT_LCL_VAR) &&
+            addOp1->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum() &&
             (
                 (op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
                 comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)) // if op1->TypeGet()!=TYP_LONG then it must be TYP_INT
@@ -3753,6 +3752,9 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use))
             {
+                // If we allow the use of BSLR where the parent is NE or EQ it will generate "blsr, test"
+                // if we prevent the use of BSLR here then the OptimizeConstCompare lowering may generate
+                //   TEST_NE or TEST_EQ leading to a cheaper "lea, test"
                 GenTree* user = use.User();
                 if (user != nullptr && !user->OperIs(GT_EQ, GT_NE))
                 {
@@ -3762,7 +3764,7 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
                                                              ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
                                                              : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
 
-                    JITDUMP("Lower: optimize AND(X, SUB(X, 1)): ");
+                    JITDUMP("Lower: optimize AND(X, ADD(X, -1)): ");
                     DISPNODE(node);
                     JITDUMP("Replaced with: ");
                     DISPNODE(replacementNode);
@@ -3773,8 +3775,8 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
                     BlockRange().InsertBefore(node, replacementNode);
                     BlockRange().Remove(node);
                     BlockRange().Remove(op2);
-                    BlockRange().Remove(op21);
-                    BlockRange().Remove(op22);
+                    BlockRange().Remove(addOp1);
+                    BlockRange().Remove(addOp2);
                     JITDUMP("Remove [%06u], [%06u]\n", node->gtTreeID, node->gtTreeID);
 
                     ContainCheckHWIntrinsic(replacementNode);
