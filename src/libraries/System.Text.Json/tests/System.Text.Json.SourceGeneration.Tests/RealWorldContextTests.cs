@@ -399,7 +399,8 @@ namespace System.Text.Json.SourceGeneration.Tests
                 EndDate = DateTime.UtcNow.AddYears(1),
                 Name = "Just a name",
                 ImageUrl = "https://www.dotnetfoundation.org/theme/img/carousel/foundation-diagram-content.png",
-                StartDate = DateTime.UtcNow
+                StartDate = DateTime.UtcNow,
+                Offset = TimeSpan.FromHours(2)
             };
         }
 
@@ -413,6 +414,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal(expected.ImageUrl, obj.ImageUrl);
             Assert.Equal(expected.Name, obj.Name);
             Assert.Equal(expected.StartDate, obj.StartDate);
+            Assert.Equal(expected.Offset, obj.Offset);
         }
 
         protected static CampaignSummaryViewModel CreateCampaignSummaryViewModel()
