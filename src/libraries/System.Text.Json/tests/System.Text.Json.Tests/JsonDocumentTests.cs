@@ -2050,6 +2050,8 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData(">>")]
         [InlineData(">>>")]
+        [InlineData(">>a")]
+        [InlineData(">a>")]
         public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testData)
         {
             string jsonString = JsonSerializer.Serialize(new { DateTimeProperty = testData });
