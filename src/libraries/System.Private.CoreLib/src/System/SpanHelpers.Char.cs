@@ -91,14 +91,15 @@ namespace System
 
                 while (mask != 0)
                 {
+                    int bitPos = BitOperations.TrailingZeroCount(mask);
                     // div by 2 (shr) because we work with 2-byte chars
-                    int bitPos = (int)((uint)BitOperations.TrailingZeroCount(mask) / 2);
+                    int charPos = (int)((uint)bitPos  / 2);
                     if (SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + bitPos)),
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
                             ref Unsafe.As<char, byte>(ref value),
                             (nuint)(uint)valueLength * 2))
                     {
-                        return index + bitPos;
+                        return index + charPos;
                     }
 
                     // Clear two lowest set bits
@@ -138,14 +139,15 @@ namespace System
 
                 while (mask != 0)
                 {
+                    int bitPos = BitOperations.TrailingZeroCount(mask);
                     // div by 2 (shr) because we work with 2-byte chars
-                    int bitPos = (int)((uint)BitOperations.TrailingZeroCount(mask) / 2);
+                    int charPos = (int)((uint)bitPos / 2);
                     if (SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + bitPos)),
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
                             ref Unsafe.As<char, byte>(ref value),
                             (nuint)(uint)valueLength * 2))
                     {
-                        return index + bitPos;
+                        return index + charPos;
                     }
 
                     // Clear two lowest set bits
