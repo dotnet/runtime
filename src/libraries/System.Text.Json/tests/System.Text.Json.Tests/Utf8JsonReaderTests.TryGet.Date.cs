@@ -255,6 +255,8 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [MemberData(nameof(Utf8JsonReaderTests.InvalidDateTimePropertyValueData))]
+        [InlineData(@"""\u001c\u0001""")]
+        [InlineData(@"""\u001c\u0001\u0001""")]
         public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testString)
         {
             var dataUtf8 = Encoding.UTF8.GetBytes(testString);
