@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
@@ -4533,6 +4534,15 @@ namespace System.Text.Json.Tests
 
                 return dataList;
             }
+        }
+
+        public static IEnumerable<object[]> InvalidDateTimePropertyValueData()
+        {
+            // DateTime value length less than System.Text.Json.JsonConstants.MinimumDateTimeParseLength = 10
+            yield return new object[] { string.Join("", Enumerable.Repeat(@"""\u003e""", 9)) };
+
+            // DateTime value length more than System.Text.Json.JsonConstants.MaximumEscapedDateTimeOffsetParseLength = 252
+            yield return new object[] { string.Join("", Enumerable.Repeat(@"""\u003e""", 253)) };
         }
     }
 }

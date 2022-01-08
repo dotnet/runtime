@@ -2047,6 +2047,42 @@ namespace System.Text.Json.Tests
             }
         }
 
+        public static IEnumerable<object[]> InvalidDateTimePropertyValueData()
+        {
+            foreach (var str in new string[] { ">", "\u003e" })
+            {
+                // DateTime value length less than System.Text.Json.JsonConstants.MinimumDateTimeParseLength = 10
+                // DateTime value length more than System.Text.Json.JsonConstants.MaximumEscapedDateTimeOffsetParseLength = 252
+                foreach (var count in new int[] { 9, 253 })
+                {
+                    yield return new object[] { string.Join("", Enumerable.Repeat(str, count)) };
+                }
+            }
+        }
+
+
+        [Theory]
+        [MemberData(nameof(InvalidDateTimePropertyValueData))]
+        public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testData)
+        {
+            string jsonString = $"{{ \"DateTimeProperty\": \"{testData}\" }}";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            using (JsonDocument doc = JsonDocument.Parse(dataUtf8, default))
+            {
+                JsonElement root = doc.RootElement;
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTime(out DateTime datetimeValue));
+                Assert.Equal(default, datetimeValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTime());
+
+                Assert.False(root.GetProperty("DateTimeProperty").TryGetDateTimeOffset(out DateTimeOffset datetimeOffsetValue));
+                Assert.Equal(default, datetimeOffsetValue);
+                Assert.Throws<FormatException>(() => root.GetProperty("DateTimeProperty").GetDateTimeOffset());
+            }
+        }
+
         [Theory]
         [InlineData("")]
         [InlineData("    ")]
