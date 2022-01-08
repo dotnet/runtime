@@ -35,10 +35,11 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        dotnetWasmFromRuntimePack: true,
-                        id: id,
-                        createProject: true);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
+                                DotnetWasmFromRuntimePack: true,
+                                CreateProject: true));
 
             Run();
 
@@ -52,9 +53,10 @@ namespace Wasm.Build.Tests
             // no-op Rebuild
             BuildProject(buildArgs,
                         id: id,
-                        dotnetWasmFromRuntimePack: true,
-                        createProject: false,
-                        useCache: false);
+                        new BuildProjectOptions(
+                            DotnetWasmFromRuntimePack: true,
+                            CreateProject: false,
+                            UseCache: false));
 
             Run();
 
