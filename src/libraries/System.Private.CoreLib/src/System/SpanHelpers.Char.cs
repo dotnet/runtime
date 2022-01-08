@@ -33,7 +33,7 @@ namespace System
             }
 
             // Avx2 implies Sse2
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
+            if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
@@ -100,7 +100,12 @@ namespace System
                     {
                         return index + bitPos;
                     }
-                    mask &= mask - 1;
+
+                    // Clear two lowest set bits
+                    if (Bmi1.IsSupported)
+                        mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                    else
+                        mask &= ~(uint)(0b11 << bitPos);
                 }
                 index += Vector256<ushort>.Count;
 
@@ -142,7 +147,12 @@ namespace System
                     {
                         return index + bitPos;
                     }
-                    mask &= mask - 1;
+
+                    // Clear two lowest set bits
+                    if (Bmi1.IsSupported)
+                        mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                    else
+                        mask &= ~(uint)(0b11 << bitPos);
                 }
                 index += Vector128<ushort>.Count;
 
@@ -154,69 +164,6 @@ namespace System
                     index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
 
                 goto NEXT_SSE;
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                // Find the last unique (which is not equal to ch1) character
-                // the algorithm is fine if both are equal, just a little bit less efficient
-                ushort ch2Val = Unsafe.Add(ref value, valueTailLength);
-                int ch1ch2Distance = valueTailLength;
-                while (ch2Val == value && ch1ch2Distance > 1)
-                    ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
-
-                Vector128<ushort> ch1 = Vector128.Create((ushort)value);
-                Vector128<ushort> ch2 = Vector128.Create(ch2Val);
-
-            NEXT_ADVSIMD:
-                Vector128<ulong> bothEq = AdvSimd.And(
-                    AdvSimd.CompareEqual(ch1, LoadVector128(ref searchSpace, index)),
-                    AdvSimd.CompareEqual(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance))).AsUInt64();
-
-                ulong mask = AdvSimd.Extract(bothEq, 0);
-                if (mask != 0)
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        if ((mask & 0xFFFF) != 0 &&
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + i)),
-                                ref Unsafe.As<char, byte>(ref value),
-                                (nuint)(uint)valueLength * 2))
-                        {
-                            return index + i;
-                        }
-                        mask >>= 16;
-                    }
-                }
-
-                // Inspect the second lane
-                mask = AdvSimd.Extract(bothEq, 1);
-                if (mask != 0)
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        if ((mask & 0xFFFF) != 0 &&
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + i + 4)),
-                                ref Unsafe.As<char, byte>(ref value),
-                                (nuint)(uint)valueTailLength * 2))
-                        {
-                            return index + i + 4;
-                        }
-                        mask >>= 16;
-                    }
-                }
-
-                index += Vector128<ushort>.Count;
-
-                if (index + valueTailLength == searchSpaceLength)
-                    return -1;
-
-                // Overlap with the current chunk if there is not enough room for the next one
-                if (index + valueTailLength + Vector128<ushort>.Count > searchSpaceLength)
-                    index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
-
-                goto NEXT_ADVSIMD;
             }
 
             Debug.Fail("Unreachable");
