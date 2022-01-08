@@ -774,11 +774,25 @@ namespace System
             if (valueLength == 0)
                 return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
-            T valueHead = value;
-            ref T valueTail = ref Unsafe.Add(ref value, 1);
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == 1)
+                    return LastIndexOf(ref Unsafe.As<T, byte>(ref searchSpace), searchSpaceLength, ref Unsafe.As<T, byte>(ref value), valueLength);
+                if (Unsafe.SizeOf<T>() == 2)
+                    return LastIndexOf(ref Unsafe.As<T, char>(ref searchSpace), searchSpaceLength, ref Unsafe.As<T, char>(ref value), valueLength);
+            }
+
             int valueTailLength = valueLength - 1;
+            if (valueTailLength == 0)
+            {
+                return LastIndexOf(ref searchSpace, value, searchSpaceLength);
+            }
 
             int index = 0;
+
+            T valueHead = value;
+            ref T valueTail = ref Unsafe.Add(ref value, 1);
+
             while (true)
             {
                 Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".
