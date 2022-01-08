@@ -375,6 +375,9 @@ namespace System.Text.Json.SourceGeneration
                     GuidType = _guidType,
                     StringType = _stringType,
                     NumberTypes = _numberTypes,
+#if DEBUG
+                    MetadataLoadContext = _metadataLoadContext,
+#endif
                 };
             }
 
