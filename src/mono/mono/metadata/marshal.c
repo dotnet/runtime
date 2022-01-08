@@ -3081,6 +3081,19 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoMarshalSpec *spec, int conv_arg,
 	      MonoType **conv_arg_type, MarshalAction action)
 {
+	// Some phases like MARSHAL_ACTION_PUSH need to still emit "correct" IL for the IL stack to be valid.
+	// For those phases, we won't emit the exception throw.
+	// In all other phases we'll emit the exception throw.
+	gboolean emit_exception = action == MARSHAL_ACTION_CONV_IN || action == MARSHAL_ACTION_CONV_RESULT;
+
+	if (m_type_is_byref(t)) {
+		if (emit_exception)
+			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed references when the built-in marshalling system is disabled.");	
+		else
+			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+		return conv_arg;
+	}
+
 	switch (t->type) {
 	case MONO_TYPE_GENERICINST:
 		if (!mono_type_generic_inst_is_valuetype (t))
@@ -3089,19 +3102,22 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass* c = mono_class_from_mono_type_internal (t);
 		if (m_class_has_references(c)) {
-			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
-			// Emit the scalar marshalling after the exception so we still have valid IL.
-			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			if (emit_exception)
+				get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
+			else
+				get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 			return conv_arg;
 		}
 		if (m_class_any_field_has_auto_layout(c)) {
-			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled.");
-			// Emit the scalar marshalling after the exception so we still have valid IL.
-			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+			if (emit_exception)
+				get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled.");
+			else
+				get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 			return conv_arg;
 		}
 	}
 	// fallthrough
+	case MONO_TYPE_VOID:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_CHAR:
@@ -3122,10 +3138,11 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	default:
 		break;
 	}
-	
-	get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
-	// Emit the scalar marshalling after the exception so we still have valid IL.
-	get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
+
+	if (emit_exception)
+		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");	
+	else
+		get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	return conv_arg;
 }
 

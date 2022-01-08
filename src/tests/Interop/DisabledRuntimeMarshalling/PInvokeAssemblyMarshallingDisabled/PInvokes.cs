@@ -48,12 +48,14 @@ public class PInvokes
     }
 
     [Fact]
+    [SkipOnMono("Mono does not support LCIDs at all and it is not worth the effort to add support just to make it throw an exception.")]
     public static void LCID_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithLCID());
     }
 
     [Fact]
+    [SkipOnMono("Mono does not support PreserveSig=False in P/Invokes and it is not worth the effort to add support just to make it throw an exception.")]
     public static void PreserveSig_False_NotSupported()
     {
         Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithHResultSwap());

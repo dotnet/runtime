@@ -2106,6 +2106,10 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		csig->ret = int_type;
 	}
 
+	// Check if SetLastError usage is valid early so we don't try to throw an exception after transitioning GC modes.
+	if (piinfo && (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) && !m.runtime_marshalling_enabled)
+		mono_mb_emit_exception_marshal_directive(mb, g_strdup("Setting SetLastError=true is not supported when runtime marshalling is disabled."));
+
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
 	m.orig_conv_args = g_newa (int, sig->param_count + 1);
