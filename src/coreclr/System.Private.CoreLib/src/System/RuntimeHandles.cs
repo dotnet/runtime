@@ -15,7 +15,7 @@ using Internal.Runtime.CompilerServices;
 namespace System
 {
     [NonVersionable]
-    public unsafe partial struct RuntimeTypeHandle : ISerializable
+    public unsafe partial struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeTypeHandle GetNativeHandle()
@@ -814,7 +814,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe partial struct RuntimeMethodHandle : ISerializable
+    public unsafe partial struct RuntimeMethodHandle : IEquatable<RuntimeMethodHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal static IRuntimeMethodInfo EnsureNonNullMethodInfo(IRuntimeMethodInfo method)
@@ -1139,7 +1139,7 @@ namespace System
     }
 
     [NonVersionable]
-    public unsafe struct RuntimeFieldHandle : ISerializable
+    public unsafe struct RuntimeFieldHandle : IEquatable<RuntimeFieldHandle>, ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal RuntimeFieldHandle GetNativeHandle()

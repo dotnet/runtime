@@ -330,20 +330,9 @@ namespace System.Data.Odbc
                 quoteSuffix = quotePrefix;
             }
 
+            // ignoring the return value because it is acceptable for the quotedString to not be quoted in this context.
             string? unquotedIdentifier;
-            // by the ODBC spec "If the data source does not support quoted identifiers, a blank is returned."
-            // So if a blank is returned the string is returned unchanged. Otherwise the returned string is used
-            // to unquote the string
-            if (!string.IsNullOrEmpty(quotePrefix) || quotePrefix != " ")
-            {
-                // ignoring the return value because it is acceptable for the quotedString to not be quoted in this
-                // context.
-                ADP.RemoveStringQuotes(quotePrefix, quoteSuffix, quotedIdentifier, out unquotedIdentifier);
-            }
-            else
-            {
-                unquotedIdentifier = quotedIdentifier;
-            }
+            ADP.RemoveStringQuotes(quotePrefix, quoteSuffix, quotedIdentifier, out unquotedIdentifier);
             return unquotedIdentifier!;
         }
     }

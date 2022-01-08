@@ -424,9 +424,9 @@ namespace ETW
 
         }LoaderStructs;
 
-        static void DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL);
+        static void DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL);
 
-        static void DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName = NULL)
+        static void DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName = NULL)
         {
 #ifndef FEATURE_PAL
             if (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled)
@@ -441,7 +441,7 @@ namespace ETW
         static void ModuleLoad(Module *pModule, LONG liReportedSharedModule);
 #else
     public:
-        static void DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL) {};
+        static void DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL) {};
         static void DomainUnload(AppDomain *pDomain) {};
         static void CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
         static void ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
@@ -991,7 +991,7 @@ ULONG
 CoMofTemplate_h(
     _In_ REGHANDLE RegHandle,
     _In_ PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
+    _In_opt_ LPCGUID EventGuid,
     _In_ const unsigned short  ClrInstanceID
     )
 {

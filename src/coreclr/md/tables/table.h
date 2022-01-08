@@ -62,7 +62,7 @@ public:
     __checkReturn
     inline HRESULT GetRecord(
                         UINT32 nRowIndex,
-        __deref_out_opt BYTE **ppRecord,
+        _Outptr_opt_ BYTE **ppRecord,
                         UINT32 cbRecordSize,
                         UINT32 cRecordCount,
                         UINT32 nTableIndex)
@@ -159,7 +159,7 @@ public:
     __checkReturn
     inline HRESULT GetRecord(
                         UINT32 nIndex,
-        __deref_out_opt BYTE **ppRecord)
+        _Outptr_opt_ BYTE **ppRecord)
     {
         return m_RecordStorage.GetRecord(nIndex, ppRecord);
     }

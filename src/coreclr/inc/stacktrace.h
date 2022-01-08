@@ -61,7 +61,7 @@ void MagicDeinit(void);
 *
 *           0x<address>: <module>! <symbol> + 0x<offset>
 ******************************************************************** robch */
-void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, __out_ecount(cchMaxAssertStackLevelStringLen * cfrTotal) CHAR *pszString, struct _CONTEXT * pContext = NULL);
+void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, _Out_writes_(cchMaxAssertStackLevelStringLen * cfrTotal) CHAR *pszString, struct _CONTEXT * pContext = NULL);
 
 /****************************************************************************
 * GetStringFromAddr *
@@ -71,7 +71,7 @@ void GetStringFromStackLevels(UINT ifrStart, UINT cfrTotal, __out_ecount(cchMaxA
 *
 *           0x<address>: <module>! <symbol> + 0x<offset>
 ******************************************************************** robch */
-void GetStringFromAddr(DWORD_PTR dwAddr, __out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString);
+void GetStringFromAddr(DWORD_PTR dwAddr, _Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString);
 
 #if defined(HOST_X86) && !defined(TARGET_UNIX)
 /****************************************************************************

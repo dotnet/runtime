@@ -44,7 +44,7 @@ public:
     inline DataBlob();
     // Creates memory block (pbData, of size cbSize).
     inline DataBlob(
-        __in_bcount_opt(cbSize) BYTE  *pbData,
+        _In_reads_bytes_opt_(cbSize) BYTE  *pbData,
                                 UINT32 cbSize);
     // Creates memory block copy.
     inline DataBlob(
@@ -53,7 +53,7 @@ public:
     inline void Clear();
     // Initializes memory block to data (pbData, of size cbSize). The object should be empty before.
     inline void Init(
-        __in_bcount_opt(cbSize) BYTE  *pbData,
+        _In_reads_bytes_opt_(cbSize) BYTE  *pbData,
                                 UINT32 cbSize);
 
     //

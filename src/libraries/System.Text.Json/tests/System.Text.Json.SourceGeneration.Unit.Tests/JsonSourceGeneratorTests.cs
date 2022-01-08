@@ -449,22 +449,216 @@ namespace System.Text.Json.Serialization
             CheckFieldsPropertiesMethods(myType, expectedFieldNames, expectedPropertyNames, expectedMethodNames);
         }
 
+        [Fact]
+        public void Record()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedLibRecordCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = @"
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                [JsonSerializable(typeof(AppRecord))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
+                public record AppRecord(int Id)
+                {
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(generatorDiags);
+            CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
+
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
+            // Check base functionality of found types.
+            Assert.Equal(1, types.Count);
+            Type recordType = types["HelloWorld.AppRecord"];
+            Assert.Equal("HelloWorld.AppRecord", recordType.FullName);
+
+            // Check for received fields, properties and methods for NotMyType.
+            string[] expectedFieldsNames = { "Country", "PhoneNumber" };
+            string[] expectedPropertyNames = { "Address1", "Address2", "City", "Id", "Name", "PostalCode", "State" };
+            CheckFieldsPropertiesMethods(recordType, expectedFieldsNames, expectedPropertyNames);
+
+            Assert.Equal(1, recordType.GetConstructors().Length);
+        }
+
+        [Fact]
+        public void RecordInExternalAssembly()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedLibRecordCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = @"
+            using System.Text.Json.Serialization;
+            using ReferencedAssembly;
+
+            namespace HelloWorld
+            {
+                [JsonSerializable(typeof(LibRecord))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(generatorDiags);
+            CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
+
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
+            Assert.Equal(1, types.Count);
+            Type recordType = types["ReferencedAssembly.LibRecord"];
+            Assert.Equal("ReferencedAssembly.LibRecord", recordType.FullName);
+
+            string[] expectedFieldsNames = { "Country", "PhoneNumber" };
+            string[] expectedPropertyNames = { "Address1", "Address2", "City", "Id", "Name", "PostalCode", "State" };
+            CheckFieldsPropertiesMethods(recordType, expectedFieldsNames, expectedPropertyNames);
+
+            Assert.Equal(1, recordType.GetConstructors().Length);
+        }
+
+        [Fact]
+        public void RecordDerivedFromRecordInExternalAssembly()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedSimpleLibRecordCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = @"
+            using System.Text.Json.Serialization;
+            using ReferencedAssembly;
+
+            namespace HelloWorld
+            {
+                [JsonSerializable(typeof(AppRecord))]
+                internal partial class JsonContext : JsonSerializerContext
+                {
+                }
+
+                internal record AppRecord : LibRecord
+                {
+                    public string ExtraData { get; set; }
+                }
+            }";
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out ImmutableArray<Diagnostic> generatorDiags, generator);
+
+            // Make sure compilation was successful.
+            CheckCompilationDiagnosticsErrors(generatorDiags);
+            CheckCompilationDiagnosticsErrors(newCompilation.GetDiagnostics());
+
+            Dictionary<string, Type> types = generator.GetSerializableTypes();
+
+            Assert.Equal(1, types.Count);
+            Type recordType = types["HelloWorld.AppRecord"];
+            Assert.Equal("HelloWorld.AppRecord", recordType.FullName);
+
+            string[] expectedFieldsNames = { "Country", "PhoneNumber" };
+            string[] expectedPropertyNames = { "Address1", "Address2", "City", "ExtraData", "Id", "Name", "PostalCode", "State" };
+            CheckFieldsPropertiesMethods(recordType, expectedFieldsNames, expectedPropertyNames, inspectBaseTypes: true);
+
+            Assert.Equal(1, recordType.GetConstructors().Length);
+        }
+
         private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
         {
             Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
         }
 
-        private void CheckFieldsPropertiesMethods(Type type, string[] expectedFields, string[] expectedProperties, string[] expectedMethods)
+        private void CheckFieldsPropertiesMethods(
+            Type type,
+            string[] expectedFields,
+            string[] expectedProperties,
+            string[] expectedMethods = null,
+            bool inspectBaseTypes = false)
         {
             BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.Instance;
 
-            string[] receivedFields = type.GetFields(bindingFlags).Select(field => field.Name).OrderBy(s => s).ToArray();
-            string[] receivedProperties = type.GetProperties(bindingFlags).Select(property => property.Name).OrderBy(s => s).ToArray();
+            string[] receivedFields;
+            string[] receivedProperties;
+
+            if (!inspectBaseTypes)
+            {
+                receivedFields = type.GetFields(bindingFlags).Select(field => field.Name).OrderBy(s => s).ToArray();
+                receivedProperties = type.GetProperties(bindingFlags).Select(property => property.Name).OrderBy(s => s).ToArray();
+            }
+            else
+            {
+                List<string> fields = new List<string>();
+                List<string> props = new List<string>();
+
+                Type currentType = type;
+                while (currentType != null)
+                {
+                    fields.AddRange(currentType.GetFields(bindingFlags).Select(property => property.Name).OrderBy(s => s).ToArray());
+                    props.AddRange(currentType.GetProperties(bindingFlags).Select(property => property.Name).OrderBy(s => s).ToArray());
+                    currentType = currentType.BaseType;
+                }
+
+                receivedFields = fields.ToArray();
+                receivedProperties = props.ToArray();
+            }
+                
             string[] receivedMethods = type.GetMethods().Select(method => method.Name).OrderBy(s => s).ToArray();
+
+            Array.Sort(receivedFields);
+            Array.Sort(receivedProperties);
+            Array.Sort(receivedMethods);
 
             Assert.Equal(expectedFields, receivedFields);
             Assert.Equal(expectedProperties, receivedProperties);
-            Assert.Equal(expectedMethods, receivedMethods);
+
+            if (expectedMethods != null)
+            {
+                Assert.Equal(expectedMethods, receivedMethods);
+            }
         }
 
         // TODO: add test guarding against (de)serializing static classes.
@@ -521,6 +715,37 @@ namespace System.Text.Json.Serialization
             Dictionary<string, Type> types = generator.GetSerializableTypes();
             Assert.Equal(1, types.Count);
             Assert.Equal("HelloWorld.MyType", types.Keys.First());
+        }
+
+        [Fact]
+        public static void NoWarningsDueToObsoleteMembers()
+        {
+                string source = @"using System;
+using System.Text.Json.Serialization;
+
+namespace Test
+{
+    [JsonSerializable(typeof(ClassWithObsolete))]
+    public partial class JsonContext : JsonSerializerContext { }
+
+    public class ClassWithObsolete
+    {
+        [Obsolete(""This is a test"")]
+        public bool Test { get; set; }
+    }
+}
+";
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out _, generator);
+            ImmutableArray<Diagnostic> generatorDiags = newCompilation.GetDiagnostics();
+
+            // No diagnostics expected.
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
     }
 }

@@ -110,7 +110,7 @@ protected:
     FORCEINLINE HRESULT Impl_GetRow(
                         UINT32 nTableIndex,
                         UINT32 nRowIndex,
-        __deref_out_opt BYTE **ppRecord)
+        _Outptr_opt_ BYTE **ppRecord)
     {
         _ASSERTE(nTableIndex < TBL_COUNT);
         return m_Tables[nTableIndex].GetRecord(

@@ -335,7 +335,7 @@ void ConsoleArgs::CleanUpArgs()
     }
 }
 
-bool ConsoleArgs::GetFullFileName(LPCWSTR szSource, __out_ecount(cchFilenameBuffer) LPWSTR filenameBuffer, DWORD cchFilenameBuffer, bool fOutputFilename)
+bool ConsoleArgs::GetFullFileName(LPCWSTR szSource, _Out_writes_(cchFilenameBuffer) LPWSTR filenameBuffer, DWORD cchFilenameBuffer, bool fOutputFilename)
 {
 #ifdef TARGET_UNIX
     WCHAR tempBuffer[MAX_LONGPATH];
@@ -680,7 +680,7 @@ LEADINGWHITE:
 // We expand any response files that may be contained in the args and return a new
 // set of args, pargc2 and pppargv2 that contain the full flat command line.
 //
-bool ConsoleArgs::ExpandResponseFiles(_In_ int argc, __deref_in_ecount(argc) const LPCWSTR * argv, int * pargc2, __deref_out_ecount(*pargc2) LPWSTR ** pppargv2)
+bool ConsoleArgs::ExpandResponseFiles(_In_ int argc, _In_reads_(argc) const LPCWSTR * argv, int * pargc2, _Outptr_result_buffer_(*pargc2) LPWSTR ** pppargv2)
 {
     *pargc2 = 0;
     *pppargv2 = NULL;
@@ -751,7 +751,7 @@ bool ConsoleArgs::ExpandResponseFiles(_In_ int argc, __deref_in_ecount(argc) con
 // Read file to end, converting to unicode
 // ppwzTextBuffer is allocated.  Caller is responsible for freeing
 //
-bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, __deref_out LPWSTR *ppwzTextBuffer)
+bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, _Outptr_ LPWSTR *ppwzTextBuffer)
 {
     bool success = false;
     char *bufA = nullptr;

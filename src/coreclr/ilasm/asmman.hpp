@@ -195,10 +195,10 @@ class AsmMan
 
     AsmManFile*         GetFileByName(_In_ __nullterminated char* szFileName);
     AsmManAssembly*     GetAsmRefByName(_In_ __nullterminated const char* szAsmRefName);
-    AsmManComType*      GetComTypeByName(__in_opt __nullterminated char* szComTypeName,
-                                         __in_opt __nullterminated char* szComEnclosingTypeName = NULL);
-    mdToken             GetComTypeTokByName(__in_opt __nullterminated char* szComTypeName,
-                                            __in_opt __nullterminated char* szComEnclosingTypeName = NULL);
+    AsmManComType*      GetComTypeByName(_In_opt_z_ char* szComTypeName,
+                                         _In_opt_z_ char* szComEnclosingTypeName = NULL);
+    mdToken             GetComTypeTokByName(_In_opt_z_ char* szComTypeName,
+                                            _In_opt_z_ char* szComEnclosingTypeName = NULL);
 
     IMetaDataEmit*          m_pEmitter;
 
@@ -245,7 +245,7 @@ public:
     void    EmitFiles();
 	void	EmitDebuggableAttribute(mdToken tkOwner);
 
-	void	StartAssembly(_In_ __nullterminated char* szName, __in_opt __nullterminated char* szAlias, DWORD dwAttr, BOOL isRef);
+	void	StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef);
 	void	EndAssembly();
     void    EmitAssemblyRefs();
     void    EmitAssembly();

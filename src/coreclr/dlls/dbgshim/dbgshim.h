@@ -66,7 +66,7 @@ EXTERN_C HRESULT
 CreateVersionStringFromModule(
     _In_ DWORD pidDebuggee,
     _In_ LPCWSTR szModuleName,
-    __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pBuffer,
+    _Out_writes_to_opt_(cchBuffer, *pdwLength) LPWSTR pBuffer,
     _In_ DWORD cchBuffer,
     _Out_ DWORD* pdwLength);
 
