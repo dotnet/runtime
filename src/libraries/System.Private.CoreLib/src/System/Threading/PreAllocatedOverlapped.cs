@@ -136,7 +136,5 @@ namespace System.Threading
                 }
             }
         }
-
-        internal bool IsUserObject(byte[]? buffer) => _overlapped.IsUserObject(buffer);
     }
 }

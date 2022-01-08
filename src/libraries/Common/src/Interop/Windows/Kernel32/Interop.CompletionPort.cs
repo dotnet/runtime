@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 internal static partial class Interop
 {
@@ -13,10 +14,29 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool PostQueuedCompletionStatus(IntPtr CompletionPort, int dwNumberOfBytesTransferred, UIntPtr CompletionKey, IntPtr lpOverlapped);
+        internal static partial bool PostQueuedCompletionStatus(IntPtr CompletionPort, uint dwNumberOfBytesTransferred, UIntPtr CompletionKey, IntPtr lpOverlapped);
 
         [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool GetQueuedCompletionStatus(IntPtr CompletionPort, out int lpNumberOfBytes, out UIntPtr CompletionKey, out IntPtr lpOverlapped, int dwMilliseconds);
+
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool GetQueuedCompletionStatusEx(
+            IntPtr CompletionPort,
+            OVERLAPPED_ENTRY* lpCompletionPortEntries,
+            int ulCount,
+            out int ulNumEntriesRemoved,
+            int dwMilliseconds,
+            [MarshalAs(UnmanagedType.Bool)] bool fAlertable);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct OVERLAPPED_ENTRY
+        {
+            public UIntPtr lpCompletionKey;
+            public NativeOverlapped* lpOverlapped;
+            public UIntPtr Internal;
+            public uint dwNumberOfBytesTransferred;
+        }
     }
 }

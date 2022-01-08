@@ -118,5 +118,34 @@ namespace System.Threading
             _callbackQueued = false;
             ThreadPoolWorkQueue.Dispatch();
         }
+
+        private static unsafe void NativeOverlappedCallback(object? obj)
+        {
+            NativeOverlapped* overlapped = (NativeOverlapped*)(IntPtr)obj!;
+            _IOCompletionCallback.PerformSingleIOCompletionCallback(overlapped, 0, 0);
+        }
+
+        [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
+        {
+            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
+            overlapped->InternalLow = (IntPtr)0;
+            // Both types of callbacks are executed on the same thread pool
+            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (IntPtr)overlapped);
+        }
+
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [SupportedOSPlatform("windows")]
+        public static bool BindHandle(IntPtr osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static bool BindHandle(SafeHandle osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
     }
 }

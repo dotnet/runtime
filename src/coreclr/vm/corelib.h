@@ -935,9 +935,6 @@ DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPo
 DEFINE_METHOD(THREAD_POOL,          ENSURE_GATE_THREAD_RUNNING,         EnsureGateThreadRunning,        SM_RetVoid)
 DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
 
-DEFINE_CLASS(COMPLETE_WAIT_THREAD_POOL_WORK_ITEM,   Threading,      CompleteWaitThreadPoolWorkItem)
-DEFINE_METHOD(COMPLETE_WAIT_THREAD_POOL_WORK_ITEM,  COMPLETE_WAIT,  CompleteWait,                   IM_RetVoid)
-
 DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
 
 
