@@ -250,7 +250,7 @@ namespace System
                 while (mask != 0)
                 {
                     // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                    int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                    int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                     int charPos = (int)((uint)bitPos / 2);
 
                     if (SequenceEqual(
@@ -261,8 +261,7 @@ namespace System
                         return charPos + offset;
                     }
 
-                    Debug.Assert(bitPos > 0);
-                    mask &= ~(uint)(0b11 << (bitPos - 1)); // clear two highest set bits.
+                    mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
                 }
 
                 offset -= Vector256<ushort>.Count;
@@ -297,7 +296,7 @@ namespace System
                 while (mask != 0)
                 {
                     // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                    int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
+                    int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                     int charPos = (int)((uint)bitPos / 2);
 
                     if (SequenceEqual(
@@ -308,8 +307,7 @@ namespace System
                         return charPos + offset;
                     }
 
-                    Debug.Assert(bitPos > 0);
-                    mask &= ~(uint)(0b11 << (bitPos - 1)); // clear two highest set bits.
+                    mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
                 }
 
                 offset -= Vector128<ushort>.Count;
