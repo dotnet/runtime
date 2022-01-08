@@ -3747,36 +3747,45 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
             op21->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum() &&
             (
                 (op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
-                comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))// if op1->TypeGet()!=TYP_LONG then it must be TYP_INT
+                comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)) // if op1->TypeGet()!=TYP_LONG then it must be TYP_INT
             ) 
         {
-            GenTreeHWIntrinsic* replacementNode =
-                comp->gtNewScalarHWIntrinsicNode(op1->TypeGet(), op1, op1->TypeGet()==TYP_INT ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
-
-            JITDUMP("Lower: optimize AND(X, SUB(X, 1)): ");
-            DISPNODE(node);
-            JITDUMP("Replaced with: ");
-            DISPNODE(replacementNode);
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use))
             {
-                use.ReplaceWith(replacementNode);
+                GenTree* user = use.User();
+                if (user != nullptr && !user->OperIs(GT_EQ, GT_NE))
+                {
+                    GenTreeHWIntrinsic* replacementNode =
+                        comp->gtNewScalarHWIntrinsicNode(op1->TypeGet(), op1,
+                                                         op1->TypeGet() == TYP_INT
+                                                             ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
+                                                             : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
+
+                    JITDUMP("Lower: optimize AND(X, SUB(X, 1)): ");
+                    DISPNODE(node);
+                    JITDUMP("Replaced with: ");
+                    DISPNODE(replacementNode);
+
+                    use.ReplaceWith(replacementNode);
+
+                    op1->ClearContained();
+                    BlockRange().InsertBefore(node, replacementNode);
+                    BlockRange().Remove(node);
+                    BlockRange().Remove(op2);
+                    BlockRange().Remove(op21);
+                    BlockRange().Remove(op22);
+                    JITDUMP("Remove [%06u], [%06u]\n", node->gtTreeID, node->gtTreeID);
+
+                    ContainCheckHWIntrinsic(replacementNode);
+
+                    return replacementNode;
+                }
             }
             else
             {
-                op1->SetUnusedValue();
+                node->SetUnusedValue();
             }
-            op1->ClearContained();
-            BlockRange().InsertBefore(node, replacementNode);
-            BlockRange().Remove(node);
-            BlockRange().Remove(op2);
-            BlockRange().Remove(op21);
-            BlockRange().Remove(op22);
-            JITDUMP("Remove [%06u], [%06u]\n", node->gtTreeID, node->gtTreeID);
-
-            ContainCheckHWIntrinsic(replacementNode);
-
-            return replacementNode;
         }
     }
     return nullptr;
