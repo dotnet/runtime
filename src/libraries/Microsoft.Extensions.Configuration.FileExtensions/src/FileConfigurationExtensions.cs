@@ -47,8 +47,9 @@ namespace Microsoft.Extensions.Configuration
             {
                 return provider as IFileProvider;
             }
-
-            return new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
+            var fileProvider = new PhysicalFileProvider(AppContext.BaseDirectory ?? string.Empty);
+            builder.Properties[FileProviderKey] = fileProvider;
+            return fileProvider;
         }
 
         /// <summary>
