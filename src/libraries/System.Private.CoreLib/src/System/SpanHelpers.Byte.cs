@@ -89,7 +89,8 @@ namespace System
                     int bitPos = BitOperations.TrailingZeroCount(mask);
                     if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
                         return offset + bitPos;
-                    mask &= mask - 1;
+
+                    mask = Bmi1.IsSupported ? Bmi1.ResetLowestSetBit(mask) : mask & (mask - 1);
                 }
                 offset += Vector256<byte>.Count;
 
@@ -125,7 +126,8 @@ namespace System
                     int bitPos = BitOperations.TrailingZeroCount(mask);
                     if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
                         return offset + bitPos;
-                    mask &= mask - 1;
+
+                    mask = Bmi1.IsSupported ? Bmi1.ResetLowestSetBit(mask) : mask & (mask - 1);
                 }
                 offset += Vector128<byte>.Count;
 
