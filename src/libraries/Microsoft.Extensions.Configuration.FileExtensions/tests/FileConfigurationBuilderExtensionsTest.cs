@@ -50,6 +50,27 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             Assert.Equal(EnsureTrailingSlash(expectedPath), physicalProvider.Root);
         }
 
+        [Fact]
+        public void GetFileProvider_ReturnTheSamePhysicalFileProviderIfNotSet()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            Assert.Same(configurationBuilder.GetFileProvider(), configurationBuilder.GetFileProvider());
+        }
+
+        [Fact]
+        public void EnsureDefault_CreateSharedPhysicalFileProviderWithBaseDirectoryIfNotSet()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            var source1 = new FileConfigurationSourceImpl();
+            var source2 = new FileConfigurationSourceImpl();
+
+            source1.EnsureDefaults(configurationBuilder);
+            source2.EnsureDefaults(configurationBuilder);
+
+            Assert.Same(configurationBuilder.Properties["FileProvider"], source1.FileProvider);
+            Assert.Same(configurationBuilder.Properties["FileProvider"], source2.FileProvider);
+        }
+
         private static string EnsureTrailingSlash(string path)
         {
             if (!string.IsNullOrEmpty(path) &&

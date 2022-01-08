@@ -111,47 +111,47 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
             var exception = Assert.Throws<DirectoryNotFoundException>(() => provider.Load());
             Assert.Contains(physicalPath, exception.Message);
         }
+    }
+    
+    public class FileInfoImpl : IFileInfo
+    {
+        public FileInfoImpl(string physicalPath, bool exists = true) =>
+            (PhysicalPath, Exists) = (physicalPath, exists);
 
-        public class FileInfoImpl : IFileInfo
+        public Stream CreateReadStream() => new MemoryStream();
+        public bool Exists { get; set; }
+        public bool IsDirectory => false;
+        public DateTimeOffset LastModified => default;
+        public long Length => default;
+        public string Name => default;
+        public string PhysicalPath { get; }
+    }
+
+    public class FileConfigurationProviderImpl : FileConfigurationProvider
+    {
+        public FileConfigurationProviderImpl(FileConfigurationSource source)
+            : base(source)
+        { }
+
+        public override void Load(Stream stream)
+        { }
+    }
+
+    public class ThrowOnLoadFileConfigurationProviderImpl : FileConfigurationProvider
+    {
+        public ThrowOnLoadFileConfigurationProviderImpl(FileConfigurationSource source)
+            : base(source)
+        { }
+
+        public override void Load(Stream stream) => throw new Exception("This is a test exception.");
+    }
+
+    public class FileConfigurationSourceImpl : FileConfigurationSource
+    {
+        public override IConfigurationProvider Build(IConfigurationBuilder builder)
         {
-            public FileInfoImpl(string physicalPath, bool exists = true) =>
-                (PhysicalPath, Exists) = (physicalPath, exists);
-
-            public Stream CreateReadStream() => new MemoryStream();
-            public bool Exists { get; set; }
-            public bool IsDirectory => false;
-            public DateTimeOffset LastModified => default;
-            public long Length => default;
-            public string Name => default;
-            public string PhysicalPath { get; }
-        }
-
-        public class FileConfigurationProviderImpl : FileConfigurationProvider
-        {
-            public FileConfigurationProviderImpl(FileConfigurationSource source)
-                : base(source)
-            { }
-
-            public override void Load(Stream stream)
-            { }
-        }
-
-        public class ThrowOnLoadFileConfigurationProviderImpl : FileConfigurationProvider
-        {
-            public ThrowOnLoadFileConfigurationProviderImpl(FileConfigurationSource source)
-                : base(source)
-            { }
-
-            public override void Load(Stream stream) => throw new Exception("This is a test exception.");
-        }
-
-        public class FileConfigurationSourceImpl : FileConfigurationSource
-        {
-            public override IConfigurationProvider Build(IConfigurationBuilder builder)
-            {
-                EnsureDefaults(builder);
-                return new FileConfigurationProviderImpl(this);
-            }
+            EnsureDefaults(builder);
+            return new FileConfigurationProviderImpl(this);
         }
     }
 }
