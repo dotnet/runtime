@@ -96,7 +96,8 @@ namespace System
                     int bitPos = BitOperations.TrailingZeroCount(mask);
                     // div by 2 (shr) because we work with 2-byte chars
                     int charPos = (int)((uint)bitPos  / 2);
-                    if (SequenceEqual(
+                    if (valueTailByteLength == 2 || // we already matched two chars
+                        SequenceEqual(
                             ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
                             ref valueTail,
                             valueTailByteLength))
@@ -144,7 +145,8 @@ namespace System
                     int bitPos = BitOperations.TrailingZeroCount(mask);
                     // div by 2 (shr) because we work with 2-byte chars
                     int charPos = (int)((uint)bitPos / 2);
-                    if (SequenceEqual(
+                    if (valueTailByteLength == 2 || // we already matched two chars
+                        SequenceEqual(
                             ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
                             ref valueTail,
                             valueTailByteLength))
@@ -257,7 +259,8 @@ namespace System
                     int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                     int charPos = (int)((uint)bitPos / 2);
 
-                    if (SequenceEqual(
+                    if (valueTailByteLength == 2 || // we already matched two chars
+                        SequenceEqual(
                             ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)), 
                             ref valueTail,
                             valueTailByteLength))
@@ -303,7 +306,8 @@ namespace System
                     int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                     int charPos = (int)((uint)bitPos / 2);
 
-                    if (SequenceEqual(
+                    if (valueTailByteLength == 2 || // we already matched two chars
+                        SequenceEqual(
                             ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
                             ref valueTail,
                             valueTailByteLength))

@@ -89,7 +89,8 @@ namespace System
                 while (mask != 0)
                 {
                     int bitPos = BitOperations.TrailingZeroCount(mask);
-                    if (SequenceEqual(
+                    if (valueTailNLength == 2 || // we already matched two bytes
+                        SequenceEqual(
                             ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
                             ref valueTail,
                             valueTailNLength))
@@ -132,7 +133,8 @@ namespace System
                 while (mask != 0)
                 {
                     int bitPos = BitOperations.TrailingZeroCount(mask);
-                    if (SequenceEqual(
+                    if (valueTailNLength == 2 || // we already matched two bytes
+                        SequenceEqual(
                             ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
                             ref valueTail,
                             valueTailNLength))
@@ -590,7 +592,8 @@ namespace System
                 {
                     // unlike IndexOf, here we use LZCNT to process matches starting from the end
                     int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                    if (SequenceEqual(
+                    if (valueTailNLength == 2 || // we already matched two bytes
+                        SequenceEqual(
                             ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
                             ref valueTail,
                             valueTailNLength))
@@ -635,7 +638,8 @@ namespace System
                 {
                     // unlike IndexOf, here we use LZCNT to process matches starting from the end
                     int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                    if (SequenceEqual(
+                    if (valueTailNLength == 2 || // we already matched two bytes
+                        SequenceEqual(
                             ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
                             ref valueTail,
                             valueTailNLength))
