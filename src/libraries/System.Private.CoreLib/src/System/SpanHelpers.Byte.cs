@@ -599,7 +599,7 @@ namespace System
                     {
                         // unlike IndexOf, here we use LZCNT to process matches starting from the end
                         int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                        if (valueTailNLength == 2 || // we already matched two bytes
+                        if (valueTailNLength == 1 || // we already matched two bytes
                             SequenceEqual(
                                 ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
                                 ref valueTail,
@@ -647,7 +647,7 @@ namespace System
                     {
                         // unlike IndexOf, here we use LZCNT to process matches starting from the end
                         int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                        if (valueTailNLength == 2 || // we already matched two bytes
+                        if (valueTailNLength == 1 || // we already matched two bytes
                             SequenceEqual(
                                 ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
                                 ref valueTail,

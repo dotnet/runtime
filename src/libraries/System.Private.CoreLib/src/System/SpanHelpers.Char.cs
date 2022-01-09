@@ -139,7 +139,8 @@ namespace System
 
                 do
                 {
-                    uint mask = (uint)Sse2.MoveMask(
+                    uint mask = (uint)
+                        Sse2.MoveMask(
                             Sse2.And(
                                 Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, index)),
                                 Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance))).AsByte());
@@ -254,12 +255,11 @@ namespace System
 
                 do
                 {
-                    uint mask = (uint)Avx2.MoveMask(
-                        Avx2.And(
+                    uint mask = (uint)
+                        Avx2.MoveMask(
+                            Avx2.And(
                                 Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
-                                Avx2.CompareEqual(ch2,
-                                    LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance))))
-                            .AsByte());
+                                Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)))).AsByte());
 
                     while (mask != 0)
                     {
