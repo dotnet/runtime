@@ -85,44 +85,47 @@ namespace System
                 Vector256<ushort> ch1 = Vector256.Create((ushort)valueHead);
                 Vector256<ushort> ch2 = Vector256.Create(ch2Val);
 
-            NEXT_AVX:
-                uint mask = (uint)Avx2.MoveMask(
-                    Avx2.And(
-                        Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, index)),
-                        Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance))).AsByte());
-
-                while (mask != 0)
+                do
                 {
-                    int bitPos = BitOperations.TrailingZeroCount(mask);
-                    // div by 2 (shr) because we work with 2-byte chars
-                    int charPos = (int)((uint)bitPos  / 2);
-                    if (valueTailByteLength == 2 || // we already matched two chars
-                        SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                            ref valueTail,
-                            valueTailByteLength))
+                    uint mask = (uint)
+                        Avx2.MoveMask(
+                            Avx2.And(
+                                Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, index)),
+                                Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance))).AsByte());
+
+                    while (mask != 0)
                     {
-                        return index + charPos;
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        // div by 2 (shr) because we work with 2-byte chars
+                        int charPos = (int)((uint)bitPos / 2);
+                        if (valueTailByteLength == 1 || // we already matched two chars
+                            SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                                ref valueTail,
+                                valueTailByteLength))
+                        {
+                            return index + charPos;
+                        }
+
+                        // Clear two lowest set bits
+                        if (Bmi1.IsSupported)
+                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                        else
+                            mask &= ~(uint)(0b11 << bitPos);
                     }
 
-                    // Clear two lowest set bits
-                    if (Bmi1.IsSupported)
-                        mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
-                    else
-                        mask &= ~(uint)(0b11 << bitPos);
-                }
-                index += Vector256<ushort>.Count;
+                    index += Vector256<ushort>.Count;
 
-                if (index + valueTailLength == searchSpaceLength)
-                    return -1;
+                    if (index + valueTailLength == searchSpaceLength)
+                        return -1;
 
-                // Overlap with the current chunk if there is not enough room for the next one
-                if (index + valueTailLength + Vector256<ushort>.Count > searchSpaceLength)
-                    index = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
+                    // Overlap with the current chunk if there is not enough room for the next one
+                    if (index + valueTailLength + Vector256<ushort>.Count > searchSpaceLength)
+                        index = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
 
-                goto NEXT_AVX;
+                } while (true);
             }
-            else if (Sse2.IsSupported)
+            if (Sse2.IsSupported)
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -134,42 +137,44 @@ namespace System
                 Vector128<ushort> ch1 = Vector128.Create((ushort)valueHead);
                 Vector128<ushort> ch2 = Vector128.Create(ch2Val);
 
-            NEXT_SSE:
-                uint mask = (uint)Sse2.MoveMask(
-                    Sse2.And(
-                        Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, index)),
-                        Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance))).AsByte());
-
-                while (mask != 0)
+                do
                 {
-                    int bitPos = BitOperations.TrailingZeroCount(mask);
-                    // div by 2 (shr) because we work with 2-byte chars
-                    int charPos = (int)((uint)bitPos / 2);
-                    if (valueTailByteLength == 2 || // we already matched two chars
-                        SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                            ref valueTail,
-                            valueTailByteLength))
+                    uint mask = (uint)Sse2.MoveMask(
+                            Sse2.And(
+                                Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, index)),
+                                Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance))).AsByte());
+
+                    while (mask != 0)
                     {
-                        return index + charPos;
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        // div by 2 (shr) because we work with 2-byte chars
+                        int charPos = (int)((uint)bitPos / 2);
+                        if (valueTailByteLength == 1 || // we already matched two chars
+                            SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                                ref valueTail,
+                                valueTailByteLength))
+                        {
+                            return index + charPos;
+                        }
+
+                        // Clear two lowest set bits
+                        if (Bmi1.IsSupported)
+                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                        else
+                            mask &= ~(uint)(0b11 << bitPos);
                     }
 
-                    // Clear two lowest set bits
-                    if (Bmi1.IsSupported)
-                        mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
-                    else
-                        mask &= ~(uint)(0b11 << bitPos);
+                    index += Vector128<ushort>.Count;
+
+                    if (index + valueTailLength == searchSpaceLength)
+                        return -1;
+
+                    // Overlap with the current chunk if there is not enough room for the next one
+                    if (index + valueTailLength + Vector128<ushort>.Count > searchSpaceLength)
+                        index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
                 }
-                index += Vector128<ushort>.Count;
-
-                if (index + valueTailLength == searchSpaceLength)
-                    return -1;
-
-                // Overlap with the current chunk if there is not enough room for the next one
-                if (index + valueTailLength + Vector128<ushort>.Count > searchSpaceLength)
-                    index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
-
-                goto NEXT_SSE;
+                while (true);
             }
 
             Debug.Fail("Unreachable");
@@ -247,38 +252,40 @@ namespace System
                 Vector256<ushort> ch1 = Vector256.Create((ushort)valueHead);
                 Vector256<ushort> ch2 = Vector256.Create((ushort)ch2Val);
 
-            NEXT_AVX:
-                uint mask = (uint)Avx2.MoveMask(
-                    Avx2.And(
-                        Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
-                        Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)))).AsByte());
-
-                while (mask != 0)
+                do
                 {
-                    // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                    int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
-                    int charPos = (int)((uint)bitPos / 2);
+                    uint mask = (uint)Avx2.MoveMask(
+                        Avx2.And(
+                                Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
+                                Avx2.CompareEqual(ch2,
+                                    LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance))))
+                            .AsByte());
 
-                    if (valueTailByteLength == 2 || // we already matched two chars
-                        SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)), 
-                            ref valueTail,
-                            valueTailByteLength))
+                    while (mask != 0)
                     {
-                        return charPos + offset;
+                        // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                        int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
+                        int charPos = (int)((uint)bitPos / 2);
+
+                        if (valueTailByteLength == 1 || // we already matched two chars
+                            SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
+                                ref valueTail,
+                                valueTailByteLength))
+                        {
+                            return charPos + offset;
+                        }
+
+                        mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
                     }
 
-                    mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
-                }
-
-                offset -= Vector256<ushort>.Count;
-                if (offset == -Vector256<ushort>.Count)
-                    return -1;
-                // Overlap with the current chunk if there is not enough room for the next one
-                if (offset < 0)
-                    offset = 0;
-
-                goto NEXT_AVX;
+                    offset -= Vector256<ushort>.Count;
+                    if (offset == -Vector256<ushort>.Count)
+                        return -1;
+                    // Overlap with the current chunk if there is not enough room for the next one
+                    if (offset < 0)
+                        offset = 0;
+                } while (true);
             }
             else if (Sse2.IsSupported)
             {
@@ -294,38 +301,39 @@ namespace System
                 Vector128<ushort> ch1 = Vector128.Create((ushort)value);
                 Vector128<ushort> ch2 = Vector128.Create((ushort)ch2Val);
 
-            NEXT_SSE:
-                uint mask = (uint)Sse2.MoveMask(
-                    Sse2.And(
-                        Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
-                        Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))).AsByte());
-
-                while (mask != 0)
+                do
                 {
-                    // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                    int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
-                    int charPos = (int)((uint)bitPos / 2);
+                    uint mask = (uint)
+                        Sse2.MoveMask(
+                            Sse2.And(
+                                Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
+                                Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))).AsByte());
 
-                    if (valueTailByteLength == 2 || // we already matched two chars
-                        SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
-                            ref valueTail,
-                            valueTailByteLength))
+                    while (mask != 0)
                     {
-                        return charPos + offset;
+                        // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                        int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
+                        int charPos = (int)((uint)bitPos / 2);
+
+                        if (valueTailByteLength == 1 || // we already matched two chars
+                            SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
+                                ref valueTail,
+                                valueTailByteLength))
+                        {
+                            return charPos + offset;
+                        }
+
+                        mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
                     }
 
-                    mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
-                }
-
-                offset -= Vector128<ushort>.Count;
-                if (offset == -Vector128<ushort>.Count)
-                    return -1;
-                // Overlap with the current chunk if there is not enough room for the next one
-                if (offset < 0)
-                    offset = 0;
-
-                goto NEXT_SSE;
+                    offset -= Vector128<ushort>.Count;
+                    if (offset == -Vector128<ushort>.Count)
+                        return -1;
+                    // Overlap with the current chunk if there is not enough room for the next one
+                    if (offset < 0)
+                        offset = 0;
+                } while (true);
             }
 
             Debug.Fail("Unreachable");
