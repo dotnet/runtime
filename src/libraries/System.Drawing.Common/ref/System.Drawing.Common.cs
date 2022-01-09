@@ -673,6 +673,8 @@ namespace System.Drawing
         public Icon(string fileName, int width, int height) { }
         public Icon(System.Type type, string resource) { }
         [System.ComponentModel.BrowsableAttribute(false)]
+        public System.IntPtr Handle { get { throw null; } }
+        [System.ComponentModel.BrowsableAttribute(false)]
         public int Height { get { throw null; } }
         public System.Drawing.Size Size { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -681,6 +683,7 @@ namespace System.Drawing
         public void Dispose() { }
         public static System.Drawing.Icon? ExtractAssociatedIcon(string filePath) { throw null; }
         ~Icon() { }
+        public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }

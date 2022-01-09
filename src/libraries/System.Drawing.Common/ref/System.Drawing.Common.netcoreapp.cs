@@ -27,12 +27,6 @@ namespace System.Drawing
         public static System.Drawing.Brush FromHandle(System.IntPtr handle) { throw null; }
     }
 
-    public sealed partial class Icon
-    {
-        public System.IntPtr Handle { get { throw null; } }
-        public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
-    }
-
     public abstract partial class Image
     {
         public System.IntPtr Handle { get { throw null; } }
