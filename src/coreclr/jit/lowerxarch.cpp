@@ -170,10 +170,6 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
-    // this logic on the support for the instruction set on XArch.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
 #ifdef FEATURE_HW_INTRINSICS
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
@@ -186,6 +182,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 #endif
 
     ContainCheckBinary(binOp);
+
     return binOp->gtNext;
 }
 
