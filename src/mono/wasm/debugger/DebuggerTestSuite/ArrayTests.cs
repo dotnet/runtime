@@ -627,25 +627,33 @@ namespace DebuggerTests
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
             locals_fn: async (locals) =>
-           {
-               var this_obj = GetAndAssertObjectWithName(locals, "this");
-               var c_obj = GetAndAssertObjectWithName(await GetProperties(this_obj["value"]["objectId"].Value<string>()), "c");
-               var c_obj_id = c_obj["value"]?["objectId"]?.Value<string>();
-               Assert.NotNull(c_obj_id);
+            {
+                var this_obj = GetAndAssertObjectWithName(locals, "this");
+                var this_obj_id = this_obj["value"]?["objectId"]?.Value<string>();
+                Assert.NotNull(this_obj_id);
 
-               var c_props = await GetProperties(c_obj_id);
+                var this_props = await GetProperties(this_obj_id);
 
-               var pf_arr = GetAndAssertObjectWithName(c_props, "PointsField");
+                var pf_arr = GetAndAssertObjectWithName(this_props, "PointsField");
 
-               var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
-               foreach (var invalid_accessor in invalid_accessors)
-               {
-                   // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
-                   var res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
-                   AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
-               }
+                // Validate the way we test the accessors, with a valid one
+                var res = await InvokeGetter(pf_arr, "0", expect_ok: true);
+                await CheckValue(res.Value["result"], TValueType("DebuggerTests.Point"), "pf_arr[0]");
+                var pf_arr0_props = await GetProperties(res.Value["result"]["objectId"]?.Value<string>());
+                await CheckProps(pf_arr0_props, new
+                 {
+                     X = TNumber(5)
+                 }, "pf_arr0_props", num_fields: 4);
+
+                var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
+                foreach (var invalid_accessor in invalid_accessors)
+                {
+                    // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
+                    res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
+                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
+                }
            });
-        
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
