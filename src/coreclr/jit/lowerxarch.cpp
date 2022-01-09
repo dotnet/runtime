@@ -174,23 +174,19 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     // this logic on the support for the instruction set on XArch.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-    GenTree* replacement = nullptr;
 #ifdef FEATURE_HW_INTRINSICS
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
-        replacement = LowerAndOpToResetLowestSetBit(binOp);
+        GenTree* blsrNode = LowerAndOpToResetLowestSetBit(binOp);
+        if (blsrNode != nullptr)
+        {
+            return blsrNode->gtNext;
+        }
     }
 #endif
 
-    if (replacement == nullptr)
-    {
-        ContainCheckBinary(binOp);
-        return binOp->gtNext;
-    }
-    else
-    {
-        return replacement->gtNext;
-    }
+    ContainCheckBinary(binOp);
+    return binOp->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -3729,68 +3725,70 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicToScalar: Lowers a tree AND(X, ADD(X, -1) to HWIntrinsic::ResetLowestSetBit
-//     Returns the recplacement node if one is created else nullptr indicating no replacement
+// Lowering::LowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1) to HWIntrinsic::ResetLowestSetBit
 //
-// Parameters
-//     tree   -   GentreePtr of binOp
+// Arguments:
+//    andNode - GentreePtr of binOp
 //
-GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Assumptions:
+//    andNode is GT_AND and (TYP_INT or TYP_LONG)
+//
+GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* andNode)
 {
-    GenTree* op1 = node->gtGetOp1();
-    GenTree* op2 = node->gtGetOp2();
+    assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
+
+    GenTree* op1 = andNode->gtGetOp1();
+    GenTree* op2 = andNode->gtGetOp2();
     if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_ADD) && !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
     {
         GenTree* addOp1 = op2->gtGetOp1();
         GenTree* addOp2 = op2->gtGetOp2();
         if (addOp2->IsIntegralConst(-1) && addOp1->OperIs(GT_LCL_VAR) &&
-            addOp1->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum() &&
-            ((op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
-             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)) // if op1->TypeGet()!=TYP_LONG then it must be
-                                                                        // TYP_INT
+            (addOp1->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum()) &&
+            ((op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
+             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
             )
         {
             LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
+            if (BlockRange().TryGetUse(andNode, &use))
             {
                 // If we allow the use of BSLR where the parent is NE or EQ it will generate "blsr, test"
-                // if we prevent the use of BSLR here then the OptimizeConstCompare lowering may generate
-                //   TEST_NE or TEST_EQ leading to a cheaper "lea, test"
+                // if we prevent the use of BSLR here then "OptimizeConstCompare" may generate TEST_NE or
+                //   TEST_EQ leading to a cheaper "lea, test"
                 GenTree* user = use.User();
-                if (user != nullptr && !user->OperIs(GT_EQ, GT_NE))
+                if (!user->OperIs(GT_EQ, GT_NE))
                 {
-                    GenTreeHWIntrinsic* replacementNode =
-                        comp->gtNewScalarHWIntrinsicNode(op1->TypeGet(), op1,
-                                                         op1->TypeGet() == TYP_INT
+                    GenTreeHWIntrinsic* blsrNode =
+                        comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1,
+                                                         andNode->TypeIs(TYP_INT)
                                                              ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
                                                              : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
 
                     JITDUMP("Lower: optimize AND(X, ADD(X, -1)): ");
-                    DISPNODE(node);
+                    DISPNODE(andNode);
                     JITDUMP("Replaced with: ");
-                    DISPNODE(replacementNode);
+                    DISPNODE(blsrNode);
 
-                    use.ReplaceWith(replacementNode);
+                    use.ReplaceWith(blsrNode);
 
-                    op1->ClearContained();
-                    BlockRange().InsertBefore(node, replacementNode);
-                    BlockRange().Remove(node);
+                    BlockRange().InsertBefore(andNode, blsrNode);
+                    BlockRange().Remove(andNode);
                     BlockRange().Remove(op2);
                     BlockRange().Remove(addOp1);
                     BlockRange().Remove(addOp2);
-                    JITDUMP("Remove [%06u], [%06u]\n", node->gtTreeID, node->gtTreeID);
+                    JITDUMP("Remove [%06u], [%06u]\n", andNode->gtTreeID, andNode->gtTreeID);
 
-                    ContainCheckHWIntrinsic(replacementNode);
+                    ContainCheckHWIntrinsic(blsrNode);
 
-                    return replacementNode;
+                    return blsrNode;
                 }
-            }
-            else
-            {
-                node->SetUnusedValue();
             }
         }
     }
+
     return nullptr;
 }
 
