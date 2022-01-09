@@ -425,10 +425,10 @@ namespace System.Reflection
                     else if (o is ReadOnlyCollection<CustomAttributeTypedArgument> args &&
                             index < args.Count &&
                             args[index].Value is byte elementB)
-                    {
-                        state = TranslateByte(elementB);
-                        return true;
-                    }
+                        {
+                            state = TranslateByte(elementB);
+                            return true;
+                        }
 
                     break;
                 }
