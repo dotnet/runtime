@@ -175,10 +175,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     CLANG_FORMAT_COMMENT_ANCHOR;
 
     GenTree* replacement = nullptr;
+#ifdef FEATURE_HW_INTRINSICS
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
         replacement = LowerAndOpToResetLowestSetBit(binOp);
     }
+#endif
 
     if (replacement == nullptr)
     {
@@ -190,7 +192,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         return replacement->gtNext;
     }
 }
-
 
 //------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
@@ -3733,21 +3734,21 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 //
 // Parameters
 //     tree   -   GentreePtr of binOp
-// 
+//
 GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* node)
 {
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
-    if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_ADD) && !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed() )
+    if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_ADD) && !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
     {
         GenTree* addOp1 = op2->gtGetOp1();
         GenTree* addOp2 = op2->gtGetOp2();
         if (addOp2->IsIntegralConst(-1) && addOp1->OperIs(GT_LCL_VAR) &&
             addOp1->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum() &&
-            (
-                (op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
-                comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)) // if op1->TypeGet()!=TYP_LONG then it must be TYP_INT
-            ) 
+            ((op1->TypeGet() == TYP_LONG && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
+             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)) // if op1->TypeGet()!=TYP_LONG then it must be
+                                                                        // TYP_INT
+            )
         {
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use))
