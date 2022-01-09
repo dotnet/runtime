@@ -3725,7 +3725,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 // Lowering::LowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1) to HWIntrinsic::ResetLowestSetBit
 //
 // Arguments:
-//    andNode - GentreePtr of binOp
+//    andNode - GT_AND node of integral type
 //
 // Return Value:
 //    Returns the replacement node if one is created else nullptr indicating no replacement
