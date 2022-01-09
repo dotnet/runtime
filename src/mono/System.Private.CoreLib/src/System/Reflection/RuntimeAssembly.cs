@@ -364,8 +364,8 @@ namespace System.Reflection
 
         internal static AssemblyName[] GetReferencedAssemblies(Assembly assembly)
         {
-            RuntimeAssembly rtassembly = (RuntimeAssembly)assembly;
-            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(new QCallAssembly(ref rtassembly))))
+            // Can't use QCallAssembly as assembly can be an AssemblyBuilder
+            using (var nativeNames = new Mono.SafeGPtrArrayHandle(InternalGetReferencedAssemblies(assembly)))
             {
                 int numAssemblies = nativeNames.Length;
                 try
@@ -525,7 +525,7 @@ namespace System.Reflection
         private static extern void GetModulesInternal(QCallAssembly assembly, ObjectHandleOnStack res);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalGetReferencedAssemblies(QCallAssembly module);
+        private static extern IntPtr InternalGetReferencedAssemblies(Assembly assembly);
 
         internal string? GetSimpleName()
         {

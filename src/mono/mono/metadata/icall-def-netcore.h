@@ -244,7 +244,7 @@ HANDLES(RASSEM_4, "GetManifestResourceInternal", ves_icall_System_Reflection_Run
 HANDLES(RASSEM_5, "GetManifestResourceNames", ves_icall_System_Reflection_RuntimeAssembly_GetManifestResourceNames, void, 2, (MonoQCallAssemblyHandle, MonoObjectHandleOnStack))
 HANDLES(RASSEM_6, "GetModulesInternal", ves_icall_System_Reflection_RuntimeAssembly_GetModulesInternal, void, 2, (MonoQCallAssemblyHandle, MonoObjectHandleOnStack))
 HANDLES(RASSEM_6b, "GetTopLevelForwardedTypes", ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes, void, 2, (MonoQCallAssemblyHandle, MonoObjectHandleOnStack))
-HANDLES(RASSEM_7, "InternalGetReferencedAssemblies", ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies, GPtrArray_ptr, 1, (MonoQCallAssemblyHandle))
+HANDLES(RASSEM_7, "InternalGetReferencedAssemblies", ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies, GPtrArray_ptr, 1, (MonoReflectionAssembly))
 
 ICALL_TYPE(MCMETH, "System.Reflection.RuntimeConstructorInfo", MCMETH_1)
 HANDLES(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_RuntimeMethodInfo_GetGenericMethodDefinition, MonoReflectionMethod, 1, (MonoReflectionMethod))

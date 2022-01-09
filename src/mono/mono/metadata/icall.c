@@ -4524,9 +4524,9 @@ create_referenced_assembly_name (MonoImage *image, int i, MonoError *error)
 }
 
 GPtrArray*
-ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoQCallAssemblyHandle assembly_h, MonoError *error)
+ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
 {
-	MonoAssembly *ass = assembly_h.assembly;
+	MonoAssembly *ass = MONO_HANDLE_GETVAL (assembly_h, assembly);
 	MonoImage *image = ass->image;
 	int count;
 
