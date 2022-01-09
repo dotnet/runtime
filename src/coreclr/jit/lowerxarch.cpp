@@ -3730,10 +3730,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 // Return Value:
 //    Returns the replacement node if one is created else nullptr indicating no replacement
 //
-// Assumptions:
-//    andNode is GT_AND and (TYP_INT or TYP_LONG)
-//
-GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* andNode)
+GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
 {
     assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
 
@@ -3746,8 +3743,7 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* andNode)
         if (addOp2->IsIntegralConst(-1) && addOp1->OperIs(GT_LCL_VAR) &&
             (addOp1->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum()) &&
             ((op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
-             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
-            )
+             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)))
         {
             LIR::Use use;
             if (BlockRange().TryGetUse(andNode, &use))
@@ -3776,7 +3772,6 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTree* andNode)
                     BlockRange().Remove(op2);
                     BlockRange().Remove(addOp1);
                     BlockRange().Remove(addOp2);
-                    JITDUMP("Remove [%06u], [%06u]\n", andNode->gtTreeID, andNode->gtTreeID);
 
                     ContainCheckHWIntrinsic(blsrNode);
 
