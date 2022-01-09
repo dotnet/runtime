@@ -234,10 +234,10 @@ namespace DebuggerTests
 
             var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             Assert.Equal(4, locals.Count());
-            CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", $"{etype_name}[{array?.Length ?? 0}]");
-            CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", $"{etype_name}[0]");
-            CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null: true);
-            CheckBool(locals, "call_other", test_prev_frame);
+            await CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", $"{etype_name}[{array?.Length ?? 0}]");
+            await CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", $"{etype_name}[0]");
+            await CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null: true);
+            await CheckBool(locals, "call_other", test_prev_frame);
 
             var local_arr_name = $"{local_var_name_prefix}_arr";
 
@@ -308,7 +308,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, method_name);
             var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             Assert.Single(locals);
-            CheckObject(locals, "c", "DebuggerTests.Container");
+            await CheckObject(locals, "c", "DebuggerTests.Container");
 
             var c_props = await GetObjectOnFrame(pause_location["callFrames"][frame_idx], "c");
             await CheckProps(c_props, new
