@@ -23,7 +23,6 @@ namespace System
                 return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
 
             int index = 0;
-            char valueHead = value;
             int valueTailLength = valueLength - 1;
 
             if (valueTailLength == 0)
@@ -32,13 +31,16 @@ namespace System
                 return IndexOf(ref searchSpace, value, searchSpaceLength);
             }
 
+            char valueHead = value;
+            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
+            nuint valueTailByteLength = (nuint)(uint)valueTailLength * 2;
+
             // Avx2 implies Sse2
             if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
 
-            ref char valueTail = ref Unsafe.Add(ref value, 1);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
             while (remainingSearchSpaceLength > 0)
@@ -56,9 +58,9 @@ namespace System
 
                 // Found the first element of "value". See if the tail matches.
                 if (SequenceEqual(
-                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + 1)),
-                    ref Unsafe.As<char, byte>(ref valueTail),
-                    (nuint)(uint)valueTailLength * 2))
+                        ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + 1)),
+                        ref valueTail,
+                        valueTailByteLength))
                 {
                     return index;  // The tail matched. Return a successful find.
                 }
@@ -77,10 +79,10 @@ namespace System
                 // the algorithm is fine if both are equal, just a little bit less efficient
                 ushort ch2Val = Unsafe.Add(ref value, valueTailLength);
                 int ch1ch2Distance = valueTailLength;
-                while (ch2Val == value && ch1ch2Distance > 1)
+                while (ch2Val == valueHead && ch1ch2Distance > 1)
                     ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
 
-                Vector256<ushort> ch1 = Vector256.Create((ushort)value);
+                Vector256<ushort> ch1 = Vector256.Create((ushort)valueHead);
                 Vector256<ushort> ch2 = Vector256.Create(ch2Val);
 
             NEXT_AVX:
@@ -95,9 +97,9 @@ namespace System
                     // div by 2 (shr) because we work with 2-byte chars
                     int charPos = (int)((uint)bitPos  / 2);
                     if (SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
-                            ref Unsafe.As<char, byte>(ref value),
-                            (nuint)(uint)valueLength * 2))
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                            ref valueTail,
+                            valueTailByteLength))
                     {
                         return index + charPos;
                     }
@@ -125,10 +127,10 @@ namespace System
                 // the algorithm is fine if both are equal, just a little bit less efficient
                 ushort ch2Val = Unsafe.Add(ref value, valueTailLength);
                 int ch1ch2Distance = valueTailLength;
-                while (ch2Val == value && ch1ch2Distance > 1)
+                while (ch2Val == valueHead && ch1ch2Distance > 1)
                     ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
 
-                Vector128<ushort> ch1 = Vector128.Create((ushort)value);
+                Vector128<ushort> ch1 = Vector128.Create((ushort)valueHead);
                 Vector128<ushort> ch2 = Vector128.Create(ch2Val);
 
             NEXT_SSE:
@@ -143,9 +145,9 @@ namespace System
                     // div by 2 (shr) because we work with 2-byte chars
                     int charPos = (int)((uint)bitPos / 2);
                     if (SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
-                            ref Unsafe.As<char, byte>(ref value),
-                            (nuint)(uint)valueLength * 2))
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                            ref valueTail,
+                            valueTailByteLength))
                     {
                         return index + charPos;
                     }
@@ -190,14 +192,15 @@ namespace System
 
             int offset = 0;
 
+            char valueHead = value;
+            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
+            nuint valueTailByteLength = (nuint)(uint)valueTailLength * 2;
+
             // Avx2 implies Sse2
             if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
-
-            char valueHead = value;
-            ref char valueTail = ref Unsafe.Add(ref value, 1);
 
             while (true)
             {
@@ -214,8 +217,8 @@ namespace System
                 // Found the first element of "value". See if the tail matches.
                 if (SequenceEqual(
                         ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, relativeIndex + 1)),
-                        ref Unsafe.As<char, byte>(ref valueTail),
-                        (nuint)(uint)valueTailLength * 2)) // The (nunit)-cast is necessary to pick the correct overload
+                        ref valueTail,
+                        valueTailByteLength)) // The (nunit)-cast is necessary to pick the correct overload
                 {
                     return relativeIndex; // The tail matched. Return a successful find.
                 }
@@ -227,6 +230,7 @@ namespace System
         // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
         // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
+
             if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<ushort>.Count)
             {
                 offset = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
@@ -235,10 +239,10 @@ namespace System
                 // the algorithm is fine if both are equal, just a little bit less efficient
                 char ch2Val = Unsafe.Add(ref value, valueTailLength);
                 int ch1ch2Distance = valueTailLength;
-                while (ch2Val == value && ch1ch2Distance > 1)
+                while (ch2Val == valueHead && ch1ch2Distance > 1)
                     ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
 
-                Vector256<ushort> ch1 = Vector256.Create((ushort)value);
+                Vector256<ushort> ch1 = Vector256.Create((ushort)valueHead);
                 Vector256<ushort> ch2 = Vector256.Create((ushort)ch2Val);
 
             NEXT_AVX:
@@ -254,9 +258,9 @@ namespace System
                     int charPos = (int)((uint)bitPos / 2);
 
                     if (SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
-                            ref Unsafe.As<char, byte>(ref value),
-                            (nuint)(uint)valueLength * 2))
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)), 
+                            ref valueTail,
+                            valueTailByteLength))
                     {
                         return charPos + offset;
                     }
@@ -300,9 +304,9 @@ namespace System
                     int charPos = (int)((uint)bitPos / 2);
 
                     if (SequenceEqual(
-                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
-                            ref Unsafe.As<char, byte>(ref value),
-                            (nuint)(uint)valueLength * 2))
+                            ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
+                            ref valueTail,
+                            valueTailByteLength))
                     {
                         return charPos + offset;
                     }

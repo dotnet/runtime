@@ -30,15 +30,17 @@ namespace System
                 return IndexOf(ref searchSpace, value, searchSpaceLength);
             }
 
+            byte valueHead = value;
+            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int offset = 0;
+            nuint valueTailNLength = (nuint)(uint)valueTailLength;
+
             // Avx2 implies Sse2
             if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
 
-            byte valueHead = value;
-            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
             while (remainingSearchSpaceLength > 0)
@@ -55,7 +57,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, (nuint)valueTailLength))  // The (nuint)-cast is necessary to pick the correct overload
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, valueTailNLength))  // The (nuint)-cast is necessary to pick the correct overload
                     return offset;  // The tail matched. Return a successful find.
 
                 remainingSearchSpaceLength--;
@@ -87,9 +89,15 @@ namespace System
                 while (mask != 0)
                 {
                     int bitPos = BitOperations.TrailingZeroCount(mask);
-                    if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
+                    if (SequenceEqual(
+                            ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
+                            ref valueTail,
+                            valueTailNLength))
+                    {
                         return offset + bitPos;
+                    }
 
+                    // Clear lowest set bit
                     mask = Bmi1.IsSupported ? Bmi1.ResetLowestSetBit(mask) : mask & (mask - 1);
                 }
                 offset += Vector256<byte>.Count;
@@ -124,9 +132,15 @@ namespace System
                 while (mask != 0)
                 {
                     int bitPos = BitOperations.TrailingZeroCount(mask);
-                    if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
+                    if (SequenceEqual(
+                            ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
+                            ref valueTail,
+                            valueTailNLength))
+                    {
                         return offset + bitPos;
+                    }
 
+                    // Clear lowest set bit
                     mask = Bmi1.IsSupported ? Bmi1.ResetLowestSetBit(mask) : mask & (mask - 1);
                 }
                 offset += Vector128<byte>.Count;
@@ -518,16 +532,16 @@ namespace System
                 return LastIndexOf(ref searchSpace, value, searchSpaceLength);
             }
 
+            byte valueHead = value;
+            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int offset = 0;
+            nuint valueTailNLength = (nuint)(uint)valueTailLength;
 
             // Avx2 implies Sse2
             if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
-
-            byte valueHead = value;
-            ref byte valueTail = ref Unsafe.Add(ref value, 1);
 
             while (true)
             {
@@ -542,7 +556,7 @@ namespace System
                     break;
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, (nuint)(uint)valueTailLength))  // The (nunit)-cast is necessary to pick the correct overload
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, relativeIndex + 1), ref valueTail, valueTailNLength))  // The (nunit)-cast is necessary to pick the correct overload
                     return relativeIndex;  // The tail matched. Return a successful find.
 
                 offset += remainingSearchSpaceLength - relativeIndex;
@@ -576,9 +590,16 @@ namespace System
                 {
                     // unlike IndexOf, here we use LZCNT to process matches starting from the end
                     int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                    if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
+                    if (SequenceEqual(
+                            ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
+                            ref valueTail,
+                            valueTailNLength))
+                    {
                         return bitPos + offset;
-                    mask &= ~(uint)(1 << bitPos); // clear the highest set bit.
+                    }
+
+                    // Clear the highest set bit.
+                    mask &= ~(uint)(1 << bitPos);
                 }
 
                 offset -= Vector256<byte>.Count;
@@ -614,9 +635,16 @@ namespace System
                 {
                     // unlike IndexOf, here we use LZCNT to process matches starting from the end
                     int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                    if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + bitPos), ref value, (nuint)(uint)valueLength))
+                    if (SequenceEqual(
+                            ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
+                            ref valueTail,
+                            valueTailNLength))
+                    {
                         return bitPos + offset;
-                    mask &= ~(uint)(1 << bitPos); // clear the highest set bit.
+                    }
+
+                    // Clear the highest set bit.
+                    mask &= ~(uint)(1 << bitPos);
                 }
 
                 offset -= Vector128<byte>.Count;
