@@ -106,7 +106,7 @@ We do not plan on supporting `IDispatch` integration with C# `dynamic`, at least
 
 ### Checkpoint 5: .NET 6-compatible output
 
-A very important component of source generators is determining how to trigger them. For the DllImportGenerator, we trigger on a new attribute type, `GeneratedDllImportAttribute`, that is applied in place of the previous `DllImportAttribute`. For the JSON source generator, the team decided to have developers define an empty `JsonSerializerContext`-derived class and add `JsonSerializableAttribute` attribute on that context type that each point to a type that the generated serialization context should support. Below I've included some of the ideas that we've had for potential designs. All options below would support the `GuidAttribute` attribute to specify an IID, the `InterfaceTypeAttribute` attribute with the `InterfaceIsIUnknown` member (and `InterfaceIsIDispatch` if Checkpoint 4 is achieved), and the `DispIdAttribute` for `IDispatch` scenarios.
+A very important component of source generators is determining how to trigger them. For the DllImportGenerator, we trigger on a new attribute type, `GeneratedDllImportAttribute`, that is applied in place of the previous `DllImportAttribute`. For the JSON source generator, the team decided to have developers define an empty `JsonSerializerContext`-derived class and add `JsonSerializableAttribute` attribute on that context type that each point to a type that the generated serialization context should support. Below are the potential API designs we considered. All options below would support the `GuidAttribute` attribute to specify an IID, the `InterfaceTypeAttribute` attribute with the `InterfaceIsIUnknown` member (and `InterfaceIsIDispatch` if Checkpoint 4 is achieved), and the `DispIdAttribute` for `IDispatch` scenarios. We selected Option 5 as it gives us the most flexibility to express the switches we want to express to the user without tying us down to legacy requirements or requiring additional metadata in basic scenarios.
 
 #### Option 1: Annotated ComWrappers stub
 
@@ -618,7 +618,7 @@ Cons:
 - The runtime might have cases where it makes assumptions based on how types are marked that this may interact with.
 - It would be much easier to accidentally use the old system and get in a place where 2 objects, one from the built-in system and one from the generated system, both represent the same native object.
 
-#### Option 5: Only `GeneratedComImport` attribute with Generated `ComWrappers`-derived type
+#### Option 5 (Selected Design): Only `GeneratedComInterfaceAttribute` attribute with Generated `ComWrappers`-derived type
 
 The built-in `ComImport` and `ComVisible` attributes have a lot of history and weird runtime behavior associated with them. Additionally the built-in `ComVisible` attribute actually takes a `bool` to determine if the applied to type is visible and it can be applied to methods as well to enable/disable COM visbility for the legacy automatic COM vtable generation that the .NET runtime has supported since .NET Framework 1.0. This option proposes introducing a single new attribute to cover the expected scenarios:
 
@@ -626,25 +626,23 @@ The built-in `ComImport` and `ComVisible` attributes have a lot of history and w
 [AttributeUsage(AttributeTargets.Interface)]
 class GeneratedComInterfaceAttribute
 {
-    public GeneratedComInterfaceAttribute();
+    public GeneratedComInterfaceAttribute(Type comWrappersType);
 
-    public GeneratedComInterfaceAttribute(bool generateManagedObjectWrapper, bool generateComObjectWrapper);
+    public GeneratedComInterfaceAttribute(Type comWrappersType, bool generateManagedObjectWrapper, bool generateComObjectWrapper);
+
+    public Type ComWrappersType { get; };
 
     public bool GenerateManagedObjectWrapper { get; } = true;
 
     public bool GenerateComObjectWrapper { get; } = true;
 
-    public bool ExportMetadata { get; }
+    public bool ExportInterfaceDefinition { get; }
 }
 ```
 
-This attribute could be applied to any interface to generate the marshalling code for either RCW or CCW scenarios. The `ExportMetadata` property would be used by any tool that wants to generate a metadata file, like a TlbExp successor, to determine which interfaces to export.
+This attribute could be applied to any interface to generate the marshalling code for either RCW or CCW scenarios. The `ExportInterfaceDefinition` property would be used by any tool that wants to generate a metadata file, like a TlbExp successor, to determine which interfaces to export.
 
-The `ComWrappers`-derived type would use one of the mechanisms described above for determining how to define or generate it.
-
-#### Option 6: Something Else?
-
-I'm open to any other ideas people have on how to trigger the generator.
+The `ComWrappers`-derived type used to generate the wrappers would be specified as the first parameter to the attribute. We will use a `System.Type` parameter instead of generic attributes to support downlevel platforms as generic-attribute support is still in preview. As this attribute is exclusively used by a source-generator, we can validate that the provided type derives from `ComWrappers` at compile time, so we don't get many gains from using generic attributes. By specifying the `ComWrappers`-derived type in the attribute on the interface, we ensure that each interface is associated with one `ComWrappers`-derived type.
 
 ### Checkpoint 6: Aggregation support
 
