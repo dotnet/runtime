@@ -29779,6 +29779,12 @@ heap_segment* gc_heap::allocate_new_region (gc_heap* hp, int gen_num, bool uoh_p
     heap_segment* res = make_heap_segment (start, (end - start), hp, gen_num);
 
     dprintf (REGIONS_LOG, ("got a new region %Ix %Ix->%Ix", (size_t)res, start, end));
+
+    if (res == nullptr)
+    {
+        global_region_allocator.delete_region (start);
+    }
+
     return res;
 }
 
