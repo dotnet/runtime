@@ -1266,10 +1266,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (loaded.IsOk)
                         loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
                     else
-                        Log("warning", $"Error on mono_wasm_get_loaded_files {loaded}");
+                        SendLog(sessionId, $"Error on mono_wasm_get_loaded_files {loaded}", token);
                 }
                 if (loaded_files == null)
-                    Log("warning", $"Loaded_files = null");
+                    SendLog(sessionId, $"Debugger will not work - loaded_files == null", token);
                 else
                 {
                     await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
