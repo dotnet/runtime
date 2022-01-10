@@ -8133,8 +8133,11 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         fgMutateGcHeap(tree DEBUGARG("INITBLK/COPYBLK - non local"));
     }
 
-    // Assignments produce no values so we give them the "Void" VN.
-    tree->gtVNPair = vnStore->VNPForVoid();
+    // Propagate the exception sets. Assignments produce no values so we give them the "Void" VN.
+    ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+    vnpExcSet              = vnStore->VNPUnionExcSet(lhs->gtVNPair, vnpExcSet);
+    vnpExcSet              = vnStore->VNPUnionExcSet(rhs->gtVNPair, vnpExcSet);
+    tree->gtVNPair         = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
 }
 
 //------------------------------------------------------------------------
