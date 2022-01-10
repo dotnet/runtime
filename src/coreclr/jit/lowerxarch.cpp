@@ -3752,7 +3752,7 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
                 // if we prevent the use of BSLR here then "OptimizeConstCompare" may generate TEST_NE or
                 //   TEST_EQ leading to a cheaper "lea, test"
                 GenTree* user = use.User();
-                if (!user->OperIs(GT_EQ, GT_NE))
+                if (!(user->OperIs(GT_EQ, GT_NE) && user->gtGetOp2()->IsIntegralConst()))
                 {
                     GenTreeHWIntrinsic* blsrNode =
                         comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1,
