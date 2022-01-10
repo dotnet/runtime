@@ -19,8 +19,8 @@
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelixhelp-wasm.proj" Condition="'$(TargetOS)' == 'Browser'" />
-  <Import Project="$(MSBuildThisFileDirectory)sendtohelixhelp-mobile-non-wasm.proj" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'Browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasm.targets" Condition="'$(TargetOS)' == 'Browser'" />
+  <Import Project="$(MSBuildThisFileDirectory)sendtohelix-mobile.targets" Condition="'$(TargetsMobile)' == 'true' and '$(TargetOS)' != 'Browser'" />
 
   <PropertyGroup Condition="'$(_workItemTimeout)' == ''">
     <!-- Normal jobs have a 30 minute timeout for arm/arm64, and 15 minute timeout otherwise.
