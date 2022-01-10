@@ -9,9 +9,6 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    // https://github.com/dotnet/runtime/issues/62661
-    [Trait("Category", "windows-failing")]
-    [Trait("Category", "linux-failing")]
     public class ArrayTests : DebuggerTestBase
     {
 
