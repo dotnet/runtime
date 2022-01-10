@@ -17729,14 +17729,20 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             op2 = impImplicitIorI4Cast(op2, info.compRetType);
             op2 = impImplicitR4orR8Cast(op2, info.compRetType);
             // Note that we allow TYP_I_IMPL<->TYP_BYREF transformation, but only TYP_I_IMPL<-TYP_REF.
-            assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
 #ifdef TARGET_LOONGARCH64
+            assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
                       (genTypeStSz(op2->TypeGet()) == genTypeStSz(info.compRetType)) ||
-#endif
                       ((op2->TypeGet() == TYP_I_IMPL) && TypeIs(info.compRetType, TYP_BYREF)) ||
                       (op2->TypeIs(TYP_BYREF, TYP_REF) && (info.compRetType == TYP_I_IMPL)) ||
                       (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
                       (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
+#else
+            assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
+                      ((op2->TypeGet() == TYP_I_IMPL) && TypeIs(info.compRetType, TYP_BYREF)) ||
+                      (op2->TypeIs(TYP_BYREF, TYP_REF) && (info.compRetType == TYP_I_IMPL)) ||
+                      (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
+                      (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
+#endif
 
 #ifdef DEBUG
             if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
