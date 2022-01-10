@@ -474,7 +474,10 @@ class Program
         {
             Console.WriteLine("Testing AdvSimd");
 
-            result = Tests_AdvSimd();
+            if(result != -1)
+            {
+                result = Tests_AdvSimd();
+            }
             if(result != -1)
             {
                 result = Tests_AdvSimd_Swapped();
@@ -498,7 +501,10 @@ class Program
         {
             Console.WriteLine("Testing AdvSimd_Arm64");
 
-            result = Tests_AdvSimd_Arm64();
+            if (result != -1)
+            {
+                result = Tests_AdvSimd_Arm64();
+            }
             if (result != -1)
             {
                 result = Tests_AdvSimd_Arm64_Swapped();
