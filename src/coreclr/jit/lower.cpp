@@ -3123,6 +3123,36 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
+    // Optimizes (X & 1) == 1 to (X & 1)
+    //
+    //                        EQ/NE                   AND
+    //                        /  \                   /  \.
+    //                      AND   CNS 1  ->         x   CNS 1
+    //                     /   \.
+    //                    x   CNS 1
+    //
+    // The compiler requires jumps to have relop operands, so we do not fold that case.
+    if (cmp->gtGetOp1()->OperIs(GT_AND) && cmp->gtGetOp2()->IsIntegralConst(1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
+    {
+        GenTree* op1 = cmp->gtGetOp1();
+        if (op1->gtGetOp2()->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()))
+        {
+            LIR::Use use;
+
+            GenTree* next = cmp->gtNext;
+
+            if (BlockRange().TryGetUse(cmp, &use))
+            {
+                use.ReplaceWith(op1);
+            }
+
+            BlockRange().Remove(cmp->gtGetOp2());
+            BlockRange().Remove(cmp);
+
+            return next;
+        }
+    }
+
     if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
     {
         GenTree* next = OptimizeConstCompare(cmp);
