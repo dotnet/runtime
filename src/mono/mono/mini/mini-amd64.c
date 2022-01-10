@@ -606,7 +606,7 @@ add_valuetype_win64 (MonoMethodSignature *signature, ArgInfo *arg_info, MonoType
 	assert (signature != NULL && arg_info != NULL && type != NULL && current_int_reg != NULL && current_float_reg != NULL && stack_size != NULL);
 
 	klass = mono_class_from_mono_type_internal (type);
-	get_valuetype_size_win64 (klass, sig->pinvoke && !signature->marshalling_disabled, arg_info, type, &arg_class, &arg_size);
+	get_valuetype_size_win64 (klass, signature->pinvoke && !signature->marshalling_disabled, arg_info, type, &arg_class, &arg_size);
 
 	/* Only drop value type if its not an empty struct as input that must be represented in call */
 	if ((arg_size == 0 && !arg_info->pass_empty_struct) || (arg_info->pass_empty_struct && is_return)) {
