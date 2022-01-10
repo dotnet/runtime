@@ -6,6 +6,7 @@ include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckCCompilerFlag)
+include(CheckCSourceCompiles)
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -78,6 +79,21 @@ ac_check_funcs (
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
   access inet_ntop Qp2getifaddrs)
+
+check_c_source_compiles(
+  "
+  #include <zlib.h>
+  int main(void)
+  {
+    #if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
+    #else
+    #error No good zlib found
+    #endif
+    return 0;
+  }
+  "
+  HAVE_SYS_ZLIB)
+
 
 if(NOT HOST_DARWIN)
   # getentropy was introduced in macOS 10.12 / iOS 10.0
