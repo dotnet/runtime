@@ -71,8 +71,6 @@
   <Import Project="$(RepositoryEngineeringDir)targetframeworksuffix.props" Condition="'$(DesignTimeBuild)' != 'true'" />
 
   <PropertyGroup>
-    <!-- Default any assembly not specifying a key to use the Open Key -->
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- Microsoft.Extensions projects have a separate StrongNameKeyId -->
     <StrongNameKeyId Condition="$(MSBuildProjectName.StartsWith('Microsoft.Extensions.'))">MicrosoftAspNetCore</StrongNameKeyId>
     <!-- We can't generate an apphost without restoring the targeting pack. -->

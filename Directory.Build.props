@@ -297,6 +297,8 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <!-- By default the SDK produces ref assembly for 5.0 or later -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <!-- Default any assembly not specifying a key to use the Open Key -->
+    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 
   <PropertyGroup>
