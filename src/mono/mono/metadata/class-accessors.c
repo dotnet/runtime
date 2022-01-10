@@ -620,6 +620,7 @@ mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateIn
 		break;
 	case MONO_CLASS_DEF:
 		set_pointer_property (klass, PROP_METADATA_UPDATE_INFO, value);
+		return;
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
 	case MONO_CLASS_POINTER:
