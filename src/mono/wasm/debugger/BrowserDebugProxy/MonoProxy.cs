@@ -1266,7 +1266,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (loaded.IsOk)
                         loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
                     else
-                        Log("warning", $"Error on mono_wasm_get_loaded_files {loaded.Value}");
+                        Log("warning", $"Error on mono_wasm_get_loaded_files {loaded}");
                 }
                 if (loaded_files == null)
                     Log("warning", $"Loaded_files = null");
