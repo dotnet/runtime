@@ -89,7 +89,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         parts = id.Split(":");
                         objectId.SubValue = int.Parse(parts[3]);
-                        objectId.ElementType = (ElementType)Enum.Parse(typeof(ElementType), parts[4]);
+                        ElementType typeCode;
+                        Enum.TryParse(parts[4], true, out typeCode);
+                        objectId.ElementType = typeCode;
                         break;
                     }
                 }
