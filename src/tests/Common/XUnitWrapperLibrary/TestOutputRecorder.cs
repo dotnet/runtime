@@ -13,7 +13,7 @@ namespace XUnitWrapperLibrary;
 public sealed class TestOutputRecorder : TextWriter
 {
     private TextWriter _inner;
-    private ThreadLocal<StringBuilder> _testOutput = new(() => new StringBuilder());
+    private ThreadLocal<StringBuilder> _testOutput = new();
 
     private TestOutputRecorder(TextWriter inner)
     {

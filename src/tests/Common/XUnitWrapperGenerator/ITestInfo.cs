@@ -334,7 +334,7 @@ sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
         builder.AppendLine($"System.TimeSpan testStart = stopwatch.Elapsed;");
         builder.AppendLine("try {");
         builder.AppendLine($"System.Console.WriteLine(\"Running test: {{0}}\", {test.TestNameExpression});");
-        builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();")
+        builder.AppendLine($"{_outputRecorderIdentifier}.ResetTestOutput();");
         builder.AppendLine(testExecutionExpression);
         builder.AppendLine($"{_summaryLocalIdentifier}.ReportPassedTest({test.TestNameExpression}, \"{test.ContainingType}\", @\"{test.Method}\", stopwatch.Elapsed - testStart, {_outputRecorderIdentifier}.GetTestOutput());");
         builder.AppendLine($"System.Console.WriteLine(\"Passed test: {{0}}\", {test.TestNameExpression});");
