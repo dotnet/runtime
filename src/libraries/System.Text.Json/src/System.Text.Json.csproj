@@ -312,6 +312,7 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
