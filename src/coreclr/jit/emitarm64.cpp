@@ -12971,6 +12971,11 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
+            if (ins == INS_fcmeq)
+            {
+                printf(", ");
+                emitDispImm(0, false);
+            }
             break;
 
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
@@ -12993,7 +12998,7 @@ void emitter::emitDispIns(
             if (ins == INS_cmeq)
             {
                 printf(", ");
-                emitDispFloatZero();
+                emitDispImm(0, false);
             }
             break;
 
@@ -13130,6 +13135,11 @@ void emitter::emitDispIns(
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, false);
+            }
+            if ((fmt == IF_DV_2L && ins == INS_cmeq) || (fmt == IF_DV_2G && ins == INS_fcmeq))
+            {
+                printf(", ");
+                emitDispImm(0, false);
             }
             break;
 

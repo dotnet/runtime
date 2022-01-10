@@ -497,6 +497,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
 
             case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
                 if (intrin.op1->isContained())
                 {
                     assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
