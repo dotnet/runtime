@@ -368,7 +368,7 @@ public:
           Cordb * pCordb,
           ICorDebugRemoteTarget * pRemoteTarget,
           LPCWSTR programName,
-          __in_z LPWSTR  programArgs,
+          _In_z_ LPWSTR  programArgs,
           LPSECURITY_ATTRIBUTES lpProcessAttributes,
           LPSECURITY_ATTRIBUTES lpThreadAttributes,
           BOOL bInheritHandles,

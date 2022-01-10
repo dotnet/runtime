@@ -3638,6 +3638,14 @@
     "any",
     "base"
   ],
+  "linux-loongarch64": [
+    "linux-loongarch64",
+    "linux",
+    "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-mips64": [
     "linux-mips64",
     "linux",
@@ -8096,6 +8104,12 @@
   ],
   "unix-armel": [
     "unix-armel",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-loongarch64": [
+    "unix-loongarch64",
     "unix",
     "any",
     "base"

@@ -920,7 +920,7 @@ ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* T
 }
 
 
-int InternalWideToAnsi(__in_ecount(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, __out_ecount_opt(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
+int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumWideChars, _Out_writes_bytes_opt_(cbAnsiBufferSize) LPSTR szAnsiString, int cbAnsiBufferSize, BOOL fBestFit, BOOL fThrowOnUnmappableChar)
 {
     CONTRACTL
     {
@@ -2784,7 +2784,7 @@ BOOL IsComTargetValidForType(REFLECTCLASSBASEREF* pRefClassObj, OBJECTREF* pTarg
     return FALSE;
 }
 
-DISPID ExtractStandardDispId(__in_z LPWSTR strStdDispIdMemberName)
+DISPID ExtractStandardDispId(_In_z_ LPWSTR strStdDispIdMemberName)
 {
     CONTRACTL
     {
@@ -3782,13 +3782,13 @@ VOID IntializeInteropLogging()
     g_TraceCount = g_pConfig->GetTraceWrapper();
 }
 
-VOID LogInterop(__in_z LPCSTR szMsg)
+VOID LogInterop(_In_z_ LPCSTR szMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%s\n",szMsg) );
 }
 
-VOID LogInterop(__in_z LPCWSTR wszMsg)
+VOID LogInterop(_In_z_ LPCWSTR wszMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%S\n", wszMsg) );
@@ -3964,7 +3964,7 @@ VOID LogInteropLeak(IUnknown* pItf)
 //-------------------------------------------------------------------
 // VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hr, LPCSTR szMsg)
 //-------------------------------------------------------------------
-VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, __in_z LPCSTR szMsg)
+VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg)
 {
     if (!LoggingOn(LF_INTEROP, LL_ALWAYS))
         return;
@@ -4013,7 +4013,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, __in_z LPCSTR szMsg
 //-------------------------------------------------------------------
 //  VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, LPCSTR szMsg)
 //-------------------------------------------------------------------
-VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
+VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 {
     if (!LoggingOn(LF_INTEROP, LL_ALWAYS))
         return;
@@ -4046,7 +4046,7 @@ VOID LogInteropAddRef(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
 //-------------------------------------------------------------------
 //  VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, LPCSTR szMsg)
 //-------------------------------------------------------------------
-VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, __in_z LPCSTR szMsg)
+VOID LogInteropRelease(IUnknown* pItf, ULONG cbRef, _In_z_ LPCSTR szMsg)
 {
     if (!LoggingOn(LF_INTEROP, LL_ALWAYS))
         return;

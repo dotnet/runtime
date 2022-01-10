@@ -651,7 +651,7 @@ RtlpUnwindFunctionCompact(
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     _Out_ PULONG EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
     _Out_ PVOID *HandlerData,
     _In_ PARM_UNWIND_PARAMS UnwindParams
     )
@@ -921,7 +921,7 @@ RtlpUnwindFunctionFull(
     _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout PT_CONTEXT ContextRecord,
     _Out_ PULONG EstablisherFrame,
-    __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
+    _Outptr_opt_result_maybenull_ PEXCEPTION_ROUTINE *HandlerRoutine,
     _Out_ PVOID *HandlerData,
     _In_ PARM_UNWIND_PARAMS UnwindParams
     )

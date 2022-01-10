@@ -96,7 +96,7 @@ unsigned SymW(_In_ __nullterminated char* curPos)
     return (unsigned)*((WCHAR*)curPos);
 }
 /*--------------------------------------------------------------------------*/
-char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
 {
     char *nb = new char[tokLen+1];
     if(nb != NULL)
@@ -106,7 +106,7 @@ char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen)
     }
     return nb;
 }
-char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     char *nb = new char[(tokLen<<1) + 2];
@@ -118,14 +118,14 @@ char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen)
     return nb;
 }
 /*--------------------------------------------------------------------------*/
-char* NewStaticStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize)
+char* NewStaticStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
     if(tokLen >= bufSize) return NULL;
     memcpy(staticBuf, curTok, tokLen);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
-char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize)
+char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
@@ -225,7 +225,7 @@ void yyerror(_In_ __nullterminated const char* str) {
 /********************************************************************************/
 /* looks up the typedef 'name' of length 'nameLen' (name does not need to be
    null terminated)   Returns 0 on failure */
-TypeDefDescr* findTypedef(__in_ecount(NameLen) char* name, size_t NameLen)
+TypeDefDescr* findTypedef(_In_reads_(NameLen) char* name, size_t NameLen)
 {
     TypeDefDescr* pRet = NULL;
     static char Name[4096];
@@ -1630,7 +1630,7 @@ void AsmParse::ParseFile(ReadStream* stream)
 };
 
 /**************************************************************************/
-char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
+char* AsmParse::fillBuff(_In_opt_z_ char* pos)
 {
     int iPutToBuffer;
     g_uCodePage = CP_UTF8;

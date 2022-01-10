@@ -872,8 +872,6 @@ namespace System.Xml.Xsl.Runtime
                 return seq;
 
             XmlQueryNodeSequence nodeSeq = (XmlQueryNodeSequence)seq;
-            if (nodeSeq == null)
-                nodeSeq = new XmlQueryNodeSequence(seq);
 
             return nodeSeq.DocOrderDistinct(_docOrderCmp);
         }

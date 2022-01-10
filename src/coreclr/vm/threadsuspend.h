@@ -36,7 +36,7 @@ struct MinMaxTot
         minVal = maxVal = 0;
     }
 
-    void DisplayAndUpdate(FILE* logFile, __in_z const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit=usec);
+    void DisplayAndUpdate(FILE* logFile, _In_z_ const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit=usec);
 };
 
 // A note about timings.  We use QueryPerformanceCounter to measure all timings in units.  During

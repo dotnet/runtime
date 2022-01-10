@@ -1073,7 +1073,7 @@ bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed dat
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 char* DumpMarshaling(IMDInternalImport* pImport,
-                     __inout_ecount(cchszString) char* szString,
+                     _Inout_updates_(cchszString) char* szString,
                      DWORD cchszString,
                      mdToken tok)
 {
@@ -1540,7 +1540,7 @@ error:
 #pragma warning(pop)
 #endif
 
-char* DumpParamAttr(__inout_ecount(cchszString) char* szString, DWORD cchszString, DWORD dwAttr)
+char* DumpParamAttr(_Inout_updates_(cchszString) char* szString, DWORD cchszString, DWORD dwAttr)
 {
     CONTRACTL
     {

@@ -57,8 +57,8 @@ void MakeTestFile(_In_ __nullterminated char* szFileName)
 
 void MakeProperSourceFileName(_In_ __nullterminated WCHAR* wzOrigName,
                               unsigned uCodePage,
-                              __out_ecount(MAX_FILENAME_LENGTH) WCHAR* wzProperName,
-                              __out_ecount(MAX_FILENAME_LENGTH*3) char* szProperName)
+                              _Out_writes_(MAX_FILENAME_LENGTH) WCHAR* wzProperName,
+                              _Out_writes_(MAX_FILENAME_LENGTH*3) char* szProperName)
 {
     wcscpy_s(wzProperName,MAX_FILENAME_LENGTH, wzOrigName);
     size_t j = wcslen(wzProperName);

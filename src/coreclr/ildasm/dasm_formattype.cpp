@@ -48,7 +48,7 @@ mdToken                  g_tkMVarOwner = 0;
 
 // Special dumping routines for keywords, comments and errors, used by ILDASM
 
-const char* KEYWORD(__in_opt __nullterminated const char* szOrig)
+const char* KEYWORD(_In_opt_z_ const char* szOrig)
 {
     CONTRACTL
     {
@@ -82,7 +82,7 @@ const char* KEYWORD(__in_opt __nullterminated const char* szOrig)
     else
         return szOrig;
 }
-const char* COMMENT(__in_opt __nullterminated const char* szOrig)
+const char* COMMENT(_In_opt_z_ const char* szOrig)
 {
     CONTRACTL
     {
@@ -121,7 +121,7 @@ const char* COMMENT(__in_opt __nullterminated const char* szOrig)
     else
         return szOrig;
 }
-const char* ERRORMSG(__in_opt __nullterminated const char* szOrig)
+const char* ERRORMSG(_In_opt_z_ const char* szOrig)
 {
     CONTRACTL
     {

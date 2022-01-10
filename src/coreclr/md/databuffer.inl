@@ -29,7 +29,7 @@ DataBuffer::DataBuffer()
 //
 inline
 DataBuffer::DataBuffer(
-    __in_bcount(cbSize) BYTE  *pbData,
+    _In_reads_bytes_(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     m_pbData = pbData;
@@ -76,7 +76,7 @@ DataBuffer::Clear()
 inline
 void
 DataBuffer::Init(
-    __in_bcount(cbSize) BYTE  *pbData,
+    _In_reads_bytes_(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     _ASSERTE(IsEmpty());
@@ -98,7 +98,7 @@ __checkReturn
 inline
 BOOL
 DataBuffer::PeekData(
-    __deref_out T **ppTypeData)
+    _Outptr_ T **ppTypeData)
 {
     if (m_cbSize < sizeof(T))
     {   // There's not enough data in the memory block
@@ -123,7 +123,7 @@ inline
 BOOL
 DataBuffer::PeekDataAt(
                 UINT32 nOffset,
-    __deref_out T    **ppTypeData)
+    _Outptr_ T    **ppTypeData)
 {
     if (m_cbSize < nOffset)
     {   // The offset is not in the memory block
@@ -152,7 +152,7 @@ __checkReturn
 inline
 BOOL
 DataBuffer::GetData(
-    __deref_out T **ppTypeData)
+    _Outptr_ T **ppTypeData)
 {
     if (m_cbSize < sizeof(T))
     {   // There's not enough data in the memory block
@@ -178,7 +178,7 @@ inline
 BOOL
 DataBuffer::GetDataOfSize(
                              UINT32 cbDataSize,
-    __out_bcount(cbDataSize) BYTE **ppbDataPointer)
+    _Out_writes_bytes_(cbDataSize) BYTE **ppbDataPointer)
 {
     if (m_cbSize < cbDataSize)
     {   // There's not enough data in the memory block

@@ -494,7 +494,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLAS
 // If fFullInst=TRUE (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters
 // If fAssembly=TRUE, suffix with a comma and the full assembly qualification
 // return size of representation
-int interceptor_ICJI::appendClassName(__deref_inout_ecount(*pnBufLen) char16_t** ppBuf,
+int interceptor_ICJI::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
                                       int*                                       pnBufLen,
                                       CORINFO_CLASS_HANDLE                       cls,
                                       bool                                       fNamespace,
@@ -1257,7 +1257,7 @@ HRESULT interceptor_ICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pException
 // Fetches the message of the current exception
 // Returns the size of the message (including terminating null). This can be
 // greater than bufferLength if the buffer is insufficient.
-uint32_t interceptor_ICJI::GetErrorMessage(__inout_ecount(bufferLength) char16_t *buffer, uint32_t bufferLength)
+uint32_t interceptor_ICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t *buffer, uint32_t bufferLength)
 {
     mc->cr->AddCall("GetErrorMessage");
     return original_ICorJitInfo->GetErrorMessage(buffer, bufferLength);
@@ -1367,7 +1367,7 @@ unsigned interceptor_ICJI::getMethodHash(CORINFO_METHOD_HANDLE ftn /* IN */
 // this function is for debugging only.
 size_t interceptor_ICJI::findNameOfToken(CORINFO_MODULE_HANDLE              module,        /* IN  */
                                          mdToken                            metaTOK,       /* IN  */
-                                         __out_ecount(FQNameCapacity) char* szFQName,      /* OUT */
+                                         _Out_writes_(FQNameCapacity) char* szFQName,      /* OUT */
                                          size_t                             FQNameCapacity /* IN */
                                          )
 {
