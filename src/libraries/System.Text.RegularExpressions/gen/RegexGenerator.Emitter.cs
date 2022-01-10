@@ -825,6 +825,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitAlternation(RegexNode node)
             {
                 Debug.Assert(node.Type is RegexNode.Alternate, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
                 int childCount = node.ChildCount();
                 Debug.Assert(childCount >= 2);
@@ -1203,6 +1204,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitBackreferenceConditional(RegexNode node)
             {
                 Debug.Assert(node.Type is RegexNode.Testref, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() == 2, $"Expected 2 children, found {node.ChildCount()}");
 
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
@@ -1210,9 +1212,10 @@ namespace System.Text.RegularExpressions.Generator
                 // Get the capture number to test.
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
 
-                // Get the "yes" branch and the optional "no" branch, if it exists.
+                // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
+                // somewhat likely to be Empty.
                 RegexNode yesBranch = node.Child(0);
-                RegexNode? noBranch = node.ChildCount() > 1 && node.Child(1) is { Type: not RegexNode.Empty } childNo ? childNo : null;
+                RegexNode? noBranch = node.Child(1) is { Type: not RegexNode.Empty } childNo ? childNo : null;
                 string originalDoneLabel = doneLabel;
 
                 string refNotMatched = ReserveName("ConditionalBackreferenceNotMatched");
@@ -1349,6 +1352,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitExpressionConditional(RegexNode node)
             {
                 Debug.Assert(node.Type is RegexNode.Testgroup, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() == 3, $"Expected 3 children, found {node.ChildCount()}");
 
                 bool isAtomic = node.IsAtomicByParent();
 
@@ -1362,14 +1366,15 @@ namespace System.Text.RegularExpressions.Generator
                 if (conditional.Type == RegexNode.Require)
                 {
                     // It's common to use a positive lookahead explicitly as the condition, as then there's no ambiguity
-                    // as to whether the expression is instead meant to be a reference to a capture group, and it let's
+                    // as to whether the expression is instead meant to be a reference to a capture group, and it lets
                     // you match expressions that would otherwise be a reference to a capture group. But conditions are
                     // themselves implicitly zero-width atomic assertions, so we don't need the extra layer imbued by
                     // having the code for a positive lookahead, so we skip it.
                     conditional = conditional.Child(0);
                 }
 
-                // Get the "yes" branch and the optional "no" branch, if it exists.
+                // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
+                // somewhat likely to be Empty.
                 RegexNode yesBranch = node.Child(1);
                 RegexNode? noBranch = node.Child(2) is { Type: not RegexNode.Empty } childNo ? childNo : null;
                 string originalDoneLabel = doneLabel;
@@ -1408,7 +1413,7 @@ namespace System.Text.RegularExpressions.Generator
                 int startingSliceStaticPos = sliceStaticPos;
 
                 // Emit the child. The condition expression is a zero-width assertion, which is atomic,
-                // Sso prevent backtracking into it.
+                // so prevent backtracking into it.
                 writer.WriteLine("// Condition:");
                 EmitNode(conditional);
                 writer.WriteLine();
@@ -1517,6 +1522,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitCapture(RegexNode node, RegexNode? subsequent = null)
             {
                 Debug.Assert(node.Type is RegexNode.Capture, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 int capnum = RegexParser.MapCaptureNumber(node.M, rm.Code.Caps);
                 int uncapnum = RegexParser.MapCaptureNumber(node.N, rm.Code.Caps);
@@ -1590,6 +1596,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitPositiveLookaheadAssertion(RegexNode node)
             {
                 Debug.Assert(node.Type is RegexNode.Require, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
                 string originalDoneLabel = doneLabel;
@@ -1617,6 +1624,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitNegativeLookaheadAssertion(RegexNode node)
             {
                 Debug.Assert(node.Type is RegexNode.Prevent, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 // Lookarounds are implicitly atomic.  Store the original done label to reset at the end.
                 string originalDoneLabel = doneLabel;
@@ -1796,6 +1804,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitAtomic(RegexNode node, RegexNode? subsequent)
             {
                 Debug.Assert(node.Type is RegexNode.Atomic, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 // Atomic simply outputs the code for the child, but it ensures that any done label left
                 // set by the child is reset to what it was prior to the node's processing.  That way,
@@ -1820,6 +1829,7 @@ namespace System.Text.RegularExpressions.Generator
             void EmitConcatenation(RegexNode node, RegexNode? subsequent, bool emitLengthChecksIfRequired)
             {
                 Debug.Assert(node.Type is RegexNode.Concatenate, $"Unexpected type: {node.Type}");
+                Debug.Assert(node.ChildCount() >= 2, $"Expected at least 2 children, found {node.ChildCount()}");
 
                 // Emit the code for each child one after the other.
                 string? prevDescription = null;
@@ -2386,6 +2396,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Type is RegexNode.Lazyloop, $"Unexpected type: {node.Type}");
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
@@ -2803,6 +2814,7 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Type is RegexNode.Loop or RegexNode.Lazyloop, $"Unexpected type: {node.Type}");
                 Debug.Assert(node.M < int.MaxValue, $"Unexpected M={node.M}");
                 Debug.Assert(node.N >= node.M, $"Unexpected M={node.M}, N={node.N}");
+                Debug.Assert(node.ChildCount() == 1, $"Expected 1 child, found {node.ChildCount()}");
 
                 int minIterations = node.M;
                 int maxIterations = node.N;

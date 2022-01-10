@@ -851,6 +851,8 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, null, @"(?(cat)|)", "dog", RegexOptions.None, new string[] { "" } };
 
                 yield return new object[] { engine, null, @"(?(cat)catdog|)", "catdog", RegexOptions.None, new string[] { "catdog" } };
+                yield return new object[] { engine, null, @"(?(cat)cat\w\w\w)*", "catdogcathog", RegexOptions.None, new string[] { "catdogcathog" } };
+                yield return new object[] { engine, null, @"(?(?=cat)cat\w\w\w)*", "catdogcathog", RegexOptions.None, new string[] { "catdogcathog" } };
                 yield return new object[] { engine, null, @"(?(cat)catdog|)", "dog", RegexOptions.None, new string[] { "" } };
                 yield return new object[] { engine, null, @"(?(cat)dog|)", "dog", RegexOptions.None, new string[] { "" } };
                 yield return new object[] { engine, null, @"(?(cat)dog|)", "cat", RegexOptions.None, new string[] { "" } };

@@ -372,7 +372,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("bonjour|hej|ciao|shalom|zdravo|pozdrav|hallo|hola|hello|hey|witam|tere|bonjou|salam|helo|sawubona", "(?>bonjou(?>r|)|h(?>e(?>j|(?>l(?>lo|o)|y))|allo|ola)|ciao|s(?>halom|a(?>lam|wubona))|zdravo|pozdrav|witam|tere)")]
         [InlineData("\\w\\d123|\\w\\dabc", "\\w\\d(?:123|abc)")]
         [InlineData("(a)(?(1)b)", "(a)(?(1)b|)")]
+        [InlineData("(abc)(?(1)def)", "(abc)(?(1)def|)")]
         [InlineData("(?(a)a)", "(?(a)a|)")]
+        [InlineData("(?(abc)def)", "(?(abc)def|)")]
         [InlineData("(?(\\w)\\d)", "(?(\\w)\\d|)")]
         // Auto-atomicity
         [InlineData("a*b", "(?>a*)b")]
