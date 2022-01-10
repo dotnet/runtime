@@ -322,6 +322,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AES))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_BMI1))
@@ -355,6 +357,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNI))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AES))
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_BMI1))
@@ -475,6 +479,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AES);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
@@ -508,6 +514,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AES);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))

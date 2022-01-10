@@ -68,6 +68,7 @@ implication        ,X86   ,SSE41     ,SSSE3
 implication        ,X86   ,SSE42     ,SSE41
 implication        ,X86   ,AVX       ,SSE42
 implication        ,X86   ,AVX2      ,AVX
+implication        ,X86   ,AVXVNNI   ,AVX2
 implication        ,X86   ,AES       ,SSE2
 implication        ,X86   ,BMI1      ,AVX
 implication        ,X86   ,BMI2      ,AVX

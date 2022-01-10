@@ -368,6 +368,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
         if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
         if (resultflags.HasInstructionSet(InstructionSet_AES) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
             resultflags.RemoveInstructionSet(InstructionSet_AES);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_AVX))
@@ -400,6 +402,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_AVX);
         if (resultflags.HasInstructionSet(InstructionSet_AVX2) && !resultflags.HasInstructionSet(InstructionSet_AVX))
             resultflags.RemoveInstructionSet(InstructionSet_AVX2);
+        if (resultflags.HasInstructionSet(InstructionSet_AVXVNNI) && !resultflags.HasInstructionSet(InstructionSet_AVX2))
+            resultflags.RemoveInstructionSet(InstructionSet_AVXVNNI);
         if (resultflags.HasInstructionSet(InstructionSet_AES) && !resultflags.HasInstructionSet(InstructionSet_SSE2))
             resultflags.RemoveInstructionSet(InstructionSet_AES);
         if (resultflags.HasInstructionSet(InstructionSet_BMI1) && !resultflags.HasInstructionSet(InstructionSet_AVX))
