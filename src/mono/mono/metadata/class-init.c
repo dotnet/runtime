@@ -2080,7 +2080,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					blittable = FALSE;
 			}
 		}
-		if (!any_field_has_auto_layout && m_class_any_field_has_auto_layout (mono_class_from_mono_type_internal (field->type)))
+		if (!any_field_has_auto_layout && field->type->type == MONO_TYPE_VALUETYPE && m_class_any_field_has_auto_layout (mono_class_from_mono_type_internal (field->type)))
 			any_field_has_auto_layout = TRUE;
 	}
 	if (klass->enumtype) {
