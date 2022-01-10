@@ -1540,11 +1540,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await CreateJObjectForVariableValue(retDebuggerCmdReader, varName, false, -1, false, token);
         }
 
-        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, string varName, CancellationToken token)
+        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, ElementType elementType, string varName, CancellationToken token)
         {
-            using var commandParamsObjWriter = new MonoBinaryWriter();
-            commandParamsObjWriter.Write(ElementType.Class, objectId);
-            return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
+            switch (elementType)
+            {
+                case ElementType.ValueType:
+                {
+                    return await InvokeMethod(valueTypes[objectId]?.valueTypeBuffer, methodId, varName, token);
+                }
+                default:
+                {
+                    using var commandParamsObjWriter = new MonoBinaryWriter();
+                    commandParamsObjWriter.Write(ElementType.Class, objectId);
+                    return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
+                }
+            }
         }
 
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
@@ -1569,7 +1579,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        public async Task<JArray> CreateJArrayForProperties(int typeId, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
+        public async Task<JArray> CreateJArrayForProperties(int typeId, ElementType elementType, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
         {
             JArray ret = new JArray();
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
@@ -1606,7 +1616,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             get = new
                             {
                                 type = "function",
-                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}",
+                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}:{elementType}",
                                 className = "Function",
                                 description = "get " + propertyNameStr + " ()",
                                 methodId = getMethodId,
@@ -1650,7 +1660,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             for (int i = 0 ; i < typesToGetProperties.Count; i++)
             {
-                var properties = await CreateJArrayForProperties(typesToGetProperties[i], valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
+                var properties = await CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
                 ret = new JArray(ret.Union(properties));
             }
 
@@ -2375,6 +2385,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
                     typeId,
+                    ElementType.Class,
                     commandParamsObjWriter.GetParameterBuffer(),
                     new JArray(objects.Values),
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
@@ -2580,7 +2591,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, propName, token);
+                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, rootObjId.ElementType, propName, token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:

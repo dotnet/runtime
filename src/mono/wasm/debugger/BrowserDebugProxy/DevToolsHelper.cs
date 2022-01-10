@@ -63,6 +63,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Value { get; }
         public int SubValue { get; set; }
 
+        public ElementType ElementType { get; set;  }
+
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
@@ -87,6 +89,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         parts = id.Split(":");
                         objectId.SubValue = int.Parse(parts[3]);
+                        objectId.ElementType = (ElementType)Enum.Parse(typeof(ElementType), parts[4]);
                         break;
                     }
                 }
