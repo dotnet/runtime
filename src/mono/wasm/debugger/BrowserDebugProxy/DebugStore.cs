@@ -377,7 +377,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        if (name == "DebuggerHiddenAttribute")
+                        if (name == "DebuggerHiddenAttribute" || name == "DebuggerStepThroughAttribute")
                         {
                             this.IsHiddenFromDebugger = true;
                             break;
