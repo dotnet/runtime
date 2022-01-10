@@ -94,6 +94,48 @@ class Program
         return AdvSimd.CompareEqual(left, Vector128<float>.Zero);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<double> AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero(Vector128<double> left)
+    {
+        return AdvSimd.Arm64.CompareEqual(left, Vector128<double>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<ulong> AdvSimd_Arm64_CompareEqual_Vector128_UInt64_Zero(Vector128<ulong> left)
+    {
+        return AdvSimd.Arm64.CompareEqual(left, Vector128<ulong>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<long> AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero(Vector128<long> left)
+    {
+        return AdvSimd.Arm64.CompareEqual(left, Vector128<long>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<float> AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero(Vector64<float> left)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(left, Vector64<float>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<double> AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero(Vector64<double> left)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(left, Vector64<double>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<ulong> AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero(Vector64<ulong> left)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(left, Vector64<ulong>.Zero);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<long> AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero(Vector64<long> left)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(left, Vector64<long>.Zero);
+    }
+
     // CompareEqual Swapped
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -180,6 +222,48 @@ class Program
         return AdvSimd.CompareEqual(Vector128<float>.Zero, right);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<double> AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero_Swapped(Vector128<double> right)
+    {
+        return AdvSimd.Arm64.CompareEqual(Vector128<double>.Zero, right);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<ulong> AdvSimd_Arm64_CompareEqual_Vector128_UInt64_Zero_Swapped(Vector128<ulong> right)
+    {
+        return AdvSimd.Arm64.CompareEqual(Vector128<ulong>.Zero, right);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector128<long> AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero_Swapped(Vector128<long> right)
+    {
+        return AdvSimd.Arm64.CompareEqual(Vector128<long>.Zero, right);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<float> AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero_Swapped(Vector64<float> right)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(Vector64<float>.Zero, right);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<double> AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero_Swapped(Vector64<double> right)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(Vector64<double>.Zero, right);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<ulong> AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero_Swapped(Vector64<ulong> right)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(Vector64<ulong>.Zero, right);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector64<long> AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero_Swapped(Vector64<long> right)
+    {
+        return AdvSimd.Arm64.CompareEqualScalar(Vector64<long>.Zero, right);
+    }
+
     // Validation
 
     unsafe static bool ValidateResult_Vector64<T>(Vector64<T> result, T expectedElementValue) where T: unmanaged
@@ -212,9 +296,9 @@ class Program
         return succeeded;
     }
 
-    static int Tests()
+    static int Tests_AdvSimd()
     {
-        var result = 100;
+        var result = 0;
 
         // Begin CompareEqual Tests
 
@@ -265,9 +349,9 @@ class Program
         return result;
     }
 
-    static int Tests_Swapped()
+    static int Tests_AdvSimd_Swapped()
     {
-        var result = 100;
+        var result = 0;
 
         // Begin CompareEqual Tests
 
@@ -318,20 +402,84 @@ class Program
         return result;
     }
 
+    static int Tests_AdvSimd_Arm64()
+    {
+        var result = 0;
+
+        // Begin CompareEqual Tests
+
+        if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero(Vector128<double>.Zero), Double.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<ulong>(AdvSimd_Arm64_CompareEqual_Vector128_UInt64_Zero(Vector128<ulong>.Zero), UInt64.MaxValue))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero(Vector128<long>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero(Vector64<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero(Vector64<double>.Zero), Double.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<ulong>(AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero(Vector64<ulong>.Zero), UInt64.MaxValue))
+            result = -1;
+
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero(Vector64<long>.Zero), -1))
+            result = -1;
+
+        // End CompareEqual Tests
+
+        return result;
+    }
+
+    static int Tests_AdvSimd_Arm64_Swapped()
+    {
+        var result = 0;
+
+        // Begin CompareEqual Tests
+
+        if (!ValidateResult_Vector128<double>(AdvSimd_Arm64_CompareEqual_Vector128_Double_Zero_Swapped(Vector128<double>.Zero), Double.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector128<ulong>(AdvSimd_Arm64_CompareEqual_Vector128_UInt64_Zero_Swapped(Vector128<ulong>.Zero), UInt64.MaxValue))
+            result = -1;
+
+        if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero_Swapped(Vector128<long>.Zero), -1))
+            result = -1;
+
+        if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero_Swapped(Vector64<float>.Zero), Single.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero_Swapped(Vector64<double>.Zero), Double.NaN))
+            result = -1;
+
+        if (!ValidateResult_Vector64<ulong>(AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero_Swapped(Vector64<ulong>.Zero), UInt64.MaxValue))
+            result = -1;
+
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero_Swapped(Vector64<long>.Zero), -1))
+            result = -1;
+
+        // End CompareEqual Tests
+
+        return result;
+    }
+
     static int Main(string[] args)
     {
-        var result = 100;
+        var result = 0;
 
         if (AdvSimd.IsSupported)
         {
             Console.WriteLine("Testing AdvSimd");
 
-            result = Tests();
+            result = Tests_AdvSimd();
             if(result != -1)
             {
-                result = Tests_Swapped();
+                result = Tests_AdvSimd_Swapped();
             }
-            
+
             if (result == -1)
             {
                 Console.WriteLine("AdvSimd Tests Failed");
@@ -344,6 +492,30 @@ class Program
         else
         {
             Console.WriteLine("Skipped AdvSimd Tests");
+        }
+
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            Console.WriteLine("Testing AdvSimd_Arm64");
+
+            result = Tests_AdvSimd_Arm64();
+            if (result != -1)
+            {
+                result = Tests_AdvSimd_Arm64_Swapped();
+            }
+
+            if (result == -1)
+            {
+                Console.WriteLine("AdvSimd_Arm64 Tests Failed");
+            }
+            else
+            {
+                Console.WriteLine("AdvSimd_Arm64 Tests Passed");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Skipped AdvSimd_Arm64 Tests");
         }
 
         return result;
