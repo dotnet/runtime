@@ -554,6 +554,7 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
+#if false // https://github.com/dotnet/runtime/issues/63560
         [Fact]
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
@@ -619,6 +620,7 @@ namespace DebuggerTests
                id_args["arrayIdx"] = "qwe";
                await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: false);
            });
+#endif
 
         [Fact]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
