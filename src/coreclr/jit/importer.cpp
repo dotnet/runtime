@@ -17731,7 +17731,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             // Note that we allow TYP_I_IMPL<->TYP_BYREF transformation, but only TYP_I_IMPL<-TYP_REF.
             assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
 #ifdef TARGET_LOONGARCH64
-                      genTypeStSz(op2->TypeGet()) == genTypeStSz(info.compRetType) ||
+                      (genTypeStSz(op2->TypeGet()) == genTypeStSz(info.compRetType)) ||
 #endif
                       ((op2->TypeGet() == TYP_I_IMPL) && TypeIs(info.compRetType, TYP_BYREF)) ||
                       (op2->TypeIs(TYP_BYREF, TYP_REF) && (info.compRetType == TYP_I_IMPL)) ||
