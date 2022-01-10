@@ -318,7 +318,7 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_cvttss_si32 (__m128 a)
         ///   CVTTSS2SI r32, xmm/m32
         /// </summary>
-        public static int ConvertToNIntWithTruncation(Vector128<float> value) => ConvertToNIntWithTruncation(value);
+        public static nint ConvertToNIntWithTruncation(Vector128<float> value) => ConvertToNIntWithTruncation(value);
 
         /// <summary>
         /// __m128 _mm_div_ps (__m128 a,  __m128 b)
