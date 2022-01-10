@@ -266,7 +266,7 @@ class Program
 
     // Validation
 
-    unsafe static bool ValidateResult_Vector64<T>(Vector64<T> result, T expectedElementValue) where T: unmanaged
+    unsafe static bool ValidateResult_Vector64<T>(Vector64<T> result, T expectedElementValue) where T : unmanaged
     {
         var succeeded = true;
 
@@ -281,13 +281,43 @@ class Program
         return succeeded;
     }
 
-    unsafe static bool ValidateResult_Vector128<T>(Vector128<T> result, T expectedElementValue) where T: unmanaged
+    unsafe static bool ValidateResult_Vector64<T>(Vector64<T> result, Vector64<T> expectedElementValue) where T : unmanaged
+    {
+        var succeeded = true;
+
+        for (var i = 0; i < (8 / sizeof(T)); i++)
+        {
+            if (!result.GetElement(i).Equals(expectedElementValue.GetElement(i)))
+            {
+                succeeded = false;
+            }
+        }
+
+        return succeeded;
+    }
+
+    unsafe static bool ValidateResult_Vector128<T>(Vector128<T> result, T expectedElementValue) where T : unmanaged
     {
         var succeeded = true;
 
         for (var i = 0; i < (16 / sizeof(T)); i++)
         {
             if (!result.GetElement(i).Equals(expectedElementValue))
+            {
+                succeeded = false;
+            }
+        }
+
+        return succeeded;
+    }
+
+    unsafe static bool ValidateResult_Vector128<T>(Vector128<T> result, Vector128<T> expectedElementValue) where T : unmanaged
+    {
+        var succeeded = true;
+
+        for (var i = 0; i < (16 / sizeof(T)); i++)
+        {
+            if (!result.GetElement(i).Equals(expectedElementValue.GetElement(i)))
             {
                 succeeded = false;
             }
@@ -417,16 +447,16 @@ class Program
         if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero(Vector128<long>.Zero), -1))
             result = -1;
 
-        if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero(Vector64<float>.Zero), Single.NaN))
+        if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero(Vector64<float>.Zero), Vector64.CreateScalar(Single.NaN)))
             result = -1;
 
-        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero(Vector64<double>.Zero), Double.NaN))
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero(Vector64<double>.Zero), Vector64.CreateScalar(Double.NaN)))
             result = -1;
 
-        if (!ValidateResult_Vector64<ulong>(AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero(Vector64<ulong>.Zero), UInt64.MaxValue))
+        if (!ValidateResult_Vector64<ulong>(AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero(Vector64<ulong>.Zero), Vector64.CreateScalar(UInt64.MaxValue)))
             result = -1;
 
-        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero(Vector64<long>.Zero), -1))
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero(Vector64<long>.Zero), Vector64.CreateScalar(-1L)))
             result = -1;
 
         // End CompareEqual Tests
@@ -449,16 +479,16 @@ class Program
         if (!ValidateResult_Vector128<long>(AdvSimd_Arm64_CompareEqual_Vector128_Int64_Zero_Swapped(Vector128<long>.Zero), -1))
             result = -1;
 
-        if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero_Swapped(Vector64<float>.Zero), Single.NaN))
+        if (!ValidateResult_Vector64<float>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Single_Zero_Swapped(Vector64<float>.Zero), Vector64.CreateScalar(Single.NaN)))
             result = -1;
 
-        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero_Swapped(Vector64<double>.Zero), Double.NaN))
+        if (!ValidateResult_Vector64<double>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Double_Zero_Swapped(Vector64<double>.Zero), Vector64.CreateScalar(Double.NaN)))
             result = -1;
 
-        if (!ValidateResult_Vector64<ulong>(AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero_Swapped(Vector64<ulong>.Zero), UInt64.MaxValue))
+        if (!ValidateResult_Vector64<ulong>(AdvSimd_Arm64_CompareEqualScalar_Vector64_UInt64_Zero_Swapped(Vector64<ulong>.Zero), Vector64.CreateScalar(UInt64.MaxValue)))
             result = -1;
 
-        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero_Swapped(Vector64<long>.Zero), -1))
+        if (!ValidateResult_Vector64<long>(AdvSimd_Arm64_CompareEqualScalar_Vector64_Int64_Zero_Swapped(Vector64<long>.Zero), Vector64.CreateScalar(-1L)))
             result = -1;
 
         // End CompareEqual Tests
@@ -474,11 +504,11 @@ class Program
         {
             Console.WriteLine("Testing AdvSimd");
 
-            if(result != -1)
+            if (result != -1)
             {
                 result = Tests_AdvSimd();
             }
-            if(result != -1)
+            if (result != -1)
             {
                 result = Tests_AdvSimd_Swapped();
             }

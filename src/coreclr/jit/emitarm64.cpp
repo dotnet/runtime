@@ -4732,19 +4732,19 @@ void emitter::emitIns_R_R(
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 fmt      = IF_DV_2M;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert(size == EA_8BYTE); // Only Double supported
+                assert(isValidScalarDatasize(size));
+                assert(insOptsNone(opt));
                 fmt = IF_DV_2L;
             }
             break;
