@@ -113,4 +113,10 @@ public class PInvokes
         char c = '✅';
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithShortAndGeneric<short>(s, (short)c), s, (short)c));
     }
+
+    [Fact]
+    public static void CanUseEnumsWithDisabledMarshalling()
+    {
+        Assert.Equal((byte)ByteEnum.Value, DisabledRuntimeMarshallingNative.GetEnumUnderlyingValue(ByteEnum.Value));
+    }
 }

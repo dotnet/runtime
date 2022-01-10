@@ -102,6 +102,11 @@ public unsafe class DisabledRuntimeMarshallingNative
         SequentialWithAutoLayoutField field;
     }
 
+    public enum ByteEnum : byte
+    {
+        Value = 42
+    }
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern bool CheckStructWithShortAndBool(StructWithShortAndBool str, short s, bool b);
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
@@ -157,6 +162,9 @@ public unsafe class DisabledRuntimeMarshallingNative
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
     public static extern bool GetByteAsBool(byte b);
+
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "PassThrough")]
+    public static extern byte GetEnumUnderlyingValue(ByteEnum b);
 
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "CheckStructWithShortAndBoolWithVariantBool")]
     [return:MarshalAs(UnmanagedType.U1)]
