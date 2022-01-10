@@ -171,7 +171,7 @@
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <ItemGroup>
       <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)ilc/**/*" TargetDir="nativeaot/tools/" />
       <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)aotsdk/**/*" TargetDir="nativeaot/sdk/" />
       <AotCompilerCopyLocal Include="$(CoreCLRArtifactsPath)build/**/*" TargetDir="nativeaot/build/" />

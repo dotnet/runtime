@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetName>crossgen2</TargetName>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <IlcCompileInput Include="$(OutputPath)ILCompiler*.dll" />
+    <IlcCompileInput Include="$(OutputPath)Microsoft.DiaSymReader.dll" />
+  </ItemGroup>
+
+  <Import Project="nativeaot.targets" />
+
+</Project>

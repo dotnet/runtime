@@ -38,9 +38,25 @@ WARNING:   When setting properties based on their current state (for example:
     <Error Text="Setting both AlwaysUseCrossGen2 to true and CrossGenTest to false is non-sensical" Condition="'$(CrossGenTest)' == 'false' and '$(AlwaysUseCrossGen2)' == 'true'"/>
 
     <PropertyGroup>
+      <CrossgenInvokeToolBashScript Condition="'$(__SkipNativeCompileTools)' == 'true'">
+        <![CDATA[
+        # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+        if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+            __Command+=" $__TestDotNetCmd"
+        else
+            __Command+=" dotnet"
+        fi
+        __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+        ]]>
+      </CrossgenInvokeToolBashScript>
+      <CrossgenInvokeToolBashScript Condition="'$(__SkipNativeCompileTools)' != 'true'">
+        <![CDATA[
+        __Command+=" $CORE_ROOT/crossgen2/crossgen"
+        ]]>
+      </CrossgenInvokeToolBashScript>
+
       <CrossgenBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
-
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
     unset RunCrossGen
     export RunCrossGen2=1
@@ -83,13 +99,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         rm $__ResponseFile
 
         __Command=$_DebuggerFullPath
-        # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-        if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-            __Command+=" $__TestDotNetCmd"
-        else
-            __Command+=" dotnet"
-        fi
-        __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
+        $(CrossgenInvokeToolBashScript)
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
 
@@ -154,6 +164,22 @@ fi
 
   <Target Name="GetCrossgenBatchScript">
     <PropertyGroup>
+     <CrossgenInvokeToolBatchScript Condition="'$(__SkipNativeCompileTools)' == 'true'">
+        <![CDATA[
+    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
+    if defined __TestDotNetCmd (
+        set __Command=!__Command! "!__TestDotNetCmd!"
+    ) else (
+        set __Command=!__Command! "dotnet"
+    )
+    set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
+        ]]>
+      </CrossgenInvokeToolBatchScript>
+      <CrossgenInvokeToolBatchScript Condition="'$(__SkipNativeCompileTools)' != 'true'">
+        <![CDATA[
+    set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.exe"
+        ]]>
+      </CrossgenInvokeToolBatchScript>
       <CrossgenBatchScript Condition="'$(CLRTestKind)' == 'BuildAndRun' and '$(CrossGenTest)' != 'false'">
         <![CDATA[
 
@@ -212,13 +238,7 @@ if defined RunCrossGen2 (
     del /Q !__ResponseFile!
 
     set __Command=!_DebuggerFullPath!
-    REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
-    if defined __TestDotNetCmd (
-        set __Command=!__Command! "!__TestDotNetCmd!"
-    ) else (
-        set __Command=!__Command! "dotnet"
-    )
-    set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
+    $(CrossgenInvokeToolBatchScript)
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!

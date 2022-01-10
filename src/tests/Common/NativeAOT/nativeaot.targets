@@ -1,0 +1,39 @@
+<Project>
+
+  <!-- Common setting for NativeAOT compilation of test tools -->
+
+  <PropertyGroup>
+    <!-- Disable SDK behaviors that don't work when we don't start with source files -->
+    <SkipResolvePackageAssets>true</SkipResolvePackageAssets>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+
+    <!-- Set up trimming to speed up the build -->
+    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <IlcTrimMetadata>true</IlcTrimMetadata>
+
+    <!-- Don't strictly need this, but we need to ship like this, so might as well test it here -->
+    <ControlFlowGuard>Guard</ControlFlowGuard>
+
+    <!-- Always use optimizations and use more aggressive inliner -->
+    <Optimize>true</Optimize>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+
+    <!-- These are forced by ILLink targets; we should fix the SDK -->
+    <SelfContained>true</SelfContained>
+    <UseAppHost>true</UseAppHost>
+  </PropertyGroup>
+
+  <Target Name="CoreCompile" />
+  <Target Name="CreateManifestResourceNames" />
+
+  <Import Project="$(IlcBuildPath)\Microsoft.NETCore.Native.targets" />
+
+  <Target Name="NativeCompileTool" DependsOnTargets="LinkNative">
+    <Delete Files="@(IlcCompileInput);$(OutputPath)$(TargetName).dll" />
+    <Move SourceFiles="$(NativeBinary)" DestinationFolder="$(OutputPath)" />
+    <Move SourceFiles="$(NativeOutputPath)$(TargetName).pdb" DestinationFolder="$(OutputPath)" Condition="'$(TargetOS)' == 'windows'" />
+    <RemoveDir Directories="$(OutputPath)\native" />
+  </Target>
+</Project>

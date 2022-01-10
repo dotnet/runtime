@@ -36,6 +36,7 @@
     <TestBuildSteps Include="CheckTestBuildStep" />
     <TestBuildSteps Include="GenerateLayout" />
     <TestBuildSteps Include="BuildTestWrappers" />
+    <TestBuildSteps Include="AotCompileTools" />
     <TestBuildSteps Include="CrossgenFramework" />
     <TestBuildSteps Include="CreateAndroidApps" />
     <TestBuildSteps Include="CreateIosApps" />
@@ -498,8 +499,31 @@
       AfterTargets="ManagedBuild;RestorePackages"
       Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and !$(MonoAot) and !$(MonoFullAot) and ('$(__BuildTestWrappersOnly)' == '1' or ('$(__SkipTestWrappers)' != '1' and '$(__SkipManaged)' != '1'))" />
 
-  <Target Name="CrossgenFramework"
+  <Target Name="AotCompileTools"
       DependsOnTargets="GenerateLayout"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(__TestBuildMode)' == 'crossgen2' or '$(__TestBuildMode)' == 'nativeaot') and !$(MonoAot) and !$(MonoFullAot) and '$(__SkipNativeCompileTools)' != 'true' and '$(TargetArchitecture)' == 'x64'" >
+    <ItemGroup>
+      <AotCompileToolProperty Include="IlcBuildPath=$(CoreClrProjectRoot)/nativeaot/BuildIntegration/" />
+      <AotCompileToolProperty Include="IlcToolsPath=$(CORE_ROOT)/nativeaot/tools/" />
+      <AotCompileToolProperty Include="IlcSdkPath=$(CORE_ROOT)/nativeaot/sdk/" />
+      <AotCompileToolProperty Include="IlcFrameworkPath=$(CORE_ROOT)/nativeaot/framework/" />
+      <AotCompileToolProperty Include="IlcBuildTasksPath=$(CORE_ROOT)/nativeaot/tools/netstandard/ILCompiler.Build.Tasks.dll " />
+      <AotCompileToolProperty Include="RuntimeIdentifier=" />
+    </ItemGroup>
+
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common/NativeAOT/compile-crossgen2.proj"
+             Targets="NativeCompileTool"
+             Properties="@(AotCompileToolProperty);OutputPath=$(CORE_ROOT)/crossgen2/;IntermediateOutputPath=$(CORE_ROOT)/crossgen2/"
+             Condition="'$(__TestBuildMode)' == 'crossgen2'" />
+
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Common/NativeAOT/compile-ilc.proj"
+             Targets="NativeCompileTool"
+             Properties="@(AotCompileToolProperty);OutputPath=$(CORE_ROOT)/nativeaot/tools/;IntermediateOutputPath=$(CORE_ROOT)/nativeaot/tools/"
+             Condition="'$(__TestBuildMode)' == 'nativeaot'" />
+  </Target>
+
+  <Target Name="CrossgenFramework"
+      DependsOnTargets="GenerateLayout;AotCompileTools"
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__TestBuildMode)' == 'crossgen2' and !$(MonoAot) and !$(MonoFullAot)" >
 
     <PropertyGroup>
