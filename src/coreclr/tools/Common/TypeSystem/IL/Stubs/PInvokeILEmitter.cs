@@ -60,7 +60,7 @@ namespace Internal.IL.Stubs
                     break;
                 case CalliMarshallingMethodThunk calliMethod:
                     methodSig = calliMethod.TargetSignature;
-                    runtimeMarshallingEnabled = MarshalHelpers.IsRuntimeMarshallingEnabled(calliMethod.ModuleContext);
+                    runtimeMarshallingEnabled = calliMethod.RuntimeMarshallingEnabled;
                     break;
                 default:
                     methodSig = targetMethod.Signature;

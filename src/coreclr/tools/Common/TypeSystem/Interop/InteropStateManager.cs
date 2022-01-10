@@ -188,7 +188,7 @@ namespace Internal.TypeSystem
 
         public MethodDesc GetPInvokeCalliStub(MethodSignature signature, ModuleDesc moduleContext)
         {
-            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(signature, moduleContext));
+            return _pInvokeCalliHashtable.GetOrCreateValue(new CalliMarshallingMethodThunkKey(signature, MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext)));
         }
 
         private class NativeStructTypeHashtable : LockFreeReaderHashtable<MetadataType, NativeStructType>
@@ -478,7 +478,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private readonly record struct CalliMarshallingMethodThunkKey(MethodSignature Signature, ModuleDesc ModuleContext);
+        private readonly record struct CalliMarshallingMethodThunkKey(MethodSignature Signature, bool RuntimeMarshallingEnabled);
 
         private class PInvokeCalliHashtable : LockFreeReaderHashtable<CalliMarshallingMethodThunkKey, CalliMarshallingMethodThunk>
         {
@@ -492,22 +492,22 @@ namespace Internal.TypeSystem
 
             protected override int GetValueHashCode(CalliMarshallingMethodThunk value)
             {
-                return new CalliMarshallingMethodThunkKey(value.TargetSignature, value.ModuleContext).GetHashCode();
+                return new CalliMarshallingMethodThunkKey(value.TargetSignature, value.RuntimeMarshallingEnabled).GetHashCode();
             }
 
             protected override bool CompareKeyToValue(CalliMarshallingMethodThunkKey key, CalliMarshallingMethodThunk value)
             {
-                return key.Signature.Equals(value.TargetSignature);
+                return key.Signature.Equals(value.TargetSignature) && key.RuntimeMarshallingEnabled == value.RuntimeMarshallingEnabled;
             }
 
             protected override bool CompareValueToValue(CalliMarshallingMethodThunk value1, CalliMarshallingMethodThunk value2)
             {
-                return value1.TargetSignature.Equals(value2.TargetSignature) && value1.ModuleContext == value2.ModuleContext;
+                return value1.TargetSignature.Equals(value2.TargetSignature) && value1.RuntimeMarshallingEnabled == value2.RuntimeMarshallingEnabled;
             }
 
             protected override CalliMarshallingMethodThunk CreateValueFromKey(CalliMarshallingMethodThunkKey key)
             {
-                return new CalliMarshallingMethodThunk(key.Signature, _owningType, _interopStateManager, key.ModuleContext);
+                return new CalliMarshallingMethodThunk(key.Signature, _owningType, _interopStateManager, key.RuntimeMarshallingEnabled);
             }
 
             public PInvokeCalliHashtable(InteropStateManager interopStateManager, TypeDesc owningType)
