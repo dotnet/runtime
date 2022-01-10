@@ -13136,7 +13136,7 @@ void emitter::emitDispIns(
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, false);
             }
-            if ((fmt == IF_DV_2L && ins == INS_cmeq))
+            if (fmt == IF_DV_2L && ins == INS_cmeq)
             {
                 printf(", ");
                 emitDispImm(0, false);
