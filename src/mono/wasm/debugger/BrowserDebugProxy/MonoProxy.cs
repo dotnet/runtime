@@ -1263,13 +1263,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (loaded_files == null)
                 {
                     Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(RuntimeId), token);
-                    loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
+                    if (loaded.IsOk)
+                        loaded_files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
+                    else
+                        Log("warning", $"Error on mono_wasm_get_loaded_files {loaded.Value}");
                 }
-
-                await
-                foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                if (loaded_files == null)
+                    Log("warning", $"Loaded_files = null");
+                else
                 {
-                    await OnSourceFileAdded(sessionId, source, context, token);
+                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                    {
+                        await OnSourceFileAdded(sessionId, source, context, token);
+                    }
                 }
             }
             catch (Exception e)
