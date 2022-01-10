@@ -15,7 +15,7 @@
 #define FAIL_UNLESS(x, y) if (!(x)) { report->error y; return; }
 
 /**************************************************************************/
-void Assembler::StartNameSpace(__in __nullterminated char* name)
+void Assembler::StartNameSpace(_In_ __nullterminated char* name)
 {
     m_NSstack.PUSH(m_szNamespace);
     m_szNamespace = name;
@@ -91,7 +91,7 @@ void    Assembler::ClearBoundList(void)
     m_TyParList = NULL;
 }
 /**************************************************************************/
-mdToken Assembler::ResolveClassRef(mdToken tkResScope, __in __nullterminated const char *pszFullClassName, Class** ppClass)
+mdToken Assembler::ResolveClassRef(mdToken tkResScope, _In_ __nullterminated const char *pszFullClassName, Class** ppClass)
 {
     Class *pClass = NULL;
     mdToken tkRet = mdTokenNil;
@@ -239,7 +239,7 @@ mdToken Assembler::ResolveTypeSpec(BinStr* typeSpec)
 }
 
 /**************************************************************************/
-mdToken Assembler::GetAsmRef(__in __nullterminated const char* szName)
+mdToken Assembler::GetAsmRef(_In_ __nullterminated const char* szName)
 {
     mdToken tkResScope = 0;
     if(strcmp(szName,"*")==0) tkResScope = mdTokenNil;
@@ -330,7 +330,7 @@ mdToken Assembler::GetInterfaceImpl(mdToken tsClass, mdToken tsInterface)
 }
 
 /**************************************************************************/
-mdToken Assembler::GetModRef(__in __nullterminated char* szName)
+mdToken Assembler::GetModRef(_In_ __nullterminated char* szName)
 {
     mdToken tkResScope = 0;
     if(!strcmp(szName,m_szScopeName))
@@ -417,7 +417,7 @@ DWORD Assembler::CheckClassFlagsIfNested(Class* pEncloser, DWORD attr)
 
 /**************************************************************************/
 
-void Assembler::StartClass(__in __nullterminated char* name, DWORD attr, TyParList *typars)
+void Assembler::StartClass(_In_ __nullterminated char* name, DWORD attr, TyParList *typars)
 {
     Class *pEnclosingClass = m_pCurClass;
     char *szFQN;
@@ -607,7 +607,7 @@ void Assembler::SetPinvoke(BinStr* DllName, int Ordinal, BinStr* Alias, int Attr
 }
 
 /**************************************************************************/
-void Assembler::StartMethod(__in __nullterminated char* name, BinStr* sig, CorMethodAttr flags, BinStr* retMarshal, DWORD retAttr, TyParList *typars)
+void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMethodAttr flags, BinStr* retMarshal, DWORD retAttr, TyParList *typars)
 {
     if (m_pCurMethod != NULL)
     {
@@ -801,7 +801,7 @@ void Assembler::EndMethod()
 }
 /**************************************************************************/
 /* rvaLabel is the optional label that indicates this field points at a particular RVA */
-void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr flags, __in __nullterminated char* rvaLabel, BinStr* pVal, ULONG ulOffset)
+void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr flags, _In_ __nullterminated char* rvaLabel, BinStr* pVal, ULONG ulOffset)
 {
     FieldDescriptor*    pFD;
     ULONG   i,n;
@@ -1030,7 +1030,7 @@ void Assembler::NewSEHDescriptor(void) //sets m_SEHD
     if(m_SEHD == NULL) report->error("Failed to allocate SEH descriptor\n");
 }
 /**************************************************************************/
-void Assembler::SetTryLabels(__in __nullterminated char * szFrom, __in __nullterminated char *szTo)
+void Assembler::SetTryLabels(_In_ __nullterminated char * szFrom, _In_ __nullterminated char *szTo)
 {
     if(!m_SEHD) return;
     Label *pLbl = m_pCurMethod->FindLabel(szFrom);
@@ -1043,7 +1043,7 @@ void Assembler::SetTryLabels(__in __nullterminated char * szFrom, __in __nullter
     else report->error("Undefined 1st label in 'try <label> to <label>'\n");
 }
 /**************************************************************************/
-void Assembler::SetFilterLabel(__in __nullterminated char *szFilter)
+void Assembler::SetFilterLabel(_In_ __nullterminated char *szFilter)
 {
     if(!m_SEHD) return;
     Label *pLbl = m_pCurMethod->FindLabel(szFilter);
@@ -1058,7 +1058,7 @@ void Assembler::SetCatchClass(mdToken catchClass)
 
 }
 /**************************************************************************/
-void Assembler::SetHandlerLabels(__in __nullterminated char *szHandlerFrom, __in __nullterminated char *szHandlerTo)
+void Assembler::SetHandlerLabels(_In_ __nullterminated char *szHandlerFrom, _In_ __nullterminated char *szHandlerTo)
 {
     if(!m_SEHD) return;
     Label *pLbl = m_pCurMethod->FindLabel(szHandlerFrom);
@@ -1249,7 +1249,7 @@ void Assembler::SetImplAttr(unsigned short attrval)
 }
 
 /**************************************************************************/
-void Assembler::EmitData(__in_opt void *buffer, unsigned len)
+void Assembler::EmitData(_In_opt_ void *buffer, unsigned len)
 {
     if (len != 0)
     {
@@ -1273,7 +1273,7 @@ void Assembler::EmitData(__in_opt void *buffer, unsigned len)
 }
 
 /**************************************************************************/
-void Assembler::EmitDD(__in __nullterminated char *str)
+void Assembler::EmitDD(_In_ __nullterminated char *str)
 {
     DWORD       dwAddr = 0;
     GlobalLabel *pLabel = FindGlobalLabel(str);
@@ -1333,7 +1333,7 @@ GlobalLabel *Assembler::FindGlobalLabel(LPCUTF8 pszName)
 
 /**************************************************************************/
 
-GlobalFixup *Assembler::AddDeferredGlobalFixup(__in __nullterminated char *pszLabel, BYTE* pReference)
+GlobalFixup *Assembler::AddDeferredGlobalFixup(_In_ __nullterminated char *pszLabel, BYTE* pReference)
 {
     GlobalFixup *pNew = new GlobalFixup(pszLabel, (BYTE*) pReference);
     if (pNew == NULL)
@@ -1565,7 +1565,7 @@ void Assembler::EmitInstrVar(Instr* instr, int var)
 }
 
 /**************************************************************************/
-void Assembler::EmitInstrVarByName(Instr* instr, __in __nullterminated char* label)
+void Assembler::EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* label)
 {
     int idx = -1, nArgVarFlag=0;
     switch(instr->opcode)
@@ -1675,7 +1675,7 @@ void Assembler::EmitInstrR(Instr* instr, double* pval)
 }
 
 /**************************************************************************/
-void Assembler::EmitInstrBrTarget(Instr* instr, __in __nullterminated char* label)
+void Assembler::EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* label)
 {
     Label * pLabel = m_pCurMethod->FindLabel(label);
     int offset=0;
@@ -1711,7 +1711,7 @@ void Assembler::EmitInstrBrTarget(Instr* instr, __in __nullterminated char* labe
     else              EmitBytes((BYTE *)&offset,4);
 }
 /**************************************************************************/
-void Assembler::AddDeferredFixup(__in __nullterminated char *pszLabel, BYTE *pBytes, DWORD RelativeToPC, BYTE FixupSize)
+void Assembler::AddDeferredFixup(_In_ __nullterminated char *pszLabel, BYTE *pBytes, DWORD RelativeToPC, BYTE FixupSize)
 {
     Fixup *pNew = new Fixup(pszLabel, pBytes, RelativeToPC, FixupSize);
 
@@ -1744,7 +1744,7 @@ void Assembler::EmitInstrBrOffset(Instr* instr, int offset)
 }
 
 /**************************************************************************/
-mdToken Assembler::MakeMemberRef(mdToken cr, __in __nullterminated char* pszMemberName, BinStr* sig)
+mdToken Assembler::MakeMemberRef(mdToken cr, _In_ __nullterminated char* pszMemberName, BinStr* sig)
 {
     DWORD           cSig = sig->length();
     COR_SIGNATURE*  mySig = (COR_SIGNATURE *)(sig->ptr());
@@ -2140,13 +2140,13 @@ void Assembler::EmitInstrSwitch(Instr* instr, Labels* targets)
 }
 
 /**************************************************************************/
-void Assembler::EmitLabel(__in __nullterminated char* label)
+void Assembler::EmitLabel(_In_ __nullterminated char* label)
 {
     _ASSERTE(m_pCurMethod);
     AddLabel(m_CurPC, label);
 }
 /**************************************************************************/
-void Assembler::EmitDataLabel(__in __nullterminated char* label)
+void Assembler::EmitDataLabel(_In_ __nullterminated char* label)
 {
     AddGlobalLabel(label, m_pCurSection);
 }
@@ -2208,7 +2208,7 @@ void Assembler::EmitBytes(BYTE *p, unsigned len)
     m_CurPC += len;
 }
 /**************************************************************************/
-BinStr* Assembler::EncodeSecAttr(__in __nullterminated char* szReflName, BinStr* pbsSecAttrBlob, unsigned nProps)
+BinStr* Assembler::EncodeSecAttr(_In_ __nullterminated char* szReflName, BinStr* pbsSecAttrBlob, unsigned nProps)
 {
     unsigned cnt;
 
@@ -2328,8 +2328,8 @@ void Assembler::EmitSecurityInfo(mdToken            token,
     }
 }
 
-void Assembler::AddMethodImpl(mdToken tkImplementedTypeSpec, __in __nullterminated char* szImplementedName, BinStr* pImplementedSig,
-                  mdToken tkImplementingTypeSpec, __in_opt __nullterminated char* szImplementingName, BinStr* pImplementingSig)
+void Assembler::AddMethodImpl(mdToken tkImplementedTypeSpec, _In_ __nullterminated char* szImplementedName, BinStr* pImplementedSig,
+                  mdToken tkImplementingTypeSpec, _In_opt_z_ char* szImplementingName, BinStr* pImplementingSig)
 {
     if(m_pCurClass)
     {
@@ -2373,7 +2373,7 @@ void Assembler::AddMethodImpl(mdToken tkImplementedTypeSpec, __in __nullterminat
         report->error(".override directive outside class scope");
 }
 // source file name paraphernalia
-void Assembler::SetSourceFileName(__in __nullterminated char* szName)
+void Assembler::SetSourceFileName(_In_ __nullterminated char* szName)
 {
     if(szName)
     {
@@ -2411,7 +2411,7 @@ void Assembler::SetSourceFileName(BinStr* pbsName)
 }
 
 // Portable PDB paraphernalia
-void Assembler::SetPdbFileName(__in __nullterminated char* szName)
+void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
 {
     if (szName)
     {
@@ -2468,7 +2468,7 @@ void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int 
 }
 
 // AddGenericParamConstraint is called when we have a .param constraint directive after a class definition
-// 
+//
 void Assembler::AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint)
 {
     if (!m_pCurClass)

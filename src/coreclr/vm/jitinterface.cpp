@@ -6,7 +6,6 @@
 
 // ===========================================================================
 
-
 #include "common.h"
 #include "jitinterface.h"
 #include "codeman.h"
@@ -574,7 +573,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTokenTypeAsHandle (CORINFO_RESOLVED_TOKEN * pRe
 size_t CEEInfo::findNameOfToken (
             CORINFO_MODULE_HANDLE       scopeHnd,
             mdToken                     metaTOK,
-            __out_ecount (FQNameCapacity)  char * szFQName,
+            _Out_writes_ (FQNameCapacity)  char * szFQName,
             size_t FQNameCapacity)
 {
     CONTRACTL {
@@ -717,7 +716,7 @@ const char16_t* CEEInfo::getStringLiteral (
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
-                                                 __out_ecount (FQNameCapacity) char * szFQName,
+                                                 _Out_writes_ (FQNameCapacity) char * szFQName,
                                                  size_t FQNameCapacity)
 {
     CONTRACTL {
@@ -3375,7 +3374,7 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
 
 /*********************************************************************/
-int CEEInfo::appendClassName(__deref_inout_ecount(*pnBufLen) char16_t** ppBuf,
+int CEEInfo::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
                              int* pnBufLen,
                              CORINFO_CLASS_HANDLE    clsHnd,
                              bool fNamespace,
@@ -4664,6 +4663,44 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
         _ASSERTE(th != TypeHandle(g_pArrayClass));
 
         result = th.GetRank();
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
+// Get the index of runtime provided array method
+CorInfoArrayIntrinsic CEEInfo::getArrayIntrinsicID(CORINFO_METHOD_HANDLE ftn)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoArrayIntrinsic result = CorInfoArrayIntrinsic::ILLEGAL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pMD = GetMethod(ftn);
+
+    if (pMD->IsArray())
+    {
+        DWORD index = ((ArrayMethodDesc*)pMD)->GetArrayFuncIndex();
+        switch (index)
+        {
+            case 0: // ARRAY_FUNC_GET
+                result = CorInfoArrayIntrinsic::GET;
+                break;
+            case 1: // ARRAY_FUNC_SET
+                result = CorInfoArrayIntrinsic::SET;
+                break;
+            case 2: // ARRAY_FUNC_ADDRESS
+                result = CorInfoArrayIntrinsic::ADDRESS;
+                break;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -6308,7 +6345,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE 
 }
 
 /*********************************************************************/
-bool CEEInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool CEEInfo::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     CONTRACTL {
         NOTHROW;
@@ -6323,7 +6360,7 @@ bool CEEInfo::isJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
     _ASSERTE(ftn);
 
     MethodDesc *pMD = (MethodDesc*)ftn;
-    ret = pMD->IsJitIntrinsic();
+    ret = pMD->IsIntrinsic();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -6379,10 +6416,10 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_STATIC;
     if (pMD->IsSynchronized())
         result |= CORINFO_FLG_SYNCH;
-    if (pMD->IsFCallOrIntrinsic())
-        result |= CORINFO_FLG_NOGCCHECK | CORINFO_FLG_INTRINSIC;
-    if (pMD->IsJitIntrinsic())
-        result |= CORINFO_FLG_JIT_INTRINSIC;
+    if (pMD->IsFCall())
+        result |= CORINFO_FLG_NOGCCHECK;
+    if (pMD->IsIntrinsic() || pMD->IsArray())
+        result |= CORINFO_FLG_INTRINSIC;
     if (IsMdVirtual(attribs))
         result |= CORINFO_FLG_VIRTUAL;
     if (IsMdAbstract(attribs))
@@ -7275,7 +7312,7 @@ getMethodInfoHelper(
 
         MethodTable * pMT  = ftn->GetMethodTable();
 
-        if (ftn->IsJitIntrinsic())
+        if (ftn->IsIntrinsic())
         {
             if (CoreLibBinder::IsClass(pMT, CLASS__UNSAFE))
             {
@@ -8334,62 +8371,6 @@ CORINFO_MODULE_HANDLE CEEInfo::getMethodModule (CORINFO_METHOD_HANDLE methodHnd)
     }
 
     EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-/*********************************************************************/
-CorInfoIntrinsics CEEInfo::getIntrinsicID(CORINFO_METHOD_HANDLE methodHnd,
-                                          bool * pMustExpand)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoIntrinsics result = CORINFO_INTRINSIC_Illegal;
-
-    JIT_TO_EE_TRANSITION();
-
-    if (pMustExpand != NULL)
-    {
-        *pMustExpand = false;
-    }
-
-    MethodDesc* method = GetMethod(methodHnd);
-
-    if (method->IsArray())
-    {
-        ArrayMethodDesc * arrMethod = (ArrayMethodDesc *)method;
-        result = arrMethod->GetIntrinsicID();
-    }
-    else
-    {
-        MethodTable * pMT = method->GetMethodTable();
-        if (pMT->GetModule()->IsSystem() && pMT->IsByRefLike())
-        {
-            if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-            {
-                // ByReference<T> has just two methods: constructor and Value property
-                if (method->IsCtor())
-                {
-                    result = CORINFO_INTRINSIC_ByReference_Ctor;
-                }
-                else
-                {
-                    _ASSERTE(strcmp(method->GetName(), "get_Value") == 0);
-                    result = CORINFO_INTRINSIC_ByReference_Value;
-                }
-                if (pMustExpand != nullptr)
-                {
-                    *pMustExpand = true;
-                }
-            }
-        }
-    }
-
-    EE_TO_JIT_TRANSITION();
 
     return result;
 }
@@ -10052,7 +10033,7 @@ HRESULT CEEInfo::GetErrorHRESULT(struct _EXCEPTION_POINTERS *pExceptionPointers)
 }
 
 
-uint32_t CEEInfo::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer, uint32_t bufferLength)
+uint32_t CEEInfo::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
 {
     CONTRACTL {
         THROWS;

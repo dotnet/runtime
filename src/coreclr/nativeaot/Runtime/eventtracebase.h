@@ -424,9 +424,9 @@ namespace ETW
 
         }LoaderStructs;
 
-        static void DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL);
+        static void DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL);
 
-        static void DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName = NULL)
+        static void DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName = NULL)
         {
 #ifndef FEATURE_PAL
             if (MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context.IsEnabled)
@@ -441,7 +441,7 @@ namespace ETW
         static void ModuleLoad(Module *pModule, LONG liReportedSharedModule);
 #else
     public:
-        static void DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL) {};
+        static void DomainLoad(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName=NULL) {};
         static void DomainUnload(AppDomain *pDomain) {};
         static void CollectibleLoaderAllocatorUnload(AssemblyLoaderAllocator *pLoaderAllocator) {};
         static void ModuleLoad(Module *pModule, LONG liReportedSharedModule) {};
@@ -505,8 +505,8 @@ namespace ETW
     {
 #ifdef FEATURE_EVENT_TRACE
     public:
-        static void StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName);
-        static void StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName);
+        static void StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName);
+        static void StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName);
 
         static void FireFieldTransparencyComputationStart(LPCWSTR wszFieldName,
                                                           LPCWSTR wszModuleName,
@@ -742,8 +742,8 @@ extern ETW::CEtwTracer *  g_pEtwTracer;
 FORCEINLINE
 BOOLEAN __stdcall
 McGenEventTracingEnabled(
-    __in PMCGEN_TRACE_CONTEXT EnableInfo,
-    __in PCEVENT_DESCRIPTOR EventDescriptor
+    _In_ PMCGEN_TRACE_CONTEXT EnableInfo,
+    _In_ PCEVENT_DESCRIPTOR EventDescriptor
     )
 {
 
@@ -863,9 +863,9 @@ struct CallStackFrame
 FORCEINLINE
 BOOLEAN __stdcall
 McGenEventProviderEnabled(
-    __in PMCGEN_TRACE_CONTEXT Context,
-    __in UCHAR Level,
-    __in ULONGLONG Keyword
+    _In_ PMCGEN_TRACE_CONTEXT Context,
+    _In_ UCHAR Level,
+    _In_ ULONGLONG Keyword
     )
 {
     if(!Context) {
@@ -989,10 +989,10 @@ namespace ETW
 ETW_INLINE
 ULONG
 CoMofTemplate_h(
-    __in REGHANDLE RegHandle,
-    __in PCEVENT_DESCRIPTOR Descriptor,
-    __in_opt LPCGUID EventGuid,
-    __in const unsigned short  ClrInstanceID
+    _In_ REGHANDLE RegHandle,
+    _In_ PCEVENT_DESCRIPTOR Descriptor,
+    _In_opt_ LPCGUID EventGuid,
+    _In_ const unsigned short  ClrInstanceID
     )
 {
 #define ARGUMENT_COUNT_h 1

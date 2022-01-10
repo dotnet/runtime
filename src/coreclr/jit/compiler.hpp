@@ -779,9 +779,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtDebugFlags = GTF_DEBUG_NONE;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
-#if ASSERTION_PROP
     ClearAssertion();
-#endif
 
     gtNext = nullptr;
     gtPrev = nullptr;
@@ -2678,6 +2676,11 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
         return false;
     }
 
+    if (!block->IsLIR() && (block->lastStmt() == nullptr))
+    {
+        return false;
+    }
+
     // Special check blocks will always end in a throw helper call.
     //
     GenTree* const call = block->lastNode();
@@ -3219,8 +3222,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if LOCAL_ASSERTION_PROP
-
 /*****************************************************************************
  *
  *  The following resets the value assignment table
@@ -3332,7 +3333,6 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         optAssertionReset(newAssertionCount);
     }
 }
-#endif // LOCAL_ASSERTION_PROP
 
 inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -4694,15 +4694,15 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     if (compLocallocSeen)
     {
-        whyNot = "localloc";
+        whyNot = "OSR can't handle localloc";
     }
     else if (compHasBackwardJumpInHandler)
     {
-        whyNot = "loop in handler";
+        whyNot = "OSR can't handle loop in handler";
     }
     else if (opts.IsReversePInvoke())
     {
-        whyNot = "reverse pinvoke";
+        whyNot = "OSR can't handle reverse pinvoke";
     }
 #else
     whyNot = "OSR feature not defined in build";

@@ -784,14 +784,11 @@ public:
         {
             // Struct marshal stubs don't actually call anything so they do not need the secrect parameter.
         }
-#ifndef HOST_64BIT
         else if (SF_IsForwardDelegateStub(m_dwStubFlags))
         {
             // Forward delegate stubs get all the context they need in 'this' so they
-            // don't use the secret parameter. Except for AMD64 where we use the secret
-            // argument to pass the real target to the stub-for-host.
+            // don't use the secret parameter.
         }
-#endif // !HOST_64BIT
         else
         {
             // All other IL stubs will need to use the secret parameter.

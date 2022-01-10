@@ -187,6 +187,7 @@ node_modules/
 *.metaproj.tmp
 bin.localpkg/
 src/mono/wasm/runtime/dotnet.d.ts.sha256
+src/mono/sample/wasm/browser-nextjs/public/
 
 # RIA/Silverlight projects
 Generated_Code/

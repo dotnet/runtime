@@ -700,7 +700,7 @@ HRESULT CordbAppDomain::Attach()
  */
 HRESULT CordbAppDomain::GetName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)

@@ -196,7 +196,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
-        TADDR basePointer = NULL;
+        TADDR basePointer = (TADDR)NULL;
         UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
         if (stackBasedRegister == NO_STACK_BASE_REGISTER)
         {
@@ -257,7 +257,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         INT32 slot = decoder.GetReversePInvokeFrameStackSlot();
         assert(slot != NO_REVERSE_PINVOKE_FRAME);
 
-        TADDR basePointer = NULL;
+        TADDR basePointer = (TADDR)NULL;
         UINT32 stackBasedRegister = decoder.GetStackBaseRegister();
         if (stackBasedRegister == NO_STACK_BASE_REGISTER)
         {

@@ -1,7 +1,9 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
-//! 
-//! This is generated file, see src/mono/wasm/runtime/rollup.config.js 
+//!
+//! This is generated file, see src/mono/wasm/runtime/rollup.config.js
+
+//! This is not considered public API with backward compatibility guarantees. 
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -47,6 +49,9 @@ declare interface EmscriptenModule {
     preInit?: (() => any)[];
     preRun?: (() => any)[];
     postRun?: (() => any)[];
+    onAbort?: {
+        (error: any): void;
+    };
     onRuntimeInitialized?: () => any;
     instantiateWasm: (imports: any, successCallback: Function) => any;
 }
@@ -110,21 +115,6 @@ declare class WasmRoot<T extends ManagedPointer | NativePointer> {
     release(): void;
     toString(): string;
 }
-
-declare const enum ArgsMarshal {
-    Int32 = "i",
-    Int32Enum = "j",
-    Int64 = "l",
-    Int64Enum = "k",
-    Float32 = "f",
-    Float64 = "d",
-    String = "s",
-    Char = "s",
-    JSObj = "o",
-    MONOObj = "m"
-}
-declare type _ExtraArgsMarshalOperators = "!" | "";
-declare type ArgsMarshalString = "" | `${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}` | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
 
 interface MonoObject extends ManagedPointer {
     __brandMonoObject: "MonoObject";
@@ -209,7 +199,7 @@ declare type DotnetModuleConfig = {
     onConfigLoaded?: () => void;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
-} & EmscriptenModule;
+} & Partial<EmscriptenModule>;
 declare type DotnetModuleConfigImports = {
     require?: (name: string) => any;
     fetch?: (url: string) => Promise<Response>;
@@ -249,7 +239,7 @@ declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
 declare function conv_string(mono_obj: MonoString): string | null;
-declare function js_string_to_mono_string(string: string): MonoString | null;
+declare function js_string_to_mono_string(string: string): MonoString;
 
 declare function js_to_mono_obj(js_obj: any): MonoObject;
 declare function js_typed_array_to_array(js_obj: any): MonoArray;
@@ -257,8 +247,8 @@ declare function js_typed_array_to_array(js_obj: any): MonoArray;
 declare function unbox_mono_obj(mono_obj: MonoObject): any;
 declare function mono_array_to_js_array(mono_array: MonoArray): any[] | null;
 
-declare function mono_bind_static_method(fqn: string, signature?: ArgsMarshalString): Function;
-declare function mono_call_assembly_entry_point(assembly: string, args: any[], signature: ArgsMarshalString): any;
+declare function mono_bind_static_method(fqn: string, signature?: string): Function;
+declare function mono_call_assembly_entry_point(assembly: string, args?: any[], signature?: string): number;
 
 declare function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr;
 
@@ -282,6 +272,9 @@ declare function getI64(offset: _MemOffset): number;
 declare function getF32(offset: _MemOffset): number;
 declare function getF64(offset: _MemOffset): number;
 
+declare function mono_run_main_and_exit(main_assembly_name: string, args: string[]): Promise<void>;
+declare function mono_run_main(main_assembly_name: string, args: string[]): Promise<number>;
+
 declare const MONO: {
     mono_wasm_setenv: typeof mono_wasm_setenv;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
@@ -293,6 +286,8 @@ declare const MONO: {
     mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
     mono_wasm_new_root: typeof mono_wasm_new_root;
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
+    mono_run_main: typeof mono_run_main;
+    mono_run_main_and_exit: typeof mono_run_main_and_exit;
     mono_wasm_add_assembly: (name: string, data: VoidPtr, size: number) => number;
     mono_wasm_load_runtime: (unused: string, debug_level: number) => void;
     config: MonoConfig | MonoConfigError;
@@ -342,7 +337,7 @@ interface DotnetPublicAPI {
     };
 }
 
-declare function createDotnetRuntime(moduleFactory: (api: DotnetPublicAPI) => DotnetModuleConfig): Promise<DotnetPublicAPI>;
+declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 declare global {
     function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;

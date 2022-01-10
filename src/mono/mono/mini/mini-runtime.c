@@ -1506,7 +1506,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (patch_info->data.field), error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
@@ -4729,6 +4729,7 @@ register_icalls (void)
 #if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
 	register_opcode_emulation (OP_LMUL_OVF_UN, __emul_lmul_ovf_un, mono_icall_sig_long_long_long, mono_llmult_ovf_un, FALSE);
 	register_opcode_emulation (OP_LMUL_OVF, __emul_lmul_ovf, mono_icall_sig_long_long_long, mono_llmult_ovf, FALSE);
+	register_opcode_emulation (OP_LMUL_OVF_UN_OOM, __emul_lmul_ovf_un_oom, mono_icall_sig_long_long_long, mono_llmult_ovf_un_oom, FALSE);
 #endif
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
@@ -4751,6 +4752,7 @@ register_icalls (void)
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_MUL_OVF)
 	register_opcode_emulation (OP_IMUL_OVF, __emul_op_imul_ovf, mono_icall_sig_int32_int32_int32, mono_imul_ovf, FALSE);
 	register_opcode_emulation (OP_IMUL_OVF_UN, __emul_op_imul_ovf_un, mono_icall_sig_int32_int32_int32, mono_imul_ovf_un, FALSE);
+	register_opcode_emulation (OP_IMUL_OVF_UN_OOM, __emul_op_imul_ovf_un_oom, mono_icall_sig_int32_int32_int32, mono_imul_ovf_un_oom, FALSE);
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
@@ -4919,6 +4921,7 @@ register_icalls (void)
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
+	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
 
 	register_icall_with_wrapper (mono_monitor_enter_internal, mono_icall_sig_int32_obj);
 	register_icall_with_wrapper (mono_monitor_enter_v4_internal, mono_icall_sig_void_obj_ptr);
@@ -4972,7 +4975,7 @@ mono_runtime_print_stats (void)
 
 		g_print ("\nInitialized classes:    %" G_GINT32_FORMAT "\n", mono_stats.generic_class_count);
 		g_print ("Inflated types:         %" G_GINT32_FORMAT "\n", mono_stats.inflated_type_count);
-		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
+		g_print ("Generics virtual invokes: %" G_GINT32_FORMAT "\n", mono_jit_stats.generic_virtual_invocations);
 
 		g_print ("Sharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_sharable_methods);
 		g_print ("Unsharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_unsharable_methods);

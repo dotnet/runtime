@@ -12,7 +12,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'refarg_box_f8.exe'
 .namespace Test
 {
   .class private auto ansi App extends [mscorlib]System.Object

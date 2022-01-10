@@ -16,7 +16,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module accum.exe
 // MVID: {2D7E75FB-9B3C-4E6C-BB98-C8ADCFF67713}
 .namespace JitTest
 {

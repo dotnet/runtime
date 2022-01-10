@@ -146,7 +146,9 @@ struct _MonoClassField {
 	const char      *name;
 
 	/* Type where the field was defined */
-	MonoClass       *parent;
+	/* Do not access directly, use m_field_get_parent */
+	/* We use the lowest bits of the pointer to store some flags, see m_field_get_meta_flags */
+	uintptr_t	parent_and_flags;
 
 	/*
 	 * Offset where this field is stored; if it is an instance
@@ -1535,11 +1537,47 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
 		}								\
 	}									\
 
+/* Metadata flags for MonoClassField.  These are stored in the lowest bits of a pointer, so there
+ * can't be too many. */
+enum {
+	/* This MonoClassField was added by EnC metadata update, it's not part of the
+	 * MonoClass:fields array, and at runtime it is not stored like ordinary instance or static
+	 * fields. */
+	MONO_CLASS_FIELD_META_FLAG_FROM_UPDATE = 0x01u,
+
+	/* Lowest 2 bits of a pointer reserved for flags */
+	MONO_CLASS_FIELD_META_FLAG_MASK = 0x03u,
+};
+
+static inline MonoClass *
+m_field_get_parent (MonoClassField *field)
+{
+	return (MonoClass*)(field->parent_and_flags & ~MONO_CLASS_FIELD_META_FLAG_MASK);
+}
+
+static inline unsigned int
+m_field_get_meta_flags (MonoClassField *field)
+{
+	return (unsigned int)(field->parent_and_flags & MONO_CLASS_FIELD_META_FLAG_MASK);
+}
+
+void
+m_field_set_parent (MonoClassField *field, MonoClass *klass);
+
+void
+m_field_set_meta_flags (MonoClassField *field, unsigned int flags);
+
 static inline gboolean
 m_field_get_offset (MonoClassField *field)
 {
-	g_assert (m_class_is_fields_inited (field->parent));
+	g_assert (m_class_is_fields_inited (m_field_get_parent (field)));
 	return field->offset;
+}
+
+static inline gboolean
+m_field_is_from_update (MonoClassField *field)
+{
+	return (m_field_get_meta_flags (field) & MONO_CLASS_FIELD_META_FLAG_FROM_UPDATE) != 0;
 }
 
 /*

@@ -6,6 +6,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Hosting and startup abstractions for applications.</PackageDescription>
   </PropertyGroup>
 

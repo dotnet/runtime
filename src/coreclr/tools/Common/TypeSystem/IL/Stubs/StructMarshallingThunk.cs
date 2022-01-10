@@ -126,6 +126,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return NamePrefix + "__" + ManagedType.DiagnosticName;
+            }
+        }
+
         private Marshaller[] InitializeMarshallers()
         {
             Debug.Assert(_interopStateManager != null);

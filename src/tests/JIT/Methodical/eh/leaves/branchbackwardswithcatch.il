@@ -13,13 +13,12 @@
 {
 }
 .assembly extern common{}
-.assembly branchbackwardswithfinally
+.assembly 'branchbackwardswithcatch'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module branchbackwardswithfinally.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512

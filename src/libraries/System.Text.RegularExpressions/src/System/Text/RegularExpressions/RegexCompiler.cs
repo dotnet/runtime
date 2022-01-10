@@ -30,6 +30,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_matchLengthMethod = RegexRunnerMethod("MatchLength");
         private static readonly MethodInfo s_matchIndexMethod = RegexRunnerMethod("MatchIndex");
         private static readonly MethodInfo s_isBoundaryMethod = RegexRunnerMethod("IsBoundary");
+        private static readonly MethodInfo s_isWordCharMethod = RegexRunnerMethod("IsWordChar");
         private static readonly MethodInfo s_isECMABoundaryMethod = RegexRunnerMethod("IsECMABoundary");
         private static readonly MethodInfo s_crawlposMethod = RegexRunnerMethod("Crawlpos");
         private static readonly MethodInfo s_charInClassMethod = RegexRunnerMethod("CharInClass");
@@ -3529,6 +3530,18 @@ namespace System.Text.RegularExpressions
                     Ldc(0);
                     Ceq();
                     return;
+
+                case RegexCharClass.WordClass:
+                    // RegexRunner.IsWordChar(ch)
+                    Call(s_isWordCharMethod);
+                    return;
+
+                case RegexCharClass.NotWordClass:
+                    // !RegexRunner.IsWordChar(ch)
+                    Call(s_isWordCharMethod);
+                    Ldc(0);
+                    Ceq();
+                    return;
             }
 
             // If we're meant to be doing a case-insensitive lookup, and if we're not using the invariant culture,
@@ -3602,17 +3615,17 @@ namespace System.Text.RegularExpressions
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
             if (!invariant && !RegexCharClass.IsNegated(charClass))
             {
-                Span<char> setChars = stackalloc char[4];
+                Span<char> setChars = stackalloc char[3];
                 int numChars = RegexCharClass.GetSetChars(charClass, setChars);
                 if (numChars is 2 or 3)
                 {
-                    if ((setChars[0] | 0x20) == setChars[1]) // special-case common case of an upper and lowercase ASCII letter combination
+                    if (RegexCharClass.DifferByOneBit(setChars[0], setChars[1], out int mask)) // special-case common case of an upper and lowercase ASCII letter combination
                     {
-                        // ((ch | 0x20) == setChars[1])
+                        // ((ch | mask) == setChars[1])
                         Ldloc(tempLocal);
-                        Ldc(0x20);
+                        Ldc(mask);
                         Or();
-                        Ldc(setChars[1]);
+                        Ldc(setChars[1] | mask);
                         Ceq();
                     }
                     else
@@ -3636,27 +3649,6 @@ namespace System.Text.RegularExpressions
                         Or();
                     }
 
-                    return;
-                }
-                else if (numChars == 4 &&
-                         (setChars[0] | 0x20) == setChars[1] &&
-                         (setChars[2] | 0x20) == setChars[3])
-                {
-                    // ((ch | 0x20) == setChars[1])
-                    Ldloc(tempLocal);
-                    Ldc(0x20);
-                    Or();
-                    Ldc(setChars[1]);
-                    Ceq();
-
-                    // ((ch | 0x20) == setChars[3])
-                    Ldloc(tempLocal);
-                    Ldc(0x20);
-                    Or();
-                    Ldc(setChars[3]);
-                    Ceq();
-
-                    Or();
                     return;
                 }
             }

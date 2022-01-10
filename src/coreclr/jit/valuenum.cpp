@@ -6159,13 +6159,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ADDR, GT_ARR_BOUNDS_CHECK,
-#ifdef FEATURE_SIMD
-                                                 GT_SIMD_CHK,
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-                                                 GT_HW_INTRINSIC_CHK,
-#endif
+                                                 GT_ADDR, GT_BOUNDS_CHECK,
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -9224,13 +9218,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
-                    case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-                    case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                    case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+                    case GT_BOUNDS_CHECK:
                     {
                         ValueNumPair vnpIndex  = tree->AsBoundsChk()->GetIndex()->gtVNPair;
                         ValueNumPair vnpArrLen = tree->AsBoundsChk()->GetArrayLength()->gtVNPair;
@@ -9464,9 +9452,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
     }
-    // TODO-List-Cleanup: the "tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN" case is a quirk
-    // to get zero diffs - Vector2(float, float) was imported with lists - remove it.
-    else if ((tree->GetOperandCount() > 2) || (tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
+    else if (tree->GetOperandCount() > 2)
     {
         // We have a SIMD node with 3 or more args. To retain the
         // previous behavior, we will generate a unique VN for this case.
@@ -9813,6 +9799,12 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
+        }
+        break;
+
+        case VNF_JitNewMdArr:
+        {
+            generateUniqueVN = true;
         }
         break;
 
@@ -10221,6 +10213,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitNewArr;
             break;
 
+        case CORINFO_HELP_NEW_MDARR:
+            vnf = VNF_JitNewMdArr;
+            break;
+
         case CORINFO_HELP_READYTORUN_NEWARR_1:
             vnf = VNF_JitReadyToRunNewArr;
             break;
@@ -10447,20 +10443,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     }
     else
     {
-        // TODO-CQ: this is a list of helpers we're going to treat as non-pure,
-        // because they raise complications.  Eventually, we need to handle those complications...
-        bool needsFurtherWork = false;
-        switch (helpFunc)
-        {
-            case CORINFO_HELP_NEW_MDARR:
-                // This is a varargs helper.  We need to represent the array shape in the VN world somehow.
-                needsFurtherWork = true;
-                break;
-            default:
-                break;
-        }
-
-        if (!needsFurtherWork && (pure || isAlloc))
+        if (pure || isAlloc)
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
 
@@ -10974,13 +10957,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForDivision(tree);
                 break;
 
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            case GT_ARR_BOUNDS_CHECK:
+            case GT_BOUNDS_CHECK:
                 fgValueNumberAddExceptionSetForBoundsCheck(tree);
                 break;
 

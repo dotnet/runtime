@@ -376,6 +376,8 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     *contextRecord = *pContext;
     *exceptionRecord = *pExRecord;
 
+    g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
+
     contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     bool continueExecution;
 

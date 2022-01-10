@@ -778,26 +778,26 @@ DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
     return value;
 }
 
-void MethodContext::recIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
+void MethodContext::recIsIntrinsic(CORINFO_METHOD_HANDLE ftn, bool result)
 {
-    if (IsJitIntrinsic == nullptr)
-        IsJitIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
+    if (IsIntrinsic == nullptr)
+        IsIntrinsic = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = CastHandle(ftn);
     DWORD value = result ? 1 : 0;
-    IsJitIntrinsic->Add(key, value);
-    DEBUG_REC(dmpIsJitIntrinsic(key, value));
+    IsIntrinsic->Add(key, value);
+    DEBUG_REC(dmpIsIntrinsic(key, value));
 }
-void MethodContext::dmpIsJitIntrinsic(DWORDLONG key, DWORD value)
+void MethodContext::dmpIsIntrinsic(DWORDLONG key, DWORD value)
 {
-    printf("IsJitIntrinsic key ftn-%016llX, value res-%u", key, value);
+    printf("IsIntrinsic key ftn-%016llX, value res-%u", key, value);
 }
-bool MethodContext::repIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool MethodContext::repIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     DWORDLONG key = CastHandle(ftn);
-    AssertMapAndKeyExist(IsJitIntrinsic, key, ": key %016llX", key);
-    DWORD value = IsJitIntrinsic->Get(key);
-    DEBUG_REP(dmpIsJitIntrinsic(key, value));
+    AssertMapAndKeyExist(IsIntrinsic, key, ": key %016llX", key);
+    DWORD value = IsIntrinsic->Get(key);
+    DEBUG_REP(dmpIsIntrinsic(key, value));
     return value != 0;
 }
 
@@ -1708,39 +1708,6 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
 
     // If we reached here, we didn't find a key associated with the given method handle
     LogException(EXCEPTIONCODE_MC, "Didn't find key %016llX.", methodHandle);
-}
-
-void MethodContext::recGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand, CorInfoIntrinsics result)
-{
-    if (GetIntrinsicID == nullptr)
-        GetIntrinsicID = new LightWeightMap<DWORDLONG, DD>();
-
-    DD value;
-    value.A = (pMustExpand != nullptr) ? (DWORD)(*pMustExpand ? 1 : 0) : (DWORD)0;
-    value.B = (DWORD)result;
-
-    DWORDLONG key = CastHandle(method);
-    GetIntrinsicID->Add(key, value);
-    DEBUG_REC(dmpGetIntrinsicID(key, value));
-}
-void MethodContext::dmpGetIntrinsicID(DWORDLONG key, DD value)
-{
-    printf("GetIntrinsicID key mth-%016llX, mustExpand-%u, value intr-%u", key, value.A, value.B);
-}
-CorInfoIntrinsics MethodContext::repGetIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand)
-{
-    DWORDLONG key = CastHandle(method);
-    AssertMapAndKeyExist(GetIntrinsicID, key, ": key %016llX", key);
-
-    DD value = GetIntrinsicID->Get(key);
-    DEBUG_REP(dmpGetIntrinsicID(key, value));
-
-    if (pMustExpand != nullptr)
-    {
-        *pMustExpand = (value.A == 0) ? false : true;
-    }
-    CorInfoIntrinsics result = (CorInfoIntrinsics)value.B;
-    return result;
 }
 
 void MethodContext::recIsIntrinsicType(CORINFO_CLASS_HANDLE cls, bool result)
@@ -6722,6 +6689,30 @@ unsigned MethodContext::repGetArrayRank(CORINFO_CLASS_HANDLE cls)
     DWORD value = GetArrayRank->Get(key);
     DEBUG_REP(dmpGetArrayRank(key, value));
     unsigned result = (unsigned)value;
+    return result;
+}
+
+void MethodContext::recGetArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod, CorInfoArrayIntrinsic result)
+{
+    if (GetArrayIntrinsicID == nullptr)
+        GetArrayIntrinsicID = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(hMethod);
+    DWORD value = (DWORD)result;
+    GetArrayIntrinsicID->Add(key, value);
+    DEBUG_REC(dmpGetArrayIntrinsicID(key, value));
+}
+void MethodContext::dmpGetArrayIntrinsicID(DWORDLONG key, DWORD value)
+{
+    printf("GetArrayIntrinsicID key %016llX, value %u", key, value);
+}
+CorInfoArrayIntrinsic MethodContext::repGetArrayIntrinsicID(CORINFO_METHOD_HANDLE hMethod)
+{
+    DWORDLONG key = CastHandle(hMethod);
+    AssertMapAndKeyExist(GetArrayIntrinsicID, key, ": key %016llX", key);
+    DWORD value = GetArrayIntrinsicID->Get(key);
+    DEBUG_REP(dmpGetArrayIntrinsicID(key, value));
+    CorInfoArrayIntrinsic result = (CorInfoArrayIntrinsic)value;
     return result;
 }
 

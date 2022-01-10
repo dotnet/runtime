@@ -9,7 +9,7 @@
 // when remorphing, however, and the assertion was appropiately weakened.
 
 .assembly extern mscorlib {}
-.assembly DevDiv_1359733 {}
+.assembly 'DevDiv_359733' {}
 .assembly extern xunit.core {}
 
 .class private C extends [mscorlib]System.Object

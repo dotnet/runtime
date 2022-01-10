@@ -149,7 +149,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataTask::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -713,7 +713,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAppDomain::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status = S_OK;
 
@@ -1132,7 +1132,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1160,7 +1160,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1201,7 +1201,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataAssembly::GetDisplayName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2376,7 +2376,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataModule::GetName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -2404,7 +2404,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataModule::GetFileName(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -3115,7 +3115,7 @@ ClrDataMethodDefinition::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -3858,7 +3858,7 @@ ClrDataMethodInstance::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -4735,7 +4735,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataExceptionState::GetString(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *strLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *strLen) WCHAR str[  ])
 {
     HRESULT status = E_FAIL;
 

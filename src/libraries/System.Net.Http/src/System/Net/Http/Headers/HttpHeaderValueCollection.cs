@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -35,8 +34,6 @@ namespace System.Net.Http.Headers
     {
         private readonly HeaderDescriptor _descriptor;
         private readonly HttpHeaders _store;
-        private readonly T? _specialValue;
-        private readonly Action<HttpHeaderValueCollection<T>, T>? _validator;
 
         public int Count
         {
@@ -48,45 +45,10 @@ namespace System.Net.Http.Headers
             get { return false; }
         }
 
-        internal bool IsSpecialValueSet
-        {
-            get
-            {
-                // If this collection instance has a "special value", then check whether that value was already set.
-                if (_specialValue == null)
-                {
-                    return false;
-                }
-                return _store.ContainsParsedValue(_descriptor, _specialValue);
-            }
-        }
-
         internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store)
-            : this(descriptor, store, null, null)
         {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store,
-            Action<HttpHeaderValueCollection<T>, T> validator)
-            : this(descriptor, store, null, validator)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T specialValue)
-            : this(descriptor, store, specialValue, null)
-        {
-        }
-
-        internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T? specialValue,
-            Action<HttpHeaderValueCollection<T>, T>? validator)
-        {
-            Debug.Assert(descriptor.Name != null);
-            Debug.Assert(store != null);
-
             _store = store;
             _descriptor = descriptor;
-            _specialValue = specialValue;
-            _validator = validator;
         }
 
         public void Add(T item)
@@ -204,27 +166,6 @@ namespace System.Net.Http.Headers
             return _store.GetHeaderString(_descriptor);
         }
 
-        internal void SetSpecialValue()
-        {
-            Debug.Assert(_specialValue != null,
-                "This method can only be used if the collection has a 'special value' set.");
-
-            if (!_store.ContainsParsedValue(_descriptor, _specialValue))
-            {
-                _store.AddParsedValue(_descriptor, _specialValue);
-            }
-        }
-
-        internal void RemoveSpecialValue()
-        {
-            Debug.Assert(_specialValue != null,
-                "This method can only be used if the collection has a 'special value' set.");
-
-            // We're not interested in the return value. It's OK if the "special value" wasn't in the store
-            // before calling RemoveParsedValue().
-            _store.RemoveParsedValue(_descriptor, _specialValue);
-        }
-
         private void CheckValue(T item)
         {
             if (item == null)
@@ -232,10 +173,13 @@ namespace System.Net.Http.Headers
                 throw new ArgumentNullException(nameof(item));
             }
 
-            // If this instance has a custom validator for validating arguments, call it now.
-            if (_validator != null)
+            if (_descriptor.Parser == GenericHeaderParser.TokenListParser)
             {
-                _validator(this, item);
+                // The collection expects valid HTTP tokens, which are typed as string.
+                // Unlike other parsed values (which are always valid by construction),
+                // we can't assume the provided string is a valid token. So validate it before we use it.
+                Debug.Assert(typeof(T) == typeof(string));
+                HeaderUtilities.CheckValidToken((string)(object)item, nameof(item));
             }
         }
 

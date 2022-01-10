@@ -13,11 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ldfld_mulovf'// as "ldfld_mulovf"
+.assembly 's_ldfld_mulovf'// as "ldfld_mulovf"
 {
 }
 .assembly extern xunit.core {}
-.module 'ldfld_mulovf.exe'
 // MVID: {8D78994E-61A5-4A50-98EF-B8CD04CD82A0}
 .namespace JitTest
 {

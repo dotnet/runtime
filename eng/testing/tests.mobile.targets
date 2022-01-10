@@ -198,7 +198,8 @@
   </Target>
 
   <Target Name="AddTestRunnersToPublishedFiles"
-          AfterTargets="ComputeResolvedFilesToPublishList">
+          AfterTargets="ComputeResolvedFilesToPublishList"
+          Condition="'$(TestFramework)' == 'xunit'">
     <ItemGroup>
       <_runnerFilesToPublish Include="$(AndroidTestRunnerDir)*" Condition="'$(TargetOS)' == 'Android'" />
       <_runnerFilesToPublish Include="$(AppleTestRunnerDir)*" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />

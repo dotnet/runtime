@@ -33,11 +33,7 @@ typedef BitVec          EXPSET_TP;
 typedef BitVec_ValArg_T EXPSET_VALARG_TP;
 typedef BitVec_ValRet_T EXPSET_VALRET_TP;
 
-#if LARGE_EXPSET
 #define EXPSET_SZ 64
-#else
-#define EXPSET_SZ 32
-#endif
 
 typedef BitVec          ASSERT_TP;
 typedef BitVec_ValArg_T ASSERT_VALARG_TP;
@@ -559,7 +555,7 @@ enum BasicBlockFlags : unsigned __int64
 
     // Flags that relate blocks to loop structure.
 
-    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1,
+    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_ALIGN,
 
     // Flags to update when two blocks are compacted
 
@@ -1001,6 +997,16 @@ struct BasicBlock : private LIR::Range
         bbHndIndex = from->bbHndIndex;
     }
 
+    void copyTryIndex(const BasicBlock* from)
+    {
+        bbTryIndex = from->bbTryIndex;
+    }
+
+    void copyHndIndex(const BasicBlock* from)
+    {
+        bbHndIndex = from->bbHndIndex;
+    }
+
     static bool sameTryRegion(const BasicBlock* blk1, const BasicBlock* blk2)
     {
         return blk1->bbTryIndex == blk2->bbTryIndex;
@@ -1147,24 +1153,18 @@ struct BasicBlock : private LIR::Range
      */
 
     union {
-        EXPSET_TP bbCseGen; // CSEs computed by block
-#if ASSERTION_PROP
+        EXPSET_TP bbCseGen;       // CSEs computed by block
         ASSERT_TP bbAssertionGen; // value assignments computed by block
-#endif
     };
 
     union {
-        EXPSET_TP bbCseIn; // CSEs available on entry
-#if ASSERTION_PROP
+        EXPSET_TP bbCseIn;       // CSEs available on entry
         ASSERT_TP bbAssertionIn; // value assignments available on entry
-#endif
     };
 
     union {
-        EXPSET_TP bbCseOut; // CSEs available on exit
-#if ASSERTION_PROP
+        EXPSET_TP bbCseOut;       // CSEs available on exit
         ASSERT_TP bbAssertionOut; // value assignments available on exit
-#endif
     };
 
     void* bbEmitCookie;

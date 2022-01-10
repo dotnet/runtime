@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -26,9 +25,9 @@ namespace Mono.Linker.Dataflow
 #endif
 
 		public MessageOrigin Origin { get; init; }
-		public ICustomAttributeProvider Source { get => Origin.Provider; }
+		public ICustomAttributeProvider? Source { get => Origin.Provider; }
 		public IMetadataTokenProvider MemberWithRequirements { get; init; }
-		public Instruction Instruction { get; init; }
+		public Instruction? Instruction { get; init; }
 		public bool ReportingEnabled { get; init; }
 
 		public ReflectionPatternContext (
@@ -36,7 +35,7 @@ namespace Mono.Linker.Dataflow
 			bool reportingEnabled,
 			in MessageOrigin origin,
 			IMetadataTokenProvider memberWithRequirements,
-			Instruction instruction = null)
+			Instruction? instruction = null)
 		{
 			_context = context;
 			ReportingEnabled = reportingEnabled;

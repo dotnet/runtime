@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'ii4'
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -20,7 +20,6 @@
   
 }
 .assembly extern xunit.core {}
-.module 'test.exe'
 // MVID: {B4ADAE94-5F38-493D-A41E-0ED51F697371}
 .namespace TestCase
 {

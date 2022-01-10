@@ -413,6 +413,12 @@ namespace System.Globalization
         private static volatile Dictionary<string, CultureData>? s_cachedRegions;
         private static volatile Dictionary<string, string>? s_regionNames;
 
+        /// <summary>
+        /// The culture name to use to interop with the underlying native globalization libraries like ICU or Windows NLS APIs.
+        /// For example, we can have the name de_DE@collation=phonebook when using ICU for the German culture de-DE with the phonebook sorting behavior.
+        /// </summary>
+        internal string? InteropName => _sWindowsName;
+
         internal static CultureData? GetCultureDataForRegion(string? cultureName, bool useUserOverride)
         {
             // First do a shortcut for Invariant
@@ -420,9 +426,9 @@ namespace System.Globalization
             {
                 return CultureData.Invariant;
             }
-            CultureData? retVal = null;
+
             // First check if GetCultureData() can find it (ie: its a real culture)
-            retVal = GetCultureData(cultureName, useUserOverride);
+            CultureData? retVal = GetCultureData(cultureName, useUserOverride);
             if (retVal != null && !retVal.IsNeutralCulture)
             {
                 return retVal;
@@ -853,7 +859,6 @@ namespace System.Globalization
         /// We'd rather people use the named version since this doesn't allow custom locales
         internal static CultureData GetCultureData(int culture, bool bUseUserOverride)
         {
-            string? localeName = null;
             CultureData? retVal = null;
 
             if (culture == CultureInfo.LOCALE_INVARIANT)
@@ -868,7 +873,7 @@ namespace System.Globalization
             }
 
             // Convert the lcid to a name, then use that
-            localeName = LCIDToLocaleName(culture);
+            string? localeName = LCIDToLocaleName(culture);
 
             if (!string.IsNullOrEmpty(localeName))
             {

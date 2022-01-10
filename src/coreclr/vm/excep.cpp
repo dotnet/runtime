@@ -190,7 +190,7 @@ BOOL ExceptionIsOfRightType(TypeHandle clauseType, TypeHandle thrownType)
 // Gets the message text from an exception
 //===========================================================================
 ULONG GetExceptionMessage(OBJECTREF throwable,
-                          __inout_ecount(bufferLength) LPWSTR buffer,
+                          _Inout_updates_(bufferLength) LPWSTR buffer,
                           ULONG bufferLength)
 {
     CONTRACTL
@@ -5162,7 +5162,7 @@ static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 void STDMETHODCALLTYPE
 DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                                           OBJECTREF throwable,
-                                          __inout_ecount(buf_size) WCHAR *buf,
+                                          _Inout_updates_(buf_size) WCHAR *buf,
                                           const int buf_size,
                                           BOOL sendWindowsEventLog)
 {
@@ -11476,7 +11476,7 @@ void ResetThreadAbortState(PTR_Thread pThread, CrawlFrame *pCf, StackFrame sfCur
 // Note: The "cond" argument is there to tide us over during the transition from
 //  BAD_FORMAT_ASSERT to THROW_BAD_FORMAT. It will go away soon.
 //---------------------------------------------------------------------------------
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond))
 {
     CONTRACTL
     {

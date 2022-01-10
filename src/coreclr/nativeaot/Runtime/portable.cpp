@@ -539,7 +539,7 @@ COOP_PINVOKE_HELPER(void*, RhpGetThunkStubsBlockAddress, (void* pThunkDataAddres
 COOP_PINVOKE_HELPER(int, RhpGetThunkBlockSize, ())
 {
     ASSERT_UNCONDITIONALLY("NYI");
-    return NULL;
+    return 0;
 }
 
 COOP_PINVOKE_HELPER(void, RhCallDescrWorker, (void * callDescr))

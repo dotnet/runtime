@@ -12,7 +12,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly precise4
+.assembly 'prefldinit4'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -21,7 +21,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module precise4.exe
 // MVID: {623817A9-BEA6-4892-A378-D2135E123200}
 .imagebase 0x00400000
 .subsystem 0x00000003

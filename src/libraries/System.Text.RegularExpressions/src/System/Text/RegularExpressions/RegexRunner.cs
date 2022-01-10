@@ -521,9 +521,12 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected bool IsBoundary(int index, int startpos, int endpos)
         {
-            return (index > startpos && RegexCharClass.IsWordChar(runtext![index - 1])) !=
-                   (index < endpos && RegexCharClass.IsWordChar(runtext![index]));
+            return (index > startpos && RegexCharClass.IsBoundaryWordChar(runtext![index - 1])) !=
+                   (index < endpos && RegexCharClass.IsBoundaryWordChar(runtext![index]));
         }
+
+        /// <summary>Called to determine a char's inclusion in the \w set.</summary>
+        internal static bool IsWordChar(char ch) => RegexCharClass.IsWordChar(ch);
 
         protected bool IsECMABoundary(int index, int startpos, int endpos)
         {

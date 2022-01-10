@@ -18,7 +18,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module loopIV_init.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200

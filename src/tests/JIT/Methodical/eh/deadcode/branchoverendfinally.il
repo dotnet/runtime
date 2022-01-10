@@ -8,7 +8,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly badtest {}
+.assembly 'branchoverendfinally' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit foo
