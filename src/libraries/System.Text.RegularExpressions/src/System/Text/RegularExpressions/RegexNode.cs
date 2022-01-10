@@ -1833,6 +1833,17 @@ namespace System.Text.RegularExpressions
                 AddChild(new RegexNode(Empty, Options));
             }
 
+            // It's common for the condition to be an explicit positive lookahead, as specifying
+            // that eliminates any ambiguity in syntax as to whether the expression is to be matched
+            // as an expression or to be a reference to a capture group.  After parsing, however,
+            // there's no ambiguity, and we can remove an extra level of positive lookahead, as the
+            // engines need to treat the condition as a zero-width positive, atomic assertion regardless.
+            RegexNode condition = Child(0);
+            if (condition.Type == Require && (condition.Options & RegexOptions.RightToLeft) == 0)
+            {
+                ReplaceChild(0, condition.Child(0));
+            }
+
             return this;
         }
 

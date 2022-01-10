@@ -1387,7 +1387,9 @@ namespace System.Text.RegularExpressions
                     Ldc(0);
                     Stloc(resumeAt);
                 }
-                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
+
+                bool needsEndConditional = postYesDoneLabel != originalDoneLabel || noBranch is not null;
+                if (needsEndConditional)
                 {
                     // goto endConditional;
                     BrFar(endConditional);
@@ -1422,59 +1424,66 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                if (isAtomic)
+                if (isAtomic || (postYesDoneLabel == originalDoneLabel && postNoDoneLabel == originalDoneLabel))
                 {
+                    // We're atomic by our parent, so even if either child branch has backtracking constructs,
+                    // we don't need to emit any backtracking logic in support, as nothing will backtrack in.
+                    // Instead, we just ensure we revert back to the original done label so that any backtracking
+                    // skips over this node.
                     doneLabel = originalDoneLabel;
+                    if (needsEndConditional)
+                    {
+                        MarkLabel(endConditional);
+                    }
                 }
                 else
                 {
-                    // If either the yes branch or the no branch contained backtracking, subsequent expressions
-                    // might try to backtrack to here, so output a backtracking map based on resumeAt.
-                    if (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel)
+                    // Subsequent expressions might try to backtrack to here, so output a backtracking map based on resumeAt.
+
+                    // Skip the backtracking section
+                    // goto endConditional;
+                    Debug.Assert(needsEndConditional);
+                    Br(endConditional);
+
+                    // Backtrack section
+                    Label backtrack = DefineLabel();
+                    doneLabel = backtrack;
+                    MarkLabel(backtrack);
+
+                    // Pop from the stack the branch that was used and jump back to its backtracking location.
+
+                    // resumeAt = base.runstack[--stackpos];
+                    EmitStackPop();
+                    Stloc(resumeAt);
+
+                    if (postYesDoneLabel != originalDoneLabel)
                     {
-                        // Skip the backtracking section
-                        // goto endConditional;
-                        Br(endConditional);
-
-                        Label backtrack = DefineLabel();
-                        doneLabel = backtrack;
-                        MarkLabel(backtrack);
-
-                        // resumeAt = base.runstack[--stackpos];
-                        EmitStackPop();
-                        Stloc(resumeAt);
-
-                        if (postYesDoneLabel != originalDoneLabel)
-                        {
-                            // if (resumeAt == 0) goto postIfDoneLabel;
-                            Ldloc(resumeAt);
-                            Ldc(0);
-                            BeqFar(postYesDoneLabel);
-                        }
-
-                        if (postNoDoneLabel != originalDoneLabel)
-                        {
-                            // if (resumeAt == 1) goto postElseDoneLabel;
-                            Ldloc(resumeAt);
-                            Ldc(1);
-                            BeqFar(postNoDoneLabel);
-                        }
-
-                        // goto originalDoneLabel;
-                        BrFar(originalDoneLabel);
+                        // if (resumeAt == 0) goto postIfDoneLabel;
+                        Ldloc(resumeAt);
+                        Ldc(0);
+                        BeqFar(postYesDoneLabel);
                     }
-                }
 
-                if (postYesDoneLabel != originalDoneLabel || noBranch is not null)
-                {
-                    MarkLabel(endConditional);
-                    if (!isAtomic && (postYesDoneLabel != originalDoneLabel || postNoDoneLabel != originalDoneLabel))
+                    if (postNoDoneLabel != originalDoneLabel)
                     {
-                        // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
-                        // base.runstack[stackpos++] = resumeAt;
-                        EmitStackResizeIfNeeded(1);
-                        EmitStackPush(() => Ldloc(resumeAt));
+                        // if (resumeAt == 1) goto postNoDoneLabel;
+                        Ldloc(resumeAt);
+                        Ldc(1);
+                        BeqFar(postNoDoneLabel);
                     }
+
+                    // goto originalDoneLabel;
+                    BrFar(originalDoneLabel);
+
+                    if (needsEndConditional)
+                    {
+                        MarkLabel(endConditional);
+                    }
+
+                    // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
+                    // base.runstack[stackpos++] = resumeAt;
+                    EmitStackResizeIfNeeded(1);
+                    EmitStackPush(() => Ldloc(resumeAt));
                 }
             }
 
@@ -1489,19 +1498,10 @@ namespace System.Text.RegularExpressions
                 // We're branching in a complicated fashion.  Make sure sliceStaticPos is 0.
                 TransferSliceStaticPosToPos();
 
-                // The first child node is the conditional expression.  If this matches, then we branch to the "yes" branch.
+                // The first child node is the condition expression.  If this matches, then we branch to the "yes" branch.
                 // If it doesn't match, then we branch to the optional "no" branch if it exists, or simply skip the "yes"
-                // branch, otherwise. The conditional is treated as a positive lookahead.
-                RegexNode conditional = node.Child(0);
-                if (conditional.Type == RegexNode.Require)
-                {
-                    // It's common to use a positive lookahead explicitly as the condition, as then there's no ambiguity
-                    // as to whether the expression is instead meant to be a reference to a capture group, and it lets
-                    // you match expressions that would otherwise be a reference to a capture group. But conditions are
-                    // themselves implicitly zero-width atomic assertions, so we don't need the extra layer imbued by
-                    // having the code for a positive lookahead, so we skip it.
-                    conditional = conditional.Child(0);
-                }
+                // branch, otherwise. The condition is treated as a positive lookahead.
+                RegexNode condition = node.Child(0);
 
                 // Get the "yes" branch and the "no" branch.  The "no" branch is optional in syntax and is thus
                 // somewhat likely to be Empty.
@@ -1513,7 +1513,7 @@ namespace System.Text.RegularExpressions
                 Label endConditional = DefineLabel();
 
                 // As with alternations, we have potentially multiple branches, each of which may contain
-                // backtracking constructs, but the expression after the conditional needs a single target
+                // backtracking constructs, but the expression after the condition needs a single target
                 // to backtrack to.  So, we expose a single Backtrack label and track which branch was
                 // followed in this resumeAt local.
                 LocalBuilder? resumeAt = null;
@@ -1522,9 +1522,9 @@ namespace System.Text.RegularExpressions
                     resumeAt = DeclareInt32();
                 }
 
-                // If the conditional expression has captures, we'll need to uncapture them in the case of no match.
+                // If the condition expression has captures, we'll need to uncapture them in the case of no match.
                 LocalBuilder? startingCapturePos = null;
-                if ((conditional.Options & RegexNode.HasCapturesFlag) != 0)
+                if ((condition.Options & RegexNode.HasCapturesFlag) != 0)
                 {
                     // int startingCapturePos = base.Crawlpos();
                     startingCapturePos = DeclareInt32();
@@ -1533,7 +1533,7 @@ namespace System.Text.RegularExpressions
                     Stloc(startingCapturePos);
                 }
 
-                // Emit the conditional expression.  Route any failures to after the yes branch.  This code is almost
+                // Emit the condition expression.  Route any failures to after the yes branch.  This code is almost
                 // the same as for a positive lookahead; however, a positive lookahead only needs to reset the position
                 // on a successful match, as a failed match fails the whole expression; here, we need to reset the
                 // position on completion, regardless of whether the match is successful or not.
@@ -1548,7 +1548,7 @@ namespace System.Text.RegularExpressions
 
                 // Emit the child. The condition expression is a zero-width assertion, which is atomic,
                 // so prevent backtracking into it.
-                EmitNode(node.Child(0));
+                EmitNode(condition);
                 doneLabel = originalDoneLabel;
 
                 // After the condition completes successfully, reset the text positions.
@@ -1619,10 +1619,8 @@ namespace System.Text.RegularExpressions
                 // might try to backtrack to here, so output a backtracking map based on resumeAt.
                 if (isAtomic || (postYesDoneLabel == originalDoneLabel && postNoDoneLabel == originalDoneLabel))
                 {
-                    if (isAtomic)
-                    {
-                        doneLabel = originalDoneLabel;
-                    }
+                    // EndConditional:
+                    doneLabel = originalDoneLabel;
                     MarkLabel(endConditional);
                 }
                 else
@@ -1659,6 +1657,7 @@ namespace System.Text.RegularExpressions
                     // goto postConditionalDoneLabel;
                     BrFar(originalDoneLabel);
 
+                    // EndConditional:
                     MarkLabel(endConditional);
 
                     // if (stackpos + 1 >= base.runstack.Length) Array.Resize(ref base.runstack, base.runstack.Length * 2);
