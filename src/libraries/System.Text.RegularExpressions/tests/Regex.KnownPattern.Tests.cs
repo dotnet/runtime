@@ -1385,12 +1385,11 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]
-        [InlineData(RegexOptions.None, 1)]
-        [InlineData(RegexOptions.Compiled, 1)]
-        public void TerminationInNonBacktrackingVsBackTracking(RegexOptions options, int sec)
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void TerminationInNonBacktrackingVsBackTracking(RegexOptions options)
         {
             string input = " 123456789 123456789 123456789 123456789 123456789";
-            TimeSpan ts = new TimeSpan(0, 0, sec);
             for (int i = 0; i < 12; i++)
             {
                 input += input;
@@ -1398,13 +1397,13 @@ namespace System.Text.RegularExpressions.Tests
 
             // The input has 2^12 * 50 = 204800 characters
             string rawregex = @"[\\/]?[^\\/]*?(heythere|hej)[^\\/]*?$";
-            Regex reC = new Regex(rawregex, options, ts);
-            Regex re = new Regex(rawregex, RegexHelpers.RegexOptionNonBacktracking, ts);
 
-            // It takes over 4min with backtracking, so test that 1sec timeout happens
+            // It takes over 4min with backtracking, so it should certainly timeout given a 1 second timeout
+            Regex reC = new Regex(rawregex, options, TimeSpan.FromSeconds(1));
             Assert.Throws<RegexMatchTimeoutException>(() => { reC.Match(input); });
 
-            // NonBacktracking needs way less than 1s
+            // NonBacktracking needs way less than 1s, but use 10s to account for the slowest possible CI machine
+            Regex re = new Regex(rawregex, RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromSeconds(10));
             Assert.False(re.Match(input).Success);
         }
 
