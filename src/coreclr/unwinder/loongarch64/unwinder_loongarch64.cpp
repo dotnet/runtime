@@ -159,8 +159,8 @@ static const BYTE UnwindCodeSizeTable[256] =
 NTSTATUS
 RtlpUnwindCustom(
     __inout PT_CONTEXT ContextRecord,
-    __in BYTE Opcode,
-    __in PLOONGARCH64_UNWIND_PARAMS UnwindParams
+    _In_ BYTE Opcode,
+    _In_ PLOONGARCH64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -350,10 +350,10 @@ Return Value:
 
 ULONG
 RtlpComputeScopeSize(
-    __in ULONG_PTR UnwindCodePtr,
-    __in ULONG_PTR UnwindCodesEndPtr,
-    __in BOOLEAN IsEpilog,
-    __in PLOONGARCH64_UNWIND_PARAMS UnwindParams
+    _In_ ULONG_PTR UnwindCodePtr,
+    _In_ ULONG_PTR UnwindCodesEndPtr,
+    _In_ BOOLEAN IsEpilog,
+    _In_ PLOONGARCH64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -417,10 +417,10 @@ Return Value:
 NTSTATUS
 RtlpUnwindRestoreRegisterRange(
     __inout PT_CONTEXT ContextRecord,
-    __in LONG SpOffset,
-    __in ULONG FirstRegister,
-    __in ULONG RegisterCount,
-    __in PLOONGARCH64_UNWIND_PARAMS UnwindParams
+    _In_ LONG SpOffset,
+    _In_ ULONG FirstRegister,
+    _In_ ULONG RegisterCount,
+    _In_ PLOONGARCH64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -492,10 +492,10 @@ Return Value:
 NTSTATUS
 RtlpUnwindRestoreFpRegisterRange(
     __inout PT_CONTEXT ContextRecord,
-    __in LONG SpOffset,
-    __in ULONG FirstRegister,
-    __in ULONG RegisterCount,
-    __in PLOONGARCH64_UNWIND_PARAMS UnwindParams
+    _In_ LONG SpOffset,
+    _In_ ULONG FirstRegister,
+    _In_ ULONG RegisterCount,
+    _In_ PLOONGARCH64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -563,14 +563,14 @@ Return Value:
 
 NTSTATUS
 RtlpUnwindFunctionFull(
-    __in DWORD64 ControlPcRva,
-    __in ULONG_PTR ImageBase,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD64 ControlPcRva,
+    _In_ ULONG_PTR ImageBase,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout T_CONTEXT *ContextRecord,
-    __out PDWORD64 EstablisherFrame,
+    _Out_ PDWORD64 EstablisherFrame,
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    __out PVOID *HandlerData,
-    __in PLOONGARCH64_UNWIND_PARAMS UnwindParams
+    _Out_ PVOID *HandlerData,
+    _In_ PLOONGARCH64_UNWIND_PARAMS UnwindParams
     )
 
 /*++
@@ -1230,13 +1230,13 @@ finished:
 
 NTSTATUS
 RtlpUnwindFunctionCompact(
-    __in DWORD64 ControlPcRva,
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ DWORD64 ControlPcRva,
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
     __inout T_CONTEXT *ContextRecord,
-    __out PDWORD64 EstablisherFrame,
+    _Out_ PDWORD64 EstablisherFrame,
     __deref_opt_out_opt PEXCEPTION_ROUTINE *HandlerRoutine,
-    __out PVOID *HandlerData,
-    __in PLOONGARCH64_UNWIND_PARAMS UnwindParams
+    _Out_ PVOID *HandlerData,
+    _In_ PLOONGARCH64_UNWIND_PARAMS UnwindParams
     )
 
 /*++

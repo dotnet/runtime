@@ -1042,8 +1042,8 @@ RtlVirtualUnwind(
 FORCEINLINE
 ULONG64
 RtlpGetFunctionEndAddress (
-    __in PT_RUNTIME_FUNCTION FunctionEntry,
-    __in ULONG64 ImageBase
+    _In_ PT_RUNTIME_FUNCTION FunctionEntry,
+    _In_ ULONG64 ImageBase
     )
 {
     ULONG64 FunctionLength;
