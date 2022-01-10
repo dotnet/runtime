@@ -292,16 +292,34 @@ namespace System.Runtime.Intrinsics.X86
         public static int ConvertToInt32(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int _mm_cvtss_si32 (__m128 a)
+        ///   CVTSS2SI r32, xmm/m32
+        /// </summary>
+        public static nint ConvertToNInt(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
         ///   CVTSI2SS xmm, reg/m32
         /// </summary>
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
+        ///   CVTSI2SS xmm, reg/m32
+        /// </summary>
+        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, nint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// int _mm_cvttss_si32 (__m128 a)
         ///   CVTTSS2SI r32, xmm/m32
         /// </summary>
         public static int ConvertToInt32WithTruncation(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int _mm_cvttss_si32 (__m128 a)
+        ///   CVTTSS2SI r32, xmm/m32
+        /// </summary>
+        public static nint ConvertToNIntWithTruncation(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_div_ps (__m128 a,  __m128 b)
