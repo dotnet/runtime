@@ -110,7 +110,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_ManagedFailFast:
         if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFAST))
-            m_Description.Append(W("Description: The application requested process termination through System.Environment.FailFast(string message)."));
+            m_Description.Append(W("Description: The application requested process termination through System.Environment.FailFast."));
         else
         {
             m_Description.Append(ssMessage);
