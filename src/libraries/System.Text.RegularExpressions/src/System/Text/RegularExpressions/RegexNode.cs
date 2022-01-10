@@ -308,11 +308,11 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case Testref:
-                        Debug.Assert(childCount is 1 or 2, $"Expected one or two children for {node.TypeName}, got {childCount}");
+                        Debug.Assert(childCount == 2, $"Expected two children for {node.TypeName}, got {childCount}");
                         break;
 
                     case Testgroup:
-                        Debug.Assert(childCount is 2 or 3, $"Expected two or three children for {node.TypeName}, got {childCount}");
+                        Debug.Assert(childCount == 3, $"Expected three children for {node.TypeName}, got {childCount}");
                         break;
 
                     case Concatenate:
@@ -562,39 +562,20 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
-        internal RegexNode Reduce()
-        {
-            switch (Type)
+        internal RegexNode Reduce() =>
+            Type switch
             {
-                case Alternate:
-                    return ReduceAlternation();
-
-                case Concatenate:
-                    return ReduceConcatenation();
-
-                case Loop:
-                case Lazyloop:
-                    return ReduceLoops();
-
-                case Atomic:
-                    return ReduceAtomic();
-
-                case Group:
-                    return ReduceGroup();
-
-                case Set:
-                case Setloop:
-                case Setloopatomic:
-                case Setlazy:
-                    return ReduceSet();
-
-                case Prevent:
-                    return ReducePrevent();
-
-                default:
-                    return this;
-            }
-        }
+                Alternate => ReduceAlternation(),
+                Atomic => ReduceAtomic(),
+                Concatenate => ReduceConcatenation(),
+                Group => ReduceGroup(),
+                Loop or Lazyloop => ReduceLoops(),
+                Prevent => ReducePrevent(),
+                Set or Setloop or Setloopatomic or Setlazy => ReduceSet(),
+                Testgroup => ReduceTestgroup(),
+                Testref => ReduceTestref(),
+                _ => this,
+            };
 
         /// <summary>Remove an unnecessary Concatenation or Alternation node</summary>
         /// <remarks>
@@ -1814,6 +1795,53 @@ namespace System.Text.RegularExpressions
             {
                 Type = Nothing;
                 Children = null;
+            }
+
+            return this;
+        }
+
+        /// <summary>Optimizations for backreference conditionals.</summary>
+        private RegexNode ReduceTestref()
+        {
+            Debug.Assert(Type == Testref);
+            Debug.Assert(ChildCount() is 1 or 2);
+
+            // This isn't so much an optimization as it is changing the tree for consistency.
+            // We want all engines to be able to trust that every Testref will have two children,
+            // even though it's optional in the syntax.  If it's missing a "not matched" branch,
+            // we add one that will match empty.
+            if (ChildCount() == 1)
+            {
+                AddChild(new RegexNode(Empty, Options));
+            }
+
+            return this;
+        }
+
+        /// <summary>Optimizations for expression conditionals.</summary>
+        private RegexNode ReduceTestgroup()
+        {
+            Debug.Assert(Type == Testgroup);
+            Debug.Assert(ChildCount() is 2 or 3);
+
+            // This isn't so much an optimization as it is changing the tree for consistency.
+            // We want all engines to be able to trust that every Testgroup will have three children,
+            // even though it's optional in the syntax.  If it's missing a "not matched" branch,
+            // we add one that will match empty.
+            if (ChildCount() == 2)
+            {
+                AddChild(new RegexNode(Empty, Options));
+            }
+
+            // It's common for the condition to be an explicit positive lookahead, as specifying
+            // that eliminates any ambiguity in syntax as to whether the expression is to be matched
+            // as an expression or to be a reference to a capture group.  After parsing, however,
+            // there's no ambiguity, and we can remove an extra level of positive lookahead, as the
+            // engines need to treat the condition as a zero-width positive, atomic assertion regardless.
+            RegexNode condition = Child(0);
+            if (condition.Type == Require && (condition.Options & RegexOptions.RightToLeft) == 0)
+            {
+                ReplaceChild(0, condition.Child(0));
             }
 
             return this;
