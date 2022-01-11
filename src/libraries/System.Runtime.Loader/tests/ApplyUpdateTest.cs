@@ -335,7 +335,19 @@ namespace System.Reflection.Metadata
 	    // Test that adding a new static lambda to an existing method body is supported
 	    ApplyUpdateUtil.TestCase(static () =>
 	    {
-		Assert.True (false);
+		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda).Assembly;
+
+		var x = new System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda();
+
+		var r = x.TestMethod();
+
+		Assert.Equal ("abcd", r);
+
+		ApplyUpdateUtil.ApplyUpdate(assm);
+
+		r = x.TestMethod();
+		
+		Assert.Equal("abcdabcd", r);
 	    });
 	}
 
