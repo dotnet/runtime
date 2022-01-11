@@ -68,11 +68,35 @@ namespace System.Runtime.Intrinsics.X86
         public static uint ZeroHighBits(uint value, uint index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// unsigned int _bzhi_u32 (unsigned int a, unsigned int index)
+        ///   BZHI r32a, reg/m32, r32b
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _bzhi_u64 (unsigned __int64 a, unsigned int index)
+        ///   BZHI r64a, reg/m32, r64b
+        /// </summary>
+        public static nuint ZeroHighBits(nuint value, nuint index) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
         ///   MULX r32a, r32b, reg/m32
         /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static uint MultiplyNoFlags(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
+        ///   MULX r32a, r32b, reg/m32
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
+        ///   MULX r64a, r64b, reg/m64
+        ///
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static nuint MultiplyNoFlags(nuint left, nuint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
@@ -82,15 +106,50 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
+        ///   MULX r32a, r32b, reg/m32
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
+        ///   MULX r64a, r64b, reg/m64
+        ///
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe nuint MultiplyNoFlags(nuint left, nuint right, nuint* low) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)
         ///   PDEP r32a, r32b, reg/m32
         /// </summary>
         public static uint ParallelBitDeposit(uint value, uint mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)
+        ///   PDEP r32a, r32b, reg/m32
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
+        ///   PDEP r64a, r64b, reg/m64
+        /// </summary>
+        public static nuint ParallelBitDeposit(nuint value, nuint mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// unsigned int _pext_u32 (unsigned int a, unsigned int mask)
         ///   PEXT r32a, r32b, reg/m32
         /// </summary>
         public static uint ParallelBitExtract(uint value, uint mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// unsigned int _pext_u32 (unsigned int a, unsigned int mask)
+        ///   PEXT r32a, r32b, reg/m32
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _pext_u64 (unsigned __int64 a, unsigned __int64 mask)
+        ///   PEXT r64a, r64b, reg/m64
+        /// </summary>
+        public static nuint ParallelBitExtract(nuint value, nuint mask) { throw new PlatformNotSupportedException(); }
     }
 }

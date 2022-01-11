@@ -3741,10 +3741,15 @@ namespace System.Runtime.Intrinsics.X86
         internal Bmi2() { }
         public static new bool IsSupported { get { throw null; } }
         public static uint MultiplyNoFlags(uint left, uint right) { throw null; }
+        public static nuint MultiplyNoFlags(nuint left, nuint right) { throw null; }
         public unsafe static uint MultiplyNoFlags(uint left, uint right, uint* low) { throw null; }
+        public unsafe static nuint MultiplyNoFlags(nuint left, nuint right, nuint* low) { throw null; }
         public static uint ParallelBitDeposit(uint value, uint mask) { throw null; }
+        public static nuint ParallelBitDeposit(nuint value, nuint mask) { throw null; }
         public static uint ParallelBitExtract(uint value, uint mask) { throw null; }
+        public static nuint ParallelBitExtract(nuint value, nuint mask) { throw null; }
         public static uint ZeroHighBits(uint value, uint index) { throw null; }
+        public static nuint ZeroHighBits(nuint value, nuint index) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
