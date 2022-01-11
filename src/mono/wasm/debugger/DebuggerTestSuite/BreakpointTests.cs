@@ -772,7 +772,7 @@ namespace DebuggerTests
                     Assert.Equal("object", scope["object"]["type"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
-                    return Task.CompletedTask;
+                    await Task.CompletedTask;
                 }
             );
         }
