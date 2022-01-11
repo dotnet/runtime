@@ -214,29 +214,33 @@ namespace System.Text.RegularExpressions
 
         private void MakeLoopAtomic()
         {
-            switch (Type)
+            Debug.Assert(Type is Oneloop or Notoneloop or Setloop);
+
+            // For loops, we simply change the Type to the atomic variant.
+            // Atomic greedy loops should consume as many values as they can.
+            Type += Oneloopatomic - Oneloop;
+        }
+
+        private void MakeLazyAtomic()
+        {
+            Debug.Assert(Type is Onelazy or Notonelazy or Setlazy);
+
+            switch (M)
             {
-                case Oneloop or Notoneloop or Setloop:
-                    // For loops, we simply change the Type to the atomic variant.
-                    // Atomic greedy loops should consume as many values as they can.
-                    Type += Oneloopatomic - Oneloop;
+                case 0:
+                    Type = Empty;
+                    Str = null;
+                    Ch = '\0';
                     break;
 
-                case Onelazy or Notonelazy or Setlazy:
-                    // For lazy, we not only change the Type, we also lower the max number of iterations
-                    // to the minimum number of iterations, as they should end up matching as little as possible.
-                    Type += Oneloopatomic - Onelazy;
-                    N = M;
-                    if (N == 0)
-                    {
-                        Type = Empty;
-                        Str = null;
-                        Ch = '\0';
-                    }
+                case 1:
+                    Type += One - Onelazy;
+                    M = N = 0;
                     break;
 
                 default:
-                    Debug.Fail($"Unexpected type: {Type}");
+                    Type += Oneloopatomic - Onelazy;
+                    N = M;
                     break;
             }
         }
@@ -452,11 +456,15 @@ namespace System.Text.RegularExpressions
                 switch (node.Type)
                 {
                     // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes, e.g. [abc]* => (?>[abc]*).
-                    // And {One/Notone/Set}lazys can similarly be upgraded to be atomic, which really makes them into repeaters
-                    // or even empty nodes.
                     case Oneloop or Notoneloop or Setloop:
-                    case Onelazy or Notonelazy or Setlazy:
                         node.MakeLoopAtomic();
+                        break;
+
+                    // {One/Notone/Set}lazys can similarly be upgraded to be atomic, but in doing so we need to lower their
+                    // max iterations down to their min, as they'll never match more than the min.  This effectively makes
+                    // them into a repeater, and we can then downgrade them to a single char or even an empty.
+                    case Onelazy or Notonelazy or Setlazy:
+                        node.MakeLazyAtomic();
                         break;
 
                     // Just because a particular node is atomic doesn't mean all its descendants are.
@@ -669,20 +677,19 @@ namespace System.Text.RegularExpressions
             switch (child.Type)
             {
                 // If the child is already atomic, we can just remove the atomic node.
-                case Oneloopatomic:
-                case Notoneloopatomic:
-                case Setloopatomic:
+                case Oneloopatomic or Notoneloopatomic or Setloopatomic:
                     return child;
 
-                // If an atomic subexpression contains only a {one/notone/set}{loop/lazy},
+                // If an atomic subexpression contains only a {one/notone/set}loop,
                 // change it to be an {one/notone/set}loopatomic and remove the atomic node.
-                case Oneloop:
-                case Notoneloop:
-                case Setloop:
-                case Onelazy:
-                case Notonelazy:
-                case Setlazy:
+                case Oneloop or Notoneloop or Setloop:
                     child.MakeLoopAtomic();
+                    return child;
+
+                // If an atomic subexpression contains only a {one/notone/set}lazy,
+                // change it to be an {one/notone/set}loopatomic and remove the atomic node.
+                case Onelazy or Notonelazy or Setlazy:
+                    child.MakeLazyAtomic();
                     return child;
 
                 // Alternations have a variety of possible optimizations that can be applied
@@ -1755,11 +1762,19 @@ namespace System.Text.RegularExpressions
                     // If the node can be changed to atomic based on what comes after it, do so.
                     switch (node.Type)
                     {
-                        case Oneloop when CanBeMadeAtomic(node, subsequent, allowSubsequentIteration: true):
-                        case Notoneloop when CanBeMadeAtomic(node, subsequent, allowSubsequentIteration: true):
-                        case Setloop when CanBeMadeAtomic(node, subsequent, allowSubsequentIteration: true):
+                        case Oneloop or Notoneloop or Setloop when CanBeMadeAtomic(node, subsequent, allowSubsequentIteration: true):
                             node.MakeLoopAtomic();
                             break;
+
+                        case Onelazy or Notonelazy or Setlazy when CanBeMadeAtomic(node, subsequent, allowSubsequentIteration: false):
+                            // allowSubsequentIteration is set to false to avoid dealing with the case where a lazy's max is lowered
+                            // to its min, e.g. `d+?e*?f??` effectively becomes `d`.  This also doesn't use MakeLazyAtomic, as that's
+                            // used for applying atomicity to a lazy, which will in turn lower its max iteration count; here, we're
+                            // actually recognizing that there's no difference in outcome whether the node is a setloop, setloopatomic,
+                            // or setlazy, and thus we're best off making it setloopatomic to avoid useless backtracking.
+                            node.Type += Oneloopatomic - Onelazy;
+                            break;
+
                         case Alternate:
                             // In the case of alternation, we can't change the alternation node itself
                             // based on what comes after it (at least not with more complicated analysis
@@ -1948,7 +1963,7 @@ namespace System.Text.RegularExpressions
                 // Doing so avoids unnecessary backtracking.
                 switch (node.Type)
                 {
-                    case Oneloop:
+                    case Oneloop or Onelazy:
                         switch (subsequent.Type)
                         {
                             case One when node.Ch != subsequent.Ch:
@@ -1977,7 +1992,7 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
-                    case Notoneloop:
+                    case Notoneloop or Notonelazy:
                         switch (subsequent.Type)
                         {
                             case One when node.Ch == subsequent.Ch:
@@ -1995,7 +2010,7 @@ namespace System.Text.RegularExpressions
                         }
                         break;
 
-                    case Setloop:
+                    case Setloop or Setlazy:
                         switch (subsequent.Type)
                         {
                             case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
