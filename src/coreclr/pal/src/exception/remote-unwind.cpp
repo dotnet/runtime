@@ -57,6 +57,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <mach-o/nlist.h>
 #include <mach-o/dyld_images.h>
 #include "compact_unwind_encoding.h"
+#define MACOS_ARM64_POINTER_AUTH_MASK 0x7fffffffffffull
 #endif
 
 // Sub-headers included from the libunwind.h contain an empty struct
@@ -1423,6 +1424,8 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
 #if defined(TARGET_ARM64)
 
 #define ARM64_SYSCALL_OPCODE 0xd4001001
+#define ARM64_BL_OPCODE_MASK 0xec000000
+#define ARM64_BL_OPCODE      0x84000000
 
 static bool
 StepWithCompactNoEncoding(const libunwindInfo* info)
@@ -1519,7 +1522,7 @@ StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_
             return false;
         }
         // Strip pointer authentication bits 
-        context->Lr &= 0x7fffffffffffull;
+        context->Lr &= MACOS_ARM64_POINTER_AUTH_MASK;
     }
     else
     {
@@ -1742,7 +1745,7 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     // Strip pointer authentication bits which seem to be leaking out of libunwind
     // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
     // errors with "this target does not support pointer authentication"
-    winContext->Pc = winContext->Pc & 0x7fffffffffffull;
+    winContext->Pc = winContext->Pc & MACOS_ARM64_POINTER_AUTH_MASK;
 #endif // __APPLE__
     TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
 #elif defined(TARGET_S390X)
@@ -2155,12 +2158,22 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
     if (result && step)
     {
-        // If the PC is at the start of the function and the unwind encoding is frameless, back up PC by 1 to the previous
-        // function and get the unwind info for that function. This for functions that have been optimized to tail call.
-        if ((context->Pc == procInfo.start_ip) && (procInfo.format & UNWIND_ARM64_MODE_MASK) == UNWIND_ARM64_MODE_FRAMELESS)
+        // If the PC is at the start of the function, the previous instruction is BL and the unwind encoding is frameless
+        // with nothing on stack (0x02000000), back up PC by 1 to the previous function and get the unwind info for that
+        // function.
+        if ((context->Pc == procInfo.start_ip) && (procInfo.format & (UNWIND_ARM64_MODE_MASK | UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK)) == UNWIND_ARM64_MODE_FRAMELESS)
         {
-            TRACE("Getting unwind info for PC - 1\n");
-            result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step, false);
+            uint32_t opcode;
+            unw_word_t addr = context->Pc - sizeof(opcode);
+            if (ReadValue32(&info, &addr, &opcode))
+            {
+                // Is the previous instruction a BL opcode?
+                if ((opcode & ARM64_BL_OPCODE_MASK) == ARM64_BL_OPCODE)
+                {
+                    TRACE("Getting unwind info for PC - 1\n");
+                    result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step, false);
+                }
+            }
         }
     }
 #else
