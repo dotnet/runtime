@@ -30,7 +30,7 @@
       <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
       <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
       <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
-      <FileVersion>$(_FileVersionMaj).$(_FileVersionMin).$([MSBuild]::Add($(_FileVersionBld), 100)).$(_FileVersionRev)</FileVersion>
+      <FileVersion>$(_FileVersionMaj).$([MSBuild]::Add($(_FileVersionMin), 100)).$(_FileVersionBld).$(_FileVersionRev)</FileVersion>
     </PropertyGroup>
   </Target>
 </Project>

@@ -496,9 +496,7 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
 
 #ifndef HOST_WINDOWS
 
-// Frame pointer relative offset of a local containing a pointer to the windows style context of a location
-// where a hardware exception occured.
-int g_hardware_exception_context_locvar_offset = 0;
+extern int g_common_signal_handler_context_locvar_offset;
 
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
@@ -508,17 +506,19 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
     DWORD64 curPc = CONTEXTGetPC(context);
 
-    // Check if the PC is the return address from the SEHProcessException.
-    // If that's the case, extract its local variable containing a pointer to the windows style context of the hardware
+#ifndef __APPLE__
+    // Check if the PC is the return address from the SEHProcessException in the common_signal_handler.
+    // If that's the case, extract its local variable containing the windows style context of the hardware
     // exception and return that. This skips the hardware signal handler trampoline that the libunwind
-    // cannot cross on some systems. On macOS, it skips a similar trampoline we create in HijackFaultingThread.
+    // cannot cross on some systems.
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
-        CONTEXT* exceptionContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_hardware_exception_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), exceptionContext, sizeof(CONTEXT));
+        CONTEXT* signalContext = (CONTEXT*)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), signalContext, sizeof(CONTEXT));
 
         return TRUE;
     }
+#endif
 
     if ((context->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0)
     {
