@@ -84,8 +84,7 @@ namespace System.Net.Security.Tests
         private void Verify(MD4 hash, byte[] input, byte[] expected) 
         {
             byte[] outputSpan = new byte[expected.Length];
-            int bytesWritten = hash.HashData(input, outputSpan);
-            Assert.Equal(hash.HashSizeBytes, bytesWritten);
+            MD4.HashData(input, outputSpan);
             Assert.Equal(expected, outputSpan);
         }
     }

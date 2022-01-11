@@ -14,11 +14,33 @@ namespace System.Net.Security
 {
     internal sealed class MD4
     {
-        private byte[]? HashValue;
-        private uint[] state;
-        private byte[] buffer;
-        private uint[] count;
-        private uint[] x;
+        internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            // Debug.Assert(destination.Length == 128 >> 3);
+            // Span<byte> buffer = stackalloc byte[64];
+
+            // the initialize our context
+            count[0] = 0;
+            count[1] = 0;
+            state[0] = 0x67452301;
+            state[1] = 0xefcdab89;
+            state[2] = 0x98badcfe;
+            state[3] = 0x10325476;
+            // Zeroize sensitive information
+            Array.Clear(buffer, 0, 64);
+            Array.Clear(x, 0, 16);
+
+            HashCore(source.ToArray(), 0, source.Length);
+            HashValue = HashFinal();
+            byte[] result = (byte[]) HashValue.Clone();
+            result.CopyTo(destination);
+        }
+
+        private static byte[]? HashValue;
+        private static uint[] state = new uint[4];
+        private static byte[] buffer = new byte[64];
+        private static uint[] count = new uint[2];
+        private static uint[] x = new uint[16];
 
         private const int S11 = 3;
         private const int S12 = 7;
@@ -33,57 +55,8 @@ namespace System.Net.Security
         private const int S33 = 11;
         private const int S34 = 15;
 
-        private byte[] digest;
-        public int HashSize => 128;
-        public int HashSizeBytes => HashSize / 8;
-
-        public MD4()
-        {
-            // we allocate the context memory
-            state = new uint[4];
-            count = new uint[2];
-            buffer = new byte[64];
-            digest = new byte[16];
-            // temporary buffer in MD4Transform that we don't want to keep allocate on each iteration
-            x = new uint[16];
-            // the initialize our context
-            Initialize();
-        }
-
-        public int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            if (destination.Length < HashSizeBytes)
-            {
-                throw new ArgumentException("Destination is too short.", nameof(destination));
-            }
-
-            ComputeHash(source.ToArray(), 0, source.Length).CopyTo(destination);
-            return destination.Length;
-        }
-
-        private void Initialize()
-        {
-            count[0] = 0;
-            count[1] = 0;
-            state[0] = 0x67452301;
-            state[1] = 0xefcdab89;
-            state[2] = 0x98badcfe;
-            state[3] = 0x10325476;
-            // Zeroize sensitive information
-            Array.Clear(buffer, 0, 64);
-            Array.Clear(x, 0, 16);
-        }
-
-        private byte[] ComputeHash(byte[] array, int offset, int count)
-        {
-            HashCore(array, offset, count);
-            HashValue = HashFinal();
-            byte[] result = (byte[]) HashValue.Clone();
-            Initialize();
-            return result;
-        }
-
-        private void HashCore(byte[] array, int ibStart, int cbSize)
+        private static byte[] digest = new byte[16];
+        private static void HashCore(byte[] array, int ibStart, int cbSize)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
@@ -113,7 +86,7 @@ namespace System.Net.Security
             Buffer.BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
         }
 
-        private byte[] HashFinal()
+        private static byte[] HashFinal()
         {
             /* Save number of bits */
             byte[] bits = new byte[8];
@@ -129,9 +102,6 @@ namespace System.Net.Security
 
             /* Store state in digest */
             Encode(digest, state);
-
-            // Zeroize sensitive information.
-            Initialize();
 
             return digest;
         }
@@ -206,7 +176,7 @@ namespace System.Net.Security
             }
         }
 
-        private void MD4Transform(uint[] state, byte[] block, int index)
+        private static void MD4Transform(uint[] state, byte[] block, int index)
         {
             uint a = state[0];
             uint b = state[1];
