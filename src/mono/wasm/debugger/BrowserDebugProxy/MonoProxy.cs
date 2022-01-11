@@ -587,16 +587,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "object":
                 case "methodId":
-                    args["details"]  = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
-                    args["details"]  = await context.SdbAgent.GetValueTypeProxy(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.valueTypes[objectId.Value].GetProxy(token);
                     break;
                 case "pointer":
-                    args["details"]  = await context.SdbAgent.GetPointerContent(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.GetPointerContent(objectId.Value, token);
                     break;
                 case "array":
-                    args["details"]  = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
+                    args["details"] = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
                 {
@@ -687,7 +687,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "valuetype":
                     {
-                        var resValType = await context.SdbAgent.GetValueTypeValues(objectId.Value, accessorPropertiesOnly, token);
+                            var resValType = await context.SdbAgent.valueTypes[objectId.Value].GetValueTypeValues(accessorPropertiesOnly, token);
                         return sortByAccessLevel ? JObject.FromObject(new { result = resValType }) : resValType;
                     }
                     case "array":
