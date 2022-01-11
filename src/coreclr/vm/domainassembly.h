@@ -246,10 +246,6 @@ public:
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
     void EnsureLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
 
-    // AttemptLoadLevel is a generic routine used to try to further load the file to a given level.
-    // No guarantee is made about the load level resulting however.
-    void AttemptLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
-
     // CheckLoadLevel is an assert predicate used to verify the load level of an assembly.
     // deadlockOK indicates that the level is allowed to be one short if we are restricted
     // by loader reentrancy.

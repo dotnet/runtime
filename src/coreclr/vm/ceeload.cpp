@@ -3300,7 +3300,7 @@ Module::GetAssemblyIfLoaded(
                 }
 
                 if (pDomainAssembly && pDomainAssembly->IsLoaded())
-                    pAssembly = pDomainAssembly->GetAssembly(); // <NOTE> Do not use GetAssembly - that may force the completion of a load
+                    pAssembly = pDomainAssembly->GetAssembly();
 
                 // Only store in the rid map if working with the current AppDomain.
                 if (fCanUseRidMap && pAssembly)

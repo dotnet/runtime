@@ -124,25 +124,6 @@ void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 }
 #include <optdefault.h>
 
-void DomainAssembly::AttemptLoadLevel(FileLoadLevel targetLevel)
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    if (IsLoading())
-        this->GetAppDomain()->LoadDomainAssembly(this, targetLevel);
-    else
-        ThrowIfError(targetLevel);
-
-    RETURN;
-}
-
-
 CHECK DomainAssembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 {
     CONTRACTL
