@@ -21,7 +21,7 @@ namespace ABIStress
         {
             static void Usage()
             {
-                Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--instantiatingstubs] [--unboxingstubs] [--sharedgenericunboxingstubs] [--shufflethunks] [--max-params <number>] [--no-ctrlc-summary]");
+                Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--instantiatingstubs] [--unboxingstubs] [--sharedgenericunboxingstubs] [--max-params <number>] [--no-ctrlc-summary]");
                 Console.WriteLine("Either --caller-index or --num-calls must be specified.");
                 Console.WriteLine("Example: --num-calls 100");
                 Console.WriteLine("  Stress first 100 of all kinds");
