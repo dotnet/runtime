@@ -223,7 +223,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine();
 
             writer.WriteLine("            // Description:");
-            DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // "); // skip implicit root capture
+            DescribeExpression(writer, rm.Code.Tree.Root.Child(0), "            // ", rm.Code); // skip implicit root capture
             writer.WriteLine();
 
             writer.WriteLine($"            protected override bool FindFirstChar()");
@@ -903,11 +903,11 @@ namespace System.Text.RegularExpressions.Generator
                             sliceStaticPos = startingSliceStaticPos;
 
                             RegexNode child = node.Child(i);
-                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, DescribeNode(child));
+                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, DescribeNode(child, rm.Code));
                             Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
 
                             RegexNode? childStart = child.FindBranchOneOrMultiStart();
-                            Debug.Assert(childStart is not null, DescribeNode(child));
+                            Debug.Assert(childStart is not null, DescribeNode(child, rm.Code));
 
                             writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
                             writer.Indent++;
@@ -1140,7 +1140,7 @@ namespace System.Text.RegularExpressions.Generator
                 // in which case per ECMA 262 section 21.2.2.9 the backreference should succeed.
                 if ((node.Options & RegexOptions.ECMAScript) != 0)
                 {
-                    writer.WriteLine($"// If the {DescribeNonNegative(node.M)} capture hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
+                    writer.WriteLine($"// If the {DescribeCapture(node.M, rm.Code)} hasn't matched, the backreference matches with RegexOptions.ECMAScript rules.");
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
                     {
                         EmitWhenHasCapture();
@@ -1148,7 +1148,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else
                 {
-                    writer.WriteLine($"// If the {DescribeNonNegative(node.M)} capture hasn't matched, the backreference doesn't match.");
+                    writer.WriteLine($"// If the {DescribeCapture(node.M, rm.Code)} hasn't matched, the backreference doesn't match.");
                     using (EmitBlock(writer, $"if (!base.IsMatched({capnum}))"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
@@ -1225,7 +1225,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"if (base.IsMatched({capnum}))"))
                     {
-                        writer.WriteLine($"// The {DescribeNonNegative(node.M)} capture group captured a value.  Match the first branch.");
+                        writer.WriteLine($"// The {DescribeCapture(node.M, rm.Code)} captured a value.  Match the first branch.");
                         EmitNode(yesBranch);
                         writer.WriteLine();
                         TransferSliceStaticPosToPos(); // make sure sliceStaticPos is 0 after each branch
@@ -1702,7 +1702,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Put the node's code into its own scope. If the node contains labels that may need to
                 // be visible outside of its scope, the scope is still emitted for clarity but is commented out.
-                using (EmitScope(writer, DescribeNode(node), faux: PossiblyBacktracks(node) && !node.IsAtomicByParent()))
+                using (EmitScope(writer, DescribeNode(node, rm.Code), faux: PossiblyBacktracks(node) && !node.IsAtomicByParent()))
                 {
                     switch (node.Type)
                     {
@@ -1857,7 +1857,7 @@ namespace System.Text.RegularExpressions.Generator
                                         writer.Write("if (");
                                     }
                                     EmitSingleChar(child, emitLengthCheck: false, clauseOnly: true);
-                                    prevDescription = includeDescription ? DescribeNode(child) : null;
+                                    prevDescription = includeDescription ? DescribeNode(child, rm.Code) : null;
                                     wroteClauses = true;
                                 }
 
@@ -3395,7 +3395,7 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets a textual description of the node fit for rendering in a comment in source.</summary>
-        private static string DescribeNode(RegexNode node) =>
+        private static string DescribeNode(RegexNode node, RegexCode regexCode) =>
             node.Type switch
             {
                 RegexNode.Alternate => $"Match with {node.ChildCount()} alternative expressions{(node.IsAtomicByParent() ? ", atomically" : "")}.",
@@ -3403,8 +3403,9 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Beginning => "Match if at the beginning of the string.",
                 RegexNode.Bol => "Match if at the beginning of a line.",
                 RegexNode.Boundary => $"Match if at a word boundary.",
-                RegexNode.Capture when node.N != -1 => $"{DescribeNonNegative(node.M)} capturing group. Uncaptures the {DescribeNonNegative(node.N)} capturing group.",
-                RegexNode.Capture when node.N == -1 => $"{DescribeNonNegative(node.M)} capturing group.",
+                RegexNode.Capture when node.M == -1 && node.N != -1 => $"Non-capturing balancing group. Uncaptures the {DescribeCapture(node.N, regexCode)}.",
+                RegexNode.Capture when node.N != -1 => $"Balancing group. Captures the {DescribeCapture(node.M, regexCode)} and uncaptures the {DescribeCapture(node.N, regexCode)}.",
+                RegexNode.Capture when node.N == -1 => $"{DescribeCapture(node.M, regexCode)}.",
                 RegexNode.Concatenate => "Match a sequence of expressions.",
                 RegexNode.ECMABoundary => $"Match if at a word boundary (according to ECMAScript rules).",
                 RegexNode.Empty => $"Match an empty string.",
@@ -3421,23 +3422,51 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.One => $"Match {Literal(node.Ch)}.",
                 RegexNode.Oneloop or RegexNode.Oneloopatomic or RegexNode.Onelazy => $"Match {Literal(node.Ch)} {DescribeLoop(node)}.",
                 RegexNode.Prevent => $"Zero-width negative lookahead assertion.",
-                RegexNode.Ref => $"Match the same text as matched by the {DescribeNonNegative(node.M)} capture group.",
+                RegexNode.Ref => $"Match the same text as matched by the {DescribeCapture(node.M, regexCode)}.",
                 RegexNode.Require => $"Zero-width positive lookahead assertion.",
                 RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
                 RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoop(node)}.",
                 RegexNode.Start => "Match if at the start position.",
                 RegexNode.Testgroup => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
-                RegexNode.Testref => $"Conditionally match one of two expressions depending on whether the {DescribeNonNegative(node.M)} capture group matched.",
+                RegexNode.Testref => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, regexCode)} matched.",
                 RegexNode.UpdateBumpalong => $"Advance the next matching position.",
                 _ => $"Unknown node type {node.Type}",
             };
+
+        /// <summary>Gets an identifer to describe a capture group.</summary>
+        private static string DescribeCapture(int capNum, RegexCode regexCode)
+        {
+            // If we can get a capture name from the captures collection and it's not just a numerical representation of the group, use it.
+            string name = RegexParser.GroupNameFromNumber(regexCode.Caps, regexCode.Tree.CapsList, regexCode.CapSize, capNum);
+            if (!string.IsNullOrEmpty(name) &&
+                (!int.TryParse(name, out int id) || id != capNum))
+            {
+                name = Literal(name);
+            }
+            else
+            {
+                // Otherwise, create a numerical description of the capture group.
+                int tens = capNum % 10;
+                name = tens is >= 1 and <= 3 && capNum % 100 is < 10 or > 20 ? // Ends in 1, 2, 3 but not 11, 12, or 13
+                    tens switch
+                    {
+                        1 => $"{capNum}st",
+                        2 => $"{capNum}nd",
+                        _ => $"{capNum}rd",
+                    } :
+                    $"{capNum}th";
+            }
+
+            return $"{name} capture group";
+        }
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
         /// <param name="writer">The writer to which the description should be written.</param>
         /// <param name="node">The node being written.</param>
         /// <param name="prefix">The prefix to write at the beginning of every line, including a "//" for a comment.</param>
+        /// <param name="regexTree">regex tree</param>
         /// <param name="depth">The depth of the current node.</param>
-        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, int depth = 0)
+        private static void DescribeExpression(TextWriter writer, RegexNode node, string prefix, RegexCode regexCode, int depth = 0)
         {
             bool skip = node.Type switch
             {
@@ -3468,7 +3497,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Write out the line for the node.
                 const char BulletPoint = '\u25CB';
-                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {tag}{DescribeNode(node)}");
+                writer.WriteLine($"{prefix}{new string(' ', depth * 4)}{BulletPoint} {tag}{DescribeNode(node, regexCode)}");
             }
 
             // Recur into each of its children.
@@ -3476,27 +3505,8 @@ namespace System.Text.RegularExpressions.Generator
             for (int i = 0; i < childCount; i++)
             {
                 int childDepth = skip ? depth : depth + 1;
-                DescribeExpression(writer, node.Child(i), prefix, childDepth);
+                DescribeExpression(writer, node.Child(i), prefix, regexCode, childDepth);
             }
-        }
-
-        /// <summary>Gets a textual description of a number, e.g. 3 => "3rd".</summary>
-        private static string DescribeNonNegative(int n)
-        {
-            if (n < 0)
-            {
-                return n.ToString(CultureInfo.InvariantCulture);
-            }
-
-            int tens = n % 10;
-            return tens is >= 1 and <= 3 && n % 100 is < 10 or > 20 ? // Ends in 1, 2, 3 but not 11, 12, or 13
-                tens switch
-                {
-                    1 => $"{n}st",
-                    2 => $"{n}nd",
-                    _ => $"{n}rd",
-                } :
-                $"{n}th";
         }
 
         /// <summary>Gets a textual description of a loop's style and bounds.</summary>
