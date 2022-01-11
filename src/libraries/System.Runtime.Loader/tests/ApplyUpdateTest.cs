@@ -71,6 +71,7 @@ namespace System.Reflection.Metadata
         [ActiveIssue("https://github.com/dotnet/runtime/issues/54617", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))] 
         void LambdaCapturesThis()
         {
+	    // Tests that changes to the body of a lambda that captures 'this' is supported.
             ApplyUpdateUtil.TestCase(static () =>
             {
                 var assm = typeof (ApplyUpdate.Test.LambdaCapturesThis).Assembly;
@@ -266,6 +267,7 @@ namespace System.Reflection.Metadata
 	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
 	public static void TestAddLambdaCapturingThis()
 	{
+	    // Test that adding a lambda that captures 'this' (to a method that already has a lambda that captures 'this') is supported
 	    ApplyUpdateUtil.TestCase(static () =>
 	    {
 		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddLambdaCapturingThis).Assembly;
@@ -284,6 +286,7 @@ namespace System.Reflection.Metadata
 	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
 	public static void TestAddStaticField()
 	{
+	    // Test that adding a new static field to an existing class is supported
 	    ApplyUpdateUtil.TestCase(static () =>
 	    {
 		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddStaticField).Assembly;
@@ -307,6 +310,7 @@ namespace System.Reflection.Metadata
 	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
 	public static void TestAddNestedClass()
 	{
+	    // Test that adding a new nested class to an existing class is supported
 	    ApplyUpdateUtil.TestCase(static () =>
 	    {
 		var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass).Assembly;
@@ -325,6 +329,15 @@ namespace System.Reflection.Metadata
 	    });
 	}
 
+	[ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+	public static void TestAddStaticLambda()
+	{
+	    // Test that adding a new static lambda to an existing method body is supported
+	    ApplyUpdateUtil.TestCase(static () =>
+	    {
+		Assert.True (false);
+	    });
+	}
 
         class NonRuntimeAssembly : Assembly
         {
