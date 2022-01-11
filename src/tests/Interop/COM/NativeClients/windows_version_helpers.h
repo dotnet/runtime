@@ -33,13 +33,13 @@ inline HRESULT is_windows_nano()
 
     DWORD dataSize;
     DWORD type;
-    if (!RegGetValueW(HKEY_LOCAL_MACHINE,
+    if (RegGetValueW(HKEY_LOCAL_MACHINE,
         L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
         L"InstallationType",
         RRF_RT_REG_SZ,
         &type,
         nullptr,
-        &dataSize)
+        &dataSize) != ERROR_SUCCESS
         || type != REG_SZ)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -47,13 +47,13 @@ inline HRESULT is_windows_nano()
 
     LPWSTR installationType = new WCHAR[dataSize + 1];
 
-    if (!RegGetValueW(HKEY_LOCAL_MACHINE,
+    if (RegGetValueW(HKEY_LOCAL_MACHINE,
         L"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
         L"InstallationType",
         RRF_RT_REG_SZ,
         &type,
         installationType,
-        &dataSize)
+        &dataSize) != ERROR_SUCCESS
         || type != REG_SZ)
     {
         delete[] installationType;
