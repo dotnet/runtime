@@ -10,7 +10,10 @@ namespace DisabledRuntimeMarshalling.PInvokeAssemblyMarshallingEnabled;
 
 public class PInvokes
 {
-    [Fact]
+    public static bool IsWindowsX86Process => OperatingSystem.IsWindows() && RuntimeInformation.ProcessArchitecture == Architecture.X86;
+    public static bool IsNotWindowsX86Process => !IsWindowsX86Process;
+
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     public static void StructWithDefaultNonBlittableFields()
     {
         short s = 42;
@@ -26,7 +29,7 @@ public class PInvokes
 
     }
 
-    [Fact]
+    [ConditionalFact(nameof(IsNotWindowsX86Process))]
     public static void StructWithDefaultNonBlittableFields_MarshalAsInfo()
     {
         short s = 41;
@@ -38,6 +41,17 @@ public class PInvokes
         // have a value that can't be accidentally round-tripped.
         char c = '✅';
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithWCharAndShort(new StructWithWCharAndShortWithMarshalAs(s, c), s, c));
+    }
+
+    [ConditionalFact(nameof(IsWindowsX86Process))]
+    public static void EntryPoint_With_StructWithDefaultNonBlittableFields_NotFound()
+    {
+        short s = 42;
+        bool b = true;
+
+        // By default, bool is a 4-byte Windows BOOL, which will make the calculation of stack space for the stdcall calling convention
+        // incorrect, causing the entry point to not be found.
+        Assert.Throws<EntryPointNotFoundException>(() => DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
     }
 
     [Fact]
