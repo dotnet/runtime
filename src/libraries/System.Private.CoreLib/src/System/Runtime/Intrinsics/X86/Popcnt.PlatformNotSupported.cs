@@ -35,5 +35,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   POPCNT reg, reg/m32
         /// </summary>
         public static uint PopCount(uint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_popcnt_u32 (unsigned int a)
+        ///   POPCNT reg, reg/m32
+        ///
+        /// 64-bit:
+        /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
+        ///   POPCNT reg64, reg/m64
+        /// </summary>
+        public static nuint PopCount(nuint value) { throw new PlatformNotSupportedException(); }
     }
 }
