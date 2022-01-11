@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -119,9 +120,7 @@ namespace Mono.Linker
 				return ruca;
 			}
 
-			context.LogWarning (
-				$"Attribute '{typeof (RequiresUnreferencedCodeAttribute).FullName}' doesn't have the required number of parameters specified.",
-				2028, (IMemberDefinition) provider);
+			context.LogWarning ((IMemberDefinition) provider, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, typeof (RequiresUnreferencedCodeAttribute).FullName ?? "");
 			return null;
 		}
 
@@ -134,9 +133,7 @@ namespace Mono.Linker
 				// Argument is always boxed
 				return new RemoveAttributeInstancesAttribute ((CustomAttributeArgument) ca.ConstructorArguments[0].Value);
 			default:
-				context.LogWarning (
-					$"Attribute '{ca.AttributeType.GetDisplayName ()}' doesn't have the required number of arguments specified.",
-					2028, attributeContext);
+				context.LogWarning (attributeContext, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, ca.AttributeType.GetDisplayName ());
 				return null;
 			};
 		}

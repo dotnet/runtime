@@ -35,6 +35,7 @@ using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
+
 namespace Mono.Linker
 {
 
@@ -573,6 +574,22 @@ namespace Mono.Linker
 		/// This API is used for warnings defined in the linker, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
+		/// <param name="origin">Filename or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (MessageOrigin origin, DiagnosticId id, params string[] args)
+		{
+			WarnVersion version = GetWarningVersion ();
+			MessageContainer warning = MessageContainer.CreateWarningMessage (this, origin, id, version, args);
+			_cachedWarningMessageContainers.Add (warning);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
@@ -589,6 +606,36 @@ namespace Mono.Linker
 		/// This API is used for warnings defined in the linker, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
+		/// <param name="origin">Type or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (IMemberDefinition origin, DiagnosticId id, int? ilOffset = null, params string[] args)
+		{
+			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
+			LogWarning (_origin, id, args);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
+		/// <param name="origin">Type or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (IMemberDefinition origin, DiagnosticId id, params string[] args)
+		{
+			MessageOrigin _origin = new MessageOrigin (origin);
+			LogWarning (_origin, id, args);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Filename where the warning is coming from</param>
@@ -598,6 +645,21 @@ namespace Mono.Linker
 		{
 			MessageOrigin _origin = new MessageOrigin (origin);
 			LogWarning (text, code, _origin, subcategory);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
+		/// <param name="origin">Filename where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (string origin, DiagnosticId id, params string[] args)
+		{
+			MessageOrigin _origin = new MessageOrigin (origin);
+			LogWarning (_origin, id, args);
 		}
 
 		/// <summary>

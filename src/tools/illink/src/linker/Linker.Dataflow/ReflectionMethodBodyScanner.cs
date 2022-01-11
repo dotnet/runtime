@@ -1732,7 +1732,7 @@ namespace Mono.Linker.Dataflow
 
 						if (comDangerousMethod) {
 							reflectionContext.AnalyzingPattern ();
-							reflectionContext.RecordUnrecognizedPattern (2050, $"P/invoke method '{calledMethodDefinition.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.");
+							reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, new DiagnosticString (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed).GetMessage (calledMethodDefinition.GetDisplayName ()));
 						}
 					}
 
@@ -1947,11 +1947,13 @@ namespace Mono.Linker.Dataflow
 
 							MarkConstructorsOnType (ref reflectionContext, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
 						} else {
-							reflectionContext.RecordUnrecognizedPattern (2032, $"Unrecognized value passed to the parameter '{calledMethod.Parameters[1].Name}' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.");
+							reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.UnrecognizedParameterInMethodCreateInstance,
+								new DiagnosticString (DiagnosticId.UnrecognizedParameterInMethodCreateInstance).GetMessage (calledMethod.Parameters[1].Name, calledMethod.GetDisplayName ()));
 						}
 					}
 				} else {
-					reflectionContext.RecordUnrecognizedPattern (2032, $"Unrecognized value passed to the parameter '{calledMethod.Parameters[0].Name}' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.");
+					reflectionContext.RecordUnrecognizedPattern ((int) DiagnosticId.UnrecognizedParameterInMethodCreateInstance,
+						new DiagnosticString (DiagnosticId.UnrecognizedParameterInMethodCreateInstance).GetMessage (calledMethod.Parameters[0].Name, calledMethod.GetDisplayName ()));
 				}
 			}
 		}
