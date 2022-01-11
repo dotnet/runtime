@@ -34,6 +34,7 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Vectorize.h"
 
 #include "llvm/CodeGen/BuiltinGCs.h"
 
@@ -173,6 +174,9 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 	for (size_t i = 0; i < PassList.size(); i++) {
 		Pass *pass = PassList[i]->getNormalCtor()();
 		if (pass->getPassKind () == llvm::PT_Function || pass->getPassKind () == llvm::PT_Loop) {
+			auto info = reg->getPassInfo (pass->getPassID());
+			auto name = info->getPassArgument ();
+			printf("Adding pass : %.*s\n", (int) name.size(), name.data());
 			fpm.add (pass);
 		} else {
 			auto info = reg->getPassInfo (pass->getPassID());
@@ -180,6 +184,9 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 			printf("Opt pass is ignored: %.*s\n", (int) name.size(), name.data());
 		}
 	}
+
+	fpm.add (createLoopVectorizePass ());
+
 	// -place-safepoints pass is mandatory
 	fpm.add (createPlaceSafepointsPass ());
 

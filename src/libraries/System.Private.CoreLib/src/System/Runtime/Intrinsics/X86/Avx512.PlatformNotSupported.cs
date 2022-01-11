@@ -29,5 +29,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
 
         public static Vector512<float> AddRound(Vector512<float> left, Vector512<float> right, int round) { throw new PlatformNotSupportedException(); }
+
+        public static Vector512<int> Multiply(Vector512<int> left, Vector512<int> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector512<float> Multiply(Vector512<float> left, Vector512<float> right) { throw new PlatformNotSupportedException(); }
+
+        public static unsafe Vector512<float> LoadVector512(float* address) { throw new PlatformNotSupportedException(); }
+
     }
 }

@@ -28,6 +28,14 @@ namespace System.Runtime.Intrinsics.X86
 
         public static Vector512<float> Add(Vector512<float> left, Vector512<float> right) => Add(left, right);
 
+        public static Vector512<int> Multiply(Vector512<int> left, Vector512<int> right) => Multiply(left, right);
+
+        public static Vector512<float> Multiply(Vector512<float> left, Vector512<float> right) => Multiply(left, right);
+
+
         public static Vector512<float> AddRound(Vector512<float> left, Vector512<float> right, int round) => AddRound(left, right, round);
+
+
+        public static unsafe Vector512<float> LoadVector512(float* address) => LoadVector512(address);
     }
 }

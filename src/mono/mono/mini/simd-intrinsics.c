@@ -2319,7 +2319,9 @@ static SimdIntrinsic x86base_methods [] = {
 
 static SimdIntrinsic avx512_methods [] = {
 	{SN_Add},
-	{SN_AddRound}
+	{SN_AddRound},
+	{SN_LoadVector512},
+	{SN_Multiply}
 };
 
 
@@ -2396,9 +2398,14 @@ emit_x86_intrinsics (
 		case SN_Add: {
 			return emit_simd_ins_for_sig (cfg, klass, OP_ZBINOP, arg0_type == MONO_TYPE_R8 || arg0_type == MONO_TYPE_R4 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
 		}
+		case SN_Multiply: {
+			return emit_simd_ins_for_sig (cfg, klass, OP_ZBINOP, arg0_type == MONO_TYPE_R8 || arg0_type == MONO_TYPE_R4 ? OP_FMUL : OP_IMUL, arg0_type, fsig, args);
+		}
 		case SN_AddRound: {
 			return emit_simd_ins_for_sig (cfg, klass, OP_ZADDROUND, -1, -1, fsig, args);
 		}
+		case SN_LoadVector512:
+			return emit_simd_ins_for_sig (cfg, klass, OP_AVX512_LOADU, 1 /*alignment*/, arg0_type, fsig, args);
 		default:
 			return NULL;
 		}

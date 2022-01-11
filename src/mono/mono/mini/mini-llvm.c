@@ -7729,6 +7729,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_FADD:
 				result = LLVMBuildFAdd (builder, l, r, "");
 				break;
+			case OP_IMUL:
+				result = LLVMBuildMul (builder, l, r, "");
+				break;
+			case OP_FMUL:
+				result = LLVMBuildFMul (builder, l, r, "");
+				break;
+
+
 			default:
 				g_assert_not_reached ();
 			}
@@ -7742,6 +7750,13 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef args [] = { lhs, rhs, arg3 };
 			IntrinsicId id = INTRINS_AVX512_ADDROUND;
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
+			break;
+		}
+
+		case OP_AVX512_LOADU: {
+			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
+			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_avx512_type (ins->inst_c1), 0), "");
+			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
 		}
 
