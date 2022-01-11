@@ -1249,7 +1249,7 @@ void Assembler::SetImplAttr(unsigned short attrval)
 }
 
 /**************************************************************************/
-void Assembler::EmitData(__in_opt void *buffer, unsigned len)
+void Assembler::EmitData(_In_opt_ void *buffer, unsigned len)
 {
     if (len != 0)
     {
@@ -2329,7 +2329,7 @@ void Assembler::EmitSecurityInfo(mdToken            token,
 }
 
 void Assembler::AddMethodImpl(mdToken tkImplementedTypeSpec, _In_ __nullterminated char* szImplementedName, BinStr* pImplementedSig,
-                  mdToken tkImplementingTypeSpec, __in_opt __nullterminated char* szImplementingName, BinStr* pImplementingSig)
+                  mdToken tkImplementingTypeSpec, _In_opt_z_ char* szImplementingName, BinStr* pImplementingSig)
 {
     if(m_pCurClass)
     {
@@ -2468,7 +2468,7 @@ void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int 
 }
 
 // AddGenericParamConstraint is called when we have a .param constraint directive after a class definition
-// 
+//
 void Assembler::AddGenericParamConstraint(int index, char * pStrGenericParam, mdToken tkTypeConstraint)
 {
     if (!m_pCurClass)

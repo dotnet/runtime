@@ -646,13 +646,15 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; }
         public string Name { get; }
         public int TypeId { get; }
-        public bool IsPublic { get; }
-        public FieldTypeClass(int id, string name, int typeId, bool isPublic)
+        public bool IsNotPrivate { get; }
+        public FieldAttributes ProtectionLevel { get; }
+        public FieldTypeClass(int id, string name, int typeId, bool isNotPrivate, FieldAttributes protectionLevel)
         {
             Id = id;
             Name = name;
             TypeId = typeId;
-            IsPublic = isPublic;
+            IsNotPrivate = isNotPrivate;
+            ProtectionLevel = protectionLevel;
         }
     }
     internal class ValueTypeClass
@@ -1235,14 +1237,14 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             for (int i = 0 ; i < nFields; i++)
             {
-                bool isPublic = false;
+                bool isNotPrivate = false;
                 int fieldId = retDebuggerCmdReader.ReadInt32(); //fieldId
                 string fieldNameStr = retDebuggerCmdReader.ReadString();
                 int fieldTypeId = retDebuggerCmdReader.ReadInt32(); //typeId
                 int attrs = retDebuggerCmdReader.ReadInt32(); //attrs
                 int isSpecialStatic = retDebuggerCmdReader.ReadInt32(); //is_special_static
                 if (((attrs & (int)MethodAttributes.Public) != 0))
-                    isPublic = true;
+                    isNotPrivate = true;
                 if (isSpecialStatic == 1)
                     continue;
                 if (fieldNameStr.Contains("k__BackingField"))
@@ -1251,7 +1253,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     fieldNameStr = fieldNameStr.Replace("<", "");
                     fieldNameStr = fieldNameStr.Replace(">", "");
                 }
-                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isPublic));
+                ret.Add(new FieldTypeClass(fieldId, fieldNameStr, fieldTypeId, isNotPrivate, (FieldAttributes)((attrs) & (int)FieldAttributes.FieldAccessMask)));
             }
             typeInfo.FieldsList = ret;
             return ret;
@@ -2315,41 +2317,46 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<JArray> GetObjectValues(int objectId, GetObjectCommandOptions getCommandType, CancellationToken token)
+        public async Task<JArray> GetObjectValues(int objectId, GetObjectCommandOptions getCommandType, CancellationToken token, bool sortByAccessLevel = false)
         {
             var typeIdsIncludingParents = await GetTypeIdFromObject(objectId, true, token);
             if (!getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerDisplayAttribute))
             {
                 var debuggerProxy = await GetValuesFromDebuggerProxyAttribute(objectId, typeIdsIncludingParents[0], token);
                 if (debuggerProxy != null)
-                    return debuggerProxy;
+                    return sortByAccessLevel ?
+                        new JArray(JObject.FromObject( new { result = debuggerProxy, internalProperties = new JArray(), privateProperties = new JArray() } )) :
+                        debuggerProxy;
             }
             if (await IsDelegate(objectId, token))
             {
                 var description = await GetDelegateMethodDescription(objectId, token);
-                return new JArray(
-                    JObject.FromObject(new
+                var objValues = new JArray(JObject.FromObject(new
+                {
+                    value = new
                     {
-                        value = new
-                        {
-                            type = "symbol",
-                            value = description,
-                            description
-                        },
-                        name = "Target"
-                    }));
+                        type = "symbol",
+                        value = description,
+                        description
+                    },
+                    name = "Target"
+                }));
+                return sortByAccessLevel ?
+                    new JArray(JObject.FromObject(new { result = objValues, internalProperties = new JArray(), privateProperties = new JArray() })) :
+                    objValues;
             }
-
+            var allFields = new List<FieldTypeClass>();
             var objects = new Dictionary<string, JToken>();
             for (int i = 0; i < typeIdsIncludingParents.Count; i++)
             {
                 int typeId = typeIdsIncludingParents[i];
                 // 0th id is for the object itself, and then its parents
                 bool isOwn = i == 0;
+                var fields = await GetTypeFields(typeId, token);
+                allFields.AddRange(fields);
 
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                 {
-                    var fields = await GetTypeFields(typeId, token);
                     var (collapsedFields, rootHiddenFields) = await FilterFieldsByDebuggerBrowsable(fields, typeId, token);
 
                     var collapsedFieldsValues = await GetFieldsValues(collapsedFields, isOwn);
@@ -2358,8 +2365,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     objects.TryAddRange(collapsedFieldsValues);
                     objects.TryAddRange(hiddenFieldsValues);
                 }
+
                 if (!getCommandType.HasFlag(GetObjectCommandOptions.WithProperties))
-                    return new JArray(objects.Values);
+                    return sortByAccessLevel ?
+                        SegregatePropertiesByAccessLevel(allFields, objects, token) :
+                        new JArray(objects.Values);
+
                 using var commandParamsObjWriter = new MonoBinaryWriter();
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
@@ -2370,7 +2381,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     $"dotnet:object:{objectId}",
                     i == 0,
                     token);
-                var properties = await GetProperties(props, typeId, token);
+                var properties = await GetProperties(props, allFields, typeId, token);
                 objects.TryAddRange(properties);
 
                 // ownProperties
@@ -2378,33 +2389,52 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // but we are going to ignore that here, because otherwise vscode/chrome don't
                 // seem to ask for inherited fields at all.
                 //if (ownProperties)
-                //break;
+                    //break;
                 /*if (accessorPropertiesOnly)
                     break;*/
             }
-            if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
+            return sortByAccessLevel ?
+                SegregatePropertiesByAccessLevel(allFields, objects, token) :
+                new JArray(objects.Values);
+
+            JArray SegregatePropertiesByAccessLevel(List<FieldTypeClass> fields, Dictionary<string, JToken> objectsDict, CancellationToken token)
             {
-                var ownId = typeIdsIncludingParents[0];
-                var ownFields = await GetTypeFields(ownId, token);
+                if (fields.Count == 0)
+                    return new JArray(JObject.FromObject(new { result = new JArray(objectsDict.Values) }));
 
-                var parentFields = new List<FieldTypeClass>();
-                for (int i = 1; i < typeIdsIncludingParents.Count; i++)
-                    parentFields.AddRange(await GetTypeFields(typeIdsIncludingParents[i], token));
+                var pubNames = fields.Where(field => field.ProtectionLevel == FieldAttributes.Public)
+                    .Select(field => field.Name).ToList();
+                var privNames = fields.Where(field =>
+                    (field.ProtectionLevel == FieldAttributes.Private ||
+                    field.ProtectionLevel == FieldAttributes.FamANDAssem) &&
+                    // when field is inherited it is listed both in Private and Public, to avoid duplicates:
+                    pubNames.All(pubFieldName => pubFieldName != field.Name))
+                    .Select(field => field.Name).ToList();
+                //protected == family, internal == assembly
+                var protectedAndInternalNames = fields.Where(field =>
+                    field.ProtectionLevel == FieldAttributes.Family ||
+                    field.ProtectionLevel == FieldAttributes.Assembly ||
+                    field.ProtectionLevel == FieldAttributes.FamORAssem)
+                    .Select(field => field.Name).ToList();
+                var accessorProperties = objectsDict
+                    .Where(obj => (
+                        pubNames.All(name => name != obj.Key) &&
+                        privNames.All(name => name != obj.Key) &&
+                        protectedAndInternalNames.All(name => name != obj.Key)))
+                    .Select((k, v) => k.Value);
 
-                var ownDuplicatedFields = ownFields.Where(field => objects.Any(obj =>
-                        field.Name.Equals(obj.Key)));
+                var pubProperties = objectsDict.GetValuesByKeys(pubNames);
+                var privProperties = objectsDict.GetValuesByKeys(privNames);
+                var protAndIntProperties = objectsDict.GetValuesByKeys(protectedAndInternalNames);
+                pubProperties.AddRange(new JArray(accessorProperties));
 
-                var parentDuplicatedFields = parentFields.Where(field => objects.Any(obj =>
-                        field.Name.Equals(obj.Key) &&
-                        (obj.Value["isOwn"] == null ||
-                        !obj.Value["isOwn"].Value<bool>())));
-
-                foreach (var duplicate in ownDuplicatedFields)
-                    objects.Remove(duplicate.Name);
-                foreach (var duplicate in parentDuplicatedFields)
-                    objects.Remove(duplicate.Name);
+                return new JArray(JObject.FromObject(new
+                {
+                    result = pubProperties,
+                    internalProperties = protAndIntProperties,
+                    privateProperties = privProperties
+                }));
             }
-            return new JArray(objects.Values);
 
             async Task AppendRootHiddenChildren(JObject root, JArray expandedCollection)
             {
@@ -2439,7 +2469,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return objFields;
 
                 if (getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute))
-                    fields = fields.Where(field => field.IsPublic).ToList();
+                    fields = fields.Where(field => field.IsNotPrivate).ToList();
 
                 using var commandParamsWriter = new MonoBinaryWriter();
                 commandParamsWriter.Write(objectId);
@@ -2527,14 +2557,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return (collapsedFields, rootHiddenFields);
             }
 
-            async Task<JArray> GetProperties(JArray props, int typeId, CancellationToken token)
+            async Task<JArray> GetProperties(JArray props, List<FieldTypeClass> fields, int typeId, CancellationToken token)
             {
                 var typeInfo = await GetTypeInfo(typeId, token);
                 var typeProperitesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
                 var regularProps = new JArray();
                 foreach (var p in props)
                 {
-                    if (!typeProperitesBrowsableInfo.TryGetValue(p["name"].Value<string>(), out DebuggerBrowsableState? state))
+                    var propName = p["name"].Value<string>();
+                    // if property has a backing field - avoid adding a duplicate
+                    if (fields.Any(field => field.Name == propName))
+                        continue;
+                    if (!typeProperitesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state))
                     {
                         regularProps.Add(p);
                         continue;
@@ -2546,7 +2580,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, p["name"].Value<string>(), token);
+                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, propName, token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
@@ -2662,6 +2696,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 dict.TryAdd(key, item);
             }
+        }
+
+        public static JArray GetValuesByKeys(this Dictionary<string, JToken> dict, List<string> keys)
+        {
+            var result = new JArray();
+            foreach (var name in keys)
+            {
+                if (!dict.TryGetValue(name, out var obj))
+                    continue;
+                result.Add(obj);
+            }
+            return result;
         }
     }
 }

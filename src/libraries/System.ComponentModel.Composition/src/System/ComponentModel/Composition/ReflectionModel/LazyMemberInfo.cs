@@ -108,9 +108,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override bool Equals(object? obj)
         {
-            LazyMemberInfo that = (LazyMemberInfo)obj!;
+            if (obj is not LazyMemberInfo that)
+            {
+                return false;
+            }
 
-            // Difefrent member types mean different members
+            // Different member types mean different members
             if (_memberType != that._memberType)
             {
                 return false;

@@ -147,6 +147,11 @@ It will unset callback if set is zero.
 */
 PALEXPORT void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set);
 
+/*=======
+Sets session caching. 0 is disabled.
+*/
+PALEXPORT void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode);
+
 /*
 Shims the SSL_new method.
 

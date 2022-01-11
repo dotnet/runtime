@@ -198,6 +198,12 @@ bool DetectCPUFeatures()
                                         if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
                                         {
                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
+
+                                            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+                                            if ((cpuidInfo[EAX] & (1 << 4)) != 0)                           // AVX-VNNI
+                                            {
+                                                g_cpuFeatures |= XArchIntrinsicConstants_AvxVnni;
+                                            }
                                         }
                                     }
                                 }

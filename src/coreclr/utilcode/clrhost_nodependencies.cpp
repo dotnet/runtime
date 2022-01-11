@@ -44,8 +44,8 @@ void DisableThrowCheck()
 
 #define CLRThrowsExceptionWorker() RealCLRThrowsExceptionWorker(__FUNCTION__, __FILE__, __LINE__)
 
-static void RealCLRThrowsExceptionWorker(__in_z const char *szFunction,
-                                         __in_z const char *szFile,
+static void RealCLRThrowsExceptionWorker(_In_z_ const char *szFunction,
+                                         _In_z_ const char *szFile,
                                          int lineNum)
 {
     WRAPPER_NO_CONTRACT;

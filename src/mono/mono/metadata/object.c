@@ -2171,7 +2171,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	 * re-acquire them and check if another thread has created the vtable in the meantime.
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
-	if (klass != mono_defaults.runtimetype_class) {
+	if (!mono_runtime_get_no_exec () && klass != mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
@@ -2199,7 +2199,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	mono_memory_barrier ();
 	mono_class_set_runtime_vtable (klass, vt);
 
-	if (klass == mono_defaults.runtimetype_class) {
+	if (!mono_runtime_get_no_exec () && klass == mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {

@@ -47,7 +47,7 @@ TiggerStorage::~TiggerStorage()
 HRESULT
 TiggerStorage::Init(
     StgIO            *pStgIO,       // The I/O subsystem.
-    _In_ __in_z LPSTR pVersion)     // 'Compiled for' CLR version
+    _In_ _In_z_ LPSTR pVersion)     // 'Compiled for' CLR version
 {
     PSTORAGESIGNATURE pSig;         // Signature data for file.
     ULONG             cbData;       // Offset of header data.

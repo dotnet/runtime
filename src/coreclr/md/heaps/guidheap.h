@@ -74,14 +74,14 @@ public:
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32           nIndex,
-        __deref_out GUID UNALIGNED **ppGuid)
+        _Outptr_ GUID UNALIGNED **ppGuid)
     {
         return m_GuidPool.GetGuid(nIndex, ppGuid);
     }
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32                 nIndex,
-        __deref_out const GUID UNALIGNED **ppGuid) const
+        _Outptr_ const GUID UNALIGNED **ppGuid) const
     {
         return const_cast<StgPoolReadOnly &>(m_GuidPool).GetGuid(nIndex, const_cast<GUID UNALIGNED **>(ppGuid));
     }
@@ -170,14 +170,14 @@ public:
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32           nIndex,
-        __deref_out GUID UNALIGNED **ppGuid)
+        _Outptr_ GUID UNALIGNED **ppGuid)
     {
         return m_GuidPool.GetGuid(nIndex, ppGuid);
     }
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32                 nIndex,
-        __deref_out const GUID UNALIGNED **ppGuid) const
+        _Outptr_ const GUID UNALIGNED **ppGuid) const
     {
         return const_cast<StgGuidPool &>(m_GuidPool).GetGuid(nIndex, const_cast<GUID UNALIGNED **>(ppGuid));
     }

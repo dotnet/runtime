@@ -179,34 +179,34 @@ private:
     /* Callbacks from msdis */
 
     static size_t __stdcall disCchAddr(
-        const DIS* pdis, DIS::ADDR addr, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp);
+        const DIS* pdis, DIS::ADDR addr, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp);
 
     size_t disCchAddrMember(
-        const DIS* pdis, DIS::ADDR addr, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp);
+        const DIS* pdis, DIS::ADDR addr, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORDLONG* pdwDisp);
 
-    static size_t __stdcall disCchFixup(const DIS*                   pdis,
-                                        DIS::ADDR                    addr,
-                                        size_t                       size,
-                                        __in_ecount(cchMax) wchar_t* wz,
-                                        size_t                       cchMax,
-                                        DWORDLONG*                   pdwDisp);
+    static size_t __stdcall disCchFixup(const DIS*                  pdis,
+                                        DIS::ADDR                   addr,
+                                        size_t                      size,
+                                        _In_reads_(cchMax) wchar_t* wz,
+                                        size_t                      cchMax,
+                                        DWORDLONG*                  pdwDisp);
 
-    size_t disCchFixupMember(const DIS*                   pdis,
-                             DIS::ADDR                    addr,
-                             size_t                       size,
-                             __in_ecount(cchMax) wchar_t* wz,
-                             size_t                       cchMax,
-                             DWORDLONG*                   pdwDisp);
+    size_t disCchFixupMember(const DIS*                  pdis,
+                             DIS::ADDR                   addr,
+                             size_t                      size,
+                             _In_reads_(cchMax) wchar_t* wz,
+                             size_t                      cchMax,
+                             DWORDLONG*                  pdwDisp);
 
     static size_t __stdcall disCchRegRel(
-        const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp);
+        const DIS* pdis, DIS::REGA reg, DWORD disp, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp);
 
     size_t disCchRegRelMember(
-        const DIS* pdis, DIS::REGA reg, DWORD disp, __in_ecount(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp);
+        const DIS* pdis, DIS::REGA reg, DWORD disp, _In_reads_(cchMax) wchar_t* wz, size_t cchMax, DWORD* pdwDisp);
 
-    static size_t __stdcall disCchReg(const DIS* pdis, DIS::REGA reg, __in_ecount(cchMax) wchar_t* wz, size_t cchMax);
+    static size_t __stdcall disCchReg(const DIS* pdis, DIS::REGA reg, _In_reads_(cchMax) wchar_t* wz, size_t cchMax);
 
-    size_t disCchRegMember(const DIS* pdis, DIS::REGA reg, __in_ecount(cchMax) wchar_t* wz, size_t cchMax);
+    size_t disCchRegMember(const DIS* pdis, DIS::REGA reg, _In_reads_(cchMax) wchar_t* wz, size_t cchMax);
 
     /* Disassemble helper */
 

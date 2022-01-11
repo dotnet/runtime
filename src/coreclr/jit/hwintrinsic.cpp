@@ -285,7 +285,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     bool isIsaSupported = comp->compHWIntrinsicDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
 
-    if (strcmp(methodName, "get_IsSupported") == 0)
+    if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
     {
         return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
                               : NI_IsSupported_False;
@@ -593,12 +593,6 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 {
     if (baseJitType == CORINFO_TYPE_UNDEF)
     {
-        return false;
-    }
-
-    if ((baseJitType == CORINFO_TYPE_NATIVEINT) || (baseJitType == CORINFO_TYPE_NATIVEUINT))
-    {
-        // We don't want to support the general purpose helpers for nint/nuint until after they go through API review.
         return false;
     }
 

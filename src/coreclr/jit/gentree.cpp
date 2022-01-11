@@ -3886,6 +3886,14 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                                 }
                             }
                         }
+#ifdef TARGET_ARM64
+                        if (tree->gtFlags & GTF_IND_VOLATILE)
+                        {
+                            // For volatile store/loads when address is contained we always emit `dmb`
+                            // if it's not - we emit one-way barriers i.e. ldar/stlr
+                            doAddrMode = false;
+                        }
+#endif // TARGET_ARM64
                         if (doAddrMode && gtMarkAddrMode(addr, &costEx, &costSz, tree->TypeGet()))
                         {
                             goto DONE;
@@ -6143,7 +6151,7 @@ GenTree* Compiler::gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_
 
     if (varTypeIsStruct(inlineCandidate) && !inlineCandidate->OperIsBlkOp())
     {
-        node->AsRetExpr()->gtRetClsHnd = gtGetStructHandle(inlineCandidate);
+        node->gtRetClsHnd = gtGetStructHandle(inlineCandidate);
     }
 
     // GT_RET_EXPR node eventually might be bashed back to GT_CALL (when inlining is aborted for example).
@@ -7237,7 +7245,6 @@ GenTree* Compiler::gtCloneExpr(
                                          tree->gtType DEBUGARG(tree->AsLclVar()->gtLclILoffs));
                     copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
                 }
-                copy->gtFlags = tree->gtFlags;
                 goto DONE;
 
             case GT_LCL_FLD:
@@ -7784,9 +7791,9 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     // a shallow copy suffices.
     copy->tailCallInfo = tree->tailCallInfo;
 
-    copy->gtCallType    = tree->gtCallType;
-    copy->gtReturnType  = tree->gtReturnType;
-    copy->gtControlExpr = gtCloneExpr(tree->gtControlExpr, addFlags, deepVarNum, deepVarVal);
+    copy->gtRetClsHnd        = tree->gtRetClsHnd;
+    copy->gtControlExpr      = gtCloneExpr(tree->gtControlExpr, addFlags, deepVarNum, deepVarVal);
+    copy->gtStubCallStubAddr = tree->gtStubCallStubAddr;
 
     /* Copy the union */
     if (tree->gtCallType == CT_INDIRECT)
@@ -7795,16 +7802,14 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
             tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie, addFlags, deepVarNum, deepVarVal) : nullptr;
         copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr, addFlags, deepVarNum, deepVarVal) : nullptr;
     }
-    else if (tree->IsVirtualStub())
-    {
-        copy->gtCallMethHnd      = tree->gtCallMethHnd;
-        copy->gtStubCallStubAddr = tree->gtStubCallStubAddr;
-    }
     else
     {
         copy->gtCallMethHnd         = tree->gtCallMethHnd;
-        copy->gtInlineCandidateInfo = nullptr;
+        copy->gtInlineCandidateInfo = tree->gtInlineCandidateInfo;
     }
+
+    copy->gtCallType   = tree->gtCallType;
+    copy->gtReturnType = tree->gtReturnType;
 
     if (tree->fgArgInfo)
     {
@@ -7815,8 +7820,6 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree,
     {
         copy->fgArgInfo = nullptr;
     }
-
-    copy->gtRetClsHnd = tree->gtRetClsHnd;
 
 #if FEATURE_MULTIREG_RET
     copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;
@@ -9155,7 +9158,7 @@ void Compiler::gtDispCommonEndLine(GenTree* tree)
 //    'indentStack' may be null, in which case no indentation or arcs are printed
 //    'msg' may be null
 
-void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ __in_z __in_opt const char* msg, bool isLIR)
+void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_z_ const char* msg, bool isLIR)
 {
     bool printFlags = true; // always true..
 
@@ -10492,7 +10495,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 void Compiler::gtDispChild(GenTree*             child,
                            IndentStack*         indentStack,
                            IndentInfo           arcType,
-                           __in_opt const char* msg,     /* = nullptr  */
+                           _In_opt_ const char* msg,     /* = nullptr  */
                            bool                 topOnly) /* = false */
 {
     indentStack->Push(arcType);
@@ -10511,10 +10514,10 @@ extern const char* const simdIntrinsicNames[] = {
 /*****************************************************************************/
 
 void Compiler::gtDispTree(GenTree*     tree,
-                          IndentStack* indentStack,                 /* = nullptr */
-                          _In_ __in_z __in_opt const char* msg,     /* = nullptr  */
-                          bool                             topOnly, /* = false */
-                          bool                             isLIR)   /* = false */
+                          IndentStack* indentStack,            /* = nullptr */
+                          _In_ _In_opt_z_ const char* msg,     /* = nullptr  */
+                          bool                        topOnly, /* = false */
+                          bool                        isLIR)   /* = false */
 {
     if (tree == nullptr)
     {
@@ -19273,27 +19276,104 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+    }
+#endif // TARGET_XARCH
+
     switch (op)
     {
 #if defined(TARGET_XARCH)
         case GT_EQ:
         {
+            intrinsic = (simdSize == 32) ? NI_Vector256_op_Equality : NI_Vector128_op_Equality;
+            break;
+        }
+
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
+
+            NamedIntrinsic getAllBitsSet = NI_Illegal;
+
             if (simdSize == 32)
             {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                intrinsic = NI_Vector256_op_Equality;
+                intrinsic     = NI_Vector256_op_Equality;
+                getAllBitsSet = NI_Vector256_get_AllBitsSet;
             }
             else
             {
-                intrinsic = NI_Vector128_op_Equality;
+                intrinsic     = NI_Vector128_op_Equality;
+                getAllBitsSet = NI_Vector128_get_AllBitsSet;
             }
+
+            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+                                     /* isSimdAsHWIntrinsic */ false);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType    = TYP_INT;
+                simdBaseJitType = CORINFO_TYPE_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseType    = TYP_LONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+
+            op2 = gtNewSimdHWIntrinsicNode(simdBaseType, getAllBitsSet, simdBaseJitType, simdSize);
             break;
         }
 #elif defined(TARGET_ARM64)
         case GT_EQ:
         {
             intrinsic = (simdSize == 8) ? NI_Vector64_op_Equality : NI_Vector128_op_Equality;
+            break;
+        }
+
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() == Vector128<TInteger>.AllBitsSet
+
+            NamedIntrinsic getAllBitsSet = NI_Illegal;
+
+            if (simdSize == 8)
+            {
+                intrinsic     = NI_Vector64_op_Equality;
+                getAllBitsSet = NI_Vector64_get_AllBitsSet;
+            }
+            else
+            {
+                intrinsic     = NI_Vector128_op_Equality;
+                getAllBitsSet = NI_Vector128_get_AllBitsSet;
+            }
+
+            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+                                     /* isSimdAsHWIntrinsic */ false);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType    = TYP_INT;
+                simdBaseJitType = CORINFO_TYPE_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseType    = TYP_LONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+
+            op2 = gtNewSimdHWIntrinsicNode(simdBaseType, getAllBitsSet, simdBaseJitType, simdSize);
             break;
         }
 #else
@@ -19335,24 +19415,81 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+    }
+#endif // TARGET_XARCH
+
     switch (op)
     {
 #if defined(TARGET_XARCH)
+        case GT_EQ:
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
+
+            intrinsic = (simdSize == 32) ? NI_Vector256_op_Inequality : NI_Vector128_op_Inequality;
+
+            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+                                     /* isSimdAsHWIntrinsic */ false);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType    = TYP_INT;
+                simdBaseJitType = CORINFO_TYPE_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseType    = TYP_LONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+
+            op2 = gtNewSimdZeroNode(simdBaseType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case GT_NE:
         {
-            if (simdSize == 32)
-            {
-                assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
-                assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
-                intrinsic = NI_Vector256_op_Inequality;
-            }
-            else
-            {
-                intrinsic = NI_Vector128_op_Inequality;
-            }
+            intrinsic = (simdSize == 32) ? NI_Vector256_op_Inequality : NI_Vector128_op_Inequality;
             break;
         }
 #elif defined(TARGET_ARM64)
+        case GT_EQ:
+        case GT_GE:
+        case GT_GT:
+        case GT_LE:
+        case GT_LT:
+        {
+            // We want to generate a comparison along the lines of
+            // GT_XX(op1, op2).As<T, TInteger>() != Vector128<TInteger>.Zero
+
+            intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
+
+            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+                                     /* isSimdAsHWIntrinsic */ false);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                simdBaseType    = TYP_INT;
+                simdBaseJitType = CORINFO_TYPE_INT;
+            }
+            else if (simdBaseType == TYP_DOUBLE)
+            {
+                simdBaseType    = TYP_LONG;
+                simdBaseJitType = CORINFO_TYPE_LONG;
+            }
+
+            op2 = gtNewSimdZeroNode(simdBaseType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case GT_NE:
         {
             intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;

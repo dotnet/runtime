@@ -36,7 +36,7 @@ DataBlob::DataBlob()
 //
 inline
 DataBlob::DataBlob(
-    __in_bcount(cbSize) BYTE  *pbData,
+    _In_reads_bytes_(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     m_pbData = pbData;
@@ -83,7 +83,7 @@ DataBlob::Clear()
 inline
 void
 DataBlob::Init(
-    __in_bcount(cbSize) BYTE  *pbData,
+    _In_reads_bytes_(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     m_pbData = pbData;

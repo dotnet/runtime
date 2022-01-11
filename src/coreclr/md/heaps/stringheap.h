@@ -65,7 +65,7 @@ public:
     __checkReturn
     inline HRESULT GetString(
                       UINT32  nIndex,
-        __deref_out_z LPCSTR *pszString) const
+        _Outptr_result_z_ LPCSTR *pszString) const
     {
         return const_cast<StgPoolReadOnly &>(m_StringPool).GetStringReadOnly(
             nIndex,
@@ -156,7 +156,7 @@ public:
     __checkReturn
     inline HRESULT GetString(
                       UINT32  nIndex,
-        __deref_out_z LPCSTR *pszString) const
+        _Outptr_result_z_ LPCSTR *pszString) const
     {
         return const_cast<StgStringPool &>(m_StringPool).GetString(
             nIndex,
@@ -219,7 +219,7 @@ public:
     // Returns error code otherwise (and fills *pnIndex with 0).
     __checkReturn
     inline HRESULT AddString(
-        __in_z LPCSTR  szString,
+        _In_z_ LPCSTR  szString,
         _Out_  UINT32 *pnIndex)
     {
         return m_StringPool.AddString(szString, pnIndex);
@@ -229,7 +229,7 @@ public:
     // Returns error code otherwise (and fills *pnIndex with 0).
     __checkReturn
     inline HRESULT AddStringW(
-        __in_z LPCWSTR wszString,
+        _In_z_ LPCWSTR wszString,
         _Out_  UINT32 *pnIndex)
     {
         return m_StringPool.AddStringW(wszString, pnIndex);
