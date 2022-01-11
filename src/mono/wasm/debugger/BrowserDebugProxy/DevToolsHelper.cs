@@ -88,7 +88,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "methodId":
                     {
                         parts = id.Split(":");
-                        objectId.SubValue = int.Parse(parts[3]);
+                        if (parts.Length > 3)
+                            objectId.SubValue = int.Parse(parts[3]);
                         ElementType typeCode;
                         Enum.TryParse(parts[4], true, out typeCode);
                         objectId.ElementType = typeCode;
