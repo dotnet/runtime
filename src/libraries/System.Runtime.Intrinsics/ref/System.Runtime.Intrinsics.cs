@@ -3716,12 +3716,19 @@ namespace System.Runtime.Intrinsics.X86
         internal Bmi1() { }
         public static new bool IsSupported { get { throw null; } }
         public static uint AndNot(uint left, uint right) { throw null; }
+        public static nint AndNot(nint left, nint right) { throw null; }
         public static uint BitFieldExtract(uint value, byte start, byte length) { throw null; }
+        public static nint BitFieldExtract(nint value, byte start, byte length) { throw null; }
         public static uint BitFieldExtract(uint value, ushort control) { throw null; }
+        public static nint BitFieldExtract(nint value, ushort control) { throw null; }
         public static uint ExtractLowestSetBit(uint value) { throw null; }
+        public static nint ExtractLowestSetBit(nint value) { throw null; }
         public static uint GetMaskUpToLowestSetBit(uint value) { throw null; }
+        public static nint GetMaskUpToLowestSetBit(nint value) { throw null; }
         public static uint ResetLowestSetBit(uint value) { throw null; }
+        public static nint ResetLowestSetBit(nint value) { throw null; }
         public static uint TrailingZeroCount(uint value) { throw null; }
+        public static nint TrailingZeroCount(nint value) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
@@ -4494,9 +4501,11 @@ namespace System.Runtime.Intrinsics.X86
         internal Sse42() { }
         public static new bool IsSupported { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<long> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> CompareGreaterThan(System.Runtime.Intrinsics.Vector128<nint> left, System.Runtime.Intrinsics.Vector128<nint> right) { throw null; }
         public static uint Crc32(uint crc, byte data) { throw null; }
         public static uint Crc32(uint crc, ushort data) { throw null; }
         public static uint Crc32(uint crc, uint data) { throw null; }
+        public static nuint Crc32(nuint crc, nuint data) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Sse41.X64
         {
             internal X64() { }

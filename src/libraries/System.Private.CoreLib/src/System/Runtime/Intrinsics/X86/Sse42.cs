@@ -38,6 +38,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<long> CompareGreaterThan(Vector128<long> left, Vector128<long> right) => CompareGreaterThan(left, right);
 
         /// <summary>
+        /// __m128i _mm_cmpgt_epi64 (__m128i a, __m128i b)
+        ///   PCMPGTQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> CompareGreaterThan(Vector128<nint> left, Vector128<nint> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
         /// unsigned int _mm_crc32_u8 (unsigned int crc, unsigned char v)
         ///   CRC32 reg, reg/m8
         /// </summary>
@@ -52,5 +58,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   CRC32 reg, reg/m32
         /// </summary>
         public static uint Crc32(uint crc, uint data) => Crc32(crc, data);
+
+        /// <summary>
+        /// 32-bit:
+        /// unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
+        ///   CRC32 reg, reg/m32
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
+        ///   CRC32 reg, reg/m64
+        /// </summary>
+        public static nuint Crc32(nuint crc, nuint data) => Crc32(crc, data);
     }
 }
