@@ -407,6 +407,13 @@ klass_info_destroy (gpointer value, gpointer user_data G_GNUC_UNUSED)
 	/* The MonoClassMetadataUpdateField is allocated from the class mempool, don't free it here */
 	g_ptr_array_free (info->added_fields, TRUE);
 
+	if (info->runtime.static_fields) {
+		mono_g_hash_table_destroy (info->runtime.static_fields);
+		info->runtime.static_fields = NULL;
+	}
+
+	mono_coop_mutex_destroy (&info->runtime.static_fields_lock);
+
 	/* The MonoClassMetadataUpdateInfo itself is allocated from the class mempool, don't free it here */
 }
 
