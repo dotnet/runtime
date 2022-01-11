@@ -383,9 +383,9 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
 #if defined(HOST_ARM64)
         // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
         // used for GCStress=C restore
-        MachSetThreadContext(pContext);
+        MachSetThreadContext(exception.ExceptionPointers.ContextRecord);
 #else
-        RtlRestoreContext(pContext, pExRecord);
+        RtlRestoreContext(exception.ExceptionPointers.ContextRecord, pExRecord);
 #endif
     }
 
