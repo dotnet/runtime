@@ -1090,7 +1090,9 @@ namespace Microsoft.Win32
                             // notify the thread to shutdown. The Zero or invalid values should be present
                             // only when the thread is already shutting down due to external factors.
                             if (s_systemEvents._windowHandle != IntPtr.Zero)
+                            {
                                 Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), Interop.User32.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+                            }
 
                             s_windowThread.Join();
                         }
