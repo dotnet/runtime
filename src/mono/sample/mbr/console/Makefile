@@ -5,7 +5,7 @@ DOTNET_Q_ARGS=--nologo -v:q -consoleloggerparameters:NoSummary
 # How to build the project.  For hot reload this must be Debug
 CONFIG ?=Debug
 # How was dotnet/runtime built? should be the same as build.sh -c option
-BUILT_RUNTIME_CONFIG ?= Debug
+BUILT_RUNTIME_CONFIG ?= Release
 MONO_ARCH=x64
 
 OS := $(shell uname -s)
@@ -17,17 +17,12 @@ endif
 
 MONO_ENV_OPTIONS = --interp
 
-ifneq ($V,0)
-MONO_VERBOSE_LOGGING=MONO_LOG_LEVEL=debug MONO_LOG_MASK=metadata-update
-endif
-
 publish:
 	$(DOTNET) publish -c $(CONFIG) -r $(TARGET_OS)-$(MONO_ARCH) -p:BuiltRuntimeConfiguration=$(BUILT_RUNTIME_CONFIG)
 
 run: publish
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS="$(MONO_ENV_OPTIONS)" \
-	$(MONO_VERBOSE_LOGGING) \
 	DOTNET_MODIFIABLE_ASSEMBLIES=debug \
 	$(TOP)artifacts/bin/ConsoleDelta/$(MONO_ARCH)/$(CONFIG)/$(TARGET_OS)-$(MONO_ARCH)/publish/ConsoleDelta
 
