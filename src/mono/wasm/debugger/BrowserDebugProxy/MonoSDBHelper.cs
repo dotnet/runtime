@@ -1540,21 +1540,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             return await CreateJObjectForVariableValue(retDebuggerCmdReader, varName, false, -1, false, token);
         }
 
-        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, ElementType elementType, string varName, CancellationToken token)
+        public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, string varName, CancellationToken token)
         {
-            switch (elementType)
-            {
-                case ElementType.ValueType:
-                {
-                    return await InvokeMethod(valueTypes[objectId]?.valueTypeBuffer, methodId, varName, token);
-                }
-                default:
-                {
-                    using var commandParamsObjWriter = new MonoBinaryWriter();
-                    commandParamsObjWriter.Write(ElementType.Class, objectId);
-                    return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
-                }
-            }
+            valueTypes.TryGetValue(objectId, out var valueType);
+            if (valueType != null)
+                return await InvokeMethod(valueType.valueTypeBuffer, methodId, varName, token);
+            using var commandParamsObjWriter = new MonoBinaryWriter();
+            commandParamsObjWriter.Write(ElementType.Class, objectId);
+            return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
         }
 
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
@@ -2591,7 +2584,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         case DebuggerBrowsableState.RootHidden:
                             DotnetObjectId rootObjId;
                             DotnetObjectId.TryParse(p["get"]["objectId"].Value<string>(), out rootObjId);
-                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, rootObjId.ElementType, propName, token);
+                            var rootObject = await InvokeMethodInObject(rootObjId.Value, rootObjId.SubValue, propName, token);
                             await AppendRootHiddenChildren(rootObject, regularProps);
                             break;
                         case DebuggerBrowsableState.Collapsed:
