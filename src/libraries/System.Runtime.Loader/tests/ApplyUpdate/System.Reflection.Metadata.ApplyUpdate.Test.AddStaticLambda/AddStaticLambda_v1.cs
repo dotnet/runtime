@@ -7,8 +7,9 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
     public class AddStaticLambda
     {
-        public string TestMethod () {
-            return Double (static () => "abcd");
+        public string TestMethod()
+	{
+            return Double(static () => "abcd");
         }
 
         public string Double(Func<string> f) => f() + f();

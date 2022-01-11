@@ -7,7 +7,8 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
     public class AddStaticLambda
     {
-        public string TestMethod () {
+        public string TestMethod()
+	{
             return "abcd";
         }
 

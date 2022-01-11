@@ -7,16 +7,16 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
 {
     public class AddStaticField
     {
-	public AddStaticField () {
-	}
+        public AddStaticField () {
+        }
 
-	public string GetField => s_field;
+        public string GetField => s_field;
 
-	private static string s_field;
+        private static string s_field;
 
-	public void TestMethod () {
-	    s_field = "abcd";
-	}
+        public void TestMethod () {
+            s_field = "abcd";
+        }
 
     }
 }
