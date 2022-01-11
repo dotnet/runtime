@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 
 namespace Mono.HotReload;
 
+// TODO: this is just a sketch, instance field additions aren't supported by Mono yet until  https://github.com/dotnet/runtime/issues/63643 is fixed
+#if false
 internal class InstanceFieldTable
 {
     // Q: Does CoreCLR EnC allow adding fields to a valuetype?
@@ -76,6 +78,7 @@ internal class InstanceFieldTable
     }
 
 }
+#endif
 
 // This is similar to System.Diagnostics.EditAndContinueHelper in CoreCLR, except instead of
 // having the allocation logic in native (see EditAndContinueModule::ResolveOrAllocateField,
