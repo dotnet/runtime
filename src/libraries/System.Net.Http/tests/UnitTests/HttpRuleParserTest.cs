@@ -377,8 +377,10 @@ namespace System.Net.Http.Tests
         private static void AssertGetHostLength(string input, int startIndex, int expectedLength, bool allowToken,
             string expectedResult)
         {
-            string result = null;
-            Assert.Equal(expectedLength, HttpRuleParser.GetHostLength(input, startIndex, allowToken, out result));
+            int length = HttpRuleParser.GetHostLength(input, startIndex, allowToken);
+            Assert.Equal(expectedLength, length);
+
+            string result = input.Substring(startIndex, length);
             Assert.Equal(expectedResult, result);
         }
         #endregion
