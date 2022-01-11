@@ -593,3 +593,4 @@ METHOD(DotProductBySelectedQuadruplet)
 // Avx512 Hacking
 METHOD(LoadVector512)
 METHOD(AddRound)
+METHOD(ReduceAdd)

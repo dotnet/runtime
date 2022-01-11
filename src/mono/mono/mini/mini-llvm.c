@@ -671,6 +671,41 @@ type_to_sse_type (int type)
 	}
 }
 
+/* Return the 256 bit SIMD type corresponding to the mono type TYPE */
+static inline G_GNUC_UNUSED LLVMTypeRef
+type_to_avx256_type (int type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return LLVMVectorType (LLVMInt8Type (), 32);
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I2:
+		return LLVMVectorType (LLVMInt16Type (), 16);
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I4:
+		return LLVMVectorType (LLVMInt32Type (), 8);
+	case MONO_TYPE_U8:
+	case MONO_TYPE_I8:
+		return LLVMVectorType (LLVMInt64Type (), 4);
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+		return LLVMVectorType (LLVMInt64Type (), 4);
+#else
+		return LLVMVectorType (LLVMInt32Type (), 8);
+#endif
+	case MONO_TYPE_R8:
+		return LLVMVectorType (LLVMDoubleType (), 4);
+	case MONO_TYPE_R4:
+		return LLVMVectorType (LLVMFloatType (), 8);
+	default:
+		g_assert_not_reached ();
+		return NULL;
+	}
+}
+
+
 /* Return the 512 bit SIMD type corresponding to the mono type TYPE */
 static inline G_GNUC_UNUSED LLVMTypeRef
 type_to_avx512_type (int type)
@@ -7757,6 +7792,73 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
 			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_avx512_type (ins->inst_c1), 0), "");
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
+			break;
+		}
+
+		case OP_AVX512_REDUCEADD: {
+			// Assume we are reducing vector of float
+			LLVMValueRef lvec = lhs;
+			lvec = LLVMBuildBitCast (builder, lvec, type_to_avx512_type (MONO_TYPE_R8), "" );
+
+			LLVMValueRef indexes [4];
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+			indexes [2] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+			indexes [3] = LLVMConstInt (LLVMInt32Type (), 3, FALSE);
+
+			lvec = LLVMBuildShuffleVector (builder, lvec, LLVMConstNull (LLVMTypeOf (lvec)), LLVMConstVector(indexes, 4), "");
+			lvec = LLVMBuildBitCast (builder, lvec, type_to_avx256_type (MONO_TYPE_R4), "" );
+
+			LLVMValueRef hvec = lhs;
+			hvec = LLVMBuildBitCast (builder, hvec, type_to_avx512_type (MONO_TYPE_R8), "" );
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 4, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 5, FALSE);
+			indexes [2] = LLVMConstInt (LLVMInt32Type (), 6, FALSE);
+			indexes [3] = LLVMConstInt (LLVMInt32Type (), 7, FALSE);
+
+			hvec = LLVMBuildShuffleVector (builder, hvec, LLVMConstNull (LLVMTypeOf (hvec)), LLVMConstVector(indexes, 4), "");
+			hvec = LLVMBuildBitCast (builder, hvec, type_to_avx256_type (MONO_TYPE_R4), "" );
+
+			LLVMValueRef r1 = LLVMBuildFAdd (builder, lvec, hvec, "");
+			
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+			indexes [2] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+			indexes [3] = LLVMConstInt (LLVMInt32Type (), 3, FALSE);
+
+			lvec = LLVMBuildShuffleVector (builder, r1, LLVMConstNull (LLVMTypeOf (r1)), LLVMConstVector(indexes, 4), "");
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 4, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 5, FALSE);
+			indexes [2] = LLVMConstInt (LLVMInt32Type (), 6, FALSE);
+			indexes [3] = LLVMConstInt (LLVMInt32Type (), 7, FALSE);
+
+			hvec = LLVMBuildShuffleVector (builder, r1, LLVMConstNull (LLVMTypeOf (r1)), LLVMConstVector(indexes, 4), "");
+
+			LLVMValueRef r2 = LLVMBuildFAdd (builder, lvec, hvec, "");
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 3, FALSE);
+			indexes [2] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [3] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+
+			lvec = LLVMBuildShuffleVector (builder, r2, LLVMConstNull (LLVMTypeOf (r2)), LLVMConstVector(indexes, 4), "");
+
+			LLVMValueRef r3 = LLVMBuildFAdd (builder, lvec, r2, "");
+
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [2] = LLVMConstInt (LLVMInt32Type (), 3, FALSE);
+			indexes [3] = LLVMConstInt (LLVMInt32Type (), 2, FALSE);
+
+			lvec = LLVMBuildShuffleVector (builder, r3, LLVMConstNull (LLVMTypeOf (r3)), LLVMConstVector(indexes, 4), "");
+
+			LLVMValueRef r4 = LLVMBuildFAdd (builder, lvec, r3, "");
+
+			LLVMValueRef result = LLVMBuildExtractElement (builder, r4, LLVMConstInt (LLVMInt32Type (), 0, FALSE), "extract");
+
+			values [ins->dreg] = result;
 			break;
 		}
 

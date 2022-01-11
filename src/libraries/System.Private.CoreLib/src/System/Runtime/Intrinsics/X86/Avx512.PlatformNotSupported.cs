@@ -36,5 +36,8 @@ namespace System.Runtime.Intrinsics.X86
 
         public static unsafe Vector512<float> LoadVector512(float* address) { throw new PlatformNotSupportedException(); }
 
+        public static float ReduceAdd(Vector512<float> left) { throw new PlatformNotSupportedException(); }
+
+
     }
 }

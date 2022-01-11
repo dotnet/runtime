@@ -1549,6 +1549,7 @@ MINI_OP(OP_ZBINOP, "zbinop", ZREG, ZREG, ZREG)
 MINI_OP3(OP_ZADDROUND, "zaddround", ZREG, ZREG, ZREG, IREG)
 
 MINI_OP(OP_AVX512_LOADU, "avx512_loadu", ZREG, ZREG, NONE)
+MINI_OP(OP_AVX512_REDUCEADD, "avx512_reduceadd", FREG, ZREG, NONE)
 
 /* inst_c0 contains an INTRINS_ enum, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
