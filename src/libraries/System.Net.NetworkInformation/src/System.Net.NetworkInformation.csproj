@@ -146,7 +146,6 @@
   </ItemGroup>
   <!-- Android -->
   <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
-    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs" Link="Common\Interop\Android\Interop.Libraries.cs" />
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Android.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidIPGlobalProperties.cs" />
     <Compile Include="System\Net\NetworkInformation\AndroidIPGlobalStatistics.cs" />
