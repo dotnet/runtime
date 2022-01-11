@@ -21,11 +21,16 @@
     <WasmExtraFilesToDeploy Include="package.json" />
     <WasmExtraFilesToDeploy Include="package-lock.json" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' != 'Windows_NT'">
-    <SetScriptCommands Condition="'$(Scenario)' != ''" Include="export NODE_TLS_REJECT_UNAUTHORIZED=0" />
+    <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
+    <SetScriptCommands Include="export NODE_TLS_REJECT_UNAUTHORIZED=0" />
   </ItemGroup>
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' == 'Windows_NT'">
-    <SetScriptCommands Condition="'$(Scenario)' != ''" Include="set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot;" />
+    <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
+    <SetScriptCommands Include="set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot;" />
+    <!-- Restore NPM packages -->
+    <RunScriptCommands Include="cmd /c &quot;cd %EXECUTION_DIR% &amp;&amp; npm ci&quot;" />
   </ItemGroup>
 
   <!-- Browser specific files -->

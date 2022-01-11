@@ -270,7 +270,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        // [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("TBD", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedInflightConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())

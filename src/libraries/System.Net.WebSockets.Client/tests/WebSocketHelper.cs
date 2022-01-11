@@ -125,7 +125,7 @@ namespace System.Net.WebSockets.Client.Tests
         private static bool InitWebSocketSupported()
         {
             ClientWebSocket cws = null;
-            if (PlatformDetection.IsBrowser && PlatformDetection.Host == "v8")
+            if (PlatformDetection.IsBrowser && (PlatformDetection.Host == "v8" || PlatformDetection.Host == "SpiderMonkey"))
             {
                 return false;
             }

@@ -6,11 +6,6 @@ setlocal enabledelayedexpansion
 [[SetCommandsEcho]]
 
 set EXECUTION_DIR=%~dp0
-
-if exist "%EXECUTION_DIR%\package-lock.json" (
-    cmd /c "cd %EXECUTION_DIR% && npm ci"
-)
-
 if [%3] NEQ [] (
     set SCENARIO=%3
 )
