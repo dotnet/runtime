@@ -23,6 +23,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 

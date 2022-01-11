@@ -31,6 +31,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Dataflow;
@@ -580,7 +581,7 @@ namespace Mono.Linker
 		{
 			var attributes = GetLinkerAttributes<T> (member);
 			if (attributes.Count () > 1) {
-				context.LogWarning ($"Attribute '{typeof (T).FullName}' should only be used once on '{((member is MemberReference memberRef) ? memberRef.GetDisplayName () : member.FullName)}'.", 2027, member);
+				context.LogWarning (member, DiagnosticId.AttributeShouldOnlyBeUsedOnceOnMember, typeof (T).FullName ?? "", (member is MemberReference memberRef) ? memberRef.GetDisplayName () : member.FullName);
 			}
 
 			attribute = attributes.FirstOrDefault ();

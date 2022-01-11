@@ -114,6 +114,25 @@ namespace Mono.Linker
 		}
 
 		/// <summary>
+		/// Create a warning message.
+		/// </summary>
+		/// <param name="context">Context with the relevant warning suppression info.</param>
+		/// <param name="origin">Filename or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
+		/// for the list of warnings and possibly add a new one</param>
+		/// <param name="version">Optional warning version number. Versioned warnings can be controlled with the
+		/// warning wave option --warn VERSION. Unversioned warnings are unaffected by this option. </param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		internal static MessageContainer CreateWarningMessage (LinkContext context, MessageOrigin origin, DiagnosticId id, WarnVersion version, params string[] args)
+		{
+			if (!((int) id > 2000 && (int) id <= 6000))
+				throw new ArgumentOutOfRangeException (nameof (id), $"The provided code '{(int) id}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+
+			return CreateWarningMessageContainer (context, origin, id, version, id.GetDiagnosticSubcategory (), args);
+		}
+
+		/// <summary>
 		/// Create a custom warning message.
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
@@ -156,6 +175,26 @@ namespace Mono.Linker
 				return new MessageContainer (MessageCategory.WarningAsError, text, code, subcategory, origin);
 
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
+		}
+
+		private static MessageContainer CreateWarningMessageContainer (LinkContext context, MessageOrigin origin, DiagnosticId id, WarnVersion version, string subcategory, params string[] args)
+		{
+			if (!(version >= WarnVersion.ILLink0 && version <= WarnVersion.Latest))
+				throw new ArgumentException ($"The provided warning version '{version}' is invalid.");
+
+			if (context.IsWarningSuppressed ((int) id, origin))
+				return Empty;
+
+			if (version > context.WarnVersion)
+				return Empty;
+
+			if (TryLogSingleWarning (context, (int) id, origin, subcategory))
+				return Empty;
+
+			if (context.IsWarningAsError ((int) id))
+				return new MessageContainer (MessageCategory.WarningAsError, id, subcategory, origin, args);
+
+			return new MessageContainer (MessageCategory.Warning, id, subcategory, origin, args);
 		}
 
 		public bool IsWarningMessage ([NotNullWhen (true)] out int? code)

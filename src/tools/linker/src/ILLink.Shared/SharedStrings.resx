@@ -261,11 +261,146 @@
   <data name="InvalidMetadataOptionMessage" xml:space="preserve">
     <value>Invalid metadata value '{0}'.</value>
   </data>
+  <data name="TypeHasNoFieldsToPreserveMessage" xml:space="preserve">
+    <value>Type '{0}' has no fields to preserve.</value>
+  </data>
+  <data name="TypeHasNoMethodsToPreserveMessage" xml:space="preserve">
+    <value>Type '{0}' has no methods to preserve.</value>
+  </data>
+  <data name="CouldNotResolveDependencyAssemblyMessage" xml:space="preserve">
+    <value>Could not resolve dependency assembly '{0}' specified in a 'PreserveDependency' attribute.</value>
+  </data>
+  <data name="CouldNotResolveDependencyTypeMessage" xml:space="preserve">
+    <value>Could not resolve dependency type '{0}' specified in a 'PreserveDependency' attribute.</value>
+  </data>
+  <data name="CouldNotResolveDependencyMemberMessage" xml:space="preserve">
+    <value>Could not resolve dependency member '{0}' declared in type '{1}' specified in a 'PreserveDependency' attribute.</value>
+  </data>
+  <data name="XmlCouldNotResolveAssemblyMessage" xml:space="preserve">
+    <value>Could not resolve assembly '{0}'.</value>
+  </data>
+  <data name="XmlCouldNotResolveTypeMessage" xml:space="preserve">
+    <value>Could not resolve type '{0}'.</value>
+  </data>
+  <data name="XmlCouldNotFindMethodOnTypeMessage" xml:space="preserve">
+    <value>Could not find method '{0}' on type '{1}'.</value>
+  </data>
+  <data name="XmlInvalidValueForStubMessage" xml:space="preserve">
+    <value>Invalid value for '{0}' stub.</value>
+  </data>
+  <data name="XmlUnkownBodyModificationMessage" xml:space="preserve">
+    <value>Unknown body modification '{0}' for '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindFieldOnTypeMessage" xml:space="preserve">
+    <value>Could not find field '{0}' on type '{1}'.</value>
+  </data>
+  <data name="XmlSubstitutedFieldNeedsToBeStaticMessage" xml:space="preserve">
+    <value>Substituted field '{0}' needs to be static field.</value>
+  </data>
+  <data name="XmlMissingSubstitutionValueForFieldMessage" xml:space="preserve">
+    <value>Missing 'value' attribute for field '{0}'.</value>
+  </data>
+  <data name="XmlInvalidSubstitutionValueForFieldMessage" xml:space="preserve">
+    <value>Invalid value '{0}' for '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindEventOnTypeMessage" xml:space="preserve">
+    <value>Could not find event '{0}' on type '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindPropertyOnTypeMessage" xml:space="preserve">
+    <value>Could not find property '{0}' on type '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindGetAccesorOfPropertyOnTypeMessage" xml:space="preserve">
+    <value>Could not find the get accessor of property '{0}' on type '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindSetAccesorOfPropertyOnTypeMessage" xml:space="preserve">
+    <value>Could not find the set accessor of property '{0}' in type '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindMatchingConstructorForCustomAttributeMessage" xml:space="preserve">
+    <value>Could not find matching constructor for custom attribute '{0}' arguments.</value>
+  </data>
+  <data name="XmlMoreThanOneReturnElementForMethodMessage" xml:space="preserve">
+    <value>There is more than one 'return' child element specified for method '{0}'.</value>
+  </data>
+  <data name="XmlMoreThanOneValyForParameterOfMethodMessage" xml:space="preserve">
+    <value>More than one value specified for parameter '{0}' of method '{1}'.</value>
+  </data>
+  <data name="XmlDuplicatePreserveMemberMessage" xml:space="preserve">
+    <value>Duplicate preserve of '{0}'.</value>
+  </data>
   <data name="RequiresUnreferencedCodeTitle" xml:space="preserve">
     <value>Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code</value>
   </data>
   <data name="RequiresUnreferencedCodeMessage" xml:space="preserve">
     <value>Using member '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.{1}{2}</value>
+  </data>
+  <data name="AttributeShouldOnlyBeUsedOnceOnMemberMessage" xml:space="preserve">
+    <value>Attribute '{0}' should only be used once on '{1}</value>
+  </data>
+  <data name="AttributeDoesntHaveTheRequiredNumberOfParametersMessage" xml:space="preserve">
+    <value>Attribute '{0}' doesn't have the required number of parameters specified.</value>
+  </data>
+  <data name="XmlElementDoesNotContainRequiredAttributeFullnameMessage" xml:space="preserve">
+    <value>'attribute' element does not contain attribute 'fullname' or it's empty.</value>
+  </data>
+  <data name="XmlCouldNotResolveAssemblyForAttributeMessage" xml:space="preserve">
+    <value>Could not resolve assembly '{0}' for attribute '{1}'.</value>
+  </data>
+  <data name="XmlAttributeTypeCouldNotBeFoundMessage" xml:space="preserve">
+    <value>Attribute type '{0}' could not be found.</value>
+  </data>
+  <data name="UnrecognizedParameterInMethodCreateInstanceMessage" xml:space="preserve">
+    <value>Unrecognized value passed to the parameter '{0}' of method '{1}'. It's not possible to guarantee the availability of the target type.</value>
+  </data>
+  <data name="DeprecatedPreserveDependencyAttributeMessage" xml:space="preserve">
+    <value>'PreserveDependencyAttribute' is deprecated. Use 'DynamicDependencyAttribute' instead.</value>
+  </data>
+  <data name="DynamicDependencyAttributeCouldNotBeAnalyzedMessage" xml:space="preserve">
+    <value>The 'DynamicDependencyAttribute' could not be analyzed.</value>
+  </data>
+  <data name="UnresolvedAssemblyInDynamicDependencyAttributeMessage" xml:space="preserve">
+    <value>Unresolved assembly '{0}' in 'DynamicDependencyAttribute'.</value>
+  </data>
+  <data name="UnresolvedTypeInDynamicDependencyAttributeMessage" xml:space="preserve">
+    <value>Unresolved type '{0}' in 'DynamicDependencyAttribute'.</value>
+  </data>
+  <data name="NoMembersResolvedForMemberSignatureOrTypeMessage" xml:space="preserve">
+    <value>No members were resolved for '{0}'.</value>
+  </data>
+  <data name="XmlMissingNameAttributeInResourceMessage" xml:space="preserve">
+    <value>Missing 'name' attribute for resource.</value>
+  </data>
+  <data name="XmlInvalidValueForAttributeActionForResourceMessage" xml:space="preserve">
+    <value>Invalid value '{0}' for attribute 'action' for resource '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindResourceToRemoveInAssemblyMessage" xml:space="preserve">
+    <value>Could not find embedded resource '{0}' to remove in assembly '{1}'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersIsNotAllowedOnMethodsMessage" xml:space="preserve">
+    <value>The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersCouldNotFindBackingFieldMessage" xml:space="preserve">
+    <value>Could not find a unique backing field for property '{0}' to propagate 'DynamicallyAccessedMembersAttribute'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessorMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on property '{0}' conflicts with the same attribute on its accessor '{1}'.</value>
+  </data>
+  <data name="XmlCouldNotFindAnyTypeInNamespaceMessage" xml:space="preserve">
+    <value>Could not find any type in namespace '{0}'.</value>
+  </data>
+  <data name="AttributeIsReferencedButTrimmerRemoveAllInstancesMessage" xml:space="preserve">
+    <value>Attribute '{0}' is being referenced in code but the trimmer was instructed to remove all instances of this attribute. If the attribute instances are necessary make sure to either remove the trimmer attribute XML portion which removes the attribute instances, or override the removal by using the trimmer XML descriptor to keep the attribute type (which in turn keeps all of its instances).</value>
+  </data>
+  <data name="RequiresUnreferencedCodeAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="XmlRemoveAttributeInstancesCanOnlyBeUsedOnTypeMessage" xml:space="preserve">
+    <value>Internal attribute '{0}' can only be used on attribute types.</value>
+  </data>
+  <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
+    <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
   </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
@@ -290,12 +425,6 @@
   </data>
   <data name="RequiresDynamicCodeMessage" xml:space="preserve">
     <value>Using member '{0}' which has 'RequiresDynamicCodeAttribute' can break functionality when AOT compiling.{1}{2}</value>
-  </data>
-  <data name="RequiresUnreferencedCodeAttributeMismatchMessage" xml:space="preserve">
-    <value>{0}. 'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
-  </data>
-  <data name="RequiresUnreferencedCodeAttributeMismatchTitle" xml:space="preserve">
-    <value>'RequiresUnreferencedCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="RequiresDynamicCodeAttributeMismatchMessage" xml:space="preserve">
     <value>{0}. 'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
@@ -344,8 +473,5 @@
   </data>
   <data name="RequiresUnreferencedCodeOnStaticConstructorTitle" xml:space="preserve">
     <value>The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
-  </data>
-  <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
-    <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
   </data>
 </root>

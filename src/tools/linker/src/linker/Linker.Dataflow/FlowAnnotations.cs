@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -169,9 +170,7 @@ namespace Mono.Linker.Dataflow
 				if (attribute.ConstructorArguments.Count == 1)
 					return (DynamicallyAccessedMemberTypes) (int) attribute.ConstructorArguments[0].Value;
 				else
-					_context.LogWarning (
-						$"Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute' doesn't have the required number of parameters specified.",
-						2028, member);
+					_context.LogWarning (member, DiagnosticId.AttributeDoesntHaveTheRequiredNumberOfParameters, "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute");
 			}
 			return DynamicallyAccessedMemberTypes.None;
 		}
@@ -227,16 +226,12 @@ namespace Mono.Linker.Dataflow
 								paramAnnotations[0] = methodMemberTypes;
 							}
 						} else if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
-							_context.LogWarning (
-								$"The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.",
-								2041, method, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods);
 						}
 					} else {
 						offset = 0;
 						if (methodMemberTypes != DynamicallyAccessedMemberTypes.None) {
-							_context.LogWarning (
-								$"The 'DynamicallyAccessedMembersAttribute' is not allowed on methods. It is allowed on method return value or method parameters though.",
-								2041, method, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnMethods);
 						}
 					}
 
@@ -328,9 +323,7 @@ namespace Mono.Linker.Dataflow
 						}
 
 						if (annotatedMethods.Any (a => a.Method == setMethod)) {
-							_context.LogWarning (
-								$"'DynamicallyAccessedMembersAttribute' on property '{property.GetDisplayName ()}' conflicts with the same attribute on its accessor '{setMethod.GetDisplayName ()}'.",
-								2043, setMethod, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (setMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName (), setMethod.GetDisplayName ());
 						} else {
 							int offset = setMethod.HasImplicitThis () ? 1 : 0;
 							if (setMethod.Parameters.Count > 0) {
@@ -357,9 +350,7 @@ namespace Mono.Linker.Dataflow
 						}
 
 						if (annotatedMethods.Any (a => a.Method == getMethod)) {
-							_context.LogWarning (
-								$"'DynamicallyAccessedMembersAttribute' on property '{property.GetDisplayName ()}' conflicts with the same attribute on its accessor '{getMethod.GetDisplayName ()}'.",
-								2043, getMethod, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (getMethod, DiagnosticId.DynamicallyAccessedMembersConflictsBetweenPropertyAndAccessor, property.GetDisplayName (), getMethod.GetDisplayName ());
 						} else {
 							annotatedMethods.Add (new MethodAnnotations (getMethod, null, annotation, null));
 						}
@@ -368,9 +359,7 @@ namespace Mono.Linker.Dataflow
 					FieldDefinition? backingField;
 					if (backingFieldFromGetter != null && backingFieldFromSetter != null &&
 						backingFieldFromGetter != backingFieldFromSetter) {
-						_context.LogWarning (
-							$"Could not find a unique backing field for property '{property.GetDisplayName ()}' to propagate 'DynamicallyAccessedMembersAttribute'.",
-							2042, property, subcategory: MessageSubCategory.TrimAnalysis);
+						_context.LogWarning (property, DiagnosticId.DynamicallyAccessedMembersCouldNotFindBackingField, property.GetDisplayName ());
 						backingField = null;
 					} else {
 						backingField = backingFieldFromGetter ?? backingFieldFromSetter;
