@@ -55,6 +55,7 @@ public class PInvokes
     }
 
     [Fact]
+    [SkipOnMono("Mono supports non-blittable generic instantiations in P/Invokes")]
     public static void StructWithNonBlittableGenericInstantiation_Fails()
     {
         short s = 41;
