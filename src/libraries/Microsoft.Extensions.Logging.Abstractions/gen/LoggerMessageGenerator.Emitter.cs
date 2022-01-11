@@ -16,10 +16,18 @@ namespace Microsoft.Extensions.Logging.Generators
             private const int MaxLoggerMessageDefineArguments = 6;
             private const int DefaultStringBuilderCapacity = 1024;
 
+            private static readonly string s_generatedTypeSummary =
+                "<summary> " +
+                "The implementation of this type is subject to change without further notice, " +
+                "do not use it directly in your code. " +
+                "</summary>";
             private static readonly string s_generatedCodeAttribute =
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
                 $"\"{typeof(Emitter).Assembly.GetName().Name}\", " +
                 $"\"{typeof(Emitter).Assembly.GetName().Version}\")";
+            private static readonly string s_editorBrowsableAttribute =
+                "global::System.ComponentModel.EditorBrowsableAttribute(" +
+                "global::System.ComponentModel.EditorBrowsableState.Never)";
             private readonly StringBuilder _builder = new StringBuilder(DefaultStringBuilderCapacity);
             private bool _needEnumerationHelper;
 
@@ -127,7 +135,9 @@ namespace {lc.Namespace}
             private void GenStruct(LoggerMethod lm, string nestedIndentation)
             {
                 _builder.AppendLine($@"
+        {nestedIndentation}/// {s_generatedTypeSummary}
         {nestedIndentation}[{s_generatedCodeAttribute}]
+        {nestedIndentation}[{s_editorBrowsableAttribute}]
         {nestedIndentation}private readonly struct __{lm.Name}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {nestedIndentation}{{");
                 GenFields(lm, nestedIndentation);
@@ -489,7 +499,9 @@ namespace {lc.Namespace}
                 if (_needEnumerationHelper)
                 {
                                 _builder.Append($@"
+/// {s_generatedTypeSummary}
 [{s_generatedCodeAttribute}]
+[{s_editorBrowsableAttribute}]
 internal static class __LoggerMessageGenerator
 {{
     public static string Enumerate(global::System.Collections.IEnumerable? enumerable)
