@@ -3592,7 +3592,7 @@ get_bb (TransformData *td, unsigned char *ip, gboolean make_list)
 
                 /* Add the blocks in reverse order */
                 if (make_list)
-			td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
+                        td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, bb);
 	}
 
 	return bb;
