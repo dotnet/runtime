@@ -123,7 +123,7 @@ namespace System.Text.RegularExpressions
 
             // As a backup, see if we can find a literal after a leading atomic loop.  That might be better than whatever sets we find, so
             // we want to know whether we have one in our pocket before deciding whether to use a leading set.
-            (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingAtomicLoop(tree);
+            (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? literalAfterLoop = RegexPrefixAnalyzer.FindLiteralFollowingLeadingLoop(tree);
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
             List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(tree, culture, thorough: !interpreter);
@@ -170,11 +170,11 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // If we found a literal we can search for after a leading atomic loop, use it.
+            // If we found a literal we can search for after a leading set loop, use it.
             if (literalAfterLoop is not null)
             {
-                FindMode = FindNextStartingPositionMode.LiteralAfterAtomicLoop_LeftToRight_CaseSensitive;
-                LiteralAfterAtomicLoop = literalAfterLoop;
+                FindMode = FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive;
+                LiteralAfterLoop = literalAfterLoop;
                 _asciiLookups = new uint[1][];
                 return;
             }
@@ -196,8 +196,8 @@ namespace System.Text.RegularExpressions
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
         public List<(char[]? Chars, string Set, int Distance, bool CaseInsensitive)>? FixedDistanceSets { get; }
 
-        /// <summary>When in literal after atomic loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
-        public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterAtomicLoop { get; }
+        /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
+        public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterLoop { get; }
 
         /// <summary>Try to advance to the next starting position that might be a location for a match.</summary>
         /// <param name="textSpan">The text to search.</param>
@@ -620,13 +620,13 @@ namespace System.Text.RegularExpressions
                         return false;
                     }
 
-                // There's a literal after an atomic loop.  Find the literal, then walk backwards through the loop to find the starting position.
-                case FindNextStartingPositionMode.LiteralAfterAtomicLoop_LeftToRight_CaseSensitive:
+                // There's a literal after a leading set loop.  Find the literal, then walk backwards through the loop to find the starting position.
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
                     {
-                        Debug.Assert(LiteralAfterAtomicLoop is not null);
-                        (RegexNode loopNode, (char Char, string? String, char[]? Chars) literal) = LiteralAfterAtomicLoop.GetValueOrDefault();
+                        Debug.Assert(LiteralAfterLoop is not null);
+                        (RegexNode loopNode, (char Char, string? String, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
 
-                        Debug.Assert(loopNode.Type == RegexNode.Setloopatomic);
+                        Debug.Assert(loopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
                         Debug.Assert(loopNode.N == int.MaxValue);
 
                         int startingPos = pos;
@@ -727,8 +727,8 @@ namespace System.Text.RegularExpressions
         /// <summary>One or more sets at a fixed distance from the start of the pattern.  At least the first set is case-insensitive.</summary>
         FixedSets_LeftToRight_CaseInsensitive,
 
-        /// <summary>A literal after a non-overlapping atomic loop at the start of the pattern.  The literal is case-sensitive.</summary>
-        LiteralAfterAtomicLoop_LeftToRight_CaseSensitive,
+        /// <summary>A literal after a non-overlapping set loop at the start of the pattern.  The literal is case-sensitive.</summary>
+        LiteralAfterLoop_LeftToRight_CaseSensitive,
 
         /// <summary>Nothing to search for. Nop.</summary>
         NoSearch,

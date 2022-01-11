@@ -559,11 +559,10 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Analyzes the pattern for a leading atomic set loop followed by a non-overlapping literal.
-        /// If such a pattern is found, an implementation can search for the literal and then walk backward through
-        /// all matches for the loop until the beginning is found.
+        /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
+        /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
         /// </summary>
-        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingAtomicLoop(RegexTree tree)
+        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexTree tree)
         {
             RegexNode node = tree.Root;
             if ((node.Options & RegexOptions.RightToLeft) != 0)
@@ -582,17 +581,21 @@ namespace System.Text.RegularExpressions
                 return null;
             }
 
-            // Bail if the first node isn't an atomic set loop. We also only currently support no upper bound, though that restriction
-            // could be lifted if desired and implemented by the engines.  This could also be made to support Oneloopatomic and
-            // Notoneloopatomic, but the scenarios for that are rare.
+            // Bail if the first node isn't a set loop.  We treat any kind of set loop (Setloop, Setloopatomic, and Setlazy)
+            // the same because of two important constraints: the loop must not have an upper bound, and the literal we look
+            // for immediately following it must not overlap.  With those constraints, all three of these kinds of loops will
+            // end up having the same semantics; in fact, if atomic optimizations are used, we will have converted Setloop
+            // into a Setloopatomic (but those optimizations are disabled for NonBacktracking in general). This
+            // could also be made to support Oneloopatomic and Notoneloopatomic, but the scenarios for that are rare.
             Debug.Assert(node.ChildCount() >= 2);
             RegexNode firstChild = node.Child(0);
-            if (firstChild.Type is not RegexNode.Setloopatomic || firstChild.N != int.MaxValue)
+            if (firstChild.Type is not (RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy) || firstChild.N != int.MaxValue)
             {
                 return null;
             }
 
-            // Get the subsequent node
+            // Get the subsequent node.  An UpdateBumpalong may have been added as an optimization, but it doesn't have an
+            // impact on semantics and we can skip it.
             RegexNode nextChild = node.Child(1);
             if (nextChild.Type == RegexNode.UpdateBumpalong)
             {

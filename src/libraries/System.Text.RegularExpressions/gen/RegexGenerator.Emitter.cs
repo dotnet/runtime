@@ -360,8 +360,8 @@ namespace System.Text.RegularExpressions.Generator
                             EmitFixedSet();
                             break;
 
-                        case FindNextStartingPositionMode.LiteralAfterAtomicLoop_LeftToRight_CaseSensitive:
-                            Debug.Assert(code.FindOptimizations.LiteralAfterAtomicLoop is not null);
+                        case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                            Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
                             additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
                             EmitLiteralAfterAtomicLoop();
                             break;
@@ -589,10 +589,10 @@ namespace System.Text.RegularExpressions.Generator
             // Emits a search for a literal following a leading atomic single-character loop.
             void EmitLiteralAfterAtomicLoop()
             {
-                Debug.Assert(code.FindOptimizations.LiteralAfterAtomicLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = code.FindOptimizations.LiteralAfterAtomicLoop.Value;
+                Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = code.FindOptimizations.LiteralAfterLoop.Value;
 
-                Debug.Assert(target.LoopNode.Type == RegexNode.Setloopatomic);
+                Debug.Assert(target.LoopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
 
                 using (EmitBlock(writer, "while (true)"))

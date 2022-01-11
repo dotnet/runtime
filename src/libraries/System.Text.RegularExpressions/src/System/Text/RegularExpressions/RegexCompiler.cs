@@ -445,8 +445,8 @@ namespace System.Text.RegularExpressions
                     EmitFixedSet_LeftToRight();
                     break;
 
-                case FindNextStartingPositionMode.LiteralAfterAtomicLoop_LeftToRight_CaseSensitive:
-                    Debug.Assert(_code.FindOptimizations.LiteralAfterAtomicLoop is not null);
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                    Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
                     EmitLiteralAfterAtomicLoop();
                     break;
 
@@ -831,10 +831,10 @@ namespace System.Text.RegularExpressions
             // Emits a search for a literal following a leading atomic single-character loop.
             void EmitLiteralAfterAtomicLoop()
             {
-                Debug.Assert(_code.FindOptimizations.LiteralAfterAtomicLoop is not null);
-                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _code.FindOptimizations.LiteralAfterAtomicLoop.Value;
+                Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _code.FindOptimizations.LiteralAfterLoop.Value;
 
-                Debug.Assert(target.LoopNode.Type == RegexNode.Setloopatomic);
+                Debug.Assert(target.LoopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
                 Debug.Assert(target.LoopNode.N == int.MaxValue);
 
                 // while (true)
