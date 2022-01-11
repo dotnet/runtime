@@ -14,14 +14,20 @@ public class PInvokes
     public static bool IsNotWindowsX86Process => !IsWindowsX86Process;
 
     [ConditionalFact(nameof(IsNotWindowsX86Process))]
-    public static void StructWithDefaultNonBlittableFields()
+    public static void StructWithDefaultNonBlittableFields_Bool()
     {
         short s = 42;
         bool b = true;
 
         // By default, bool is a 4-byte Windows BOOL, which will cause us to incorrectly marshal back the struct from native code.
         Assert.False(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBool(s, b), s, b));
+    }
 
+    [Fact]
+    [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
+    public static void StructWithDefaultNonBlittableFields_Char()
+    {
+        short s = 42;
         // We use a the "green check mark" character so that we use both bytes and
         // have a value that can't be accidentally round-tripped.
         char c = '✅';
@@ -30,13 +36,19 @@ public class PInvokes
     }
 
     [ConditionalFact(nameof(IsNotWindowsX86Process))]
-    public static void StructWithDefaultNonBlittableFields_MarshalAsInfo()
+    public static void StructWithDefaultNonBlittableFields_Bool_MarshalAsInfo()
     {
         short s = 41;
         bool b = true;
 
         Assert.True(DisabledRuntimeMarshallingNative.CheckStructWithShortAndBool(new StructWithShortAndBoolWithMarshalAs(s, b), s, b));
+    }
 
+    [Fact]
+    [SkipOnMono("Mono doesn't support marshalling a .NET Char to a C char (only a char16_t).")]
+    public static void StructWithDefaultNonBlittableFields_Char_MarshalAsInfo()
+    {
+        short s = 41;
         // We use a the "green check mark" character so that we use both bytes and
         // have a value that can't be accidentally round-tripped.
         char c = '✅';
