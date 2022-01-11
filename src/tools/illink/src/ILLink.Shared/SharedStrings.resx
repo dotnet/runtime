@@ -214,7 +214,7 @@
     <value>XML descriptor file '{0}' could not be found'.</value>
   </data>
   <data name="RootAssemblyDoesNotHaveEntryPointMessage" xml:space="preserve">
-    <value>Root assembly '{assembly.Name}' does not have entry point.</value>
+    <value>Root assembly '{0}' does not have entry point.</value>
   </data>
   <data name="RootAssemblyCannotUseActionMessage" xml:space="preserve">
     <value>Root assembly '{0}' cannot use action '{1}'.</value>
@@ -333,6 +333,12 @@
   <data name="RequiresUnreferencedCodeMessage" xml:space="preserve">
     <value>Using member '{0}' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code.{1}{2}</value>
   </data>
+  <data name="DynamicTypeInvocationMessage" xml:space="preserve">
+    <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
+  </data>
+  <data name="DynamicTypeInvocationTitle" xml:space="preserve">
+    <value>Using dynamic types might cause types or members to be removed by trimmer.</value>
+  </data>
   <data name="AttributeShouldOnlyBeUsedOnceOnMemberMessage" xml:space="preserve">
     <value>Attribute '{0}' should only be used once on '{1}</value>
   </data>
@@ -402,6 +408,204 @@
   <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
     <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
   </data>
+  <data name="XmlPropertyDoesNotContainAttributeNameMessage" xml:space="preserve">
+    <value>Property element does not contain attribute 'name'.</value>
+  </data>
+  <data name="XmlCouldNotFindPropertyMessage" xml:space="preserve">
+    <value>Property '{0}' could not be found.</value>
+  </data>
+  <data name="MakeGenericTypeMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnPropertyConflictsWithBackingFieldMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on property '{0}' conflicts with the same attribute on its backing field '{1}'.</value>
+  </data>
+  <data name="UnrecognizedTypeNameInTypeGetTypeMessage" xml:space="preserve">
+    <value>Unrecognized value passed to the parameter 'typeName' of method '{0}'. It's not possible to guarantee the availability of the target type.</value>
+  </data>
+  <data name="ParametersOfAssemblyCreateInstanceCannotBeAnalyzedMessage" xml:space="preserve">
+    <value>Parameters passed to method '{0}' cannot be analyzed. Consider using methods 'System.Type.GetType' and `System.Activator.CreateInstance` instead.</value>
+  </data>
+  <data name="UnrecognizedTypeInRuntimeHelpersRunClassConstructorMessage" xml:space="preserve">
+    <value>Unrecognized value passed to the parameter 'type' of method '{0}'. It's not possible to guarantee the availability of the target static constructor.</value>
+  </data>
+  <data name="MakeGenericMethodMessage" xml:space="preserve">
+    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</value>
+  </data>
+  <data name="UnresolvedAssemblyInCreateInstanceMessage" xml:space="preserve">
+    <value>The assembly name '{0}' passed to method '{1}' references assembly which is not available.</value>
+  </data>
+  <data name="MethodParameterCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Value passed to parameter '{0}' of method '{1}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="MethodReturnValueCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Value returned from method '{0}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="FieldValueCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Value assigned to {0} can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="ImplicitThisCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Value passed to implicit 'this' parameter of method '{0}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="TypePassedToGenericParameterCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Type passed to generic parameter '{0}' of '{1}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {4} in call to '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {3} requirements. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {3} in call to '{0}'. The parameter '{1}' of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchParameterTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {4} in '{1}'. The parameter '{2}' of method '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {3} in call to '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {2} requirements. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {2} in call to '{0}'. The return value of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {3} in '{1}'. The return value of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {3} in call to '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {2} requirements. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {2} in call to '{0}'. The field '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchFieldTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {3} in '{1}'. The field '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {3} in call to '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {2} requirements. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {2} in call to '{0}'. The implicit 'this' argument of method '{1}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {3} in '{1}'. The implicit 'this' argument of method '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameterMessage" xml:space="preserve">
+    <value>'{0}' argument does not satisfy {4} in call to '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnTypeMessage" xml:space="preserve">
+    <value>'{0}' method return value does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsFieldMessage" xml:space="preserve">
+    <value>value stored in field '{0}' does not satisfy {3} requirements. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameterMessage" xml:space="preserve">
+    <value>'this' argument does not satisfy {3} in call to '{0}'. The generic parameter '{1}' of '{2}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameterMessage" xml:space="preserve">
+    <value>'{0}' generic argument does not satisfy {4} in '{1}'. The generic parameter '{2}' of '{3}' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverridesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter '{0}' of method '{1}' don't match overridden parameter '{2}' of method '{3}'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverridesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method '{0}' don't match overridden return value of method '{1}'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverridesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{0}' don't match overridden implicit 'this' parameter of method '{1}'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverridesMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter '{0}' of '{1}' don't match overridden generic parameter '{2}' of '{3}'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.</value>
+  </data>
+  <data name="CaseInsensitiveTypeGetTypeCallIsNotSupportedMessage" xml:space="preserve">
+    <value>Call to '{0}' can perform case insensitive lookup of the type, currently ILLink can not guarantee presence of all the matching types.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStringsMessage" xml:space="preserve">
+    <value>Field '{0}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to fields of type 'System.Type' or 'System.String'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStringsMessage" xml:space="preserve">
+    <value>Parameter '{0}' of method '{1}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStringsMessage" xml:space="preserve">
+    <value>Property '{0}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.</value>
+  </data>
+  <data name="XmlUnsuportedWildcardMessage" xml:space="preserve">
+    <value>XML contains unsupported wildcard for assembly 'fullname' attribute.</value>
+  </data>
+  <data name="AssemblyWithEmbeddedXmlApplyToAnotherAssemblyMessage" xml:space="preserve">
+    <value>Embedded XML in assembly '{0}' contains assembly "fullname" attribute for another assembly '{1}'</value>
+  </data>
+  <data name="InvalidIsTrimmableValueMessage" xml:space="preserve">
+    <value>Invalid AssemblyMetadata("IsTrimmable", "{0}") attribute in assembly '{1}'. Value must be "True".</value>
+  </data>
+  <data name="PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDeterminedMessage" xml:space="preserve">
+    <value>Value passed to the '{0}' parameter of method '{1}' cannot be statically determined as a property accessor.</value>
+  </data>
+  <data name="AssemblyProducedTrimWarningsMessage" xml:space="preserve">
+    <value>Assembly '{0}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries</value>
+  </data>
+  <data name="TypeWasNotFoundInAssemblyNorBaseLibraryMessage" xml:space="preserve">
+    <value>Type '{0}' was not found in the caller assembly nor in the base library. Type name strings used for dynamically accessing a type should be assembly qualified.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStringsMessage" xml:space="preserve">
+    <value>Return type of method '{0}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.</value>
+  </data>
+  <data name="MethodsAreAssociatedWithStateMachineMessage" xml:space="preserve">
+    <value>Methods '{0}' and '{1}' are both associated with state machine type '{2}'. This is currently unsupported and may lead to incorrectly reported warnings.</value>
+  </data>
+  <data name="InvalidScopeInUnconditionalSuppressMessageMessage" xml:space="preserve">
+    <value>Invalid scope '{0}' used in 'UnconditionalSuppressMessageAttribute' on module '{1}' with target '{2}'.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnBaseClassMessage" xml:space="preserve">
+    <value>Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'. {2}{3}</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnBaseClassTitle" xml:space="preserve">
+    <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
+  </data>
+  <data name="DynamicallyAccessedMembersFieldAccessedViaReflectionMessage" xml:space="preserve">
+    <value>Field '{0}' with 'DynamicallyAccessedMembersAttribute' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersMethodAccessedViaReflectionMessage" xml:space="preserve">
+    <value>Method '{0}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the method.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCodeMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.{2}{3}</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCodeMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.{2}{3}</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembersMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which has 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembersMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which has 'DynamicallyAccessedMembersAttribute' requirements.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
+  </data>
+  <data name="RequiresUnreferencedCodeOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>
@@ -420,7 +624,13 @@
   <data name="RequiresAssemblyFilesMessage" xml:space="preserve">
     <value>Using member '{0}' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app.{1}{2}</value>
   </data>
- <data name="RequiresDynamicCodeTitle" xml:space="preserve">
+  <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
+    <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
+  </data>
+  <data name="RequiresDynamicCodeTitle" xml:space="preserve">
     <value>Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.</value>
   </data>
   <data name="RequiresDynamicCodeMessage" xml:space="preserve">
@@ -431,12 +641,6 @@
   </data>
   <data name="RequiresDynamicCodeAttributeMismatchTitle" xml:space="preserve">
     <value>'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
-  </data>
-  <data name="RequiresAssemblyFilesAttributeMismatchMessage" xml:space="preserve">
-    <value>{0}. 'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
-  </data>
-  <data name="RequiresAssemblyFilesAttributeMismatchTitle" xml:space="preserve">
-    <value>'RequiresAssemblyFilesAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
   <data name="BaseRequiresMismatchMessage" xml:space="preserve">
     <value>Base member '{2}' with '{0}' has a derived member '{1}' without '{0}'</value>
@@ -449,29 +653,5 @@
   </data>
   <data name="InterfaceRequiresMismatchMessage" xml:space="preserve">
     <value>Interface member '{2}' with '{0}' has an implementation member '{1}' without '{0}'</value>
-  </data>
-  <data name="RequiresOnBaseClassMessage" xml:space="preserve">
-    <value>Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'. {2}{3}</value>
-  </data>
-  <data name="RequiresOnBaseClassTitle" xml:space="preserve">
-    <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
-  </data>
-  <data name="DynamicTypeInvocationMessage" xml:space="preserve">
-    <value>Invoking members on dynamic types is not trimming-compatible. Types or members might have been removed by the trimmer.</value>
-  </data>
-  <data name="DynamicTypeInvocationTitle" xml:space="preserve">
-    <value>Using dynamic types might cause types or members to be removed by trimmer.</value>
-  </data>
-  <data name="MakeGenericMethodMessage" xml:space="preserve">
-    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic method.</value>
-  </data>
-  <data name="MakeGenericTypeMessage" xml:space="preserve">
-    <value>Call to '{0}' can not be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.</value>
-  </data>
-  <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
-    <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
-  </data>
-  <data name="RequiresUnreferencedCodeOnStaticConstructorTitle" xml:space="preserve">
-    <value>The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
   </data>
 </root>

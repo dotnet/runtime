@@ -1632,23 +1632,16 @@ namespace Mono.Linker.Steps
 				var origin = ScopeStack.CurrentScope.Origin;
 
 				if (Annotations.DoesMemberRequireUnreferencedCode (member, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute)) {
-					var message = string.Format (
-						"'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.{2}{3}",
-						type.GetDisplayName (),
+					var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
+					Context.LogWarning (origin, id, type.GetDisplayName (),
 						((MemberReference) member).GetDisplayName (), // The cast is valid since it has to be a method or field
 						MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Message),
 						MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Url));
-					var code = reportOnMember ? 2112 : 2113;
-					Context.LogWarning (message, code, origin, MessageSubCategory.TrimAnalysis);
 				}
 
 				if (Context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member)) {
-					var message = string.Format (
-						"'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which has 'DynamicallyAccessedMembersAttribute' requirements.",
-						type.GetDisplayName (),
-						((MemberReference) member).GetDisplayName ());
-					var code = reportOnMember ? 2114 : 2115;
-					Context.LogWarning (message, code, origin, MessageSubCategory.TrimAnalysis);
+					var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
+					Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
 				}
 			} finally {
 				memberScope?.Dispose ();
@@ -1680,11 +1673,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.InteropMethodDependency:
 				if (Context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field) &&
 					!ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode ())
-					Context.LogWarning (
-						$"Field '{field.GetDisplayName ()}' with 'DynamicallyAccessedMembersAttribute' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.",
-						2110,
-						ScopeStack.CurrentScope.Origin,
-						MessageSubCategory.TrimAnalysis);
+					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
 				break;
 			case DependencyKind.DynamicallyAccessedMemberOnType:
@@ -1907,11 +1896,9 @@ namespace Mono.Linker.Steps
 
 				var currentOrigin = ScopeStack.CurrentScope.Origin;
 
-				string formatString = SharedStrings.RequiresOnBaseClassMessage;
 				string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (effectiveRequiresUnreferencedCode.Message);
 				string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (effectiveRequiresUnreferencedCode.Url);
-				string message = string.Format (formatString, type.GetDisplayName (), type.BaseType.GetDisplayName (), arg1, arg2);
-				Context.LogWarning (message, 2109, currentOrigin, MessageSubCategory.TrimAnalysis);
+				Context.LogWarning (currentOrigin, DiagnosticId.RequiresUnreferencedCodeOnBaseClass, type.GetDisplayName (), type.BaseType.GetDisplayName (), arg1, arg2);
 			}
 
 
@@ -2950,11 +2937,7 @@ namespace Mono.Linker.Steps
 					break;
 				}
 
-				Context.LogWarning (
-					$"Method '{method.GetDisplayName ()}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the method.",
-					2111,
-					ScopeStack.CurrentScope.Origin,
-					MessageSubCategory.TrimAnalysis);
+				Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, method.GetDisplayName ());
 			}
 		}
 
@@ -2996,8 +2979,7 @@ namespace Mono.Linker.Steps
 		{
 			string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
 			string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
-			string message = string.Format (SharedStrings.RequiresUnreferencedCodeMessage, displayName, arg1, arg2);
-			Context.LogWarning (message, 2026, currentOrigin, MessageSubCategory.TrimAnalysis);
+			Context.LogWarning (currentOrigin, DiagnosticId.RequiresUnreferencedCode, displayName, arg1, arg2);
 		}
 
 		protected (MethodReference, DependencyInfo) GetOriginalMethod (MethodReference method, DependencyInfo reason)

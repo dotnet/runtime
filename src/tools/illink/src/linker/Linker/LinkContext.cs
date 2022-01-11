@@ -426,7 +426,7 @@ namespace Mono.Linker
 					continue;
 
 				if (args[1].Value is not string value || !value.Equals ("True", StringComparison.OrdinalIgnoreCase)) {
-					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\".", 2102, GetAssemblyLocation (assembly));
+					LogWarning (GetAssemblyLocation (assembly), DiagnosticId.InvalidIsTrimmableValue, args[1].Value.ToString () ?? "", assembly.Name.Name);
 					continue;
 				}
 
