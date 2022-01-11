@@ -222,6 +222,36 @@ namespace System.IO.Tests
             await RandomAccess.WriteAsync(handle, Array.Empty<ReadOnlyMemory<byte>>(), 0);
         }
 
+        [Theory]
+        [MemberData(nameof(AllAsyncSyncCombinations))]
+        public async Task ReadShouldReturnZeroForEndOfFile(bool asyncOperation, bool asyncHandle)
+        {
+            int fileSize = Environment.SystemPageSize + 1; // it MUST NOT be a multiple of it (https://github.com/dotnet/runtime/issues/62851)
+            string filePath = GetTestFilePath();
+            byte[] expected = RandomNumberGenerator.GetBytes(fileSize);
+            File.WriteAllBytes(filePath, expected);
+
+            using FileStream fileStream = new (filePath, FileMode.Open, FileAccess.Read, FileShare.None, 0, GetFileOptions(asyncHandle));
+            using SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(Environment.SystemPageSize);
+
+            int current = 0;
+            int total = 0;
+
+            do
+            {
+                current = asyncOperation
+                    ? await fileStream.ReadAsync(buffer.Memory)
+                    : fileStream.Read(buffer.GetSpan());
+
+                Assert.True(expected.AsSpan(total, current).SequenceEqual(buffer.GetSpan().Slice(0, current)));
+
+                total += current;
+            }
+            while (current != 0);
+
+            Assert.Equal(fileSize, total);
+        }
+
         // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)
         private static FileOptions GetFileOptions(bool asyncHandle) => (asyncHandle ? FileOptions.Asynchronous : FileOptions.None) | NoBuffering; 
     }
