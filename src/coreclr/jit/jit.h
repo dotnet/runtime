@@ -353,21 +353,7 @@ public:
 /*****************************************************************************/
 
 #define CSE_INTO_HANDLERS 0
-
-#define LARGE_EXPSET 1   // Track 64 or 32 assertions/copies/consts/rangechecks
-#define ASSERTION_PROP 1 // Enable value/assertion propagation
-
-#define LOCAL_ASSERTION_PROP ASSERTION_PROP // Enable local assertion propagation
-
-//=============================================================================
-
-#define OPT_BOOL_OPS 1 // optimize boolean operations
-
-//=============================================================================
-
-#define REDUNDANT_LOAD 1      // track locals in regs, suppress loads
-#define DUMP_FLOWGRAPHS DEBUG // Support for creating Xml Flowgraph reports in *.fgx files
-
+#define DUMP_FLOWGRAPHS DEBUG                  // Support for creating Xml Flowgraph reports in *.fgx files
 #define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 1 // if 1 we must have all handler entry points in the Hot code section
 
 /*****************************************************************************/

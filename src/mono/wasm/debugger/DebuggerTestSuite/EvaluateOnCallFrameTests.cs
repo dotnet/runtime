@@ -854,6 +854,126 @@ namespace DebuggerTests
                    ("\"15\"\n//comment as vs does\n", TString("15")),
                    ("\"15\"", TString("15")));
            });
+        
+        [Theory]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        public async Task EvaluateBrowsableNone(string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (testNone, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testNone, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testNone));
+                var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
+                
+                if (isCustomGetter)
+                    await CheckProps(testNoneProps, new
+                    {
+                        list = TGetter("list", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
+                        array = TGetter("array", TObject("int[]", description: "int[2]")),
+                        text = TGetter("text", TString("text"))
+                    }, "testNoneProps#1");
+                else
+                    await CheckProps(testNoneProps, new
+                    {
+                        list = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                        array = TObject("int[]", description: "int[2]"),
+                        text = TString("text")
+                    }, "testNoneProps#1");
+           });
+
+        [Theory]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
+        [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
+        [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
+        [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        public async Task EvaluateBrowsableNever(string outerClassName, string className, string localVarName, int breakLine) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (testNever, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testNever, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testNever));
+                var testNeverProps = await GetProperties(testNever["objectId"]?.Value<string>());
+                await CheckProps(testNeverProps, new
+                {
+                }, "testNeverProps#1");
+           });
+
+        [Theory]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
+        [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
+        [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
+        [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        public async Task EvaluateBrowsableCollapsed(string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (testCollapsed, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testCollapsed, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testCollapsed));
+                var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
+                if (isCustomGetter)
+                    await CheckProps(testCollapsedProps, new
+                    {
+                        listCollapsed = TGetter("listCollapsed", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
+                        arrayCollapsed = TGetter("arrayCollapsed", TObject("int[]", description: "int[2]")),
+                        textCollapsed = TGetter("textCollapsed", TString("textCollapsed"))
+                    }, "testCollapsedProps#1");
+                else
+                    await CheckProps(testCollapsedProps, new
+                    {
+                        listCollapsed = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
+                        arrayCollapsed = TObject("int[]", description: "int[2]"),
+                        textCollapsed = TString("textCollapsed")
+                    }, "testCollapsedProps#1");
+           });
+        
+        [Theory]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
+        [InlineData("EvaluateBrowsableProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
+        [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
+        [InlineData("EvaluateBrowsableStaticProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
+        [InlineData("EvaluateBrowsableCustomProperties", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5, true)]
+        public async Task EvaluateBrowsableRootHidden(string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                var (testRootHidden, _) = await EvaluateOnCallFrame(id, localVarName);
+                await CheckValue(testRootHidden, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testRootHidden));
+                var testRootHiddenProps = await GetProperties(testRootHidden["objectId"]?.Value<string>());
+                var (refList, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.list");
+                var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
+                var refListElementsProp = await GetProperties(refListProp[0]["value"]["objectId"]?.Value<string>());
+                var (refArray, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.array");
+                var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());
+
+                //in Console App names are in []
+                //adding variable name to make elements unique
+                foreach (var item in refArrayProp)
+                {
+                    item["name"] = string.Concat("arrayRootHidden[", item["name"], "]");
+                }
+                foreach (var item in refListElementsProp)
+                {
+                    item["name"] = string.Concat("listRootHidden[", item["name"], "]");
+                }
+                var mergedRefItems = new JArray(refListElementsProp.Union(refArrayProp));
+                Assert.Equal(mergedRefItems, testRootHiddenProps);
+           });
 
         [Fact]
         public async Task EvaluateStaticAttributeInAssemblyNotRelatedButLoaded() => await CheckInspectLocalsAtBreakpointSite(
@@ -874,6 +994,27 @@ namespace DebuggerTests
            {
                await RuntimeEvaluateAndCheck(
                    ("a.valueToCheck", TNumber(20)));
+           });
+
+        [Fact]
+        public async Task EvaluateProtectionLevels() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateProtectionLevels", "Evaluate", 2, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateProtectionLevels:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+               var (obj, _) = await EvaluateOnCallFrame(id, "testClass");
+               var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
+            
+               Assert.True(pub[0] != null);
+               Assert.True(internalAndProtected[0] != null);
+               Assert.True(internalAndProtected[1] != null);
+               Assert.True(priv[0] != null);
+
+               Assert.Equal(pub[0]["value"]["value"], "public");
+               Assert.Equal(internalAndProtected[0]["value"]["value"], "internal");
+               Assert.Equal(internalAndProtected[1]["value"]["value"], "protected");
+               Assert.Equal(priv[0]["value"]["value"], "private");
            });
     }
 

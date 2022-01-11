@@ -380,7 +380,7 @@ jobs:
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         scenarios:
         - normal
-        - wasmtestonbrowser
+        - WasmTestOnBrowser
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

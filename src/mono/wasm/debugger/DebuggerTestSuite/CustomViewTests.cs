@@ -27,11 +27,11 @@ namespace DebuggerTests
                 "run");
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
-            CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
-            CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
-            CheckObject(locals, "person1", "DebuggerTests.Person", description: "FirstName: Anton, SurName: Mueller, Age: 44");
-            CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: Müller, Age: 41");
+            await CheckObject(locals, "a", "DebuggerTests.WithDisplayString", description:"Some one Value 2 End");
+            await CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
+            await CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
+            await CheckObject(locals, "person1", "DebuggerTests.Person", description: "FirstName: Anton, SurName: Mueller, Age: 44");
+            await CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: Müller, Age: 41");
         }
 
         [Fact]
@@ -47,17 +47,17 @@ namespace DebuggerTests
 
             var frame = pause_location["callFrames"][0];
             var locals = await GetProperties(frame["callFrameId"].Value<string>());
-            CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
+            await CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
             var props = await GetObjectOnFrame(frame, "myList");
             Assert.Equal(1, props.Count());
 
-            CheckArray(props, "Items", "int[]", "int[4]");
+            await CheckArray(props, "Items", "int[]", "int[4]");
 
-            CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
+            await CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
             props = await GetObjectOnFrame(frame, "b");
-            CheckString(props, "Val2", "one");
+            await CheckString(props, "Val2", "one");
 
-            CheckObject(locals, "openWith", "System.Collections.Generic.Dictionary<string, string>", description: "Count = 3");
+            await CheckObject(locals, "openWith", "System.Collections.Generic.Dictionary<string, string>", description: "Count = 3");
             props = await GetObjectOnFrame(frame, "openWith");
             Assert.Equal(1, props.Count());
 
@@ -95,8 +95,10 @@ namespace DebuggerTests
                 var task = CheckProperties(pause_location);
                 tasks.Add(task);
             }
+            await Task.WhenAll(tasks);
             foreach(Task<bool> task in tasks)
             {
+                //FIXME: blocks
                 Assert.True(task.Result);
             }
         }

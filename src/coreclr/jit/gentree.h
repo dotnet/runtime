@@ -155,6 +155,7 @@ enum BasicBlockFlags : unsigned __int64;
 struct InlineCandidateInfo;
 struct GuardedDevirtualizationCandidateInfo;
 struct ClassProfileCandidateInfo;
+struct LateDevirtualizationInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -762,7 +763,6 @@ struct GenTree
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
-#if ASSERTION_PROP
     AssertionInfo gtAssertionInfo;
 
     bool GeneratesAssertion() const
@@ -784,7 +784,6 @@ struct GenTree
     {
         gtAssertionInfo = info;
     }
-#endif
 
     //
     // Cost metrics on the node. Don't allow direct access to the variable for setting.
@@ -1724,7 +1723,8 @@ public:
         }
     }
 
-    static inline bool RequiresNonNullOp2(genTreeOps oper);
+    bool        OperSupportsReverseOps() const;
+    static bool RequiresNonNullOp2(genTreeOps oper);
     bool IsValidCallArgument();
 #endif // DEBUG
 
@@ -3762,7 +3762,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-
+    GTF_CALL_M_LATE_DEVIRT             = 0x10000000, // this call has late devirtualzation info
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4731,10 +4731,11 @@ struct GenTreeCall final : public GenTree
 
     void ResetArgInfo();
 
-    GenTreeCallFlags     gtCallMoreFlags;  // in addition to gtFlags
-    gtCallTypes          gtCallType : 3;   // value from the gtCallTypes enumeration
-    var_types            gtReturnType : 5; // exact return type
-    CORINFO_CLASS_HANDLE gtRetClsHnd;      // The return type handle of the call if it is a struct; always available
+    GenTreeCallFlags     gtCallMoreFlags;    // in addition to gtFlags
+    gtCallTypes          gtCallType : 3;     // value from the gtCallTypes enumeration
+    var_types            gtReturnType : 5;   // exact return type
+    CORINFO_CLASS_HANDLE gtRetClsHnd;        // The return type handle of the call if it is a struct; always available
+    void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
 
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
@@ -4743,7 +4744,7 @@ struct GenTreeCall final : public GenTree
         InlineCandidateInfo*                  gtInlineCandidateInfo;
         GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
         ClassProfileCandidateInfo*            gtClassProfileCandidateInfo;
-        void*                                 gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
+        LateDevirtualizationInfo*             gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
@@ -7747,8 +7748,7 @@ inline GenTree* GenTree::gtGetOp1() const
 }
 
 #ifdef DEBUG
-/* static */
-inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
+/* static */ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
 {
     switch (oper)
     {
@@ -7783,6 +7783,21 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
         default:
             return false;
     }
+}
+
+inline bool GenTree::OperSupportsReverseOps() const
+{
+    if (OperIsBinary() && !OperIs(GT_COMMA, GT_INTRINSIC, GT_BOUNDS_CHECK))
+    {
+        return (AsOp()->gtGetOp1() != nullptr) && (AsOp()->gtGetOp2() != nullptr);
+    }
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    if (OperIsMultiOp())
+    {
+        return AsMultiOp()->GetOperandCount() == 2;
+    }
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    return false;
 }
 #endif // DEBUG
 

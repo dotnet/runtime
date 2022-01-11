@@ -179,7 +179,7 @@ BOOL RegisterOutOfProcessWatsonCallbacks()
 //------------------------------------------------------------------------------
 // Description
 HRESULT DwGetFileVersionInfo(
-    __in_z LPCWSTR wszFilePath,
+    _In_z_ LPCWSTR wszFilePath,
     USHORT& major,
     USHORT& minor,
     USHORT& build,
@@ -222,7 +222,7 @@ HRESULT DwGetFileVersionInfo(
 //   None
 //------------------------------------------------------------------------------
 int DwGetAppDescription(                // Number of characters written.
-    __in_z LPCWSTR wszFilePath,          // Path to the executable.
+    _In_z_ LPCWSTR wszFilePath,          // Path to the executable.
     SString& pBuf // Put description here.
     )                     // Size of buf, wide chars.
 {
@@ -354,8 +354,8 @@ int DwGetAppDescription(                // Number of characters written.
 //   None
 //------------------------------------------------------------------------------
 int DwGetAssemblyVersion(               // Number of characters written.
-    __in_z LPCWSTR  wszFilePath,         // Path to the executable.
-    __inout_ecount(cchBuf) WCHAR *pBuf, // Put description here.
+    _In_z_ LPCWSTR  wszFilePath,         // Path to the executable.
+    _Inout_updates_(cchBuf) WCHAR *pBuf, // Put description here.
     int cchBuf)                     // Size of buf, wide chars.
 {
     CONTRACTL
@@ -551,7 +551,7 @@ UINT_PTR GetIPOfThrowSite(
 //   false   -- otherwise.
 //
 //------------------------------------------------------------------------------
-BOOL ContainsUnicodeChars(__in_z LPCWSTR wsz)
+BOOL ContainsUnicodeChars(_In_z_ LPCWSTR wsz)
 {
     LIMITED_METHOD_CONTRACT;
 

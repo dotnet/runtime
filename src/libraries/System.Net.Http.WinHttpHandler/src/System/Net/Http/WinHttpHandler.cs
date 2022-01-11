@@ -1120,6 +1120,7 @@ namespace System.Net.Http
             SetSessionHandleTimeoutOptions(sessionHandle);
             SetDisableHttp2StreamQueue(sessionHandle);
             SetTcpKeepalive(sessionHandle);
+            SetRequireStreamEnd(sessionHandle);
         }
 
         private unsafe void SetTcpKeepalive(SafeWinHttpHandle sessionHandle)
@@ -1142,6 +1143,27 @@ namespace System.Net.Http
                     Interop.WinHttp.WINHTTP_OPTION_TCP_KEEPALIVE,
                     (IntPtr)(&tcpKeepalive),
                     (uint)sizeof(Interop.WinHttp.tcp_keepalive));
+            }
+        }
+
+        private void SetRequireStreamEnd(SafeWinHttpHandle sessionHandle)
+        {
+            if (WinHttpTrailersHelper.OsSupportsTrailers)
+            {
+                // Setting WINHTTP_OPTION_REQUIRE_STREAM_END to TRUE is needed for WinHttp to read trailing headers
+                // in case the response has Content-Lenght defined.
+                // According to the WinHttp team, the feature-detection logic in WinHttpTrailersHelper.OsSupportsTrailers
+                // should also indicate the support of WINHTTP_OPTION_REQUIRE_STREAM_END.
+                // WINHTTP_OPTION_REQUIRE_STREAM_END doesn't have effect on HTTP 1.1 requests, therefore it's safe to set it on
+                // the session handle so it is inhereted by all request handles.
+                uint optionData = 1;
+                if (!Interop.WinHttp.WinHttpSetOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_REQUIRE_STREAM_END, ref optionData))
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Info(this, "Failed to enable WINHTTP_OPTION_REQUIRE_STREAM_END error code: " + Marshal.GetLastWin32Error());
+                    }
+                }
             }
         }
 

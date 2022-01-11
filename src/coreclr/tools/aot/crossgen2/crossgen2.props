@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
-    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
   </ItemGroup>
 

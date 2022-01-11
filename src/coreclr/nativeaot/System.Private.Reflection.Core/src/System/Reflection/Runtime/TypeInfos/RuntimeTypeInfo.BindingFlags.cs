@@ -168,7 +168,7 @@ namespace System.Reflection.Runtime.TypeInfos
                     {
                         if (returnType is null)
                             // if we are here we have no args or property type to select over and we have more than one property with that name
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
                     }
                 }
 

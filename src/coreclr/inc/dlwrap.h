@@ -46,7 +46,7 @@ CreateUrlCacheEntryW_NoThrow(
         IN LPCWSTR lpszUrlName,
         IN DWORD dwExpectedFileSize,
         IN LPCWSTR lpszFileExtension,
-        __out_ecount(MAX_LONGPATH+1) LPWSTR lpszFileName,
+        _Out_writes_(MAX_LONGPATH+1) LPWSTR lpszFileName,
         IN DWORD dwReserved
         );
 #endif
@@ -89,7 +89,7 @@ HRESULT
 URLDownloadToCacheFileW_NoThrow(
         LPUNKNOWN lpUnkcaller,
         LPCWSTR szURL,
-        __out_ecount(dwBufLength) LPWSTR szFileName,
+        _Out_writes_(dwBufLength) LPWSTR szFileName,
         DWORD dwBufLength,
         DWORD dwReserved,
         IBindStatusCallback *pBSC
@@ -161,7 +161,7 @@ CopyBindInfo_NoThrow(
             IN LPCWSTR lpszUrlName,
             IN DWORD dwExpectedFileSize,
             IN LPCWSTR lpszFileExtension,
-            __out_ecount(MAX_LONGPATH+1) LPWSTR lpszFileName,
+            _Out_writes_(MAX_LONGPATH+1) LPWSTR lpszFileName,
             IN DWORD dwReserved
             )
     {

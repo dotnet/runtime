@@ -463,16 +463,19 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
     return SSL_get_client_CA_list(ssl);
 }
 
-void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback)
-{
-    int mode = SSL_VERIFY_PEER;
-
-    SSL_CTX_set_verify(ctx, mode, callback);
-}
-
 void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 {
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+}
+
+void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
+{
+    // We never reuse same CTX for both client and server
+    SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF, NULL);
+    if (mode == 0)
+    {
+        SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
+    }
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)

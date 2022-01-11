@@ -211,8 +211,8 @@
 /* Use static ICU */
 #cmakedefine STATIC_ICU 1
 
-/* Use OS-provided zlib */
-#cmakedefine HAVE_SYS_ZLIB 1
+/* Use in-tree zlib */
+#cmakedefine INTERNAL_ZLIB 1
 
 /* Define to 1 if you have the <poll.h> header file. */
 #cmakedefine HAVE_POLL_H 1
@@ -950,6 +950,12 @@
 
 /* QCalls disabled */
 #cmakedefine DISABLE_QCALLS 1
+
+/* Embedded PDB support disabled */
+#cmakedefine DISABLE_EMBEDDED_PDB
+
+/* log profiler compressed output disabled */
+#cmakedefine DISABLE_LOG_PROFILER_GZ
 
 /* Have __thread keyword */
 #cmakedefine MONO_KEYWORD_THREAD @MONO_KEYWORD_THREAD@

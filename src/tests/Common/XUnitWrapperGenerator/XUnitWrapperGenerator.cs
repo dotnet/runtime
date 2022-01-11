@@ -126,11 +126,18 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
 
                 bool isMergedTestRunnerAssembly = configOptions.GlobalOptions.IsMergedTestRunnerAssembly();
+                configOptions.GlobalOptions.TryGetValue("build_property.TargetOS", out string? targetOS);
 
-                // TODO: add error (maybe in MSBuild that referencing CoreLib directly from a merged test runner is not supported)
                 if (isMergedTestRunnerAssembly)
                 {
-                    context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
+                    if (targetOS?.ToLowerInvariant() is "ios" or "iossimulator" or "tvos" or "tvossimulator" or "maccatalyst" or "android" or "browser")
+                    {
+                        context.AddSource("XHarnessRunner.g.cs", GenerateXHarnessTestRunner(methods, aliasMap, assemblyName));
+                    }
+                    else
+                    {
+                        context.AddSource("FullRunner.g.cs", GenerateFullTestRunner(methods, aliasMap, assemblyName));
+                    }
                 }
                 else
                 {
@@ -149,7 +156,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = args.Length != 0 ? new XUnitWrapperLibrary.TestFilter(args[0]) : null;");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
-        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
 
         foreach (ITestInfo test in testInfos)
         {
@@ -158,6 +165,34 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.AppendLine($@"System.IO.File.WriteAllText(""{assemblyName}.testResults.xml"", summary.GetTestResultOutput(""{assemblyName}""));");
         builder.AppendLine("return 100;");
+
+        return builder.ToString();
+    }
+
+    private static string GenerateXHarnessTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string assemblyName)
+    {
+        // For simplicity, we'll use top-level statements for the generated Main method.
+        StringBuilder builder = new();
+        builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
+
+        
+        builder.AppendLine("try {");
+        builder.AppendLine($@"return await XHarnessRunnerLibrary.RunnerEntryPoint.RunTests(RunTests, ""{assemblyName}"", args.Length != 0 ? args[0] : null);");
+        builder.AppendLine("} catch(System.Exception ex) { System.Console.WriteLine(ex.ToString()); return 101; }");
+
+        builder.AppendLine("static XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        builder.AppendLine("{");
+        builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
+        ITestReporterWrapper reporter = new WrapperLibraryTestSummaryReporting("summary", "filter");
+        builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = new();");
+
+        foreach (ITestInfo test in testInfos)
+        {
+            builder.AppendLine(test.GenerateTestExecution(reporter));
+        }
+
+        builder.AppendLine("return summary;");
+        builder.AppendLine("}");
 
         return builder.ToString();
     }
