@@ -115,7 +115,7 @@ namespace Mono.Linker.Steps
 				// skipped due to feature conditions.
 				bool processAllAssemblies = ShouldProcessAllAssemblies (assemblyNav, out AssemblyNameReference? name);
 				if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies) {
-					LogWarning ($"XML contains unsupported wildcard for assembly 'fullname' attribute.", 2100, assemblyNav);
+					LogWarning (assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
 					continue;
 				}
 
@@ -124,7 +124,7 @@ namespace Mono.Linker.Steps
 					Debug.Assert (!processAllAssemblies);
 					Debug.Assert (_resource != null);
 					if (_resource.Value.Assembly.Name.Name != name!.Name) {
-						LogWarning ($"Embedded XML in assembly '{_resource.Value.Assembly.Name.Name}' contains assembly 'fullname' attribute for another assembly '{name}'.", 2101, assemblyNav);
+						LogWarning (assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name.ToString ());
 						continue;
 					}
 					assemblyToProcess = _resource.Value.Assembly;

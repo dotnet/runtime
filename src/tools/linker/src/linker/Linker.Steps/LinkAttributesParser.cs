@@ -184,13 +184,13 @@ namespace Mono.Linker.Steps
 			foreach (XPathNavigator propertyNav in nav.SelectChildren ("property", string.Empty)) {
 				string propertyName = GetName (propertyNav);
 				if (string.IsNullOrEmpty (propertyName)) {
-					LogWarning ($"Property element does not contain attribute 'name'.", 2051, propertyNav);
+					LogWarning (propertyNav, DiagnosticId.XmlPropertyDoesNotContainAttributeName);
 					continue;
 				}
 
 				PropertyDefinition? property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
 				if (property == null) {
-					LogWarning ($"Property '{propertyName}' could not be found.", 2052, propertyNav);
+					LogWarning (propertyNav, DiagnosticId.XmlCouldNotFindProperty, propertyName);
 					continue;
 				}
 

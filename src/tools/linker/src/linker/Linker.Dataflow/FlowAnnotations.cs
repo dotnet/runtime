@@ -192,9 +192,7 @@ namespace Mono.Linker.Dataflow
 
 					if (!IsTypeInterestingForDataflow (field.FieldType)) {
 						// Already know that there's a non-empty annotation on a field which is not System.Type/String and we're about to ignore it
-						_context.LogWarning (
-							$"Field '{field.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to fields of type 'System.Type' or 'System.String'.",
-							2097, field, subcategory: MessageSubCategory.TrimAnalysis);
+						_context.LogWarning (field, DiagnosticId.DynamicallyAccessedMembersOnFieldCanOnlyApplyToTypesOrStrings, field.GetDisplayName ());
 						continue;
 					}
 
@@ -242,9 +240,8 @@ namespace Mono.Linker.Dataflow
 							continue;
 
 						if (!IsTypeInterestingForDataflow (methodParameter.ParameterType)) {
-							_context.LogWarning (
-								$"Parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method)}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to parameters of type 'System.Type' or 'System.String'.",
-								2098, method, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersOnMethodParameterCanOnlyApplyToTypesOrStrings,
+								DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter), DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method));
 							continue;
 						}
 
@@ -256,9 +253,7 @@ namespace Mono.Linker.Dataflow
 
 					DynamicallyAccessedMemberTypes returnAnnotation = GetMemberTypesForDynamicallyAccessedMembersAttribute (method, providerIfNotMember: method.MethodReturnType);
 					if (returnAnnotation != DynamicallyAccessedMemberTypes.None && !IsTypeInterestingForDataflow (method.ReturnType)) {
-						_context.LogWarning (
-							$"Return type of method '{method.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.",
-							2106, method, subcategory: MessageSubCategory.TrimAnalysis);
+						_context.LogWarning (method, DiagnosticId.DynamicallyAccessedMembersOnMethodReturnValueCanOnlyApplyToTypesOrStrings, method.GetDisplayName ());
 					}
 
 					DynamicallyAccessedMemberTypes[]? genericParameterAnnotations = null;
@@ -301,9 +296,7 @@ namespace Mono.Linker.Dataflow
 						continue;
 
 					if (!IsTypeInterestingForDataflow (property.PropertyType)) {
-						_context.LogWarning (
-							$"Property '{property.GetDisplayName ()}' has 'DynamicallyAccessedMembersAttribute', but that attribute can only be applied to properties of type 'System.Type' or 'System.String'.",
-							2099, property, subcategory: MessageSubCategory.TrimAnalysis);
+						_context.LogWarning (property, DiagnosticId.DynamicallyAccessedMembersOnPropertyCanOnlyApplyToTypesOrStrings, property.GetDisplayName ());
 						continue;
 					}
 
@@ -367,9 +360,7 @@ namespace Mono.Linker.Dataflow
 
 					if (backingField != null) {
 						if (annotatedFields.Any (a => a.Field == backingField)) {
-							_context.LogWarning (
-								$"'DynamicallyAccessedMemberAttribute' on property '{property.GetDisplayName ()}' conflicts with the same attribute on its backing field '{backingField.GetDisplayName ()}'.",
-								2056, backingField, subcategory: MessageSubCategory.TrimAnalysis);
+							_context.LogWarning (backingField, DiagnosticId.DynamicallyAccessedMembersOnPropertyConflictsWithBackingField, property.GetDisplayName (), backingField.GetDisplayName ());
 						} else {
 							annotatedFields.Add (new FieldAnnotation (backingField, annotation));
 						}
@@ -537,34 +528,24 @@ namespace Mono.Linker.Dataflow
 			switch (provider) {
 			case ParameterDefinition parameterDefinition:
 				var baseParameterDefinition = (ParameterDefinition) baseProvider;
-				_context.LogWarning (
-					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (parameterDefinition)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (parameterDefinition.Method)}' " +
-					$"don't match overridden parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (baseParameterDefinition)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (baseParameterDefinition.Method)}'. " +
-					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
-					2092, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				_context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides,
+					DiagnosticUtilities.GetParameterNameForErrorMessage (parameterDefinition), DiagnosticUtilities.GetMethodSignatureDisplayName (parameterDefinition.Method),
+					DiagnosticUtilities.GetParameterNameForErrorMessage (baseParameterDefinition), DiagnosticUtilities.GetMethodSignatureDisplayName (baseParameterDefinition.Method));
 				break;
 			case MethodReturnType methodReturnType:
-				_context.LogWarning (
-					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodReturnType.Method)}' " +
-					$"don't match overridden return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (((MethodReturnType) baseProvider).Method)}'. " +
-					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
-					2093, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				_context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides,
+					DiagnosticUtilities.GetMethodSignatureDisplayName (methodReturnType.Method), DiagnosticUtilities.GetMethodSignatureDisplayName (((MethodReturnType) baseProvider).Method));
 				break;
 			// No fields - it's not possible to have a virtual field and override it
 			case MethodDefinition methodDefinition:
-				_context.LogWarning (
-					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodDefinition)}' " +
-					$"don't match overridden implicit 'this' parameter of method '{DiagnosticUtilities.GetMethodSignatureDisplayName ((MethodDefinition) baseProvider)}'. " +
-					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
-					2094, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				_context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnImplicitThisBetweenOverrides,
+					DiagnosticUtilities.GetMethodSignatureDisplayName (methodDefinition), DiagnosticUtilities.GetMethodSignatureDisplayName ((MethodDefinition) baseProvider));
 				break;
 			case GenericParameter genericParameterOverride:
 				var genericParameterBase = (GenericParameter) baseProvider;
-				_context.LogWarning (
-					$"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter '{genericParameterOverride.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterOverride)}' " +
-					$"don't match overridden generic parameter '{genericParameterBase.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterBase)}'. " +
-					$"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.",
-					2095, origin, subcategory: MessageSubCategory.TrimAnalysis);
+				_context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides,
+					genericParameterOverride.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterOverride),
+					genericParameterBase.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterBase));
 				break;
 			default:
 				throw new NotImplementedException ($"Unsupported provider type '{provider.GetType ()}'.");
