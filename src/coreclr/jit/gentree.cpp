@@ -3463,10 +3463,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_STR:
             case GT_CNS_LNG:
             case GT_CNS_INT:
-            // TODO: workround, should amend for LoongArch64.
+                // TODO: workround, should amend for LoongArch64.
                 costEx = 4;
                 costSz = 4;
-            goto COMMON_CNS;
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -21498,28 +21498,28 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
             DWORD numFloatFields = comp->info.compCompHnd->getFieldTypeByHnd(retClsHnd);
-            BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
+            BYTE  gcPtrs[2]      = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 
             if (numFloatFields & 0x8)
             {
                 assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
-                m_regType[0] = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[0]                = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1]                = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
                 comp->compFloatingPointUsed = true;
             }
             else if (numFloatFields & 0x2)
             {
                 assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
-                m_regType[0] = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = numFloatFields & 0x20 ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
+                m_regType[0]                = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1]                = numFloatFields & 0x20 ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
                 comp->compFloatingPointUsed = true;
             }
             else if (numFloatFields & 0x4)
             {
                 assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
-                m_regType[0] = numFloatFields & 0x10 ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[0]                = numFloatFields & 0x10 ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[1]                = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
                 comp->compFloatingPointUsed = true;
             }
             else
@@ -21728,10 +21728,10 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
     }
     else
     {
-        noway_assert(idx < 2);                                  // Up to 2 return registers for two-float-field structs
+        noway_assert(idx < 2); // Up to 2 return registers for two-float-field structs
         if (varTypeIsIntegralOrI(regType))
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // V0 or V1
-        else //if (!varTypeIsIntegralOrI(regType))
+        else // if (!varTypeIsIntegralOrI(regType))
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
     }
 

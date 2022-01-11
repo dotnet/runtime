@@ -492,7 +492,6 @@ INSTS(fld_d,	"fld.d",	0,	LD,	IF_LA,	0x2b800000)
 INSTS(fst_s,	"fst.s",	0,	ST,	IF_LA,	0x2b400000)
 INSTS(fst_d,	"fst.d",	0,	ST,	IF_LA,	0x2bc00000)
 
-
 // clang-format on
 /*****************************************************************************/
 #undef INSTS

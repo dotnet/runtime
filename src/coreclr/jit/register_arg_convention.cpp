@@ -44,11 +44,11 @@ unsigned InitVarDscInfo::allocRegArg(var_types type, unsigned numRegs /* = 1 */)
         nextReg(TYP_FLOAT, numRegs);
 #elif defined(TARGET_LOONGARCH64)
         // LA-ABI64.
-        if (numRegs > MAX_PASS_MULTIREG_BYTES/TARGET_POINTER_SIZE)
+        if (numRegs > MAX_PASS_MULTIREG_BYTES / TARGET_POINTER_SIZE)
         {
             assert(varTypeIsStruct(type));
-            nextReg(TYP_INT, 1);//TYP_BYREF
-        }//TODO:struct-float.
+            nextReg(TYP_INT, 1); // TYP_BYREF
+        }                        // TODO:struct-float.
         else
         {
             nextReg(type, numRegs);

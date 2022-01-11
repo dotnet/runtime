@@ -1785,19 +1785,24 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     else
     {
         //// Ngen case - GS cookie constant needs to be accessed through an indirection.
-        //instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        //GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
+        // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        // GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, regGSConst, regGSConst, 0);
         if (compiler->opts.compReloc)
         {
-            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+            GetEmitter()->emitIns_R_AI(INS_bl, EA_PTR_DSP_RELOC, regGSConst,
+                                       (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         }
         else
-        {////TODO:LoongArch64 should amend for optimize!
-            //GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-            //GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst, );
-            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, regGSConst, ((ssize_t)compiler->gsGlobalSecurityCookieAddr & 0xfffff000)>>12);
-            GetEmitter()->emitIns_R_I(INS_lu32i_d, EA_PTRSIZE, regGSConst, (ssize_t)compiler->gsGlobalSecurityCookieAddr >> 32);
-            GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst, ((ssize_t)compiler->gsGlobalSecurityCookieAddr & 0xfff)>>2);
+        { ////TODO:LoongArch64 should amend for optimize!
+            // GetEmitter()->emitIns_R_I(INS_pcaddu12i, EA_PTRSIZE, regGSConst,
+            // (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+            // GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst, );
+            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, regGSConst,
+                                      ((ssize_t)compiler->gsGlobalSecurityCookieAddr & 0xfffff000) >> 12);
+            GetEmitter()->emitIns_R_I(INS_lu32i_d, EA_PTRSIZE, regGSConst,
+                                      (ssize_t)compiler->gsGlobalSecurityCookieAddr >> 32);
+            GetEmitter()->emitIns_R_R_I(INS_ldptr_d, EA_PTRSIZE, regGSConst, regGSConst,
+                                        ((ssize_t)compiler->gsGlobalSecurityCookieAddr & 0xfff) >> 2);
         }
         regSet.verifyRegUsed(regGSConst);
     }
@@ -1809,7 +1814,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     GetEmitter()->emitIns_J_cond_la(INS_beq, gsCheckBlk, regGSConst, regGSValue);
 
     // regGSConst and regGSValue aren't needed anymore, we can use them for helper call
-    genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);//no branch-delay!
+    genEmitHelperCall(CORINFO_HELP_FAIL_FAST, 0, EA_UNKNOWN, regGSConst);
     genDefineTempLabel(gsCheckBlk);
 }
 #endif // TARGET_LOONGARCH64
@@ -1921,8 +1926,8 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
     }
     else
     {
-        // The code to throw the exception will be generated inline, and
-        //  we will jump around it in the normal non-exception case.
+// The code to throw the exception will be generated inline, and
+//  we will jump around it in the normal non-exception case.
 
 #ifndef TARGET_LOONGARCH64
         BasicBlock*  tgtBlk          = nullptr;
@@ -3324,8 +3329,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
     noway_assert(regArgMaskLive != 0);
 
     unsigned varNum;
-    unsigned regArgsVars[MAX_REG_ARG*2] = {0};
-    unsigned regArgNum = 0;
+    unsigned regArgsVars[MAX_REG_ARG * 2] = {0};
+    unsigned regArgNum                    = 0;
     for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
     {
         LclVarDsc* varDsc = compiler->lvaTable + varNum;
@@ -3349,7 +3354,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
             {
                 if (varDsc->GetArgInitReg() > REG_ARG_LAST)
                 {
-                    inst_Mov(genIsValidFloatReg(varDsc->GetArgInitReg()) ? TYP_DOUBLE : TYP_LONG, varDsc->GetArgInitReg(), varDsc->GetArgReg(), false);
+                    inst_Mov(genIsValidFloatReg(varDsc->GetArgInitReg()) ? TYP_DOUBLE : TYP_LONG,
+                             varDsc->GetArgInitReg(), varDsc->GetArgReg(), false);
                     regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
                 }
                 else
@@ -3386,7 +3392,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
             {
                 storeType = varDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
             }
-            else //if (emitter::isGeneralRegister(varDsc->GetArgReg()))
+            else // if (emitter::isGeneralRegister(varDsc->GetArgReg()))
             {
                 assert(emitter::isGeneralRegister(varDsc->GetArgReg()));
                 if (varDsc->lvIs4Field1)
@@ -3394,7 +3400,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 else
                     storeType = varDsc->GetLayout()->GetGCPtrType(0);
             }
-            slotSize  = (unsigned)emitActualTypeSize(storeType);
+            slotSize = (unsigned)emitActualTypeSize(storeType);
 
 #if FEATURE_MULTIREG_ARGS
             // Must be <= MAX_PASS_MULTIREG_BYTES or else it wouldn't be passed in registers
@@ -3426,12 +3432,12 @@ void CodeGen::genFnPrologCalleeRegArgs()
         {
             assert(srcRegNum != varDsc->GetOtherArgReg());
 
-            int tmp_offset = 0;
-            regNumber tmp_reg = REG_NA;
+            int       tmp_offset = 0;
+            regNumber tmp_reg    = REG_NA;
 
             bool FPbased;
-            int baseOffset = 0;//(regArgTab[argNum].slot - 1) * slotSize;
-            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
+            int  baseOffset = 0; //(regArgTab[argNum].slot - 1) * slotSize;
+            int  base       = compiler->lvaFrameAddress(varNum, &FPbased);
 
             base += baseOffset;
 
@@ -3444,9 +3450,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 if (tmp_reg == REG_NA)
                 {
                     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                    tmp_offset = base;
-                    tmp_reg = REG_R21;
-                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                    tmp_offset     = base;
+                    tmp_reg        = REG_R21;
+                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                     GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                     GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
                     GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, -8);
@@ -3466,10 +3472,10 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 if (emitter::isFloatReg(varDsc->GetOtherArgReg()))
                 {
                     baseOffset = (int)EA_SIZE(emitActualTypeSize(storeType));
-                    storeType = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
-                    size = EA_SIZE(emitActualTypeSize(storeType));
+                    storeType  = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
+                    size       = EA_SIZE(emitActualTypeSize(storeType));
                     baseOffset = baseOffset < (int)size ? (int)size : baseOffset;
-                    srcRegNum = varDsc->GetOtherArgReg();
+                    srcRegNum  = varDsc->GetOtherArgReg();
                 }
                 else if (emitter::isGeneralRegister(varDsc->GetOtherArgReg()))
                 {
@@ -3478,10 +3484,10 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         storeType = TYP_INT;
                     else
                         storeType = varDsc->GetLayout()->GetGCPtrType(1);
-                    size = emitActualTypeSize(storeType);
+                    size          = emitActualTypeSize(storeType);
                     if (baseOffset < (int)EA_SIZE(size))
                         baseOffset = (int)EA_SIZE(size);
-                    srcRegNum = varDsc->GetOtherArgReg();
+                    srcRegNum      = varDsc->GetOtherArgReg();
                 }
 
                 if (srcRegNum == varDsc->GetOtherArgReg())
@@ -3497,9 +3503,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         if (tmp_reg == REG_NA)
                         {
                             regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                            tmp_offset = base;
-                            tmp_reg = REG_R21;
-                            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                            tmp_offset     = base;
+                            tmp_reg        = REG_R21;
+                            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                             GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                             GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
                             GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, -8);
@@ -3510,7 +3516,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
                             GetEmitter()->emitIns_S_R(ins_Store(storeType), size, srcRegNum, varNum, baseOffset);
                         }
                     }
-                    regArgMaskLive &= ~genRegMask(srcRegNum);//maybe do this later is better!
+                    regArgMaskLive &= ~genRegMask(srcRegNum); // maybe do this later is better!
                 }
                 else if (varDsc->lvIsSplit)
                 {
@@ -3518,7 +3524,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     baseOffset = 8;
                     base += 8;
 
-                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size/*EA_PTRSIZE*/, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
+                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size /*EA_PTRSIZE*/, REG_SCRATCH, REG_SPBASE,
+                                                  genTotalFrameSize());
                     if ((-2048 <= base) && (base < 2048))
                     {
                         GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, baseOffset);
@@ -3528,9 +3535,9 @@ void CodeGen::genFnPrologCalleeRegArgs()
                         if (tmp_reg == REG_NA)
                         {
                             regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                            tmp_offset = base;
-                            tmp_reg = REG_R21;
-                            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                            tmp_offset     = base;
+                            tmp_reg        = REG_R21;
+                            GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                             GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                             GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
                             GetEmitter()->emitIns_S_R(INS_st_d, size, REG_ARG_LAST, varNum, -8);
@@ -3554,23 +3561,25 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     while (regArgNum > 0)
     {
-        varNum = regArgsVars[regArgNum - 1];
+        varNum            = regArgsVars[regArgNum - 1];
         LclVarDsc* varDsc = compiler->lvaTable + varNum;
 
         if (varDsc->GetArgInitReg() > varDsc->GetArgReg())
         {
             var_types destMemType = varDsc->TypeGet();
-            GetEmitter()->emitIns_R_R(ins_Copy(destMemType), emitActualTypeSize(destMemType), varDsc->GetArgInitReg(), varDsc->GetArgReg());
+            GetEmitter()->emitIns_R_R(ins_Copy(destMemType), emitActualTypeSize(destMemType), varDsc->GetArgInitReg(),
+                                      varDsc->GetArgReg());
             regArgNum--;
             regArgMaskLive &= ~genRegMask(varDsc->GetArgReg());
         }
         else
         {
-            for (int i=0; i < regArgNum; i++)
+            for (int i = 0; i < regArgNum; i++)
             {
-                LclVarDsc* varDsc2 = compiler->lvaTable + regArgsVars[i];
-                var_types destMemType = varDsc2->GetRegisterType();
-                inst_Mov(destMemType, varDsc2->GetArgInitReg(), varDsc2->GetArgReg(), /* canSkip */ false, emitActualTypeSize(destMemType));
+                LclVarDsc* varDsc2     = compiler->lvaTable + regArgsVars[i];
+                var_types  destMemType = varDsc2->GetRegisterType();
+                inst_Mov(destMemType, varDsc2->GetArgInitReg(), varDsc2->GetArgReg(), /* canSkip */ false,
+                         emitActualTypeSize(destMemType));
                 regArgMaskLive &= ~genRegMask(varDsc2->GetArgReg());
             }
             break;
@@ -3578,9 +3587,8 @@ void CodeGen::genFnPrologCalleeRegArgs()
     }
 
     assert(!regArgMaskLive);
-
 }
-#else  //!defined(TARGET_LOONGARCH64)
+#else //! defined(TARGET_LOONGARCH64)
 void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbered, RegState* regState)
 {
 #ifdef DEBUG
@@ -3654,20 +3662,20 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     //
     struct regArgElem
     {
-        unsigned varNum; // index into compiler->lvaTable[] for this register argument
+        unsigned  varNum;  // index into compiler->lvaTable[] for this register argument
 #if defined(UNIX_AMD64_ABI)
-        var_types type;   // the Jit type of this regArgTab entry
-#endif                    // defined(UNIX_AMD64_ABI)
-        unsigned trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
-                          // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
-                          // argument register number 'x'. Only used when circular = true.
-        char slot;        // 0 means the register is not used for a register argument
-                          // 1 means the first part of a register argument
-                          // 2, 3 or 4  means the second,third or fourth part of a multireg argument
-        bool stackArg;    // true if the argument gets homed to the stack
-        bool writeThru;   // true if the argument gets homed to both stack and register
-        bool processed;   // true after we've processed the argument (and it is in its final location)
-        bool circular;    // true if this register participates in a circular dependency loop.
+        var_types type;    // the Jit type of this regArgTab entry
+#endif // defined(UNIX_AMD64_ABI)
+        unsigned  trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
+                           // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
+                           // argument register number 'x'. Only used when circular = true.
+        char slot;         // 0 means the register is not used for a register argument
+                           // 1 means the first part of a register argument
+                           // 2, 3 or 4  means the second,third or fourth part of a multireg argument
+        bool stackArg;     // true if the argument gets homed to the stack
+        bool writeThru;    // true if the argument gets homed to both stack and register
+        bool processed;    // true after we've processed the argument (and it is in its final location)
+        bool circular;     // true if this register participates in a circular dependency loop.
 
 #ifdef UNIX_AMD64_ABI
 
@@ -4470,10 +4478,10 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             else
 #endif // TARGET_XARCH
             {
-                var_types destMemType = varDscDest->TypeGet();
+                var_types destMemType    = varDscDest->TypeGet();
 
 #ifdef TARGET_ARM
-                bool cycleAllDouble = true; // assume the best
+                bool      cycleAllDouble = true; // assume the best
 
                 unsigned iter = begReg;
                 do
@@ -4898,8 +4906,8 @@ void CodeGen::genEnregisterIncomingStackArgs()
     unsigned varNum = 0;
 
 #ifdef TARGET_LOONGARCH64
-    int tmp_offset = 0;
-    regNumber tmp_reg = REG_NA;
+    int       tmp_offset = 0;
+    regNumber tmp_reg    = REG_NA;
 #endif
 
     for (LclVarDsc *varDsc = compiler->lvaTable; varNum < compiler->lvaCount; varNum++, varDsc++)
@@ -4951,8 +4959,8 @@ void CodeGen::genEnregisterIncomingStackArgs()
 #ifdef TARGET_LOONGARCH64
         {
             bool FPbased;
-            //int baseOffset = (regArgTab[argNum].slot - 1) * slotSize;
-            int  base = compiler->lvaFrameAddress(varNum, &FPbased);
+            // int baseOffset = (regArgTab[argNum].slot - 1) * slotSize;
+            int base = compiler->lvaFrameAddress(varNum, &FPbased);
 
             if ((-2048 <= base) && (base < 2048))
             {
@@ -4963,9 +4971,9 @@ void CodeGen::genEnregisterIncomingStackArgs()
                 if (tmp_reg == REG_NA)
                 {
                     regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-                    tmp_offset = base;
-                    tmp_reg = REG_R21;
-                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset>>12);
+                    tmp_offset     = base;
+                    tmp_reg        = REG_R21;
+                    GetEmitter()->emitIns_R_I(INS_lu12i_w, EA_PTRSIZE, REG_R21, tmp_offset >> 12);
                     GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, REG_R21, tmp_offset & 0xfff);
                     GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_R21, REG_R21, reg2);
                     GetEmitter()->emitIns_R_S(ins_Load(regType), emitTypeSize(regType), regNum, varNum, -8);
@@ -5959,8 +5967,9 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
             if (!IsSaveFpRaWithAllCalleeSavedRegisters())
             {
-                JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
-                        totalFrameSize, dspBool(compiler->compLocallocUsed));
+                JITDUMP("Frame type 1(save FP/RA at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                        dspBool(compiler->compLocallocUsed));
 
                 frameType = 1;
 
@@ -5974,17 +5983,18 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
                 calleeSaveSPOffset = compiler->compLclFrameSize;
 
-                JITDUMP("Frame type 2(Top). #outsz=%d; #framesz=%d; localloc? %s\n", unsigned(compiler->lvaOutgoingArgSpaceSize),
-                        totalFrameSize, dspBool(compiler->compLocallocUsed));
-
+                JITDUMP("Frame type 2(Top). #outsz=%d; #framesz=%d; localloc? %s\n",
+                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
+                        dspBool(compiler->compLocallocUsed));
             }
-            //calleeSaveSPDelta = 0;
+            // calleeSaveSPDelta = 0;
         }
         else
         {
             if (!IsSaveFpRaWithAllCalleeSavedRegisters())
             {
-                JITDUMP("Frame type 3(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; localloc? %s\n",
+                JITDUMP("Frame type 3(save FP/RA at bottom). #outsz=%d; #framesz=%d; #calleeSaveRegsPushed:%d; "
+                        "localloc? %s\n",
                         unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, compiler->compCalleeRegsPushed,
                         dspBool(compiler->compLocallocUsed));
 
@@ -5993,13 +6003,13 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                 int outSzAligned;
                 if (compiler->lvaOutgoingArgSpaceSize >= 2040)
                 {
-                    int offset = totalFrameSize - compiler->compLclFrameSize - 2*REGSIZE_BYTES;
-                    calleeSaveSPDelta = AlignUp((UINT)offset, STACK_ALIGN);
+                    int offset         = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                    calleeSaveSPDelta  = AlignUp((UINT)offset, STACK_ALIGN);
                     calleeSaveSPOffset = calleeSaveSPDelta - offset;
 
-                    int offset2 = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
+                    int offset2       = totalFrameSize - calleeSaveSPDelta - compiler->lvaOutgoingArgSpaceSize;
                     calleeSaveSPDelta = AlignUp((UINT)offset2, STACK_ALIGN);
-                    offset2 = calleeSaveSPDelta - offset2;
+                    offset2           = calleeSaveSPDelta - offset2;
 
                     if (compiler->compLocallocUsed)
                     {
@@ -6009,8 +6019,8 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                     }
                     else
                     {
-                        outSzAligned = compiler->lvaOutgoingArgSpaceSize &  ~0xf;
-                        //if (outSzAligned > 0)
+                        outSzAligned = compiler->lvaOutgoingArgSpaceSize & ~0xf;
+                        // if (outSzAligned > 0)
                         {
                             genStackPointerAdjustment(outSzAligned, REG_R21, nullptr, /* reportUnwindData */ true);
                         }
@@ -6026,7 +6036,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 
                     genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
 
-                    calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2*REGSIZE_BYTES;
+                    calleeSaveSPDelta = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
                     calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDelta, STACK_ALIGN);
                 }
                 else
@@ -6047,11 +6057,12 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                     GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, offset2);
                     compiler->unwindSaveReg(REG_FP, offset2);
 
-                    calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2*REGSIZE_BYTES;
-                    calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
+                    calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize - 2 * REGSIZE_BYTES;
+                    calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
                     calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
 
-                    genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
+                    genStackPointerAdjustment(totalFrameSize - calleeSaveSPDelta, REG_R21, nullptr,
+                                              /* reportUnwindData */ true);
                 }
             }
             else
@@ -6063,7 +6074,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
                         dspBool(compiler->compLocallocUsed));
 
                 calleeSaveSPOffset = totalFrameSize - compiler->compLclFrameSize;
-                calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
+                calleeSaveSPDelta  = AlignUp((UINT)calleeSaveSPOffset, STACK_ALIGN);
                 calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPOffset;
 
                 if (compiler->compLocallocUsed)
@@ -6115,11 +6126,11 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     }
     else if (frameType == 3)
     {
-        //genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
+        // genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
     }
     else if (frameType == 4)
     {
-        //genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
+        // genStackPointerAdjustment(calleeSaveSPDelta, REG_R21, nullptr, /* reportUnwindData */ true);
     }
     else
     {
@@ -6710,7 +6721,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         regMaskTP regMask;
 
         regMaskTP availMask = regSet.rsGetModifiedRegsMask() | RBM_INT_CALLEE_TRASH; // Set of available registers
-        //see: src/jit/registerloongarch64.h
+        // see: src/jit/registerloongarch64.h
         availMask &= ~intRegState.rsCalleeRegArgMaskLiveIn; // Remove all of the incoming argument registers as they are
                                                             // currently live
         availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg as we will zero it and maybe use it for
@@ -6721,7 +6732,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
         // rAddr is not a live incoming argument reg
         assert((genRegMask(rAddr) & intRegState.rsCalleeRegArgMaskLiveIn) == 0);
-        assert(untrLclLo%4 == 0);
+        assert(untrLclLo % 4 == 0);
 
         if ((-2048 <= untrLclLo) && (untrLclLo < 2048))
         {
@@ -6815,7 +6826,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
         noway_assert(uCntBytes == 0);
 
-#else  // TARGET*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
     }
@@ -7190,7 +7201,7 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
                                 compiler->lvaCachedGenericContextArgOffset());
 #elif defined(TARGET_LOONGARCH64)
     genInstrWithConstant(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
-                                compiler->lvaCachedGenericContextArgOffset(), REG_R21);
+                         compiler->lvaCachedGenericContextArgOffset(), REG_R21);
 #else  // !ARM64 !ARM !LOONGARCH64
     // mov [ebp-lvaCachedGenericContextArgOffset()], reg
     GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, genFramePointerReg(),
@@ -9407,20 +9418,20 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             switch (addrInfo.accessType)
             {
                 case IAT_VALUE:
-                    //if (validImmForBAL((ssize_t)addrInfo.addr))
-                    //{
-                    //    // Simple direct call
+                // if (validImmForBAL((ssize_t)addrInfo.addr))
+                //{
+                //    // Simple direct call
 
-                    //    //TODO for LA.
-                    //    callType   = emitter::EC_FUNC_TOKEN;
-                    //    addr       = addrInfo.addr;
-                    //    indCallReg = REG_NA;
-                    //    break;
-                    //}
+                //    //TODO for LA.
+                //    callType   = emitter::EC_FUNC_TOKEN;
+                //    addr       = addrInfo.addr;
+                //    indCallReg = REG_NA;
+                //    break;
+                //}
 
-                    //// otherwise the target address doesn't fit in an immediate
-                    //// so we have to burn a register...
-                    //__fallthrough;
+                //// otherwise the target address doesn't fit in an immediate
+                //// so we have to burn a register...
+                //__fallthrough;
 
                 case IAT_PVALUE:
                     // Load the address into a register, load indirect and call  through a register
@@ -9490,7 +9501,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             // https://github.com/dotnet/coreclr/issues/4827
             // Do we need a special encoding for stack walker like rex.w prefix for x64?
 
-            //TODO for LA: whether the relative address is enough for optimize?
+            // TODO for LA: whether the relative address is enough for optimize?
             GetEmitter()->emitIns_R_R_I(INS_jirl, emitTypeSize(TYP_I_IMPL), REG_R0, REG_FASTTAILCALL_TARGET, 0);
         }
 #endif // FEATURE_FASTTAILCALL
@@ -10656,7 +10667,7 @@ bool Compiler::IsMultiRegReturnedType(CORINFO_CLASS_HANDLE hClass, CorInfoCallCo
     structPassingKind howToReturnStruct;
     var_types         returnType = getReturnTypeForStruct(hClass, callConv, &howToReturnStruct);
 
-#if defined(TARGET_ARM64)  || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     return (varTypeIsStruct(returnType) && (howToReturnStruct != SPK_PrimitiveType));
 #else
     return (varTypeIsStruct(returnType));
@@ -12206,16 +12217,16 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
 #ifdef TARGET_LOONGARCH64
-        var_types type = retTypeDesc.GetReturnRegType(0);
-        regNumber toReg  = retTypeDesc.GetABIReturnReg(0);
+        var_types type  = retTypeDesc.GetReturnRegType(0);
+        regNumber toReg = retTypeDesc.GetABIReturnReg(0);
         GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), 0);
         if (regCount > 1)
         {
             assert(regCount == 2);
             int offset = genTypeSize(type);
-            type = retTypeDesc.GetReturnRegType(1);
-            offset = offset < genTypeSize(type) ? genTypeSize(type) : offset;
-            toReg  = retTypeDesc.GetABIReturnReg(1);
+            type       = retTypeDesc.GetReturnRegType(1);
+            offset     = offset < genTypeSize(type) ? genTypeSize(type) : offset;
+            toReg      = retTypeDesc.GetABIReturnReg(1);
             GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), toReg, lclNode->GetLclNum(), offset);
         }
 #else

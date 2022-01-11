@@ -900,13 +900,13 @@ AGAIN:
                     regSet.verifyRegUsed(regTmp);
                     return;
             }
-#else  // !TARGET_ARM
+#else // !TARGET_ARM
 #ifdef TARGET_LOONGARCH64
             if (emitter::isFloatReg(reg))
-                assert((ins==INS_fld_d) || (ins==INS_fld_s));
+                assert((ins == INS_fld_d) || (ins == INS_fld_s));
             else if (emitter::isGeneralRegister(reg) && (ins != INS_lea))
-            {//TODO should amend for LOONGARCH64 !!!
-                //assert((ins==INS_ld_d) || (ins==INS_ld_w));
+            { // TODO should amend for LOONGARCH64 !!!
+                // assert((ins==INS_ld_d) || (ins==INS_ld_w));
                 ins = size == EA_4BYTE ? INS_ld_w : INS_ld_d;
             }
 #endif
@@ -1476,7 +1476,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
 
 #if defined(TARGET_LOONGARCH64)
 bool CodeGenInterface::validImmForBAL(ssize_t addr)
-{//TODO: can amend/optimize for LoongArch64.
+{ // TODO: can amend/optimize for LoongArch64.
     return false;
 }
 #endif // TARGET_LOONGARCH64
@@ -1778,8 +1778,8 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
     }
     else
     {
-        //assert((TYP_LONG == srcType) || (TYP_ULONG == srcType));
-        ins = INS_ld_d;//default ld_d.
+        // assert((TYP_LONG == srcType) || (TYP_ULONG == srcType));
+        ins = INS_ld_d; // default ld_d.
     }
 #else
     NYI("ins_Load");
@@ -2005,8 +2005,8 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
         ins = INS_st_h;
     else if ((TYP_INT == dstType) || (TYP_UINT == dstType))
         ins = INS_st_w;
-    else //if ((TYP_LONG == dstType) || (TYP_ULONG == dstType) || (TYP_REF == dstType))
-        ins = INS_st_d;//default st_d.
+    else                // if ((TYP_LONG == dstType) || (TYP_ULONG == dstType) || (TYP_REF == dstType))
+        ins = INS_st_d; // default st_d.
 #else
     NYI("ins_Store");
 #endif

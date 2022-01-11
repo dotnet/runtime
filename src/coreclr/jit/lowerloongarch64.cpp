@@ -42,8 +42,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 bool Lowering::IsCallTargetInRange(void* addr)
 {
     ////TODO for LOONGARCH64: should amend for optimize!
-    //assert(!"unimplemented on LOONGARCH yet");
-    //return comp->codeGen->validImmForBAL((ssize_t)addr);
+    // assert(!"unimplemented on LOONGARCH yet");
+    // return comp->codeGen->validImmForBAL((ssize_t)addr);
     return false;
 }
 
@@ -72,8 +72,8 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         switch (parentNode->OperGet())
         {
             case GT_ADD:
-                return comp->compOpportunisticallyDependsOn(InstructionSet_Atomics) ? false
-                                                                  : ((-2048 <= immVal) && (immVal <= 2047));
+                return comp->compOpportunisticallyDependsOn(InstructionSet_Atomics) ? false : ((-2048 <= immVal) &&
+                                                                                               (immVal <= 2047));
                 break;
             case GT_CMPXCHG:
             case GT_LOCKADD:
@@ -127,7 +127,7 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 {
     assert(mul->OperIsMul());
 
-    //if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
+    // if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
     //{
     //    GenTreeCast* op1 = mul->gtGetOp1()->AsCast();
     //    GenTree*     op2 = mul->gtGetOp2();
@@ -256,7 +256,7 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*  dstAddr  = blkNode->Addr();
+    GenTree* dstAddr = blkNode->Addr();
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
@@ -286,7 +286,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             ssize_t fill = src->AsIntCon()->IconValue() & 0xFF;
             if (fill == 0)
             {
-                src->SetContained();;
+                src->SetContained();
+                ;
             }
             else if (size >= REGSIZE_BYTES)
             {
@@ -347,7 +348,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
@@ -365,7 +366,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
         }
-
     }
 }
 
@@ -432,9 +432,6 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     addr->SetContained();
 }
 
-
-
-
 void Lowering::LowerCast(GenTree* tree)
 {
     assert(tree->OperGet() == GT_CAST);
@@ -491,8 +488,8 @@ void Lowering::LowerRotate(GenTree* tree)
 
         if (rotateLeftIndexNode->IsCnsIntOrI())
         {
-            ssize_t rotateLeftIndex                 = rotateLeftIndexNode->AsIntCon()->gtIconVal;
-            ssize_t rotateRightIndex                = rotatedValueBitSize - rotateLeftIndex;
+            ssize_t rotateLeftIndex                    = rotateLeftIndexNode->AsIntCon()->gtIconVal;
+            ssize_t rotateRightIndex                   = rotatedValueBitSize - rotateLeftIndex;
             rotateLeftIndexNode->AsIntCon()->gtIconVal = rotateRightIndex;
         }
         else
@@ -515,7 +512,7 @@ void Lowering::LowerRotate(GenTree* tree)
 //
 void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 {
-assert(!"unimplemented on LOONGARCH yet");
+    assert(!"unimplemented on LOONGARCH yet");
 #if 0
     assert(simdNode->gtType != TYP_SIMD32);
 
@@ -540,7 +537,7 @@ assert(!"unimplemented on LOONGARCH yet");
 //
 void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-assert(!"unimplemented on LOONGARCH yet");
+    assert(!"unimplemented on LOONGARCH yet");
 #if 0
     auto intrinsicID   = node->gtHWIntrinsicId;
     auto intrinsicInfo = HWIntrinsicInfo::lookup(node->gtHWIntrinsicId);
@@ -1375,7 +1372,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     }
 #endif // FEATURE_SIMD
 
-    GenTree* addr          = indirNode->Addr();
+    GenTree* addr = indirNode->Addr();
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
     {
         MakeSrcContained(indirNode, addr);
@@ -1393,7 +1390,6 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         // make this contained, it turns into a constant that goes into an addr mode
         MakeSrcContained(indirNode, addr);
     }
-
 }
 
 //------------------------------------------------------------------------
@@ -1473,9 +1469,6 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 
     const LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
 
-
-
-
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
@@ -1552,7 +1545,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 //
 void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
 {
-assert(!"unimplemented on LOONGARCH yet");
+    assert(!"unimplemented on LOONGARCH yet");
 #if 0
     switch (simdNode->gtSIMDIntrinsicID)
     {
@@ -1619,7 +1612,7 @@ assert(!"unimplemented on LOONGARCH yet");
 //
 void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-assert(!"unimplemented on LOONGARCH yet");
+    assert(!"unimplemented on LOONGARCH yet");
 #if 0
     GenTreeArgList* argList = nullptr;
     GenTree*        op1     = node->gtOp.gtOp1;

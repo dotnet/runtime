@@ -309,7 +309,7 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)/* || defined(TARGET_LOONGARCH64)*/
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) /* || defined(TARGET_LOONGARCH64)*/
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0

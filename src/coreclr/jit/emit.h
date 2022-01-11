@@ -303,7 +303,7 @@ struct insGroup
 #if EMIT_TRACK_STACK_DEPTH
     unsigned igStkLvl; // stack level on entry
 #endif
-    regMaskSmall  igGCregs; // set of registers with live GC refs
+    regMaskSmall igGCregs; // set of registers with live GC refs
 #ifdef TARGET_LOONGARCH64
     unsigned int igInsCnt; // # of instructions  in this group
 #else
@@ -611,9 +611,10 @@ protected:
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
 #elif defined(TARGET_LOONGARCH64)
-        //insFormat _idInsFmt : 5;// NOTE: LOONGARCH64 does not used the _idInsFmt .
-        unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described. If not enough, please use the _idInsCount.
-        //unsigned _idInsCount : 5; // the instruction(s) count of this instrDesc described.
+        // insFormat _idInsFmt : 5;// NOTE: LOONGARCH64 does not used the _idInsFmt .
+        unsigned _idCodeSize : 5; // the instruction(s) size of this instrDesc described. If not enough, please use the
+                                  // _idInsCount.
+                                  // unsigned _idInsCount : 5; // the instruction(s) count of this instrDesc described.
 #else
         static_assert_no_msg(IF_COUNT <= 256);
         insFormat _idInsFmt : 8;
@@ -632,7 +633,7 @@ protected:
 
 #if defined(TARGET_LOONGARCH64)
         insFormat idInsFmt() const
-        {//not used for LOONGARCH64.
+        { // not used for LOONGARCH64.
             return (insFormat)0;
         }
         void idInsFmt(insFormat insFmt)
@@ -665,7 +666,7 @@ protected:
         // amd64: 17 bits
         // arm:   16 bits
         // arm64: 17 bits
-        //loongarch64: 14 bits
+        // loongarch64: 14 bits
 
     private:
 #if defined(TARGET_XARCH)
@@ -676,7 +677,7 @@ protected:
 #elif defined(TARGET_ARM64)
 // Moved the definition of '_idOpSize' later so that we don't cross a 32-bit boundary when laying out bitfields
 #elif defined(TARGET_LOONGARCH64)
-        /* _idOpSize defined bellow. */
+/* _idOpSize defined bellow. */
 #else  // ARM
         opSize      _idOpSize : 2; // operand size: 0=1 , 1=2 , 2=4 , 3=8
 #endif // ARM
@@ -729,8 +730,9 @@ protected:
 
 #ifdef TARGET_LOONGARCH64
         /* TODO: for LOONGARCH: maybe delete on future. */
-        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the accessing a local on stack.
+        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                // accessing a local on stack.
         unsigned _idLclVar : 1; // access a local on stack.
 #endif
 
@@ -748,10 +750,10 @@ protected:
 // For Arm64, we have used 17 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (17)
 #elif defined(TARGET_XARCH)
-                                   // For xarch, we have used 14 bits from the second DWORD.
+// For xarch, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_LOONGARCH64)
-// For Loongarch64, we have used 14 bits from the second DWORD.
+                                   // For Loongarch64, we have used 14 bits from the second DWORD.
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
 #error Unsupported or unset target architecture
@@ -763,7 +765,7 @@ protected:
         // amd64: 46 bits
         // arm:   48 bits
         // arm64: 49 bits
-        //loongarch64: 46 bits
+        // loongarch64: 46 bits
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
@@ -911,14 +913,14 @@ protected:
 #elif defined(TARGET_LOONGARCH64) // TARGET_XARCH
             struct
             {
-                unsigned int iiaEncodedInstr;//instruction's binary encoding.
-                regNumber _idReg3 : REGNUM_BITS;
-                regNumber _idReg4 : REGNUM_BITS;
+                unsigned int iiaEncodedInstr; // instruction's binary encoding.
+                regNumber    _idReg3 : REGNUM_BITS;
+                regNumber    _idReg4 : REGNUM_BITS;
             };
 
             struct
             {
-                int iiaJmpOffset;//temporary saving the offset of jmp or data.
+                int            iiaJmpOffset; // temporary saving the offset of jmp or data.
                 emitLclVarAddr iiaLclVar;
             };
 
@@ -939,7 +941,7 @@ protected:
             {
                 return iiaJmpOffset;
             }
-#endif // defined(TARGET_LOONGARCH64)
+#endif                            // defined(TARGET_LOONGARCH64)
 
         } _idAddrUnion;
 
@@ -1043,7 +1045,7 @@ protected:
 #elif defined(TARGET_LOONGARCH64)
         unsigned idCodeSize() const
         {
-            return _idCodeSize;//_idInsCount;
+            return _idCodeSize; //_idInsCount;
         }
         void idCodeSize(unsigned sz)
         {
@@ -1053,7 +1055,7 @@ protected:
 #endif // TARGET_LOONGARCH64
 
         emitAttr idOpSize()
-        {//NOTE: not used for LOONGARCH64.
+        { // NOTE: not used for LOONGARCH64.
             return emitDecodeSize(_idOpSize);
         }
         void idOpSize(emitAttr opsz)
@@ -1888,8 +1890,8 @@ public:
 #endif // !defined(HOST_64BIT)
 
 #ifdef TARGET_LOONGARCH64
-    unsigned int emitCounts_INS_OPTS_J;//INS_OPTS_J
-#endif // defined(TARGET_LOONGARCH64)
+    unsigned int emitCounts_INS_OPTS_J; // INS_OPTS_J
+#endif                                  // defined(TARGET_LOONGARCH64)
 
     size_t emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp);
     size_t emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp);

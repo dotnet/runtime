@@ -360,7 +360,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     }
 #endif // TARGET_UNIX
     int z = offset / 8;
-    //assert(0 <= z && z <= 0xFF);
+    // assert(0 <= z && z <= 0xFF);
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -368,8 +368,8 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     {
         // save_reg: 11010000 | 000xxxxx | zzzzzzzz: save reg r(1 + #X) at [sp + #Z * 8], offset <= 2047
 
-        assert(reg == REG_RA || reg == REG_FP ||    // first legal register: RA
-               (REG_S0 <= reg && reg <= REG_S8));   // last legal register: S8
+        assert(reg == REG_RA || reg == REG_FP ||  // first legal register: RA
+               (REG_S0 <= reg && reg <= REG_S8)); // last legal register: S8
 
         BYTE x = (BYTE)(reg - REG_RA);
         assert(0 <= x && x <= 0x1E);
@@ -381,7 +381,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
         // save_freg: 11011100 | 0xxxzzzz | zzzzzzzz : save reg f(24 + #X) at [sp + #Z * 8], offset <= 2047
 
         assert(REG_F24 <= reg && // first legal register: F24
-               reg <= REG_F31); // last legal register: F31
+               reg <= REG_F31);  // last legal register: F31
 
         BYTE x = (BYTE)(reg - REG_F24);
         assert(0 <= x && x <= 0x7);
@@ -392,7 +392,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
 void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 {
-    //TODO:temp not used on loongarch64.
+    // TODO:temp not used on loongarch64.
     assert(!"unimplemented on LOONGARCH yet");
 #if 0
     UnwindInfo* pu = &funCurrentFunc()->uwi;
@@ -473,22 +473,22 @@ unsigned GetUnwindSizeFromUnwindHeader(BYTE b1)
 {
     static BYTE s_UnwindSize[256] = {
         // array of unwind sizes, in bytes (as specified in the LOONGARCH unwind specification)
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 10-1F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 20-2F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 30-3F
-        2, 2, 2, 2, 2, 2, 2, 2,    2, 2, 2, 2, 2, 2, 2, 2, // 40-4F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 50-5F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 60-6F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 70-7F
-        2, 2, 2, 2, 2, 2, 2, 2,    2, 2, 2, 2, 2, 2, 2, 2, // 80-8F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // 90-9F
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // A0-AF
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // B0-BF
-        2, 2, 2, 2, 2, 2, 2, 2,    3, 2, 2, 2, 3, 2, 2, 2, // C0-CF
-        3, 2, 2, 2, 2, 2, 3, 2,    3, 2, 3, 2, 3, 2, 2, 1, // D0-DF
-        4, 1, 3, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
-        1, 1, 1, 1, 1, 1, 1, 1,    1, 1, 1, 1, 1, 1, 1, 1  // F0-FF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 00-0F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 10-1F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 20-2F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 30-3F
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 40-4F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 50-5F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 60-6F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 70-7F
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // 80-8F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 90-9F
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A0-AF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // B0-BF
+        2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 2, 2, 3, 2, 2, 2, // C0-CF
+        3, 2, 2, 2, 2, 2, 3, 2, 3, 2, 3, 2, 3, 2, 2, 1, // D0-DF
+        4, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // E0-EF
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1  // F0-FF
     };
 
     unsigned size = s_UnwindSize[b1];
@@ -891,8 +891,8 @@ void DumpUnwindInfo(Compiler*         comp,
 
             x = ((DWORD)(b2 & 0x1F) << 8) | (DWORD)b3;
 
-            printf("    %02X %02X %02X      add_fp %u (0x%02X); addi.d %s, sp, #%u\n", b1, b2, b3, x, x, getRegName(REG_FP),
-                   x * 8);
+            printf("    %02X %02X %02X      add_fp %u (0x%02X); addi.d %s, sp, #%u\n", b1, b2, b3, x, x,
+                   getRegName(REG_FP), x * 8);
         }
         else if (b1 == 0xE3)
         {
@@ -1227,12 +1227,12 @@ int UnwindPrologCodes::Match(UnwindEpilogInfo* pEpi)
         return -1;
     }
 
-    int matchIndex = 0;//Size() - pEpi->Size();
+    int matchIndex = 0; // Size() - pEpi->Size();
 
     BYTE* pProlog = GetCodes();
     BYTE* pEpilog = pEpi->GetCodes();
 
-    //First check set_fp.
+    // First check set_fp.
     if (0 < pEpi->Size())
     {
         if (*pProlog == 0xE1)
@@ -1783,7 +1783,7 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     }
 #endif
 
-// Compute the header
+    // Compute the header
 
     noway_assert((functionLength & 3) == 0);
     DWORD headerFunctionLength = functionLength / 4;
@@ -1791,7 +1791,7 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     DWORD headerVers = 0; // Version of the unwind info is zero. No other version number is currently defined.
     DWORD headerXBit = 0; // We never generate "exception data", but the VM might add some.
     DWORD headerEBit;
-    DWORD headerEpilogCount;                        // This depends on how we set headerEBit.
+    DWORD headerEpilogCount; // This depends on how we set headerEBit.
     DWORD headerCodeWords;
     DWORD headerExtendedEpilogCount = 0; // This depends on how we set headerEBit.
     DWORD headerExtendedCodeWords   = 0;
@@ -2107,7 +2107,8 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 // expand!) during issuing (although this is extremely rare in any case, and may not
 // actually occur on LOONGARCH), so we don't finalize actual sizes or offsets.
 //
-// LOONGARCH64 has very similar limitations, except functions can be up to 1MB. TODO-LOONGARCH64-Bug?: make sure this works!
+// LOONGARCH64 has very similar limitations, except functions can be up to 1MB. TODO-LOONGARCH64-Bug?: make sure this
+// works!
 //
 // We don't split any prolog or epilog. Ideally, we might not split an instruction,
 // although that doesn't matter because the unwind at any point would still be
@@ -2200,7 +2201,7 @@ void UnwindInfo::Split()
 
     // Call the emitter to do the split, and call us back for every split point it chooses.
     uwiComp->GetEmitter()->emitSplit(uwiFragmentLast->ufiEmitLoc, uwiEndLoc, maxFragmentSize, (void*)this,
-                                   EmitSplitCallback);
+                                     EmitSplitCallback);
 
 #ifdef DEBUG
     // Did the emitter split the function/funclet into as many fragments as we asked for?

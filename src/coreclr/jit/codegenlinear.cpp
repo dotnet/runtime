@@ -2516,10 +2516,10 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #ifdef TARGET_LOONGARCH64
-        m_extendKind    = castUnsigned ? ZERO_EXTEND_INT : SIGN_EXTEND_INT;
-        cast->gtFlags |=  castUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
+        m_extendKind = castUnsigned ? ZERO_EXTEND_INT : SIGN_EXTEND_INT;
+        cast->gtFlags |= castUnsigned ? GTF_UNSIGNED : GTF_EMPTY;
 #else
-        m_extendKind    = COPY;
+        m_extendKind = COPY;
 #endif
         m_extendSrcSize = 4;
     }

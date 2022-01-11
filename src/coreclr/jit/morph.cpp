@@ -214,7 +214,8 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
         {
             if (!tree->gtOverflow())
             {
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)// On ARM64 All non-overflow checking conversions can be optimized
+#if defined(TARGET_ARM64) ||                                                                                           \
+    defined(TARGET_LOONGARCH64) // On ARM64 All non-overflow checking conversions can be optimized
                 return nullptr;
 #else
                 switch (dstType)
@@ -916,7 +917,8 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
                                     bool              isVararg,
                                     const regNumber   otherRegNum)
 {
-    fgArgTabEntry* curArgTabEntry = AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, false, isVararg);
+    fgArgTabEntry* curArgTabEntry =
+        AddRegArg(argNum, node, use, regNum, numRegs, byteSize, byteAlignment, isStruct, false, isVararg);
     assert(curArgTabEntry != nullptr);
 
     curArgTabEntry->isStruct = isStruct; // is this a struct arg
@@ -926,7 +928,7 @@ fgArgTabEntry* fgArgInfo::AddRegArg(unsigned          argNum,
     if (numRegs == 2)
     {
         curArgTabEntry->setRegNum(1, otherRegNum);
-        //curArgTabEntry->isSplit = true;
+        // curArgTabEntry->isSplit = true;
     }
 
     return curArgTabEntry;
@@ -2888,7 +2890,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
 #elif defined(TARGET_X86)
 
-        passUsingFloatRegs = false;
+        passUsingFloatRegs   = false;
 
 #elif defined(TARGET_LOONGARCH64)
         assert(!callIsVararg);
@@ -3015,7 +3017,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         DWORD numFloatFields = 0;
         if (!isStructArg)
         {
-            size = 1;
+            size     = 1;
             byteSize = genTypeSize(argx);
         }
         else
@@ -3059,9 +3061,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 else if (numFloatFields & 8)
                     size = 2;
             }
-            else //if (passStructByRef)
+            else // if (passStructByRef)
             {
-                size = 1;
+                size     = 1;
                 byteSize = TARGET_POINTER_SIZE;
             }
 #else
@@ -3225,7 +3227,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
                     if (!passUsingFloatRegs)
                     {
-                        size = structSize > 8 ? 2 : 1;
+                        size           = structSize > 8 ? 2 : 1;
                         numFloatFields = 0;
                     }
                     else if (passUsingFloatRegs)
@@ -3235,20 +3237,20 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                         else if (numFloatFields & 0x4)
                         {
                             assert(size == 1);
-                            size = 2;
+                            size               = 2;
                             passUsingFloatRegs = false;
-                            nextOtherRegNum = genMapFloatRegArgNumToRegNum(nextFltArgRegNum);
+                            nextOtherRegNum    = genMapFloatRegArgNumToRegNum(nextFltArgRegNum);
                         }
-                        else if (/*(size == 1) && */(numFloatFields & 0x2))
+                        else if (/*(size == 1) && */ (numFloatFields & 0x2))
                         {
                             assert((size == 1) && (numFloatFields & 0x2));
-                            size = 2;
+                            size            = 2;
                             nextOtherRegNum = genMapIntRegArgNumToRegNum(intArgRegNum);
                         }
                     }
                 }
 
-                assert(!isHfaArg);//LOONGARCH not support HFA.
+                assert(!isHfaArg); // LOONGARCH not support HFA.
             }
 
             // if run out the fp argument register, try the int argument register.
@@ -3268,9 +3270,9 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     // We also must update intArgRegNum so that we no longer try to
                     // allocate any new general purpose registers for args
                     //
-                    isRegArg = intArgRegNum < maxRegArgs;//the split-struct case.
+                    isRegArg        = intArgRegNum < maxRegArgs; // the split-struct case.
                     nextOtherRegNum = REG_STK;
-                    //assert((intArgRegNum + 1) == maxRegArgs);
+                    // assert((intArgRegNum + 1) == maxRegArgs);
                 }
             }
 #else // not TARGET_ARM or TARGET_ARM64 or TARGET_LOONGARCH64
@@ -3425,10 +3427,11 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             // This is a register argument - put it in the table
             newArgEntry =
                 call->fgArgInfo->AddRegArg(argIndex, argx, args, nextRegNum, size, byteSize, argAlignBytes, isStructArg,
-                                           isFloatHfa, callIsVararg UNIX_LOONGARCH64_ONLY_ARG(nextOtherRegNum) UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
-                                                           UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
-                                                               UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
-                                                                   UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
+                                           isFloatHfa, callIsVararg UNIX_LOONGARCH64_ONLY_ARG(nextOtherRegNum)
+                                                           UNIX_AMD64_ABI_ONLY_ARG(nextOtherRegNum)
+                                                               UNIX_AMD64_ABI_ONLY_ARG(structIntRegs)
+                                                                   UNIX_AMD64_ABI_ONLY_ARG(structFloatRegs)
+                                                                       UNIX_AMD64_ABI_ONLY_ARG(&structDesc));
             newArgEntry->SetIsBackFilled(isBackFilled);
 
             // Set up the next intArgRegNum and fltArgRegNum values.
@@ -3448,7 +3451,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 #endif // FEATURE_ARG_SPLIT
                         assert(!passUsingFloatRegs);
                         assert(size == 2);
-                        //assert(nextOtherRegNum == REG_STK);
+                        // assert(nextOtherRegNum == REG_STK);
                         intArgRegNum = maxRegArgs;
                     }
                     else if ((numFloatFields & 0xf) == 0x0)
@@ -3465,7 +3468,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                     else if (numFloatFields & 0x6)
                     {
-                        //assert((numFloatFields & 0x2) || (numFloatFields & 0x4));
+                        // assert((numFloatFields & 0x2) || (numFloatFields & 0x4));
                         fltArgRegNum += 1;
                         intArgRegNum += 1;
                     }
@@ -3558,9 +3561,10 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         {
             newArgEntry->passedByRef = passStructByRef;
 #if defined(TARGET_LOONGARCH64)
-            newArgEntry->argType     = (numFloatFields & 0xe) || (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            newArgEntry->argType =
+                (numFloatFields & 0xe) || (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
 #else
-            newArgEntry->argType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            newArgEntry->argType = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
 #endif
         }
         else
@@ -4474,8 +4478,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
     }
 
 #if FEATURE_MULTIREG_ARGS
-    // Examine 'arg' and setup argValue objClass and structSize
-    //
+// Examine 'arg' and setup argValue objClass and structSize
+//
 #if defined(TARGET_LOONGARCH64)
     const CORINFO_CLASS_HANDLE objClass = gtGetStructHandleIfPresent(arg);
     if (objClass == NO_CLASS_HANDLE)
@@ -4490,24 +4494,24 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
         LclVarDsc* varDsc = &lvaTable[varNum];
         assert(varDsc->lvExactSize == 8);
 
-        unsigned offset = arg->AsLclVarCommon()->GetLclOffs();
-        GenTreeFieldList* newArg = nullptr;
-        var_types tmp_type = fgEntryPtr->isPassedInFloatRegisters() ? TYP_FLOAT : TYP_INT;
-        arg->gtType = tmp_type;
+        unsigned          offset   = arg->AsLclVarCommon()->GetLclOffs();
+        GenTreeFieldList* newArg   = nullptr;
+        var_types         tmp_type = fgEntryPtr->isPassedInFloatRegisters() ? TYP_FLOAT : TYP_INT;
+        arg->gtType                = tmp_type;
 
         newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
         newArg->AddField(this, arg, offset, tmp_type);
-        tmp_type = isValidFloatArgReg(fgEntryPtr->GetOtherRegNum()) ? TYP_FLOAT : TYP_INT;
+        tmp_type            = isValidFloatArgReg(fgEntryPtr->GetOtherRegNum()) ? TYP_FLOAT : TYP_INT;
         GenTree* nextLclFld = gtNewLclFldNode(varNum, tmp_type, offset + 4);
         newArg->AddField(this, nextLclFld, offset + 4, tmp_type);
 
         return newArg;
     }
 #else
-    const CORINFO_CLASS_HANDLE objClass   = gtGetStructHandle(arg);
+    const CORINFO_CLASS_HANDLE objClass = gtGetStructHandle(arg);
 #endif
-    GenTree*                   argValue   = arg; // normally argValue will be arg, but see right below
-    unsigned                   structSize = 0;
+    GenTree* argValue   = arg; // normally argValue will be arg, but see right below
+    unsigned structSize = 0;
 
     if (arg->TypeGet() != TYP_STRUCT)
     {
@@ -4929,12 +4933,12 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 else if (numFloatFields & 0x2)
                 {
                     tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                    //tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;type[0]
+                    // tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;type[0]
                     tmp_type_2 = numFloatFields & 0x20 ? type[1] : TYP_INT;
                 }
                 else if (numFloatFields & 0x4)
                 {
-                    //tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
+                    // tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
                     tmp_type_1 = numFloatFields & 0x10 ? type[0] : TYP_INT;
                     tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
                 }
@@ -4943,7 +4947,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                     assert(!"----------------unimplemented type-case... on LOONGARCH");
                     unreached();
                 }
-                elemSize = numFloatFields & 0x30 ? 8 : 4;;
+                elemSize = numFloatFields & 0x30 ? 8 : 4;
 
                 GenTree* nextLclFld = gtNewLclFldNode(varNum, tmp_type_1, offset);
                 newArg->AddField(this, nextLclFld, offset, tmp_type_1);
@@ -4959,7 +4963,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 if (elemCount > 1)
                 {
                     assert(elemCount == 2);
-                    elemSize = genTypeSize(type[1]);
+                    elemSize   = genTypeSize(type[1]);
                     nextLclFld = gtNewLclFldNode(varNum, type[1], offset + elemSize);
                     newArg->AddField(this, nextLclFld, offset + elemSize, type[1]);
                 }
@@ -5018,12 +5022,12 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 else if (numFloatFields & 0x2)
                 {
                     tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                    //tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;
+                    // tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;
                     tmp_type_2 = numFloatFields & 0x20 ? type[1] : TYP_INT;
                 }
                 else if (numFloatFields & 0x4)
                 {
-                    //tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
+                    // tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
                     tmp_type_1 = numFloatFields & 0x10 ? type[0] : TYP_INT;
                     tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
                 }
@@ -5032,7 +5036,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                     assert(!"----------------unimplemented type-case... on LOONGARCH");
                     unreached();
                 }
-                elemSize = numFloatFields & 0x30 ? 8 : 4;;
+                elemSize = numFloatFields & 0x30 ? 8 : 4;
 
                 GenTree* curItem = gtNewIndir(tmp_type_1, baseAddr);
                 // For safety all GT_IND should have at least GT_GLOB_REF set.
@@ -5041,7 +5045,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
                 newArg = new (this, GT_FIELD_LIST) GenTreeFieldList();
                 newArg->AddField(this, curItem, 0, tmp_type_1);
 
-                //GenTree* curAddr = baseAddr;
+                // GenTree* curAddr = baseAddr;
                 baseAddr = gtCloneExpr(baseAddr);
                 noway_assert(baseAddr != nullptr);
                 baseAddr = gtNewOperNode(GT_ADD, addrType, baseAddr, gtNewIconNode(elemSize, TYP_I_IMPL));
@@ -5054,26 +5058,28 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             }
             else
 #endif
-            for (unsigned inx = 0; inx < elemCount; inx++)
             {
-                GenTree* curAddr = baseAddr;
-                if (offset != 0)
+                for (unsigned inx = 0; inx < elemCount; inx++)
                 {
-                    GenTree* baseAddrDup = gtCloneExpr(baseAddr);
-                    noway_assert(baseAddrDup != nullptr);
-                    curAddr = gtNewOperNode(GT_ADD, addrType, baseAddrDup, gtNewIconNode(offset, TYP_I_IMPL));
-                }
-                else
-                {
-                    curAddr = baseAddr;
-                }
-                GenTree* curItem = gtNewIndir(type[inx], curAddr);
+                    GenTree* curAddr = baseAddr;
+                    if (offset != 0)
+                    {
+                        GenTree* baseAddrDup = gtCloneExpr(baseAddr);
+                        noway_assert(baseAddrDup != nullptr);
+                        curAddr = gtNewOperNode(GT_ADD, addrType, baseAddrDup, gtNewIconNode(offset, TYP_I_IMPL));
+                    }
+                    else
+                    {
+                        curAddr = baseAddr;
+                    }
+                    GenTree* curItem = gtNewIndir(type[inx], curAddr);
 
-                // For safety all GT_IND should have at least GT_GLOB_REF set.
-                curItem->gtFlags |= GTF_GLOB_REF;
+                    // For safety all GT_IND should have at least GT_GLOB_REF set.
+                    curItem->gtFlags |= GTF_GLOB_REF;
 
-                newArg->AddField(this, curItem, offset, type[inx]);
-                offset += genTypeSize(type[inx]);
+                    newArg->AddField(this, curItem, offset, type[inx]);
+                    offset += genTypeSize(type[inx]);
+                }
             }
         }
     }
@@ -5777,7 +5783,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             arrLen = gtNewCastNode(bndsChkType, arrLen, true, bndsChkType);
         }
 #else
-        GenTree* arrLen = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
+        GenTree* arrLen                  = gtNewArrLen(TYP_INT, arrRef, (int)lenOffs, compCurBB);
 #endif
 
         GenTreeBoundsChk* arrBndsChk = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, arrLen, SCK_RNGCHK_FAIL);
@@ -18031,9 +18037,10 @@ GenTree* Compiler::fgMorphImplicitByRefArgs(GenTree* tree, bool isAddr)
 //
 void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
-    // We expect 'addr' to be an address at this point.
+// We expect 'addr' to be an address at this point.
 #ifdef TARGET_LOONGARCH64
-    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_INT || addr->TypeGet() == TYP_REF);
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_INT ||
+           addr->TypeGet() == TYP_REF);
 #else
     assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 #endif

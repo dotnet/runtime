@@ -31,7 +31,7 @@ struct CnsVal
 const char* emitFPregName(unsigned reg, bool varName = true);
 const char* emitVectorRegName(regNumber reg);
 
-//NOTE: At least 32bytes within dst.
+// NOTE: At least 32bytes within dst.
 void emitDisInsName(code_t code, const BYTE* dst, instrDesc* id);
 #endif // DEBUG
 
@@ -47,16 +47,14 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr         retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr         retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */
@@ -75,12 +73,13 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 //  Emit the 32-bit LOONGARCH64 instruction 'code' into the 'dst'  buffer
 unsigned emitOutput_Instr(BYTE* dst, code_t code);
 
-//NOTEADD: New functions in emitarm64.h
+// NOTEADD: New functions in emitarm64.h
 // Method to do check if mov is redundant with respect to the last instruction.
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
-bool IsRedundantLdStr(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);//New functions end.
+bool IsRedundantLdStr(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
 /************************************************************************
 *
@@ -104,9 +103,9 @@ union bitMaskImm {
 *   representation imm(i16,hw)
 */
 
-//static emitter::bitMaskImm emitEncodeBitMaskImm(INT64 imm, emitAttr size);
+// static emitter::bitMaskImm emitEncodeBitMaskImm(INT64 imm, emitAttr size);
 
-//static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size);
+// static INT64 emitDecodeBitMaskImm(const emitter::bitMaskImm bmImm, emitAttr size);
 
 /************************************************************************
 *
@@ -129,9 +128,9 @@ union halfwordImm {
 *   representation imm(i16,hw)
 */
 
-//static emitter::halfwordImm emitEncodeHalfwordImm(INT64 imm, emitAttr size);
+// static emitter::halfwordImm emitEncodeHalfwordImm(INT64 imm, emitAttr size);
 
-//static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size);
+// static INT64 emitDecodeHalfwordImm(const emitter::halfwordImm hwImm, emitAttr size);
 
 /************************************************************************
 *
@@ -155,9 +154,9 @@ union byteShiftedImm {
 *   representation imm(i8,by)
 */
 
-//static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
+// static emitter::byteShiftedImm emitEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL);
 
-//static INT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
+// static INT32 emitDecodeByteShiftedImm(const emitter::byteShiftedImm bsImm, emitAttr size);
 
 /************************************************************************
 *
@@ -180,9 +179,9 @@ union floatImm8 {
 *  Convert between a double and its 'float 8-bit immediate' representation
 */
 
-//static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
+// static emitter::floatImm8 emitEncodeFloatImm8(double immDbl);
 
-//static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
+// static double emitDecodeFloatImm8(const emitter::floatImm8 fpImm);
 
 /************************************************************************
 *
@@ -193,9 +192,9 @@ union floatImm8 {
 union condFlagsImm {
     struct
     {
-        //insCond   cond : 4;  // bits  0..3
-        //insCflags flags : 4; // bits  4..7
-        unsigned  imm5 : 5;  // bits  8..12
+        // insCond   cond : 4;  // bits  0..3
+        // insCflags flags : 4; // bits  4..7
+        unsigned imm5 : 5; // bits  8..12
     };
     unsigned immCFVal; // concat imm5:flags:cond forming an 13-bit unsigned immediate
 };
@@ -209,19 +208,19 @@ static bool isIntegerRegister(regNumber reg)
 // Returns true if 'value' is a legal signed immediate 12 bit encoding.
 static bool isValidSimm12(ssize_t value)
 {
-    return -( ((int)1) << 11 ) <= value && value < ( ((int)1) << 11 );
+    return -(((int)1) << 11) <= value && value < (((int)1) << 11);
 };
 
 // Returns true if 'value' is a legal signed immediate 16 bit encoding.
 static bool isValidSimm16(ssize_t value)
 {
-    return -( ((int)1) << 15 ) <= value && value < ( ((int)1) << 15 );
+    return -(((int)1) << 15) <= value && value < (((int)1) << 15);
 };
 
 // Returns true if 'value' is a legal signed immediate 20 bit encoding.
 static bool isValidSimm20(ssize_t value)
 {
-    return -( ((int)1) << 19 ) <= value && value < ( ((int)1) << 19 );
+    return -(((int)1) << 19) <= value && value < (((int)1) << 19);
 };
 
 /************************************************************************/
@@ -229,7 +228,6 @@ static bool isValidSimm20(ssize_t value)
 /************************************************************************/
 
 public:
-
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)
 {
@@ -273,7 +271,7 @@ void emitIns_R(instruction ins, emitAttr attr, regNumber reg);
 
 void emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t imm, insOpts opt = INS_OPTS_NONE);
 
-//NOTEADD: NEW function in emitarm64.
+// NOTEADD: NEW function in emitarm64.
 void emitIns_Mov(
     instruction ins, emitAttr attr, regNumber dstReg, regNumber srcReg, bool canSkip, insOpts opt = INS_OPTS_NONE);
 
@@ -310,13 +308,13 @@ void emitIns_R_R_R_Ext(instruction ins,
                        insOpts     opt         = INS_OPTS_NONE,
                        int         shiftAmount = -1);
 
-//NODECHANGE: ADD an arg.
+// NODECHANGE: ADD an arg.
 void emitIns_R_R_I_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int imm1, int imm2, insOpts opt = INS_OPTS_NONE);
 
 void emitIns_R_R_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, regNumber reg4);
 
-//void emitIns_BARR(instruction ins, insBarrier barrier);
+// void emitIns_BARR(instruction ins, insBarrier barrier);
 
 void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int offs);
 
@@ -325,7 +323,7 @@ void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
 
-//void emitIns_R_R_S(
+// void emitIns_R_R_S(
 //    instruction ins, emitAttr attr, regNumber ireg, regNumber ireg2, int sa);
 
 void emitIns_R_R_S_S(
@@ -352,12 +350,11 @@ void emitIns_I_AR(instruction ins, emitAttr attr, int val, regNumber reg, int of
 
 void emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
-//NODECHANGE: ADD a description of arguments "disp"
+// NODECHANGE: ADD a description of arguments "disp"
 void emitIns_R_AI(instruction ins,
                   emitAttr    attr,
                   regNumber   reg,
                   ssize_t disp DEBUGARG(size_t targetHandle = 0) DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
-
 
 void emitIns_AR_R(instruction ins, emitAttr attr, regNumber ireg, regNumber reg, int offs);
 
@@ -380,7 +377,7 @@ enum EmitCallType
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method
                    //  EC_FUNC_TOKEN_INDIR,    // Indirect call to a helper/static/nonvirtual/global method
-    //EC_FUNC_ADDR,  // Direct call to an absolute address
+    // EC_FUNC_ADDR,  // Direct call to an absolute address
 
     //  EC_FUNC_VIRTUAL,        // Call to a virtual method (using the vtable)
     EC_INDIR_R, // Indirect call via register
@@ -394,28 +391,27 @@ enum EmitCallType
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*            addr,
-                  ssize_t          argSize,
-                  emitAttr         retSize
-                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                  void*    addr,
+                  ssize_t  argSize,
+                  emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                   VARSET_VALARG_TP ptrVars,
                   regMaskTP        gcrefRegs,
                   regMaskTP        byrefRegs,
                   const DebugInfo& di,
-                  regNumber        ireg          = REG_NA,
-                  regNumber        xreg          = REG_NA,
-                  unsigned         xmul          = 0,
-                  ssize_t          disp          = 0,
-                  bool             isJump        = false);
+                  regNumber        ireg   = REG_NA,
+                  regNumber        xreg   = REG_NA,
+                  unsigned         xmul   = 0,
+                  ssize_t          disp   = 0,
+                  bool             isJump = false);
 
 unsigned emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t code);
-//BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
-//BYTE* emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
-//BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
-//BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
-//BYTE* emitOutputShortConstant(
+// BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i);
+// BYTE* emitOutputLoadLabel(BYTE* dst, BYTE* srcAddr, BYTE* dstAddr, instrDescJmp* id);
+// BYTE* emitOutputShortBranch(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, instrDescJmp* id);
+// BYTE* emitOutputShortAddress(BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg);
+// BYTE* emitOutputShortConstant(
 //    BYTE* dst, instruction ins, insFormat fmt, ssize_t distVal, regNumber reg, emitAttr opSize);
 
-unsigned  get_curTotalCodeSize(); // bytes of code
+unsigned get_curTotalCodeSize(); // bytes of code
 
 #endif // TARGET_LOONGARCH64

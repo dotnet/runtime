@@ -239,7 +239,11 @@ protected:
 
 #ifdef TARGET_LOONGARCH64
     void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
-    void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind, instruction ins, regNumber reg1, BasicBlock* failBlk = nullptr, regNumber reg2 = REG_R0);
+    void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
+                                 instruction     ins,
+                                 regNumber       reg1,
+                                 BasicBlock*     failBlk = nullptr,
+                                 regNumber       reg2    = REG_R0);
 #else
     void genCheckOverflow(GenTree* tree);
 #endif
@@ -1335,7 +1339,7 @@ protected:
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef TARGET_LOONGARCH64
-    //TODO for LOONGARCH64 : maybe delete on LA64?
+    // TODO for LOONGARCH64 : maybe delete on LA64?
     void genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* base, unsigned offset);
 #endif
 
@@ -1363,7 +1367,7 @@ protected:
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);
 #if defined(TARGET_LOONGARCH64)
-    //TODO: refactor for LA.
+    // TODO: refactor for LA.
     void genCodeForJumpCompare(GenTreeOp* tree);
 #endif
 #if defined(TARGET_ARM64)
@@ -1401,7 +1405,7 @@ protected:
     void genFloatReturn(GenTree* treeNode);
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM64)|| defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     void genSimpleReturn(GenTree* treeNode);
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64
 

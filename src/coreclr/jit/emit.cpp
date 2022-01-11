@@ -743,7 +743,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
         ig->igFlags |= IGF_BYREF_REGS;
 
-        // We'll allocate extra space (DWORD aligned) to record the GC regs
+// We'll allocate extra space (DWORD aligned) to record the GC regs
 #if defined(TARGET_LOONGARCH64)
         gs += sizeof(regMaskTP);
 #else
@@ -759,7 +759,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 
     if (ig->igFlags & IGF_BYREF_REGS)
     {
-        // Record the byref regs in front the of the instructions
+// Record the byref regs in front the of the instructions
 
 #if defined(TARGET_LOONGARCH64)
         *castto(id, regMaskTP*)++ = emitInitByrefRegs;
@@ -795,7 +795,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     }
 #endif
 
-    // Record how many instructions and bytes of code this group contains
+// Record how many instructions and bytes of code this group contains
 
 #ifdef TARGET_LOONGARCH64
     noway_assert((unsigned int)emitCurIGinsCnt == emitCurIGinsCnt);
@@ -809,7 +809,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
 #else
     ig->igInsCnt = (BYTE)emitCurIGinsCnt;
 #endif
-    ig->igSize   = (unsigned short)emitCurIGsize;
+    ig->igSize = (unsigned short)emitCurIGsize;
     emitCurCodeOffset += emitCurIGsize;
     assert(IsCodeAligned(emitCurCodeOffset));
 
@@ -4157,16 +4157,19 @@ void emitter::emitJumpDistBind()
     int jmp_iteration = 1;
 
 #ifdef TARGET_LOONGARCH64
-    //NOTE:
+    // NOTE:
     //  bit0 of isLinkingEnd_LA: indicating whether updating the instrDescJmp's size with the type INS_OPTS_J;
-    //  bit1 of isLinkingEnd_LA: indicating not needed updating ths size while emitTotalCodeSize <= (0x7fff << 2) or had updated;
+    //  bit1 of isLinkingEnd_LA: indicating not needed updating ths size while emitTotalCodeSize <= (0x7fff << 2) or had
+    //  updated;
     unsigned int isLinkingEnd_LA = emitTotalCodeSize <= (0x7fff << 2) ? 2 : 0;
 
     UNATIVE_OFFSET ssz = 0; // relative small jump's delay-slot.
     // small  jump max. neg distance
-    NATIVE_OFFSET  nsd = B_DIST_SMALL_MAX_NEG;
+    NATIVE_OFFSET nsd = B_DIST_SMALL_MAX_NEG;
     // small  jump max. pos distance
-    NATIVE_OFFSET  psd = B_DIST_SMALL_MAX_POS - emitCounts_INS_OPTS_J * (3 << 2);//the max placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
+    NATIVE_OFFSET psd =
+        B_DIST_SMALL_MAX_POS -
+        emitCounts_INS_OPTS_J * (3 << 2); // the max placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
 #endif
 
 /*****************************************************************************/
@@ -4330,7 +4333,7 @@ AGAIN:
 #ifdef DEBUG
 #if defined(TARGET_LOONGARCH64)
 #if defined(UNALIGNED_CHECK_DISABLE)
-	UNALIGNED_CHECK_DISABLE;
+        UNALIGNED_CHECK_DISABLE;
 #endif
         assert(lastLJ == nullptr || lastIG != jmp->idjIG || lastLJ->idjOffs < (jmp->idjOffs + adjLJ));
 #else
@@ -4374,7 +4377,7 @@ AGAIN:
 #else
                                lstIG->igOffs - adjIG
 #endif
-                            );
+                               );
                     }
 #endif // DEBUG
 #if defined(TARGET_LOONGARCH64)
@@ -4392,7 +4395,7 @@ AGAIN:
             lstIG = jmpIG;
         }
 
-        /* Apply any local size adjustment to the jump's relative offset */
+/* Apply any local size adjustment to the jump's relative offset */
 
 #if defined(TARGET_LOONGARCH64)
         jmp->idjOffs += adjLJ;
@@ -4552,11 +4555,11 @@ AGAIN:
 
         if (jmpIG->igNum < tgtIG->igNum)
         {
-            /* Forward jump */
+/* Forward jump */
 
-            /* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
-               here and the target could be shortened, causing the actual distance to shrink.
-             */
+/* Adjust the target offset by the current delta. This is a worst-case estimate, as jumps between
+   here and the target could be shortened, causing the actual distance to shrink.
+ */
 
 #if defined(TARGET_LOONGARCH64)
             dstOffs += adjIG;
@@ -4598,7 +4601,7 @@ AGAIN:
 #endif // DEBUG_EMIT
 
 #if defined(TARGET_LOONGARCH64)
-            assert(jmpDist >= 0);//Forward jump
+            assert(jmpDist >= 0); // Forward jump
             assert(!(jmpDist & 0x3));
 
             if (isLinkingEnd_LA & 0x2)
@@ -4610,38 +4613,39 @@ AGAIN:
                 instruction ins = jmp->idIns();
                 assert((INS_bceqz <= ins) && (ins <= INS_bl));
 
-                if (ins < INS_beqz)  //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
+                if (ins <
+                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
                 {
-                    if ((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000)
+                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
                         extra = 4;
                     }
                     else
                     {
-                        assert((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000);//TODO:later will be deleted!!!
+                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000); // TODO:later will be deleted!!!
                         extra = 8;
                     }
                 }
-                else if (ins < INS_b)//   beqz/bnez < b < bl    // See instrsloongarch64.h.
+                else if (ins < INS_b) //   beqz/bnez < b < bl    // See instrsloongarch64.h.
                 {
-                    if (jmpDist + emitCounts_INS_OPTS_J*4 < 0x200000 )
+                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
                         continue;
 
                     extra = 4;
-                    //assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                 }
-                else //if (ins == INS_b || ins == INS_bl)
+                else // if (ins == INS_b || ins == INS_bl)
                 {
                     assert(ins == INS_b || ins == INS_bl);
-                    //assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                     continue;
                 }
 
                 jmp->idInsOpt(INS_OPTS_JIRL);
                 jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += extra;//the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
+                jmpIG->igSize += extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
                 adjLJ += extra;
                 adjIG += extra;
                 emitTotalCodeSize += extra;
@@ -4696,50 +4700,51 @@ AGAIN:
 #endif // DEBUG_EMIT
 
 #if defined(TARGET_LOONGARCH64)
-            assert(jmpDist >= 0);//Backward jump
+            assert(jmpDist >= 0); // Backward jump
             assert(!(jmpDist & 0x3));
 
             if (isLinkingEnd_LA & 0x2)
             {
-                jmp->idAddr()->iiaSetJmpOffset(-jmpDist);//Backward jump is negative!
+                jmp->idAddr()->iiaSetJmpOffset(-jmpDist); // Backward jump is negative!
             }
             else if ((extra > 0) && (jmp->idInsOpt() == INS_OPTS_J))
             {
                 instruction ins = jmp->idIns();
                 assert((INS_bceqz <= ins) && (ins <= INS_bl));
 
-                if (ins < INS_beqz)  //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
+                if (ins <
+                    INS_beqz) //   bceqz/bcnez/beq/bne/blt/bltu/bge/bgeu < beqz < bnez  // See instrsloongarch64.h.
                 {
-                    if ((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000)
+                    if ((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000)
                     {
                         extra = 4;
                     }
                     else
                     {
-                        assert((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000);//TODO:later will be deleted!!!
+                        assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000); // TODO:later will be deleted!!!
                         extra = 8;
                     }
                 }
-                else if (ins < INS_b)//   beqz/bnez < b < bl    // See instrsloongarch64.h.
+                else if (ins < INS_b) //   beqz/bnez < b < bl    // See instrsloongarch64.h.
                 {
-                    if (jmpDist + emitCounts_INS_OPTS_J*4 < 0x200000 )
+                    if (jmpDist + emitCounts_INS_OPTS_J * 4 < 0x200000)
                         continue;
 
                     extra = 4;
-                    //assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000);
                 }
-                else //if (ins == INS_b || ins == INS_bl)
+                else // if (ins == INS_b || ins == INS_bl)
                 {
                     assert(ins == INS_b || ins == INS_bl);
-                    //assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
-                    assert((jmpDist + emitCounts_INS_OPTS_J*4) < 0x8000000);//TODO
+                    // assert((emitTotalCodeSize + emitCounts_INS_OPTS_J*4) < 0x8000000);
+                    assert((jmpDist + emitCounts_INS_OPTS_J * 4) < 0x8000000); // TODO
                     continue;
                 }
 
                 jmp->idInsOpt(INS_OPTS_JIRL);
                 jmp->idCodeSize(jmp->idCodeSize() + extra);
-                jmpIG->igSize += extra;//the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
+                jmpIG->igSize += extra; // the placeholder sizeof(INS_OPTS_JIRL) - sizeof(INS_OPTS_J).
                 adjLJ += extra;
                 adjIG += extra;
                 emitTotalCodeSize += extra;
@@ -4951,18 +4956,18 @@ AGAIN:
 
         jmpIG->igFlags |= IGF_UPD_ISZ;
 
-#endif  // not defined(TARGET_LOONGARCH64)
-    } // end for each jump
+#endif // not defined(TARGET_LOONGARCH64)
+    }  // end for each jump
 
 #if defined(TARGET_LOONGARCH64)
     if ((isLinkingEnd_LA & 0x3) < 0x2)
     {
-        //indicating had updated the instrDescJmp's size with the type INS_OPTS_J.
+        // indicating had updated the instrDescJmp's size with the type INS_OPTS_J.
         isLinkingEnd_LA = 0x2;
-        //emitRecomputeIGoffsets();
+        // emitRecomputeIGoffsets();
         /* Adjust offsets of any remaining blocks */
 
-        for (;lstIG;)
+        for (; lstIG;)
         {
             lstIG = lstIG->igNext;
             if (!lstIG)
@@ -6820,7 +6825,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 
 #ifdef TARGET_LOONGARCH64
-    //cp = cp - 4;
+    // cp = cp - 4;
     unsigned actualCodeSize = cp - codeBlock;
 #endif
 
@@ -6949,7 +6954,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
         }
     }
-#endif   //!TARGET_LOONGARCH64
+#endif //! TARGET_LOONGARCH64
 
 #ifdef DEBUG
     if (emitComp->opts.disAsm)
@@ -8925,7 +8930,7 @@ cnsval_ssize_t emitter::emitGetInsSC(instrDesc* id)
         int  adr = emitComp->lvaFrameAddress(varNum, &FPbased);
         int  dsp = adr + offs;
         if (id->idIns() == INS_sub)
-            dsp = -dsp;
+            dsp    = -dsp;
 #endif
         return dsp;
     }
@@ -9538,7 +9543,7 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
             result = RBM_CALLEE_TRASH_NOGC & ~(RBM_RDI | RBM_RSI);
             break;
 #elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-            result = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
+            result      = RBM_CALLEE_GCTRASH_WRITEBARRIER_BYREF;
             break;
 #else
             assert(!"unknown arch");

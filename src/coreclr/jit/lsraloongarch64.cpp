@@ -298,8 +298,8 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDefsWithKills(tree, 0, RBM_NONE, killMask);
             break;
 
-        //case GT_MOD:
-        //case GT_UMOD:
+        // case GT_MOD:
+        // case GT_UMOD:
         //    NYI_IF(varTypeIsFloating(tree->TypeGet()), "FP Remainder in LOONGARCH64");
         //    assert(!"Shouldn't see an integer typed GT_MOD node in LOONGARCH64");
         //    srcCount = 0;
@@ -790,7 +790,7 @@ int LinearScan::BuildNode(GenTree* tree)
 //
 int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 {
-assert(!"unimplemented on LOONGARCH yet");
+    assert(!"unimplemented on LOONGARCH yet");
 #if 0
     int srcCount = 0;
     // Only SIMDIntrinsicInit can be contained
@@ -997,7 +997,7 @@ assert(!"unimplemented on LOONGARCH yet");
 //
 int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 {
-assert(!"unimplemented on LOONGARCH yet");
+    assert(!"unimplemented on LOONGARCH yet");
 #if 0
     NamedIntrinsic intrinsicID = intrinsicTree->gtHWIntrinsicId;
     int            numArgs     = HWIntrinsicInfo::lookupNumArgs(intrinsicTree);
@@ -1180,9 +1180,9 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 //
 int LinearScan::BuildCall(GenTreeCall* call)
 {
-    bool            hasMultiRegRetVal = false;
-    const ReturnTypeDesc* retTypeDesc = nullptr;
-    regMaskTP       dstCandidates     = RBM_NONE;
+    bool                  hasMultiRegRetVal = false;
+    const ReturnTypeDesc* retTypeDesc       = nullptr;
+    regMaskTP             dstCandidates     = RBM_NONE;
 
     int srcCount = 0;
     int dstCount = 0;
@@ -1234,7 +1234,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     RegisterType registerType = call->TypeGet();
 
-// Set destination candidates for return value of the call.
+    // Set destination candidates for return value of the call.
 
     if (hasMultiRegRetVal)
     {
@@ -1474,8 +1474,8 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
 
-    regNumber argReg  = argNode->GetRegNum();
-    regMaskTP argMask = RBM_NONE;
+    regNumber argReg                  = argNode->GetRegNum();
+    regMaskTP argMask                 = RBM_NONE;
     regMaskTP argMaskArr[MAX_REG_ARG] = {RBM_NONE};
 
     for (unsigned i = 0; i < dstCount; i++)

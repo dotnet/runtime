@@ -460,7 +460,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             // This struct is passed by reference using a single 'slot'
             return TARGET_POINTER_SIZE;
         }
-        //  otherwise will we pass this struct by value in multiple registers
+//  otherwise will we pass this struct by value in multiple registers
 #elif !defined(TARGET_ARM)
         NYI("unknown target");
 #endif // defined(TARGET_XXX)

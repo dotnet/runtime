@@ -610,7 +610,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     }
 #elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     // On System V type environment the float registers are not indexed together with the int ones.
-    varDscInfo->floatRegArgNum = varDscInfo->intRegArgNum;
+    varDscInfo->floatRegArgNum         = varDscInfo->intRegArgNum;
 #endif // TARGET*
 
     CORINFO_ARG_LIST_HANDLE argLst = info.compMethodInfo->args.args;
@@ -644,12 +644,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
 #if defined(TARGET_LOONGARCH64)
-        int flags = 0;
-        CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType2(&info.compMethodInfo->args, argLst, &typeHnd, &flags);
+        int                flags = 0;
+        CorInfoTypeWithMod corInfoType =
+            info.compCompHnd->getArgType2(&info.compMethodInfo->args, argLst, &typeHnd, &flags);
 #else
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
 #endif
-        varDsc->lvIsParam              = 1;
+        varDsc->lvIsParam = 1;
 
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
@@ -904,19 +905,19 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 assert(varDsc->lvExactSize <= argSize);
                 float_num = 1;
 
-                arg1_Type = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
+                arg1_Type             = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
                 canPassArgInRegisters = varDscInfo->canEnreg(arg1_Type, 1);
             }
             else if (flags & 0x8)
             {
-                arg1_Type = (flags & 0x10) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2_Type = (flags & 0x20) ? TYP_DOUBLE : TYP_FLOAT;
-                float_num = 2;
+                arg1_Type             = (flags & 0x10) ? TYP_DOUBLE : TYP_FLOAT;
+                arg2_Type             = (flags & 0x20) ? TYP_DOUBLE : TYP_FLOAT;
+                float_num             = 2;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
             }
             else if (flags & 2)
             {
-                float_num = 1;
+                float_num             = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
@@ -925,7 +926,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             }
             else if (flags & 4)
             {
-                float_num = 1;
+                float_num             = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
@@ -937,8 +938,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             {
                 assert(float_num > 0);
                 canPassArgInRegisters = varDscInfo->canEnreg(argType, cSlotsToEnregister);
-                arg1_Type = TYP_UNKNOWN;
-                arg2_Type = TYP_UNKNOWN;
+                arg1_Type             = TYP_UNKNOWN;
+                arg2_Type             = TYP_UNKNOWN;
             }
         }
         else
@@ -949,12 +950,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             if (!canPassArgInRegisters && varTypeIsFloating(argType))
             {
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, cSlotsToEnregister);
-                argType = canPassArgInRegisters ? TYP_I_IMPL : argType;
+                argType               = canPassArgInRegisters ? TYP_I_IMPL : argType;
             }
             if (!canPassArgInRegisters && (cSlots > 1))
             {
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_I_IMPL, 1);
-                arg1_Type = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
+                arg1_Type             = canPassArgInRegisters ? TYP_I_IMPL : TYP_UNKNOWN;
             }
 #endif
         }
@@ -986,7 +987,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 }
             }
             else
-#elif  defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64)
             if (arg1_Type != TYP_UNKNOWN)
             {
                 firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg1_Type, 1);
@@ -1051,13 +1052,13 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                     {
                         firstAllocatedRegArgNum = varDscInfo->allocRegArg(arg2_Type, 1);
                         varDsc->SetOtherArgReg(genMapRegArgNumToRegNum(firstAllocatedRegArgNum, arg2_Type));
-                        varDsc->lvIs4Field2 = (int)emitActualTypeSize(arg2_Type) == 4 ? 1 : 0;
+                        varDsc->lvIs4Field2            = (int)emitActualTypeSize(arg2_Type) == 4 ? 1 : 0;
                         varDscInfo->hasMultiSlotStruct = true;
                     }
                     else if (cSlots > 1)
                     {
                         varDsc->lvIsSplit = 1;
-                        //varDsc->lvFldOffset = 0;
+                        // varDsc->lvFldOffset = 0;
                         varDsc->SetOtherArgReg(REG_STK);
                         varDscInfo->hasMultiSlotStruct = true;
                         varDscInfo->setAllRegArgUsed(arg1_Type);
@@ -1515,9 +1516,9 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     varDsc->lvIsImplicitByRef = 0;
 #elif defined(TARGET_LOONGARCH64)
     varDsc->lvIsImplicitByRef = 0;
-    varDsc->lvIs4Field1 = 0;
-    varDsc->lvIs4Field2 = 0;
-    varDsc->lvIsSplit = 0;
+    varDsc->lvIs4Field1       = 0;
+    varDsc->lvIs4Field2       = 0;
+    varDsc->lvIsSplit         = 0;
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     // Set the lvType (before this point it is TYP_UNDEF).
@@ -1849,7 +1850,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     const int MaxOffset      = MAX_NumOfFieldsInPromotableStruct * FP_REGSIZE_BYTES;
 #endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 #else  // !FEATURE_SIMD
-    const int MaxOffset = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
+    const int MaxOffset       = MAX_NumOfFieldsInPromotableStruct * sizeof(double);
 #endif // !FEATURE_SIMD
 
     assert((BYTE)MaxOffset == MaxOffset); // because lvaStructFieldInfo.fldOffset is byte-sized
@@ -5418,7 +5419,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
             JITDUMP("-- V%02u was %d, now %d\n", lclNum, varDsc->GetStackOffset(), varDsc->GetStackOffset() + delta);
             varDsc->SetStackOffset(varDsc->GetStackOffset() + delta);
 
-#if  defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64)
             if (varDsc->GetStackOffset() >= delta)
                 varDsc->SetStackOffset(varDsc->GetStackOffset() + (varDsc->lvIsSplit ? 8 : 0));
 #endif
@@ -5998,16 +5999,16 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
         }
 
 #elif defined(TARGET_LOONGARCH64)
-        //if (compFeatureArgSplit() && this->info.compIsVarArgs)
-        //{//TODO: should confirm for "info.compIsVarArgs".
-        //    if (varDsc->lvType == TYP_STRUCT && varDsc->lvOtherArgReg >= MAX_REG_ARG && varDsc->lvOtherArgReg != REG_NA)
-        //    {
-        //        // This is a split struct. It will account for an extra (8 bytes)
-        //        // of alignment.
-        //        varDsc->lvStkOffs += TARGET_POINTER_SIZE;
-        //        argOffs += TARGET_POINTER_SIZE;
-        //    }
-        //}
+// if (compFeatureArgSplit() && this->info.compIsVarArgs)
+//{//TODO: should confirm for "info.compIsVarArgs".
+//    if (varDsc->lvType == TYP_STRUCT && varDsc->lvOtherArgReg >= MAX_REG_ARG && varDsc->lvOtherArgReg != REG_NA)
+//    {
+//        // This is a split struct. It will account for an extra (8 bytes)
+//        // of alignment.
+//        varDsc->lvStkOffs += TARGET_POINTER_SIZE;
+//        argOffs += TARGET_POINTER_SIZE;
+//    }
+//}
 #else // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
@@ -6815,9 +6816,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
 #ifdef TARGET_LOONGARCH64
                 if (info.compIsVarArgs && varDsc->GetArgReg() != theFixedRetBuffArgNum())
-                {//TODO: add VarArgs for LOONGARCH64.
+                { // TODO: add VarArgs for LOONGARCH64.
                     // Stack offset to parameters should point to home area which will be preallocated.
-                    varDsc->SetStackOffset(-initialStkOffs + genMapIntRegNumToRegArgNum(varDsc->GetArgReg()) * REGSIZE_BYTES);
+                    varDsc->SetStackOffset(-initialStkOffs +
+                                           genMapIntRegNumToRegArgNum(varDsc->GetArgReg()) * REGSIZE_BYTES);
                     continue;
                 }
 #endif

@@ -759,7 +759,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #elif defined(TARGET_LOONGARCH64)
                 // Structs that are pointer sized or smaller.
-                //assert(structSize > TARGET_POINTER_SIZE);
+                // assert(structSize > TARGET_POINTER_SIZE);
 
                 // On LOONGARCH64 structs that are 1-16 bytes are passed by value in one/multiple register(s)
                 if (structSize <= (TARGET_POINTER_SIZE * 2))
@@ -798,7 +798,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)  || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
@@ -948,7 +948,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_STRUCT;
         }
     }
-#endif //TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64
 
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
@@ -2464,7 +2464,7 @@ void Compiler::compSetProcessor()
 #endif
 
 #if defined(TARGET_LOONGARCH64)
-    //TODO: should add LOONGARCH64's features for LOONGARCH64.
+// TODO: should add LOONGARCH64's features for LOONGARCH64.
 #endif
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
@@ -2652,7 +2652,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
     }
 #elif defined(TARGET_LOONGARCH64)
-    //TODO: should be adaptive on LoongArch64.
+// TODO: should be adaptive on LoongArch64.
 #endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));

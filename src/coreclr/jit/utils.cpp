@@ -337,10 +337,10 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                      || (regNum == REG_R28))                         // last register before FP
 #elif defined(TARGET_LOONGARCH64)
             else if ((regNum == REG_INT_LAST) || (regNum == REG_X0))
-#else                                                                // TARGET_LOONGARCH64
+#else  // TARGET_LOONGARCH64
             // We've already printed a register. Is this the end of a range?
             else if (regNum == REG_INT_LAST)
-#endif                                                               // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64
             {
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);

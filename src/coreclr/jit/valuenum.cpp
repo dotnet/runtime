@@ -58,7 +58,7 @@ struct FloatTraits
 #elif defined(TARGET_ARMARCH)
         unsigned           bits = 0x7FC00000u;
 #elif defined(TARGET_LOONGARCH64)
-        unsigned bits = 0xFFC00000u;
+        unsigned           bits = 0xFFC00000u;
 #else
 #error Unsupported or unset target architecture
 #endif

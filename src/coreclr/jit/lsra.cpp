@@ -705,7 +705,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #elif TARGET_LOONGARCH64
     availableIntRegs = (RBM_ALLINT & ~(RBM_FP | RBM_RA) & ~compiler->codeGen->regSet.rsMaskResvd);
 #else
-    availableIntRegs   = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
+    availableIntRegs = (RBM_ALLINT & ~compiler->codeGen->regSet.rsMaskResvd);
 #endif
 
 #if ETW_EBP_FRAMED
@@ -1568,12 +1568,13 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:
-            // TODO-1stClassStructs: support vars with GC pointers. The issue is that such
-            // vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
-            // but if the variable is tracked the prolog generator would expect it to be in liveIn set,
-            // so an assert in `genFnProlog` will fire.
+// TODO-1stClassStructs: support vars with GC pointers. The issue is that such
+// vars will have `lvMustInit` set, because emitter has poor support for struct liveness,
+// but if the variable is tracked the prolog generator would expect it to be in liveIn set,
+// so an assert in `genFnProlog` will fire.
 #ifdef TARGET_LOONGARCH64
-            return !genIsValidFloatReg(varDsc->GetOtherArgReg()) && compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
+            return !genIsValidFloatReg(varDsc->GetOtherArgReg()) && compiler->compEnregStructLocals() &&
+                   !varDsc->HasGCPtr();
 #else
             return compiler->compEnregStructLocals() && !varDsc->HasGCPtr();
 #endif

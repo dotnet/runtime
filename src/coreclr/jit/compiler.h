@@ -472,11 +472,10 @@ public:
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
 #elif defined(TARGET_LOONGARCH64)
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit : 1;   // Set if the argument is splited. also used the lvFldOffset.
-#endif  // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH)
-
+    unsigned char lvIs4Field1 : 1;       // Set if the 1st field is int or float within struct for LA-ABI64.
+    unsigned char lvIs4Field2 : 1;       // Set if the 2nd field is int or float within struct for LA-ABI64.
+    unsigned char lvIsSplit : 1;         // Set if the argument is splited. also used the lvFldOffset.
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
     unsigned char lvSingleDef : 1; // variable has a single def
@@ -8029,7 +8028,7 @@ public:
     }
 #elif defined(TARGET_LOONGARCH64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
-    {//TODO: supporting SIMD feature for LoongArch64.
+    { // TODO: supporting SIMD feature for LoongArch64.
         return false;
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
@@ -8723,7 +8722,7 @@ private:
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
 #elif defined(TARGET_LOONGARCH64)
-        //TODO: supporting SIMD feature for LoongArch64.
+        // TODO: supporting SIMD feature for LoongArch64.
         assert(!"unimplemented yet on LA");
         CORINFO_InstructionSet minimumIsa = 0;
 #else
@@ -12127,10 +12126,10 @@ const instruction INS_SQRT = INS_fsqrt;
 
 #ifdef TARGET_LOONGARCH64
 const instruction INS_BREAKPOINT = INS_break;
-const instruction INS_MULADD     = INS_fmadd_d;// NOTE: default is double.
-const instruction INS_ABS  = INS_fabs_d; // NOTE: default is double.
-const instruction INS_SQRT = INS_fsqrt_d;// NOTE: default is double.
-#endif // TARGET_LOONGARCH64
+const instruction INS_MULADD     = INS_fmadd_d; // NOTE: default is double.
+const instruction INS_ABS        = INS_fabs_d;  // NOTE: default is double.
+const instruction INS_SQRT       = INS_fsqrt_d; // NOTE: default is double.
+#endif                                          // TARGET_LOONGARCH64
 
 /*****************************************************************************/
 

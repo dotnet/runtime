@@ -2213,15 +2213,15 @@ public:
     // no reg is allocated.
     unsigned char regOptional : 1;
 
-    // Used by RefTypeDef/Use positions of a multi-reg call node.
-    // Indicates the position of the register that this ref position refers to.
-    // The max bits needed is based on max value of MAX_RET_REG_COUNT value
-    // across all targets and that happens 4 on on Arm.  Hence index value
-    // would be 0..MAX_RET_REG_COUNT-1.
+// Used by RefTypeDef/Use positions of a multi-reg call node.
+// Indicates the position of the register that this ref position refers to.
+// The max bits needed is based on max value of MAX_RET_REG_COUNT value
+// across all targets and that happens 4 on on Arm.  Hence index value
+// would be 0..MAX_RET_REG_COUNT-1.
 #ifdef TARGET_LOONGARCH64
-    //TODO for LOONGARCH64: should confirm for ArgSplit?
+    // TODO for LOONGARCH64: should confirm for ArgSplit?
     unsigned char multiRegIdx : 3;
-#else // !TARGET_LOONGARCH64
+#else  // !TARGET_LOONGARCH64
     unsigned char multiRegIdx : 2;
 #endif // !TARGET_LOONGARCH64
 

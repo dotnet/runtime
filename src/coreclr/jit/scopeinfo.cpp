@@ -1609,7 +1609,7 @@ void CodeGen::psiBegProlog()
                     noway_assert(EA_SIZE_IN_BYTES(lclVarDsc->lvSize()) <= 16);
                     if (emitter::isFloatReg(lclVarDsc->GetArgReg()))
                     {
-                        //regType = lclVarDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
+                        // regType = lclVarDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
                         regType = TYP_DOUBLE;
                     }
                     else
