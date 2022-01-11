@@ -41,18 +41,14 @@ public unsafe class PInvokes_AutoLayout
              testCode();
              return;
         }
-        catch (MarshalDirectiveException)
+        catch (Exception ex) when(ex is MarshalDirectiveException or TypeLoadException)
         {
-
-        }
-        catch (TypeLoadException)
-        {
-
+            return;
         }
         catch (Exception ex)
         {
             Assert.False(true, $"Expected either a MarshalDirectiveException or a TypeLoadException, but received a '{ex.GetType().FullName}' exception: '{ex.ToString()}'");
         }
-            Assert.False(true, $"Expected either a MarshalDirectiveException or a TypeLoadException, but received no exception.");
+        Assert.False(true, $"Expected either a MarshalDirectiveException or a TypeLoadException, but received no exception.");
     }
 }
