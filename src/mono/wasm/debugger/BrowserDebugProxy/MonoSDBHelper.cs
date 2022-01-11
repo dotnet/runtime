@@ -1731,7 +1731,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             for (int i = 0 ; i < typesToGetProperties.Count; i++)
             {
-                var properties = await CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, valueType.buffer, valueType.json, valueType.autoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
+                var properties = await CreateJArrayForProperties(typesToGetProperties[i], ElementType.Class, valueType.buffer, valueType.json, valueType.autoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
                 ret = new JArray(ret.Union(properties));
             }
 
