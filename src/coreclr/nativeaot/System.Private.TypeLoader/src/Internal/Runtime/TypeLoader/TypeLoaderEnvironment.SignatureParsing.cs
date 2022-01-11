@@ -139,7 +139,7 @@ namespace Internal.Runtime.TypeLoader
                 return false;
 
             methodNameSig = RuntimeSignature.CreateFromNativeLayoutSignature(module, parser.Offset);
-            parser.GetString();
+            parser.SkipString(); // methodName
 
             // Signatures are indirected to through a relative offset so that we don't have to parse them
             // when not comparing signatures (parsing them requires resolving types and is tremendously
