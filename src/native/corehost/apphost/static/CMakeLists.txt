@@ -111,7 +111,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
 
-    # Delay load libraries required for WinRT as that is not supported on all platforms
+    # Delay load libraries required for WinRT as that is not supported on all platforms.
     add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 endif()
 
