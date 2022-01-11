@@ -34,7 +34,7 @@ public class TestSummary
     public void ReportSkippedTest(string name, string containingTypeName, string methodName, TimeSpan duration, string reason)
     {
         SkippedTests++;
-        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, reason));
+        _testResults.Add(new TestResult(name, containingTypeName, methodName, duration, null, reason, null));
     }
 
     public string GetTestResultOutput(string assemblyName)

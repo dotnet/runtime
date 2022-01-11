@@ -13,7 +13,7 @@ namespace XUnitWrapperLibrary;
 public sealed class TestOutputRecorder : TextWriter
 {
     private TextWriter _inner;
-    private ThreadLocal<StringBuilder> _testOutput = new();
+    private ThreadLocal<StringBuilder> _testOutput = new(() => new StringBuilder());
 
     private TestOutputRecorder(TextWriter inner)
     {
@@ -23,12 +23,12 @@ public sealed class TestOutputRecorder : TextWriter
     public override void Write(char value)
     {
         _inner.Write(value);
-        _testOutput.Value.Append(value);
+        _testOutput.Value!.Append(value);
     }
 
     public override Encoding Encoding => _inner.Encoding;
 
-    public void ResetTestOutput() => _testOutput.Value.Clear();
+    public void ResetTestOutput() => _testOutput.Value!.Clear();
 
-    public string GetTestOutput() => _testOutput.Value.ToString();
+    public string GetTestOutput() => _testOutput.Value!.ToString();
 }
