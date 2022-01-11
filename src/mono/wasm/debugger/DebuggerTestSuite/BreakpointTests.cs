@@ -753,7 +753,7 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_add(); }, 1);",
                 "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
                 "IntAdd",
-                wait_for_event_fn: (pause_location) =>
+                wait_for_event_fn: async (pause_location) =>
                 {
                     Assert.Equal("other", pause_location["reason"]?.Value<string>());
                     Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
