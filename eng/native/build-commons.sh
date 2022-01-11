@@ -197,7 +197,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, -s390x, -loongarch64, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, -loongarch64, -s390x, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -377,12 +377,12 @@ while :; do
             __BuildArch=x64
             ;;
 
-        s390x|-s390x)
-            __BuildArch=s390x
-            ;;
-
         loongarch64|-loongarch64)
             __BuildArch=loongarch64
+            ;;
+
+        s390x|-s390x)
+            __BuildArch=s390x
             ;;
 
         wasm|-wasm)
