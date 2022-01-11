@@ -6,8 +6,16 @@ agent:
   flavor: b1.xlarge
 
 commands:
-  - build.cmd -subset clr+libs+libs.tests -test -a x64 -c release -ci
-  - build.cmd -subset host+packs -a x64 -c release
+  - |
+    cd unity\unitygc
+    cmake .
+    cmake --build . --config Release
+  - build.cmd -subset clr+libs -a x64 -c release -ci
+  - copy unity\unitygc\Release\unitygc.dll artifacts\bin\microsoft.netcore.app.runtime.win-x64\Release\runtimes\win-x64\native 
+  - powershell .yamato\scripts\download_7z.ps1
+  - artifacts\7za-win-x64\7za.exe a artifacts\unity\dotnet-runtime-unity-win-x64.7z .\artifacts\bin\microsoft.netcore.app.runtime.win-x64\Release\runtimes\win-x64
+# build/run tests
+  - build.cmd libs.tests -test -a x64 -c release -ci
   - src\tests\build.cmd x64 release ci
   - src\tests\run.cmd x64 release
 
@@ -20,4 +28,4 @@ triggers:
 artifacts: 
   win64:
     paths:
-      - artifacts\packages\Release\Shipping\dotnet-runtime-7.0.0-dev-win-x64.zip
+      - artifacts\unity\dotnet-runtime-unity-win-x64.7z
