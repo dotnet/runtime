@@ -342,6 +342,30 @@ namespace Tracing.Tests.PauseOnStartValidation
                     advertise = IpcAdvertise.Parse(stream);
                     Logger.logger.Log(advertise.ToString());
 
+                    // Start EP session to know when runtime is resumed
+                    var config = new SessionConfiguration(
+                        circularBufferSizeMB: 1000,
+                        format: EventPipeSerializationFormat.NetTrace,
+                        providers: new List<Provider> { 
+                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
+                            new Provider("Microsoft-DotNETCore-SampleProfiler")
+                        });
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+
+                    TaskCompletionSource<bool> runtimeResumed = new(false, TaskCreationOptions.RunContinuationsAsynchronously);
+
+                    var eventPipeTask = Task.Run(() =>
+                    {
+                        Logger.logger.Log("Creating source");
+                        using var source = new EventPipeEventSource(eventStream);
+                        var parser = new ClrPrivateTraceEventParser(source);
+                        parser.StartupEEStartupStart += (_) => runtimeResumed.SetResult(true);
+                        source.Process();
+                        Logger.logger.Log("stopping processing");
+                    });
+
                     Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
                     // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
                     message = new IpcMessage(0x04,0x01);
@@ -356,7 +380,17 @@ namespace Tracing.Tests.PauseOnStartValidation
 
                     // wait a little bit to make sure the runtime of the target is fully up, i.e., g_EEStarted == true
                     // on resource constrained CI machines this may not be instantaneous
-                    await Task.Delay(TimeSpan.FromSeconds(3));
+                    Logger.logger.Log($"awaiting resume");
+                    await Utils.WaitTillTimeout(runtimeResumed.Task, TimeSpan.FromSeconds(10));
+                    Logger.logger.Log($"resumed");
+
+                    // await Task.Delay(TimeSpan.FromSeconds(1));
+                    Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                    EventPipeClient.StopTracing(pid, sessionId);
+                    Logger.logger.Log($"Await reader task");
+                    await eventPipeTask;
+                    Logger.logger.Log("Stopped EventPipeSession over standard connection");
+
 
                     Logger.logger.Log($"Get ProcessInfo after resumption");
                     // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
