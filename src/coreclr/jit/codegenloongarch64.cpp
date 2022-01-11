@@ -1067,8 +1067,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         assert(genFuncletInfo.fiSP_to_FPRA_save_delta < 2040);
         genStackPointerAdjustment(frameSize, REG_R21, nullptr, /* reportUnwindData */ true);
 
-        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE,
-                                    genFuncletInfo.fiSP_to_FPRA_save_delta);
+        GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
         compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
 
         GetEmitter()->emitIns_R_R_I(INS_st_d, EA_PTRSIZE, REG_RA, REG_SPBASE,
@@ -1231,8 +1230,7 @@ void CodeGen::genFuncletEpilog()
                                     genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
         compiler->unwindSaveReg(REG_RA, genFuncletInfo.fiSP_to_FPRA_save_delta + 8);
 
-        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE,
-                                    genFuncletInfo.fiSP_to_FPRA_save_delta);
+        GetEmitter()->emitIns_R_R_I(INS_ld_d, EA_PTRSIZE, REG_FP, REG_SPBASE, genFuncletInfo.fiSP_to_FPRA_save_delta);
         compiler->unwindSaveReg(REG_FP, genFuncletInfo.fiSP_to_FPRA_save_delta);
 
         // generate daddiu SP,SP,imm
