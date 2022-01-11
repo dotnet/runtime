@@ -26,6 +26,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private const string sPauseOnCaught = "pause_on_caught";
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
+        public bool JustMyCode { get; private set; }
 
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0) : base(loggerFactory)
         {
@@ -573,15 +574,38 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
+                case "DotnetDebugger.justMyCode":
+                    {
+                        try
+                        {
+                            SetJustMyCode(id, args, token);
+                        }
+                        catch (Exception)
+                        {
+                            SendResponse(id,
+                                Result.Exception(new ArgumentException(
+                                    $"DotnetDebugger.justMyCode got incorrect argument ({args})")),
+                                token);
+                        }
+                        return true;
+                    }
             }
 
             return false;
+        }
+        private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
+        {
+            var isEnabled = args["enabled"]?.Value<bool>();
+            if (isEnabled == null)
+                throw new ArgumentException();
+            JustMyCode = isEnabled.Value;
+            SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
         private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
         {
             var context = GetContext(id);
             if (!DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId)) {
-                return false;
+                return true;
             }
             switch (objectId.Scheme)
             {

@@ -707,5 +707,11 @@ namespace DebuggerTests
                 8,
                 "VisibleMethodDebuggerBreak");
         }
+
+        [Fact]
+        public async Task StepThroughAttribute()
+        {
+            await SetJustMyCode(true);
+        }
     }
 }
