@@ -1753,7 +1753,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 		int token_index = mono_metadata_token_index (log_token);
 
 		gboolean is_addition = token_index-1 >= delta_info->count[token_table].prev_gen_rows ;
-		
+
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "enclog i=%d: token=0x%08x (table=%s): %d:\t%s", i, log_token, mono_meta_table_name (token_table), func_code, (is_addition ? "ADD" : "UPDATE"));
 
 
@@ -1911,7 +1911,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			break;
 		}
 		case MONO_TABLE_TYPEDEF: {
-#ifdef ALLOW_CLASS_ADD			
+#ifdef ALLOW_CLASS_ADD
 			if (is_addition) {
 				/* Adding a new class. ok */
 				switch (func_code) {
@@ -2122,20 +2122,6 @@ hot_reload_apply_changes (int origin, MonoImage *image_base, gconstpointer dmeta
 	}
 	mono_error_assert_ok (error);
 
-	/* TODO: Need to do the second half of EditAndContinueModule::ApplyEditAndContinue - that
-	 * is, actually inform the execution engine about new methods and fields.  In particular
-	 * EditAndContinueModule::AddMethod (and EEClass::AddMethod) to store the MonoMethod on the
-	 * class, and EditAndContinueModule::AddField (and EEClass::AddField) to store the new
-	 * MonoClassField on the class.  Also we will need the equivalent of
-	 * EnCFieldDesc::GetAddress in the interpreter to get the field address on a MonoObject
-	 * instance.
-	 *
-	 *  Maybe a simpler design (than stashing a dependent handle in the sync block like CoreCLR
-	 *  do) is to CWT from the original object to an enc dictionary that will map added fields
-	 *  (key: token?) to values, and make transform.c change ldfld/stfld/ldsflda into an icall call to
-	 *  get the CWT target and lookup the token in there.
-	 */
-
 	MonoAssemblyLoadContext *alc = mono_image_get_alc (image_base);
 	hot_reload_update_publish (alc, generation);
 
@@ -2343,7 +2329,7 @@ static void
 add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClass *klass, uint32_t method_token, MonoDebugInformationEnc* pdb_address)
 {
 	add_member_to_baseline (base_info, delta_info, klass, method_token);
-	
+
 	if (pdb_address)
 		set_delta_method_debug_info (delta_info, method_token, pdb_address);
 }
@@ -2366,7 +2352,7 @@ hot_reload_member_parent (MonoImage *base_image, uint32_t member_token)
 {
 	/* make sure they passed a token, not just a table row index */
 	g_assert (mono_metadata_token_table (member_token) != 0);
-	
+
 	if (!base_image->has_updates)
 		return 0;
 	BaselineInfo *base_info = baseline_info_lookup (base_image);
@@ -2404,7 +2390,7 @@ hot_reload_field_parent (MonoImage *base_image, uint32_t field_token)
 }
 
 
-/* XXX HACK - keep in sync with locator_t in metadata/metadata.c */
+/* HACK - keep in sync with locator_t in metadata/metadata.c */
 typedef struct {
 	int idx;			/* The index that we are trying to locate */
 	int col_idx;		/* The index in the row where idx may be stored */
@@ -2496,7 +2482,7 @@ metadata_update_field_setup_basic_info_and_resolve (MonoImage *image_base, Basel
 	if (!parent_info->added_fields) {
 		parent_info->added_fields = g_ptr_array_new ();
 	}
-	
+
 	g_ptr_array_add (parent_info->added_fields, field);
 
 	return field;
