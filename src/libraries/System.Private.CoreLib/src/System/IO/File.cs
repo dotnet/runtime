@@ -256,7 +256,7 @@ namespace System.IO
             using (SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options))
             {
                 long fileLength = 0;
-                if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
+                if (sfh.CanSeek && (fileLength = sfh.GetFileLength()) > Array.MaxLength)
                 {
                     throw new IOException(SR.IO_FileTooLong2GB);
                 }
@@ -530,7 +530,7 @@ namespace System.IO
             SafeFileHandle sfh = OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, options);
 
             long fileLength = 0L;
-            if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
+            if (sfh.CanSeek && (fileLength = sfh.GetFileLength()) > Array.MaxLength)
             {
                 sfh.Dispose();
                 return Task.FromException<byte[]>(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.IO_FileTooLong2GB)));

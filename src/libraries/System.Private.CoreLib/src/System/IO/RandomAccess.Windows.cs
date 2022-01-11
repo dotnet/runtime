@@ -18,18 +18,6 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
-        internal static unsafe long GetFileLength(SafeFileHandle handle)
-        {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
-
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
-            {
-                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
-            }
-
-            return info.EndOfFile;
-        }
-
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
         {
             if (handle.IsAsync)
@@ -755,7 +743,7 @@ namespace System.IO
         // Based on feedback received from customers (https://github.com/dotnet/runtime/issues/62851),
         // it was decided to not throw, but just return 0.
         private static bool IsEndOfFileForNoBuffering(SafeFileHandle fileHandle, long fileOffset)
-            => fileHandle.IsNoBuffering && (!fileHandle.CanSeek || fileOffset >= GetFileLength(fileHandle));
+            => fileHandle.IsNoBuffering && (!fileHandle.CanSeek || fileOffset >= fileHandle.GetFileLength());
 
         // We need to store the reference count (see the comment in FreeNativeOverlappedIfItIsSafe) and an EventHandle to signal the completion.
         // We could keep these two things separate, but since ManualResetEvent is sealed and we want to avoid any extra allocations, this type has been created.
