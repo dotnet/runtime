@@ -38,15 +38,6 @@ namespace System.IO.Tests
                 int current = 0;
                 int total = 0;
 
-                // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
-                // "File access sizes, including the optional file offset in the OVERLAPPED structure,
-                // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
-                // So if buffer and physical sector size is 4096 and the file size is 4097:
-                // the read from offset=0 reads 4096 bytes
-                // the read from offset=4096 reads 1 byte
-                // the read from offset=4097 THROWS (Invalid argument, offset is not a multiple of sector size!)
-                // That is why we stop at the first incomplete read (the next one would throw).
-                // It's possible to get 0 if we are lucky and file size is a multiple of physical sector size.
                 do
                 {
                     current = asyncOperation
@@ -57,7 +48,7 @@ namespace System.IO.Tests
 
                     total += current;
                 }
-                while (current == buffer.Memory.Length);
+                while (current != 0);
 
                 Assert.Equal(fileSize, total);
             }
