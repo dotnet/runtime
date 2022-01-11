@@ -17,6 +17,7 @@ namespace DllImportGenerator.UnitTests
     public class Diagnostics
     {
         [ConditionalTheory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63635", TestPlatforms.OSX)]
         [InlineData(TestTargetFramework.Framework)]
         [InlineData(TestTargetFramework.Core)]
         [InlineData(TestTargetFramework.Standard)]
@@ -43,6 +44,7 @@ partial class Test
         }
 
         [ConditionalTheory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63635", TestPlatforms.OSX)]
         [InlineData(TestTargetFramework.Framework)]
         [InlineData(TestTargetFramework.Core)]
         [InlineData(TestTargetFramework.Standard)]

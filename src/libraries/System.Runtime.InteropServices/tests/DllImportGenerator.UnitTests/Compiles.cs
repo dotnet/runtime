@@ -343,6 +343,7 @@ namespace DllImportGenerator.UnitTests
         }
 
         [ConditionalTheory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63635", TestPlatforms.OSX)]
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
         public async Task ValidateSnippetsFallbackForwarder(string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
