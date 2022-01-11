@@ -185,7 +185,7 @@ namespace System.Net.Security
                     errorCode = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, null, out output, out outputSize);
                 }
 
-                // sometimes during renegotiation processing messgae does not yield new output.
+                // sometimes during renegotiation processing message does not yield new output.
                 // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
                 if (outputSize == 0 && Interop.Ssl.IsSslRenegotiatePending(((SafeDeleteSslContext)context).SslContext))
                 {
