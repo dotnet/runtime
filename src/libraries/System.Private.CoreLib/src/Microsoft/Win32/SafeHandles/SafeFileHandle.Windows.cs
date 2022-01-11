@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -21,6 +20,8 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
+
+        internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
 
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
