@@ -26,7 +26,7 @@
     <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
     <SetScriptCommands Include="export NODE_TLS_REJECT_UNAUTHORIZED=0" />
     <!-- Restore NPM packages -->
-    <RunScriptCommands Include="sh -c 'cd $EXECUTION_DIR &amp;&amp; npm ci'" />
+    <RunScriptCommands Include="pushd $EXECUTION_DIR &amp;&amp; npm ci &amp;&amp; popd" />
   </ItemGroup>
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' == 'Windows_NT'">
     <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
