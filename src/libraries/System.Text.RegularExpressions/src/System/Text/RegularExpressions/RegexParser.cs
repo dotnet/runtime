@@ -2347,21 +2347,26 @@ namespace System.Text.RegularExpressions
         /// <summary>Number of characters to the right of the current parsing position.</summary>
         private int CharsRight() => _pattern.Length - _currentPos;
 
-        /// <summary>Gets group name from its number</summary>
+        /// <summary>Gets group name from its number.</summary>
         internal static string GroupNameFromNumber(Hashtable? caps, string[]? capslist, int capsize, int i)
         {
             if (capslist is null)
             {
-                return (uint)i < (uint)capsize ?
-                    ((uint)i).ToString() :
-                    string.Empty;
+                if ((uint)i < (uint)capsize)
+                {
+                    return ((uint)i).ToString();
+                }
             }
             else
             {
-                return caps != null && !caps.TryGetValue(i, out i) ? string.Empty :
-                    (uint)i < (uint)capslist.Length ? capslist[i] :
-                    string.Empty;
+                if ((caps is null || caps.TryGetValue(i, out i)) &&
+                    (uint)i < (uint)capslist.Length)
+                {
+                    return capslist[i];
+                }
             }
+
+            return string.Empty;
         }
     }
 }
