@@ -75,6 +75,8 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<uint> LoadDquVector128(uint* address) => LoadDquVector128(address);
         public static unsafe Vector128<long> LoadDquVector128(long* address) => LoadDquVector128(address);
         public static unsafe Vector128<ulong> LoadDquVector128(ulong* address) => LoadDquVector128(address);
+        public static unsafe Vector128<nint> LoadDquVector128(nint* address) => LoadDquVector128(address);
+        public static unsafe Vector128<nuint> LoadDquVector128(nuint* address) => LoadDquVector128(address);
 
         /// <summary>
         /// __m128d _mm_movedup_pd (__m128d a)

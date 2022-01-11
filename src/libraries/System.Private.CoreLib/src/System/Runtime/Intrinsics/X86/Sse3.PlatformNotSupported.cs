@@ -75,6 +75,8 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<uint> LoadDquVector128(uint* address) { throw new PlatformNotSupportedException(); }
         public static unsafe Vector128<long> LoadDquVector128(long* address) { throw new PlatformNotSupportedException(); }
         public static unsafe Vector128<ulong> LoadDquVector128(ulong* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nint> LoadDquVector128(nint* address) { throw new PlatformNotSupportedException(); }
+        public static unsafe Vector128<nuint> LoadDquVector128(nuint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_movedup_pd (__m128d a)

@@ -4323,6 +4323,8 @@ namespace System.Runtime.Intrinsics.X86
         public unsafe static System.Runtime.Intrinsics.Vector128<ushort> LoadDquVector128(ushort* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<uint> LoadDquVector128(uint* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<ulong> LoadDquVector128(ulong* address) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<nint> LoadDquVector128(nint* address) { throw null; }
+        public unsafe static System.Runtime.Intrinsics.Vector128<nuint> LoadDquVector128(nuint* address) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> MoveAndDuplicate(System.Runtime.Intrinsics.Vector128<double> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> MoveHighAndDuplicate(System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> MoveLowAndDuplicate(System.Runtime.Intrinsics.Vector128<float> source) { throw null; }
