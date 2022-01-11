@@ -328,7 +328,7 @@ class Program
 
     static int Tests_AdvSimd()
     {
-        var result = 0;
+        var result = 100;
 
         // Begin CompareEqual Tests
 
@@ -381,7 +381,7 @@ class Program
 
     static int Tests_AdvSimd_Swapped()
     {
-        var result = 0;
+        var result = 100;
 
         // Begin CompareEqual Tests
 
@@ -434,7 +434,7 @@ class Program
 
     static int Tests_AdvSimd_Arm64()
     {
-        var result = 0;
+        var result = 100;
 
         // Begin CompareEqual Tests
 
@@ -466,7 +466,7 @@ class Program
 
     static int Tests_AdvSimd_Arm64_Swapped()
     {
-        var result = 0;
+        var result = 100;
 
         // Begin CompareEqual Tests
 
@@ -498,7 +498,7 @@ class Program
 
     static int Main(string[] args)
     {
-        var result = 0;
+        var result = 100;
 
         if (AdvSimd.IsSupported)
         {
