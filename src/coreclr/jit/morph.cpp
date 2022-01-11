@@ -12180,12 +12180,13 @@ DONE_MORPHING_CHILDREN:
             if (!optValnumCSE_phase && op2->IsIntegralConst())
             {
                 tree = fgOptimizeEqualityComparisonWithConst(tree->AsOp());
+                assert(tree->OperIsCompare());
 
                 oper = tree->OperGet();
                 op1  = tree->gtGetOp1();
                 op2  = tree->gtGetOp2();
             }
-            break;
+            goto COMPARE;
 
         case GT_LT:
         case GT_LE:
@@ -13217,7 +13218,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 //
 // Return Value:
 //    The optimized tree, "cmp" in case no optimizations were done.
-//    Currently only returns GTK_SMPOP trees.
+//    Currently only returns relop trees.
 //
 GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 {
