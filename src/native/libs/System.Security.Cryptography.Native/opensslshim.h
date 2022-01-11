@@ -964,7 +964,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
-#define  SSL_set_cert_cb  SSL_set_cert_cb_ptr
+#define SSL_set_cert_cb  SSL_set_cert_cb_ptr
 #define SSL_set_cipher_list SSL_set_cipher_list_ptr
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
