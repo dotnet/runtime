@@ -15,7 +15,7 @@ public sealed class TestOutputRecorder : TextWriter
     private TextWriter _inner;
     private ThreadLocal<StringBuilder> _testOutput = new(() => new StringBuilder());
 
-    private TestOutputRecorder(TextWriter inner)
+    public TestOutputRecorder(TextWriter inner)
     {
         _inner = inner;
     }
