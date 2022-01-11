@@ -3760,9 +3760,9 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
                                                              ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
                                                              : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
 
-                    JITDUMP("Lower: optimize AND(X, ADD(X, -1)): ");
+                    JITDUMP("Lower: optimize AND(X, ADD(X, -1))\n");
                     DISPNODE(andNode);
-                    JITDUMP("Replaced with: ");
+                    JITDUMP("to:\n");
                     DISPNODE(blsrNode);
 
                     use.ReplaceWith(blsrNode);
