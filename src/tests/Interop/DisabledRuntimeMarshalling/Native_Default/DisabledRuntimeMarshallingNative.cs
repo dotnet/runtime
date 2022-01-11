@@ -26,11 +26,13 @@ public unsafe class DisabledRuntimeMarshallingNative
         [MarshalAs(UnmanagedType.U1)]
         bool b;
         short s;
+        int padding;
 
         public StructWithShortAndBoolWithMarshalAs(short s, bool b)
         {
             this.s = s;
             this.b = b;
+            this.padding = 0xdeadbee;
         }
     }
 

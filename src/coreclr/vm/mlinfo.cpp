@@ -2991,6 +2991,15 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
     if (nativeSize == VARIABLESIZE)
     {
         _ASSERTE(IsValueClass(mtype));
+        // For blittable types, use the GetNumInstanceFieldBytes method.
+        // When we generate IL stubs when marshalling is disabled,
+        // we reuse the blittable value class marshalling mechanism.
+        // In that scenario, only GetNumInstanceFieldBytes will return the correct value.
+        // GetNativeSize will return the size for when built-in marshalling is enabled.
+        if (mtype == MARSHAL_TYPE_BLITTABLEVALUECLASS)
+        {
+            return (UINT16) m_pMT->GetNumInstanceFieldBytes();
+        }
         return (UINT16) m_pMT->GetNativeSize();
     }
 
