@@ -3867,6 +3867,7 @@ namespace System.Runtime.Intrinsics.X86
         internal Popcnt() { }
         public static new bool IsSupported { get { throw null; } }
         public static uint PopCount(uint value) { throw null; }
+        public static nuint PopCount(nuint value) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Sse42.X64
         {
             internal X64() { }
