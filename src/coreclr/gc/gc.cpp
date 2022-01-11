@@ -22151,15 +22151,20 @@ void gc_heap::equalize_promoted_bytes()
     // goal is just to balance roughly, while keeping computational complexity low
     // hope is to achieve better work balancing in relocate and compact phases
     // 
-    // step 1:
-    //  compute total promoted bytes per gen
     int condemned_gen_number = settings.condemned_generation;
+#if 0
+    // doing gen 2 runs into trouble with r/o segments
     int highest_gen_number = ((condemned_gen_number == max_generation) ?
                               (total_generation_count - 1) : settings.condemned_generation);
+#else
+    int highest_gen_number = min (condemned_gen_number, max_generation-1);
+#endif
     int stop_gen_idx = get_stop_generation_index (condemned_gen_number);
 
     for (int gen_idx = highest_gen_number; gen_idx >= stop_gen_idx; gen_idx--)
     {
+        // step 1:
+        //  compute total promoted bytes per gen
         size_t total_surv = 0;
         size_t max_surv_per_heap = 0;
         size_t surv_per_heap[MAX_SUPPORTED_CPUS];
@@ -22192,7 +22197,7 @@ void gc_heap::equalize_promoted_bytes()
         {
             dprintf (REGIONS_LOG, ("gen: %d avg surv: %Id max_surv: %Id imbalance: %d", gen_idx, avg_surv_per_heap, max_surv_per_heap, max_surv_per_heap*100/avg_surv_per_heap));
         }
-
+#if 1 // see pseudo code for more sophisticated approach below
         // step 2:
         int deficit_heaps[MAX_SUPPORTED_CPUS];
         int num_deficit_heaps = 0;
@@ -22274,6 +22279,31 @@ void gc_heap::equalize_promoted_bytes()
                 num_deficit_heaps--;
             }
         }
+#else
+        // idea for more sophisticated approach
+        // 
+        // step 2:
+        //   remove regions from surplus heaps until all heaps are <= average
+        //   put these in surplus regions
+        // 
+        // step 3:
+        //   sort surplus regions by decreasing survivorship
+        //   sort heaps by decreasing deficit
+        //
+        // step 4:
+        //   while (surplus regions is non-empy)
+        //     get biggest surplus region
+        //     put it into heap with biggest deficit
+        //     sort heaps again by decreasing deficit
+        //
+        // modification to keep computational complexity lower:
+        //   put regions into size classes by survivorship (say we have 16 size classes) 
+        //   put deficit heaps into size classes by deficit
+        //   this will make the sorts above essentially O(N)
+        //   always move regions from the biggest size class to a heap
+        //   in the biggest deficit class. heap gets re-inserted by
+        //   deficit class, but that's now O(1)
+#endif
 #ifdef TRACE_GC
         max_surv_per_heap = 0;
         for (int i = 0; i < n_heaps; i++)
@@ -25401,7 +25431,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 
 #ifdef USE_REGIONS
         sync_promoted_bytes();
-        equalize_promoted_bytes();
+//        equalize_promoted_bytes();
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
