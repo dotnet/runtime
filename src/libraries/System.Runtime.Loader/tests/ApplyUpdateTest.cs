@@ -306,7 +306,7 @@ namespace System.Reflection.Metadata
             });
         }
 
-        [ActiveIssue("no instance fields", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63643", TestRuntimes.Mono)]
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddNestedClass()
         {
