@@ -55,7 +55,7 @@ namespace System.Reflection.Metadata
 
         private static string InitializeApplyUpdateCapabilities()
         {
-	    const string caps = "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition";
+            const string caps = "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition";
             return ApplyUpdateEnabled(justComponentCheck: 1) != 0 ? caps : string.Empty ;
         }
 
