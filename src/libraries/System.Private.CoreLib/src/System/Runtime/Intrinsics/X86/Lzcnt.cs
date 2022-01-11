@@ -36,5 +36,17 @@ namespace System.Runtime.Intrinsics.X86
         ///   LZCNT reg, reg/m32
         /// </summary>
         public static uint LeadingZeroCount(uint value) => LeadingZeroCount(value);
+
+
+        /// <summary>
+        /// 32-bit:
+        /// unsigned int _lzcnt_u32 (unsigned int a)
+        ///   LZCNT reg, reg/m32
+        ///
+        /// 64-bit:
+        /// unsigned __int64 _lzcnt_u64 (unsigned __int64 a)
+        ///   LZCNT reg, reg/m64
+        /// </summary>
+        public static nuint LeadingZeroCount(nuint value) => LeadingZeroCount(value);
     }
 }
