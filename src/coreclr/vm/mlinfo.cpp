@@ -1235,6 +1235,14 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_byref = TRUE;
 #endif
 
+    // For COM IL-stub scenarios, we do not support disabling the built-in marshalling support.
+    // The runtime-integrated COM support uses a significant portion of the marshalling infrastructure as well as
+    // quite a bit of its own custom marshalling infrastructure to function in basically any aspect.
+    // As a result, disabling marshalling in COM scenarios isn't useful. Instead, we recommend that people set the
+    // feature switch to false to disable the built-in COM support if they want it disabled.
+    // For field marshalling scenarios, we also don't disable built-in marshalling. If we're already in a field
+    // marshalling scenario, we've already decided that the context for the owning type is using built-in marshalling,
+    // so the fields of the struct should also use built-in marshalling.
     const bool useBuiltInMarshalling = ms != MARSHAL_SCENARIO_NDIRECT || pModule->IsRuntimeMarshallingEnabled();
 
     if (!useBuiltInMarshalling)
