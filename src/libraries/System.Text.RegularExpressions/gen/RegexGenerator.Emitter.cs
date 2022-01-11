@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers.Binary;
 using System.CodeDom.Compiler;
 using System.Collections;
@@ -11,10 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -59,7 +55,7 @@ namespace System.Text.RegularExpressions.Generator
             var parentClasses = new Stack<string>();
             while (parent is not null)
             {
-                parentClasses.Push($"partial {parent.Keyword} {parent.Name} {parent.Constraints}");
+                parentClasses.Push($"partial {parent.Keyword} {parent.Name}");
                 parent = parent.ParentClass;
             }
             while (parentClasses.Count != 0)
@@ -70,7 +66,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit the direct parent type
-            writer.WriteLine($"partial {regexClass.Keyword} {regexClass.Name} {regexClass.Constraints}");
+            writer.WriteLine($"partial {regexClass.Keyword} {regexClass.Name}");
             writer.WriteLine("{");
             writer.Indent++;
 
