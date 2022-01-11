@@ -1723,7 +1723,8 @@ public:
         }
     }
 
-    static inline bool RequiresNonNullOp2(genTreeOps oper);
+    bool        OperSupportsReverseOps() const;
+    static bool RequiresNonNullOp2(genTreeOps oper);
     bool IsValidCallArgument();
 #endif // DEBUG
 
@@ -7747,8 +7748,7 @@ inline GenTree* GenTree::gtGetOp1() const
 }
 
 #ifdef DEBUG
-/* static */
-inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
+/* static */ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
 {
     switch (oper)
     {
@@ -7783,6 +7783,21 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
         default:
             return false;
     }
+}
+
+inline bool GenTree::OperSupportsReverseOps() const
+{
+    if (OperIsBinary() && !OperIs(GT_COMMA, GT_INTRINSIC, GT_BOUNDS_CHECK))
+    {
+        return (AsOp()->gtGetOp1() != nullptr) && (AsOp()->gtGetOp2() != nullptr);
+    }
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    if (OperIsMultiOp())
+    {
+        return AsMultiOp()->GetOperandCount() == 2;
+    }
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    return false;
 }
 #endif // DEBUG
 
