@@ -147,7 +147,7 @@ struct ResourceNode
 
 #define RES_FILE_DUMP_ENABLED
 
-DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
+DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
 {
 
     BYTE*   pbResBase;

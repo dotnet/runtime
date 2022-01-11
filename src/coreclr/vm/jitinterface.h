@@ -425,7 +425,7 @@ public:
     static CorInfoHelpFunc getSharedStaticsHelper(FieldDesc * pField, MethodTable * pFieldMT);
 
     static size_t findNameOfToken (Module* module, mdToken metaTOK,
-                            __out_ecount (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
+                            _Out_writes_ (FQNameCapacity) char * szFQName, size_t FQNameCapacity);
 
     DWORD getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftnHnd);
 

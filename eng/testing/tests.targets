@@ -102,6 +102,7 @@
     </ItemGroup>
 
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
+                       SetCommands="@(SetScriptCommands)"
                        TemplatePath="$(RunScriptInputPath)"
                        OutputPath="$(RunScriptOutputPath)" />
 
@@ -109,13 +110,18 @@
   </Target>
 
   <Target Name="RunTests">
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(TargetsMobile)' != 'true'">
       <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
       <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
       <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                   $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(NetCoreAppCurrentTestHostPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
-      <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS.ToLowerInvariant()) $(TestProjectName) $(AdditionalXHarnessArguments)</RunTestsCommand>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+      <RunTestsCommand>"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS.ToLowerInvariant()) $(TestProjectName)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetsAppleMobile)' == 'true'">$(RunTestsCommand) $(Configuration) $(AdditionalXHarnessArguments)</RunTestsCommand>
+      <RunTestsCommand Condition="'$(TargetOS)' == 'Android'">$(RunTestsCommand) $(AdditionalXHarnessArguments)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>
     </PropertyGroup>
 

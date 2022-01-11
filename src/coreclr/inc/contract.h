@@ -346,8 +346,8 @@ struct DbgStateLockData
     void LockTaken(DbgStateLockType dbgStateLockType,
                      UINT cEntrances,
                      void * pvLock,
-                     __in_z const char * szFunction,
-                     __in_z const char * szFile,
+                     _In_z_ const char * szFunction,
+                     _In_z_ const char * szFile,
                      int lineNum);
     void LockReleased(DbgStateLockType dbgStateLockType, UINT cExits, void * pvLock);
     UINT GetLockCount(DbgStateLockType dbgStateLockType);
@@ -439,7 +439,7 @@ public:
         m_LockState.SetStartingValues();
     }
 
-    void CheckOkayToThrow(__in_z const char *szFunction, __in_z const char *szFile, int lineNum); // Asserts if its not okay to throw.
+    void CheckOkayToThrow(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum); // Asserts if its not okay to throw.
     BOOL CheckOkayToThrowNoAssert(); // Returns if OK to throw
 
     //--//
@@ -676,13 +676,13 @@ public:
         m_LockState.OnEnterCannotRetakeLockFunction();
     }
 
-    void CheckOkayToLock(__in_z const char *szFunction, __in_z const char *szFile, int lineNum); // Asserts if its not okay to lock
+    void CheckOkayToLock(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum); // Asserts if its not okay to lock
     BOOL CheckOkayToLockNoAssert(); // Returns if OK to lock
     void LockTaken(DbgStateLockType dbgStateLockType,
                      UINT cEntrances,
                      void * pvLock,
-                     __in_z const char * szFunction,
-                     __in_z const char * szFile,
+                     _In_z_ const char * szFunction,
+                     _In_z_ const char * szFile,
                      int lineNum);
     void LockReleased(DbgStateLockType dbgStateLockType, UINT cExits, void * pvLock);
     UINT GetLockCount(DbgStateLockType dbgStateLockType);
@@ -949,7 +949,7 @@ class BaseContract
         }
     }
 
-    void DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum);
+    void DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum);
     void Disable()
     {
     }

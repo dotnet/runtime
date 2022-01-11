@@ -9,8 +9,6 @@
 
 include AsmMacros.inc
 
-extern RhpReversePInvokeBadTransition : proc
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; RhpWaitForSuspend -- rare path for RhpPInvoke and RhpReversePInvokeReturn

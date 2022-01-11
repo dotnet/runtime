@@ -161,7 +161,7 @@ namespace ILCompiler
         /// </summary>
         public static DelegateCreationInfo Create(TypeDesc delegateType, MethodDesc targetMethod, NodeFactory factory, bool followVirtualDispatch)
         {
-            TypeSystemContext context = delegateType.Context;
+            CompilerTypeSystemContext context = factory.TypeSystemContext;
             DefType systemDelegate = context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType;
 
             int paramCountTargetMethod = targetMethod.Signature.Length;

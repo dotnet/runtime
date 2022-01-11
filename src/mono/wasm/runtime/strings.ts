@@ -163,9 +163,9 @@ export function js_string_to_mono_string_interned(string: string | symbol): Mono
     return ptr;
 }
 
-export function js_string_to_mono_string(string: string): MonoString | null {
+export function js_string_to_mono_string(string: string): MonoString {
     if (string === null)
-        return null;
+        return MonoStringNull;
     else if (typeof (string) === "symbol")
         return js_string_to_mono_string_interned(string);
     else if (typeof (string) !== "string")

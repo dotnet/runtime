@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <AssemblyName>$(MSBuildProjectName.Replace("_il_d", "").Replace("_il_r", ""))</AssemblyName>
+  </PropertyGroup>
+</Project>

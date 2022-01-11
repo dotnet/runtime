@@ -33,6 +33,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return ".ctor";
+            }
+        }
+
         private MethodSignature _signature;
         public override MethodSignature Signature
         {

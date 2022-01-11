@@ -36,7 +36,7 @@ DataBlob::DataBlob()
 //
 inline
 DataBlob::DataBlob(
-    __in_bcount(cbSize) BYTE  *pbData,
+    _In_reads_bytes_(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     m_pbData = pbData;
@@ -83,7 +83,7 @@ DataBlob::Clear()
 inline
 void
 DataBlob::Init(
-    __in_bcount(cbSize) BYTE  *pbData,
+    _In_reads_bytes_(cbSize) BYTE  *pbData,
                         UINT32 cbSize)
 {
     m_pbData = pbData;
@@ -107,7 +107,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::PeekU1(__out BYTE *pnValue) const
+DataBlob::PeekU1(_Out_ BYTE *pnValue) const
 {
     if (m_cbSize < sizeof(BYTE))
     {
@@ -125,7 +125,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::PeekU2(__out UINT16 *pnValue) const
+DataBlob::PeekU2(_Out_ UINT16 *pnValue) const
 {
     if (m_cbSize < sizeof(UINT16))
     {
@@ -143,7 +143,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::PeekU4(__out UINT32 *pnValue) const
+DataBlob::PeekU4(_Out_ UINT32 *pnValue) const
 {
     if (m_cbSize < sizeof(UINT32))
     {
@@ -161,7 +161,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::PeekU8(__out UINT64 *pnValue) const
+DataBlob::PeekU8(_Out_ UINT64 *pnValue) const
 {
     if (m_cbSize < sizeof(UINT64))
     {
@@ -188,7 +188,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::GetU1(__out BYTE *pnValue)
+DataBlob::GetU1(_Out_ BYTE *pnValue)
 {
     if (m_cbSize < sizeof(BYTE))
     {
@@ -207,7 +207,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::GetU2(__out UINT16 *pnValue)
+DataBlob::GetU2(_Out_ UINT16 *pnValue)
 {
     if (m_cbSize < sizeof(UINT16))
     {
@@ -226,7 +226,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::GetU4(__out UINT32 *pnValue)
+DataBlob::GetU4(_Out_ UINT32 *pnValue)
 {
     if (m_cbSize < sizeof(UINT32))
     {
@@ -245,7 +245,7 @@ __checkReturn
 _Success_(return)
 inline
 BOOL
-DataBlob::GetU8(__out UINT64 *pnValue)
+DataBlob::GetU8(_Out_ UINT64 *pnValue)
 {
     if (m_cbSize < sizeof(UINT64))
     {
@@ -267,7 +267,7 @@ DataBlob::GetU8(__out UINT64 *pnValue)
 __checkReturn
 inline
 BOOL
-DataBlob::GetCompressedU(__out UINT32 *pnValue)
+DataBlob::GetCompressedU(_Out_ UINT32 *pnValue)
 {
     UINT32 cbCompressedValueSize_Ignore;
     return GetCompressedU(pnValue, &cbCompressedValueSize_Ignore);
@@ -288,8 +288,8 @@ _Success_(return)
 inline
 BOOL
 DataBlob::PeekCompressedU(
-    __out UINT32 *pnValue,
-    __out UINT32 *pcbCompressedValueSize)
+    _Out_ UINT32 *pnValue,
+    _Out_ UINT32 *pcbCompressedValueSize)
 {
     // This algorithm has to be in sync with code:CompressedInteger#Format encoding definition.
     //
@@ -359,8 +359,8 @@ __checkReturn
 inline
 BOOL
 DataBlob::GetCompressedU(
-    __out UINT32 *pnValue,
-    __out UINT32 *pcbCompressedValueSize)
+    _Out_ UINT32 *pnValue,
+    _Out_ UINT32 *pcbCompressedValueSize)
 {
     // Read the compressed integer from withou skipping the read data
     BOOL fReadResult = PeekCompressedU(
@@ -389,7 +389,7 @@ inline
 BOOL
 DataBlob::GetDataOfSize(
           UINT32    cbDataSize,
-    __out DataBlob *pData)
+    _Out_ DataBlob *pData)
 {
     if (m_cbSize < cbDataSize)
     {   // There's not enough data in the memory block
@@ -544,7 +544,7 @@ DataBlob::StoreCompressedU(UINT32 nValue)
 __checkReturn
 inline
 BOOL
-DataBlob::StoreData(__in const DataBlob *pSource)
+DataBlob::StoreData(_In_ const DataBlob *pSource)
 {
     // Check that we have enough space to store the *pSource data
     if (m_cbSize < pSource->m_cbSize)

@@ -76,6 +76,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Directory\Delete.Windows.cs" />
+    <Compile Include="File\EncryptDecrypt.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />

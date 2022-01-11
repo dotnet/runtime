@@ -12,8 +12,8 @@ char* g_appName;
 #define MAX(x,y) ((x) > (y) ? (x) : (y))
 
 void
-AddBinaryResourceToDll(__in_z char* dllName,
-                       __in_z const char* resName,
+AddBinaryResourceToDll(_In_z_ char* dllName,
+                       _In_z_ const char* resName,
                        PVOID resData,
                        ULONG resDataSize)
 {
@@ -59,7 +59,7 @@ AddBinaryResourceToDll(__in_z char* dllName,
 }
 
 void
-GetBinFileData(__in_z char* binFileName, PVOID* binData, PULONG binDataSize)
+GetBinFileData(_In_z_ char* binFileName, PVOID* binData, PULONG binDataSize)
 {
     HANDLE binFileHandle;
     PVOID data;
@@ -108,7 +108,7 @@ Usage(void)
 }
 
 void __cdecl
-main(int argc, __in_z char** argv)
+main(int argc, _In_z_ char** argv)
 {
     char* binFile = NULL;
     char* dllFile = NULL;

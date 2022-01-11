@@ -426,7 +426,7 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 // If fFullInst=TRUE (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters
 // If fAssembly=TRUE, suffix with a comma and the full assembly qualification
 // return size of representation
-int MyICJI::appendClassName(__deref_inout_ecount(*pnBufLen) char16_t** ppBuf,
+int MyICJI::appendClassName(_Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
                             int*                                    pnBufLen,
                             CORINFO_CLASS_HANDLE                    cls,
                             bool                                    fNamespace,
@@ -1099,7 +1099,7 @@ HRESULT MyICJI::GetErrorHRESULT(struct _EXCEPTION_POINTERS* pExceptionPointers)
 // Fetches the message of the current exception
 // Returns the size of the message (including terminating null). This can be
 // greater than bufferLength if the buffer is insufficient.
-uint32_t MyICJI::GetErrorMessage(__inout_ecount(bufferLength) char16_t* buffer, uint32_t bufferLength)
+uint32_t MyICJI::GetErrorMessage(_Inout_updates_(bufferLength) char16_t* buffer, uint32_t bufferLength)
 {
     jitInstance->mc->cr->AddCall("GetErrorMessage");
     LogError("Hit unimplemented GetErrorMessage");
@@ -1214,7 +1214,7 @@ unsigned MyICJI::getMethodHash(CORINFO_METHOD_HANDLE ftn /* IN */
 // this function is for debugging only.
 size_t MyICJI::findNameOfToken(CORINFO_MODULE_HANDLE              module,        /* IN  */
                                mdToken                            metaTOK,       /* IN  */
-                               __out_ecount(FQNameCapacity) char* szFQName,      /* OUT */
+                               _Out_writes_(FQNameCapacity) char* szFQName,      /* OUT */
                                size_t                             FQNameCapacity /* IN */
                                )
 {
@@ -1782,7 +1782,7 @@ int MyICJI::doAssert(const char* szFile, int iLine, const char* szExpr)
     char buff[16 * 1024];
     sprintf_s(buff, sizeof(buff), "%s (%d) - %s", szFile, iLine, szExpr);
 
-    LogIssue(ISSUE_ASSERT, "%s", buff);
+    LogIssue(ISSUE_ASSERT, "#%d %s", jitInstance->mc->index, buff);
     jitInstance->mc->cr->recMessageLog(buff);
 
     // Under "/boa", ask the user if they want to attach a debugger. If they do, the debugger will be attached,

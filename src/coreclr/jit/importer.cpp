@@ -3364,7 +3364,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 #endif
             )
     {
-        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_NONVARARG))
+        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR))
         {
             return nullptr;
         }
@@ -4094,8 +4094,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
                 const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
                 GenTree*             length       = gtNewFieldRef(TYP_INT, lengthHnd, ptrToSpan, lengthOffset);
-                GenTree*             boundsCheck  = new (this, GT_ARR_BOUNDS_CHECK)
-                    GenTreeBoundsChk(GT_ARR_BOUNDS_CHECK, TYP_VOID, index, length, SCK_RNGCHK_FAIL);
+                GenTree* boundsCheck = new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(index, length, SCK_RNGCHK_FAIL);
 
                 // Element access
                 index = indexClone;
@@ -5399,7 +5398,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (result == NI_Illegal)
         {
-            if (strcmp(methodName, "get_IsSupported") == 0)
+            if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
             {
                 // This allows the relevant code paths to be dropped as dead code even
                 // on platforms where FEATURE_HW_INTRINSICS is not supported.
@@ -7428,107 +7427,59 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
     GenTree* node;
 
-    //
-    // There are two different JIT helpers that can be used to allocate
-    // multi-dimensional arrays:
-    //
-    // - CORINFO_HELP_NEW_MDARR - takes the array dimensions as varargs.
-    //      This variant is deprecated. It should be eventually removed.
-    //
-    // - CORINFO_HELP_NEW_MDARR_NONVARARG - takes the array dimensions as
-    //      pointer to block of int32s. This variant is more portable.
-    //
-    // The non-varargs helper is enabled for CoreRT only for now. Enabling this
-    // unconditionally would require ReadyToRun version bump.
-    //
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-    if (!opts.IsReadyToRun() || IsTargetAbi(CORINFO_CORERT_ABI))
+    // Reuse the temp used to pass the array dimensions to avoid bloating
+    // the stack frame in case there are multiple calls to multi-dim array
+    // constructors within a single method.
+    if (lvaNewObjArrayArgs == BAD_VAR_NUM)
     {
-
-        // Reuse the temp used to pass the array dimensions to avoid bloating
-        // the stack frame in case there are multiple calls to multi-dim array
-        // constructors within a single method.
-        if (lvaNewObjArrayArgs == BAD_VAR_NUM)
-        {
-            lvaNewObjArrayArgs                       = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
-            lvaTable[lvaNewObjArrayArgs].lvType      = TYP_BLK;
-            lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
-        }
-
-        // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-        // for our call to CORINFO_HELP_NEW_MDARR_NONVARARG.
-        lvaTable[lvaNewObjArrayArgs].lvExactSize =
-            max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
-
-        // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
-        // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
-        // to one allocation at a time.
-        impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
-
-        //
-        // The arguments of the CORINFO_HELP_NEW_MDARR_NONVARARG helper are:
-        //  - Array class handle
-        //  - Number of dimension arguments
-        //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
-        //
-
-        node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-        node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
-
-        // Pop dimension arguments from the stack one at a time and store it
-        // into lvaNewObjArrayArgs temp.
-        for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
-        {
-            GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
-
-            GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
-            dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
-            dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
-                                 new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
-            dest = gtNewOperNode(GT_IND, TYP_INT, dest);
-
-            node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
-        }
-
-        GenTreeCall::Use* args = gtNewCallArgs(node);
-
-        // pass number of arguments to the helper
-        args = gtPrependNewCallArg(gtNewIconNode(pCallInfo->sig.numArgs), args);
-
-        args = gtPrependNewCallArg(classHandle, args);
-
-        node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR_NONVARARG, TYP_REF, args);
+        lvaNewObjArrayArgs                       = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaTable[lvaNewObjArrayArgs].lvType      = TYP_BLK;
+        lvaTable[lvaNewObjArrayArgs].lvExactSize = 0;
     }
-    else
+
+    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
+    // for our call to CORINFO_HELP_NEW_MDARR.
+    lvaTable[lvaNewObjArrayArgs].lvExactSize =
+        max(lvaTable[lvaNewObjArrayArgs].lvExactSize, pCallInfo->sig.numArgs * sizeof(INT32));
+
+    // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
+    // to ensure that the shared lvaNewObjArrayArgs local variable is only ever used to pass arguments
+    // to one allocation at a time.
+    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("impImportNewObjArray"));
+
+    //
+    // The arguments of the CORINFO_HELP_NEW_MDARR helper are:
+    //  - Array class handle
+    //  - Number of dimension arguments
+    //  - Pointer to block of int32 dimensions - address  of lvaNewObjArrayArgs temp.
+    //
+
+    node = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
+    node = gtNewOperNode(GT_ADDR, TYP_I_IMPL, node);
+
+    // Pop dimension arguments from the stack one at a time and store it
+    // into lvaNewObjArrayArgs temp.
+    for (int i = pCallInfo->sig.numArgs - 1; i >= 0; i--)
     {
-        //
-        // The varargs helper needs the type and method handles as last
-        // and  last-1 param (this is a cdecl call, so args will be
-        // pushed in reverse order on the CPU stack)
-        //
+        GenTree* arg = impImplicitIorI4Cast(impPopStack().val, TYP_INT);
 
-        GenTreeCall::Use* args = gtNewCallArgs(classHandle);
+        GenTree* dest = gtNewLclvNode(lvaNewObjArrayArgs, TYP_BLK);
+        dest          = gtNewOperNode(GT_ADDR, TYP_I_IMPL, dest);
+        dest          = gtNewOperNode(GT_ADD, TYP_I_IMPL, dest,
+                             new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, sizeof(INT32) * i));
+        dest = gtNewOperNode(GT_IND, TYP_INT, dest);
 
-        // pass number of arguments to the helper
-        args = gtPrependNewCallArg(gtNewIconNode(pCallInfo->sig.numArgs), args);
-
-        args = impPopCallArgs(pCallInfo->sig.numArgs, &pCallInfo->sig, args);
-
-        node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, args);
-
-        // varargs, so we pop the arguments
-        node->gtFlags |= GTF_CALL_POP_ARGS;
-
-#ifdef DEBUG
-        // At the present time we don't track Caller pop arguments
-        // that have GC references in them
-        for (GenTreeCall::Use& use : GenTreeCall::UseList(args))
-        {
-            assert(use.GetNode()->TypeGet() != TYP_REF);
-        }
-#endif
+        node = gtNewOperNode(GT_COMMA, node->TypeGet(), gtNewAssignNode(dest, arg), node);
     }
+
+    GenTreeCall::Use* args = gtNewCallArgs(node);
+
+    // pass number of arguments to the helper
+    args = gtPrependNewCallArg(gtNewIconNode(pCallInfo->sig.numArgs), args);
+
+    args = gtPrependNewCallArg(classHandle, args);
+
+    node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, args);
 
     for (GenTreeCall::Use& use : node->AsCall()->Args())
     {
@@ -9815,52 +9766,6 @@ DONE:
         }
     }
 
-    // A tail recursive call is a potential loop from the current block to the start of the method.
-    if ((tailCallFlags != 0) && canTailCall)
-    {
-        // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
-        // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
-        // instrumentation.
-        //
-        if (!compIsForInlining() && (compCurBB->bbJumpKind != BBJ_RETURN))
-        {
-            BasicBlock* const successor = compCurBB->GetUniqueSucc();
-            assert(successor->bbJumpKind == BBJ_RETURN);
-            successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
-            optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
-        }
-
-        if (gtIsRecursiveCall(methHnd))
-        {
-            assert(verCurrentState.esStackDepth == 0);
-            BasicBlock* loopHead = nullptr;
-            if (opts.IsOSR())
-            {
-                // We might not have been planning on importing the method
-                // entry block, but now we must.
-
-                // We should have remembered the real method entry block.
-                assert(fgEntryBB != nullptr);
-
-                JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
-                        fgEntryBB->bbNum);
-                impImportBlockPending(fgEntryBB);
-                loopHead = fgEntryBB;
-            }
-            else
-            {
-                // For normal jitting we'll branch back to the firstBB; this
-                // should already be imported.
-                loopHead = fgFirstBB;
-            }
-
-            JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
-                    " as having a backward branch.\n",
-                    loopHead->bbNum, compCurBB->bbNum);
-            fgMarkBackwardJump(loopHead, compCurBB);
-        }
-    }
-
     // Note: we assume that small return types are already normalized by the managed callee
     // or by the pinvoke stub for calls to unmanaged code.
 
@@ -9894,6 +9799,86 @@ DONE:
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+    }
+
+    // Extra checks for tail calls and tail recursion.
+    //
+    // A tail recursive call is a potential loop from the current block to the start of the root method.
+    // If we see a tail recursive call, mark the blocks from the call site back to the entry as potentially
+    // being in a loop.
+    //
+    // Note: if we're importing an inlinee we don't mark the right set of blocks, but by then it's too
+    // late. Currently this doesn't lead to problems. See GitHub issue 33529.
+    //
+    // OSR also needs to handle tail calls specially:
+    // * block profiling in OSR methods needs to ensure probes happen before tail calls, not after.
+    // * the root method entry must be imported if there's a recursive tail call or a potentially
+    //   inlineable tail call.
+    //
+    if ((tailCallFlags != 0) && canTailCall)
+    {
+        if (gtIsRecursiveCall(methHnd))
+        {
+            assert(verCurrentState.esStackDepth == 0);
+            BasicBlock* loopHead = nullptr;
+            if (!compIsForInlining() && opts.IsOSR())
+            {
+                // For root method OSR we may branch back to the actual method entry,
+                // which is not fgFirstBB, and which we will need to import.
+                assert(fgEntryBB != nullptr);
+                loopHead = fgEntryBB;
+            }
+            else
+            {
+                // For normal jitting we may branch back to the firstBB; this
+                // should already be imported.
+                loopHead = fgFirstBB;
+            }
+
+            JITDUMP("\nTail recursive call [%06u] in the method. Mark " FMT_BB " to " FMT_BB
+                    " as having a backward branch.\n",
+                    dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
+            fgMarkBackwardJump(loopHead, compCurBB);
+        }
+
+        // We only do these OSR checks in the root method because:
+        // * If we fail to import the root method entry when importing the root method, we can't go back
+        //    and import it during inlining. So instead of checking jsut for recursive tail calls we also
+        //    have to check for anything that might introduce a recursive tail call.
+        // * We only instrument root method blocks in OSR methods,
+        //
+        if (opts.IsOSR() && !compIsForInlining())
+        {
+            // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
+            // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
+            // instrumentation.
+            //
+            if (compCurBB->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const successor = compCurBB->GetUniqueSucc();
+                assert(successor->bbJumpKind == BBJ_RETURN);
+                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
+            }
+
+            // If this call might eventually turn into a loop back to method entry, make sure we
+            // import the method entry.
+            //
+            assert(call->IsCall());
+            GenTreeCall* const actualCall           = call->AsCall();
+            const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
+                                              actualCall->IsGuardedDevirtualizationCandidate();
+
+            // Only schedule importation if we're not currently importing.
+            //
+            if (mustImportEntryBlock && (compCurBB != fgEntryBB))
+            {
+                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                        " for importation\n",
+                        dspTreeID(call), fgEntryBB->bbNum);
+                impImportBlockPending(fgEntryBB);
+            }
+        }
     }
 
     if ((sig->flags & CORINFO_SIGFLAG_FAT_CALL) != 0)
@@ -9999,6 +9984,22 @@ DONE_CALL:
             }
             else
             {
+                // If the call is virtual, and has a generics context, and is not going to have a class probe,
+                // record the context for possible use during late devirt.
+                //
+                // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
+                // important devirtualizations, we'll want to allow both a class probe and a captured context.
+                //
+                if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
+                    (origCall->gtClassProfileCandidateInfo == nullptr))
+                {
+                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    origCall->gtCallMoreFlags |= GTF_CALL_M_LATE_DEVIRT;
+                    LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
+                    info->exactContextHnd                = exactContextHnd;
+                    origCall->gtLateDevirtualizationInfo = info;
+                }
+
                 if (isFatPointerCandidate)
                 {
                     // fatPointer candidates should be in statements of the form call() or var = call().
@@ -14932,18 +14933,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // At present this can only be String
                 else if (clsFlags & CORINFO_FLG_VAROBJSIZE)
                 {
-                    if (IsTargetAbi(CORINFO_CORERT_ABI))
-                    {
-                        // The dummy argument does not exist in CoreRT
-                        newObjThisPtr = nullptr;
-                    }
-                    else
-                    {
-                        // This is the case for variable-sized objects that are not
-                        // arrays.  In this case, call the constructor with a null 'this'
-                        // pointer
-                        newObjThisPtr = gtNewIconNode(0, TYP_REF);
-                    }
+                    // Skip this thisPtr argument
+                    newObjThisPtr = nullptr;
 
                     /* Remember that this basic block contains 'new' of an object */
                     block->bbFlags |= BBF_HAS_NEWOBJ;
@@ -19984,7 +19975,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pInfo->guardedClassHandle              = nullptr;
                 pInfo->guardedMethodHandle             = nullptr;
                 pInfo->guardedMethodUnboxedEntryHandle = nullptr;
-                pInfo->stubAddr                        = nullptr;
                 pInfo->likelihood                      = 0;
                 pInfo->requiresInstMethodTableArg      = false;
             }
@@ -20838,33 +20828,8 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             // TODO-1stClassStructs: We currently do not reuse an existing lclVar
             // if it is a struct, because it requires some additional handling.
 
-            bool substitute = false;
-            switch (argNode->OperGet())
-            {
-#ifdef FEATURE_HW_INTRINSICS
-                case GT_HWINTRINSIC:
-                {
-                    // Enable for all parameterless (=invariant) hw intrinsics such as
-                    // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
-                    // doing that for Vector.Create(cns) as well.
-                    if (argNode->AsHWIntrinsic()->GetOperandCount() == 0)
-                    {
-                        substitute = true;
-                    }
-                    break;
-                }
-#endif
-
-                // TODO: Enable substitution for CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE (typeof(T))
-                // but in order to benefit from that, we need to move various "typeof + IsValueType"
-                // optimizations from importer to morph.
-
-                default:
-                    break;
-            }
-
-            if (substitute || (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                               !argInfo.argHasCallerLocalRef))
+            if ((!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
+                 !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));
@@ -21020,15 +20985,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             dspTreeID(call));
 
     call->ClearGuardedDevirtualizationCandidate();
-
-    // If we have a stub address, restore it back into the union that it shares
-    // with the candidate info.
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
-        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -21516,14 +21472,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             // Record some info needed for the class profiling probe.
             //
-            pInfo->ilOffset   = ilOffset;
-            pInfo->probeIndex = info.compClassProbeCount++;
-            pInfo->stubAddr   = call->gtStubCallStubAddr;
-
-            // note this overwrites gtCallStubAddr, so it needs to be undone
-            // during the instrumentation phase, or we won't generate proper
-            // code for vsd calls.
-            //
+            pInfo->ilOffset                   = ilOffset;
+            pInfo->probeIndex                 = info.compClassProbeCount++;
             call->gtClassProfileCandidateInfo = pInfo;
 
             // Flag block as needing scrutiny
@@ -22641,18 +22591,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
             pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
             pInfo->requiresInstMethodTableArg      = requiresInstMethodTableArg;
         }
-    }
-
-    // Save off the stub address since it shares a union with the candidate info.
-    //
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("Saving stub addr %p in candidate info\n", dspPtr(call->gtStubCallStubAddr));
-        pInfo->stubAddr = call->gtStubCallStubAddr;
-    }
-    else
-    {
-        pInfo->stubAddr = nullptr;
     }
 
     call->gtGuardedDevirtualizationCandidateInfo = pInfo;

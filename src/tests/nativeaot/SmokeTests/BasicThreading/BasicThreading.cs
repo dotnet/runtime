@@ -45,7 +45,7 @@ class FinalizeTest
     public static int Run()
     {
         int iterationCount = 0;
-        while (!visited && iterationCount++ < 10000)
+        while (!visited && iterationCount++ < 1000000)
         {
             GC.KeepAlive(new Dummy());
             GC.Collect();

@@ -2145,6 +2145,20 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
     block->dspFlags();
 
+    // Display OSR info
+    //
+    if (opts.IsOSR())
+    {
+        if (block == fgEntryBB)
+        {
+            printf("original-entry");
+        }
+        if (block == fgOSREntryBB)
+        {
+            printf("osr-entry");
+        }
+    }
+
     printf("\n");
 }
 
