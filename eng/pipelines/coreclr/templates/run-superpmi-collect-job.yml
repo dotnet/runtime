@@ -159,6 +159,10 @@ jobs:
         artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
 
+    # Ensure the Python azure-storage-blob package is installed before doing the upload.
+    - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+      displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
       displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
       env:
