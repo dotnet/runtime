@@ -8231,6 +8231,35 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
         break;
 
+        case CORINFO_FIELD_STATIC_DATASEGMENT:
+        {
+#ifdef FEATURE_READYTORUN
+            assert(opts.IsReadyToRun());
+            assert((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) == 0);
+            
+            if (pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_VALUE)
+            {
+                op1 = gtNewIconHandleNode((size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_STATIC_HDL);
+                op1->gtType = TYP_BYREF;
+            }
+            else
+            {
+                assert(pFieldInfo->fieldLookup.accessType == InfoAccessType::IAT_PVALUE);
+                op1 = gtNewIndOfIconHandleNode(TYP_BYREF, (size_t)pFieldInfo->fieldLookup.addr, GTF_ICON_GLOBAL_PTR, false);
+            }
+
+            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+            op1              = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
+                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, pFieldInfo->offset, fs));
+
+            // Prevent CSE from adding the offset to the base
+            op1->gtFlags |= GTF_DONT_CSE;
+#else
+            unreached();
+#endif // FEATURE_READYTORUN
+        }
+        break;
+
         default:
         {
             // Do we need the address of a static field?
@@ -15567,6 +15596,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_DATASEGMENT:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -15838,6 +15868,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_DATASEGMENT:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;

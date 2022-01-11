@@ -1921,6 +1921,7 @@ namespace Internal.JitInterface
             {
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
+                CORINFO_FIELD_ACCESSOR intrinsicAccessor;
                 if (field.HasRva)
                 {
                     fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
@@ -1981,20 +1982,38 @@ namespace Internal.JitInterface
                         pResult->fieldLookup = CreateConstLookupToSymbol(helper);
                     }
                 }
+                else if (field.IsIntrinsic &&
+                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
+                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
+                {
+                    fieldAccessor = intrinsicAccessor;
+                }
+                else if (!field.IsThreadStatic && !_compilation.HasLazyStaticConstructor(field.OwningType))
+                {
+                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_DATASEGMENT;
+
+                    ISymbolNode baseAddress;
+                    if (field.HasGCStaticBase)
+                    {
+                        pResult->fieldLookup.accessType = InfoAccessType.IAT_PVALUE;
+                        baseAddress = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
+                    }
+                    else
+                    {
+                        pResult->fieldLookup.accessType = InfoAccessType.IAT_VALUE;
+                        baseAddress = _compilation.NodeFactory.TypeNonGCStaticsSymbol((MetadataType)field.OwningType);
+                    }
+
+                    pResult->fieldLookup.addr = (void*)ObjectToHandle(baseAddress);
+                }
                 else
                 {
                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
                     pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
                     ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if (field.IsIntrinsic &&
-                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
-                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
-                    {
-                        fieldAccessor = intrinsicAccessor;
-                    }
-                    else if (field.IsThreadStatic)
+                    
+                    if (field.IsThreadStatic)
                     {
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
