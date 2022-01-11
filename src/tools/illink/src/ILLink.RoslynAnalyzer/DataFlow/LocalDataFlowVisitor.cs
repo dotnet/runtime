@@ -17,9 +17,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 	// - field
 	// - parameter
 	// - method return
-	public abstract class LocalDataFlowVisitor<TValue, TValueLattice> : OperationVisitor<LocalState<TValue>, TValue>,
+	public abstract class LocalDataFlowVisitor<TValue, TValueLattice> : OperationWalker<LocalState<TValue>, TValue>,
 		ITransfer<BlockProxy, LocalState<TValue>, LocalStateLattice<TValue, TValueLattice>>
-		where TValue : IEquatable<TValue>
+		// This struct constraint prevents warnings due to possible null returns from the visitor methods.
+		// Note that this assumes that default(TValue) is equal to the TopValue.
+		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{
 		protected readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
@@ -89,17 +91,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
 		public abstract void HandleReturnValue (TValue returnValue, IOperation operation);
-
-		// Override with a non-nullable return value to prevent some warnings.
-		// The interface constraint on TValue ensures that it's not a nullable type, so this is safe as long
-		// as no overrides return default(TValue).
-		public override TValue Visit (IOperation? operation, LocalState<TValue> argument) => operation != null ? operation.Accept (this, argument)! : TopValue;
-
-		internal virtual TValue VisitNoneOperation (IOperation operation, LocalState<TValue> argument) => TopValue;
-
-		// The default visitor preserves the local state. Any unimplemented operations will not
-		// have their effects reflected in the tracked state.
-		public override TValue DefaultVisit (IOperation operation, LocalState<TValue> state) => TopValue;
 
 		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalState<TValue> state)
 		{
