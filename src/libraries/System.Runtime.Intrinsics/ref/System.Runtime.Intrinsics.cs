@@ -3840,6 +3840,7 @@ namespace System.Runtime.Intrinsics.X86
         internal Lzcnt() { }
         public static new bool IsSupported { get { throw null; } }
         public static uint LeadingZeroCount(uint value) { throw null; }
+        public static nuint LeadingZeroCount(nuint value) { throw null; }
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.X86Base.X64
         {
             internal X64() { }
