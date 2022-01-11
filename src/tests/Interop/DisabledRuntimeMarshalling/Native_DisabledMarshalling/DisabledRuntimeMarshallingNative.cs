@@ -172,7 +172,11 @@ public unsafe class DisabledRuntimeMarshallingNative
     [return:MarshalAs(UnmanagedType.U1)]
     public static extern bool CheckStructWithShortAndBoolWithVariantBool_FailureExpected(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 
+    // Apply the UnmanagedFunctionPointer attributes with the default calling conventions so that Mono's AOT compiler
+    // recognizes that these delegate types are used in interop and should have managed->native thunks generated for them.
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
     public delegate bool CheckStructWithShortAndBoolCallback(StructWithShortAndBool str, short s, bool b);
+    [UnmanagedFunctionPointer(CallingConvention.Winapi)]
     public delegate bool CheckStructWithShortAndBoolWithVariantBoolCallback(StructWithShortAndBool str, short s, [MarshalAs(UnmanagedType.VariantBool)] bool b);
 
     [UnmanagedCallersOnly]
