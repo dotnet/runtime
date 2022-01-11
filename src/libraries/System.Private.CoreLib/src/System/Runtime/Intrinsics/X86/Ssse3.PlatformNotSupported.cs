@@ -95,6 +95,32 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> AlignRight(Vector128<ulong> left, Vector128<ulong> right, byte mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        ///
+        /// 64-bit:
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        ///
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<nint> AlignRight(Vector128<nint> left, Vector128<nint> right, byte mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        ///
+        /// 64-bit:
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        ///
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<nuint> AlignRight(Vector128<nuint> left, Vector128<nuint> right, byte mask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_hadd_epi16 (__m128i a, __m128i b)
         ///   PHADDW xmm, xmm/m128
         /// </summary>

@@ -4516,10 +4516,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<short> AlignRight(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> AlignRight(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> AlignRight(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right, byte mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> AlignRight(System.Runtime.Intrinsics.Vector128<nint> left, System.Runtime.Intrinsics.Vector128<nint> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> AlignRight(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ushort> AlignRight(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> AlignRight(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> AlignRight(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right, byte mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nuint> AlignRight(System.Runtime.Intrinsics.Vector128<nuint> left, System.Runtime.Intrinsics.Vector128<nuint> right, byte mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> HorizontalAdd(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> HorizontalAdd(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> HorizontalAddSaturate(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
