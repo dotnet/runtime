@@ -126,9 +126,9 @@ namespace System.Reflection
 
         public override long HostContext => 0;
 
-        public override string ImageRuntimeVersion => GetInfo(AssemblyInfoKind.ImageRuntimeVersion);
+        public override string ImageRuntimeVersion => GetInfo(AssemblyInfoKind.ImageRuntimeVersion)!;
 
-        public override string Location => GetInfo(AssemblyInfoKind.Location);
+        public override string Location => GetInfo(AssemblyInfoKind.Location)!;
 
         // TODO: consider a dedicated icall instead
         public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this)!.IsCollectible;
@@ -504,12 +504,12 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void GetInfo(QCallAssembly assembly, ObjectHandleOnStack res, AssemblyInfoKind kind);
 
-        private string GetInfo(AssemblyInfoKind kind)
+        private string? GetInfo(AssemblyInfoKind kind)
         {
             var this_assembly = this;
             string? res = null;
             GetInfo(new QCallAssembly(ref this_assembly), ObjectHandleOnStack.Create(ref res), kind);
-            return res!;
+            return res;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
