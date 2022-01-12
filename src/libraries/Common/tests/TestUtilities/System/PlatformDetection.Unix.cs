@@ -58,7 +58,7 @@ namespace System
             throw new PlatformNotSupportedException();
 
         private static readonly Version s_openssl3Version = new Version(3, 0, 0);
-        public static bool IsOpenSsl3 => !IsOSXLike && !IsWindows && !IsAndroid ?
+        public static bool IsOpenSsl3 => !IsOSXLike && !IsWindows && !IsAndroid && !IsBrowser ?
             GetOpenSslVersion() >= s_openssl3Version :
             false;
 
