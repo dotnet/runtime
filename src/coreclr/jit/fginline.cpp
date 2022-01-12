@@ -1437,8 +1437,8 @@ _Done:
         if (bottomBlock != nullptr)
         {
             // We've split the iciblock into two and the RET_EXPR was possibly moved to the bottomBlock
-            // so let's update its flags with retBB's ones using "split gained" mask
-            bottomBlock->bbFlags |= pInlineInfo->retBB->bbFlags & BBF_SPLIT_GAINED;
+            // so let's update its flags with retBB's ones
+            bottomBlock->bbFlags |= pInlineInfo->retBB->bbFlags & BBF_COMPACT_UPD;
         }
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
