@@ -13,9 +13,9 @@ namespace System.Net.NetworkInformation
     {
         public AndroidIPGlobalStatistics(bool ipv4)
         {
-            NetworkInterface[] networkInterfaces = AndroidNetworkInterface.GetAndroidNetworkInterfaces();
+            AndroidNetworkInterface[] networkInterfaces = NetworkInterfacePal.GetAndroidNetworkInterfaces();
 
-            foreach (NetworkInterface networkInterface in networkInterfaces)
+            foreach (var networkInterface in networkInterfaces)
             {
                 var component = ipv4 ? NetworkInterfaceComponent.IPv4 : NetworkInterfaceComponent.IPv6;
                 if (networkInterface.Supports(component))
@@ -23,74 +23,51 @@ namespace System.Net.NetworkInformation
                     NumberOfInterfaces++;
                 }
 
-                if (networkInterface is AndroidNetworkInterface androidNetworkInterface)
+                foreach (UnixUnicastIPAddressInformation addressInformation in networkInterface.UnicastAddress)
                 {
-                    foreach (UnixUnicastIPAddressInformation addressInformation in androidNetworkInterface.UnicastAddress)
+                    bool isIPv4 = addressInformation.Address.AddressFamily == AddressFamily.InterNetwork;
+                    if (isIPv4 == ipv4)
                     {
-                        bool isIPv4 = addressInformation.Address.AddressFamily == AddressFamily.InterNetwork;
+                        NumberOfIPAddresses++;
+                    }
+                }
+
+                if (networkInterface.MulticastAddresess != null)
+                {
+                    foreach (IPAddress address in networkInterface.MulticastAddresess)
+                    {
+                        bool isIPv4 = address.AddressFamily == AddressFamily.InterNetwork;
                         if (isIPv4 == ipv4)
                         {
                             NumberOfIPAddresses++;
-                        }
-                    }
-
-                    if (androidNetworkInterface.MulticastAddresess != null)
-                    {
-                        foreach (IPAddress address in androidNetworkInterface.MulticastAddresess)
-                        {
-                            bool isIPv4 = address.AddressFamily == AddressFamily.InterNetwork;
-                            if (isIPv4 == ipv4)
-                            {
-                                NumberOfIPAddresses++;
-                            }
                         }
                     }
                 }
             }
         }
 
-        public override int DefaultTtl => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
-        public override bool ForwardingEnabled => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override int NumberOfInterfaces { get; }
-
         public override int NumberOfIPAddresses { get; }
 
+        public override int DefaultTtl => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+        public override bool ForwardingEnabled => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
         public override int NumberOfRoutes => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long OutputPacketRequests => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long OutputPacketRoutingDiscards => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long OutputPacketsDiscarded => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long OutputPacketsWithNoRoute => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long PacketFragmentFailures => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long PacketReassembliesRequired => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long PacketReassemblyFailures => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long PacketReassemblyTimeout => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long PacketsFragmented => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long PacketsReassembled => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPackets => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPacketsDelivered => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPacketsDiscarded => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPacketsForwarded => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPacketsWithAddressErrors => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPacketsWithHeadersErrors => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
-
         public override long ReceivedPacketsWithUnknownProtocol => throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
     }
 }
