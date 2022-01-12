@@ -117,8 +117,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> ToImmutableArray<T>(this ReadOnlySpan<T> items)
         {
-            T[] array = items.ToArray();
-            return new ImmutableArray<T>(array);
+            return Create(items);
         }
 
         /// <summary>
@@ -129,8 +128,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> ToImmutableArray<T>(this Span<T> items)
         {
-            T[] array = items.ToArray();
-            return new ImmutableArray<T>(array);
+            return Create((ReadOnlySpan<T>)items);
         }
 
         /// <summary>

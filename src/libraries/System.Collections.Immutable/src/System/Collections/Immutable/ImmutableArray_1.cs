@@ -193,7 +193,7 @@ namespace System.Collections.Immutable
         public int LastIndexOf(T item)
         {
             var self = this;
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return -1;
             }
@@ -210,7 +210,7 @@ namespace System.Collections.Immutable
         public int LastIndexOf(T item, int startIndex)
         {
             var self = this;
-            if (self.Length == 0 && startIndex == 0)
+            if (self.IsEmpty && startIndex == 0)
             {
                 return -1;
             }
@@ -292,7 +292,7 @@ namespace System.Collections.Immutable
             self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
 
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return ImmutableArray.Create(item);
             }
@@ -325,7 +325,7 @@ namespace System.Collections.Immutable
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
             Requires.NotNull(items, nameof(items));
 
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return ImmutableArray.CreateRange(items);
             }
@@ -382,7 +382,7 @@ namespace System.Collections.Immutable
             {
                 return items;
             }
-            else if (items.IsEmpty)
+            if (items.IsEmpty)
             {
                 return self;
             }
@@ -398,7 +398,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> Add(T item)
         {
             var self = this;
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return ImmutableArray.Create(item);
             }
@@ -840,28 +840,12 @@ namespace System.Collections.Immutable
             {
                 return self;
             }
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return new ImmutableArray<T>(items);
             }
 
             return self.InsertSpanRangeInternal(index, items);
-        }
-
-        private ImmutableArray<T> InsertSpanRangeInternal(int index, ReadOnlySpan<T> items)
-        {
-            var tmp = new T[Length + items.Length];
-            if (index != 0)
-            {
-                Array.Copy(array!, tmp, index);
-            }
-            items.CopyTo(new Span<T>(tmp, index, items.Length));
-            if (index != Length)
-            {
-                Array.Copy(array!, index, tmp, index + items.Length, Length - index);
-            }
-
-            return new ImmutableArray<T>(tmp);
         }
 
         /// <summary>
@@ -880,7 +864,7 @@ namespace System.Collections.Immutable
             {
                 return self;
             }
-            if (self.Length == 0)
+            if (self.IsEmpty)
             {
                 return items.ToImmutableArray();
             }
@@ -1409,6 +1393,26 @@ namespace System.Collections.Immutable
             Array.Copy(self.array!, copied + removed, newArray, copied, self.Length - (copied + removed));
 
             return new ImmutableArray<T>(newArray);
+        }
+
+        private ImmutableArray<T> InsertSpanRangeInternal(int index, ReadOnlySpan<T> items)
+        {
+            Debug.Assert(array != null);
+            Debug.Assert(!IsEmpty);
+            Debug.Assert(!items.IsEmpty);
+
+            var tmp = new T[Length + items.Length];
+            if (index != 0)
+            {
+                Array.Copy(array!, tmp, index);
+            }
+            items.CopyTo(new Span<T>(tmp, index, items.Length));
+            if (index != Length)
+            {
+                Array.Copy(array!, index, tmp, index + items.Length, Length - index);
+            }
+
+            return new ImmutableArray<T>(tmp);
         }
     }
 }

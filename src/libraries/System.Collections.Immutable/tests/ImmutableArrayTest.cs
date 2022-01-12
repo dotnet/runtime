@@ -47,6 +47,17 @@ namespace System.Collections.Immutable.Tests
             yield return new object[] { new[] { (string)null } };
         }
 
+        public static IEnumerable<object[]> RangeIndexLengthData()
+        {
+            yield return new object[] { s_empty, 0, 0 };
+            yield return new object[] { s_oneElement, 1, 0 };
+            yield return new object[] { s_oneElement, 0, 1 };
+            yield return new object[] { s_oneElement, 0, 0 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 0, 2 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 1, 2 };
+            yield return new object[] { new[] { 1, 2, 3, 4 }, 2, 2 };
+        }
+
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
         public void Clear(IEnumerable<int> source)
@@ -131,6 +142,38 @@ namespace System.Collections.Immutable.Tests
             TestExtensionsMethods.ValidateDefaultThisBehavior(() => s_emptyDefault.AsSpan(new Range(0, 0)));
         }
 #endif
+
+        [Theory]
+        [MemberData(nameof(RangeIndexLengthData))]
+        public void AsSpanStartLength(IEnumerable<int> source, int start, int length)
+        {
+            var array = source.ToImmutableArray();
+            var expected = source.Skip(start).Take(length);
+            Assert.Equal(expected, array.AsSpan(start, length).ToArray());
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            Assert.Equal(expected, array.AsSpan(new Range(start, start + length)).ToArray());
+#endif
+        }
+
+        [Theory]
+        [MemberData(nameof(Int32EnumerableData))]
+        public void AsSpanStartLengthInvalid(IEnumerable<int> source)
+        {
+            var array = source.ToImmutableArray();
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(-1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(array.Length + 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, array.Length + 1));
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(-1, 0)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(array.Length + 1, array.Length + 2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(0, -1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(0, array.Length + 1)));
+#endif
+        }
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
@@ -1432,49 +1475,6 @@ namespace System.Collections.Immutable.Tests
             var array = source.ToImmutableArray();
             var expected = source.Take(index).Concat(source.Skip(index + length));
             Assert.Equal(expected, array.RemoveRange(index, length));
-        }
-
-        [Theory]
-        [MemberData(nameof(RangeIndexLengthData))]
-        public void AsSpanStartLength(IEnumerable<int> source, int start, int length)
-        {
-            var array = source.ToImmutableArray();
-            var expected = source.Skip(start).Take(length);
-            Assert.Equal(expected, array.AsSpan(start, length).ToArray());
-
-#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            Assert.Equal(expected, array.AsSpan(new Range(start, start + length)).ToArray());
-#endif
-        }
-
-        [Theory]
-        [MemberData(nameof(Int32EnumerableData))]
-        public void AsSpanStartLengthInvalid(IEnumerable<int> source)
-        {
-            var array = source.ToImmutableArray();
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(-1, 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(array.Length + 1, 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(0, array.Length + 1));
-
-#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(-1, 0)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(array.Length + 1, array.Length + 2)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(0, -1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(() => array.AsSpan(new Range(0, array.Length + 1)));
-#endif
-        }
-
-        public static IEnumerable<object[]> RangeIndexLengthData()
-        {
-            yield return new object[] { s_empty, 0, 0 };
-            yield return new object[] { s_oneElement, 1, 0 };
-            yield return new object[] { s_oneElement, 0, 1 };
-            yield return new object[] { s_oneElement, 0, 0 };
-            yield return new object[] { new[] { 1, 2, 3, 4 }, 0, 2 };
-            yield return new object[] { new[] { 1, 2, 3, 4 }, 1, 2 };
-            yield return new object[] { new[] { 1, 2, 3, 4 }, 2, 2 };
         }
 
         [Theory]

@@ -12,6 +12,13 @@ namespace System.Collections.Immutable.Tests
 {
     public class ImmutableArrayBuilderTest : SimpleElementImmutablesTestBase
     {
+        public static IEnumerable<object[]> BuilderAddRangeData()
+        {
+            yield return new object[] { new[] { "a", "b" }, Array.Empty<string>(), new[] { "a", "b" } };
+            yield return new object[] { Array.Empty<string>(), new[] { "a", "b" }, new[] { "a", "b" } };
+            yield return new object[] { new[] { "a", "b" }, new[] { "c", "d" }, new[] { "a", "b", "c", "d" } };
+        }
+
         [Fact]
         public void CreateBuilderDefaultCapacity()
         {
@@ -151,47 +158,83 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("items", () => builder2.AddRange((ImmutableArray<string>.Builder)null));
         }
 
-        [Fact]
-        public void AddRangeDerivedArray()
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedArray(string[] builderElements, string[] rangeElements, string[] expectedResult)
         {
+            // Initialize builder
             var builder = new ImmutableArray<object>.Builder();
-            builder.AddRange(new[] { "a", "b" });
-            Assert.Equal(new[] { "a", "b" }, builder);
+            builder.AddRange(builderElements);
+
+            // AddRange
+            builder.AddRange(rangeElements);
+
+            // Assert
+            Assert.Equal(expectedResult, builder);
         }
 
-        [Fact]
-        public void AddRangeSpan()
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeSpan(string[] builderElements, string[] rangeElements, string[] expectedResult)
         {
-            var builder = new ImmutableArray<string>.Builder(2);
-            builder.AddRange(new ReadOnlySpan<string>(new[] { "a", "b", "c" }));
-            Assert.Equal(new[] { "a", "b", "c" }, builder);
-        }
-
-        [Fact]
-        public void AddRangeDerivedSpan()
-        {
-            var builder = new ImmutableArray<object>.Builder();
-            builder.AddRange(new ReadOnlySpan<string>(new[] { "a", "b" }));
-            Assert.Equal(new[] { "a", "b" }, builder);
-        }
-
-        [Fact]
-        public void AddRangeDerivedImmutableArray()
-        {
-            var builder = new ImmutableArray<object>.Builder();
-            builder.AddRange(new[] { "a", "b" }.ToImmutableArray());
-            Assert.Equal(new[] { "a", "b" }, builder);
-        }
-
-        [Fact]
-        public void AddRangeDerivedBuilder()
-        {
+            // Initialize builder
             var builder = new ImmutableArray<string>.Builder();
-            builder.AddRange(new[] { "a", "b" });
+            builder.AddRange(builderElements);
 
+            // AddRange
+            builder.AddRange(new ReadOnlySpan<string>(rangeElements));
+
+            // Assert
+            Assert.Equal(expectedResult, builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedSpan(string[] builderElements, string[] rangeElements, string[] expectedResult)
+        {
+            // Initialize builder
+            var builder = new ImmutableArray<object>.Builder();
+            builder.AddRange(builderElements);
+
+            // AddRange
+            builder.AddRange(new ReadOnlySpan<string>(rangeElements));
+            
+            // Assert
+            Assert.Equal(expectedResult, builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedImmutableArray(string[] builderElements, string[] rangeElements, string[] expectedResult)
+        {
+            // Initialize builder
+            var builder = new ImmutableArray<object>.Builder();
+            builder.AddRange(builderElements);
+
+            // AddRange
+            builder.AddRange(rangeElements.ToImmutableArray());
+            
+            // Assert
+            Assert.Equal(expectedResult, builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedBuilder(string[] builderElements, string[] rangeElements, string[] expectedResult)
+        {
+            // Initialize builder
             var builderBase = new ImmutableArray<object>.Builder();
+            builderBase.AddRange(builderElements);
+            
+            // Prepare another builder to add
+            var builder = new ImmutableArray<string>.Builder();
+            builder.AddRange(rangeElements);
+
+            // AddRange
             builderBase.AddRange(builder);
-            Assert.Equal(new[] { "a", "b" }, builderBase);
+
+            // Assert
+            Assert.Equal(expectedResult, builderBase);
         }
 
         [Fact]

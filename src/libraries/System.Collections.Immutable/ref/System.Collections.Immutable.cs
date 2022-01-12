@@ -186,10 +186,10 @@ namespace System.Collections.Immutable
         public System.Collections.Immutable.ImmutableArray<T> RemoveRange(int index, int length) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> RemoveRange(System.ReadOnlySpan<T> items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> RemoveRange(T[] items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer = null) { throw null; }
-        public System.Collections.Immutable.ImmutableArray<T> Slice(int start, int length) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Replace(T oldValue, T newValue) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Replace(T oldValue, T newValue, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> SetItem(int index, T item) { throw null; }
+        public System.Collections.Immutable.ImmutableArray<T> Slice(int start, int length) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Sort() { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Sort(System.Collections.Generic.IComparer<T>? comparer) { throw null; }
         public System.Collections.Immutable.ImmutableArray<T> Sort(System.Comparison<T> comparison) { throw null; }
