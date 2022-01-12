@@ -408,6 +408,11 @@ namespace Tracing.Tests.PauseOnStartValidation
                         pi2After = ProcessInfo2.TryParse(response.Payload);
                         if (!pi2After.Commandline.Equals(pi2Before.Commandline))
                             break;
+
+                        // recycle
+                        stream = await server.AcceptAsync();
+                        advertise = IpcAdvertise.Parse(stream);
+                        Logger.logger.Log(advertise.ToString());
                     }
 
                     Utils.Assert(pi2Before.Commandline.Equals(currentProcess.MainModule.FileName), $"Before resuming, the commandline should be the mock value of the host executable path '{currentProcess.MainModule.FileName}'. Observed: '{pi2Before.Commandline}'");
