@@ -16,7 +16,11 @@ System.Text.Json.JsonSerializer
 System.Text.Json.JsonDocument
 System.Text.Json.JsonElement
 System.Text.Json.Utf8JsonWriter
-System.Text.Json.Utf8JsonReader</PackageDescription>
+System.Text.Json.Utf8JsonReader
+System.Text.Json.Nodes.JsonNode
+System.Text.Json.Nodes.JsonArray
+System.Text.Json.Nodes.JsonObject
+System.Text.Json.Nodes.JsonValue</PackageDescription>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -350,7 +354,8 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj"
+                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
   </ItemGroup>
 </Project>

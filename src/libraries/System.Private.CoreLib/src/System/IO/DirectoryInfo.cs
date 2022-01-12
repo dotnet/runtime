@@ -5,16 +5,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-#if MS_IO_REDIST
-using Microsoft.IO.Enumeration;
-
-namespace Microsoft.IO
-#else
 using System.IO.Enumeration;
 
 namespace System.IO
-#endif
 {
     public sealed partial class DirectoryInfo : FileSystemInfo
     {

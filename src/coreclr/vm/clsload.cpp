@@ -627,7 +627,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     CONTRACTL_END
 
 
-    mdToken             mdEncloser;
     EEClassHashEntry_t  *pBucket = NULL;
 
     needsToBuildHashtable = FALSE;
@@ -643,8 +642,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
     }
 #endif
 
-    BOOL isNested = IsNested(pName, &mdEncloser);
-
     PTR_Assembly assembly = GetAssembly();
     PREFIX_ASSUME(assembly != NULL);
     ModuleIterator i = assembly->IterateModules();
@@ -654,8 +651,6 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
         Module * pCurrentClsModule = i.GetModule();
         PREFIX_ASSUME(pCurrentClsModule != NULL);
 
-        if (pCurrentClsModule->IsResource())
-            continue;
         if (pLookInThisModuleOnly && (pCurrentClsModule != pLookInThisModuleOnly))
             continue;
 
@@ -720,6 +715,9 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
                 }
             }
             _ASSERTE(pTable);
+
+            mdToken             mdEncloser;
+            BOOL isNested = IsNested(pName, &mdEncloser);
 
             if (isNested)
             {
@@ -836,6 +834,9 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     }
     CONTRACTL_END;
 
+
+    _ASSERT(m_cUnhashedModules > 0);
+
     AllocMemTracker amTracker;
     ModuleIterator i = GetAssembly()->IterateModules();
 
@@ -844,7 +845,7 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     {
         Module *pModule = i.GetModule();
         PREFIX_ASSUME(pModule != NULL);
-        if (pModule->IsResource() || pModule->GetAvailableClassHash() != NULL)
+        if (pModule->GetAvailableClassHash() != NULL)
             continue;
 
         // Lazy construction of the case-sensitive hashtable of types is *only* a scenario for ReadyToRun images
@@ -858,16 +859,13 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     }
 
     // Add exported types of the manifest module to the hashtable
-    if (!GetAssembly()->GetManifestModule()->IsResource())
-    {
-        IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
-        HENUMInternalHolder phEnum(pManifestImport);
-        phEnum.EnumInit(mdtExportedType, mdTokenNil);
+    IMDInternalImport * pManifestImport = GetAssembly()->GetManifestImport();
+    HENUMInternalHolder phEnum(pManifestImport);
+    phEnum.EnumInit(mdtExportedType, mdTokenNil);
 
-        mdToken mdExportedType;
-        while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
-            AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
-    }
+    mdToken mdExportedType;
+    while (pManifestImport->EnumNext(&phEnum, &mdExportedType))
+        AddExportedTypeHaveLock(GetAssembly()->GetManifestModule(), mdExportedType, &amTracker);
 
     amTracker.SuppressRelease();
 }
@@ -884,7 +882,7 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     }
     CONTRACTL_END;
 
-    if (!GetAssembly()->GetManifestModule()->IsResource() && GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
+    if (GetAssembly()->GetManifestModule()->GetAvailableClassHash() == NULL)
     {
         // This is a R2R assembly, and a case insensitive type lookup was triggered.
         // Construct the case-sensitive table first, since the case-insensitive table
@@ -900,9 +898,6 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
     while (i.Next())
     {
         Module *pModule = i.GetModule();
-        if (pModule->IsResource())
-            continue;
-
         if (pModule->GetAvailableClassCaseInsHash() == NULL)
         {
             EEClassHashTable *pNewClassCaseInsHash = pModule->GetAvailableClassHash()->MakeCaseInsensitiveTable(pModule, &amTracker);
@@ -917,6 +912,8 @@ void ClassLoader::LazyPopulateCaseInsensitiveHashTables()
                 amTracker.SuppressRelease();
                 pModule->SetAvailableClassCaseInsHash(pNewClassCaseInsHash);
                 FastInterlockDecrement((LONG*)&m_cUnhashedModules);
+
+                _ASSERT(m_cUnhashedModules >= 0);
             }
         }
     }
@@ -1069,27 +1066,8 @@ void ClassLoader::TryEnsureLoaded(TypeHandle typeHnd, ClassLoadLevel level)
 #endif // DACCESS_COMPILE
 }
 
-// This is separated out to avoid the overhead of C++ exception handling in the non-locking case.
 /* static */
-TypeHandle ClassLoader::LookupTypeKeyUnderLock(TypeKey *pKey,
-                                               EETypeHashTable *pTable,
-                                               CrstBase *pLock)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
-    GCX_MAYBE_COOP_NO_THREAD_BROKEN(!IsGCThread());
-
-    CrstHolder ch(pLock);
-    return pTable->GetValue(pKey);
-}
-
-/* static */
-TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey,
-                                      EETypeHashTable *pTable,
-                                      CrstBase *pLock,
-                                      BOOL fCheckUnderLock)
+TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable)
 {
     CONTRACTL {
         NOTHROW;
@@ -1098,26 +1076,15 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey,
         PRECONDITION(CheckPointer(pKey));
         PRECONDITION(pKey->IsConstructed());
         PRECONDITION(CheckPointer(pTable));
-        PRECONDITION(!fCheckUnderLock || CheckPointer(pLock));
         MODE_ANY;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    TypeHandle th;
-
-    if (fCheckUnderLock)
-    {
-        th = LookupTypeKeyUnderLock(pKey, pTable, pLock);
-    }
-    else
-    {
-        th = pTable->GetValue(pKey);
-    }
-    return th;
+    return pTable->GetValue(pKey);
 }
 
 /* static */
-TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey, BOOL fCheckUnderLock)
+TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey)
 {
     CONTRACTL {
         NOTHROW;
@@ -1132,39 +1099,12 @@ TypeHandle ClassLoader::LookupInLoaderModule(TypeKey *pKey, BOOL fCheckUnderLock
     Module *pLoaderModule = ComputeLoaderModule(pKey);
     PREFIX_ASSUME(pLoaderModule!=NULL);
 
-    return LookupTypeKey(pKey,
-                         pLoaderModule->GetAvailableParamTypes(),
-                         &pLoaderModule->GetClassLoader()->m_AvailableTypesLock,
-                         fCheckUnderLock);
+    return LookupTypeKey(pKey, pLoaderModule->GetAvailableParamTypes());
 }
 
 
 /* static */
 TypeHandle ClassLoader::LookupTypeHandleForTypeKey(TypeKey *pKey)
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    // Make an initial lookup without taking any locks.
-    TypeHandle th = LookupTypeHandleForTypeKeyInner(pKey, FALSE);
-
-    // A non-null TypeHandle for the above lookup indicates success
-    // A null TypeHandle only indicates "well, it might have been there,
-    // try again with a lock".  This kind of negative result will
-    // only happen while accessing the underlying EETypeHashTable
-    // during a resize, i.e. very rarely. In such a case, we just
-    // perform the lookup again, but indicate that appropriate locks
-    // should be taken.
-
-    if (th.IsNull())
-    {
-        th = LookupTypeHandleForTypeKeyInner(pKey, TRUE);
-    }
-
-    return th;
-}
-/* static */
-TypeHandle ClassLoader::LookupTypeHandleForTypeKeyInner(TypeKey *pKey, BOOL fCheckUnderLock)
 {
     CONTRACTL
     {
@@ -1192,7 +1132,7 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKeyInner(TypeKey *pKey, BOOL fChe
     // If the thing is not NGEN'd then this may
     // be different to pPreferredZapModule.  If they are the same then
     // we can reuse the results of the lookup above.
-    TypeHandle thLM = LookupInLoaderModule(pKey, fCheckUnderLock);
+    TypeHandle thLM = LookupInLoaderModule(pKey);
     if (!thLM.IsNull())
     {
         return thLM;
@@ -1303,18 +1243,18 @@ BOOL ClassLoader::FindClassModuleThrowing(
 
     if (pBucket == NULL)
     {
+        // Take the lock. To make sure the table is not being built by another thread.
         AvailableClasses_LockHolder lh(this);
 
-        // Try again with the lock.  This will protect against another thread reallocating
-        // the hash table underneath us
-        GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
-        pBucket = foundEntry.GetClassHashBasedEntryValue();
-
-#ifndef DACCESS_COMPILE
-        if (needsToBuildHashtable && (pBucket == NULL) && (m_cUnhashedModules > 0))
+        if (!needsToBuildHashtable || (m_cUnhashedModules == 0))
         {
-            _ASSERT(needsToBuildHashtable);
-
+            // the table should be finished now, try again
+            GetClassValue(nhTable, pName, &Data, &pTable, pLookInThisModuleOnly, &foundEntry, loadFlag, needsToBuildHashtable);
+            pBucket = foundEntry.GetClassHashBasedEntryValue();
+        }
+#ifndef DACCESS_COMPILE
+        else
+        {
             if (nhTable == nhCaseInsensitive)
             {
                 LazyPopulateCaseInsensitiveHashTables();
@@ -1333,7 +1273,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
 #endif
     }
 
-    // Same check as above, but this time we've checked with the lock so the table will be populated
+    // Same check as above, but this time we've ensured that the tables are populated
     if (pBucket == NULL)
     {
 #if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
@@ -1601,19 +1541,19 @@ ClassLoader::LoadTypeHandleThrowing(
             pClsLdr = pFoundModule->GetClassLoader();
             pLookInThisModuleOnly = NULL;
         }
+    }
 
 #ifndef DACCESS_COMPILE
-        // Replace AvailableClasses Module entry with found TypeHandle
-        if (!typeHnd.IsNull() &&
-            typeHnd.IsRestored() &&
-            foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
-            (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
-            (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
-        {
-            foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
-        }
-#endif // !DACCESS_COMPILE
+    // Replace AvailableClasses Module entry with found TypeHandle
+    if (!typeHnd.IsNull() &&
+        typeHnd.IsRestored() &&
+        foundEntry.GetEntryType() == HashedTypeEntry::EntryType::IsHashedClassEntry &&
+        (foundEntry.GetClassHashBasedEntryValue() != NULL) &&
+        (foundEntry.GetClassHashBasedEntryValue()->GetData() != typeHnd.AsPtr()))
+    {
+        foundEntry.GetClassHashBasedEntryValue()->SetData(typeHnd.AsPtr());
     }
+#endif // !DACCESS_COMPILE
 
     RETURN typeHnd;
 } // ClassLoader::LoadTypeHandleThrowing
@@ -2063,11 +2003,10 @@ VOID ClassLoader::Init(AllocMemTracker *pamTracker)
                              CrstAvailableClass,
                              CRST_REENTRANCY);
 
-    // This lock is taken within the classloader whenever we have to insert a new param. type into the table
-    // This lock also needs to be taken for a read operation in a GC_NOTRIGGER scope, thus the ANYMODE flag.
+    // This lock is taken within the classloader whenever we have to insert a new param. type into the table.
     m_AvailableTypesLock.Init(
-                                  CrstAvailableParamTypes,
-                                  (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
+                              CrstAvailableParamTypes,
+                              CRST_DEBUGGER_THREAD);
 
 #ifdef _DEBUG
     CorTypeInfo::CheckConsistency();
@@ -3112,9 +3051,6 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
         Module *pLoaderModule = ComputeLoaderModule(pTypeKey);
         EETypeHashTable *pTable = pLoaderModule->GetAvailableParamTypes();
 
-        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
-        GCX_COOP();
-
         CrstHolder ch(&pLoaderModule->GetClassLoader()->m_AvailableTypesLock);
 
         // The type could have been loaded by a different thread as side-effect of avoiding deadlocks caused by LoadsTypeViolation
@@ -3128,9 +3064,6 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
     {
         Module *pModule = pTypeKey->GetModule();
         mdTypeDef typeDef = pTypeKey->GetTypeToken();
-
-        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
-        GCX_COOP();
 
         CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
 
@@ -3642,7 +3575,7 @@ retry:
     }
     EX_HOOK
     {
-        LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %0x (Module)\n", pTypeKey->IsConstructed() ? pTypeKey->ComputeHash() : pTypeKey->GetTypeToken(), pTypeKey->GetModule()));
+        LOG((LF_CLASSLOADER, LL_INFO10, "Caught an exception loading: %x, %0x (Module)\n", pTypeKey->IsConstructed() ? HashTypeKey(pTypeKey) : pTypeKey->GetTypeToken(), pTypeKey->GetModule()));
 
         if (!GetThread()->HasThreadStateNC(Thread::TSNC_LoadsTypeViolation))
         {

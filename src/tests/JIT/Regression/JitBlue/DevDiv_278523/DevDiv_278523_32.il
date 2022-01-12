@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly a {}
+.assembly extern xunit.core {}
 .module a.exe
 
 // This test originally triggered an assert when computing the value number for a block assignment. In particular, the
@@ -60,6 +61,9 @@
 
     .method private static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .locals init (int32 V_0)
 

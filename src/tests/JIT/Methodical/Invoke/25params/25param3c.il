@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly '20param3c' {}
+.assembly extern xunit.core {}
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
@@ -2259,6 +2260,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       83 (0x53)
     .maxstack  25

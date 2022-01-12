@@ -52,7 +52,7 @@ public:
     struct OffsetMapping
     {
         uint32_t        nativeOffset;
-        uint32_t        ilOffset;
+        uint32_t        ilOffset; // IL offset or one of the special values in MappingTypes
         SourceTypes     source; // The debugger needs this so that
                                 // we don't put Edit and Continue breakpoints where
                                 // the stack isn't empty.  We can put regular breakpoints

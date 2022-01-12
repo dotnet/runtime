@@ -11,6 +11,7 @@ Wasm.Build.Tests.LocalEMSDKTests
 Wasm.Build.Tests.MainWithArgsTests
 Wasm.Build.Tests.NativeBuildTests
 Wasm.Build.Tests.NativeLibraryTests
+Wasm.Build.Tests.PInvokeTableGeneratorTests
 Wasm.Build.Tests.RebuildTests
 Wasm.Build.Tests.SatelliteAssembliesTests
 Wasm.Build.Tests.WasmBuildAppTest

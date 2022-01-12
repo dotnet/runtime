@@ -10,6 +10,7 @@
 
 .assembly b124443_il
 {}
+.assembly extern xunit.core {}
 
 .module b124443_il.exe
 
@@ -581,6 +582,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       397 (0x18d)
     .maxstack  2

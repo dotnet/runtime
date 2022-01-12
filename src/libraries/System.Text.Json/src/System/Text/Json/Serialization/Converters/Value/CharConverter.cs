@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
             string? str = reader.GetString();
             if (string.IsNullOrEmpty(str) || str.Length > 1)
             {
-                throw ThrowHelper.GetInvalidOperationException_ExpectedChar(reader.TokenType);
+                ThrowHelper.ThrowInvalidOperationException_ExpectedChar(reader.TokenType);
             }
             return str[0];
         }

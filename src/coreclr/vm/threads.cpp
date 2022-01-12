@@ -1481,6 +1481,11 @@ Thread::Thread()
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
 
+    for (int i = 0; i < MAX_NOTIFICATION_PROFILERS + 1; ++i)
+    {
+        m_dwProfilerEvacuationCounters[i] = 0;
+    }
+
     m_pProfilerFilterContext = NULL;
 
     m_CacheStackBase = 0;
@@ -1922,7 +1927,7 @@ BOOL Thread::HasStarted()
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         BOOL gcOnTransition = GC_ON_TRANSITIONS(FALSE);     // disable GCStress 2 to avoid the profiler receiving a RuntimeThreadSuspended notification even before the ThreadCreated notification
-        
+
         {
             GCX_PREEMP();
             (&g_profControlBlock)->ThreadCreated((ThreadID) this);
@@ -8273,7 +8278,7 @@ void dbgOnly_IdentifySpecialEEThread()
 
     LONG  ourCount = FastInterlockIncrement(&cnt_SpecialEEThreads);
 
-    _ASSERTE(ourCount < (LONG) NumItems(SpecialEEThreads));
+    _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
     SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
 }
 

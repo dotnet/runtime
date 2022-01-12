@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class BCrypt
     {
-        [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        internal static extern NTSTATUS BCryptDestroyKey(IntPtr hKey);
+        [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+        internal static partial NTSTATUS BCryptDestroyKey(IntPtr hKey);
     }
 }

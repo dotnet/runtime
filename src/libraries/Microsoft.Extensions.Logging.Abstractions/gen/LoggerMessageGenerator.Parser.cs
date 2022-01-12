@@ -10,6 +10,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Microsoft.Extensions.Logging.Generators
 {
@@ -65,28 +66,28 @@ namespace Microsoft.Extensions.Logging.Generators
             /// </summary>
             public IReadOnlyList<LoggerClass> GetLogClasses(IEnumerable<ClassDeclarationSyntax> classes)
             {
-                INamedTypeSymbol loggerMessageAttribute = _compilation.GetTypeByMetadataName(LoggerMessageAttribute);
+                INamedTypeSymbol loggerMessageAttribute = _compilation.GetBestTypeByMetadataName(LoggerMessageAttribute);
                 if (loggerMessageAttribute == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol loggerSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
+                INamedTypeSymbol loggerSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.ILogger");
                 if (loggerSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol logLevelSymbol = _compilation.GetTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
+                INamedTypeSymbol logLevelSymbol = _compilation.GetBestTypeByMetadataName("Microsoft.Extensions.Logging.LogLevel");
                 if (logLevelSymbol == null)
                 {
                     // nothing to do if this type isn't available
                     return Array.Empty<LoggerClass>();
                 }
 
-                INamedTypeSymbol exceptionSymbol = _compilation.GetTypeByMetadataName("System.Exception");
+                INamedTypeSymbol exceptionSymbol = _compilation.GetBestTypeByMetadataName("System.Exception");
                 if (exceptionSymbol == null)
                 {
                     Diag(DiagnosticDescriptors.MissingRequiredType, null, "System.Exception");

@@ -427,6 +427,8 @@ find_method_in_class (MonoClass *klass, const char *name, const char *qname, con
 {
  	int i;
 
+	/* FIXME: method refs from metadata-upate probably end up here */
+
 	/* Search directly in the metadata to avoid calling setup_methods () */
 	error_init (error);
 
@@ -1159,6 +1161,8 @@ mono_get_method_checked (MonoImage *image, guint32 token, MonoClass *klass, Mono
 {
 	MonoMethod *result = NULL;
 	gboolean used_context = FALSE;
+
+	/* FIXME: method definition lookups for metadata-update probably end up here */
 
 	/* We do everything inside the lock to prevent creation races */
 

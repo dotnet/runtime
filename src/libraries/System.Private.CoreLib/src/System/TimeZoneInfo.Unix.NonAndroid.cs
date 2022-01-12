@@ -200,7 +200,7 @@ namespace System
                         {
                             // Read each entry from the enumerator
                             Interop.Sys.DirectoryEntry dirent;
-                            while (Interop.Sys.ReadDirR(dirHandle, dirBufferPtr, bufferSize, out dirent) == 0)
+                            while (Interop.Sys.ReadDirR(dirHandle, dirBufferPtr, bufferSize, &dirent) == 0)
                             {
                                 string? fullPath = GetDirectoryEntryFullPath(ref dirent, currentPath);
                                 if (fullPath == null)

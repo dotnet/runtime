@@ -585,7 +585,7 @@ struct LC_Condition
     }
 
     // Convert this conditional operation into a GenTree.
-    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb);
+    GenTree* ToGenTree(Compiler* comp, BasicBlock* bb, bool invert);
 };
 
 /**
@@ -692,8 +692,11 @@ struct LoopCloneContext
         blockConditions.resize(loopCount, nullptr);
     }
 
-    // Evaluate conditions into a JTRUE stmt and put it in the block. Reverse condition if 'reverse' is true.
-    void CondToStmtInBlock(Compiler* comp, JitExpandArrayStack<LC_Condition>& conds, BasicBlock* block, bool reverse);
+    // Evaluate conditions into a JTRUE stmt and put it in a new block after `insertAfter`.
+    BasicBlock* CondToStmtInBlock(Compiler*                          comp,
+                                  JitExpandArrayStack<LC_Condition>& conds,
+                                  BasicBlock*                        slowHead,
+                                  BasicBlock*                        insertAfter);
 
     // Get all the optimization information for loop "loopNum"; this information is held in "optInfo" array.
     // If NULL this allocates the optInfo[loopNum] array for "loopNum".

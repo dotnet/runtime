@@ -11,6 +11,8 @@ namespace System.IO.Tests
 
         protected override DirectoryInfo GetMissingItem() => new DirectoryInfo(GetTestFilePath());
 
+        protected override DirectoryInfo CreateSymlink(string path, string pathToTarget) => (DirectoryInfo)Directory.CreateSymbolicLink(path, pathToTarget);
+
         protected override string GetItemPath(DirectoryInfo item) => item.FullName;
 
         protected override void InvokeCreate(DirectoryInfo item) => item.Create();

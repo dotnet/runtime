@@ -180,7 +180,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (generateSymbols)
                 {
-                    _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder);
+                    _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder, _nodeFactory.Target);
                 }
 
                 if (generateProfileFile)
@@ -400,7 +400,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath, _nodeFactory.Target);
+                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
                     }
 
                     if (_profileFileBuilder != null)

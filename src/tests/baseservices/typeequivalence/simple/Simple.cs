@@ -7,7 +7,7 @@ using System.Text;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-using TestLibrary;
+using Xunit;
 using TypeEquivalenceTypes;
 
 public class Simple
@@ -33,7 +33,7 @@ public class Simple
 
         void AreNotSameObject(IEmptyType a, IEmptyType b)
         {
-            Assert.AreNotEqual(a, b);
+            Assert.NotEqual(a, b);
         }
     }
 
@@ -47,22 +47,22 @@ public class Simple
         Type otherAsmInterfaceType = otherAsm.GetType().GetInterface(nameof(IEmptyType));
 
         // Sanity checks
-        Assert.IsTrue(inAsmInterfaceType == inAsmInterfaceType);
-        Assert.IsTrue(inAsmInterfaceType.IsEquivalentTo(inAsmInterfaceType));
-        Assert.IsFalse(inAsmInterfaceType.IsEquivalentTo(inAsm.GetType()));
-        Assert.IsTrue(otherAsmInterfaceType == otherAsmInterfaceType);
-        Assert.IsTrue(otherAsmInterfaceType.IsEquivalentTo(otherAsmInterfaceType));
-        Assert.IsFalse(otherAsmInterfaceType.IsEquivalentTo(otherAsm.GetType()));
+        Assert.True(inAsmInterfaceType == inAsmInterfaceType);
+        Assert.True(inAsmInterfaceType.IsEquivalentTo(inAsmInterfaceType));
+        Assert.False(inAsmInterfaceType.IsEquivalentTo(inAsm.GetType()));
+        Assert.True(otherAsmInterfaceType == otherAsmInterfaceType);
+        Assert.True(otherAsmInterfaceType.IsEquivalentTo(otherAsmInterfaceType));
+        Assert.False(otherAsmInterfaceType.IsEquivalentTo(otherAsm.GetType()));
 
         // The intrinsic equality operations should fail
-        Assert.IsFalse(inAsmInterfaceType == otherAsmInterfaceType);
-        Assert.IsFalse(inAsmInterfaceType.Equals(otherAsmInterfaceType));
-        Assert.IsFalse(otherAsmInterfaceType == inAsmInterfaceType);
-        Assert.IsFalse(otherAsmInterfaceType.Equals(inAsmInterfaceType));
+        Assert.False(inAsmInterfaceType == otherAsmInterfaceType);
+        Assert.False(inAsmInterfaceType.Equals(otherAsmInterfaceType));
+        Assert.False(otherAsmInterfaceType == inAsmInterfaceType);
+        Assert.False(otherAsmInterfaceType.Equals(inAsmInterfaceType));
 
         // Determination of equal types requires API call
-        Assert.IsTrue(inAsmInterfaceType.IsEquivalentTo(otherAsmInterfaceType));
-        Assert.IsTrue(otherAsmInterfaceType.IsEquivalentTo(inAsmInterfaceType));
+        Assert.True(inAsmInterfaceType.IsEquivalentTo(otherAsmInterfaceType));
+        Assert.True(otherAsmInterfaceType.IsEquivalentTo(inAsmInterfaceType));
     }
 
     private class MethodTestDerived : MethodTestBase
@@ -120,8 +120,8 @@ public class Simple
             int expectedBaseValue = input * baseScale;
             int expectedDerivedValue = expectedBaseValue * derivedScale;
 
-            Assert.AreEqual(expectedBaseValue, baseInterface.ScaleInt(input));
-            Assert.AreEqual(expectedDerivedValue, derivedBase.ScaleInt(input));
+            Assert.Equal(expectedBaseValue, baseInterface.ScaleInt(input));
+            Assert.Equal(expectedDerivedValue, derivedBase.ScaleInt(input));
         }
 
         {
@@ -129,8 +129,8 @@ public class Simple
             string expectedBaseValue = string.Concat(Enumerable.Repeat(input, baseScale));
             string expectedDerivedValue = string.Concat(Enumerable.Repeat(expectedBaseValue, derivedScale));
 
-            Assert.AreEqual(expectedBaseValue, baseInterface.ScaleString(input));
-            Assert.AreEqual(expectedDerivedValue, derivedBase.ScaleString(input));
+            Assert.Equal(expectedBaseValue, baseInterface.ScaleString(input));
+            Assert.Equal(expectedDerivedValue, derivedBase.ScaleString(input));
         }
     }
 
@@ -139,14 +139,14 @@ public class Simple
         Console.WriteLine($"{nameof(CallSparseInterface)}");
 
         int sparseTypeMethodCount = typeof(ISparseType).GetMethods(BindingFlags.Public | BindingFlags.Instance).Length;
-        Assert.AreEqual(2, sparseTypeMethodCount, "Should have limited method metadata");
+        Assert.Equal(2, sparseTypeMethodCount);
 
         var sparseType = (ISparseType)SparseTest.Create();
-        Assert.AreEqual(20, SparseTest.GetSparseInterfaceMethodCount(), "Should have all method metadata");
+        Assert.Equal(20, SparseTest.GetSparseInterfaceMethodCount());
 
         int input = 63;
-        Assert.AreEqual(input * 7, sparseType.MultiplyBy7(input));
-        Assert.AreEqual(input * 18, sparseType.MultiplyBy18(input));
+        Assert.Equal(input * 7, sparseType.MultiplyBy7(input));
+        Assert.Equal(input * 18, sparseType.MultiplyBy18(input));
     }
 
     private static void TestArrayEquivalence()
@@ -158,12 +158,12 @@ public class Simple
         Type inAsmInterfaceType = inAsm.GetType().GetInterface(nameof(IEmptyType));
         Type otherAsmInterfaceType = otherAsm.GetType().GetInterface(nameof(IEmptyType));
 
-        Assert.IsTrue(inAsmInterfaceType.MakeArrayType().IsEquivalentTo(otherAsmInterfaceType.MakeArrayType()));
-        Assert.IsTrue(inAsmInterfaceType.MakeArrayType(1).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(1)));
-        Assert.IsTrue(inAsmInterfaceType.MakeArrayType(2).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(2)));
+        Assert.True(inAsmInterfaceType.MakeArrayType().IsEquivalentTo(otherAsmInterfaceType.MakeArrayType()));
+        Assert.True(inAsmInterfaceType.MakeArrayType(1).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(1)));
+        Assert.True(inAsmInterfaceType.MakeArrayType(2).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(2)));
 
-        Assert.IsFalse(inAsmInterfaceType.MakeArrayType().IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(1)));
-        Assert.IsFalse(inAsmInterfaceType.MakeArrayType(1).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(2)));
+        Assert.False(inAsmInterfaceType.MakeArrayType().IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(1)));
+        Assert.False(inAsmInterfaceType.MakeArrayType(1).IsEquivalentTo(otherAsmInterfaceType.MakeArrayType(2)));
     }
 
     private static void TestByRefEquivalence()
@@ -175,7 +175,7 @@ public class Simple
         Type inAsmInterfaceType = inAsm.GetType().GetInterface(nameof(IEmptyType));
         Type otherAsmInterfaceType = otherAsm.GetType().GetInterface(nameof(IEmptyType));
 
-        Assert.IsTrue(inAsmInterfaceType.MakeByRefType().IsEquivalentTo(otherAsmInterfaceType.MakeByRefType()));
+        Assert.True(inAsmInterfaceType.MakeByRefType().IsEquivalentTo(otherAsmInterfaceType.MakeByRefType()));
     }
 
     interface IGeneric<in T>
@@ -199,7 +199,7 @@ public class Simple
         Type inAsmInterfaceType = inAsm.GetType().GetInterface(nameof(IEmptyType));
         Type otherAsmInterfaceType = otherAsm.GetType().GetInterface(nameof(IEmptyType));
 
-        Assert.IsFalse(typeof(Generic<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(Generic<>).MakeGenericType(otherAsmInterfaceType)));
+        Assert.False(typeof(Generic<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(Generic<>).MakeGenericType(otherAsmInterfaceType)));
     }
 
     private static void TestGenericInterfaceEquivalence()
@@ -211,7 +211,7 @@ public class Simple
         Type inAsmInterfaceType = inAsm.GetType().GetInterface(nameof(IEmptyType));
         Type otherAsmInterfaceType = otherAsm.GetType().GetInterface(nameof(IEmptyType));
 
-        Assert.IsTrue(typeof(IGeneric<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(IGeneric<>).MakeGenericType(otherAsmInterfaceType)));
+        Assert.True(typeof(IGeneric<>).MakeGenericType(inAsmInterfaceType).IsEquivalentTo(typeof(IGeneric<>).MakeGenericType(otherAsmInterfaceType)));
     }
 
     public static int Main(string[] noArgs)

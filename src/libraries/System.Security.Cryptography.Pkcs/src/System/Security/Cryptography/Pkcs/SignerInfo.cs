@@ -690,7 +690,11 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             bool verifySignatureOnly)
         {
-            CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value!, key: null);
+            // SignatureAlgorithm always 'wins' so we don't need to pass in an rsaSignaturePadding
+            CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(
+                SignatureAlgorithm.Value!,
+                key: null,
+                rsaSignaturePadding: null);
 
             if (signatureProcessor == null)
             {

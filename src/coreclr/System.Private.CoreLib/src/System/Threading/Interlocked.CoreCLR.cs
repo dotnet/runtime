@@ -57,6 +57,7 @@ namespace System.Threading
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
 
@@ -117,6 +118,7 @@ namespace System.Threading
         /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
@@ -192,6 +194,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int ExchangeAdd(ref int location1, int value);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern long ExchangeAdd(ref long location1, long value);
         #endregion
@@ -223,7 +226,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ReadMemoryBarrier();
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
         private static extern void _MemoryBarrierProcessWide();
 
         /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>

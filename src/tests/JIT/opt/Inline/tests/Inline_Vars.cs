@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable 219
-public class Test
+public class Test_Inline_Vars
 {
     public int RunTest0_Inline()
     {
@@ -2817,807 +2817,807 @@ public class Test
     }
     private static int Main()
     {
-        (new Test()).RunTest0_Inline();
+        (new Test_Inline_Vars()).RunTest0_Inline();
 
-        (new Test()).RunTest1();
+        (new Test_Inline_Vars()).RunTest1();
 
-        (new Test()).RunTest2();
+        (new Test_Inline_Vars()).RunTest2();
 
-        (new Test()).RunTest3();
+        (new Test_Inline_Vars()).RunTest3();
 
-        (new Test()).RunTest4();
+        (new Test_Inline_Vars()).RunTest4();
 
-        (new Test()).RunTest5();
+        (new Test_Inline_Vars()).RunTest5();
 
-        (new Test()).RunTest6();
+        (new Test_Inline_Vars()).RunTest6();
 
-        (new Test()).RunTest7();
+        (new Test_Inline_Vars()).RunTest7();
 
-        (new Test()).RunTest8();
+        (new Test_Inline_Vars()).RunTest8();
 
-        (new Test()).RunTest9();
+        (new Test_Inline_Vars()).RunTest9();
 
-        (new Test()).RunTest10();
+        (new Test_Inline_Vars()).RunTest10();
 
-        (new Test()).RunTest11();
+        (new Test_Inline_Vars()).RunTest11();
 
-        (new Test()).RunTest12();
+        (new Test_Inline_Vars()).RunTest12();
 
-        (new Test()).RunTest13();
+        (new Test_Inline_Vars()).RunTest13();
 
-        (new Test()).RunTest14();
+        (new Test_Inline_Vars()).RunTest14();
 
-        (new Test()).RunTest15();
+        (new Test_Inline_Vars()).RunTest15();
 
-        (new Test()).RunTest16();
+        (new Test_Inline_Vars()).RunTest16();
 
-        (new Test()).RunTest17();
+        (new Test_Inline_Vars()).RunTest17();
 
-        (new Test()).RunTest18();
+        (new Test_Inline_Vars()).RunTest18();
 
-        (new Test()).RunTest19();
+        (new Test_Inline_Vars()).RunTest19();
 
-        (new Test()).RunTest20();
+        (new Test_Inline_Vars()).RunTest20();
 
-        (new Test()).RunTest21();
+        (new Test_Inline_Vars()).RunTest21();
 
-        (new Test()).RunTest22();
+        (new Test_Inline_Vars()).RunTest22();
 
-        (new Test()).RunTest23();
+        (new Test_Inline_Vars()).RunTest23();
 
-        (new Test()).RunTest24();
+        (new Test_Inline_Vars()).RunTest24();
 
-        (new Test()).RunTest25();
+        (new Test_Inline_Vars()).RunTest25();
 
-        (new Test()).RunTest26();
+        (new Test_Inline_Vars()).RunTest26();
 
-        (new Test()).RunTest27();
+        (new Test_Inline_Vars()).RunTest27();
 
-        (new Test()).RunTest28();
+        (new Test_Inline_Vars()).RunTest28();
 
-        (new Test()).RunTest29();
+        (new Test_Inline_Vars()).RunTest29();
 
-        (new Test()).RunTest30();
+        (new Test_Inline_Vars()).RunTest30();
 
-        (new Test()).RunTest31();
+        (new Test_Inline_Vars()).RunTest31();
 
-        (new Test()).RunTest32();
+        (new Test_Inline_Vars()).RunTest32();
 
-        (new Test()).RunTest33();
+        (new Test_Inline_Vars()).RunTest33();
 
-        (new Test()).RunTest34();
+        (new Test_Inline_Vars()).RunTest34();
 
-        (new Test()).RunTest35();
+        (new Test_Inline_Vars()).RunTest35();
 
-        (new Test()).RunTest36();
+        (new Test_Inline_Vars()).RunTest36();
 
-        (new Test()).RunTest37();
+        (new Test_Inline_Vars()).RunTest37();
 
-        (new Test()).RunTest38();
+        (new Test_Inline_Vars()).RunTest38();
 
-        (new Test()).RunTest39();
+        (new Test_Inline_Vars()).RunTest39();
 
-        (new Test()).RunTest40();
+        (new Test_Inline_Vars()).RunTest40();
 
-        (new Test()).RunTest41();
+        (new Test_Inline_Vars()).RunTest41();
 
-        (new Test()).RunTest42();
+        (new Test_Inline_Vars()).RunTest42();
 
-        (new Test()).RunTest43();
+        (new Test_Inline_Vars()).RunTest43();
 
-        (new Test()).RunTest44();
+        (new Test_Inline_Vars()).RunTest44();
 
-        (new Test()).RunTest45();
+        (new Test_Inline_Vars()).RunTest45();
 
-        (new Test()).RunTest46();
+        (new Test_Inline_Vars()).RunTest46();
 
-        (new Test()).RunTest47();
+        (new Test_Inline_Vars()).RunTest47();
 
-        (new Test()).RunTest48();
+        (new Test_Inline_Vars()).RunTest48();
 
-        (new Test()).RunTest49();
+        (new Test_Inline_Vars()).RunTest49();
 
-        (new Test()).RunTest50();
+        (new Test_Inline_Vars()).RunTest50();
 
-        (new Test()).RunTest51();
+        (new Test_Inline_Vars()).RunTest51();
 
-        (new Test()).RunTest52();
+        (new Test_Inline_Vars()).RunTest52();
 
-        (new Test()).RunTest53();
+        (new Test_Inline_Vars()).RunTest53();
 
-        (new Test()).RunTest54();
+        (new Test_Inline_Vars()).RunTest54();
 
-        (new Test()).RunTest55();
+        (new Test_Inline_Vars()).RunTest55();
 
-        (new Test()).RunTest56();
+        (new Test_Inline_Vars()).RunTest56();
 
-        (new Test()).RunTest57();
+        (new Test_Inline_Vars()).RunTest57();
 
-        (new Test()).RunTest58();
+        (new Test_Inline_Vars()).RunTest58();
 
-        (new Test()).RunTest59();
+        (new Test_Inline_Vars()).RunTest59();
 
-        (new Test()).RunTest60();
+        (new Test_Inline_Vars()).RunTest60();
 
-        (new Test()).RunTest61();
+        (new Test_Inline_Vars()).RunTest61();
 
-        (new Test()).RunTest62();
+        (new Test_Inline_Vars()).RunTest62();
 
-        (new Test()).RunTest63();
+        (new Test_Inline_Vars()).RunTest63();
 
-        (new Test()).RunTest64();
+        (new Test_Inline_Vars()).RunTest64();
 
-        (new Test()).RunTest65();
+        (new Test_Inline_Vars()).RunTest65();
 
-        (new Test()).RunTest66();
+        (new Test_Inline_Vars()).RunTest66();
 
-        (new Test()).RunTest67();
+        (new Test_Inline_Vars()).RunTest67();
 
-        (new Test()).RunTest68();
+        (new Test_Inline_Vars()).RunTest68();
 
-        (new Test()).RunTest69();
+        (new Test_Inline_Vars()).RunTest69();
 
-        (new Test()).RunTest70();
+        (new Test_Inline_Vars()).RunTest70();
 
-        (new Test()).RunTest71();
+        (new Test_Inline_Vars()).RunTest71();
 
-        (new Test()).RunTest72();
+        (new Test_Inline_Vars()).RunTest72();
 
-        (new Test()).RunTest73();
+        (new Test_Inline_Vars()).RunTest73();
 
-        (new Test()).RunTest74();
+        (new Test_Inline_Vars()).RunTest74();
 
-        (new Test()).RunTest75();
+        (new Test_Inline_Vars()).RunTest75();
 
-        (new Test()).RunTest76();
+        (new Test_Inline_Vars()).RunTest76();
 
-        (new Test()).RunTest77();
+        (new Test_Inline_Vars()).RunTest77();
 
-        (new Test()).RunTest78();
+        (new Test_Inline_Vars()).RunTest78();
 
-        (new Test()).RunTest79();
+        (new Test_Inline_Vars()).RunTest79();
 
-        (new Test()).RunTest80();
+        (new Test_Inline_Vars()).RunTest80();
 
-        (new Test()).RunTest81();
+        (new Test_Inline_Vars()).RunTest81();
 
-        (new Test()).RunTest82();
+        (new Test_Inline_Vars()).RunTest82();
 
-        (new Test()).RunTest83();
+        (new Test_Inline_Vars()).RunTest83();
 
-        (new Test()).RunTest84();
+        (new Test_Inline_Vars()).RunTest84();
 
-        (new Test()).RunTest85();
+        (new Test_Inline_Vars()).RunTest85();
 
-        (new Test()).RunTest86();
+        (new Test_Inline_Vars()).RunTest86();
 
-        (new Test()).RunTest87();
+        (new Test_Inline_Vars()).RunTest87();
 
-        (new Test()).RunTest88();
+        (new Test_Inline_Vars()).RunTest88();
 
-        (new Test()).RunTest89();
+        (new Test_Inline_Vars()).RunTest89();
 
-        (new Test()).RunTest90();
+        (new Test_Inline_Vars()).RunTest90();
 
-        (new Test()).RunTest91();
+        (new Test_Inline_Vars()).RunTest91();
 
-        (new Test()).RunTest92();
+        (new Test_Inline_Vars()).RunTest92();
 
-        (new Test()).RunTest93();
+        (new Test_Inline_Vars()).RunTest93();
 
-        (new Test()).RunTest94();
+        (new Test_Inline_Vars()).RunTest94();
 
-        (new Test()).RunTest95();
+        (new Test_Inline_Vars()).RunTest95();
 
-        (new Test()).RunTest96();
+        (new Test_Inline_Vars()).RunTest96();
 
-        (new Test()).RunTest97();
+        (new Test_Inline_Vars()).RunTest97();
 
-        (new Test()).RunTest98();
+        (new Test_Inline_Vars()).RunTest98();
 
-        (new Test()).RunTest99();
+        (new Test_Inline_Vars()).RunTest99();
 
-        (new Test()).RunTest100();
+        (new Test_Inline_Vars()).RunTest100();
 
-        (new Test()).RunTest101();
+        (new Test_Inline_Vars()).RunTest101();
 
-        (new Test()).RunTest102();
+        (new Test_Inline_Vars()).RunTest102();
 
-        (new Test()).RunTest103();
+        (new Test_Inline_Vars()).RunTest103();
 
-        (new Test()).RunTest104();
+        (new Test_Inline_Vars()).RunTest104();
 
-        (new Test()).RunTest105();
+        (new Test_Inline_Vars()).RunTest105();
 
-        (new Test()).RunTest106();
+        (new Test_Inline_Vars()).RunTest106();
 
-        (new Test()).RunTest107();
+        (new Test_Inline_Vars()).RunTest107();
 
-        (new Test()).RunTest108();
+        (new Test_Inline_Vars()).RunTest108();
 
-        (new Test()).RunTest109();
+        (new Test_Inline_Vars()).RunTest109();
 
-        (new Test()).RunTest110();
+        (new Test_Inline_Vars()).RunTest110();
 
-        (new Test()).RunTest111();
+        (new Test_Inline_Vars()).RunTest111();
 
-        (new Test()).RunTest112();
+        (new Test_Inline_Vars()).RunTest112();
 
-        (new Test()).RunTest113();
+        (new Test_Inline_Vars()).RunTest113();
 
-        (new Test()).RunTest114();
+        (new Test_Inline_Vars()).RunTest114();
 
-        (new Test()).RunTest115();
+        (new Test_Inline_Vars()).RunTest115();
 
-        (new Test()).RunTest116();
+        (new Test_Inline_Vars()).RunTest116();
 
-        (new Test()).RunTest117();
+        (new Test_Inline_Vars()).RunTest117();
 
-        (new Test()).RunTest118();
+        (new Test_Inline_Vars()).RunTest118();
 
-        (new Test()).RunTest119();
+        (new Test_Inline_Vars()).RunTest119();
 
-        (new Test()).RunTest120();
+        (new Test_Inline_Vars()).RunTest120();
 
-        (new Test()).RunTest121();
+        (new Test_Inline_Vars()).RunTest121();
 
-        (new Test()).RunTest122();
+        (new Test_Inline_Vars()).RunTest122();
 
-        (new Test()).RunTest123();
+        (new Test_Inline_Vars()).RunTest123();
 
-        (new Test()).RunTest124();
+        (new Test_Inline_Vars()).RunTest124();
 
-        (new Test()).RunTest125();
+        (new Test_Inline_Vars()).RunTest125();
 
-        (new Test()).RunTest126();
+        (new Test_Inline_Vars()).RunTest126();
 
-        (new Test()).RunTest127();
+        (new Test_Inline_Vars()).RunTest127();
 
-        (new Test()).RunTest128();
+        (new Test_Inline_Vars()).RunTest128();
 
-        (new Test()).RunTest129();
+        (new Test_Inline_Vars()).RunTest129();
 
-        (new Test()).RunTest130();
+        (new Test_Inline_Vars()).RunTest130();
 
-        (new Test()).RunTest131();
+        (new Test_Inline_Vars()).RunTest131();
 
-        (new Test()).RunTest132();
+        (new Test_Inline_Vars()).RunTest132();
 
-        (new Test()).RunTest133();
+        (new Test_Inline_Vars()).RunTest133();
 
-        (new Test()).RunTest134();
+        (new Test_Inline_Vars()).RunTest134();
 
-        (new Test()).RunTest135();
+        (new Test_Inline_Vars()).RunTest135();
 
-        (new Test()).RunTest136();
+        (new Test_Inline_Vars()).RunTest136();
 
-        (new Test()).RunTest137();
+        (new Test_Inline_Vars()).RunTest137();
 
-        (new Test()).RunTest138();
+        (new Test_Inline_Vars()).RunTest138();
 
-        (new Test()).RunTest139();
+        (new Test_Inline_Vars()).RunTest139();
 
-        (new Test()).RunTest140();
+        (new Test_Inline_Vars()).RunTest140();
 
-        (new Test()).RunTest141();
+        (new Test_Inline_Vars()).RunTest141();
 
-        (new Test()).RunTest142();
+        (new Test_Inline_Vars()).RunTest142();
 
-        (new Test()).RunTest143();
+        (new Test_Inline_Vars()).RunTest143();
 
-        (new Test()).RunTest144();
+        (new Test_Inline_Vars()).RunTest144();
 
-        (new Test()).RunTest145();
+        (new Test_Inline_Vars()).RunTest145();
 
-        (new Test()).RunTest146();
+        (new Test_Inline_Vars()).RunTest146();
 
-        (new Test()).RunTest147();
+        (new Test_Inline_Vars()).RunTest147();
 
-        (new Test()).RunTest148();
+        (new Test_Inline_Vars()).RunTest148();
 
-        (new Test()).RunTest149();
+        (new Test_Inline_Vars()).RunTest149();
 
-        (new Test()).RunTest150();
+        (new Test_Inline_Vars()).RunTest150();
 
-        (new Test()).RunTest151();
+        (new Test_Inline_Vars()).RunTest151();
 
-        (new Test()).RunTest152();
+        (new Test_Inline_Vars()).RunTest152();
 
-        (new Test()).RunTest153();
+        (new Test_Inline_Vars()).RunTest153();
 
-        (new Test()).RunTest154();
+        (new Test_Inline_Vars()).RunTest154();
 
-        (new Test()).RunTest155();
+        (new Test_Inline_Vars()).RunTest155();
 
-        (new Test()).RunTest156();
+        (new Test_Inline_Vars()).RunTest156();
 
-        (new Test()).RunTest157();
+        (new Test_Inline_Vars()).RunTest157();
 
-        (new Test()).RunTest158();
+        (new Test_Inline_Vars()).RunTest158();
 
-        (new Test()).RunTest159();
+        (new Test_Inline_Vars()).RunTest159();
 
-        (new Test()).RunTest160();
+        (new Test_Inline_Vars()).RunTest160();
 
-        (new Test()).RunTest161();
+        (new Test_Inline_Vars()).RunTest161();
 
-        (new Test()).RunTest162();
+        (new Test_Inline_Vars()).RunTest162();
 
-        (new Test()).RunTest163();
+        (new Test_Inline_Vars()).RunTest163();
 
-        (new Test()).RunTest164();
+        (new Test_Inline_Vars()).RunTest164();
 
-        (new Test()).RunTest165();
+        (new Test_Inline_Vars()).RunTest165();
 
-        (new Test()).RunTest166();
+        (new Test_Inline_Vars()).RunTest166();
 
-        (new Test()).RunTest167();
+        (new Test_Inline_Vars()).RunTest167();
 
-        (new Test()).RunTest168();
+        (new Test_Inline_Vars()).RunTest168();
 
-        (new Test()).RunTest169();
+        (new Test_Inline_Vars()).RunTest169();
 
-        (new Test()).RunTest170();
+        (new Test_Inline_Vars()).RunTest170();
 
-        (new Test()).RunTest171();
+        (new Test_Inline_Vars()).RunTest171();
 
-        (new Test()).RunTest172();
+        (new Test_Inline_Vars()).RunTest172();
 
-        (new Test()).RunTest173();
+        (new Test_Inline_Vars()).RunTest173();
 
-        (new Test()).RunTest174();
+        (new Test_Inline_Vars()).RunTest174();
 
-        (new Test()).RunTest175();
+        (new Test_Inline_Vars()).RunTest175();
 
-        (new Test()).RunTest176();
+        (new Test_Inline_Vars()).RunTest176();
 
-        (new Test()).RunTest177();
+        (new Test_Inline_Vars()).RunTest177();
 
-        (new Test()).RunTest178();
+        (new Test_Inline_Vars()).RunTest178();
 
-        (new Test()).RunTest179();
+        (new Test_Inline_Vars()).RunTest179();
 
-        (new Test()).RunTest180();
+        (new Test_Inline_Vars()).RunTest180();
 
-        (new Test()).RunTest181();
+        (new Test_Inline_Vars()).RunTest181();
 
-        (new Test()).RunTest182();
+        (new Test_Inline_Vars()).RunTest182();
 
-        (new Test()).RunTest183();
+        (new Test_Inline_Vars()).RunTest183();
 
-        (new Test()).RunTest184();
+        (new Test_Inline_Vars()).RunTest184();
 
-        (new Test()).RunTest185();
+        (new Test_Inline_Vars()).RunTest185();
 
-        (new Test()).RunTest186();
+        (new Test_Inline_Vars()).RunTest186();
 
-        (new Test()).RunTest187();
+        (new Test_Inline_Vars()).RunTest187();
 
-        (new Test()).RunTest188();
+        (new Test_Inline_Vars()).RunTest188();
 
-        (new Test()).RunTest189();
+        (new Test_Inline_Vars()).RunTest189();
 
-        (new Test()).RunTest190();
+        (new Test_Inline_Vars()).RunTest190();
 
-        (new Test()).RunTest191();
+        (new Test_Inline_Vars()).RunTest191();
 
-        (new Test()).RunTest192();
+        (new Test_Inline_Vars()).RunTest192();
 
-        (new Test()).RunTest193();
+        (new Test_Inline_Vars()).RunTest193();
 
-        (new Test()).RunTest194();
+        (new Test_Inline_Vars()).RunTest194();
 
-        (new Test()).RunTest195();
+        (new Test_Inline_Vars()).RunTest195();
 
-        (new Test()).RunTest196();
+        (new Test_Inline_Vars()).RunTest196();
 
-        (new Test()).RunTest197();
+        (new Test_Inline_Vars()).RunTest197();
 
-        (new Test()).RunTest198();
+        (new Test_Inline_Vars()).RunTest198();
 
-        (new Test()).RunTest199();
+        (new Test_Inline_Vars()).RunTest199();
 
-        (new Test()).RunTest200();
+        (new Test_Inline_Vars()).RunTest200();
 
-        (new Test()).RunTest201();
+        (new Test_Inline_Vars()).RunTest201();
 
-        (new Test()).RunTest202();
+        (new Test_Inline_Vars()).RunTest202();
 
-        (new Test()).RunTest203();
+        (new Test_Inline_Vars()).RunTest203();
 
-        (new Test()).RunTest204();
+        (new Test_Inline_Vars()).RunTest204();
 
-        (new Test()).RunTest205();
+        (new Test_Inline_Vars()).RunTest205();
 
-        (new Test()).RunTest206();
+        (new Test_Inline_Vars()).RunTest206();
 
-        (new Test()).RunTest207();
+        (new Test_Inline_Vars()).RunTest207();
 
-        (new Test()).RunTest208();
+        (new Test_Inline_Vars()).RunTest208();
 
-        (new Test()).RunTest209();
+        (new Test_Inline_Vars()).RunTest209();
 
-        (new Test()).RunTest210();
+        (new Test_Inline_Vars()).RunTest210();
 
-        (new Test()).RunTest211();
+        (new Test_Inline_Vars()).RunTest211();
 
-        (new Test()).RunTest212();
+        (new Test_Inline_Vars()).RunTest212();
 
-        (new Test()).RunTest213();
+        (new Test_Inline_Vars()).RunTest213();
 
-        (new Test()).RunTest214();
+        (new Test_Inline_Vars()).RunTest214();
 
-        (new Test()).RunTest215();
+        (new Test_Inline_Vars()).RunTest215();
 
-        (new Test()).RunTest216();
+        (new Test_Inline_Vars()).RunTest216();
 
-        (new Test()).RunTest217();
+        (new Test_Inline_Vars()).RunTest217();
 
-        (new Test()).RunTest218();
+        (new Test_Inline_Vars()).RunTest218();
 
-        (new Test()).RunTest219();
+        (new Test_Inline_Vars()).RunTest219();
 
-        (new Test()).RunTest220();
+        (new Test_Inline_Vars()).RunTest220();
 
-        (new Test()).RunTest221();
+        (new Test_Inline_Vars()).RunTest221();
 
-        (new Test()).RunTest222();
+        (new Test_Inline_Vars()).RunTest222();
 
-        (new Test()).RunTest223();
+        (new Test_Inline_Vars()).RunTest223();
 
-        (new Test()).RunTest224();
+        (new Test_Inline_Vars()).RunTest224();
 
-        (new Test()).RunTest225();
+        (new Test_Inline_Vars()).RunTest225();
 
-        (new Test()).RunTest226();
+        (new Test_Inline_Vars()).RunTest226();
 
-        (new Test()).RunTest227();
+        (new Test_Inline_Vars()).RunTest227();
 
-        (new Test()).RunTest228();
+        (new Test_Inline_Vars()).RunTest228();
 
-        (new Test()).RunTest229();
+        (new Test_Inline_Vars()).RunTest229();
 
-        (new Test()).RunTest230();
+        (new Test_Inline_Vars()).RunTest230();
 
-        (new Test()).RunTest231();
+        (new Test_Inline_Vars()).RunTest231();
 
-        (new Test()).RunTest232();
+        (new Test_Inline_Vars()).RunTest232();
 
-        (new Test()).RunTest233();
+        (new Test_Inline_Vars()).RunTest233();
 
-        (new Test()).RunTest234();
+        (new Test_Inline_Vars()).RunTest234();
 
-        (new Test()).RunTest235();
+        (new Test_Inline_Vars()).RunTest235();
 
-        (new Test()).RunTest236();
+        (new Test_Inline_Vars()).RunTest236();
 
-        (new Test()).RunTest237();
+        (new Test_Inline_Vars()).RunTest237();
 
-        (new Test()).RunTest238();
+        (new Test_Inline_Vars()).RunTest238();
 
-        (new Test()).RunTest239();
+        (new Test_Inline_Vars()).RunTest239();
 
-        (new Test()).RunTest240();
+        (new Test_Inline_Vars()).RunTest240();
 
-        (new Test()).RunTest241();
+        (new Test_Inline_Vars()).RunTest241();
 
-        (new Test()).RunTest242();
+        (new Test_Inline_Vars()).RunTest242();
 
-        (new Test()).RunTest243();
+        (new Test_Inline_Vars()).RunTest243();
 
-        (new Test()).RunTest244();
+        (new Test_Inline_Vars()).RunTest244();
 
-        (new Test()).RunTest245();
+        (new Test_Inline_Vars()).RunTest245();
 
-        (new Test()).RunTest246();
+        (new Test_Inline_Vars()).RunTest246();
 
-        (new Test()).RunTest247();
+        (new Test_Inline_Vars()).RunTest247();
 
-        (new Test()).RunTest248();
+        (new Test_Inline_Vars()).RunTest248();
 
-        (new Test()).RunTest249();
+        (new Test_Inline_Vars()).RunTest249();
 
-        (new Test()).RunTest250();
+        (new Test_Inline_Vars()).RunTest250();
 
-        (new Test()).RunTest251();
+        (new Test_Inline_Vars()).RunTest251();
 
-        (new Test()).RunTest252();
+        (new Test_Inline_Vars()).RunTest252();
 
-        (new Test()).RunTest253();
+        (new Test_Inline_Vars()).RunTest253();
 
-        (new Test()).RunTest254();
+        (new Test_Inline_Vars()).RunTest254();
 
-        (new Test()).RunTest255();
+        (new Test_Inline_Vars()).RunTest255();
 
-        (new Test()).RunTest256();
+        (new Test_Inline_Vars()).RunTest256();
 
-        (new Test()).RunTest257();
+        (new Test_Inline_Vars()).RunTest257();
 
-        (new Test()).RunTest258();
+        (new Test_Inline_Vars()).RunTest258();
 
-        (new Test()).RunTest259();
+        (new Test_Inline_Vars()).RunTest259();
 
-        (new Test()).RunTest260();
+        (new Test_Inline_Vars()).RunTest260();
 
-        (new Test()).RunTest261();
+        (new Test_Inline_Vars()).RunTest261();
 
-        (new Test()).RunTest262();
+        (new Test_Inline_Vars()).RunTest262();
 
-        (new Test()).RunTest263();
+        (new Test_Inline_Vars()).RunTest263();
 
-        (new Test()).RunTest264();
+        (new Test_Inline_Vars()).RunTest264();
 
-        (new Test()).RunTest265();
+        (new Test_Inline_Vars()).RunTest265();
 
-        (new Test()).RunTest266();
+        (new Test_Inline_Vars()).RunTest266();
 
-        (new Test()).RunTest267();
+        (new Test_Inline_Vars()).RunTest267();
 
-        (new Test()).RunTest268();
+        (new Test_Inline_Vars()).RunTest268();
 
-        (new Test()).RunTest269();
+        (new Test_Inline_Vars()).RunTest269();
 
-        (new Test()).RunTest270();
+        (new Test_Inline_Vars()).RunTest270();
 
-        (new Test()).RunTest271();
+        (new Test_Inline_Vars()).RunTest271();
 
-        (new Test()).RunTest272();
+        (new Test_Inline_Vars()).RunTest272();
 
-        (new Test()).RunTest273();
+        (new Test_Inline_Vars()).RunTest273();
 
-        (new Test()).RunTest274();
+        (new Test_Inline_Vars()).RunTest274();
 
-        (new Test()).RunTest275();
+        (new Test_Inline_Vars()).RunTest275();
 
-        (new Test()).RunTest276();
+        (new Test_Inline_Vars()).RunTest276();
 
-        (new Test()).RunTest277();
+        (new Test_Inline_Vars()).RunTest277();
 
-        (new Test()).RunTest278();
+        (new Test_Inline_Vars()).RunTest278();
 
-        (new Test()).RunTest279();
+        (new Test_Inline_Vars()).RunTest279();
 
-        (new Test()).RunTest280();
+        (new Test_Inline_Vars()).RunTest280();
 
-        (new Test()).RunTest281();
+        (new Test_Inline_Vars()).RunTest281();
 
-        (new Test()).RunTest282();
+        (new Test_Inline_Vars()).RunTest282();
 
-        (new Test()).RunTest283();
+        (new Test_Inline_Vars()).RunTest283();
 
-        (new Test()).RunTest284();
+        (new Test_Inline_Vars()).RunTest284();
 
-        (new Test()).RunTest285();
+        (new Test_Inline_Vars()).RunTest285();
 
-        (new Test()).RunTest286();
+        (new Test_Inline_Vars()).RunTest286();
 
-        (new Test()).RunTest287();
+        (new Test_Inline_Vars()).RunTest287();
 
-        (new Test()).RunTest288();
+        (new Test_Inline_Vars()).RunTest288();
 
-        (new Test()).RunTest289();
+        (new Test_Inline_Vars()).RunTest289();
 
-        (new Test()).RunTest290();
+        (new Test_Inline_Vars()).RunTest290();
 
-        (new Test()).RunTest291();
+        (new Test_Inline_Vars()).RunTest291();
 
-        (new Test()).RunTest292();
+        (new Test_Inline_Vars()).RunTest292();
 
-        (new Test()).RunTest293();
+        (new Test_Inline_Vars()).RunTest293();
 
-        (new Test()).RunTest294();
+        (new Test_Inline_Vars()).RunTest294();
 
-        (new Test()).RunTest295();
+        (new Test_Inline_Vars()).RunTest295();
 
-        (new Test()).RunTest296();
+        (new Test_Inline_Vars()).RunTest296();
 
-        (new Test()).RunTest297();
+        (new Test_Inline_Vars()).RunTest297();
 
-        (new Test()).RunTest298();
+        (new Test_Inline_Vars()).RunTest298();
 
-        (new Test()).RunTest299();
+        (new Test_Inline_Vars()).RunTest299();
 
-        (new Test()).RunTest300();
+        (new Test_Inline_Vars()).RunTest300();
 
-        (new Test()).RunTest301();
+        (new Test_Inline_Vars()).RunTest301();
 
-        (new Test()).RunTest302();
+        (new Test_Inline_Vars()).RunTest302();
 
-        (new Test()).RunTest303();
+        (new Test_Inline_Vars()).RunTest303();
 
-        (new Test()).RunTest304();
+        (new Test_Inline_Vars()).RunTest304();
 
-        (new Test()).RunTest305();
+        (new Test_Inline_Vars()).RunTest305();
 
-        (new Test()).RunTest306();
+        (new Test_Inline_Vars()).RunTest306();
 
-        (new Test()).RunTest307();
+        (new Test_Inline_Vars()).RunTest307();
 
-        (new Test()).RunTest308();
+        (new Test_Inline_Vars()).RunTest308();
 
-        (new Test()).RunTest309();
+        (new Test_Inline_Vars()).RunTest309();
 
-        (new Test()).RunTest310();
+        (new Test_Inline_Vars()).RunTest310();
 
-        (new Test()).RunTest311();
+        (new Test_Inline_Vars()).RunTest311();
 
-        (new Test()).RunTest312();
+        (new Test_Inline_Vars()).RunTest312();
 
-        (new Test()).RunTest313();
+        (new Test_Inline_Vars()).RunTest313();
 
-        (new Test()).RunTest314();
+        (new Test_Inline_Vars()).RunTest314();
 
-        (new Test()).RunTest315();
+        (new Test_Inline_Vars()).RunTest315();
 
-        (new Test()).RunTest316();
+        (new Test_Inline_Vars()).RunTest316();
 
-        (new Test()).RunTest317();
+        (new Test_Inline_Vars()).RunTest317();
 
-        (new Test()).RunTest318();
+        (new Test_Inline_Vars()).RunTest318();
 
-        (new Test()).RunTest319();
+        (new Test_Inline_Vars()).RunTest319();
 
-        (new Test()).RunTest320();
+        (new Test_Inline_Vars()).RunTest320();
 
-        (new Test()).RunTest321();
+        (new Test_Inline_Vars()).RunTest321();
 
-        (new Test()).RunTest322();
+        (new Test_Inline_Vars()).RunTest322();
 
-        (new Test()).RunTest323();
+        (new Test_Inline_Vars()).RunTest323();
 
-        (new Test()).RunTest324();
+        (new Test_Inline_Vars()).RunTest324();
 
-        (new Test()).RunTest325();
+        (new Test_Inline_Vars()).RunTest325();
 
-        (new Test()).RunTest326();
+        (new Test_Inline_Vars()).RunTest326();
 
-        (new Test()).RunTest327();
+        (new Test_Inline_Vars()).RunTest327();
 
-        (new Test()).RunTest328();
+        (new Test_Inline_Vars()).RunTest328();
 
-        (new Test()).RunTest329();
+        (new Test_Inline_Vars()).RunTest329();
 
-        (new Test()).RunTest330();
+        (new Test_Inline_Vars()).RunTest330();
 
-        (new Test()).RunTest331();
+        (new Test_Inline_Vars()).RunTest331();
 
-        (new Test()).RunTest332();
+        (new Test_Inline_Vars()).RunTest332();
 
-        (new Test()).RunTest333();
+        (new Test_Inline_Vars()).RunTest333();
 
-        (new Test()).RunTest334();
+        (new Test_Inline_Vars()).RunTest334();
 
-        (new Test()).RunTest335();
+        (new Test_Inline_Vars()).RunTest335();
 
-        (new Test()).RunTest336();
+        (new Test_Inline_Vars()).RunTest336();
 
-        (new Test()).RunTest337();
+        (new Test_Inline_Vars()).RunTest337();
 
-        (new Test()).RunTest338();
+        (new Test_Inline_Vars()).RunTest338();
 
-        (new Test()).RunTest339();
+        (new Test_Inline_Vars()).RunTest339();
 
-        (new Test()).RunTest340();
+        (new Test_Inline_Vars()).RunTest340();
 
-        (new Test()).RunTest341();
+        (new Test_Inline_Vars()).RunTest341();
 
-        (new Test()).RunTest342();
+        (new Test_Inline_Vars()).RunTest342();
 
-        (new Test()).RunTest343();
+        (new Test_Inline_Vars()).RunTest343();
 
-        (new Test()).RunTest344();
+        (new Test_Inline_Vars()).RunTest344();
 
-        (new Test()).RunTest345();
+        (new Test_Inline_Vars()).RunTest345();
 
-        (new Test()).RunTest346();
+        (new Test_Inline_Vars()).RunTest346();
 
-        (new Test()).RunTest347();
+        (new Test_Inline_Vars()).RunTest347();
 
-        (new Test()).RunTest348();
+        (new Test_Inline_Vars()).RunTest348();
 
-        (new Test()).RunTest349();
+        (new Test_Inline_Vars()).RunTest349();
 
-        (new Test()).RunTest350();
+        (new Test_Inline_Vars()).RunTest350();
 
-        (new Test()).RunTest351();
+        (new Test_Inline_Vars()).RunTest351();
 
-        (new Test()).RunTest352();
+        (new Test_Inline_Vars()).RunTest352();
 
-        (new Test()).RunTest353();
+        (new Test_Inline_Vars()).RunTest353();
 
-        (new Test()).RunTest354();
+        (new Test_Inline_Vars()).RunTest354();
 
-        (new Test()).RunTest355();
+        (new Test_Inline_Vars()).RunTest355();
 
-        (new Test()).RunTest356();
+        (new Test_Inline_Vars()).RunTest356();
 
-        (new Test()).RunTest357();
+        (new Test_Inline_Vars()).RunTest357();
 
-        (new Test()).RunTest358();
+        (new Test_Inline_Vars()).RunTest358();
 
-        (new Test()).RunTest359();
+        (new Test_Inline_Vars()).RunTest359();
 
-        (new Test()).RunTest360();
+        (new Test_Inline_Vars()).RunTest360();
 
-        (new Test()).RunTest361();
+        (new Test_Inline_Vars()).RunTest361();
 
-        (new Test()).RunTest362();
+        (new Test_Inline_Vars()).RunTest362();
 
-        (new Test()).RunTest363();
+        (new Test_Inline_Vars()).RunTest363();
 
-        (new Test()).RunTest364();
+        (new Test_Inline_Vars()).RunTest364();
 
-        (new Test()).RunTest365();
+        (new Test_Inline_Vars()).RunTest365();
 
-        (new Test()).RunTest366();
+        (new Test_Inline_Vars()).RunTest366();
 
-        (new Test()).RunTest367();
+        (new Test_Inline_Vars()).RunTest367();
 
-        (new Test()).RunTest368();
+        (new Test_Inline_Vars()).RunTest368();
 
-        (new Test()).RunTest369();
+        (new Test_Inline_Vars()).RunTest369();
 
-        (new Test()).RunTest370();
+        (new Test_Inline_Vars()).RunTest370();
 
-        (new Test()).RunTest371();
+        (new Test_Inline_Vars()).RunTest371();
 
-        (new Test()).RunTest372();
+        (new Test_Inline_Vars()).RunTest372();
 
-        (new Test()).RunTest373();
+        (new Test_Inline_Vars()).RunTest373();
 
-        (new Test()).RunTest374();
+        (new Test_Inline_Vars()).RunTest374();
 
-        (new Test()).RunTest375();
+        (new Test_Inline_Vars()).RunTest375();
 
-        (new Test()).RunTest376();
+        (new Test_Inline_Vars()).RunTest376();
 
-        (new Test()).RunTest377();
+        (new Test_Inline_Vars()).RunTest377();
 
-        (new Test()).RunTest378();
+        (new Test_Inline_Vars()).RunTest378();
 
-        (new Test()).RunTest379();
+        (new Test_Inline_Vars()).RunTest379();
 
-        (new Test()).RunTest380();
+        (new Test_Inline_Vars()).RunTest380();
 
-        (new Test()).RunTest381();
+        (new Test_Inline_Vars()).RunTest381();
 
-        (new Test()).RunTest382();
+        (new Test_Inline_Vars()).RunTest382();
 
-        (new Test()).RunTest383();
+        (new Test_Inline_Vars()).RunTest383();
 
-        (new Test()).RunTest384();
+        (new Test_Inline_Vars()).RunTest384();
 
-        (new Test()).RunTest385();
+        (new Test_Inline_Vars()).RunTest385();
 
-        (new Test()).RunTest386();
+        (new Test_Inline_Vars()).RunTest386();
 
-        (new Test()).RunTest387();
+        (new Test_Inline_Vars()).RunTest387();
 
-        (new Test()).RunTest388();
+        (new Test_Inline_Vars()).RunTest388();
 
-        (new Test()).RunTest389();
+        (new Test_Inline_Vars()).RunTest389();
 
-        (new Test()).RunTest390();
+        (new Test_Inline_Vars()).RunTest390();
 
-        (new Test()).RunTest391();
+        (new Test_Inline_Vars()).RunTest391();
 
-        (new Test()).RunTest392();
+        (new Test_Inline_Vars()).RunTest392();
 
-        (new Test()).RunTest393();
+        (new Test_Inline_Vars()).RunTest393();
 
-        (new Test()).RunTest394();
+        (new Test_Inline_Vars()).RunTest394();
 
-        (new Test()).RunTest395();
+        (new Test_Inline_Vars()).RunTest395();
 
-        (new Test()).RunTest396();
+        (new Test_Inline_Vars()).RunTest396();
 
-        (new Test()).RunTest397();
+        (new Test_Inline_Vars()).RunTest397();
 
-        (new Test()).RunTest398();
+        (new Test_Inline_Vars()).RunTest398();
 
-        (new Test()).RunTest399();
+        (new Test_Inline_Vars()).RunTest399();
 
-        (new Test()).RunTest400_NoInline();
+        (new Test_Inline_Vars()).RunTest400_NoInline();
         return 100;
     }
 }

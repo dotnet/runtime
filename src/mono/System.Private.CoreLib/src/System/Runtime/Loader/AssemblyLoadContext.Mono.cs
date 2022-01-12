@@ -80,6 +80,7 @@ namespace System.Runtime.Loader
             // We only support looking up load context for runtime assemblies.
             if (rtAsm != null)
             {
+                var _ = Default;  // ensure the default ALC is initialized.
                 RuntimeAssembly runtimeAssembly = rtAsm;
                 IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(runtimeAssembly);
                 loadContextForAssembly = GetAssemblyLoadContext(ptrAssemblyLoadContext);

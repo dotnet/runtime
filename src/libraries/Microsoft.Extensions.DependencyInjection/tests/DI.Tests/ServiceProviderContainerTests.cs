@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceCollection.AddTransient(serviceType, implementationType);
 
             // Act and Assert
-            var exception = Assert.Throws<ArgumentException>(() => serviceCollection.BuildServiceProvider());
+            var exception = Assert.Throws<ArgumentException>(() => CreateServiceProvider(serviceCollection));
             Assert.Equal(
                 $"Cannot instantiate implementation type '{implementationType}' for service type '{serviceType}'.",
                 exception.Message);
@@ -178,7 +178,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             serviceCollection.AddTransient(serviceType, implementationType);
 
             // Act and Assert
-            var exception = Assert.Throws<ArgumentException>(() => serviceCollection.BuildServiceProvider());
+            var exception = Assert.Throws<ArgumentException>(() => CreateServiceProvider(serviceCollection));
             Assert.StartsWith(errorMessage, exception.Message);
         }
 
@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         {
             var services = new ServiceCollection();
             services.AddSingleton<DisposeServiceProviderInCtor>();
-            IServiceProvider sp = services.BuildServiceProvider();
+            IServiceProvider sp = CreateServiceProvider(services);
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 // ctor disposes ServiceProvider
@@ -380,7 +380,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             services.AddSingleton<DisposeServiceProviderInCtorAsyncDisposable>(sp =>
                 new DisposeServiceProviderInCtorAsyncDisposable(asyncDisposableResource, sp));
 
-            var sp = services.BuildServiceProvider();
+            var sp = CreateServiceProvider(services);
             bool doesNotHang = Task.Run(() =>
             {
                 SingleThreadedSynchronizationContext.Run(() =>
@@ -407,7 +407,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             services.AddSingleton<DisposeServiceProviderInCtorDisposable>(sp =>
                 new DisposeServiceProviderInCtorDisposable(disposableResource, sp));
 
-            var sp = services.BuildServiceProvider();
+            var sp = CreateServiceProvider(services);
             bool doesNotHang = Task.Run(() =>
             {
                 SingleThreadedSynchronizationContext.Run(() =>
@@ -447,7 +447,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 //forces Dispose ValueTask to be asynchronous and not be immediately completed
                 services.AddSingleton<DelayedAsyncDisposableService>();
             }
-            ServiceProvider sp = services.BuildServiceProvider();
+            ServiceProvider sp = (ServiceProvider)CreateServiceProvider(services);
+
             var disposable = sp.GetRequiredService<Disposable>();
             var asyncDisposable = sp.GetRequiredService<AsyncDisposable>();
             DelayedAsyncDisposableService delayedAsyncDisposableService = null;
@@ -541,7 +542,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 services.AddSingleton<OuterSingleton>();
                 services.AddSingleton(sp => new InnerSingleton(mreForThread1, mreForThread2));
 
-                sp = services.BuildServiceProvider();
+                sp = CreateServiceProvider(services);
 
                 var t1 = Task.Run(() =>
                 {
@@ -637,7 +638,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 });
                 services.AddSingleton<Thing2>();
 
-                sp = services.BuildServiceProvider();
+                sp = CreateServiceProvider(services);
 
                 var t1 = Task.Run(() =>
                 {
@@ -717,7 +718,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 });
                 services.AddSingleton<Thing5>();
 
-                sp = services.BuildServiceProvider();
+                sp = CreateServiceProvider(services);
 
                 // Act
                 var t1 = Task.Run(() =>
@@ -794,7 +795,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
         private class Thing0 { }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42160")] // We don't support value task services currently
         [Theory]
         [InlineData(ServiceLifetime.Transient)]
         [InlineData(ServiceLifetime.Scoped)]
@@ -808,7 +808,62 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var provider = CreateServiceProvider(serviceCollection);
             var service = provider.GetService<IFakeMultipleService>();
+
             Assert.NotNull(service);
+            Assert.IsType<StructFakeMultipleService>(service);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void WorksWithFactoryStructServices(ServiceLifetime lifetime)
+        {
+            IServiceCollection serviceCollection = new ServiceCollection();
+            serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), _ => new StructServiceWithNoDependencies(), lifetime));
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var service = provider.GetService<IFakeService>();
+
+            Assert.NotNull(service);
+            Assert.IsType<StructServiceWithNoDependencies>(service);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void WorksWithFactoryStructServicesAsDependencies(ServiceLifetime lifetime)
+        {
+            IServiceCollection serviceCollection = new ServiceCollection();
+            serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), _ => new StructServiceWithNoDependencies(), lifetime));
+            serviceCollection.Add(new ServiceDescriptor(typeof(StructService), typeof(StructService), lifetime));
+            serviceCollection.Add(new ServiceDescriptor(typeof(IFakeMultipleService), typeof(StructFakeMultipleService), lifetime));
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var service = provider.GetService<IFakeMultipleService>();
+
+            Assert.NotNull(service);
+            Assert.IsType<StructFakeMultipleService>(service);
+        }
+
+        [Theory]
+        [InlineData(ServiceLifetime.Transient)]
+        [InlineData(ServiceLifetime.Scoped)]
+        [InlineData(ServiceLifetime.Singleton)]
+        public void WorksWithIEnumerableStructServices(ServiceLifetime lifetime)
+        {
+            IServiceCollection serviceCollection = new ServiceCollection();
+            for (int i = 0; i < 10; i++)
+            {
+                serviceCollection.Add(new ServiceDescriptor(typeof(IFakeService), typeof(StructServiceWithNoDependencies), lifetime));
+            }
+
+            var provider = CreateServiceProvider(serviceCollection);
+            var services = provider.GetService<IEnumerable<IFakeService>>();
+
+            Assert.Equal(10, services.Count());
+            Assert.All(services, service => Assert.IsType<StructServiceWithNoDependencies>(service));
         }
 
         [Fact]
@@ -821,8 +876,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
                 serviceCollection.AddScoped<IFakeMultipleService, FakeMultipleServiceWithIEnumerableDependency>();
                 serviceCollection.AddScoped<IFakeService, FakeService>();
             }
+            var serviceProvider = CreateServiceProvider(serviceCollection);
 
-            var service = CreateServiceProvider(serviceCollection).GetService<IEnumerable<IFakeOuterService>>();
+            var services = serviceProvider.GetService<IEnumerable<IFakeOuterService>>();
+
+            Assert.Equal(20, services.Count());
         }
 
         [Fact]
@@ -834,7 +892,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Doesn't matter what this services is, we just want something in the collection after generic registration
             services.AddSingleton<FakeService>();
 
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = CreateServiceProvider(services);
 
             var serviceRef1 = serviceProvider.GetRequiredService<IFakeOpenGenericService<PocoClass>>();
             var servicesRef1 = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().Single();
@@ -1156,9 +1214,9 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Fact]
         public void ScopedServiceResolvedFromSingletonAfterCompilation()
         {
-            ServiceProvider sp = new ServiceCollection()
-                                .AddScoped<A>()
-                                .BuildServiceProvider();
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<A>();
+            var sp = CreateServiceProvider(serviceCollection);
 
             var singleton = sp.GetRequiredService<A>();
             for (int i = 0; i < 10; i++)
@@ -1168,18 +1226,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
         }
 
-        [Theory]
-        [InlineData(ServiceProviderMode.Default)]
-        [InlineData(ServiceProviderMode.Dynamic)]
-        [InlineData(ServiceProviderMode.Runtime)]
-        [InlineData(ServiceProviderMode.Expressions)]
-        [InlineData(ServiceProviderMode.ILEmit)]
-        private void ScopedServiceResolvedFromSingletonAfterCompilation2(ServiceProviderMode mode)
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation2()
         {
-            ServiceProvider sp = new ServiceCollection()
-                                .AddScoped<A>()
-                                .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>()
-                                .BuildServiceProvider(mode);
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<A>()
+                             .AddSingleton<IFakeOpenGenericService<A>, FakeOpenGenericService<A>>();
+            var sp = CreateServiceProvider(serviceCollection);
 
             var scope = sp.CreateScope();
             for (int i = 0; i < 50; i++)
@@ -1191,20 +1244,15 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Same(sp.GetRequiredService<IFakeOpenGenericService<A>>().Value, sp.GetRequiredService<A>());
         }
 
-        [Theory]
-        [InlineData(ServiceProviderMode.Default)]
-        [InlineData(ServiceProviderMode.Dynamic)]
-        [InlineData(ServiceProviderMode.Runtime)]
-        [InlineData(ServiceProviderMode.Expressions)]
-        [InlineData(ServiceProviderMode.ILEmit)]
-        private void ScopedServiceResolvedFromSingletonAfterCompilation3(ServiceProviderMode mode)
+        [Fact]
+        public void ScopedServiceResolvedFromSingletonAfterCompilation3()
         {
             // Singleton IFakeX<A> -> Scoped A -> Scoped Aa
-            ServiceProvider sp = new ServiceCollection()
-                                .AddScoped<Aa>()
-                                .AddScoped<A>()
-                                .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>()
-                                .BuildServiceProvider(mode);
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddScoped<Aa>()
+                             .AddScoped<A>()
+                             .AddSingleton<IFakeOpenGenericService<Aa>, FakeOpenGenericService<Aa>>();
+            var sp = CreateServiceProvider(serviceCollection);
 
             var scope = sp.CreateScope();
             for (int i = 0; i < 50; i++)

@@ -201,7 +201,13 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
             // time span
             try
             {
-                returnValue = unchecked((int)(TimeSpan.Parse(timeValue).Ticks / TimeSpan.TicksPerMinute));
+                long ticks = TimeSpan.Parse(timeValue).Ticks;
+                returnValue = unchecked((int)(ticks / TimeSpan.TicksPerMinute));
+                if ((ticks != 0) && (returnValue == 0))
+                {
+                    // If the specified duration is less than a minute, run for at least a minute anyway.
+                    returnValue = 1;
+                }
             }
             catch
             {

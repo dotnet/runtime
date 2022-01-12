@@ -1234,7 +1234,7 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Guid, Guid>.operator <(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1295,7 +1295,7 @@ namespace System
             return false;
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Guid, Guid>.operator <=(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1356,7 +1356,7 @@ namespace System
             return true;
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Guid, Guid>.operator >(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1417,7 +1417,7 @@ namespace System
             return false;
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<Guid, Guid>.operator >=(Guid left, Guid right)
         {
             if (left._a != right._a)
@@ -1482,11 +1482,11 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<Guid, Guid>.operator ==(Guid left, Guid right)
             => left == right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<Guid, Guid>.operator !=(Guid left, Guid right)
             => left != right;
 
@@ -1494,11 +1494,11 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Guid IParseable<Guid>.Parse(string s, IFormatProvider? provider)
             => Parse(s);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<Guid>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Guid result)
             => TryParse(s, out result);
 
@@ -1506,11 +1506,11 @@ namespace System
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static Guid ISpanParseable<Guid>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<Guid>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result)
             => TryParse(s, out result);
 #endif // FEATURE_GENERIC_MATH

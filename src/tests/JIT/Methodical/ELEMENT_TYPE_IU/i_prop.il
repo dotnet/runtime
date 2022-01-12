@@ -11,6 +11,7 @@
 }
 .assembly 'qsort'// as "qsort"
 { }
+.assembly extern xunit.core {}
 .module 'qsort.exe'
 .namespace Test
 {
@@ -18,6 +19,9 @@
   {
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  8
 		.locals (class Test.AA)

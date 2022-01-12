@@ -140,7 +140,7 @@ namespace DebuggerTests
 
             var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
 
-            int line = 44;
+            int line = 46;
             try
             {
                 await EvaluateAndCheck(eval_expr, null, 0, 0, "", null, null);

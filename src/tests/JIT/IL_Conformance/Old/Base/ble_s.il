@@ -79,5 +79,5 @@ end:
 }
 
 
-.assembly ble_s.exe {}
+.assembly ble_s {}
 

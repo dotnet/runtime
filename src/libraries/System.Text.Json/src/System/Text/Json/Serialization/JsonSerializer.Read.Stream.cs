@@ -371,7 +371,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            options ??= JsonSerializerOptions.Default;
             if (!options.IsInitializedForReflectionSerializer)
             {
                 options.InitializeForReflectionSerializer();

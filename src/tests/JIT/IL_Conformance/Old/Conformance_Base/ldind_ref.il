@@ -28,4 +28,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldind_ref.exe{}
+.assembly ldind_ref{}

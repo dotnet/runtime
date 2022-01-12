@@ -6,6 +6,7 @@
 
 
 .assembly ILGEN_0xad4651aa {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0xad4651aa {
@@ -902,6 +903,9 @@ conv.i1
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	27
 ldc.r8 float64(0x875047a061a1b7f) 

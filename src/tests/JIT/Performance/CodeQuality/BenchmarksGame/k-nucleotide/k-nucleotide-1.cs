@@ -16,15 +16,9 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
-[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
-
     public struct ByteString : IEquatable<ByteString>
     {
         public byte[] Array;
@@ -100,22 +94,6 @@ namespace BenchmarksGame
             }
 
             return 100;
-        }
-
-        [Benchmark(InnerIterationCount = 3)]
-        public static void RunBench()
-        {
-            var helpers = new TestHarnessHelpers(bigInput: true);
-            bool ok = true;
-
-            Benchmark.Iterate(() =>
-            {
-                using (var inputStream = helpers.GetInputStream())
-                {
-                    ok &= Bench(inputStream, helpers, false);
-                }
-            });
-            Assert.True(ok);
         }
 
         static bool Bench(Stream inputStream, TestHarnessHelpers helpers, bool verbose)

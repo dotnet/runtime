@@ -4175,8 +4175,8 @@ InitializeCrashDump()
 
 bool GenerateDump(
     LPCWSTR dumpName,
-    int dumpType,
-    bool diag)
+    INT dumpType,
+    ULONG32 flags)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4186,10 +4186,10 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, diag);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
     }
 #else // TARGET_UNIX
-    return GenerateCrashDump(dumpName, dumpType, diag);
+    return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
 #endif // TARGET_UNIX
 }
 
@@ -5782,7 +5782,7 @@ static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCateg
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5801,7 +5801,7 @@ void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnSt
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 
@@ -5817,7 +5817,7 @@ void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
 

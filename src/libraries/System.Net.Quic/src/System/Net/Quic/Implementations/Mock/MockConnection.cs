@@ -470,7 +470,7 @@ namespace System.Net.Quic.Implementations.Mock
                 => _availableTcs.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException()));
         }
 
-        internal class PeerStreamLimit
+        internal sealed class PeerStreamLimit
         {
             public readonly StreamLimit Unidirectional;
             public readonly StreamLimit Bidirectional;

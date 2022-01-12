@@ -15,10 +15,11 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module badcodeafterfinally.exe
 
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_badcodeafterfinally
        extends [mscorlib]System.Object
 {
 
@@ -60,6 +61,9 @@
 
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (object V_0,
 	  class [mscorlib]System.IO.StringWriter expectedOut,
@@ -78,7 +82,7 @@
     ldloc.s    testLog
     callvirt   instance void [common]TestUtil.TestLog::StartRecording()
 
-    call       object Test::GetObj()
+    call       object Test_badcodeafterfinally::GetObj()
     call       void [System.Console]System.Console::WriteLine(object)
     
     ldloc.s    testLog

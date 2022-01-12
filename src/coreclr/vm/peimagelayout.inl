@@ -75,30 +75,6 @@ inline PEImageLayout::PEImageLayout()
     LIMITED_METHOD_CONTRACT;
 }
 
-inline void PEImageLayout::Startup()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        POSTCONDITION(CheckStartup());
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    if (CheckStartup())
-        RETURN;
-
-    RETURN;
-}
-
-inline CHECK PEImageLayout::CheckStartup()
-{
-    WRAPPER_NO_CONTRACT;
-    CHECK_OK;
-}
-
 inline BOOL PEImageLayout::CompareBase(UPTR base, UPTR mapping)
 {
     CONTRACTL

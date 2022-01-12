@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
@@ -10,9 +11,16 @@ namespace System.IO.Tests
     {
         #region Utilities
 
+        protected virtual bool IsAppend {  get; }
+
         protected virtual void Write(string path, string content)
         {
             File.WriteAllText(path, content);
+        }
+
+        protected virtual void Write(string path, string content, Encoding encoding)
+        {
+            File.WriteAllText(path, content, encoding);
         }
 
         protected virtual string Read(string path)
@@ -73,15 +81,28 @@ namespace System.IO.Tests
             Assert.Equal(toWrite, Read(path));
         }
 
-        [Fact]
-        public virtual void Overwrite()
+        [Theory]
+        [InlineData(200, 100)]
+        [InlineData(50_000, 40_000)] // tests a different code path than the line above
+        public void AppendOrOverwrite(int linesSizeLength, int overwriteLinesLength)
         {
             string path = GetTestFilePath();
-            string lines = new string('c', 200);
-            string overwriteLines = new string('b', 100);
+            string lines = new string('c', linesSizeLength);
+            string overwriteLines = new string('b', overwriteLinesLength);
+
             Write(path, lines);
             Write(path, overwriteLines);
-            Assert.Equal(overwriteLines, Read(path));
+
+            if (IsAppend)
+            {
+                Assert.Equal(lines + overwriteLines, Read(path));
+            }
+            else
+            {
+                Assert.DoesNotContain("Append", GetType().Name); // ensure that all "Append" types override this property
+
+                Assert.Equal(overwriteLines, Read(path));
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
@@ -131,6 +152,56 @@ namespace System.IO.Tests
             {
                 File.SetAttributes(path, FileAttributes.Normal);
             }
+        }
+
+        public static IEnumerable<object[]> OutputIsTheSameAsForStreamWriter_Args()
+        {
+            string longText = new string('z', 50_000);
+            foreach (Encoding encoding in new[] { Encoding.Unicode , new UTF8Encoding(encoderShouldEmitUTF8Identifier: true), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false) })
+            {
+                foreach (string text in new[] { null, string.Empty, " ", "shortText", longText })
+                {
+                    yield return new object[] { text, encoding };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(OutputIsTheSameAsForStreamWriter_Args))]
+        public void OutputIsTheSameAsForStreamWriter(string content, Encoding encoding)
+        {
+            string filePath = GetTestFilePath();
+            Write(filePath, content, encoding); // it uses System.IO.File APIs
+
+            string swPath = GetTestFilePath();
+            using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
+            {
+                sw.Write(content);
+            }
+
+            Assert.Equal(File.ReadAllText(swPath, encoding), File.ReadAllText(filePath, encoding));
+            Assert.Equal(File.ReadAllBytes(swPath), File.ReadAllBytes(filePath)); // ensure Preamble was stored
+        }
+
+        [Theory]
+        [MemberData(nameof(OutputIsTheSameAsForStreamWriter_Args))]
+        public void OutputIsTheSameAsForStreamWriter_Overwrite(string content, Encoding encoding)
+        {
+            string filePath = GetTestFilePath();
+            string swPath = GetTestFilePath();
+
+            for (int i = 0; i < 2; i++)
+            {
+                Write(filePath, content, encoding); // it uses System.IO.File APIs
+
+                using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
+                {
+                    sw.Write(content);
+                }
+            }
+
+            Assert.Equal(File.ReadAllText(swPath, encoding), File.ReadAllText(filePath, encoding));
+            Assert.Equal(File.ReadAllBytes(swPath), File.ReadAllBytes(filePath)); // ensure Preamble was stored once
         }
 
         #endregion

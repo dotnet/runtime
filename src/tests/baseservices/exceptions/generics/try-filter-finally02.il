@@ -8,6 +8,7 @@
 
 // Metadata version: v1.1.2211
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -258,7 +259,7 @@
         IL_001a:  brfalse.s  IL_0022
 
         IL_001c:  ldc.i4.0
-        IL_001d:  call       void Test::Eval(bool)
+        IL_001d:  call       void Test_try_filter_finally02::Eval(bool)
         IL_0022:  leave.s    Exit
 
       }  // end .try
@@ -269,7 +270,7 @@
     	   isinst     class GenException<!0>
     	   ldnull
      	   cgt.un
-    	   call       void Test::Eval(bool)
+    	   call       void Test_try_filter_finally02::Eval(bool)
            ldc.i4.1
            stloc.3 
 	   ldc.i4.0	
@@ -285,14 +286,14 @@
       finally
       {
         ldloc.2
-        call       void Test::Eval(bool)
+        call       void Test_try_filter_finally02::Eval(bool)
 	ldloc.3
-        call       void Test::Eval(bool)
+        call       void Test_try_filter_finally02::Eval(bool)
         IL_002a:  endfinally
       }  // end handler  	
     Exit:  
 	ldc.i4.0
-        call       void Test::Eval(bool)
+        call       void Test_try_filter_finally02::Eval(bool)
 	ret
   } // end of method Gen::InternalExceptionTest
 
@@ -308,14 +309,14 @@
     IL_0007:  ldarg.1
     IL_0008:  ldc.i4.0
     IL_0009:  ceq
-    IL_000b:  call       void Test::Eval(bool)
+    IL_000b:  call       void Test_try_filter_finally02::Eval(bool)
     IL_0010:  leave.s    IL_001b
   }  // end .try
   catch [mscorlib]System.Object 
   {
     IL_0012:  pop
     IL_0013:  ldarg.1
-    IL_0014:  call       void Test::Eval(bool)
+    IL_0014:  call       void Test_try_filter_finally02::Eval(bool)
     IL_0019:  leave.s    IL_001b
   }  // end handler
   IL_001b:  ret
@@ -335,7 +336,7 @@
 
 } // end of class Gen
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_try_filter_finally02
        extends [mscorlib]System.Object
 {
   .field public static int32 counter
@@ -344,17 +345,17 @@
   {
     // Code size       47 (0x2f)
     .maxstack  8
-    IL_0000:  ldsfld     int32 Test::counter
+    IL_0000:  ldsfld     int32 Test_try_filter_finally02::counter
     IL_0005:  ldc.i4.1
     IL_0006:  add
-    IL_0007:  stsfld     int32 Test::counter
+    IL_0007:  stsfld     int32 Test_try_filter_finally02::counter
     IL_000c:  ldarg.0
     IL_000d:  brtrue.s   IL_002e
 
     IL_000f:  ldarg.0
-    IL_0010:  stsfld     bool Test::result
+    IL_0010:  stsfld     bool Test_try_filter_finally02::result
     IL_0015:  ldstr      "Test Failed at location: "
-    IL_001a:  ldsfld     int32 Test::counter
+    IL_001a:  ldsfld     int32 Test_try_filter_finally02::counter
     IL_001f:  box        [mscorlib]System.Int32
     IL_0024:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
@@ -364,6 +365,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       588 (0x24c)
     .maxstack  2
@@ -518,7 +522,7 @@
     IL_021b:  newobj     instance void class Gen<valuetype ValX3<valuetype ValX1<int32[0...,0...,0...,0...][]>,valuetype ValX2<object[][][0...,0...,0...,0...],valuetype [mscorlib]System.Guid[][][]>,valuetype ValX3<float64[0...,0...,0...,0...,0...,0...,0...,0...,0...,0...,0...],valuetype [mscorlib]System.Guid[][][][0...,0...,0...,0...,0...][0...,0...,0...,0...,0...][][][],string[][][][][][][][][][][]>>>::.ctor()
     IL_0220:  ldc.i4.1
     IL_0221:  call       instance void class Gen<valuetype ValX3<valuetype ValX1<int32[0...,0...,0...,0...][]>,valuetype ValX2<object[][][0...,0...,0...,0...],valuetype [mscorlib]System.Guid[][][]>,valuetype ValX3<float64[0...,0...,0...,0...,0...,0...,0...,0...,0...,0...,0...],valuetype [mscorlib]System.Guid[][][][0...,0...,0...,0...,0...][0...,0...,0...,0...,0...][][][],string[][][][][][][][][][][]>>>::ExceptionTest(bool)
-    IL_0226:  ldsfld     bool Test::result
+    IL_0226:  ldsfld     bool Test_try_filter_finally02::result
     IL_022b:  brfalse.s  IL_023c
 
     IL_022d:  ldstr      "Test Passed"
@@ -543,9 +547,9 @@
     // Code size       13 (0xd)
     .maxstack  8
     IL_0000:  ldc.i4.0
-    IL_0001:  stsfld     int32 Test::counter
+    IL_0001:  stsfld     int32 Test_try_filter_finally02::counter
     IL_0006:  ldc.i4.1
-    IL_0007:  stsfld     bool Test::result
+    IL_0007:  stsfld     bool Test_try_filter_finally02::result
     IL_000c:  ret
   } // end of method Test::.cctor
 

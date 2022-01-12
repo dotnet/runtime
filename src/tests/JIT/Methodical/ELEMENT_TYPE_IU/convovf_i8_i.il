@@ -11,10 +11,14 @@
 }
 .assembly 'test'
 { }
-.class private auto ansi Test extends [mscorlib]System.Object
+.assembly extern xunit.core {}
+.class private auto ansi Test_convovf_i8_i extends [mscorlib]System.Object
 {
 .method private hidebysig static int32 Main() il managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	// Code size       48 (0x30)
 	.maxstack  5

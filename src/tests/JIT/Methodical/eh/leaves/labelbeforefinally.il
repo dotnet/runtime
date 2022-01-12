@@ -17,6 +17,7 @@
   .hash algorithm 0x00008004
   .ver 1:0:3018:0
 }
+.assembly extern xunit.core {}
 .module b30630.exe
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -39,6 +40,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals init (bool V_0,

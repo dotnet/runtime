@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    internal struct FileStatus
+    internal partial struct FileStatus
     {
         private const int NanosecondsPerTick = 100;
 
@@ -30,13 +30,6 @@ namespace System.IO
         // Exists as of the last refresh
         private bool _exists;
 
-#if !TARGET_BROWSER
-        // Caching the euid/egid to avoid extra p/invokes
-        // Should get reset on refresh
-        private uint? _euid;
-        private uint? _egid;
-#endif
-
         private bool IsFileCacheInitialized => _initializedFileCache == 0;
 
         // Check if the main path (without following symlinks) has the hidden attribute set
@@ -58,36 +51,76 @@ namespace System.IO
                 {
                     return false;
                 }
-#if TARGET_BROWSER
-                const Interop.Sys.Permissions readBit = Interop.Sys.Permissions.S_IRUSR;
-                const Interop.Sys.Permissions writeBit = Interop.Sys.Permissions.S_IWUSR;
-#else
-                Interop.Sys.Permissions readBit, writeBit;
 
-                if (_fileCache.Uid == (_euid ??= Interop.Sys.GetEUid()))
+#if TARGET_BROWSER
+                var mode = (Interop.Sys.Permissions)(_fileCache.Mode & (int)Interop.Sys.Permissions.Mask);
+                bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
+                                      (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
+                return isUserReadOnly;
+#else
+                if (_isReadOnlyCache == 0)
                 {
-                    // User effectively owns the file
-                    readBit = Interop.Sys.Permissions.S_IRUSR;
-                    writeBit = Interop.Sys.Permissions.S_IWUSR;
+                    return false;
                 }
-                else if (_fileCache.Gid == (_egid ??= Interop.Sys.GetEGid()))
+                else if (_isReadOnlyCache == 1)
                 {
-                    // User belongs to a group that effectively owns the file
-                    readBit = Interop.Sys.Permissions.S_IRGRP;
-                    writeBit = Interop.Sys.Permissions.S_IWGRP;
+                    return true;
                 }
                 else
                 {
-                    // Others permissions
-                    readBit = Interop.Sys.Permissions.S_IROTH;
-                    writeBit = Interop.Sys.Permissions.S_IWOTH;
+                    bool isReadOnly = IsModeReadOnlyCore();
+                    _isReadOnlyCache = isReadOnly ? 1 : 0;
+                    return isReadOnly;
                 }
 #endif
-
-                return (_fileCache.Mode & (int)readBit)  != 0 && // has read permission
-                       (_fileCache.Mode & (int)writeBit) == 0;   // but not write permission
             }
         }
+
+#if !TARGET_BROWSER
+        // HasReadOnlyFlag cache.
+        private int _isReadOnlyCache;
+
+        private bool IsModeReadOnlyCore()
+        {
+            var mode = (Interop.Sys.Permissions)(_fileCache.Mode & (int)Interop.Sys.Permissions.Mask);
+
+            bool isUserReadOnly = (mode & Interop.Sys.Permissions.S_IRUSR) != 0 && // has read permission
+                                  (mode & Interop.Sys.Permissions.S_IWUSR) == 0;   // but not write permission
+            bool isGroupReadOnly = (mode & Interop.Sys.Permissions.S_IRGRP) != 0 && // has read permission
+                                    (mode & Interop.Sys.Permissions.S_IWGRP) == 0;   // but not write permission
+            bool isOtherReadOnly = (mode & Interop.Sys.Permissions.S_IROTH) != 0 && // has read permission
+                                    (mode & Interop.Sys.Permissions.S_IWOTH) == 0;   // but not write permission
+
+            // If they are all the same, no need to check user/group.
+            if ((isUserReadOnly == isGroupReadOnly) && (isGroupReadOnly == isOtherReadOnly))
+            {
+                return isUserReadOnly;
+            }
+
+            if (_fileCache.Uid == Interop.Sys.GetEUid())
+            {
+                // User owns the file.
+                return isUserReadOnly;
+            }
+
+            // System files often have the same permissions for group and other (umask 022).
+            if (isGroupReadOnly == isUserReadOnly)
+            {
+                return isGroupReadOnly;
+            }
+
+            if (Interop.Sys.IsMemberOfGroup(_fileCache.Gid))
+            {
+                // User belongs to group that owns the file.
+                return isGroupReadOnly;
+            }
+            else
+            {
+                // Other permissions.
+                return isOtherReadOnly;
+            }
+        }
+#endif
 
         // Checks if the main path is a symbolic link
         // Only call if Refresh has been successfully called at least once
@@ -123,7 +156,7 @@ namespace System.IO
             return HasHiddenFlag;
         }
 
-        internal bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
+        internal static bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
 
         // Returns true if the path points to a directory, or if the path is a symbolic link
         // that points to a directory
@@ -139,9 +172,9 @@ namespace System.IO
             return HasSymbolicLinkFlag;
         }
 
-        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
+        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(path, continueOnError);
 
             if (!_exists)
                 return (FileAttributes)(-1);
@@ -245,20 +278,6 @@ namespace System.IO
             return UnixTimeToDateTimeOffset(_fileCache.CTime, _fileCache.CTimeNsec);
         }
 
-        internal void SetCreationTime(string path, DateTimeOffset time)
-        {
-            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
-            // There is no API to update the CreationTime.
-            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
-            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
-            // We update the LastWriteTime (mtime).
-            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
-            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
-            // CreationTime, GetCreationTime will return the value that was previously set (when that value
-            // wasn't in the future).
-            SetLastWriteTime(path, time);
-        }
-
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
@@ -284,20 +303,29 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime)
+        private unsafe void SetAccessOrWriteTimeCore(string path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime)
         {
+            // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
+            // The reason why we use it to set 'creation time' is the below comment:
+            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
+            // There is no API to update the CreationTime.
+            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
+            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
+            // We update the LastWriteTime (mtime).
+            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
+            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
+            // CreationTime, GetCreationTime will return the value that was previously set (when that value
+            // wasn't in the future).
+
             // force a refresh so that we have an up-to-date times for values not being overwritten
-            _initializedFileCache = -1;
+            InvalidateCaches();
             EnsureCachesInitialized(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
 
             long seconds = time.ToUnixTimeSeconds();
-
-            const long TicksPerMillisecond = 10000;
-            const long TicksPerSecond = TicksPerMillisecond * 1000;
-            long nanoseconds = (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
 #if TARGET_BROWSER
             buf[0].TvSec = seconds;
@@ -321,13 +349,37 @@ namespace System.IO
             }
 #endif
             Interop.CheckIo(Interop.Sys.UTimensat(path, buf), path, InitiallyDirectory);
-            _initializedFileCache = -1;
+
+            // On OSX-like platforms, when the modification time is less than the creation time (including
+            // when the modification time is already less than but access time is being set), the creation
+            // time is set to the modification time due to the api we're currently using; this is not
+            // desirable behaviour since it is inconsistent with windows behaviour and is not logical to
+            // the programmer (ie. we'd have to document it), so these api calls revert the creation time
+            // when it shouldn't be set (since we're setting modification time and access time here).
+            // checkCreationTime is only true on OSX-like platforms.
+            // allowFallbackToLastWriteTime is ignored on non OSX-like platforms.
+            bool updateCreationTime = checkCreationTime && (_fileCache.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 &&
+                                        (buf[1].TvSec < _fileCache.BirthTime || (buf[1].TvSec == _fileCache.BirthTime && buf[1].TvNsec < _fileCache.BirthTimeNsec));
+
+            InvalidateCaches();
+
+            if (updateCreationTime)
+            {
+                Interop.Error error = SetCreationTimeCore(path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
+                if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
+                {
+                    Interop.CheckIo(error, path, InitiallyDirectory);
+                }
+            }
         }
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
+            // For symbolic links, on Windows, Length returns zero and not the target file size.
+            // On Unix, it returns the length of the path stored in the link.
+
             EnsureCachesInitialized(path, continueOnError);
-            return _fileCache.Size;
+            return IsFileCacheInitialized ? _fileCache.Size : 0;
         }
 
         // Tries to refresh the lstat cache (_fileCache).
@@ -356,12 +408,6 @@ namespace System.IO
                 // and check again if the symlink path is a directory
                 _isDirectory = CacheHasDirectoryFlag(target);
             }
-
-#if !TARGET_BROWSER
-            // These are cached and used when retrieving the read-only attribute
-            _euid = null;
-            _egid = null;
-#endif
 
             _exists = true;
 
@@ -399,8 +445,20 @@ namespace System.IO
             }
         }
 
-        private bool TryRefreshFileCache(ReadOnlySpan<char> path) =>
-            VerifyStatCall(Interop.Sys.LStat(path, out _fileCache), out _initializedFileCache);
+        private static long UnixTimeSecondsToNanoseconds(DateTimeOffset time, long seconds)
+        {
+            const long TicksPerMillisecond = 10000;
+            const long TicksPerSecond = TicksPerMillisecond * 1000;
+            return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+        }
+
+        private bool TryRefreshFileCache(ReadOnlySpan<char> path)
+        {
+#if !TARGET_BROWSER
+            _isReadOnlyCache = -1;
+#endif
+            return VerifyStatCall(Interop.Sys.LStat(path, out _fileCache), out _initializedFileCache);
+        }
 
         // Receives the return value of a stat or lstat call.
         // If the call is unsuccessful, sets the initialized parameter to a positive number representing the last error info.

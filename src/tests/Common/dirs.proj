@@ -12,7 +12,6 @@
       <DisabledProjects Include="$(TestRoot)FunctionalTests\**\*.csproj" /> <!-- They need to be isolated from the existing setup -->
       <DisabledProjects Include="$(TestRoot)BuildWasmApps\**\*.csproj" /> <!-- built and run with libraries -->
       <DisabledProjects Include="$(TestRoot)GC\Performance\Framework\GCPerfTestFramework.csproj" />
-      <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
       <DisabledProjects Include="$(TestRoot)Loader\classloader\StaticVirtualMethods\**\generatetest.csproj" /> <!-- test generators -->
       <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
@@ -20,9 +19,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <BuildTestProjects Include="$(BuildTestProject.Split(';'))" />
-      <BuildTestDirs Include="$(BuildTestDir.Split(';'))" />
-      <BuildTestTrees Include="$(BuildTestTree.Split(';'))" />
+      <BuildTestProjects Include="$(__BuildTestProject.Split(';'))" />
+      <BuildTestDirs Include="$(__BuildTestDir.Split(';'))" />
+      <BuildTestTrees Include="$(__BuildTestTree.Split(';'))" />
     </ItemGroup>
 
     <ItemGroup Condition="'@(BuildTestProjects)' != ''">
@@ -69,8 +68,6 @@
       </_GroupStartsWith>
     </ItemGroup>
 
-    <Error Condition=" '$(CLRTestPriorityToBuild)' == '0' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 3) " Text="__TestGroupToBuild property must be between 1 and 3 for Pri0." />
-
     <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '1' ">
       <!-- See above for explanation.
       <_GroupStartsWith Include="">
@@ -114,9 +111,7 @@
       </_GroupStartsWith>
     </ItemGroup>
 
-    <Error Condition=" '$(CLRTestPriorityToBuild)' == '1' And ($(__TestGroupToBuild) &lt; 1 Or $(__TestGroupToBuild) &gt; 10)" Text="__TestGroupToBuild property must be between 1 and 10 for Pri1." />
-
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(__TestGroupToBuild)' != ''">
       <!-- This computes lower inclusive and upper exclusive boundaries for Group number $(__TestGroupToBuild). -->
       <_GroupStartsWith>@(_GroupStartsWith->WithMetadataValue("GroupNumber", $(__TestGroupToBuild)))</_GroupStartsWith>
       <_GroupEndsWithExcl>@(_GroupStartsWith->WithMetadataValue("GroupNumber", $([MSBuild]::Add($(__TestGroupToBuild), 1))))</_GroupEndsWithExcl>

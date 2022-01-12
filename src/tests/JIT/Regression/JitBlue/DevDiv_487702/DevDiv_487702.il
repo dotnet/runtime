@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly ILGEN_MODULE {}
+.assembly extern xunit.core {}
 
 .class ILGEN_CLASS
 {
@@ -90,6 +91,9 @@ IL_005d:
     }
     .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <RuntimeIdentifier>$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
+
+    <!--<ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>-->
+
+    <AppleBuildAppAfterThisTarget Condition="'$(AppleBuildAppAfterThisTarget)' == ''">Publish</AppleBuildAppAfterThisTarget>
+    <AppleBuildAppDependsOn>
+        _InitializeCommonProperties;
+        _BeforeAppleBuildApp;
+        _AppleResolveReferences;
+        _AppleAotCompileApp;
+        _AppleGenerateAppBundle;
+        _AfterAppleBuildApp
+    </AppleBuildAppDependsOn>
+  </PropertyGroup>
+</Project>

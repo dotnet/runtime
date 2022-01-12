@@ -1,4 +1,8 @@
 <Project>
+  <ItemGroup>
+      <EmscriptenEnvVars Include="FROZEN_CACHE=" Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
+
   <Target Name="CheckWasmLocalBuildInputs" BeforeTargets="Build">
     <Error Condition="'$(RuntimeSrcDir)' == '' and '$(WasmBuildSupportDir)' == ''"
            Text="Both %24(RuntimeSrcDir) and %24(WasmBuildSupportDir) are not set. Either one of them needs to be set to use local runtime builds" />

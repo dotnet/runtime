@@ -23,6 +23,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module nonvirtualcalls_generics2.exe
 // MVID: {5D0110E9-A5F8-484A-97F5-D5C79C5A9A77}
 .imagebase 0x00400000
@@ -35,7 +36,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public abstract auto ansi beforefieldinit Test.Base`1<K>
+.class public abstract auto ansi beforefieldinit Test_generics2.Base`1<K>
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -175,8 +176,8 @@
 
 } // end of class Test.Base`1
 
-.class public auto ansi beforefieldinit Test.Child`1<K>
-       extends class Test.Base`1<!K>
+.class public auto ansi beforefieldinit Test_generics2.Child`1<K>
+       extends class Test_generics2.Base`1<!K>
 {
   .method public hidebysig virtual final 
           instance string  AbstractFinal() cil managed
@@ -309,74 +310,74 @@
     IL_000b:  nop
     IL_000c:  ldstr      "Child.AbstractFinal"
     IL_0011:  ldarg.0
-    IL_0012:  callvirt   instance string class Test.Child`1<!K>::AbstractFinal()
-    IL_0017:  call       void Test.Assert::AreEqual(string,
+    IL_0012:  callvirt   instance string class Test_generics2.Child`1<!K>::AbstractFinal()
+    IL_0017:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_001c:  nop
     IL_001d:  ldstr      "Child.AbstractOverrideFinal"
     IL_0022:  ldarg.0
-    IL_0023:  callvirt   instance string class Test.Child`1<!K>::AbstractOverrideFinal()
-    IL_0028:  call       void Test.Assert::AreEqual(string,
+    IL_0023:  callvirt   instance string class Test_generics2.Child`1<!K>::AbstractOverrideFinal()
+    IL_0028:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_002d:  nop
     IL_002e:  ldstr      "Child.AbstractOverrideOverride"
     IL_0033:  ldarg.0
-    IL_0034:  callvirt   instance string class Test.Child`1<!K>::AbstractOverrideOverride()
-    IL_0039:  call       void Test.Assert::AreEqual(string,
+    IL_0034:  callvirt   instance string class Test_generics2.Child`1<!K>::AbstractOverrideOverride()
+    IL_0039:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_003e:  nop
     IL_003f:  ldstr      "Child.AbstractOverrideNil"
     IL_0044:  ldarg.0
-    IL_0045:  callvirt   instance string class Test.Child`1<!K>::AbstractOverrideNil()
-    IL_004a:  call       void Test.Assert::AreEqual(string,
+    IL_0045:  callvirt   instance string class Test_generics2.Child`1<!K>::AbstractOverrideNil()
+    IL_004a:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_004f:  nop
     IL_0050:  ldstr      "Base.VirtualFinal"
     IL_0055:  ldarg.0
-    IL_0056:  call       instance string class Test.Base`1<!K>::VirtualFinal()
-    IL_005b:  call       void Test.Assert::AreEqual(string,
+    IL_0056:  call       instance string class Test_generics2.Base`1<!K>::VirtualFinal()
+    IL_005b:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0060:  nop
     IL_0061:  ldstr      "Child.VirtualFinal"
     IL_0066:  ldarg.0
-    IL_0067:  callvirt   instance string class Test.Child`1<!K>::VirtualFinal()
-    IL_006c:  call       void Test.Assert::AreEqual(string,
+    IL_0067:  callvirt   instance string class Test_generics2.Child`1<!K>::VirtualFinal()
+    IL_006c:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0071:  nop
     IL_0072:  ldstr      "Base.VirtualOverrideFinal"
     IL_0077:  ldarg.0
-    IL_0078:  call       instance string class Test.Base`1<!K>::VirtualOverrideFinal()
-    IL_007d:  call       void Test.Assert::AreEqual(string,
+    IL_0078:  call       instance string class Test_generics2.Base`1<!K>::VirtualOverrideFinal()
+    IL_007d:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0082:  nop
     IL_0083:  ldstr      "Child.VirtualOverrideFinal"
     IL_0088:  ldarg.0
-    IL_0089:  callvirt   instance string class Test.Child`1<!K>::VirtualOverrideFinal()
-    IL_008e:  call       void Test.Assert::AreEqual(string,
+    IL_0089:  callvirt   instance string class Test_generics2.Child`1<!K>::VirtualOverrideFinal()
+    IL_008e:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0093:  nop
     IL_0094:  ldstr      "Base.VirtualOverrideOverride"
     IL_0099:  ldarg.0
-    IL_009a:  call       instance string class Test.Base`1<!K>::VirtualOverrideOverride()
-    IL_009f:  call       void Test.Assert::AreEqual(string,
+    IL_009a:  call       instance string class Test_generics2.Base`1<!K>::VirtualOverrideOverride()
+    IL_009f:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00a4:  nop
     IL_00a5:  ldstr      "Child.VirtualOverrideOverride"
     IL_00aa:  ldarg.0
-    IL_00ab:  callvirt   instance string class Test.Child`1<!K>::VirtualOverrideOverride()
-    IL_00b0:  call       void Test.Assert::AreEqual(string,
+    IL_00ab:  callvirt   instance string class Test_generics2.Child`1<!K>::VirtualOverrideOverride()
+    IL_00b0:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00b5:  nop
     IL_00b6:  ldstr      "Base.VirtualOverrideNil"
     IL_00bb:  ldarg.0
-    IL_00bc:  call       instance string class Test.Base`1<!K>::VirtualOverrideNil()
-    IL_00c1:  call       void Test.Assert::AreEqual(string,
+    IL_00bc:  call       instance string class Test_generics2.Base`1<!K>::VirtualOverrideNil()
+    IL_00c1:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00c6:  nop
     IL_00c7:  ldstr      "Child.VirtualOverrideNil"
     IL_00cc:  ldarg.0
-    IL_00cd:  callvirt   instance string class Test.Child`1<!K>::VirtualOverrideNil()
-    IL_00d2:  call       void Test.Assert::AreEqual(string,
+    IL_00cd:  callvirt   instance string class Test_generics2.Child`1<!K>::VirtualOverrideNil()
+    IL_00d2:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00d7:  nop
     IL_00d8:  ret
@@ -388,14 +389,14 @@
     // Code size       7 (0x7)
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void class Test.Base`1<!K>::.ctor()
+    IL_0001:  call       instance void class Test_generics2.Base`1<!K>::.ctor()
     IL_0006:  ret
   } // end of method Child`1::.ctor
 
 } // end of class Test.Child`1
 
-.class public auto ansi beforefieldinit Test.GrandChild`1<K>
-       extends class Test.Child`1<!K>
+.class public auto ansi beforefieldinit Test_generics2.GrandChild`1<K>
+       extends class Test_generics2.Child`1<!K>
 {
   .method public hidebysig virtual final 
           instance string  AbstractOverrideFinal() cil managed
@@ -498,92 +499,92 @@
     IL_000b:  nop
     IL_000c:  ldstr      "Child.AbstractFinal"
     IL_0011:  ldarg.0
-    IL_0012:  callvirt   instance string class Test.Child`1<!K>::AbstractFinal()
-    IL_0017:  call       void Test.Assert::AreEqual(string,
+    IL_0012:  callvirt   instance string class Test_generics2.Child`1<!K>::AbstractFinal()
+    IL_0017:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_001c:  nop
     IL_001d:  ldstr      "Child.AbstractOverrideFinal"
     IL_0022:  ldarg.0
-    IL_0023:  call       instance string class Test.Child`1<!K>::AbstractOverrideFinal()
-    IL_0028:  call       void Test.Assert::AreEqual(string,
+    IL_0023:  call       instance string class Test_generics2.Child`1<!K>::AbstractOverrideFinal()
+    IL_0028:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_002d:  nop
     IL_002e:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0033:  ldarg.0
-    IL_0034:  callvirt   instance string class Test.GrandChild`1<!K>::AbstractOverrideFinal()
-    IL_0039:  call       void Test.Assert::AreEqual(string,
+    IL_0034:  callvirt   instance string class Test_generics2.GrandChild`1<!K>::AbstractOverrideFinal()
+    IL_0039:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_003e:  nop
     IL_003f:  ldstr      "Child.AbstractOverrideOverride"
     IL_0044:  ldarg.0
-    IL_0045:  call       instance string class Test.Child`1<!K>::AbstractOverrideOverride()
-    IL_004a:  call       void Test.Assert::AreEqual(string,
+    IL_0045:  call       instance string class Test_generics2.Child`1<!K>::AbstractOverrideOverride()
+    IL_004a:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_004f:  nop
     IL_0050:  ldstr      "GrandChild.AbstractOverrideOverride"
     IL_0055:  ldarg.0
-    IL_0056:  callvirt   instance string class Test.GrandChild`1<!K>::AbstractOverrideOverride()
-    IL_005b:  call       void Test.Assert::AreEqual(string,
+    IL_0056:  callvirt   instance string class Test_generics2.GrandChild`1<!K>::AbstractOverrideOverride()
+    IL_005b:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0060:  nop
     IL_0061:  ldstr      "Child.AbstractOverrideNil"
     IL_0066:  ldarg.0
-    IL_0067:  call       instance string class Test.Child`1<!K>::AbstractOverrideNil()
-    IL_006c:  call       void Test.Assert::AreEqual(string,
+    IL_0067:  call       instance string class Test_generics2.Child`1<!K>::AbstractOverrideNil()
+    IL_006c:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0071:  nop
     IL_0072:  ldstr      "Child.AbstractOverrideNil"
     IL_0077:  ldarg.0
-    IL_0078:  callvirt   instance string class Test.Child`1<!K>::AbstractOverrideNil()
-    IL_007d:  call       void Test.Assert::AreEqual(string,
+    IL_0078:  callvirt   instance string class Test_generics2.Child`1<!K>::AbstractOverrideNil()
+    IL_007d:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0082:  nop
     IL_0083:  ldstr      "Child.VirtualFinal"
     IL_0088:  ldarg.0
-    IL_0089:  call       instance string class Test.Child`1<!K>::VirtualFinal()
-    IL_008e:  call       void Test.Assert::AreEqual(string,
+    IL_0089:  call       instance string class Test_generics2.Child`1<!K>::VirtualFinal()
+    IL_008e:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0093:  nop
     IL_0094:  ldstr      "Child.VirtualFinal"
     IL_0099:  ldarg.0
-    IL_009a:  callvirt   instance string class Test.Child`1<!K>::VirtualFinal()
-    IL_009f:  call       void Test.Assert::AreEqual(string,
+    IL_009a:  callvirt   instance string class Test_generics2.Child`1<!K>::VirtualFinal()
+    IL_009f:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00a4:  nop
     IL_00a5:  ldstr      "Child.VirtualOverrideFinal"
     IL_00aa:  ldarg.0
-    IL_00ab:  call       instance string class Test.Child`1<!K>::VirtualOverrideFinal()
-    IL_00b0:  call       void Test.Assert::AreEqual(string,
+    IL_00ab:  call       instance string class Test_generics2.Child`1<!K>::VirtualOverrideFinal()
+    IL_00b0:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00b5:  nop
     IL_00b6:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_00bb:  ldarg.0
-    IL_00bc:  callvirt   instance string class Test.GrandChild`1<!K>::VirtualOverrideFinal()
-    IL_00c1:  call       void Test.Assert::AreEqual(string,
+    IL_00bc:  callvirt   instance string class Test_generics2.GrandChild`1<!K>::VirtualOverrideFinal()
+    IL_00c1:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00c6:  nop
     IL_00c7:  ldstr      "Child.VirtualOverrideOverride"
     IL_00cc:  ldarg.0
-    IL_00cd:  call       instance string class Test.Child`1<!K>::VirtualOverrideOverride()
-    IL_00d2:  call       void Test.Assert::AreEqual(string,
+    IL_00cd:  call       instance string class Test_generics2.Child`1<!K>::VirtualOverrideOverride()
+    IL_00d2:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00d7:  nop
     IL_00d8:  ldstr      "GrandChild.VirtualOverrideOverride"
     IL_00dd:  ldarg.0
-    IL_00de:  callvirt   instance string class Test.GrandChild`1<!K>::VirtualOverrideOverride()
-    IL_00e3:  call       void Test.Assert::AreEqual(string,
+    IL_00de:  callvirt   instance string class Test_generics2.GrandChild`1<!K>::VirtualOverrideOverride()
+    IL_00e3:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00e8:  nop
     IL_00e9:  ldstr      "Child.VirtualOverrideNil"
     IL_00ee:  ldarg.0
-    IL_00ef:  call       instance string class Test.Child`1<!K>::VirtualOverrideNil()
-    IL_00f4:  call       void Test.Assert::AreEqual(string,
+    IL_00ef:  call       instance string class Test_generics2.Child`1<!K>::VirtualOverrideNil()
+    IL_00f4:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00f9:  nop
     IL_00fa:  ldstr      "Child.VirtualOverrideNil"
     IL_00ff:  ldarg.0
-    IL_0100:  callvirt   instance string class Test.Child`1<!K>::VirtualOverrideNil()
-    IL_0105:  call       void Test.Assert::AreEqual(string,
+    IL_0100:  callvirt   instance string class Test_generics2.Child`1<!K>::VirtualOverrideNil()
+    IL_0105:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_010a:  nop
     IL_010b:  ret
@@ -595,14 +596,14 @@
     // Code size       7 (0x7)
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void class Test.Child`1<!K>::.ctor()
+    IL_0001:  call       instance void class Test_generics2.Child`1<!K>::.ctor()
     IL_0006:  ret
   } // end of method GrandChild`1::.ctor
 
 } // end of class Test.GrandChild`1
 
-.class public auto ansi sealed beforefieldinit Test.SealedGrandChild`1<K>
-       extends class Test.GrandChild`1<!K>
+.class public auto ansi sealed beforefieldinit Test_generics2.SealedGrandChild`1<K>
+       extends class Test_generics2.GrandChild`1<!K>
 {
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
@@ -610,90 +611,90 @@
     // Code size       7 (0x7)
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void class Test.GrandChild`1<!K>::.ctor()
+    IL_0001:  call       instance void class Test_generics2.GrandChild`1<!K>::.ctor()
     IL_0006:  ret
   } // end of method SealedGrandChild`1::.ctor
 
 } // end of class Test.SealedGrandChild`1
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_generics2.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallSealedGrandChild() cil managed
   {
     // Code size       206 (0xce)
     .maxstack  2
-    .locals init (class Test.SealedGrandChild`1<object> V_0)
+    .locals init (class Test_generics2.SealedGrandChild`1<object> V_0)
     IL_0000:  nop
     IL_0001:  ldstr      "Call SealedGrandChild from outside"
     IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
-    IL_000c:  newobj     instance void class Test.SealedGrandChild`1<object>::.ctor()
+    IL_000c:  newobj     instance void class Test_generics2.SealedGrandChild`1<object>::.ctor()
     IL_0011:  stloc.0
     IL_0012:  ldstr      "Child.AbstractFinal"
     IL_0017:  ldloc.0
-    IL_0018:  callvirt   instance string class Test.GrandChild`1<object>::AbstractFinal()
-    IL_001d:  call       void Test.Assert::AreEqual(string,
+    IL_0018:  callvirt   instance string class Test_generics2.GrandChild`1<object>::AbstractFinal()
+    IL_001d:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0022:  nop
     IL_0023:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0028:  ldloc.0
-    IL_0029:  callvirt   instance string class Test.GrandChild`1<object>::AbstractOverrideFinal()
-    IL_002e:  call       void Test.Assert::AreEqual(string,
+    IL_0029:  callvirt   instance string class Test_generics2.GrandChild`1<object>::AbstractOverrideFinal()
+    IL_002e:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0033:  nop
     IL_0034:  ldstr      "GrandChild.AbstractOverrideOverride"
     IL_0039:  ldloc.0
-    IL_003a:  callvirt   instance string class Test.GrandChild`1<object>::AbstractOverrideOverride()
-    IL_003f:  call       void Test.Assert::AreEqual(string,
+    IL_003a:  callvirt   instance string class Test_generics2.GrandChild`1<object>::AbstractOverrideOverride()
+    IL_003f:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0044:  nop
     IL_0045:  ldstr      "Child.AbstractOverrideNil"
     IL_004a:  ldloc.0
-    IL_004b:  callvirt   instance string class Test.Child`1<object>::AbstractOverrideNil()
-    IL_0050:  call       void Test.Assert::AreEqual(string,
+    IL_004b:  callvirt   instance string class Test_generics2.Child`1<object>::AbstractOverrideNil()
+    IL_0050:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0055:  nop
     IL_0056:  ldstr      "Child.VirtualFinal"
     IL_005b:  ldloc.0
-    IL_005c:  callvirt   instance string class Test.Child`1<object>::VirtualFinal()
-    IL_0061:  call       void Test.Assert::AreEqual(string,
+    IL_005c:  callvirt   instance string class Test_generics2.Child`1<object>::VirtualFinal()
+    IL_0061:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0066:  nop
     IL_0067:  ldstr      "GrandChild.VirtualNilFinal"
     IL_006c:  ldloc.0
-    IL_006d:  callvirt   instance string class Test.GrandChild`1<object>::VirtualNilFinal()
-    IL_0072:  call       void Test.Assert::AreEqual(string,
+    IL_006d:  callvirt   instance string class Test_generics2.GrandChild`1<object>::VirtualNilFinal()
+    IL_0072:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0077:  nop
     IL_0078:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_007d:  ldloc.0
-    IL_007e:  callvirt   instance string class Test.GrandChild`1<object>::VirtualOverrideFinal()
-    IL_0083:  call       void Test.Assert::AreEqual(string,
+    IL_007e:  callvirt   instance string class Test_generics2.GrandChild`1<object>::VirtualOverrideFinal()
+    IL_0083:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0088:  nop
     IL_0089:  ldstr      "GrandChild.VirtualNilOverride"
     IL_008e:  ldloc.0
-    IL_008f:  callvirt   instance string class Test.GrandChild`1<object>::VirtualNilOverride()
-    IL_0094:  call       void Test.Assert::AreEqual(string,
+    IL_008f:  callvirt   instance string class Test_generics2.GrandChild`1<object>::VirtualNilOverride()
+    IL_0094:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_0099:  nop
     IL_009a:  ldstr      "Base.VirtualNilNil"
     IL_009f:  ldloc.0
-    IL_00a0:  callvirt   instance string class Test.Base`1<object>::VirtualNilNil()
-    IL_00a5:  call       void Test.Assert::AreEqual(string,
+    IL_00a0:  callvirt   instance string class Test_generics2.Base`1<object>::VirtualNilNil()
+    IL_00a5:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00aa:  nop
     IL_00ab:  ldstr      "GrandChild.VirtualOverrideOverride"
     IL_00b0:  ldloc.0
-    IL_00b1:  callvirt   instance string class Test.GrandChild`1<object>::VirtualOverrideOverride()
-    IL_00b6:  call       void Test.Assert::AreEqual(string,
+    IL_00b1:  callvirt   instance string class Test_generics2.GrandChild`1<object>::VirtualOverrideOverride()
+    IL_00b6:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00bb:  nop
     IL_00bc:  ldstr      "Child.VirtualOverrideNil"
     IL_00c1:  ldloc.0
-    IL_00c2:  callvirt   instance string class Test.Child`1<object>::VirtualOverrideNil()
-    IL_00c7:  call       void Test.Assert::AreEqual(string,
+    IL_00c2:  callvirt   instance string class Test_generics2.Child`1<object>::VirtualOverrideNil()
+    IL_00c7:  call       void Test_generics2.Assert::AreEqual(string,
                                                     string)
     IL_00cc:  nop
     IL_00cd:  ret
@@ -703,12 +704,12 @@
   {
     // Code size       15 (0xf)
     .maxstack  1
-    .locals init (class Test.Child`1<object> V_0)
+    .locals init (class Test_generics2.Child`1<object> V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void class Test.Child`1<object>::.ctor()
+    IL_0001:  newobj     instance void class Test_generics2.Child`1<object>::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldloc.0
-    IL_0008:  callvirt   instance void class Test.Child`1<object>::TestChild()
+    IL_0008:  callvirt   instance void class Test_generics2.Child`1<object>::TestChild()
     IL_000d:  nop
     IL_000e:  ret
   } // end of method Program::CallFromInsideChild
@@ -717,18 +718,21 @@
   {
     // Code size       15 (0xf)
     .maxstack  1
-    .locals init (class Test.GrandChild`1<object> V_0)
+    .locals init (class Test_generics2.GrandChild`1<object> V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void class Test.GrandChild`1<object>::.ctor()
+    IL_0001:  newobj     instance void class Test_generics2.GrandChild`1<object>::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldloc.0
-    IL_0008:  callvirt   instance void class Test.GrandChild`1<object>::TestGrandChild()
+    IL_0008:  callvirt   instance void class Test_generics2.GrandChild`1<object>::TestGrandChild()
     IL_000d:  nop
     IL_000e:  ret
   } // end of method Program::CallFromInsideGrandChild
 
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       64 (0x40)
     .maxstack  1
@@ -738,11 +742,11 @@
     .try
     {
       IL_0001:  nop
-      IL_0002:  call       void Test.Program::CallSealedGrandChild()
+      IL_0002:  call       void Test_generics2.Program::CallSealedGrandChild()
       IL_0007:  nop
-      IL_0008:  call       void Test.Program::CallFromInsideChild()
+      IL_0008:  call       void Test_generics2.Program::CallFromInsideChild()
       IL_000d:  nop
-      IL_000e:  call       void Test.Program::CallFromInsideGrandChild()
+      IL_000e:  call       void Test_generics2.Program::CallFromInsideGrandChild()
       IL_0013:  nop
       IL_0014:  ldstr      "Test SUCCESS"
       IL_0019:  call       void [System.Console]System.Console::WriteLine(string)
@@ -774,7 +778,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test.Assert
+.class public abstract auto ansi sealed beforefieldinit Test_generics2.Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,

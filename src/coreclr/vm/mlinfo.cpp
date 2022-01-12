@@ -6,7 +6,6 @@
 
 //
 
-
 #include "common.h"
 #include "mlinfo.h"
 #include "dllimport.h"
@@ -26,18 +25,12 @@
 #include "dispparammarshaler.h"
 #endif // FEATURE_COMINTEROP
 
-
-#ifndef lengthof
-    #define lengthof(rg)    (sizeof(rg)/sizeof(rg[0]))
-#endif
-
-
 #ifdef FEATURE_COMINTEROP
     DEFINE_ASM_QUAL_TYPE_NAME(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME, g_EnumeratorToEnumClassName, g_CorelibAsmName);
 
-    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN    = lengthof(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME);
+    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_NAME_LEN    = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_NAME);
     static const char       ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE[]    = {""};
-    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN  = lengthof(ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE);
+    static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN  = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE);
 
     DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
     DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);

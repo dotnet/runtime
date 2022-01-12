@@ -38,7 +38,7 @@ public class Gen<T>
         }
     }
 }
-public class Test
+public class Test_specific_class_instance02
 {
     public static int counter = 0;
     public static bool result = true;

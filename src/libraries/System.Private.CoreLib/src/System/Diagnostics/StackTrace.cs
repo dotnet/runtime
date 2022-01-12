@@ -203,6 +203,8 @@ namespace System.Diagnostics
         }
 
 #if !CORERT
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "ToString is best effort when it comes to available information.")]
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
         {
             // Passing a default string for "at" in case SR.UsingResourceKeys() is true
@@ -301,8 +303,12 @@ namespace System.Diagnostics
                             if (pi[j].ParameterType != null)
                                 typeName = pi[j].ParameterType.Name;
                             sb.Append(typeName);
-                            sb.Append(' ');
-                            sb.Append(pi[j].Name);
+                            string? parameterName = pi[j].Name;
+                            if (parameterName != null)
+                            {
+                                sb.Append(' ');
+                                sb.Append(parameterName);
+                            }
                         }
                         sb.Append(')');
                     }

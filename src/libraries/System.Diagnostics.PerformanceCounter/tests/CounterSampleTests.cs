@@ -48,6 +48,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60403", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public static void CounterSample_Calculate_CalculateCounterSampleCounterSample()
         {
             CounterSample counterSample1 = new CounterSample(5, 0, 0, 1, 0, 0, PerformanceCounterType.CounterDelta32);

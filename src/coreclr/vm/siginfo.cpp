@@ -43,7 +43,7 @@ CorTypeInfo::FindPrimitiveType(LPCUTF8 name)
 
     _ASSERTE(name != NULL);
 
-    for (unsigned int i = 1; i < _countof(CorTypeInfo::info); i++)
+    for (unsigned int i = 1; i < ARRAY_SIZE(CorTypeInfo::info); i++)
     {   // can skip ELEMENT_TYPE_END (index 0)
         if ((info[i].className != NULL) && (strcmp(name, info[i].className) == 0))
             return (CorElementType)i;
@@ -2728,7 +2728,7 @@ HRESULT TypeIdentifierData::Init(Module *pModule, mdToken tk)
 
             args[0].Init(SERIALIZATION_TYPE_STRING, 0);
             args[1].Init(SERIALIZATION_TYPE_STRING, 0);
-            IfFailRet(ParseKnownCaArgs(caType, args, lengthof(args)));
+            IfFailRet(ParseKnownCaArgs(caType, args, ARRAY_SIZE(args)));
 
             m_cbScope = args[0].val.str.cbStr;
             m_pchScope = args[0].val.str.pStr;
@@ -3547,7 +3547,7 @@ ErrExit:
 #ifdef DACCESS_COMPILE
     ThrowHR(hr);
 #else
-    EEFileLoadException::Throw(pModule2->GetFile(), hr);
+    EEFileLoadException::Throw(pModule2->GetPEAssembly(), hr);
 #endif //!DACCESS_COMPILE
 } // CompareTypeTokens
 

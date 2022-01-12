@@ -20,7 +20,19 @@ namespace System.Text.Json
     {
         internal const int BufferSizeDefault = 16 * 1024;
 
-        internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
+        // For backward compatibility the default max depth for JsonSerializer is 64,
+        // the minimum of JsonReaderOptions.DefaultMaxDepth and JsonWriterOptions.DefaultMaxDepth.
+        internal const int DefaultMaxDepth = JsonReaderOptions.DefaultMaxDepth;
+
+        /// <summary>
+        /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the default configuration.
+        /// </summary>
+        /// <remarks>
+        /// Each <see cref="JsonSerializerOptions" /> instance encapsulates its own serialization metadata caches,
+        /// so using fresh default instances every time one is needed can result in redundant recomputation of converters.
+        /// This property provides a shared instance that can be consumed by any number of components without necessitating any converter recomputation.
+        /// </remarks>
+        public static JsonSerializerOptions Default { get; } = new JsonSerializerOptions { _haveTypesBeenCreated = true };
 
         private readonly ConcurrentDictionary<Type, JsonTypeInfo> _classes = new ConcurrentDictionary<Type, JsonTypeInfo>();
 
@@ -421,16 +433,15 @@ namespace System.Text.Json
 
                 if (value < 0)
                 {
-                    throw ThrowHelper.GetArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+                    ThrowHelper.ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
                 }
 
                 _maxDepth = value;
-                EffectiveMaxDepth = (value == 0 ? JsonReaderOptions.DefaultMaxDepth : value);
+                EffectiveMaxDepth = (value == 0 ? DefaultMaxDepth : value);
             }
         }
 
-        // The default is 64 because that is what the reader uses, so re-use the same JsonReaderOptions.DefaultMaxDepth constant.
-        internal int EffectiveMaxDepth { get; private set; } = JsonReaderOptions.DefaultMaxDepth;
+        internal int EffectiveMaxDepth { get; private set; } = DefaultMaxDepth;
 
         /// <summary>
         /// Specifies the policy used to convert a property's name on an object to another format, such as camel-casing.
@@ -600,9 +611,7 @@ namespace System.Text.Json
         {
             _haveTypesBeenCreated = true;
 
-            // todo: for performance and reduced instances, consider using the converters and JsonTypeInfo from s_defaultOptions by cloning (or reference directly if no changes).
-            // https://github.com/dotnet/runtime/issues/32357
-            if (!_classes.TryGetValue(type, out JsonTypeInfo? result))
+            if (!TryGetClass(type, out JsonTypeInfo? result))
             {
                 result = _classes.GetOrAdd(type, GetClassFromContextOrCreate(type));
             }
@@ -644,6 +653,20 @@ namespace System.Text.Json
             return jsonTypeInfo;
         }
 
+        internal bool TryGetClass(Type type, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo)
+        {
+            // todo: for performance and reduced instances, consider using the converters and JsonTypeInfo from s_defaultOptions by cloning (or reference directly if no changes).
+            // https://github.com/dotnet/runtime/issues/32357
+            if (!_classes.TryGetValue(type, out JsonTypeInfo? result))
+            {
+                jsonTypeInfo = null;
+                return false;
+            }
+
+            jsonTypeInfo = result;
+            return true;
+        }
+
         internal bool TypeIsCached(Type type)
         {
             return _classes.ContainsKey(type);
@@ -679,7 +702,7 @@ namespace System.Text.Json
             {
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = EffectiveMaxDepth
             };
         }
 
@@ -689,6 +712,7 @@ namespace System.Text.Json
             {
                 Encoder = Encoder,
                 Indented = WriteIndented,
+                MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true
 #endif
@@ -697,9 +721,6 @@ namespace System.Text.Json
 
         internal void VerifyMutable()
         {
-            // The default options are hidden and thus should be immutable.
-            Debug.Assert(this != s_defaultOptions);
-
             if (_haveTypesBeenCreated || _context != null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable(_context);

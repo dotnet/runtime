@@ -670,10 +670,12 @@ PCODE MethodDesc::JitCompileCode(PrepareCodeConfig* pConfig)
             return pCode;
         }
 
+        NativeCodeVersion version = pConfig->GetCodeVersion();
+
         const char *description = "jit lock";
         INDEBUG(description = m_pszDebugMethodName;)
-            ReleaseHolder<JitListLockEntry> pEntry(JitListLockEntry::Find(
-                pJitLock, pConfig->GetCodeVersion(), description));
+        ReleaseHolder<JitListLockEntry> pEntry(JitListLockEntry::Find(
+            pJitLock, version, description));
 
         // We have an entry now, we can release the global lock
         pJitLock.Release();

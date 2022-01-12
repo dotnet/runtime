@@ -22,6 +22,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module delegate.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -31,7 +32,7 @@
 
 
 
-.class public abstract auto ansi beforefieldinit Test.Base
+.class public abstract auto ansi beforefieldinit Test_delegate.Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -163,8 +164,8 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test.Child
-       extends Test.Base
+.class public auto ansi beforefieldinit Test_delegate.Child
+       extends Test_delegate.Base
 {
   .method public hidebysig virtual final 
           instance string  AbstractFinal() cil managed
@@ -269,14 +270,14 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.Base::.ctor()
+    IL_0001:  call       instance void Test_delegate.Base::.ctor()
     IL_0006:  ret
   } // end of method Child::.ctor
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test.GrandChild
-       extends Test.Child
+.class public auto ansi beforefieldinit Test_delegate.GrandChild
+       extends Test_delegate.Child
 {
   .method public hidebysig virtual final 
           instance string  AbstractOverrideFinal() cil managed
@@ -367,27 +368,27 @@
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.Child::.ctor()
+    IL_0001:  call       instance void Test_delegate.Child::.ctor()
     IL_0006:  ret
   } // end of method GrandChild::.ctor
 
 } // end of class Test.GrandChild
 
-.class public auto ansi sealed beforefieldinit Test.SealedGrandChild
-       extends Test.GrandChild
+.class public auto ansi sealed beforefieldinit Test_delegate.SealedGrandChild
+       extends Test_delegate.GrandChild
 {
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void Test.GrandChild::.ctor()
+    IL_0001:  call       instance void Test_delegate.GrandChild::.ctor()
     IL_0006:  ret
   } // end of method SealedGrandChild::.ctor
 
 } // end of class Test.SealedGrandChild
 
-.class public auto ansi sealed Test.TestMethod
+.class public auto ansi sealed Test_delegate.TestMethod
        extends [mscorlib]System.MulticastDelegate
 {
   .method public hidebysig specialname rtspecialname 
@@ -415,103 +416,103 @@
 
 } // end of class Test.TestMethod
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_delegate.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallDelegateFromSealedGrandChild() cil managed
   {
     .maxstack  4
-    .locals init (class Test.SealedGrandChild V_0)
+    .locals init (class Test_delegate.SealedGrandChild V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void Test.SealedGrandChild::.ctor()
+    IL_0001:  newobj     instance void Test_delegate.SealedGrandChild::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldstr      "Child.AbstractFinal"
     IL_000c:  ldloc.0
-    IL_000e:  ldftn  instance string Test.Child::AbstractFinal()
-    IL_0014:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_000e:  ldftn  instance string Test_delegate.Child::AbstractFinal()
+    IL_0014:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0019:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0019:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_001e:  nop
     IL_001f:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0024:  ldloc.0
-    IL_0026:  ldftn  instance string Test.GrandChild::AbstractOverrideFinal()
-    IL_002c:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_0026:  ldftn  instance string Test_delegate.GrandChild::AbstractOverrideFinal()
+    IL_002c:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0031:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0031:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_0036:  nop
     IL_0037:  ldstr      "Child.AbstractOverrideNil"
     IL_003c:  ldloc.0
-    IL_003e:  ldftn  instance string Test.Child::AbstractOverrideNil()
-    IL_0044:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_003e:  ldftn  instance string Test_delegate.Child::AbstractOverrideNil()
+    IL_0044:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0049:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0049:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_004e:  nop
     IL_004f:  ldstr      "GrandChild.AbstractOverrideOverride"
     IL_0054:  ldloc.0
-    IL_0056:  ldftn  instance string Test.GrandChild::AbstractOverrideOverride()
-    IL_005c:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_0056:  ldftn  instance string Test_delegate.GrandChild::AbstractOverrideOverride()
+    IL_005c:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0061:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0061:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_0066:  nop
     IL_0067:  ldstr      "Child.VirtualFinal"
     IL_006c:  ldloc.0
-    IL_006e:  ldftn  instance string Test.Child::VirtualFinal()
-    IL_0074:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_006e:  ldftn  instance string Test_delegate.Child::VirtualFinal()
+    IL_0074:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0079:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0079:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_007e:  nop
     IL_007f:  ldstr      "GrandChild.VirtualNilFinal"
     IL_0084:  ldloc.0
-    IL_0086:  ldftn  instance string Test.GrandChild::VirtualNilFinal()
-    IL_008c:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_0086:  ldftn  instance string Test_delegate.GrandChild::VirtualNilFinal()
+    IL_008c:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0091:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0091:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_0096:  nop
     IL_0097:  ldstr      "Base.VirtualNilNil"
     IL_009c:  ldloc.0
-    IL_009e:  ldftn  instance string Test.Base::VirtualNilNil()
-    IL_00a4:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_009e:  ldftn  instance string Test_delegate.Base::VirtualNilNil()
+    IL_00a4:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_00a9:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_00a9:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_00ae:  nop
     IL_00af:  ldstr      "GrandChild.VirtualNilOverride"
     IL_00b4:  ldloc.0
-    IL_00b6:  ldftn  instance string Test.GrandChild::VirtualNilOverride()
-    IL_00bc:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_00b6:  ldftn  instance string Test_delegate.GrandChild::VirtualNilOverride()
+    IL_00bc:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_00c1:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_00c1:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_00c6:  nop
     IL_00c7:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_00cc:  ldloc.0
-    IL_00ce:  ldftn  instance string Test.GrandChild::VirtualOverrideFinal()
-    IL_00d4:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_00ce:  ldftn  instance string Test_delegate.GrandChild::VirtualOverrideFinal()
+    IL_00d4:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_00d9:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_00d9:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_00de:  nop
     IL_00df:  ldstr      "Child.VirtualOverrideNil"
     IL_00e4:  ldloc.0
-    IL_00e6:  ldftn  instance string Test.Child::VirtualOverrideNil()
-    IL_00ec:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_00e6:  ldftn  instance string Test_delegate.Child::VirtualOverrideNil()
+    IL_00ec:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_00f1:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_00f1:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_00f6:  nop
     IL_00f7:  ldstr      "GrandChild.VirtualOverrideOverride"
     IL_00fc:  ldloc.0
-    IL_00fe:  ldftn  instance string Test.GrandChild::VirtualOverrideOverride()
-    IL_0104:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_00fe:  ldftn  instance string Test_delegate.GrandChild::VirtualOverrideOverride()
+    IL_0104:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0109:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0109:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_010e:  nop
     IL_010f:  ret
   } // end of method Program::CallDelegateFromSealedGrandChild
@@ -519,55 +520,58 @@
   .method public hidebysig static void  CallDelegateFromGrandChild() cil managed
   {
     .maxstack  4
-    .locals init (class Test.GrandChild V_0)
+    .locals init (class Test_delegate.GrandChild V_0)
     IL_0000:  nop
-    IL_0001:  newobj     instance void Test.GrandChild::.ctor()
+    IL_0001:  newobj     instance void Test_delegate.GrandChild::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldstr      "Child.AbstractFinal"
     IL_000c:  ldloc.0
-    IL_000e:  ldftn  instance string Test.Child::AbstractFinal()
-    IL_0014:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_000e:  ldftn  instance string Test_delegate.Child::AbstractFinal()
+    IL_0014:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0019:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0019:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_001e:  nop
     IL_001f:  ldstr      "GrandChild.AbstractOverrideFinal"
     IL_0024:  ldloc.0
-    IL_0026:  ldftn  instance string Test.GrandChild::AbstractOverrideFinal()
-    IL_002c:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_0026:  ldftn  instance string Test_delegate.GrandChild::AbstractOverrideFinal()
+    IL_002c:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0031:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0031:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_0036:  nop
     IL_0037:  ldstr      "Child.VirtualFinal"
     IL_003c:  ldloc.0
-    IL_003e:  ldftn  instance string Test.Child::VirtualFinal()
-    IL_0044:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_003e:  ldftn  instance string Test_delegate.Child::VirtualFinal()
+    IL_0044:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0049:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0049:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_004e:  nop
     IL_004f:  ldstr      "GrandChild.VirtualNilFinal"
     IL_0054:  ldloc.0
-    IL_0056:  ldftn  instance string Test.GrandChild::VirtualNilFinal()
-    IL_005c:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_0056:  ldftn  instance string Test_delegate.GrandChild::VirtualNilFinal()
+    IL_005c:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0061:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0061:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_0066:  nop
     IL_0067:  ldstr      "GrandChild.VirtualOverrideFinal"
     IL_006c:  ldloc.0
-    IL_006e:  ldftn  instance string Test.GrandChild::VirtualOverrideFinal()
-    IL_0074:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_006e:  ldftn  instance string Test_delegate.GrandChild::VirtualOverrideFinal()
+    IL_0074:  newobj     instance void Test_delegate.TestMethod::.ctor(object,
                                                               native int)
-    IL_0079:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0079:  call       void Test_delegate.Assert::AreEqual(string,
+                                                    class Test_delegate.TestMethod)
     IL_007e:  nop
     IL_007f:  ret
   } // end of method Program::CallDelegateFromGrandChild
 
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init (class [mscorlib]System.Exception V_0,
@@ -576,9 +580,9 @@
     .try
     {
       IL_0001:  nop
-      IL_0002:  call       void Test.Program::CallDelegateFromGrandChild()
+      IL_0002:  call       void Test_delegate.Program::CallDelegateFromGrandChild()
       IL_0007:  nop
-      IL_0008:  call       void Test.Program::CallDelegateFromSealedGrandChild()
+      IL_0008:  call       void Test_delegate.Program::CallDelegateFromSealedGrandChild()
       IL_000d:  nop
       IL_000e:  ldstr      "Test SUCCESS"
       IL_0013:  call       void [System.Console]System.Console::WriteLine(string)
@@ -610,18 +614,18 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test.Assert
+.class public abstract auto ansi sealed beforefieldinit Test_delegate.Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
-                                                 class Test.TestMethod right) cil managed
+                                                 class Test_delegate.TestMethod right) cil managed
   {
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldarg.0
     IL_0002:  ldarg.1
-    IL_0003:  callvirt   instance string Test.TestMethod::Invoke()
-    IL_0008:  call       void Test.Assert::AreEqual(string,
+    IL_0003:  callvirt   instance string Test_delegate.TestMethod::Invoke()
+    IL_0008:  call       void Test_delegate.Assert::AreEqual(string,
                                                     string)
     IL_000d:  nop
     IL_000e:  ret

@@ -1634,12 +1634,6 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
 // Native Link method custom value definitions. This is for N-direct support.
 //
 
-#define COR_NATIVE_LINK_CUSTOM_VALUE        L"COMPLUS_NativeLink"
-#define COR_NATIVE_LINK_CUSTOM_VALUE_ANSI   "COMPLUS_NativeLink"
-
-// count of chars for COR_NATIVE_LINK_CUSTOM_VALUE(_ANSI)
-#define COR_NATIVE_LINK_CUSTOM_VALUE_CC     18
-
 #include <pshpack1.h>
 typedef struct
 {

@@ -19,6 +19,7 @@
   
   
 }
+.assembly extern xunit.core {}
 .module 'recurse.exe'
 // MVID: {885F4995-E80A-480B-BB9B-30139BED90E1}
 .namespace TestCase
@@ -66,6 +67,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       72 (0x48)
       .maxstack  2

@@ -34,6 +34,7 @@ public static partial class DataContractSerializerTests
     }
 #endif
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_DateTimeOffsetAsRoot()
     {
         // Assume that UTC offset doesn't change more often than once in the day 2013-01-02
@@ -1081,6 +1082,7 @@ public static partial class DataContractSerializerTests
 
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/51679", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_DerivedTypeWithDifferentOverrides()
     {
         var x = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
@@ -1278,6 +1280,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_SerializeClassThatImplementsInteface()
     {
         ClassImplementsInterface value = new ClassImplementsInterface() { ClassID = "ClassID", DisplayName = "DisplayName", Id = "Id", IsLoaded = true };
@@ -1432,6 +1435,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_DuplicatedKnownTypesWithAdapterThroughConstructor()
     {
         //Constructor# 5
@@ -1559,6 +1563,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_TypeWithDatetimeOffsetTypeProperty()
     {
         var value = new TypeWithDateTimeOffsetTypeProperty() { ModifiedTime = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc)) };
@@ -1777,6 +1782,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_TypeWithKnownTypeAttributeAndInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndInterfaceMember value = new TypeWithKnownTypeAttributeAndInterfaceMember();
@@ -1788,6 +1794,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_TypeWithKnownTypeAttributeAndListOfInterfaceMember()
     {
         TypeWithKnownTypeAttributeAndListOfInterfaceMember value = new TypeWithKnownTypeAttributeAndListOfInterfaceMember();
@@ -1886,6 +1893,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_DuplicatedKeyDateTimeOffset()
     {
         DateTimeOffset value = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6, DateTimeKind.Utc).AddMinutes(7));
@@ -2633,6 +2641,7 @@ public static partial class DataContractSerializerTests
 #endregion
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_BasicRoundTripResolveDTOTypes()
     {
         ObjectContainer instance = new ObjectContainer(new DTOContainer());
@@ -2876,6 +2885,7 @@ public static partial class DataContractSerializerTests
     /// Resolver is plugged in and resolves the primitive types. Verify resolver called during ser and deser
     /// </summary>
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_BasicRoundTripResolvePrimitiveTypes_NotNetFramework()
     {
         string baseline = @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:PrimitiveContainer_foo"" xmlns:a=""http://www.default.com""><a i:type=""a:Boolean_foo"">false</a><array1><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></array1><b i:type=""a:Byte_foo"">255</b><c i:type=""a:Byte_foo"">0</c><d i:type=""a:Char_foo"">65535</d><e i:type=""a:Decimal_foo"">79228162514264337593543950335</e><f i:type=""a:Decimal_foo"">-1</f><f5 i:type=""a:DateTime_foo"">9999-12-31T23:59:59.9999999</f5><g i:type=""a:Decimal_foo"">-79228162514264337593543950335</g><guidData i:type=""a:Guid_foo"">4bc848b1-a541-40bf-8aa9-dd6ccb6d0e56</guidData><h i:type=""a:Decimal_foo"">1</h><i i:type=""a:Decimal_foo"">0</i><j i:type=""a:Decimal_foo"">0</j><k i:type=""a:Double_foo"">0</k><l i:type=""a:Double_foo"">5E-324</l><lDTO xmlns:b=""http://schemas.datacontract.org/2004/07/System""/><m i:type=""a:Double_foo"">1.7976931348623157E+308</m><n i:type=""a:Double_foo"">-1.7976931348623157E+308</n><nDTO i:type=""a:DateTimeOffset_foo""><DateTime xmlns=""http://schemas.datacontract.org/2004/07/System"">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=""http://schemas.datacontract.org/2004/07/System"">0</OffsetMinutes></nDTO><o i:type=""a:Double_foo"">NaN</o><obj/><p i:type=""a:Double_foo"">-INF</p><q i:type=""a:Double_foo"">INF</q><r i:type=""a:Single_foo"">0</r><s i:type=""a:Single_foo"">1E-45</s><strData i:nil=""true""/><t i:type=""a:Single_foo"">-3.4028235E+38</t><timeSpan i:type=""a:TimeSpan_foo"">P10675199DT2H48M5.4775807S</timeSpan><u i:type=""a:Single_foo"">3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v i:type=""a:Single_foo"">NaN</v><w i:type=""a:Single_foo"">-INF</w><x i:type=""a:Single_foo"">INF</x><xmlQualifiedName i:type=""a:XmlQualifiedName_foo"" xmlns:b=""http://www.microsoft.com"">b:WCF</xmlQualifiedName><y i:type=""a:Int32_foo"">0</y><z i:type=""a:Int32_foo"">2147483647</z><z1 i:type=""a:Int32_foo"">-2147483648</z1><z2 i:type=""a:Int64_foo"">0</z2><z3 i:type=""a:Int64_foo"">9223372036854775807</z3><z4 i:type=""a:Int64_foo"">-9223372036854775808</z4><z5/><z6 i:type=""a:SByte_foo"">0</z6><z7 i:type=""a:SByte_foo"">127</z7><z8 i:type=""a:SByte_foo"">-128</z8><z9 i:type=""a:Int16_foo"">0</z9><z91 i:type=""a:Int16_foo"">32767</z91><z92 i:type=""a:Int16_foo"">-32768</z92><z93 i:type=""a:String_foo"">abc</z93><z94 i:type=""a:UInt16_foo"">0</z94><z95 i:type=""a:UInt16_foo"">65535</z95><z96 i:type=""a:UInt16_foo"">0</z96><z97 i:type=""a:UInt32_foo"">0</z97><z98 i:type=""a:UInt32_foo"">4294967295</z98><z99 i:type=""a:UInt32_foo"">0</z99><z990 i:type=""a:UInt64_foo"">0</z990><z991 i:type=""a:UInt64_foo"">18446744073709551615</z991><z992 i:type=""a:UInt64_foo"">0</z992><z993>AQIDBA==</z993></_data><_data2 i:type=""a:PrimitiveContainer_foo"" xmlns:a=""http://www.default.com""><a i:type=""a:Boolean_foo"">false</a><array1><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/><anyType xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""/></array1><b i:type=""a:Byte_foo"">255</b><c i:type=""a:Byte_foo"">0</c><d i:type=""a:Char_foo"">65535</d><e i:type=""a:Decimal_foo"">79228162514264337593543950335</e><f i:type=""a:Decimal_foo"">-1</f><f5 i:type=""a:DateTime_foo"">9999-12-31T23:59:59.9999999</f5><g i:type=""a:Decimal_foo"">-79228162514264337593543950335</g><guidData i:type=""a:Guid_foo"">4bc848b1-a541-40bf-8aa9-dd6ccb6d0e56</guidData><h i:type=""a:Decimal_foo"">1</h><i i:type=""a:Decimal_foo"">0</i><j i:type=""a:Decimal_foo"">0</j><k i:type=""a:Double_foo"">0</k><l i:type=""a:Double_foo"">5E-324</l><lDTO xmlns:b=""http://schemas.datacontract.org/2004/07/System""/><m i:type=""a:Double_foo"">1.7976931348623157E+308</m><n i:type=""a:Double_foo"">-1.7976931348623157E+308</n><nDTO i:type=""a:DateTimeOffset_foo""><DateTime xmlns=""http://schemas.datacontract.org/2004/07/System"">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=""http://schemas.datacontract.org/2004/07/System"">0</OffsetMinutes></nDTO><o i:type=""a:Double_foo"">NaN</o><obj/><p i:type=""a:Double_foo"">-INF</p><q i:type=""a:Double_foo"">INF</q><r i:type=""a:Single_foo"">0</r><s i:type=""a:Single_foo"">1E-45</s><strData i:nil=""true""/><t i:type=""a:Single_foo"">-3.4028235E+38</t><timeSpan i:type=""a:TimeSpan_foo"">P10675199DT2H48M5.4775807S</timeSpan><u i:type=""a:Single_foo"">3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v i:type=""a:Single_foo"">NaN</v><w i:type=""a:Single_foo"">-INF</w><x i:type=""a:Single_foo"">INF</x><xmlQualifiedName i:type=""a:XmlQualifiedName_foo"" xmlns:b=""http://www.microsoft.com"">b:WCF</xmlQualifiedName><y i:type=""a:Int32_foo"">0</y><z i:type=""a:Int32_foo"">2147483647</z><z1 i:type=""a:Int32_foo"">-2147483648</z1><z2 i:type=""a:Int64_foo"">0</z2><z3 i:type=""a:Int64_foo"">9223372036854775807</z3><z4 i:type=""a:Int64_foo"">-9223372036854775808</z4><z5/><z6 i:type=""a:SByte_foo"">0</z6><z7 i:type=""a:SByte_foo"">127</z7><z8 i:type=""a:SByte_foo"">-128</z8><z9 i:type=""a:Int16_foo"">0</z9><z91 i:type=""a:Int16_foo"">32767</z91><z92 i:type=""a:Int16_foo"">-32768</z92><z93 i:type=""a:String_foo"">abc</z93><z94 i:type=""a:UInt16_foo"">0</z94><z95 i:type=""a:UInt16_foo"">65535</z95><z96 i:type=""a:UInt16_foo"">0</z96><z97 i:type=""a:UInt32_foo"">0</z97><z98 i:type=""a:UInt32_foo"">4294967295</z98><z99 i:type=""a:UInt32_foo"">0</z99><z990 i:type=""a:UInt64_foo"">0</z990><z991 i:type=""a:UInt64_foo"">18446744073709551615</z991><z992 i:type=""a:UInt64_foo"">0</z992><z993>AQIDBA==</z993></_data2></ObjectContainer>";
@@ -3121,6 +3131,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3762,6 +3773,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_EnumStruct()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
@@ -3845,6 +3857,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_BasicPerSerializerRoundTripAndCompare_EnumStruct_NotNetFramework()
     {
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.AllTypes(), "<ObjectContainer xmlns=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:SerializationTestTypes.AllTypes***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.AllTypes***\"><a>false</a><array1><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/></array1><b>255</b><c>0</c><d>65535</d><e>79228162514264337593543950335</e><enumArrayData><MyEnum1>red</MyEnum1></enumArrayData><enumBase1 i:type=\"b:SerializationTestTypes.MyEnum1***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.MyEnum1***\">red</enumBase1><f>-1</f><f5>0001-01-01T00:00:00</f5><g>-79228162514264337593543950335</g><guidData>5642b5d2-87c3-a724-2390-997062f3f7a2</guidData><h>1</h><i>0</i><j>0</j><k>0</k><l>5E-324</l><lDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"/><m>1.7976931348623157E+308</m><n>-1.7976931348623157E+308</n><nDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"><b:DateTime>9999-12-31T23:59:59.9999999Z</b:DateTime><b:OffsetMinutes>0</b:OffsetMinutes></nDTO><o>NaN</o><obj/><p>-INF</p><q>INF</q><r>0</r><s>1E-45</s><strData i:nil=\"true\"/><t>-3.4028235E+38</t><timeSpan i:type=\"b:duration\" xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/\">P10675199DT2H48M5.4775807S</timeSpan><u>3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v>NaN</v><valType i:type=\"PublicDCStruct\"><Data>Data</Data></valType><w>-INF</w><x>INF</x><q:xmlQualifiedName xmlns:q=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:b=\"http://www.microsoft.com\">b:WCF</q:xmlQualifiedName><y>0</y><z>2147483647</z><z1>-2147483648</z1><z2>0</z2><z3>9223372036854775807</z3><z4>-9223372036854775808</z4><z5/><z6>0</z6><z7>127</z7><z8>-128</z8><z9>0</z9><z91>32767</z91><z92>-32768</z92><z93>abc</z93><z94>0</z94><z95>65535</z95><z96>0</z96><z97>0</z97><z98>4294967295</z98><z99>0</z99><z990>0</z990><z991>18446744073709551615</z991><z992>0</z992></_data><_data2 i:type=\"a:SerializationTestTypes.AllTypes***\" xmlns:a=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.AllTypes***\"><a>false</a><array1><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><anyType xmlns=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/></array1><b>255</b><c>0</c><d>65535</d><e>79228162514264337593543950335</e><enumArrayData><MyEnum1>red</MyEnum1></enumArrayData><enumBase1 i:type=\"b:SerializationTestTypes.MyEnum1***\" xmlns:b=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes.MyEnum1***\">red</enumBase1><f>-1</f><f5>0001-01-01T00:00:00</f5><g>-79228162514264337593543950335</g><guidData>5642b5d2-87c3-a724-2390-997062f3f7a2</guidData><h>1</h><i>0</i><j>0</j><k>0</k><l>5E-324</l><lDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"/><m>1.7976931348623157E+308</m><n>-1.7976931348623157E+308</n><nDTO xmlns:b=\"http://schemas.datacontract.org/2004/07/System\"><b:DateTime>9999-12-31T23:59:59.9999999Z</b:DateTime><b:OffsetMinutes>0</b:OffsetMinutes></nDTO><o>NaN</o><obj/><p>-INF</p><q>INF</q><r>0</r><s>1E-45</s><strData i:nil=\"true\"/><t>-3.4028235E+38</t><timeSpan i:type=\"b:duration\" xmlns:b=\"http://schemas.microsoft.com/2003/10/Serialization/\">P10675199DT2H48M5.4775807S</timeSpan><u>3.4028235E+38</u><uri>http://www.microsoft.com/</uri><v>NaN</v><valType i:type=\"PublicDCStruct\"><Data>Data</Data></valType><w>-INF</w><x>INF</x><q:xmlQualifiedName xmlns:q=\"http://schemas.datacontract.org/2004/07/SerializationTestTypes\" xmlns:b=\"http://www.microsoft.com\">b:WCF</q:xmlQualifiedName><y>0</y><z>2147483647</z><z1>-2147483648</z1><z2>0</z2><z3>9223372036854775807</z3><z4>-9223372036854775808</z4><z5/><z6>0</z6><z7>127</z7><z8>-128</z8><z9>0</z9><z91>32767</z91><z92>-32768</z92><z93>abc</z93><z94>0</z94><z95>65535</z95><z96>0</z96><z97>0</z97><z98>4294967295</z98><z99>0</z99><z990>0</z990><z991>18446744073709551615</z991><z992>0</z992></_data2></ObjectContainer>");
@@ -3856,6 +3869,7 @@ public static partial class DataContractSerializerTests
 #endregion
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_TypeWithVirtualGenericProperty()
     {
         var value1 = new TypeWithVirtualGenericProperty<int>() { Value = 1 };
@@ -4170,6 +4184,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_TypeWithCollectionAndDateTimeOffset()
     {
         // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
@@ -4185,6 +4200,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DCS_TypeWithCollectionAndDateTimeOffset_ListIsNull()
     {
         // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent

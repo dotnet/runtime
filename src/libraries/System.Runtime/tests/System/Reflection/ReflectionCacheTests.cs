@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public class ReflectionCacheTests
     {
         [Fact]

@@ -162,7 +162,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     parameterExpressions[i] = Convert(VisitCallSite(callSite.ParameterCallSites[i], context), parameters[i].ParameterType);
                 }
             }
-            return Expression.New(callSite.ConstructorInfo, parameterExpressions);
+
+            Expression expression = Expression.New(callSite.ConstructorInfo, parameterExpressions);
+            if (callSite.ImplementationType.IsValueType)
+            {
+                expression = Expression.Convert(expression, typeof(object));
+            }
+            return expression;
         }
 
         private static Expression Convert(Expression expression, Type type, bool forceValueTypeConversion = false)

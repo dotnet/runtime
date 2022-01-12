@@ -552,8 +552,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("member", () => Expression.MakeMemberAccess(Expression.Constant(new PC()), member));
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14920", TestRuntimes.Mono)]
         public static void Property_NoGetOrSetAccessors_ThrowsArgumentException()
         {
@@ -575,7 +574,6 @@ namespace System.Linq.Expressions.Tests
 
             AssertExtensions.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, createdProperty));
         }
-#endif
 
         [Fact]
         public static void ToStringTest()

@@ -210,7 +210,7 @@ namespace System.Xml.Serialization
                 {
                     typeDesc.Exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, typeDesc.FullName));
                 }
-                throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, member.DeclaringType!.FullName + "." + member.Name, type.FullName), typeDesc.Exception);
+                throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedMember, $"{member.DeclaringType!.FullName}.{member.Name}", type.FullName), typeDesc.Exception);
             }
             CheckSupportedMember(typeDesc.BaseTypeDesc, member, type);
             CheckSupportedMember(typeDesc.ArrayElementTypeDesc, member, type);
@@ -300,10 +300,10 @@ namespace System.Xml.Serialization
             _fieldType = fieldType;
             _fieldTypeDesc = fieldTypeDesc;
             _memberInfo = memberInfo;
-            _checkShouldPersistMethodInfo = memberInfo.DeclaringType!.GetMethod("ShouldSerialize" + memberInfo.Name, Type.EmptyTypes);
+            _checkShouldPersistMethodInfo = memberInfo.DeclaringType!.GetMethod($"ShouldSerialize{memberInfo.Name}", Type.EmptyTypes);
             _checkShouldPersist = _checkShouldPersistMethodInfo != null;
 
-            FieldInfo? specifiedField = memberInfo.DeclaringType.GetField(memberInfo.Name + "Specified");
+            FieldInfo? specifiedField = memberInfo.DeclaringType.GetField($"{memberInfo.Name}Specified");
             if (specifiedField != null)
             {
                 if (specifiedField.FieldType != typeof(bool))
@@ -315,7 +315,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                PropertyInfo? specifiedProperty = memberInfo.DeclaringType.GetProperty(memberInfo.Name + "Specified");
+                PropertyInfo? specifiedProperty = memberInfo.DeclaringType.GetProperty($"{memberInfo.Name}Specified");
                 if (specifiedProperty != null)
                 {
                     if (StructModel.CheckPropertyRead(specifiedProperty))

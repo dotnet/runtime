@@ -108,4 +108,4 @@ FAIL:
 
 }
 }
-.assembly localloc.exe{}
+.assembly 'localloc'{}

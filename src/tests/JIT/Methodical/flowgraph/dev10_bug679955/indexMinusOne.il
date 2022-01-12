@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly ILGEN_0x52ea038a {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0x52ea038a {
@@ -2517,6 +2518,9 @@ ldelem.i4
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	21
 .try

@@ -8,20 +8,20 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern unsafe int select(
-            [In] int ignoredParameter,
-            [In] IntPtr* readfds,
-            [In] IntPtr* writefds,
-            [In] IntPtr* exceptfds,
-            [In] ref TimeValue timeout);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static unsafe partial int select(
+            int ignoredParameter,
+            IntPtr* readfds,
+            IntPtr* writefds,
+            IntPtr* exceptfds,
+            ref TimeValue timeout);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern unsafe int select(
-            [In] int ignoredParameter,
-            [In] IntPtr* readfds,
-            [In] IntPtr* writefds,
-            [In] IntPtr* exceptfds,
-            [In] IntPtr nullTimeout);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static unsafe partial int select(
+            int ignoredParameter,
+            IntPtr* readfds,
+            IntPtr* writefds,
+            IntPtr* exceptfds,
+            IntPtr nullTimeout);
     }
 }

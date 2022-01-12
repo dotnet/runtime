@@ -121,7 +121,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(regex._replref!, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
+            RegexReplacement repl = RegexReplacement.GetOrCreate(regex.RegexReplacementWeakReference, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
             SegmentStringBuilder segments = SegmentStringBuilder.Create();
             repl.ReplacementImpl(ref segments, this);
             return segments.ToString();

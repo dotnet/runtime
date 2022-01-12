@@ -123,13 +123,13 @@ namespace System.Xml.Xsl
                 string message = FormatMessage(res, args);
                 if (res != SR.Xslt_CompileError && lineNumber != 0)
                 {
-                    message += " " + FormatMessage(SR.Xml_ErrorFilePosition, sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture));
+                    message += $" {FormatMessage(SR.Xml_ErrorFilePosition, sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture))}";
                 }
                 return message;
             }
             catch (MissingManifestResourceException)
             {
-                return "UNKNOWN(" + res + ")";
+                return $"UNKNOWN({res})";
             }
         }
 

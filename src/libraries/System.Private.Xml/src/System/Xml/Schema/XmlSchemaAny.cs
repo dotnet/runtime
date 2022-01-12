@@ -69,7 +69,7 @@ namespace System.Xml.Schema
                         int i = 1;
                         foreach (string wildcardNS in _namespaceList.Enumerate)
                         {
-                            sb.Append(wildcardNS + ":*");
+                            sb.Append($"{wildcardNS}:*");
                             if (i < _namespaceList.Enumerate.Count)
                             {
                                 sb.Append(' ');

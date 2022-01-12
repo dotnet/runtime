@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly ILGEN_0xf9a34ac1 {}
+.assembly extern xunit.core {}
 .class ILGEN_0xf9a34ac1 {
 
 //BEGIN STATIC FIELDS
@@ -172,6 +173,9 @@ add
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	5
 .try {

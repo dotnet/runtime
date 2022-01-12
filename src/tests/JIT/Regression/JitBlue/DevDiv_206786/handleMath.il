@@ -6,6 +6,7 @@
 
 .assembly extern mscorlib {}
 .assembly handleMath {}
+.assembly extern xunit.core {}
 .module handleMath.exe
 
 .class public F
@@ -52,6 +53,9 @@
 
 .method public hidebysig static int32 Main(string[] args) cil managed
 {
+   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+       01 00 00 00
+   )
    .entrypoint
    ldc.i4 -100
    newobj instance void F::.ctor(int32)

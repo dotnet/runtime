@@ -8,6 +8,7 @@
 #include "lightweightmap.h"
 #include "commandline.h"
 #include "errorhandling.h"
+#include "metricssummary.h"
 
 #define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
@@ -293,6 +294,35 @@ Cleanup:
     }
 }
 
+static bool ProcessChildMetrics(const char* baseMetricsSummaryPath, const char* diffMetricsSummaryPath, MetricsSummary* baseMetrics, MetricsSummary* diffMetrics)
+{
+    if (baseMetricsSummaryPath != nullptr)
+    {
+        MetricsSummary childBaseMetrics;
+        if (!MetricsSummary::LoadFromFile(baseMetricsSummaryPath, &childBaseMetrics))
+        {
+            LogError("Couldn't load base metrics summary created by child process");
+            return false;
+        }
+
+        baseMetrics->AggregateFrom(childBaseMetrics);
+    }
+
+    if (diffMetricsSummaryPath != nullptr)
+    {
+        MetricsSummary childDiffMetrics;
+        if (!MetricsSummary::LoadFromFile(diffMetricsSummaryPath, &childDiffMetrics))
+        {
+            LogError("Couldn't load diff metrics summary created by child process");
+            return false;
+        }
+
+        diffMetrics->AggregateFrom(childDiffMetrics);
+    }
+
+    return true;
+}
+
 #ifndef TARGET_UNIX // TODO-Porting: handle Ctrl-C signals gracefully on Unix
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
 {
@@ -309,15 +339,39 @@ int __cdecl compareInt(const void* arg1, const void* arg2)
     return (*(const int*)arg1) - (*(const int*)arg2);
 }
 
-// 'arrWorkerMCLPath' is an array of strings of size 'workerCount'.
-void MergeWorkerMCLs(char* mclFilename, char** arrWorkerMCLPath, int workerCount)
+struct PerWorkerData
+{
+    HANDLE hStdOutput;
+    HANDLE hStdError;
+
+    char* failingMCListPath;
+    char* diffMCListPath;
+    char* stdOutputPath;
+    char* stdErrorPath;
+    char* baseMetricsSummaryPath;
+    char* diffMetricsSummaryPath;
+
+    PerWorkerData()
+        : hStdOutput(INVALID_HANDLE_VALUE)
+        , hStdError(INVALID_HANDLE_VALUE)
+        , failingMCListPath(nullptr)
+        , diffMCListPath(nullptr)
+        , stdOutputPath(nullptr)
+        , stdErrorPath(nullptr)
+        , baseMetricsSummaryPath(nullptr)
+        , diffMetricsSummaryPath(nullptr)
+    {
+    }
+};
+
+void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
 {
     int **MCL = new int *[workerCount], *MCLCount = new int[workerCount], totalCount = 0;
 
     for (int i = 0; i < workerCount; i++)
     {
         // Read the next partial MCL file
-        ReadMCLToArray(arrWorkerMCLPath[i], &MCL[i], &MCLCount[i]);
+        ReadMCLToArray(workerData[i].*mclPath, &MCL[i], &MCLCount[i]);
 
         totalCount += MCLCount[i];
     }
@@ -394,6 +448,7 @@ char* ConstructChildProcessArgs(const CommandLine::Options& o)
 
     ADDARG_BOOL(o.breakOnError, "-boe");
     ADDARG_BOOL(o.breakOnAssert, "-boa");
+    ADDARG_BOOL(o.breakOnException, "-box");
     ADDARG_BOOL(o.applyDiff, "-applyDiff");
     ADDARG_STRING(o.reproName, "-reproName");
     ADDARG_STRING(o.writeLogFile, "-writeLogFile");
@@ -473,14 +528,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
         LogVerbose(" diffMCLFilename=%s", o.diffMCLFilename);
     LogVerbose(" workerCount=%d, skipCleanup=%d.", o.workerCount, o.skipCleanup);
 
-    HANDLE* hProcesses = new HANDLE[o.workerCount];
-    HANDLE* hStdOutput = new HANDLE[o.workerCount];
-    HANDLE* hStdError  = new HANDLE[o.workerCount];
-
-    char** arrFailingMCListPath = new char*[o.workerCount];
-    char** arrDiffMCListPath    = new char*[o.workerCount];
-    char** arrStdOutputPath     = new char*[o.workerCount];
-    char** arrStdErrorPath      = new char*[o.workerCount];
+    PerWorkerData* perWorkerData = new PerWorkerData[o.workerCount];
 
     // Add a random number to the temporary file names to allow multiple parallel SuperPMI to happen at once.
     unsigned int randNumber = 0;
@@ -492,51 +540,71 @@ int doParallelSuperPMI(CommandLine::Options& o)
 
     for (int i = 0; i < o.workerCount; i++)
     {
+        PerWorkerData& wd = perWorkerData[i];
         if (o.mclFilename != nullptr)
         {
-            arrFailingMCListPath[i] = new char[MAX_PATH];
-            sprintf_s(arrFailingMCListPath[i], MAX_PATH, "%sParallelSuperPMI-%u-%d.mcl", tempPath, randNumber, i);
-        }
-        else
-        {
-            arrFailingMCListPath[i] = nullptr;
+            wd.failingMCListPath = new char[MAX_PATH];
+            sprintf_s(wd.failingMCListPath, MAX_PATH, "%sParallelSuperPMI-%u-%d.mcl", tempPath, randNumber, i);
         }
 
         if (o.diffMCLFilename != nullptr)
         {
-            arrDiffMCListPath[i] = new char[MAX_PATH];
-            sprintf_s(arrDiffMCListPath[i], MAX_PATH, "%sParallelSuperPMI-Diff-%u-%d.mcl", tempPath, randNumber, i);
+            wd.diffMCListPath = new char[MAX_PATH];
+            sprintf_s(wd.diffMCListPath, MAX_PATH, "%sParallelSuperPMI-Diff-%u-%d.mcl", tempPath, randNumber, i);
         }
-        else
+
+        if (o.baseMetricsSummaryFile != nullptr)
         {
-            arrDiffMCListPath[i] = nullptr;
+            wd.baseMetricsSummaryPath = new char[MAX_PATH];
+            sprintf_s(wd.baseMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-BaseMetricsSummary-%u-%d.txt", tempPath, randNumber, i);
         }
 
-        arrStdOutputPath[i] = new char[MAX_PATH];
-        arrStdErrorPath[i]  = new char[MAX_PATH];
+        if (o.diffMetricsSummaryFile != nullptr)
+        {
+            wd.diffMetricsSummaryPath = new char[MAX_PATH];
+            sprintf_s(wd.diffMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-DiffMetricsSummary-%u-%d.txt", tempPath, randNumber, i);
+        }
 
-        sprintf_s(arrStdOutputPath[i], MAX_PATH, "%sParallelSuperPMI-stdout-%u-%d.txt", tempPath, randNumber, i);
-        sprintf_s(arrStdErrorPath[i], MAX_PATH, "%sParallelSuperPMI-stderr-%u-%d.txt", tempPath, randNumber, i);
+        wd.stdOutputPath = new char[MAX_PATH];
+        wd.stdErrorPath  = new char[MAX_PATH];
+
+        sprintf_s(wd.stdOutputPath, MAX_PATH, "%sParallelSuperPMI-stdout-%u-%d.txt", tempPath, randNumber, i);
+        sprintf_s(wd.stdErrorPath, MAX_PATH, "%sParallelSuperPMI-stderr-%u-%d.txt", tempPath, randNumber, i);
     }
 
     char cmdLine[MAX_CMDLINE_SIZE];
     cmdLine[0] = '\0';
     int bytesWritten;
 
+    HANDLE* hProcesses = new HANDLE[o.workerCount];
     for (int i = 0; i < o.workerCount; i++)
     {
         bytesWritten = sprintf_s(cmdLine, MAX_CMDLINE_SIZE, "%s -stride %d %d", spmiFilename, i + 1, o.workerCount);
 
-        if (o.mclFilename != nullptr)
+        PerWorkerData& wd = perWorkerData[i];
+
+        if (wd.failingMCListPath != nullptr)
         {
             bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -failingMCList %s",
-                                      arrFailingMCListPath[i]);
+                                      wd.failingMCListPath);
         }
 
-        if (o.diffMCLFilename != nullptr)
+        if (wd.diffMCListPath != nullptr)
         {
             bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffMCList %s",
-                                      arrDiffMCListPath[i]);
+                                      wd.diffMCListPath);
+        }
+
+        if (wd.baseMetricsSummaryPath != nullptr)
+        {
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -baseMetricsSummary %s",
+                                      wd.baseMetricsSummaryPath);
+        }
+
+        if (wd.diffMetricsSummaryPath != nullptr)
+        {
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffMetricsSummary %s",
+                                      wd.diffMetricsSummaryPath);
         }
 
         if (o.failureLimit > 0)
@@ -552,26 +620,26 @@ int doParallelSuperPMI(CommandLine::Options& o)
         sa.lpSecurityDescriptor = NULL;
         sa.bInheritHandle       = TRUE; // Let newly created stdout/stderr handles be inherited.
 
-        LogDebug("stdout %i=%s", i, arrStdOutputPath[i]);
-        hStdOutput[i] = CreateFileA(arrStdOutputPath[i], GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
+        LogDebug("stdout %i=%s", i, wd.stdOutputPath);
+        wd.hStdOutput = CreateFileA(wd.stdOutputPath, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
                                     FILE_ATTRIBUTE_NORMAL, NULL);
-        if (hStdOutput[i] == INVALID_HANDLE_VALUE)
+        if (wd.hStdOutput == INVALID_HANDLE_VALUE)
         {
-            LogError("Unable to open '%s'. GetLastError()=%u", arrStdOutputPath[i], GetLastError());
+            LogError("Unable to open '%s'. GetLastError()=%u", wd.stdOutputPath, GetLastError());
             return -1;
         }
 
-        LogDebug("stderr %i=%s", i, arrStdErrorPath[i]);
-        hStdError[i] = CreateFileA(arrStdErrorPath[i], GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
+        LogDebug("stderr %i=%s", i, wd.stdErrorPath);
+        wd.hStdError = CreateFileA(wd.stdErrorPath, GENERIC_WRITE, FILE_SHARE_READ, &sa, CREATE_ALWAYS,
                                    FILE_ATTRIBUTE_NORMAL, NULL);
-        if (hStdError[i] == INVALID_HANDLE_VALUE)
+        if (wd.hStdError == INVALID_HANDLE_VALUE)
         {
-            LogError("Unable to open '%s'. GetLastError()=%u", arrStdErrorPath[i], GetLastError());
+            LogError("Unable to open '%s'. GetLastError()=%u", wd.stdErrorPath, GetLastError());
             return -1;
         }
 
         // Create a SuperPMI worker process and redirect its output to file
-        if (!StartProcess(cmdLine, hStdOutput[i], hStdError[i], &hProcesses[i]))
+        if (!StartProcess(cmdLine, wd.hStdOutput, wd.hStdError, &hProcesses[i]))
         {
             return -1;
         }
@@ -582,8 +650,8 @@ int doParallelSuperPMI(CommandLine::Options& o)
     // Close stdout/stderr
     for (int i = 0; i < o.workerCount; i++)
     {
-        CloseHandle(hStdOutput[i]);
-        CloseHandle(hStdError[i]);
+        CloseHandle(perWorkerData[i].hStdOutput);
+        CloseHandle(perWorkerData[i].hStdError);
     }
 
     SpmiResult result = SpmiResult::Success;
@@ -625,13 +693,18 @@ int doParallelSuperPMI(CommandLine::Options& o)
         bool usageError = false; // variable to flag if we hit a usage error in SuperPMI
 
         int loaded = 0, jitted = 0, failed = 0, excluded = 0, missing = 0, diffs = 0;
+        MetricsSummary baseMetrics;
+        MetricsSummary diffMetrics;
 
         // Read the stderr files and log them as errors
         // Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
         for (int i = 0; i < o.workerCount; i++)
         {
-            ProcessChildStdErr(arrStdErrorPath[i]);
-            ProcessChildStdOut(o, arrStdOutputPath[i], &loaded, &jitted, &failed, &excluded, &missing, &diffs, &usageError);
+            PerWorkerData& wd = perWorkerData[i];
+            ProcessChildStdErr(wd.stdErrorPath);
+            ProcessChildStdOut(o, wd.stdOutputPath, &loaded, &jitted, &failed, &excluded, &missing, &diffs, &usageError);
+            ProcessChildMetrics(wd.baseMetricsSummaryPath, wd.diffMetricsSummaryPath, &baseMetrics, &diffMetrics);
+
             if (usageError)
                 break;
         }
@@ -639,13 +712,23 @@ int doParallelSuperPMI(CommandLine::Options& o)
         if (o.mclFilename != nullptr && !usageError)
         {
             // Concat the resulting .mcl files
-            MergeWorkerMCLs(o.mclFilename, arrFailingMCListPath, o.workerCount);
+            MergeWorkerMCLs(o.mclFilename, perWorkerData, o.workerCount, &PerWorkerData::failingMCListPath);
         }
 
         if (o.diffMCLFilename != nullptr && !usageError)
         {
             // Concat the resulting diff .mcl files
-            MergeWorkerMCLs(o.diffMCLFilename, arrDiffMCListPath, o.workerCount);
+            MergeWorkerMCLs(o.diffMCLFilename, perWorkerData, o.workerCount, &PerWorkerData::diffMCListPath);
+        }
+
+        if (o.baseMetricsSummaryFile != nullptr && !usageError)
+        {
+            baseMetrics.SaveToFile(o.baseMetricsSummaryFile);
+        }
+
+        if (o.diffMetricsSummaryFile != nullptr && !usageError)
+        {
+            diffMetrics.SaveToFile(o.diffMetricsSummaryFile);
         }
 
         if (!usageError)
@@ -669,16 +752,25 @@ int doParallelSuperPMI(CommandLine::Options& o)
         // Delete all temporary files generated
         for (int i = 0; i < o.workerCount; i++)
         {
-            if (arrFailingMCListPath[i] != nullptr)
+            PerWorkerData& wd = perWorkerData[i];
+            if (wd.failingMCListPath != nullptr)
             {
-                DeleteFile(arrFailingMCListPath[i]);
+                DeleteFile(wd.failingMCListPath);
             }
-            if (arrDiffMCListPath[i] != nullptr)
+            if (wd.diffMCListPath != nullptr)
             {
-                DeleteFile(arrDiffMCListPath[i]);
+                DeleteFile(wd.diffMCListPath);
             }
-            DeleteFile(arrStdOutputPath[i]);
-            DeleteFile(arrStdErrorPath[i]);
+            if (wd.baseMetricsSummaryPath != nullptr)
+            {
+                DeleteFile(wd.baseMetricsSummaryPath);
+            }
+            if (wd.diffMetricsSummaryPath != nullptr)
+            {
+                DeleteFile(wd.diffMetricsSummaryPath);
+            }
+            DeleteFile(wd.stdOutputPath);
+            DeleteFile(wd.stdErrorPath);
         }
     }
 

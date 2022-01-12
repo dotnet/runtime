@@ -806,7 +806,7 @@ PEImageLayout::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p PEFile\n", dac_cast<TADDR>(this)));
+    EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
     PEDecoder::EnumMemoryRegions(flags,false);
 }
 #endif //DACCESS_COMPILE

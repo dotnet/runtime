@@ -350,7 +350,7 @@ namespace System.Net
             //demand a client cert at a later point
             //
             //The fix here is to demand the client cert when the channel is NOT INSECURE
-            //which means whether the client certs are requried at the beginning or not,
+            //which means whether the client certs are required at the beginning or not,
             //if this is an SSL connection, Call HttpReceiveClientCertificate, thus
             //starting the cert negotiation at that point
             //
@@ -447,7 +447,7 @@ namespace System.Net
             //demand a client cert at a later point
             //
             //The fix here is to demand the client cert when the channel is NOT INSECURE
-            //which means whether the client certs are requried at the beginning or not,
+            //which means whether the client certs are required at the beginning or not,
             //if this is an SSL connection, Call HttpReceiveClientCertificate, thus
             //starting the cert negotiation at that point
             //
@@ -549,10 +549,7 @@ namespace System.Net
 
         internal void CheckDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;

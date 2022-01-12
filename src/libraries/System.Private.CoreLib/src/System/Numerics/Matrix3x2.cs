@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -66,6 +68,27 @@ namespace System.Numerics
         public static Matrix3x2 Identity
         {
             get => _identity;
+        }
+
+        public unsafe float this[int row, int column]
+        {
+            get
+            {
+                if ((uint)row >= 3)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+
+                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row);
+                return vrow[column];
+            }
+            set
+            {
+                if ((uint)row >= 3)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+
+                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row);
+                var tmp = Vector2.WithElement(vrow, column, value);
+                vrow = tmp;
+            }
         }
 
         /// <summary>Gets a value that indicates whether the current matrix is the identity matrix.</summary>

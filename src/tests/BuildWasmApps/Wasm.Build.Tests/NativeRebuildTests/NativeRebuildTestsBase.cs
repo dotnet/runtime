@@ -77,6 +77,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             buildArgs = newBuildArgs;
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
+            Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
                                             dotnetWasmFromRuntimePack: false,
@@ -135,6 +136,18 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             if (msg.Length > 0)
                 throw new XunitException($"CompareStat failed:{Environment.NewLine}{msg}");
+        }
+
+        internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(bool unchanged, params string[] baseDirs)
+        {
+            var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
+            foreach (var baseDir in baseDirs)
+            {
+                foreach (var file in Directory.EnumerateFiles(baseDir, "*", new EnumerationOptions { RecurseSubdirectories = true }))
+                    dict[Path.GetFileName(file)] = (file, unchanged);
+            }
+
+            return dict;
         }
 
         internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(BuildArgs buildArgs, BuildPaths paths, bool unchanged)

@@ -12,11 +12,15 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit CrashTest.Program
 {
   .method assembly hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
 

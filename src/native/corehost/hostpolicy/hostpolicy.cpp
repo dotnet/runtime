@@ -824,11 +824,6 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_unload()
     return StatusCode::Success;
 }
 
-typedef void(HOSTPOLICY_CALLTYPE *corehost_resolve_component_dependencies_result_fn)(
-    const pal::char_t* assembly_paths,
-    const pal::char_t* native_search_paths,
-    const pal::char_t* resource_search_paths);
-
 SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
     const pal::char_t *component_main_assembly_path,
     corehost_resolve_component_dependencies_result_fn result)

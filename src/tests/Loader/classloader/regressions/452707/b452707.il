@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // this is regression test for VSW 452707
 // Overriding MyS.ToString caused an AV since we were attempting to create precode 
 // before the slot that the method desc points to has been filled in.
@@ -30,11 +31,14 @@
 }
 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_b452707
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
  
     .maxstack  1

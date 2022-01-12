@@ -14,6 +14,7 @@
 .assembly stress2// as "stress2"
 {
 }
+.assembly extern xunit.core {}
 .module stress2.exe
 // MVID: {5A1483AA-BABB-44FA-9E05-6A081C8BFE56}
 .namespace JitTest
@@ -24,6 +25,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       28 (0x1c)
       .maxstack  1

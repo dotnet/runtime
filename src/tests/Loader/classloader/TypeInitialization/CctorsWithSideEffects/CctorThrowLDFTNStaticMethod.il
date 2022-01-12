@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // A .cctor has only one chance to run in any appdomain. 
 // If it fails, the 2nd time we try to access a static field we check if .cctor has been run. 
 // And it has, but failed so we fail again.
@@ -100,11 +101,14 @@
 
 } // end of class B
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_CctorThrowLDFTNStaticMethod
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       279 (0x117)
     .maxstack  2

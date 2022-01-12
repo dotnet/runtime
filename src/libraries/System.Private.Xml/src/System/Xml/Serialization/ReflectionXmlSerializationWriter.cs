@@ -587,13 +587,13 @@ namespace System.Xml.Serialization
                     bool shouldPersist = true;
                     if (m.CheckSpecified != SpecifiedAccessor.None)
                     {
-                        string specifiedMemberName = m.Name + "Specified";
+                        string specifiedMemberName = $"{m.Name}Specified";
                         isSpecified = (bool)GetMemberValue(o!, specifiedMemberName)!;
                     }
 
                     if (m.CheckShouldPersist)
                     {
-                        string methodInvoke = "ShouldSerialize" + m.Name;
+                        string methodInvoke = $"ShouldSerialize{m.Name}";
                         MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
@@ -619,13 +619,13 @@ namespace System.Xml.Serialization
                     bool shouldPersist = true;
                     if (m.CheckSpecified != SpecifiedAccessor.None)
                     {
-                        string specifiedMemberName = m.Name + "Specified";
+                        string specifiedMemberName = $"{m.Name}Specified";
                         isSpecified = (bool)GetMemberValue(o!, specifiedMemberName)!;
                     }
 
                     if (m.CheckShouldPersist)
                     {
-                        string methodInvoke = "ShouldSerialize" + m.Name;
+                        string methodInvoke = $"ShouldSerialize{m.Name}";
                         MethodInfo method = o!.GetType().GetMethod(methodInvoke, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)!;
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>())!;
                     }
@@ -1230,7 +1230,7 @@ namespace System.Xml.Serialization
                         bool? specifiedSource = null;
                         if (member.CheckSpecified != SpecifiedAccessor.None)
                         {
-                            string memberNameSpecified = member.Name + "Specified";
+                            string memberNameSpecified = $"{member.Name}Specified";
                             for (int j = 0; j < Math.Min(pLength, mapping.Members.Length); j++)
                             {
                                 if (mapping.Members[j].Name == memberNameSpecified)
@@ -1261,7 +1261,7 @@ namespace System.Xml.Serialization
                 bool? specifiedSource = null;
                 if (member.CheckSpecified != SpecifiedAccessor.None)
                 {
-                    string memberNameSpecified = member.Name + "Specified";
+                    string memberNameSpecified = $"{member.Name}Specified";
                     for (int j = 0; j < Math.Min(pLength, mapping.Members.Length); j++)
                     {
                         if (mapping.Members[j].Name == memberNameSpecified)

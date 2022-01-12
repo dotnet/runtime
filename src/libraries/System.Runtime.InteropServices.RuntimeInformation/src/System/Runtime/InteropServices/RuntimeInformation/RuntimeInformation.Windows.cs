@@ -42,7 +42,12 @@ namespace System.Runtime.InteropServices
 
                 if (osArch == -1)
                 {
-                    Interop.Kernel32.GetNativeSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    Interop.Kernel32.SYSTEM_INFO sysInfo;
+                    unsafe
+                    {
+                        Interop.Kernel32.GetNativeSystemInfo(&sysInfo);
+                    }
+
                     osArch = s_osArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 
@@ -60,7 +65,12 @@ namespace System.Runtime.InteropServices
 
                 if (processArch == -1)
                 {
-                    Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO sysInfo);
+                    Interop.Kernel32.SYSTEM_INFO sysInfo;
+                    unsafe
+                    {
+                        Interop.Kernel32.GetSystemInfo(&sysInfo);
+                    }
+
                     processArch = s_processArch = (int)Map((Interop.Kernel32.ProcessorArchitecture)sysInfo.wProcessorArchitecture);
                 }
 

@@ -5,6 +5,7 @@
 // when we are prevented from inlining something.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,7 +14,7 @@
 .assembly test {}
 .module test.il
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_test
        extends [mscorlib]System.Object
 {
   .field static int32 i
@@ -33,7 +34,7 @@
 
   .method public hidebysig static void myHelperCall() cil managed
   {
-    call void Test::myCall()
+    call void Test_test::myCall()
     ret
   }
 
@@ -43,14 +44,14 @@
     ldc.i4.1
     add
     pop
-    ldsfld int32 Test::i
+    ldsfld int32 Test_test::i
     ldc.i4.0
     beq End
-    ldsfld int32 Test::i
+    ldsfld int32 Test_test::i
     ldc.i4.1
     sub
-    stsfld int32 Test::i
-    call void Test::myHelperCall()
+    stsfld int32 Test_test::i
+    call void Test_test::myHelperCall()
     End:  ret
   }
 
@@ -62,25 +63,28 @@
 
   .method public hidebysig instance void this() cil managed
   {
-    newobj instance void Test::.ctor()
-    call instance int32 Test::func()
+    newobj instance void Test_test::.ctor()
+    call instance int32 Test_test::func()
     pop
     ret
   }
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
-    .locals init (class Test V_0)
+    .locals init (class Test_test V_0)
     ldc.i4 10
-    stsfld int32 Test::i
-    call void Test::myCall()
-    newobj instance void Test::.ctor()
+    stsfld int32 Test_test::i
+    call void Test_test::myCall()
+    newobj instance void Test_test::.ctor()
     stloc V_0
     ldloc V_0
-    call instance int32 Test::func()
+    call instance int32 Test_test::func()
     pop
-    call string Test::myString()
+    call string Test_test::myString()
     call void [System.Console]System.Console::WriteLine(string)
     ldc.i4 100
     ret

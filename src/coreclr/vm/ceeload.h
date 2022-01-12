@@ -19,7 +19,7 @@
 #include "corsym.h"
 #include "typehandle.h"
 #include "arraylist.h"
-#include "pefile.h"
+#include "peassembly.h"
 #include "typehash.h"
 #include "contractimpl.h"
 #include "bitmask.h"
@@ -43,7 +43,6 @@
 
 #include "ilinstrumentation.h"
 
-class PELoader;
 class Stub;
 class MethodDesc;
 class FieldDesc;
@@ -736,7 +735,7 @@ struct ThreadLocalModule;
 // Native code (NGEN module). A module live in a code:Assembly
 //
 // Some important fields are
-//    * code:Module.m_file - this points at a code:PEFile that understands the layout of a PE file. The most
+//    * code:Module.m_pPEAssembly - this points at a code:PEAssembly that understands the layout of a PE assembly. The most
 //        important part is getting at the code:Module (see file:..\inc\corhdr.h#ManagedHeader) from there
 //        you can get at the Meta-data and IL)
 //    * code:Module.m_pAvailableClasses - this is a table that lets you look up the types (the code:EEClass)
@@ -758,7 +757,7 @@ class Module
 private:
     PTR_CUTF8               m_pSimpleName; // Cached simple name for better performance and easier diagnostics
 
-    PTR_PEFile              m_file;
+    PTR_PEAssembly          m_pPEAssembly;
 
     enum {
         // These are the values set in m_dwTransientFlags.
@@ -1079,10 +1078,10 @@ protected:
 #endif // _DEBUG
 
  public:
-    static Module *Create(Assembly *pAssembly, mdFile kFile, PEFile *pFile, AllocMemTracker *pamTracker);
+    static Module *Create(Assembly *pAssembly, mdFile kFile, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker);
 
  protected:
-    Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file);
+    Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *file);
 
 
  public:
@@ -1092,9 +1091,7 @@ protected:
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
-    PTR_PEFile GetFile() const { LIMITED_METHOD_DAC_CONTRACT; return m_file; }
-
-    static size_t GetFileOffset() { LIMITED_METHOD_CONTRACT; return offsetof(Module, m_file); }
+    PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
 
     BOOL IsManifest();
 
@@ -1153,10 +1150,8 @@ protected:
         return m_moduleRef;
     }
 
-    BOOL IsResource() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsResource(); }
-    BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetFile()->IsDynamic(); }
-    BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetFile()->IsDynamic(); }
-    BOOL IsIbcOptimized() const { WRAPPER_NO_CONTRACT; return GetFile()->IsIbcOptimized(); }
+    BOOL IsPEFile() const { WRAPPER_NO_CONTRACT; return !GetPEAssembly()->IsDynamic(); }
+    BOOL IsReflection() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return GetPEAssembly()->IsDynamic(); }
     // Returns true iff the debugger can see this module.
     BOOL IsVisibleToDebugger();
 
@@ -1170,11 +1165,9 @@ protected:
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
-    BOOL IsIStream() { LIMITED_METHOD_CONTRACT; return GetFile()->IsIStream(); }
+    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
 
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_file->IsSystem(); }
-
-    static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file);
+    static BOOL IsEditAndContinueCapable(Assembly *pAssembly, PEAssembly *file);
 
     void EnableEditAndContinue()
     {
@@ -1265,7 +1258,7 @@ protected:
             return DacGetMDImport(GetReflectionModule(), true);
         }
 #endif // DACCESS_COMPILE
-        return m_file->GetPersistentMDImport();
+        return m_pPEAssembly->GetMDImport();
     }
 
 #ifndef DACCESS_COMPILE
@@ -1273,21 +1266,14 @@ protected:
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_file->GetEmitter();
+        return m_pPEAssembly->GetEmitter();
     }
 
     IMetaDataImport2 *GetRWImporter()
     {
         WRAPPER_NO_CONTRACT;
 
-        return m_file->GetRWImporter();
-    }
-
-    IMetaDataAssemblyImport *GetAssemblyImporter()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return m_file->GetAssemblyImporter();
+        return m_pPEAssembly->GetRWImporter();
     }
 
     HRESULT GetReadablePublicMetaDataInterface(DWORD dwOpenFlags, REFIID riid, LPVOID * ppvInterface);
@@ -1379,54 +1365,26 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
-
-            _ASSERTE(!IsResource());
-        }
 
         return m_pAvailableClasses;
     }
 #ifndef DACCESS_COMPILE
     void SetAvailableClassHash(EEClassHashTable *pAvailableClasses)
     {
-        LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         m_pAvailableClasses = pAvailableClasses;
     }
 #endif // !DACCESS_COMPILE
     PTR_EEClassHashTable GetAvailableClassCaseInsHash()
     {
         LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pAvailableClassesCaseIns;
     }
 #ifndef DACCESS_COMPILE
     void SetAvailableClassCaseInsHash(EEClassHashTable *pAvailableClassesCaseIns)
     {
-        LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         m_pAvailableClassesCaseIns = pAvailableClassesCaseIns;
     }
 #endif // !DACCESS_COMPILE
@@ -1436,26 +1394,14 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pAvailableParamTypes;
     }
 
     InstMethodHashTable *GetInstMethodHashTable()
     {
         LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pInstMethodHashTable;
     }
 
@@ -1484,9 +1430,9 @@ protected:
 public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
-    Module *GetModuleIfLoaded(mdFile kFile, BOOL onlyLoadedInAppDomain, BOOL loadAllowed);
-    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL loadResources = TRUE, BOOL bindOnly = FALSE);
-    PTR_Module LookupModule(mdToken kFile, BOOL loadResources = TRUE); //wrapper over GetModuleIfLoaded, takes modulerefs as well
+    Module *GetModuleIfLoaded(mdFile kFile);
+    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile);
+    PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 
     // RID maps
@@ -1806,8 +1752,8 @@ public:
 
 public:
 #ifndef DACCESS_COMPILE
-    BOOL Equals(Module *pModule) { WRAPPER_NO_CONTRACT; return m_file->Equals(pModule->m_file); }
-    BOOL Equals(PEFile *pFile) { WRAPPER_NO_CONTRACT; return m_file->Equals(pFile); }
+    BOOL Equals(Module *pModule) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->Equals(pModule->m_pPEAssembly); }
+    BOOL Equals(PEAssembly *pPEAssembly) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->Equals(pPEAssembly); }
 #endif // !DACCESS_COMPILE
 
     LPCUTF8 GetSimpleName()
@@ -1817,11 +1763,11 @@ public:
         return m_pSimpleName;
     }
 
-    HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_file->GetScopeName(pszName); }
-    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_file->GetPath(); }
+    HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetScopeName(pszName); }
+    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
 
 #ifdef LOGGING
-    LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_file->GetDebugName(); }
+    LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }
 #endif
 
     PEImageLayout * GetReadyToRunImage();
@@ -1837,7 +1783,7 @@ public:
     CHECK CheckRvaField(RVA field, COUNT_T size);
 
     const void *GetInternalPInvokeTarget(RVA target)
-    { WRAPPER_NO_CONTRACT; return m_file->GetInternalPInvokeTarget(target); }
+    { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetInternalPInvokeTarget(target); }
 
     BOOL HasTls();
     BOOL IsRvaFieldTls(DWORD field);
@@ -2268,7 +2214,7 @@ private:
     bool m_fSuppressMetadataCapture;
 
 #if !defined DACCESS_COMPILE
-    ReflectionModule(Assembly *pAssembly, mdFile token, PEFile *pFile);
+    ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly);
 #endif // !DACCESS_COMPILE
 
 public:
@@ -2279,7 +2225,7 @@ public:
 #endif
 
 #if !defined DACCESS_COMPILE
-    static ReflectionModule *Create(Assembly *pAssembly, PEFile *pFile, AllocMemTracker *pamTracker, LPCWSTR szName);
+    static ReflectionModule *Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker, LPCWSTR szName);
     void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName);
     void Destruct();
 #endif // !DACCESS_COMPILE

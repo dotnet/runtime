@@ -95,6 +95,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     if (!ShouldCompile(srcFile, objFile, depFiles, out string reason))
                     {
                         Log.LogMessage(MessageImportance.Low, $"Skipping {srcFile} because {reason}.");
+                        outputItems.Add(CreateOutputItemFor(srcFile, objFile));
                     }
                     else
                     {
@@ -107,7 +108,8 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 if (_numCompiled == _totalFiles)
                 {
                     // nothing to do!
-                    return true;
+                    OutputFiles = outputItems.ToArray();
+                    return !Log.HasLoggedErrors;
                 }
 
                 if (_numCompiled > 0)
@@ -123,31 +125,20 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 _tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
                 Directory.CreateDirectory(_tempPath);
 
-                int allowedParallelism = Math.Min(SourceFiles.Length, Environment.ProcessorCount);
+                int allowedParallelism = DisableParallelCompile ? 1 : Math.Min(SourceFiles.Length, Environment.ProcessorCount);
                 if (BuildEngine is IBuildEngine9 be9)
                     allowedParallelism = be9.RequestCores(allowedParallelism);
 
-                if (DisableParallelCompile || allowedParallelism == 1)
+                ParallelLoopResult result = Parallel.ForEach(filesToCompile,
+                                                new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                                (toCompile, state) =>
                 {
-                    foreach ((string srcFile, string outFile) in filesToCompile)
-                    {
-                        if (!ProcessSourceFile(srcFile, outFile))
-                            return false;
-                    }
-                }
-                else
-                {
-                    ParallelLoopResult result = Parallel.ForEach(filesToCompile,
-                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                    (toCompile, state) =>
-                    {
-                        if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
-                            state.Stop();
-                    });
+                    if (!ProcessSourceFile(toCompile.Item1, toCompile.Item2))
+                        state.Stop();
+                });
 
-                    if (!result.IsCompleted && !Log.HasLoggedErrors)
-                        Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
-                }
+                if (!result.IsCompleted && !Log.HasLoggedErrors)
+                    Log.LogError("Unknown failure occured while compiling. Check logs to get more details.");
 
                 if (!Log.HasLoggedErrors)
                 {
@@ -200,9 +191,7 @@ namespace Microsoft.WebAssembly.Build.Tasks
                     else
                         Log.LogMessage(MessageImportance.Low, $"Copied {tmpObjFile} to {objFile}");
 
-                    ITaskItem newItem = new TaskItem(objFile);
-                    newItem.SetMetadata("SourceFile", srcFile);
-                    outputItems.Add(newItem);
+                    outputItems.Add(CreateOutputItemFor(srcFile, objFile));
 
                     int count = Interlocked.Increment(ref _numCompiled);
                     Log.LogMessage(MessageImportance.High, $"[{count}/{_totalFiles}] {Path.GetFileName(srcFile)} -> {Path.GetFileName(objFile)} [took {elapsedSecs:F}s]");
@@ -218,6 +207,13 @@ namespace Microsoft.WebAssembly.Build.Tasks
                 {
                     File.Delete(tmpObjFile);
                 }
+            }
+
+            ITaskItem CreateOutputItemFor(string srcFile, string objFile)
+            {
+                ITaskItem newItem = new TaskItem(objFile);
+                newItem.SetMetadata("SourceFile", srcFile);
+                return newItem;
             }
         }
 

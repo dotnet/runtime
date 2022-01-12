@@ -12,7 +12,7 @@ namespace System
 {
     /// <summary>Defines a mechanism for parsing a string to a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IParseable<TSelf>
         where TSelf : IParseable<TSelf>
     {

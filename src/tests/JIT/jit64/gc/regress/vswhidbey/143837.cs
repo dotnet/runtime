@@ -4,7 +4,7 @@
 
 using System;
 
-public class Test
+public class Test_143837
 {
     public static TestClass static_TestClass;
     public static DerivedClass static_DerivedClass;

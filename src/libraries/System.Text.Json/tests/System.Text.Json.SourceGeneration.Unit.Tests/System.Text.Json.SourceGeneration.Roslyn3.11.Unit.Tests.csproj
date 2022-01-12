@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11)</RoslynApiVersion>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
   </PropertyGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.Unit.Tests.targets" />

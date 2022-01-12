@@ -103,8 +103,12 @@ code_t AddRexPrefix(instruction ins, code_t code);
 bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
 static bool IsMovInstruction(instruction ins);
+bool HasSideEffect(instruction ins, emitAttr size);
 bool IsRedundantMov(
     instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects);
+bool EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src);
+
+bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs);
 
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
@@ -112,6 +116,7 @@ static bool IsJmpInstruction(instruction ins);
 bool AreUpper32BitsZero(regNumber reg);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
+bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
 
 bool hasRexPrefix(code_t code)
 {
@@ -186,6 +191,7 @@ void SetContains256bitAVX(bool value)
 bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
 bool DoesWriteZeroFlag(instruction ins);
+bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);
 
@@ -215,15 +221,6 @@ bool isPrefetch(instruction ins)
 void emitDispReloc(ssize_t value);
 void emitDispAddrMode(instrDesc* id, bool noDetail = false);
 void emitDispShift(instruction ins, int cnt = 0);
-
-void emitDispIns(instrDesc* id,
-                 bool       isNew,
-                 bool       doffs,
-                 bool       asmfm,
-                 unsigned   offs = 0,
-                 BYTE*      code = nullptr,
-                 size_t     sz   = 0,
-                 insGroup*  ig   = nullptr);
 
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);
@@ -305,10 +302,6 @@ inline emitAttr emitDecodeScale(unsigned ensz)
 /************************************************************************/
 
 public:
-void emitLoopAlign(unsigned short paddingBytes);
-
-void emitLongLoopAlign(unsigned short alignmentBoundary);
-
 void emitIns(instruction ins);
 
 void emitIns(instruction ins, emitAttr attr);
@@ -520,15 +513,10 @@ void emitIns_SIMD_R_R_S_R(
 
 enum EmitCallType
 {
-    EC_FUNC_TOKEN,       //   Direct call to a helper/static/nonvirtual/global method
-    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method
-    EC_FUNC_ADDR,        // Direct call to an absolute address
-
-    EC_FUNC_VIRTUAL, // Call to a virtual method (using the vtable)
-    EC_INDIR_R,      // Indirect call via register
-    EC_INDIR_SR,     // Indirect call via stack-reference (local var)
-    EC_INDIR_C,      // Indirect call via static class var
-    EC_INDIR_ARD,    // Indirect call via an addressing mode
+    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
+    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
+    EC_INDIR_R,          // Indirect call via register (call rax)
+    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
 
     EC_COUNT
 };
@@ -544,7 +532,7 @@ void emitIns_Call(EmitCallType          callType,
                   VARSET_VALARG_TP      ptrVars,
                   regMaskTP             gcrefRegs,
                   regMaskTP             byrefRegs,
-                  IL_OFFSETX            ilOffset = BAD_IL_OFFSET,
+                  const DebugInfo& di = DebugInfo(),
                   regNumber             ireg     = REG_NA,
                   regNumber             xreg     = REG_NA,
                   unsigned              xmul     = 0,

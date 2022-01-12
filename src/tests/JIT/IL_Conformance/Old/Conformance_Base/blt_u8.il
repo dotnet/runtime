@@ -124,4 +124,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_u8.exe{}
+.assembly blt_u8{}

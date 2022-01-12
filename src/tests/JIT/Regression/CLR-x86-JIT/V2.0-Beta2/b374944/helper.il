@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly helper {}
+.assembly extern xunit.core {}
 .module helper.exe
 
 
@@ -26,6 +27,9 @@
 
 .method private hidebysig static int32 Main() cil managed
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (native int v_0, int32 v_1)
 

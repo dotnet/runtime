@@ -1,26 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
-using System.Security;
 
 namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-        public static uint[] Divide(uint[] left, uint right,
-                                    out uint remainder)
+        public static void Divide(ReadOnlySpan<uint> left, uint right, Span<uint> quotient, out uint remainder)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
+            Debug.Assert(quotient.Length == left.Length);
 
             // Executes the division for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
 
-            uint[] quotient = new uint[left.Length];
-
             ulong carry = 0UL;
+
             for (int i = left.Length - 1; i >= 0; i--)
             {
                 ulong value = (carry << 32) | left[i];
@@ -29,18 +27,14 @@ namespace System.Numerics
                 carry = value - digit * right;
             }
             remainder = (uint)carry;
-
-            return quotient;
         }
 
-        public static uint[] Divide(uint[] left, uint right)
+        public static void Divide(ReadOnlySpan<uint> left, uint right, Span<uint> quotient)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
+            Debug.Assert(quotient.Length == left.Length);
 
             // Same as above, but only computing the quotient.
-
-            uint[] quotient = new uint[left.Length];
 
             ulong carry = 0UL;
             for (int i = left.Length - 1; i >= 0; i--)
@@ -50,17 +44,13 @@ namespace System.Numerics
                 quotient[i] = (uint)digit;
                 carry = value - digit * right;
             }
-
-            return quotient;
         }
 
-        public static uint Remainder(uint[] left, uint right)
+        public static uint Remainder(ReadOnlySpan<uint> left, uint right)
         {
-            Debug.Assert(left != null);
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the remainder.
-
             ulong carry = 0UL;
             for (int i = left.Length - 1; i >= 0; i--)
             {
@@ -71,115 +61,79 @@ namespace System.Numerics
             return (uint)carry;
         }
 
-        public static unsafe uint[] Divide(uint[] left, uint[] right,
-                                           out uint[] remainder)
+        public static void Divide(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient, Span<uint> remainder)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(quotient.Length == left.Length - right.Length + 1);
+            Debug.Assert(remainder.Length == left.Length);
 
-            // Switching to unsafe pointers helps sparing
-            // some nasty index calculations...
-
-            uint[] localLeft = left.AsSpan().ToArray(); // left will get overwritten, we need a local copy
-            uint[] bits = new uint[left.Length - right.Length + 1];
-
-            fixed (uint* l = &localLeft[0], r = &right[0], b = &bits[0])
-            {
-                Divide(l, localLeft.Length,
-                       r, right.Length,
-                       b, bits.Length);
-            }
-
-            remainder = localLeft;
-
-            return bits;
+            left.CopyTo(remainder);
+            Divide(remainder, right, quotient);
         }
 
-        public static unsafe uint[] Divide(uint[] left, uint[] right)
+        public static void Divide(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> quotient)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(quotient.Length == left.Length - right.Length + 1);
 
             // Same as above, but only returning the quotient.
 
-            // left will get overwritten, we need a local copy
-            Span<uint> localLeft = stackalloc uint[0];
-            if (left.Length <= BigInteger.StackallocUInt32Limit)
-            {
-                localLeft = stackalloc uint[BigInteger.StackallocUInt32Limit].Slice(0, left.Length);
-                left.AsSpan().CopyTo(localLeft);
-            }
-            else
-            {
-                localLeft = left.AsSpan().ToArray();
-            }
+            uint[]? leftCopyFromPool = null;
 
-            uint[] bits = new uint[left.Length - right.Length + 1];
+            // NOTE: left will get overwritten, we need a local copy
+            // However, mutated left is not used afterwards, so use array pooling or stack alloc
+            Span<uint> leftCopy = (left.Length <= StackAllocThreshold ?
+                                  stackalloc uint[StackAllocThreshold]
+                                  : leftCopyFromPool = ArrayPool<uint>.Shared.Rent(left.Length)).Slice(0, left.Length);
+            left.CopyTo(leftCopy);
 
-            fixed (uint* l = &localLeft[0], r = &right[0], b = &bits[0])
-            {
-                Divide(l, localLeft.Length,
-                       r, right.Length,
-                       b, bits.Length);
-            }
+            Divide(leftCopy, right, quotient);
 
-            return bits;
+            if (leftCopyFromPool != null)
+                ArrayPool<uint>.Shared.Return(leftCopyFromPool);
         }
 
-        public static unsafe uint[] Remainder(uint[] left, uint[] right)
+        public static void Remainder(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> remainder)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(remainder.Length >= left.Length);
 
             // Same as above, but only returning the remainder.
 
-            uint[] localLeft = left.AsSpan().ToArray(); // left will get overwritten, we need a local copy
-
-            fixed (uint* l = &localLeft[0], r = &right[0])
-            {
-                Divide(l, localLeft.Length,
-                       r, right.Length,
-                       null, 0);
-            }
-
-            return localLeft;
+            left.CopyTo(remainder);
+            Divide(remainder, right, default);
         }
 
-        private static unsafe void Divide(uint* left, int leftLength,
-                                          uint* right, int rightLength,
-                                          uint* bits, int bitsLength)
+        private static void Divide(Span<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
         {
-            Debug.Assert(leftLength >= 1);
-            Debug.Assert(rightLength >= 1);
-            Debug.Assert(leftLength >= rightLength);
-            Debug.Assert(bitsLength == leftLength - rightLength + 1
-                || bitsLength == 0);
+            Debug.Assert(left.Length >= 1);
+            Debug.Assert(right.Length >= 1);
+            Debug.Assert(left.Length >= right.Length);
+            Debug.Assert(bits.Length == left.Length - right.Length + 1
+                || bits.Length == 0);
 
             // Executes the "grammar-school" algorithm for computing q = a / b.
             // Before calculating q_i, we get more bits into the highest bit
             // block of the divisor. Thus, guessing digits of the quotient
             // will be more precise. Additionally we'll get r = a % b.
 
-            uint divHi = right[rightLength - 1];
-            uint divLo = rightLength > 1 ? right[rightLength - 2] : 0;
+            uint divHi = right[right.Length - 1];
+            uint divLo = right.Length > 1 ? right[right.Length - 2] : 0;
 
             // We measure the leading zeros of the divisor
-            int shift = LeadingZeros(divHi);
+            int shift = BitOperations.LeadingZeroCount(divHi);
             int backShift = 32 - shift;
 
             // And, we make sure the most significant bit is set
             if (shift > 0)
             {
-                uint divNx = rightLength > 2 ? right[rightLength - 3] : 0;
+                uint divNx = right.Length > 2 ? right[right.Length - 3] : 0;
 
                 divHi = (divHi << shift) | (divLo >> backShift);
                 divLo = (divLo << shift) | (divNx >> backShift);
@@ -187,10 +141,10 @@ namespace System.Numerics
 
             // Then, we divide all of the bits as we would do it using
             // pen and paper: guessing the next digit, subtracting, ...
-            for (int i = leftLength; i >= rightLength; i--)
+            for (int i = left.Length; i >= right.Length; i--)
             {
-                int n = i - rightLength;
-                uint t = i < leftLength ? left[i] : 0;
+                int n = i - right.Length;
+                uint t = (uint)i < (uint)left.Length ? left[i] : 0;
 
                 ulong valHi = ((ulong)t << 32) | left[i - 1];
                 uint valLo = i > 1 ? left[i - 2] : 0;
@@ -217,15 +171,13 @@ namespace System.Numerics
                 if (digit > 0)
                 {
                     // Now it's time to subtract our current quotient
-                    uint carry = SubtractDivisor(left + n, leftLength - n,
-                                                 right, rightLength, digit);
+                    uint carry = SubtractDivisor(left.Slice(n), right, digit);
                     if (carry != t)
                     {
                         Debug.Assert(carry == t + 1);
 
                         // Our guess was still exactly one too high
-                        carry = AddDivisor(left + n, leftLength - n,
-                                           right, rightLength);
+                        carry = AddDivisor(left.Slice(n), right);
                         --digit;
 
                         Debug.Assert(carry == 1);
@@ -233,41 +185,36 @@ namespace System.Numerics
                 }
 
                 // We have the digit!
-                if (bitsLength != 0)
+                if ((uint)n < (uint)bits.Length)
                     bits[n] = (uint)digit;
-                if (i < leftLength)
+
+                if ((uint)i < (uint)left.Length)
                     left[i] = 0;
             }
         }
 
-        private static unsafe uint AddDivisor(uint* left, int leftLength,
-                                              uint* right, int rightLength)
+        private static uint AddDivisor(Span<uint> left, ReadOnlySpan<uint> right)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
+            Debug.Assert(left.Length >= right.Length);
 
             // Repairs the dividend, if the last subtract was too much
 
             ulong carry = 0UL;
 
-            for (int i = 0; i < rightLength; i++)
+            for (int i = 0; i < right.Length; i++)
             {
-                ulong digit = (left[i] + carry) + right[i];
-                left[i] = unchecked((uint)digit);
+                ref uint leftElement = ref left[i];
+                ulong digit = (leftElement + carry) + right[i];
+                leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
             }
 
             return (uint)carry;
         }
 
-        private static unsafe uint SubtractDivisor(uint* left, int leftLength,
-                                                   uint* right, int rightLength,
-                                                   ulong q)
+        private static uint SubtractDivisor(Span<uint> left, ReadOnlySpan<uint> right, ulong q)
         {
-            Debug.Assert(leftLength >= 0);
-            Debug.Assert(rightLength >= 0);
-            Debug.Assert(leftLength >= rightLength);
+            Debug.Assert(left.Length >= right.Length);
             Debug.Assert(q <= 0xFFFFFFFF);
 
             // Combines a subtract and a multiply operation, which is naturally
@@ -275,14 +222,15 @@ namespace System.Numerics
 
             ulong carry = 0UL;
 
-            for (int i = 0; i < rightLength; i++)
+            for (int i = 0; i < right.Length; i++)
             {
                 carry += right[i] * q;
                 uint digit = unchecked((uint)carry);
                 carry = carry >> 32;
-                if (left[i] < digit)
+                ref uint leftElement = ref left[i];
+                if (leftElement < digit)
                     ++carry;
-                left[i] = unchecked(left[i] - digit);
+                leftElement = unchecked(leftElement - digit);
             }
 
             return (uint)carry;
@@ -315,40 +263,6 @@ namespace System.Numerics
                 return true;
 
             return false;
-        }
-
-        private static int LeadingZeros(uint value)
-        {
-            if (value == 0)
-                return 32;
-
-            int count = 0;
-            if ((value & 0xFFFF0000) == 0)
-            {
-                count += 16;
-                value = value << 16;
-            }
-            if ((value & 0xFF000000) == 0)
-            {
-                count += 8;
-                value = value << 8;
-            }
-            if ((value & 0xF0000000) == 0)
-            {
-                count += 4;
-                value = value << 4;
-            }
-            if ((value & 0xC0000000) == 0)
-            {
-                count += 2;
-                value = value << 2;
-            }
-            if ((value & 0x80000000) == 0)
-            {
-                count += 1;
-            }
-
-            return count;
         }
     }
 }

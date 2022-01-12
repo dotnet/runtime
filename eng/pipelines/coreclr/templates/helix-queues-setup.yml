@@ -66,23 +66,23 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.312.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200602002622-e06dc59
+        - (Alpine.314.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.312.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200602002622-e06dc59
+        - (Alpine.314.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
 
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'Linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.313.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
+        - (Alpine.314.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm32v7-20210910135806-8a6f4f3
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.313.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
+        - (Alpine.314.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm32v7-20210910135806-8a6f4f3
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.312.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm64v8-20200602002604-25f8a3e
+        - (Alpine.314.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.312.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm64v8-20200602002604-25f8a3e
+        - (Alpine.314.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:

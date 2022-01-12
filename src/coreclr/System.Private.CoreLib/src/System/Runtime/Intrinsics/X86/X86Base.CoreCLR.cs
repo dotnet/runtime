@@ -8,7 +8,7 @@ namespace System.Runtime.Intrinsics.X86
 {
     public abstract partial class X86Base
     {
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "X86BaseCpuId")]
         private static extern unsafe void __cpuidex(int* cpuInfo, int functionId, int subFunctionId);
     }
 }

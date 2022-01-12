@@ -6003,20 +6003,6 @@ BOOL MethodTable::SanityCheck()
 }
 
 //==========================================================================================
-
-// Structs containing GC pointers whose size is at most this are always stack-allocated.
-const unsigned MaxStructBytesForLocalVarRetBuffBytes = 2 * sizeof(void*);  // 4 pointer-widths.
-
-BOOL MethodTable::IsStructRequiringStackAllocRetBuf()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // Disable this optimization. It has limited value (only kicks in on x86, and only for less common structs),
-    // causes bugs and introduces odd ABI differences not compatible with ReadyToRun.
-    return FALSE;
-}
-
-//==========================================================================================
 unsigned MethodTable::GetTypeDefRid()
 {
     LIMITED_METHOD_DAC_CONTRACT;

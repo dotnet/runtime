@@ -30,5 +30,21 @@ namespace TypeSystemTests
                 layout.ThreadGcStatics.Size = LayoutInt.Zero;
             }
         }
+
+        protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            if (type.IsExplicitLayout)
+            {
+                return ComputeExplicitFieldLayout(type, numInstanceFields);
+            }
+            else if (type.IsSequentialLayout || type.IsEnum)
+            {
+                return ComputeSequentialFieldLayout(type, numInstanceFields);
+            }
+            else
+            {
+                return ComputeAutoFieldLayout(type, numInstanceFields);
+            }
+        }
     }
 }

@@ -108,7 +108,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(nameof(IsThreadingAndPreciseGcSupported))]
         public static void RunThreadLocalTest5_Dispose()
         {
             // test recycling the combination index;
@@ -128,15 +128,15 @@ namespace System.Threading.Tests
             // it to be run on another thread.
             new Task(() => { threadLocal.Value = new SetMreOnFinalize(mres); }, TaskCreationOptions.LongRunning).Start(TaskScheduler.Default);
 
-            SpinWait.SpinUntil(() =>
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-                GC.Collect();
-                return mres.IsSet;
-            }, ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
-
-            Assert.True(mres.IsSet);
+            ThreadTestHelpers.WaitForConditionWithCustomDelay(
+                () => mres.IsSet,
+                () =>
+                {
+                    Thread.Sleep(1);
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                });
         }
 
         [Fact]
@@ -478,5 +478,8 @@ namespace System.Threading.Tests
                 _mres.Set();
             }
         }
+
+        public static bool IsThreadingAndPreciseGcSupported =>
+            PlatformDetection.IsThreadingSupported && PlatformDetection.IsPreciseGcSupported;
     }
 }

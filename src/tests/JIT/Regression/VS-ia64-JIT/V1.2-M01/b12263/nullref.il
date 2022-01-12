@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly field017{}
+.assembly extern xunit.core {}
 .module field017.exe
 
 .class private auto ansi beforefieldinit MyTest
@@ -50,6 +51,9 @@
 
   .method public hidebysig static void Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .locals init (int32 V_0,
              class MyClass V_1,
              int32 V_2,

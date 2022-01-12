@@ -268,9 +268,11 @@ namespace System.Linq.Expressions.Tests
                 double, double, double, double,
                 bool>), exp.Type);
 
-#if FEATURE_COMPILE
-            // From this point on, the tests require FEATURE_COMPILE (RefEmit) support as SLE needs to create delegate types on the fly.
+            // From this point on, the tests require IsLinqExpressionsBuiltWithIsInterpretingOnly (RefEmit) support as SLE needs to create delegate types on the fly.
             // You can't instantiate Func<> over 20 arguments or over byrefs.
+            if (PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly)
+                return;
+
             ParameterExpression[] paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
             exp = Expression.Lambda(
                 Expression.Constant(0),
@@ -302,7 +304,6 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(1, delMethod.GetParameters().Length);
             Assert.Equal(typeof(int).MakeByRefType(), delMethod.GetParameters()[0].ParameterType);
             Assert.Same(delType, Expression.Lambda(Expression.Constant(3L), Expression.Parameter(typeof(int).MakeByRefType())).Type);
-#endif //FEATURE_COMPILE
         }
 
         [Fact]
@@ -790,8 +791,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(23, result);
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public void AboveByteMaxArityArgIL()
         {
             ParameterExpression[] pars = Enumerable.Range(0, 300)
@@ -808,7 +808,6 @@ namespace System.Linq.Expressions.Tests
 }
 ");
         }
-#endif
 
         private struct Mutable
         {
@@ -882,8 +881,7 @@ namespace System.Linq.Expressions.Tests
             Assert.True(result.Mutated);
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public void AboveByteMaxArityArgAddressIL()
         {
             ParameterExpression parToMutate = Expression.Parameter(typeof(Mutable));
@@ -903,7 +901,6 @@ namespace System.Linq.Expressions.Tests
 }
 ");
         }
-#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void ExcessiveArity(bool useInterpreter)
@@ -927,9 +924,9 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false, Enumerable.Empty<ParameterExpression>()));
         }
 
-#if FEATURE_COMPILE // When we don't have FEATURE_COMPILE we don't have the Reflection.Emit used in the tests.
-
-        [Theory, ClassData(typeof(CompilationTypes))]
+        // When we don't have IsLinqExpressionsBuiltWithIsInterpretingOnly we don't have the Reflection.Emit used in the tests.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ClassData(typeof(CompilationTypes))]
         public void PrivateDelegate(bool useInterpreter)
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect);
@@ -943,8 +940,6 @@ namespace System.Linq.Expressions.Tests
             Assert.IsType(delType, del);
             Assert.Equal(42, del.DynamicInvoke());
         }
-
-#endif
 
         [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Optimization in .NET Core")]

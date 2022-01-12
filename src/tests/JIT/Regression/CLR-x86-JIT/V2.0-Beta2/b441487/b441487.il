@@ -21,6 +21,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module b441487.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -30,7 +31,7 @@
 
 
 
-.class public auto ansi beforefieldinit Test.FooException`1<T>
+.class public auto ansi beforefieldinit Test_b441487.FooException`1<T>
        extends [mscorlib]System.Exception
 {
   .method public hidebysig specialname virtual 
@@ -65,11 +66,11 @@ starg 0
 
   .property instance string Message()
   {
-    .get instance string Test.FooException`1::get_Message()
+    .get instance string Test_b441487.FooException`1::get_Message()
   } 
 } 
 
-.class public auto ansi beforefieldinit Test.Widget`1<T>
+.class public auto ansi beforefieldinit Test_b441487.Widget`1<T>
        extends [mscorlib]System.Object
 {
   .method public hidebysig instance void 
@@ -83,7 +84,7 @@ starg 0
 ldnull
 starg 0
 
-    IL_000c:  call       void class Test.Widget`1<!T>::Hello()
+    IL_000c:  call       void class Test_b441487.Widget`1<!T>::Hello()
     IL_0011:  nop
     IL_0012:  ret
   } 
@@ -105,7 +106,7 @@ starg 0
           CatchMe() cil managed noinlining
   {
     .maxstack  1
-    .locals init (class Test.FooException`1<!T> V_0)
+    .locals init (class Test_b441487.FooException`1<!T> V_0)
     IL_0000:  nop
     IL_0001:  ldstr      "CatchMe"
     IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
@@ -115,11 +116,11 @@ starg 0
     .try
     {
       IL_000c:  nop
-      IL_000d:  newobj     instance void class Test.FooException`1<!T>::.ctor()
+      IL_000d:  newobj     instance void class Test_b441487.FooException`1<!T>::.ctor()
       IL_0012:  throw
 
     }  
-    catch class Test.FooException`1<!T> 
+    catch class Test_b441487.FooException`1<!T> 
     {
       IL_0013:  stloc.0
       IL_0014:  nop
@@ -144,7 +145,7 @@ starg 0
     IL_000b:  nop
 ldnull
 starg 0
-    IL_000c:  call       void class Test.Widget`1<!T>::Hello()
+    IL_000c:  call       void class Test_b441487.Widget`1<!T>::Hello()
     IL_0011:  nop
     IL_0012:  ret
   } 
@@ -160,7 +161,7 @@ starg 0
 
 } 
 
-.class public auto ansi beforefieldinit Test.Turtle`1<.ctor T>
+.class public auto ansi beforefieldinit Test_b441487.Turtle`1<.ctor T>
        extends [mscorlib]System.Object
 {
   .method public hidebysig instance void 
@@ -199,7 +200,7 @@ starg 0
 
 } 
 
-.class public auto ansi Test.Schyzofrenic`1<T>
+.class public auto ansi Test_b441487.Schyzofrenic`1<T>
        extends [mscorlib]System.Object
 {
   .method private hidebysig specialname rtspecialname static
@@ -225,11 +226,14 @@ starg 0
 
 } 
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_b441487.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (int32 V_0,
@@ -239,23 +243,23 @@ starg 0
     IL_0001:  ldc.i4.0
     IL_0002:  stloc.0
     IL_0003:  ldloc.0
-    IL_0004:  call       int32 Test.Program::RunTests<string>()
+    IL_0004:  call       int32 Test_b441487.Program::RunTests<string>()
     IL_0009:  add
     IL_000a:  stloc.0
     IL_000b:  ldloc.0
-    IL_000c:  call       int32 Test.Program::RunTests<int32>()
+    IL_000c:  call       int32 Test_b441487.Program::RunTests<int32>()
     IL_0011:  add
     IL_0012:  stloc.0
     IL_0013:  ldloc.0
-    IL_0014:  call       int32 Test.Program::RunTests<object>()
+    IL_0014:  call       int32 Test_b441487.Program::RunTests<object>()
     IL_0019:  add
     IL_001a:  stloc.0
     IL_001b:  ldloc.0
-    IL_001c:  call       int32 Test.Program::RunTurtle<object>()
+    IL_001c:  call       int32 Test_b441487.Program::RunTurtle<object>()
     IL_0021:  add
     IL_0022:  stloc.0
     IL_0023:  ldloc.0
-    IL_0024:  call       int32 Test.Program::RunSchyzofrenic()
+    IL_0024:  call       int32 Test_b441487.Program::RunSchyzofrenic()
     IL_0029:  add
     IL_002a:  stloc.0
     IL_002b:  ldloc.0
@@ -289,13 +293,13 @@ starg 0
           RunSchyzofrenic() cil managed noinlining
   {
     .maxstack  1
-    .locals init (class Test.Schyzofrenic`1<string> V_0,
+    .locals init (class Test_b441487.Schyzofrenic`1<string> V_0,
              int32 V_1)
     IL_0000:  nop
     IL_0001:  ldstr      "Running Schyzofrenic<string>()"
     IL_0006:  call       void [System.Console]System.Console::WriteLine(string)
     IL_000b:  nop
-    IL_000c:  newobj     instance void class Test.Schyzofrenic`1<string>::.ctor()
+    IL_000c:  newobj     instance void class Test_b441487.Schyzofrenic`1<string>::.ctor()
     IL_0011:  stloc.0
     IL_0012:  ldc.i4.0
     IL_0013:  stloc.1
@@ -324,8 +328,8 @@ starg 0
     .try
     {
       IL_0018:  nop
-      IL_0019:  newobj     instance void class Test.Turtle`1<!!T>::.ctor()
-      IL_001e:  call       instance void class Test.Turtle`1<!!T>::Foo()
+      IL_0019:  newobj     instance void class Test_b441487.Turtle`1<!!T>::.ctor()
+      IL_001e:  call       instance void class Test_b441487.Turtle`1<!!T>::Foo()
       IL_0023:  nop
       IL_0024:  nop
       IL_0025:  leave.s    IL_004c
@@ -380,8 +384,8 @@ starg 0
     .try
     {
       IL_0018:  nop
-      IL_0019:  newobj     instance void class Test.Widget`1<!!T>::.ctor()
-      IL_001e:  call       instance void class Test.Widget`1<!!T>::Foo()
+      IL_0019:  newobj     instance void class Test_b441487.Widget`1<!!T>::.ctor()
+      IL_001e:  call       instance void class Test_b441487.Widget`1<!!T>::Foo()
       IL_0023:  nop
       IL_0024:  nop
       IL_0025:  leave.s    IL_004c
@@ -412,8 +416,8 @@ starg 0
     .try
     {
       IL_004d:  nop
-      IL_004e:  newobj     instance void class Test.Widget`1<!!T>::.ctor()
-      IL_0053:  call       instance void class Test.Widget`1<!!T>::CatchMe()
+      IL_004e:  newobj     instance void class Test_b441487.Widget`1<!!T>::.ctor()
+      IL_0053:  call       instance void class Test_b441487.Widget`1<!!T>::CatchMe()
       IL_0058:  nop
       IL_0059:  nop
       IL_005a:  leave.s    IL_0081
@@ -444,8 +448,8 @@ starg 0
     .try
     {
       IL_0082:  nop
-      IL_0083:  newobj     instance void class Test.Widget`1<!!T>::.ctor()
-      IL_0088:  call       instance void class Test.Widget`1<!!T>::SyncIt()
+      IL_0083:  newobj     instance void class Test_b441487.Widget`1<!!T>::.ctor()
+      IL_0088:  call       instance void class Test_b441487.Widget`1<!!T>::SyncIt()
       IL_008d:  nop
       IL_008e:  nop
       IL_008f:  leave.s    IL_00b6

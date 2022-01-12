@@ -281,7 +281,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "dataWritten:" + dataWritten + " _leftToWrite:" + _leftToWrite + " _closed:" + _closed);
         }
 
-        private static readonly byte[] s_chunkTerminator = new byte[] { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
+        private static ReadOnlySpan<byte> ChunkTerminator => new byte[] { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
 
         private void DisposeCore()
         {
@@ -303,7 +303,7 @@ namespace System.Net
                 {
                     flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
                 }
-                fixed (void* pBuffer = &s_chunkTerminator[0])
+                fixed (void* pBuffer = &MemoryMarshal.GetReference(ChunkTerminator))
                 {
                     Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
                     if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
@@ -311,7 +311,7 @@ namespace System.Net
                         Interop.HttpApi.HTTP_DATA_CHUNK dataChunk = default;
                         dataChunk.DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                         dataChunk.pBuffer = (byte*)pBuffer;
-                        dataChunk.BufferLength = (uint)s_chunkTerminator.Length;
+                        dataChunk.BufferLength = (uint)ChunkTerminator.Length;
                         pDataChunk = &dataChunk;
                     }
                     if (!sentHeaders)

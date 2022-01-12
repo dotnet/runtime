@@ -10,7 +10,7 @@ namespace System.IO.Compression
         // const tables used in decoding:
 
         // Extra bits for length code 257 - 285.
-        private static readonly byte[] s_extraLengthBits =
+        private static ReadOnlySpan<byte> ExtraLengthBits => new byte[]
         {
             0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3,
             3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 16
@@ -33,9 +33,9 @@ namespace System.IO.Compression
         };
 
         // code lengths for code length alphabet is stored in following order
-        private static readonly byte[] s_codeOrder = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
+        private static ReadOnlySpan<byte> CodeOrder => new byte[] { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
-        private static readonly byte[] s_staticDistanceTreeTable =
+        private static ReadOnlySpan<byte> StaticDistanceTreeTable => new byte[]
         {
             0x00, 0x10, 0x08, 0x18, 0x04, 0x14, 0x0c, 0x1c, 0x02, 0x12, 0x0a, 0x1a,
             0x06, 0x16, 0x0e, 0x1e, 0x01, 0x11, 0x09, 0x19, 0x05, 0x15, 0x0d, 0x1d,
@@ -388,11 +388,11 @@ namespace System.IO.Compression
                             }
                             else
                             {
-                                if (symbol < 0 || symbol >= s_extraLengthBits.Length)
+                                if ((uint)symbol >= ExtraLengthBits.Length)
                                 {
                                     throw new InvalidDataException(SR.GenericInvalidData);
                                 }
-                                _extraBits = s_extraLengthBits[symbol];
+                                _extraBits = ExtraLengthBits[symbol];
                                 Debug.Assert(_extraBits != 0, "We handle other cases separately!");
                             }
                             _length = symbol;
@@ -431,7 +431,7 @@ namespace System.IO.Compression
                             _distanceCode = _input.GetBits(5);
                             if (_distanceCode >= 0)
                             {
-                                _distanceCode = s_staticDistanceTreeTable[_distanceCode];
+                                _distanceCode = StaticDistanceTreeTable[_distanceCode];
                             }
                         }
 
@@ -544,13 +544,13 @@ namespace System.IO.Compression
                         {
                             return false;
                         }
-                        _codeLengthTreeCodeLength[s_codeOrder[_loopCounter]] = (byte)bits;
+                        _codeLengthTreeCodeLength[CodeOrder[_loopCounter]] = (byte)bits;
                         ++_loopCounter;
                     }
 
-                    for (int i = _codeLengthCodeCount; i < s_codeOrder.Length; i++)
+                    for (int i = _codeLengthCodeCount; i < CodeOrder.Length; i++)
                     {
-                        _codeLengthTreeCodeLength[s_codeOrder[i]] = 0;
+                        _codeLengthTreeCodeLength[CodeOrder[i]] = 0;
                     }
 
                     // create huffman tree for code length

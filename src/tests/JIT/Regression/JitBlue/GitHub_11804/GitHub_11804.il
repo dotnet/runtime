@@ -16,6 +16,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module GitHub_11804.exe
 // MVID: {9CC2AC15-DDA3-4ADF-9566-89AB25A8CF63}
 .imagebase 0x00400000
@@ -62,6 +63,9 @@
   .method private hidebysig static int32
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       20 (0x14)
     .maxstack  8

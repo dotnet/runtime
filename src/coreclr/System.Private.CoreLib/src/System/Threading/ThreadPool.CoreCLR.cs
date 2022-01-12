@@ -157,10 +157,7 @@ namespace System.Threading
             _state = state;
         }
 
-        void IThreadPoolWorkItem.Execute() => ExecuteUnmanagedThreadPoolWorkItem(_callback, _state);
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void ExecuteUnmanagedThreadPoolWorkItem(IntPtr callback, IntPtr state);
+        unsafe void IThreadPoolWorkItem.Execute() => ((delegate* unmanaged<IntPtr, int>)_callback)(_state);
     }
 
     public static partial class ThreadPool
@@ -345,7 +342,7 @@ namespace System.Threading
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_GetCompletedWorkItemCount")]
         private static extern long GetCompletedWorkItemCount();
 
         private static long PendingUnmanagedWorkItemCount => UsePortableThreadPool ? 0 : GetPendingUnmanagedWorkItemCount();
@@ -422,7 +419,7 @@ namespace System.Threading
             RequestWorkerThreadNative();
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_RequestWorkerThread")]
         private static extern Interop.BOOL RequestWorkerThreadNative();
 
         // Entry point from unmanaged code
@@ -443,7 +440,7 @@ namespace System.Threading
             return PerformRuntimeSpecificGateActivitiesNative(cpuUtilization) != Interop.BOOL.FALSE;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_PerformGateActivities")]
         private static extern Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

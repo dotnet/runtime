@@ -15,7 +15,6 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    [Trait("category", "FlakyAppHostTests")]
     public class BundleExtractToSpecificPath : BundleTestBase, IClassFixture<BundleExtractToSpecificPath.SharedTestState>
     {
         private SharedTestState sharedTestState;

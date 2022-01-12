@@ -934,4 +934,4 @@ FAIL:
 	ret
 }
 }
-.assembly ble_un_r4.exe{}
+.assembly ble_un_r4{}

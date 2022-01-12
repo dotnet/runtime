@@ -57,6 +57,9 @@ namespace System.Text.RegularExpressions
         protected internal Match? runmatch;        // result object
         protected internal Regex? runregex;        // regex object
 
+        // TODO: Expose something as protected internal: https://github.com/dotnet/runtime/issues/59629
+        private protected bool quick;              // false if match details matter, true if only the fact that match occurred matters
+
         private int _timeout;              // timeout in milliseconds (needed for actual)
         private bool _ignoreTimeout;
         private int _timeoutOccursAt;
@@ -68,7 +71,7 @@ namespace System.Text.RegularExpressions
         private const int TimeoutCheckFrequency = 1000;
         private int _timeoutChecksToSkip;
 
-        protected internal RegexRunner() { }
+        protected RegexRunner() { }
 
         /// <summary>
         /// Scans the string to find the first match. Uses the Match object
@@ -82,11 +85,13 @@ namespace System.Text.RegularExpressions
         /// and we could use a separate method Skip() that will quickly scan past
         /// any characters that we know can't match.
         /// </summary>
-        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+        protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
+            this.quick = quick;
+
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
@@ -218,8 +223,10 @@ namespace System.Text.RegularExpressions
         /// This optionally repeatedly hands out the same Match instance, updated with new information.
         /// <paramref name="reuseMatchObject"/> should be set to false if the Match object is handed out to user code.
         /// </remarks>
-        internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject, TimeSpan timeout)
+        internal void ScanInternal<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, bool reuseMatchObject, TimeSpan timeout)
         {
+            quick = false;
+
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;

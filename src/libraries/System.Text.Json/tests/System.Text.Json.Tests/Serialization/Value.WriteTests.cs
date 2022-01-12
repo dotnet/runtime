@@ -111,6 +111,21 @@ namespace System.Text.Json.Serialization.Tests
                 Version version = new Version(1, 2, 3, 4);
                 Assert.Equal(@"""1.2.3.4""", JsonSerializer.Serialize(version));
             }
+
+            {
+                Version version = new Version(int.MaxValue, int.MaxValue);
+                Assert.Equal(@"""2147483647.2147483647""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(int.MaxValue, int.MaxValue, int.MaxValue);
+                Assert.Equal(@"""2147483647.2147483647.2147483647""", JsonSerializer.Serialize(version));
+            }
+
+            {
+                Version version = new Version(int.MaxValue, int.MaxValue, int.MaxValue, int.MaxValue);
+                Assert.Equal(@"""2147483647.2147483647.2147483647.2147483647""", JsonSerializer.Serialize(version));
+            }
         }
 
         [Theory]

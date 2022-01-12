@@ -22,6 +22,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60334", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void Test_GetCurrentMethod_Inlineable()
         {
             // Verify that the result is not affected by inlining optimizations

@@ -1845,25 +1845,21 @@ namespace System.Reflection.Emit
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Linker thinks Type.GetConstructor(ConstructorInfo) is one of the public APIs because it doesn't analyze method signatures. We already have ConstructorInfo.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
-            /*FIXME I would expect the same checks of GetMethod here*/
-            if (type == null)
-                throw new ArgumentException("Type is not generic", nameof(type));
+            if (!IsValidGetMethodType(type))
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            if (!type.IsGenericType)
-                throw new ArgumentException("Type is not a generic type", nameof(type));
-
-            if (type.IsGenericTypeDefinition)
-                throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
-
-            if (constructor == null)
-                throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
+            if (type is TypeBuilder && type.ContainsGenericParameters)
+                type = type.MakeGenericType(type.GetGenericArguments());
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("constructor declaring type is not a generic type definition", nameof(constructor));
+                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
+
             if (constructor.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(constructor));
+                throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             ConstructorInfo res = type.GetConstructor(constructor);
             if (res == null)
@@ -1874,6 +1870,9 @@ namespace System.Reflection.Emit
 
         private static bool IsValidGetMethodType(Type type)
         {
+            if (type == null)
+                return false;
+
             if (type is TypeBuilder || type is TypeBuilderInstantiation)
                 return true;
             /*GetMethod() must work with TypeBuilders after CreateType() was called.*/
@@ -1898,20 +1897,19 @@ namespace System.Reflection.Emit
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (!IsValidGetMethodType(type))
-                throw new ArgumentException("type is not TypeBuilder but " + type.GetType(), nameof(type));
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (type is TypeBuilder && type.ContainsGenericParameters)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (!type.IsGenericType)
-                throw new ArgumentException("type is not a generic type", nameof(type));
+            if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
+                throw new ArgumentException(SR.Argument_NeedGenericMethodDefinition, nameof(method));
 
             if (!method.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException("method declaring type is not a generic type definition", nameof(method));
+                throw new ArgumentException(SR.Argument_MethodNeedGenericDeclaringType, nameof(method));
+
             if (method.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("method declaring type is not the generic type definition of type", nameof(method));
-            if (method == null)
-                throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
+                throw new ArgumentException(SR.Argument_InvalidMethodDeclaringType, nameof(type));
 
             MethodInfo res = type.GetMethod(method);
             if (res == null)
@@ -1920,19 +1918,24 @@ namespace System.Reflection.Emit
             return res;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
+            Justification = "Type.MakeGenericType is used to create a typical instantiation")]
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
-            if (!type.IsGenericType)
-                throw new ArgumentException("Type is not a generic type", nameof(type));
+            if (!IsValidGetMethodType(type))
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
-            if (type.IsGenericTypeDefinition)
-                throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
+            if (type is TypeBuilder && type.ContainsGenericParameters)
+                type = type.MakeGenericType(type.GetGenericArguments());
+
+            if (!field.DeclaringType!.IsGenericTypeDefinition)
+                throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
+
+            if (field.DeclaringType != type.GetGenericTypeDefinition())
+                throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             if (field is FieldOnTypeBuilderInst)
                 throw new ArgumentException("The specified field must be declared on a generic type definition.", nameof(field));
-
-            if (field.DeclaringType != type.GetGenericTypeDefinition())
-                throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(field));
 
             FieldInfo res = type.GetField(field);
             if (res == null)

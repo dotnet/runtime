@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class FileUtils
     {

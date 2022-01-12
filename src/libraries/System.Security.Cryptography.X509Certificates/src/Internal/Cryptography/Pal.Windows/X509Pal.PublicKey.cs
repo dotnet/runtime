@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -30,8 +31,7 @@ namespace Internal.Cryptography.Pal
             {
                 return DecodeECPublicKey(
                     pal,
-                    factory: cngKey => new ECDsaCng(cngKey),
-                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams));
+                    factory: cngKey => new ECDsaCng(cngKey));
             }
 
             throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -44,7 +44,6 @@ namespace Internal.Cryptography.Pal
                 return DecodeECPublicKey(
                     pal,
                     factory: cngKey => new ECDiffieHellmanCng(cngKey),
-                    import: (algorithm, ecParams) => algorithm.ImportParameters(ecParams),
                     importFlags: CryptImportPublicKeyInfoFlags.CRYPT_OID_INFO_PUBKEY_ENCRYPT_KEY_FLAG);
             }
 
@@ -78,9 +77,8 @@ namespace Internal.Cryptography.Pal
         private static TAlgorithm DecodeECPublicKey<TAlgorithm>(
             CertificatePal certificatePal,
             Func<CngKey, TAlgorithm> factory,
-            Action<TAlgorithm, ECParameters> import,
             CryptImportPublicKeyInfoFlags importFlags = CryptImportPublicKeyInfoFlags.NONE)
-                where TAlgorithm : AsymmetricAlgorithm, new()
+                where TAlgorithm : ECAlgorithm, new()
         {
             TAlgorithm key;
 
@@ -115,7 +113,7 @@ namespace Internal.Cryptography.Pal
                     ExportNamedCurveParameters(ref ecparams, keyBlob, false);
                     ecparams.Curve = ECCurve.CreateFromFriendlyName(curveName);
                     key = new TAlgorithm();
-                    import(key, ecparams);
+                    key.ImportParameters(ecparams);
                 }
             }
 
@@ -133,7 +131,7 @@ namespace Internal.Cryptography.Pal
                 {
                     unsafe
                     {
-                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
+                        bool success = Interop.Crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         return bCryptKeyHandle;
@@ -287,8 +285,8 @@ namespace Internal.Cryptography.Pal
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
+                        Debug.Assert(cbDecoded >= sizeof(DATA_BLOB));
+                        DATA_BLOB* pBlob = (DATA_BLOB*)pvDecoded;
                         return pBlob->ToByteArray();
                     });
             }

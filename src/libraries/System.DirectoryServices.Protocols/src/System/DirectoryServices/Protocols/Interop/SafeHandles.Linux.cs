@@ -16,6 +16,13 @@ namespace System.DirectoryServices.Protocols
             _needDispose = true;
         }
 
+        internal ConnectionHandle(string uri)
+            :base(true)
+        {
+            Interop.Ldap.ldap_initialize(out handle, uri);
+            _needDispose = true;
+        }
+
         internal ConnectionHandle(IntPtr value, bool disposeHandle) : base(true)
         {
             _needDispose = disposeHandle;

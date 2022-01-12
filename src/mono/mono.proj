@@ -136,18 +136,23 @@
 
     <PropertyGroup>
       <EmsdkExt Condition="'$(OS)' != 'Windows_NT'">.sh</EmsdkExt>
-      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.bat</EmsdkExt>
+      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.ps1</EmsdkExt>
       <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
       <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+
+      <InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
+      <ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
+      <InstallCmd Condition="'$(OS)' == 'Windows_NT'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
+      <ActivateCmd Condition="'$(OS)' == 'Windows_NT'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
     <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
           WorkingDirectory="$(WasmLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) install $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) activate $(EmscriptenVersion)"
+    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
           WorkingDirectory="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
@@ -466,7 +471,7 @@
     <PropertyGroup>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))</EMSDK_PATH>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh $(_CompilerTargetArch) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh &quot;$(RepositoryEngineeringCommonDir)native&quot; &quot;$(_CompilerTargetArch)&quot; &quot;$(MonoCCompiler)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
@@ -724,26 +729,19 @@
     <Exec Condition="'$(MonoGenerateOffsetsOSGroups)' == ''" Command="$(_MonoAotCMakeBuildCommand)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoObjCrossDir)"/>
   </Target>
 
-  <Target Name="InitializeGenerateRuntimeVersionFile"
-          BeforeTargets="Restore">
-    <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="Restore"/>
-  </Target>
+  <PropertyGroup>
+    <!-- Hardcode version paths in a global location. Condition on running OS to generate the right files for the Mono WASM cross tools. -->
+    <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <AssemblyName>.NET Runtime</AssemblyName>
+  </PropertyGroup>
 
-  <Target Name="GenerateMonoVersionFile" DependsOnTargets="InitializeGenerateRuntimeVersionFile">
-    <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjDir)_version.h;RuntimeVersionFile=$(MonoObjDir)runtime_version.h" />
-    <MSBuild Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'"
-             Projects="$(RepoRoot)eng\empty.csproj"
-             Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjCrossDir)_version.h;RuntimeVersionFile=$(MonoObjCrossDir)runtime_version.h" />
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->
   <PropertyGroup>
-    <MonoDependsOnTargets>CheckEnv;GenerateMonoVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
-    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
+    <MonoDependsOnTargets>CheckEnv;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
+    <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">GenerateRuntimeVersionFile;ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 
   <!-- General targets -->

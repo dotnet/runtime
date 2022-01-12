@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
     <NoWarn>$(NoWarn);xUnit2008</NoWarn>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
   </PropertyGroup>
 
   <ItemGroup>

@@ -172,7 +172,7 @@ int wmain(int argc, wchar_t *argv[])
         }
         if (runAgain)
         {
-            int largc = ParseCommandLine(&s[1], largv, _countof(largv));
+            int largc = ParseCommandLine(&s[1], largv, ARRAY_SIZE(largv));
             if (largc > 0)
             {
                 argc = largc;

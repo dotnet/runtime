@@ -16,8 +16,8 @@ internal static partial class Interop
             internal const int CLRDTR = 6;
         }
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool EscapeCommFunction(
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial bool EscapeCommFunction(
             SafeFileHandle hFile,
             int dwFunc);
     }

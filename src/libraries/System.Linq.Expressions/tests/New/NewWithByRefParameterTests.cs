@@ -70,13 +70,11 @@ namespace System.Linq.Expressions.Tests
             CreateByRefAliasing(useInterpreter: true);
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public void CreateByRefAliasingCompiled()
         {
             CreateByRefAliasing(useInterpreter: false);
         }
-#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateByRefReferencingReadonly(bool useInterpreter)

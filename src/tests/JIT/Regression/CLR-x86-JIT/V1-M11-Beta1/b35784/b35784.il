@@ -10,6 +10,7 @@
 .assembly 'typedref'// as "typedref"
 {
 }
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class auto ansi Test extends [mscorlib]System.Object 
@@ -141,6 +142,9 @@
 
     .method private hidebysig static int32 Main() il managed 
 {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       67 (0x43)
       .maxstack  3

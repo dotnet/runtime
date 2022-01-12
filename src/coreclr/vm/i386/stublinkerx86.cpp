@@ -1765,7 +1765,7 @@ VOID StubLinkerCPU::X64EmitMovqWorker(BYTE opcode, X86Reg Xmmreg, X86Reg reg)
     BYTE modrm = static_cast<BYTE>((Xmmreg << 3) | reg);
     codeBuffer[nBytes++] = 0xC0|modrm;
 
-    _ASSERTE(nBytes <= _countof(codeBuffer));
+    _ASSERTE(nBytes <= ARRAY_SIZE(codeBuffer));
 
     // Lastly, emit the encoded bytes
     EmitBytes(codeBuffer, nBytes);
@@ -1836,7 +1836,7 @@ VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg,
         nBytes += 4;
     }
 
-    _ASSERTE(nBytes <= _countof(codeBuffer));
+    _ASSERTE(nBytes <= ARRAY_SIZE(codeBuffer));
 
     // Lastly, emit the encoded bytes
     EmitBytes(codeBuffer, nBytes);

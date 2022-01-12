@@ -3,12 +3,6 @@
   <Import Project="..\Directory.Build.props" />
   <Import Project="netfxreference.props" />
 
-  <PropertyGroup>
-    <NETFrameworkReferenceAssemblyTFM>net48</NETFrameworkReferenceAssemblyTFM>
-    <NetFxRefPath>$(NuGetPackageRoot)microsoft.netframework.referenceassemblies.$(NETFrameworkReferenceAssemblyTFM)\$(MicrosoftNetFrameworkReferenceAssembliesVersion)\build\.NETFramework\v4.8\</NetFxRefPath>
-    <NETStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'netstandard.library.ref', '$(NETStandardLibraryRefVersion)', 'ref', 'netstandard2.1'))</NETStandard21RefPath>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(IsFrameworkSupportFacade)' == 'true'">
     <IsNETCoreAppSrc>true</IsNETCoreAppSrc>
     <IsNETCoreAppRef>true</IsNETCoreAppRef>

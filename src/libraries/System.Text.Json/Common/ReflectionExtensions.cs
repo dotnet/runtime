@@ -310,5 +310,18 @@ namespace System.Text.Json.Reflection
             deserializationCtor = ctorWithAttribute ?? publicParameterlessCtor ?? lonePublicCtor;
             return true;
         }
+
+        public static object? GetDefaultValue(this ParameterInfo parameterInfo)
+        {
+            object? defaultValue = parameterInfo.DefaultValue;
+
+            // DBNull.Value is sometimes used as the default value (returned by reflection) of nullable params in place of null.
+            if (defaultValue == DBNull.Value && parameterInfo.ParameterType != typeof(DBNull))
+            {
+                return null;
+            }
+
+            return defaultValue;
+        }
     }
 }

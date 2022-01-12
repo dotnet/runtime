@@ -274,6 +274,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module b473131_byte.exe
 // MVID: {93C4C3CC-5A75-464C-A0F3-61562010094F}
 .imagebase 0x00400000
@@ -320,6 +321,9 @@
           int32 Main() cil managed
   // SIG: 00 00 01
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Method begins at RVA 0x2064
     // Code size       11 (0xb)

@@ -8,6 +8,7 @@
 }
 
 .assembly ILGEN_0xca498c54 {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class ILGEN_0xca498c54 {
 .method static unsigned int64  Method_0x570110b9(float64 Arg_0x0, float32 Arg_0x1, unsigned int32 Arg_0x2, int8 Arg_0x3, int8 Arg_0x4, int64 Arg_0x5, unsigned int16 Arg_0x6, int64 Arg_0x7, unsigned int64 Arg_0x8, int8 Arg_0x9, int8 Arg_0xa, int8 Arg_0xb, float32 Arg_0xc, int8 Arg_0xd) {
@@ -19,6 +20,9 @@
  ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	29
 .try

@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -110,6 +111,7 @@
   </data>
   <data name="InternalError_ScanRegex" xml:space="preserve">
     <value>Internal error in ScanRegex.</value>
+    <comment>{Locked="ScanRegex"}</comment>
   </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
@@ -153,11 +155,8 @@
   <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
     <value>Collection is read-only.</value>
   </data>
-  <data name="OnlyAllowedOnce" xml:space="preserve">
-    <value>This operation is only allowed once per object.</value>
-  </data>
   <data name="PlatformNotSupported_CompileToAssembly" xml:space="preserve">
-    <value>This platform does not support writing compiled regular expressions to an assembly.</value>
+    <value>This platform does not support writing compiled regular expressions to an assembly. Use RegexGeneratorAttribute with the regular expression source generator instead.</value>
   </data>
   <data name="QuantifierAfterNothing" xml:space="preserve">
     <value>Quantifier {x,y} following nothing.</value>
@@ -224,5 +223,41 @@
   </data>
   <data name="UnterminatedComment" xml:space="preserve">
     <value>Unterminated (?#...) comment.</value>
+  </data>
+  <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
+    <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
+  <data name="NotSupported_NonBacktrackingConflictingOption" xml:space="preserve">
+    <value>RegexOptions.NonBacktracking is not supported in conjunction with RegexOptions.{0}.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
+  <data name="NotSupported_NonBacktrackingConflictingExpression" xml:space="preserve">
+    <value>RegexOptions.NonBacktracking is not supported in conjunction with expressions containing: '{0}'.</value>
+    <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
+  <data name="ExpressionDescription_Backreference" xml:space="preserve">
+    <value>backreference (\\ number)</value>
+  </data>
+  <data name="ExpressionDescription_Conditional" xml:space="preserve">
+    <value>captured group conditional (?( name ) yes-pattern | no-pattern ) or (?( number ) yes-pattern| no-pattern )</value>
+  </data>
+  <data name="ExpressionDescription_PositiveLookaround" xml:space="preserve">
+    <value>positive lookahead (?= pattern) or positive lookbehind (?&lt;= pattern)</value>
+  </data>
+  <data name="ExpressionDescription_NegativeLookaround" xml:space="preserve">
+    <value>negative lookahead (?! pattern) or negative lookbehind (?&lt;! pattern)</value>
+  </data>
+  <data name="ExpressionDescription_ContiguousMatches" xml:space="preserve">
+    <value>contiguous matches (\\G)</value>
+  </data>
+  <data name="ExpressionDescription_AtomicSubexpressions" xml:space="preserve">
+    <value>atomic subexpressions (?&gt; pattern)</value>
+  </data>
+  <data name="ExpressionDescription_IfThenElse" xml:space="preserve">
+    <value>test conditional (?( test-pattern ) yes-pattern | no-pattern )</value>
+  </data>
+  <data name="ExpressionDescription_BalancingGroup" xml:space="preserve">
+    <value>balancing group (?&lt;name1-name2&gt;subexpression) or (?'name1-name2' subexpression)</value>
   </data>
 </root>

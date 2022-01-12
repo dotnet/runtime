@@ -34,7 +34,7 @@ namespace System.Xml.Serialization
         {
             XmlSchemaFacet f1 = (XmlSchemaFacet)o1!;
             XmlSchemaFacet f2 = (XmlSchemaFacet)o2!;
-            return string.Compare(f1.GetType().Name + ":" + f1.Value, f2.GetType().Name + ":" + f2.Value, StringComparison.Ordinal);
+            return string.Compare($"{f1.GetType().Name}:{f1.Value}", $"{f2.GetType().Name}:{f2.Value}", StringComparison.Ordinal);
         }
     }
 

@@ -77,8 +77,6 @@ public:
         return m_pBinder;
     }
 
-    BOOL IsAssemblySpecForCoreLib();
-
     HRESULT ParseName();
     DWORD Hash();
 

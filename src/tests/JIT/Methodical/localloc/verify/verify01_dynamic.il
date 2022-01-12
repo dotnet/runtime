@@ -10,6 +10,7 @@
   .ver 4:0:0:0
 }
 .assembly eh01{}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
@@ -17,6 +18,9 @@
   .field public static int32 stackAllocSize
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       39 (0x27)
     .maxstack  1

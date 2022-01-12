@@ -40,6 +40,7 @@ struct PatchpointInfo
         m_genericContextArgOffset = -1;
         m_keptAliveThisOffset     = -1;
         m_securityCookieOffset    = -1;
+        m_monitorAcquiredOffset   = -1;
     }
 
     // Total size of this patchpoint info record, in bytes
@@ -108,6 +109,22 @@ struct PatchpointInfo
         m_securityCookieOffset = offset;
     }
 
+    // Original method FP relative offset for monitor acquired flag
+    int MonitorAcquiredOffset() const
+    {
+        return m_monitorAcquiredOffset;
+    }
+
+    bool HasMonitorAcquired() const
+    {
+        return m_monitorAcquiredOffset != -1;
+    }
+
+    void SetMonitorAcquiredOffset(int offset)
+    {
+        m_monitorAcquiredOffset = offset;
+    }
+
     // True if this local was address exposed in the original method
     bool IsExposed(unsigned localNum) const
     {
@@ -141,6 +158,7 @@ private:
     int      m_genericContextArgOffset;
     int      m_keptAliveThisOffset;
     int      m_securityCookieOffset;
+    int      m_monitorAcquiredOffset;
     int      m_offsetAndExposureData[];
 };
 

@@ -8,7 +8,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageDownload Include="microsoft.netcore.app.ref" Version="[$(NetCoreAppLatestStablePackageBaselineVersion)]" />
+    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(NetCoreAppLatestStablePackageBaselineVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatVersion)" IsImplicitlyDefined="true" />

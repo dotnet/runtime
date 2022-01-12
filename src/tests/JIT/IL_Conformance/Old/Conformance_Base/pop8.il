@@ -44,4 +44,4 @@ FAIL:
 	ret
 }
 }
-.assembly pop8.exe{}
+.assembly pop8{}

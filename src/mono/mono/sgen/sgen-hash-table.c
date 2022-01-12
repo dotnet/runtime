@@ -119,7 +119,7 @@ sgen_hash_table_lookup (SgenHashTable *hash_table, gpointer key)
 gboolean
 sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer new_value, gpointer old_value)
 {
-	guint hash;
+	guint hash = 0;
 	SgenHashTableEntry *entry;
 
 	rehash_if_necessary (hash_table);
@@ -127,7 +127,7 @@ sgen_hash_table_replace (SgenHashTable *hash_table, gpointer key, gpointer new_v
 
 	if (entry) {
 		if (old_value)
-			memcpy (old_value, entry->data, hash_table->data_size);	
+			memcpy (old_value, entry->data, hash_table->data_size);
 		memcpy (entry->data, new_value, hash_table->data_size);
 		return FALSE;
 	}

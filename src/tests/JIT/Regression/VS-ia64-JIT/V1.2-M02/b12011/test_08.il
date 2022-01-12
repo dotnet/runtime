@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly attrib014_2{}
+.assembly extern xunit.core {}
 .module attrib014_2.exe
 
 .class private auto ansi import beforefieldinit ShellApplication
@@ -18,6 +19,9 @@
 {
   .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     .try

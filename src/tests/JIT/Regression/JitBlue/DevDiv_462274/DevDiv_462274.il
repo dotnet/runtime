@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly ILGEN_MODULE{}
+.assembly extern xunit.core {}
 .class ILGEN_CLASS
 {
     .method static int64 ILGEN_METHOD(unsigned int32, float32, unsigned int8, char, int64, float64)
@@ -50,6 +51,9 @@ skip:
 
     .method static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

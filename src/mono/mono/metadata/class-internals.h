@@ -1406,8 +1406,14 @@ mono_class_set_event_info (MonoClass *klass, MonoClassEventInfo *info);
 MonoFieldDefaultValue*
 mono_class_get_field_def_values (MonoClass *klass);
 
+MonoFieldDefaultValue*
+mono_class_get_field_def_values_with_swizzle (MonoClass *klass, int swizzle);
+
 void
 mono_class_set_field_def_values (MonoClass *klass, MonoFieldDefaultValue *values);
+
+void
+mono_class_set_field_def_values_with_swizzle (MonoClass *klass, MonoFieldDefaultValue *values, int swizzle);
 
 guint32
 mono_class_get_declsec_flags (MonoClass *klass);
@@ -1466,6 +1472,9 @@ mono_class_get_object_finalize_slot (void);
 
 MonoMethod *
 mono_class_get_default_finalize_method (void);
+
+const char *
+mono_field_get_rva (MonoClassField *field, int swizzle);
 
 void
 mono_field_resolve_type (MonoClassField *field, MonoError *error);

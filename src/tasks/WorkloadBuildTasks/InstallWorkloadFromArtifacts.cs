@@ -28,13 +28,29 @@ namespace Microsoft.Workload.Build.Tasks
         public string?        LocalNuGetsPath    { get; set; }
 
         [Required, NotNull]
+        public string?        TemplateNuGetConfigPath { get; set; }
+
+        [Required, NotNull]
         public string?        SdkDir             { get; set; }
 
         public bool           OnlyUpdateManifests{ get; set; }
 
-        public ITaskItem[]    ExtraNuGetSources  { get; set; } = Array.Empty<ITaskItem>();
+        private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
 
         public override bool Execute()
+        {
+            try
+            {
+                return ExecuteInternal();
+            }
+            catch (LogAsErrorException laee)
+            {
+                Log.LogError(laee.Message);
+                return false;
+            }
+        }
+
+        private bool ExecuteInternal()
         {
             if (!HasMetadata(WorkloadId, nameof(WorkloadId), "Version") ||
                 !HasMetadata(WorkloadId, nameof(WorkloadId), "ManifestName"))
@@ -45,6 +61,12 @@ namespace Microsoft.Workload.Build.Tasks
             if (!Directory.Exists(SdkDir))
             {
                 Log.LogError($"Cannot find SdkDir={SdkDir}");
+                return false;
+            }
+
+            if (!File.Exists(TemplateNuGetConfigPath))
+            {
+                Log.LogError($"Cannot find TemplateNuGetConfigPath={TemplateNuGetConfigPath}");
                 return false;
             }
 
@@ -86,25 +108,11 @@ namespace Microsoft.Workload.Build.Tasks
 
         private string GetNuGetConfig()
         {
-            StringBuilder nugetConfigBuilder = new();
-            nugetConfigBuilder.AppendLine($"<configuration>{Environment.NewLine}<packageSources>");
+            string contents = File.ReadAllText(TemplateNuGetConfigPath);
+            if (contents.IndexOf(s_nugetInsertionTag) < 0)
+                throw new LogAsErrorException($"Could not find {s_nugetInsertionTag} in {TemplateNuGetConfigPath}");
 
-            nugetConfigBuilder.AppendLine($@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
-            foreach (ITaskItem source in ExtraNuGetSources)
-            {
-                string key = source.ItemSpec;
-                string value = source.GetMetadata("Value");
-                if (string.IsNullOrEmpty(value))
-                {
-                    Log.LogWarning($"ExtraNuGetSource {key} is missing Value metadata");
-                    continue;
-                }
-
-                nugetConfigBuilder.AppendLine($@"<add key=""{key}"" value=""{value}"" />");
-            }
-
-            nugetConfigBuilder.AppendLine($"</packageSources>{Environment.NewLine}</configuration>");
-            return nugetConfigBuilder.ToString();
+            return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
         }
 
         private bool InstallWorkloadManifest(string name, string version, string nugetConfigContents, bool stopOnMissing)
@@ -196,7 +204,7 @@ namespace Microsoft.Workload.Build.Tasks
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        private record ManifestInformation(
+        private sealed record ManifestInformation(
             object Version,
             string Description,
 
@@ -207,7 +215,7 @@ namespace Microsoft.Workload.Build.Tasks
             object Data
         );
 
-        private record WorkloadInformation(
+        private sealed record WorkloadInformation(
             bool Abstract,
             string Kind,
             string Description,
@@ -217,7 +225,7 @@ namespace Microsoft.Workload.Build.Tasks
             List<string> Platforms
         );
 
-        private record PackVersionInformation(
+        private sealed record PackVersionInformation(
             string Kind,
             string Version,
             [property: JsonPropertyName("alias-to")]
@@ -225,7 +233,7 @@ namespace Microsoft.Workload.Build.Tasks
         );
     }
 
-    internal record PackageReference(string Name,
+    internal sealed record PackageReference(string Name,
                                      string Version,
                                      string OutputDir,
                                      string relativeSourceDir = "");

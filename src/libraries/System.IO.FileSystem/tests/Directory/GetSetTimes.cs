@@ -9,6 +9,8 @@ namespace System.IO.Tests
     {
         protected override string GetExistingItem() => Directory.CreateDirectory(GetTestFilePath()).FullName;
 
+        protected override string CreateSymlink(string path, string pathToTarget) => Directory.CreateSymbolicLink(path, pathToTarget).FullName;
+
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
             if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))

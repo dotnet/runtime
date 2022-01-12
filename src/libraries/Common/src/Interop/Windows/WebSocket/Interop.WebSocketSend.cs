@@ -10,18 +10,18 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
-        [DllImport(Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
-        internal static extern int WebSocketSend_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] BufferType bufferType,
-            [In] ref Buffer buffer,
-            [In] IntPtr applicationContext);
+        [GeneratedDllImport(Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
+        internal static partial int WebSocketSend_Raw(
+            SafeHandle webSocketHandle,
+            BufferType bufferType,
+            ref Buffer buffer,
+            IntPtr applicationContext);
 
-        [DllImport(Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
-        internal static extern int WebSocketSendWithoutBody_Raw(
-            [In] SafeHandle webSocketHandle,
-            [In] BufferType bufferType,
-            [In] IntPtr buffer,
-            [In] IntPtr applicationContext);
+        [GeneratedDllImport(Libraries.WebSocket, EntryPoint = "WebSocketSend", ExactSpelling = true)]
+        internal static partial int WebSocketSendWithoutBody_Raw(
+            SafeHandle webSocketHandle,
+            BufferType bufferType,
+            IntPtr buffer,
+            IntPtr applicationContext);
     }
 }

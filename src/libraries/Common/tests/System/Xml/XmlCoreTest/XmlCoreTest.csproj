@@ -19,5 +19,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="..\XmlDiff\XmlDiff.csproj" />
+    <ProjectReference Include="..\..\..\TestUtilities\TestUtilities.csproj" />
   </ItemGroup>
 </Project>

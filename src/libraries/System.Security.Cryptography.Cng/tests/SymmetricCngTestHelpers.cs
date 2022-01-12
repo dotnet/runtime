@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Cng.Tests
             PaddingMode paddingMode,
             int feedbackSizeInBits)
         {
-            byte[] plainBytes = GenerateRandom(plainBytesCount);
+            byte[] plainBytes = RandomNumberGenerator.GetBytes(plainBytesCount);
 
             using (SymmetricAlgorithm persisted = persistedFunc(keyName))
             using (SymmetricAlgorithm ephemeral = ephemeralFunc())
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography.Cng.Tests
                     stable.GenerateIV();
 
                     // Generate (4 * 8) = 32 blocks of plaintext
-                    byte[] plainTextBytes = GenerateRandom(4 * stable.BlockSize);
+                    byte[] plainTextBytes = RandomNumberGenerator.GetBytes(4 * stable.BlockSize);
                     byte[] iv = stable.IV;
 
                     regenKey.IV = replaceKey.IV = iv;
@@ -348,43 +348,32 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        private static bool? s_supportsPersistedSymmetricKeys;
-        internal static bool SupportsPersistedSymmetricKeys
+        internal static void VerifyMismatchAlgorithmFails(
+            CngAlgorithm algorithm,
+            Func<string, SymmetricAlgorithm> createFromKey)
         {
-            get
-            {
-                if (!s_supportsPersistedSymmetricKeys.HasValue)
-                {
-                    // Windows 7 (Microsoft Windows 6.1) does not support persisted symmetric keys
-                    // in the Microsoft Software KSP
-                    s_supportsPersistedSymmetricKeys = !RuntimeInformation.OSDescription.Contains("Windows 6.1");
-                }
+            string keyName = Guid.NewGuid().ToString();
 
-                return s_supportsPersistedSymmetricKeys.Value;
+            // We try to delete the key later which will also dispose of it, so no need
+            // to put this in a using.
+            CngKey cngKey = CngKey.Create(algorithm, keyName);
+
+            try
+            {
+                CryptographicException ce = Assert.Throws<CryptographicException>(() => createFromKey(keyName));
+                Assert.Contains($"'{algorithm.Algorithm}'", ce.Message);
+            }
+            finally
+            {
+                cngKey.Delete();
             }
         }
 
-        private static readonly Lazy<bool> s_isAdministrator = new Lazy<bool>(
-            () =>
-            {
-                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
-                {
-                    WindowsPrincipal principal = new WindowsPrincipal(identity);
-                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
-                }
-            });
+        // Windows 7 (Microsoft Windows 6.1) does not support persisted symmetric keys
+        // in the Microsoft Software KSP
+        internal static bool SupportsPersistedSymmetricKeys => PlatformDetection.IsWindows8xOrLater;
 
-        internal static bool IsAdministrator => s_isAdministrator.Value;
-
-        internal static byte[] GenerateRandom(int count)
-        {
-            byte[] buffer = new byte[count];
-            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-            {
-                rng.GetBytes(buffer);
-            }
-            return buffer;
-        }
+        internal static bool IsAdministrator => PlatformDetection.IsWindowsAndElevated;
 
         internal static void AssertTransformsEqual(byte[] plainTextBytes, ICryptoTransform decryptor, byte[] encryptedBytes)
         {

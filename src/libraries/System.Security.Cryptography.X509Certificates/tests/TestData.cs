@@ -2910,5 +2910,17 @@ voLmcK+XtmehjMVy7OSSFICNKybLBOvO8paydhCb1J0klkLPAoAjgP2cEd+KueeR
 yJpx+jD1MsjIEXIn5jtjXdUHd0JJmHWAyHdNzmhXrXC7JLnj4ri7xMAV3GZGDpAn
 YvvL0LiXzFyomg==
 -----END PUBLIC KEY-----";
+
+        // This string is for tests that are sensitive to the exact formatting
+        // and line breaks of the PEM.
+        public const string CertRfc7468Wrapped =
+            "-----BEGIN CERTIFICATE-----\n" +
+            "MIIBETCBuaADAgECAgkA9StU5ZnBmM4wCgYIKoZIzj0EAwIwDzENMAsGA1UEAxME\n" +
+            "dGlueTAeFw0yMTA5MTUyMjAyNDNaFw0yMTA5MTUyMjAyNDNaMA8xDTALBgNVBAMT\n" +
+            "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZ+baUXzzLi+p3cZEf4f23\n" +
+            "L/2Dbn5UB/uMCB7L71rWf3UwuCA3Is5uPci/3PQYLNwDkP3m3ZzxyzVCgFVqqYFg\n" +
+            "MAoGCCqGSM49BAMCA0cAMEQCIHafyKHQhv+03DaOJpuotD+jNu0Nc9pUI9OA8pUY\n" +
+            "3+qJAiBsqKjtc8LuGtUoqGvxLLQJwJ2QNY/qyEGtaImlqTYg5w==\n" +
+            "-----END CERTIFICATE-----";
     }
 }

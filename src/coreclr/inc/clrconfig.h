@@ -126,10 +126,7 @@ public:
     static HRESULT GetConfigValue(const ConfigStringInfo & info, __deref_out_z LPWSTR * outVal);
 
     //
-    // Check whether an option is specified (e.g. explicitly listed) in any of the CLRConfig
-    // locations: environment or registry (with or without COMPlus_) or any config file.
-    // The result is therefore a conservative approximation (some settings do not actually
-    // take effect everywhere and no setting is valid both with and without COMPlus_)
+    // Check whether an option is specified (e.g. explicitly listed) in the CLRConfig.
     //
     static BOOL IsConfigOptionSpecified(LPCWSTR name);
 

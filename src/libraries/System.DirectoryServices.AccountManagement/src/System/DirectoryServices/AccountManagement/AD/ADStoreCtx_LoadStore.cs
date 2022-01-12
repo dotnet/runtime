@@ -528,7 +528,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                             pSid = Utils.ConvertByteArrayToIntPtr(sidb);
 
-                            if (UnsafeNativeMethods.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
+                            if (Interop.Advapi32.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                         "ADStoreCtx",
@@ -583,7 +583,7 @@ namespace System.DirectoryServices.AccountManagement
                             {
                                 pSid = Utils.ConvertByteArrayToIntPtr(sidb);
 
-                                if (UnsafeNativeMethods.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
+                                if (Interop.Advapi32.IsValidSid(pSid) && (Utils.ClassifySID(pSid) == SidType.FakeObject))
                                 {
                                     GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                                             "ADStoreCtx",

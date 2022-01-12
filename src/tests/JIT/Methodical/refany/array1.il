@@ -14,6 +14,7 @@
 .assembly array1// as "array1"
 {
 }
+.assembly extern xunit.core {}
 .module array1.exe
 // MVID: {F8BFB824-C7D0-485F-A06E-07B6D1F1151B}
 .namespace JitTest
@@ -211,6 +212,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       438 (0x1b6)
       .maxstack  5

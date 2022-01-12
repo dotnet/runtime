@@ -9,7 +9,7 @@
 **
 **
 **===================================================================*/
- 
+
 #include <palsuite.h>
 #include "../vswprintf.h"
 
@@ -22,38 +22,38 @@ void DoArgumentPrecTest_vswprintf(WCHAR *formatstr, int precision, void *param,
                         WCHAR *paramstr, WCHAR *checkstr1, WCHAR *checkstr2)
 {
     WCHAR buf[256];
-    
-    testvswp(buf, _countof(buf), formatstr, precision, param);
+
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {
         Fail("ERROR: failed to insert %s into \"%s\" with precision %d\n"
-            "Expected \"%s\" or \"%s\", got \"%s\".\n", 
+            "Expected \"%s\" or \"%s\", got \"%s\".\n",
             paramstr,
             convertC(formatstr),
             precision,
             convertC(checkstr1),
             convertC(checkstr2),
             convertC(buf));
-    }            
+    }
 }
 void DoArgumentPrecDoubleTest_vswprintf(WCHAR *formatstr, int precision, double param,
     WCHAR *checkstr1, WCHAR *checkstr2)
 {
     WCHAR buf[256];
 
-    testvswp(buf, _countof(buf), formatstr, precision, param);
+    testvswp(buf, ARRAY_SIZE(buf), formatstr, precision, param);
     if (memcmp(buf, checkstr1, wcslen(checkstr1) + 2) != 0 &&
         memcmp(buf, checkstr2, wcslen(checkstr2) + 2) != 0)
     {
         Fail("ERROR: failed to insert %f into \"%s\" with precision %d\n"
-            "Expected \"%s\" or \"%s\", got \"%s\".\n", 
+            "Expected \"%s\" or \"%s\", got \"%s\".\n",
             param, convertC(formatstr),
             precision,
             convertC(checkstr1),
             convertC(checkstr2),
             convertC(buf));
-    }            
+    }
 }
 
 /*
@@ -66,15 +66,15 @@ PALTEST(c_runtime_vswprintf_test19_paltest_vswprintf_test19, "c_runtime/vswprint
     if (PAL_Initialize(argc, argv) != 0)
         return(FAIL);
 
-    DoArgumentPrecTest_vswprintf(convert("%.*s"), 2, (void*)convert("bar"), convert("bar"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*s"), 2, (void*)convert("bar"), convert("bar"),
         convert("ba"), convert("ba"));
-    DoArgumentPrecTest_vswprintf(convert("%.*c"), 0, (void*)'a', convert("a"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*c"), 0, (void*)'a', convert("a"),
         convert("a"), convert("a"));
-    DoArgumentPrecTest_vswprintf(convert("%.*c"), 4, (void*)'a', convert("a"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*c"), 4, (void*)'a', convert("a"),
         convert("a"), convert("a"));
-    DoArgumentPrecTest_vswprintf(convert("%.*C"), 0, (void*)'a', convert("a"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*C"), 0, (void*)'a', convert("a"),
         convert("a"), convert("a"));
-    DoArgumentPrecTest_vswprintf(convert("%.*C"), 4, (void*)'a', convert("a"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*C"), 4, (void*)'a', convert("a"),
         convert("a"), convert("a"));
     DoArgumentPrecTest_vswprintf(convert("%.*d"), 1, (void*)42, convert("42"),
         convert("42"), convert("42"));
@@ -96,9 +96,9 @@ PALTEST(c_runtime_vswprintf_test19_paltest_vswprintf_test19, "c_runtime/vswprint
         convert("42"), convert("42"));
     DoArgumentPrecTest_vswprintf(convert("%.*x"), 3, (void*)0x42, convert("0x42"),
         convert("042"), convert("042"));
-    DoArgumentPrecTest_vswprintf(convert("%.*X"), 1, (void*)0x42, convert("0x42"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*X"), 1, (void*)0x42, convert("0x42"),
         convert("42"), convert("42"));
-    DoArgumentPrecTest_vswprintf(convert("%.*X"), 3, (void*)0x42, convert("0x42"), 
+    DoArgumentPrecTest_vswprintf(convert("%.*X"), 3, (void*)0x42, convert("0x42"),
         convert("042"), convert("042"));
 
 
@@ -118,7 +118,7 @@ PALTEST(c_runtime_vswprintf_test19_paltest_vswprintf_test19, "c_runtime/vswprint
         convert("3e+02"));
     DoArgumentPrecDoubleTest_vswprintf(convert("%.*g"), 3, 256.01, convert("256"),
         convert("256"));
-    DoArgumentPrecDoubleTest_vswprintf(convert("%.*g"), 4, 256.01, convert("256"), 
+    DoArgumentPrecDoubleTest_vswprintf(convert("%.*g"), 4, 256.01, convert("256"),
         convert("256"));
     DoArgumentPrecDoubleTest_vswprintf(convert("%.*g"), 6, 256.01, convert("256.01"),
         convert("256.01"));
@@ -126,7 +126,7 @@ PALTEST(c_runtime_vswprintf_test19_paltest_vswprintf_test19, "c_runtime/vswprint
         convert("3E+02"));
     DoArgumentPrecDoubleTest_vswprintf(convert("%.*G"), 3, 256.01, convert("256"),
         convert("256"));
-    DoArgumentPrecDoubleTest_vswprintf(convert("%.*G"), 4, 256.01, convert("256"), 
+    DoArgumentPrecDoubleTest_vswprintf(convert("%.*G"), 4, 256.01, convert("256"),
         convert("256"));
     DoArgumentPrecDoubleTest_vswprintf(convert("%.*G"), 6, 256.01, convert("256.01"),
         convert("256.01"));

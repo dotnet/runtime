@@ -5,7 +5,7 @@
 
   <Fragment>
 
-    <ComponentGroup Id="InstallSharedHostandDetectionKeys" Directory="DOTNETHOME">
+    <ComponentGroup Id="InstallSharedHostandDetectionKeys">
 
       <!-- When installing the SharedHost; copy all files to the traditional default install location: 'ProgramFiles'\dotnet even when installing into a custom location.
 
@@ -20,19 +20,25 @@
         1. the legacy SDK can be subsequently installed
         2. the user runs 'dotnet' commands directly against 'ProgramFiles'\dotnet\dotnet.exe -->
 
-      <Component Id="cmpCoreHost" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
+      <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
         <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe">
           <CopyFile Id="copyFileCoreHostExe" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>
       </Component>
         
-      <Component Id="cmpSharedHostVersionRegistry" Guid="*">
+      <Component Id="cmpSharedHostVersionRegistry" Directory="DOTNETHOME" Guid="*">
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
           <RegistryValue KeyPath="yes" Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
         </RegistryKey>
       </Component>
 
-      <Component Id="cmdPath" Guid="*">
+      <Component Id="cmpInstallLocation" Directory="TARGETDIR" Guid="*" Win64="no">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)">
+          <RegistryValue Action="write" Name="InstallLocation" Type="string" Value="[DOTNETHOME]" KeyPath="yes"/>
+        </RegistryKey>
+      </Component>
+
+      <Component Id="cmdPath" Directory="DOTNETHOME" Guid="*">
         <?if $(var.Platform)~=x64 ?>
         <!-- For x64 installer, only add to PATH when actually on native architecture -->
         <Condition>NOT NON_NATIVE_ARCHITECTURE</Condition>
@@ -45,7 +51,7 @@
         <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
       </Component>
 
-      <Component Id="cmpLicenseFiles" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
+      <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
         <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt">
           <CopyFile Id="copyFileLicenseTxt" DestinationDirectory="PROGRAMFILES_DOTNET" />
         </File>

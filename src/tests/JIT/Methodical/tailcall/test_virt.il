@@ -7,6 +7,7 @@
 .assembly extern mscorlib { auto }
 
 .assembly test_virt { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit TestClass extends [mscorlib]System.Object
@@ -15,6 +16,9 @@
     .field private static int32 n
     .method private hidebysig virtual  instance int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .maxstack  4
       .locals (int32 V_0)
       ldc.i4.1

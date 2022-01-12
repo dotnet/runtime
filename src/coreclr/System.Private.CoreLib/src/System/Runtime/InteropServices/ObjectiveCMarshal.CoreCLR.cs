@@ -21,18 +21,18 @@ namespace System.Runtime.InteropServices.ObjectiveC
             System.StubHelpers.StubHelpers.SetPendingExceptionObject(exception);
         }
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TrySetGlobalMessageSendCallback")]
         private static extern bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
             IntPtr func);
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
         private static unsafe extern bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization);
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_CreateReferenceTrackingHandle")]
         private static extern IntPtr CreateReferenceTrackingHandleInternal(
             ObjectHandleOnStack obj,
             out int memInSizeT,

@@ -34,12 +34,12 @@ public class Gen
 			}
 			if (throwException)
 			{
-				Test.Eval(false);
+				Test_try_catch06.Eval(false);
 			}
 		}
 		catch(Exception E)
 		{
-			Test.Eval(E is GenException<U>);
+			Test_try_catch06.Eval(E is GenException<U>);
 		}		
 	}
 	
@@ -50,7 +50,7 @@ public class Gen
 	
 }
 
-public class Test
+public class Test_try_catch06
 {
 	public static int counter = 0;
 	public static bool result = true;

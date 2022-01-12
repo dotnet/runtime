@@ -13,6 +13,9 @@ namespace System.Net
 {
     internal static partial class CertificateValidation
     {
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName, IntPtr certificateBuffer, int bufferLength)
+            => BuildChainAndVerifyProperties(chain, remoteCertificate, checkCertName, isServer, hostName);
+
         internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName)
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
@@ -48,7 +51,7 @@ namespace System.Net
 
                     fixed (char* namePtr = hostName)
                     {
-                        eppStruct.pwszServerName = namePtr;
+                        eppStruct.pwszServerName = (ushort*)namePtr;
                         cppStruct.dwFlags |=
                             (Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_ALL &
                              ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG);

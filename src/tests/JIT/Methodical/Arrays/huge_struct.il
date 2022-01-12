@@ -20,6 +20,7 @@
   
   
 }
+.assembly extern xunit.core {}
 .module 'huge_strcut.exe'
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
 .namespace JitTest
@@ -38,6 +39,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       38 (0x26)
       .maxstack  70

@@ -19,6 +19,7 @@
 .assembly 'avg'// as "avg"
 {
 }
+.assembly extern xunit.core {}
 .module 'avg.exe'
 .namespace BoxTest
 {
@@ -47,6 +48,9 @@
     }
     .method private hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  5
 		.locals (native int)

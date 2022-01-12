@@ -2796,6 +2796,16 @@ namespace System.Tests
         [InlineData( 6.5808859910179210,       2)]
         [InlineData( 8.8249778270762876,       3)]
         [InlineData( double.PositiveInfinity,  unchecked((int)(0x7FFFFFFF)))]
+        [InlineData( -8.066848,                3)]
+        [InlineData( 4.345240,                 2)]
+        [InlineData( -8.381433,                3)]
+        [InlineData( -6.531674,                2)]
+        [InlineData( 9.267057,                 3)]
+        [InlineData( 0.661986,                -1)]
+        [InlineData( -0.406604,               -2)]
+        [InlineData( 0.561760,                -1)]
+        [InlineData( 0.774152,                -1)]
+        [InlineData( -0.678764,               -1)]
         public static void ILogB(double value, int expectedResult)
         {
             Assert.Equal(expectedResult, Math.ILogB(value));

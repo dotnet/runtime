@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace Microsoft.Extensions.Configuration
@@ -18,7 +19,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The builder to add to.</param>
         /// <param name="configureSource">Configures the source secrets.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder Add<TSource>(this IConfigurationBuilder builder, Action<TSource> configureSource) where TSource : IConfigurationSource, new()
+        public static IConfigurationBuilder Add<TSource>(this IConfigurationBuilder builder, Action<TSource>? configureSource) where TSource : IConfigurationSource, new()
         {
             var source = new TSource();
             configureSource?.Invoke(source);
@@ -31,9 +32,9 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration to enumerate.</param>
         /// <param name="name">The connection string key.</param>
         /// <returns>The connection string.</returns>
-        public static string GetConnectionString(this IConfiguration configuration, string name)
+        public static string? GetConnectionString(this IConfiguration configuration, string name)
         {
-            return configuration?.GetSection("ConnectionStrings")?[name];
+            return configuration?.GetSection("ConnectionStrings")[name];
         }
 
         /// <summary>
@@ -41,7 +42,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="configuration">The configuration to enumerate.</param>
         /// <returns>An enumeration of key value pairs.</returns>
-        public static IEnumerable<KeyValuePair<string, string>> AsEnumerable(this IConfiguration configuration) => configuration.AsEnumerable(makePathsRelative: false);
+        public static IEnumerable<KeyValuePair<string, string?>> AsEnumerable(this IConfiguration configuration) => configuration.AsEnumerable(makePathsRelative: false);
 
         /// <summary>
         /// Get the enumeration of key value pairs within the <see cref="IConfiguration" />
@@ -49,19 +50,18 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration to enumerate.</param>
         /// <param name="makePathsRelative">If true, the child keys returned will have the current configuration's Path trimmed from the front.</param>
         /// <returns>An enumeration of key value pairs.</returns>
-        public static IEnumerable<KeyValuePair<string, string>> AsEnumerable(this IConfiguration configuration, bool makePathsRelative)
+        public static IEnumerable<KeyValuePair<string, string?>> AsEnumerable(this IConfiguration configuration, bool makePathsRelative)
         {
             var stack = new Stack<IConfiguration>();
             stack.Push(configuration);
-            var rootSection = configuration as IConfigurationSection;
-            int prefixLength = (makePathsRelative && rootSection != null) ? rootSection.Path.Length + 1 : 0;
+            int prefixLength = (makePathsRelative && configuration is IConfigurationSection rootSection) ? rootSection.Path.Length + 1 : 0;
             while (stack.Count > 0)
             {
                 IConfiguration config = stack.Pop();
                 // Don't include the sections value if we are removing paths, since it will be an empty key
                 if (config is IConfigurationSection section && (!makePathsRelative || config != configuration))
                 {
-                    yield return new KeyValuePair<string, string>(section.Path.Substring(prefixLength), section.Value);
+                    yield return new KeyValuePair<string, string?>(section.Path.Substring(prefixLength), section.Value);
                 }
                 foreach (IConfigurationSection child in config.GetChildren())
                 {
@@ -75,7 +75,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="section">The section to enumerate.</param>
         /// <returns><see langword="true" /> if the section has values or children; otherwise, <see langword="false" />.</returns>
-        public static bool Exists(this IConfigurationSection section)
+        public static bool Exists([NotNullWhen(true)] this IConfigurationSection? section)
         {
             if (section == null)
             {

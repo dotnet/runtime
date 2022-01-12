@@ -20,9 +20,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType InternalGetUnderlyingType(RuntimeType enumType);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern bool InternalHasFlag(Enum flags);
-
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
             EnumInfo? entry = enumType.Cache.EnumInfo;

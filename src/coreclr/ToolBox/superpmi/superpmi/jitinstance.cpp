@@ -8,6 +8,7 @@
 #include "jithost.h"
 #include "errorhandling.h"
 #include "spmiutil.h"
+#include "metricssummary.h"
 
 JitInstance* JitInstance::InitJit(char*                         nameOfJit,
                                   bool                          breakOnAssert,
@@ -276,7 +277,7 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     return true;
 }
 
-JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput)
+JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
@@ -286,12 +287,14 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         unsigned            flags;
         int                 mcIndex;
         bool                collectThroughput;
+        MetricsSummary*     metrics;
     } param;
     param.pThis             = this;
     param.result            = RESULT_SUCCESS; // assume success
     param.flags             = 0;
     param.mcIndex           = mcIndex;
     param.collectThroughput = collectThroughput;
+    param.metrics           = metrics;
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
@@ -303,14 +306,16 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
 
     PAL_TRY(Param*, pParam, &param)
     {
-        uint8_t* NEntryBlock    = nullptr;
-        uint32_t NCodeSizeBlock = 0;
+        uint8_t*   NEntryBlock    = nullptr;
+        uint32_t   NCodeSizeBlock = 0;
+        CORINFO_OS os             = CORINFO_WINNT;
 
-        pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags);
+        pParam->pThis->mc->repCompileMethod(&pParam->info, &pParam->flags, &os);
         if (pParam->collectThroughput)
         {
             pParam->pThis->lt.Start();
         }
+        pParam->pThis->pJitInstance->setTargetOS(os);
         CorJitResult jitResult = pParam->pThis->pJitInstance->compileMethod(pParam->pThis->icji, &pParam->info,
                                                                        pParam->flags, &NEntryBlock, &NCodeSizeBlock);
         if (pParam->collectThroughput)
@@ -363,6 +368,8 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog("Successful Compile");
+
+            pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
         else
         {
@@ -397,6 +404,20 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
     }
 
     mc->cr->secondsToCompile = stj.GetSeconds();
+
+    if (param.result == RESULT_SUCCESS)
+    {
+        metrics->SuccessfulCompiles++;
+    }
+    else
+    {
+        metrics->FailingCompiles++;
+    }
+
+    if (param.result == RESULT_MISSING)
+    {
+        metrics->MissingCompiles++;
+    }
 
     return param.result;
 }

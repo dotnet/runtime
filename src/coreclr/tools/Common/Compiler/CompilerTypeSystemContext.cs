@@ -193,6 +193,12 @@ namespace ILCompiler
                 if (oldModuleData == null)
                 {
                     peReader = OpenPEFile(filePath, out mappedViewAccessor);
+
+#if !READYTORUN
+                if (peReader.HasMetadata && (peReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == 0)
+                    throw new NotSupportedException($"Error: C++/CLI is not supported: '{filePath}'");
+#endif
+
                     pdbReader = PortablePdbSymbolReader.TryOpenEmbedded(peReader, GetMetadataStringDecoder()) ?? OpenAssociatedSymbolFile(filePath, peReader);
                 }
                 else

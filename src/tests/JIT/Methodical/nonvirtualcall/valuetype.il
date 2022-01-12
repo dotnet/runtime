@@ -23,6 +23,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module valuetype.exe
 // MVID: {AF04A73C-C896-4A00-97F2-959EE06A9394}
 .imagebase 0x00400000
@@ -35,7 +36,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public sequential ansi sealed beforefieldinit Test.Dummy
+.class public sequential ansi sealed beforefieldinit Test_valuetype.Dummy
        extends [mscorlib]System.ValueType
 {
   .pack 0
@@ -57,7 +58,7 @@
 
 } // end of class Test.Dummy
 
-.class public auto ansi sealed Test.TestMethod
+.class public auto ansi sealed Test_valuetype.TestMethod
        extends [mscorlib]System.MulticastDelegate
 {
   .method public hidebysig specialname rtspecialname 
@@ -85,37 +86,40 @@
 
 } // end of class Test.TestMethod
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_valuetype.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallDummy() cil managed
   {
     // Code size       56 (0x38)
     .maxstack  4
-    .locals init (valuetype Test.Dummy V_0)
+    .locals init (valuetype Test_valuetype.Dummy V_0)
     IL_0000:  nop
     IL_0001:  ldloca.s   V_0
-    IL_0003:  initobj    Test.Dummy
+    IL_0003:  initobj    Test_valuetype.Dummy
     IL_0009:  ldstr      "Dummy.Virtual"
     IL_000e:  ldloca.s   V_0
-    IL_0010:  call       instance string Test.Dummy::Virtual()
-    IL_0015:  call       void Test.Assert::AreEqual(string,
+    IL_0010:  call       instance string Test_valuetype.Dummy::Virtual()
+    IL_0015:  call       void Test_valuetype.Assert::AreEqual(string,
                                                     string)
     IL_001a:  nop
     IL_001b:  ldstr      "Dummy.Virtual"
     IL_0020:  ldloc.0
-    IL_0021:  box        Test.Dummy
-    IL_0026:  ldftn      instance string Test.Dummy::Virtual()
-    IL_002c:  newobj     instance void Test.TestMethod::.ctor(object,
+    IL_0021:  box        Test_valuetype.Dummy
+    IL_0026:  ldftn      instance string Test_valuetype.Dummy::Virtual()
+    IL_002c:  newobj     instance void Test_valuetype.TestMethod::.ctor(object,
                                                               native int)
-    IL_0031:  call       void Test.Assert::AreEqual(string,
-                                                    class Test.TestMethod)
+    IL_0031:  call       void Test_valuetype.Assert::AreEqual(string,
+                                                    class Test_valuetype.TestMethod)
     IL_0036:  nop
     IL_0037:  ret
   } // end of method Program::CallDummy
 
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       52 (0x34)
     .maxstack  1
@@ -125,7 +129,7 @@
     .try
     {
       IL_0001:  nop
-      IL_0002:  call       void Test.Program::CallDummy()
+      IL_0002:  call       void Test_valuetype.Program::CallDummy()
       IL_0007:  nop
       IL_0008:  ldstr      "Test SUCCESS"
       IL_000d:  call       void [System.Console]System.Console::WriteLine(string)
@@ -157,19 +161,19 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test.Assert
+.class public abstract auto ansi sealed beforefieldinit Test_valuetype.Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
-                                                 class Test.TestMethod right) cil managed
+                                                 class Test_valuetype.TestMethod right) cil managed
   {
     // Code size       15 (0xf)
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldarg.0
     IL_0002:  ldarg.1
-    IL_0003:  callvirt   instance string Test.TestMethod::Invoke()
-    IL_0008:  call       void Test.Assert::AreEqual(string,
+    IL_0003:  callvirt   instance string Test_valuetype.TestMethod::Invoke()
+    IL_0008:  call       void Test_valuetype.Assert::AreEqual(string,
                                                     string)
     IL_000d:  nop
     IL_000e:  ret

@@ -12,6 +12,7 @@
 .assembly sin
 {
 }
+.assembly extern xunit.core {}
 .module sin_il.exe
 .namespace SinCalc
 {
@@ -222,6 +223,9 @@
     .method private hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals (object V_0,

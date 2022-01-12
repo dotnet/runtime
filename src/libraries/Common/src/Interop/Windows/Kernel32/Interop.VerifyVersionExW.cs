@@ -13,7 +13,7 @@ internal static partial class Interop
         internal const uint VER_SERVICEPACKMAJOR = 0x0000020;
         internal const uint VER_SERVICEPACKMINOR = 0x0000010;
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern bool VerifyVersionInfoW(ref OSVERSIONINFOEX lpVersionInfo, uint dwTypeMask, ulong dwlConditionMask);
+        [GeneratedDllImport(Libraries.Kernel32)]
+        internal static partial bool VerifyVersionInfoW(ref OSVERSIONINFOEX lpVersionInfo, uint dwTypeMask, ulong dwlConditionMask);
     }
 }

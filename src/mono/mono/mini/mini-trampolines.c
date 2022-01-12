@@ -454,12 +454,10 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	/* IMT call */
 	if (imt_call) {
 		MonoMethod *imt_method = NULL, *impl_method = NULL;
-		MonoObject *this_arg;
 
 		g_assert (vtable_slot);
 
 		imt_method = mono_arch_find_imt_method (regs, code);
-		this_arg = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
 		{
 			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
@@ -1024,7 +1022,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			if (sig->hasthis && m_class_is_valuetype (method->klass)) {
 				gboolean need_unbox = TRUE;
 
-				if (tramp_info->invoke_sig->param_count > sig->param_count && tramp_info->invoke_sig->params [0]->byref)
+				if (tramp_info->invoke_sig->param_count > sig->param_count && m_type_is_byref (tramp_info->invoke_sig->params [0]))
 					need_unbox = FALSE;
 
 				if (need_unbox) {
@@ -1399,7 +1397,6 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	ERROR_DECL (error);
 	MonoDelegateTrampInfo *tramp_info;
 	MonoClassMethodPair pair, *dpair;
-	guint32 code_size = 0;
 	MonoMemoryManager *mm_class, *mm_method, *mm;
 	MonoJitMemoryManager *jit_mm;
 
@@ -1425,18 +1422,29 @@ mono_create_delegate_trampoline_info (MonoClass *klass, MonoMethod *method)
 	g_assert (invoke);
 
 	tramp_info = (MonoDelegateTrampInfo *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoDelegateTrampInfo));
+	tramp_info->klass = klass;
 	tramp_info->invoke = invoke;
 	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
-	tramp_info->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), TRUE);
-	tramp_info->impl_nothis = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), FALSE);
+	// FIXME: Use a different conditional
+#ifndef HOST_WASM
+	if (!mono_llvm_only) {
+		tramp_info->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), TRUE);
+		tramp_info->impl_nothis = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), FALSE);
+	}
+#endif
 	tramp_info->method = method;
 	if (method) {
 		error_init (error);
 		tramp_info->sig = mono_method_signature_checked (method, error);
 		tramp_info->need_rgctx_tramp = mono_method_needs_static_rgctx_invoke (method, FALSE);
 	}
-	tramp_info->invoke_impl = mono_create_specific_trampoline (jit_mm->mem_manager, tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
-	g_assert (code_size);
+#ifndef HOST_WASM
+	if (!mono_llvm_only) {
+		guint32 code_size = 0;
+		tramp_info->invoke_impl = mono_create_specific_trampoline (jit_mm->mem_manager, tramp_info, MONO_TRAMPOLINE_DELEGATE, &code_size);
+		g_assert (code_size);
+	}
+#endif
 
 	dpair = (MonoClassMethodPair *)mono_mem_manager_alloc0 (jit_mm->mem_manager, sizeof (MonoClassMethodPair));
 	memcpy (dpair, &pair, sizeof (MonoClassMethodPair));

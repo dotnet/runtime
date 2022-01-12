@@ -42,16 +42,16 @@ public class Gen<T>
 				}
 				if (throwException)
 				{
-					Test.Eval(false);
+					Test_nested_try_catch08.Eval(false);
 				}
 			}
 			catch(GenException<T>)
 			{
-				Test.Eval(throwException);
+				Test_nested_try_catch08.Eval(throwException);
 				set = true;
 			}
 		}
-		Test.Eval(throwException ^ (!set));
+		Test_nested_try_catch08.Eval(throwException ^ (!set));
 	}
 	
 	public void ExceptionTest(bool throwException)
@@ -61,7 +61,7 @@ public class Gen<T>
 	
 }
 
-public class Test
+public class Test_nested_try_catch08
 {
 	public static int counter = 0;
 	public static bool result = true;

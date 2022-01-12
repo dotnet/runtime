@@ -18,6 +18,7 @@
 {
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 .module hello.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -32,6 +33,9 @@
 {
   .method public static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  16
     .locals init (int64 V_0,

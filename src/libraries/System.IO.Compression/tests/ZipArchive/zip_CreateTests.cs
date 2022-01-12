@@ -178,6 +178,23 @@ namespace System.IO.Compression.Tests
             AssertDataDescriptor(memoryStream, false);
         }
 
+        [Fact]
+        public static void CreateNormal_With2SameEntries_ThrowException()
+        {
+            using var memoryStream = new MemoryStream();
+            // We need an non-seekable stream so the data descriptor bit is turned on when saving
+            var wrappedStream = new WrappedStream(memoryStream);
+
+            // Creation will go through the path that sets the data descriptor bit when the stream is unseekable
+            using (var archive = new ZipArchive(wrappedStream, ZipArchiveMode.Create))
+            {
+                string entryName = "duplicate.txt";
+                CreateEntry(archive, entryName, "xxx");
+                AssertExtensions.ThrowsContains<InvalidOperationException>(() => CreateEntry(archive, entryName, "yyy"),
+                    entryName);
+            }
+        }
+
         private static string ReadStringFromSpan(Span<byte> input)
         {
             return Text.Encoding.UTF8.GetString(input.ToArray());

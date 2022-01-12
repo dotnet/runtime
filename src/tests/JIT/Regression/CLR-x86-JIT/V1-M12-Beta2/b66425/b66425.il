@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly test_21_try {}
+.assembly extern xunit.core {}
 
 .class TestClass{
 
@@ -56,6 +57,9 @@ lbl_21_exitSEH:
 
 .method public static int32 Main(class ['mscorlib']System.String[] arg)
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     call void TestClass::test_21_try()
     .entrypoint
     ldc.i4 100

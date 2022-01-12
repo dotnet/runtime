@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 
 using System.CodeDom.Compiler;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -17,8 +16,6 @@ using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl
 {
-#if ! HIDE_XSL
-
     //----------------------------------------------------------------------------------------------------
     //  Clarification on null values in this API:
     //      stylesheet, stylesheetUri   - cannot be null
@@ -48,7 +45,6 @@ namespace System.Xml.Xsl
 
         // Results of compilation
         private CompilerErrorCollection? _compilerErrorColl;
-        private XmlWriterSettings? _outputSettings;
         private QilExpression? _qil;
 
         // Executable command for the compiled stylesheet
@@ -67,7 +63,7 @@ namespace System.Xml.Xsl
         private void Reset()
         {
             _compilerErrorColl = null;
-            _outputSettings = null;
+            OutputSettings = null;
             _qil = null;
             _command = null;
         }
@@ -75,13 +71,7 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Writer settings specified in the stylesheet
         /// </summary>
-        public XmlWriterSettings? OutputSettings
-        {
-            get
-            {
-                return _outputSettings;
-            }
-        }
+        public XmlWriterSettings? OutputSettings { get; private set; }
 
         //------------------------------------------------
         // Load methods
@@ -122,33 +112,21 @@ namespace System.Xml.Xsl
         public void Load(string stylesheetUri)
         {
             Reset();
-            if (stylesheetUri == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheetUri));
-            }
+            ArgumentNullException.ThrowIfNull(stylesheetUri);
             LoadInternal(stylesheetUri, XsltSettings.Default, CreateDefaultResolver());
         }
 
         public void Load(string stylesheetUri, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
-            if (stylesheetUri == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheetUri));
-            }
+            ArgumentNullException.ThrowIfNull(stylesheetUri);
             LoadInternal(stylesheetUri, settings, stylesheetResolver);
         }
 
-        private CompilerErrorCollection LoadInternal(object stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
+        private void LoadInternal(object stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
-            if (stylesheet == null)
-            {
-                throw new ArgumentNullException(nameof(stylesheet));
-            }
-            if (settings == null)
-            {
-                settings = XsltSettings.Default;
-            }
+            ArgumentNullException.ThrowIfNull(stylesheet);
+            settings ??= XsltSettings.Default;
             CompileXsltToQil(stylesheet, settings, stylesheetResolver);
             CompilerError? error = GetFirstError();
             if (error != null)
@@ -159,7 +137,6 @@ namespace System.Xml.Xsl
             {
                 CompileQilToMsil(settings);
             }
-            return _compilerErrorColl;
         }
 
         [MemberNotNull(nameof(_compilerErrorColl))]
@@ -186,8 +163,8 @@ namespace System.Xml.Xsl
 
         private void CompileQilToMsil(XsltSettings settings)
         {
-            _command = new XmlILGenerator().Generate(_qil!, /*typeBuilder:*/null)!;
-            _outputSettings = _command.StaticData.DefaultWriterSettings;
+            _command = new XmlILGenerator().Generate(_qil!, null)!;
+            OutputSettings = _command.StaticData.DefaultWriterSettings;
             _qil = null;
         }
 
@@ -198,10 +175,8 @@ namespace System.Xml.Xsl
         public void Load(Type compiledStylesheet)
         {
             Reset();
-            if (compiledStylesheet == null)
-                throw new ArgumentNullException(nameof(compiledStylesheet));
-
-            object[] customAttrs = compiledStylesheet.GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
+            ArgumentNullException.ThrowIfNull(compiledStylesheet);
+            object[] customAttrs = compiledStylesheet.GetCustomAttributes(typeof(GeneratedCodeAttribute), false);
             GeneratedCodeAttribute? generatedCodeAttr = customAttrs.Length > 0 ? (GeneratedCodeAttribute)customAttrs[0] : null;
 
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
@@ -224,7 +199,7 @@ namespace System.Xml.Xsl
                     if (queryData != null)
                     {
                         MethodInfo? executeMethod = compiledStylesheet.GetMethod("Execute", BindingFlags.Static | BindingFlags.NonPublic);
-                        Type[]? earlyBoundTypes = (Type[]?)fldTypes.GetValue(/*this:*/null);
+                        Type[]? earlyBoundTypes = (Type[]?)fldTypes.GetValue(null);
 
                         // Load the stylesheet
                         Load(executeMethod!, queryData, earlyBoundTypes);
@@ -235,25 +210,24 @@ namespace System.Xml.Xsl
 
             // Throw an exception if the command was not loaded
             if (_command == null)
+            {
                 throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
+            }
         }
 
         [RequiresUnreferencedCode("This method will call into constructors of the earlyBoundTypes array which cannot be statically analyzed.")]
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[]? earlyBoundTypes)
         {
             Reset();
+            ArgumentNullException.ThrowIfNull(executeMethod);
+            ArgumentNullException.ThrowIfNull(queryData);
 
-            if (executeMethod == null)
-                throw new ArgumentNullException(nameof(executeMethod));
+            Delegate delExec = executeMethod is DynamicMethod dm
+                ? dm.CreateDelegate(typeof(ExecuteDelegate))
+                : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
 
-            if (queryData == null)
-                throw new ArgumentNullException(nameof(queryData));
-
-
-            DynamicMethod? dm = executeMethod as DynamicMethod;
-            Delegate delExec = (dm != null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
             _command = new XmlILCommand((ExecuteDelegate)delExec, new XmlQueryStaticData(queryData, earlyBoundTypes));
-            _outputSettings = _command.StaticData.DefaultWriterSettings;
+            OutputSettings = _command.StaticData.DefaultWriterSettings;
         }
 
         //------------------------------------------------
@@ -263,7 +237,7 @@ namespace System.Xml.Xsl
         public void Transform(IXPathNavigable input, XmlWriter results)
         {
             CheckArguments(input, results);
-            Transform(input, (XsltArgumentList?)null, results, CreateDefaultResolver());
+            Transform(input, null, results, CreateDefaultResolver());
         }
 
         public void Transform(IXPathNavigable input, XsltArgumentList? arguments, XmlWriter results)
@@ -275,21 +249,15 @@ namespace System.Xml.Xsl
         public void Transform(IXPathNavigable input, XsltArgumentList? arguments, TextWriter results)
         {
             CheckArguments(input, results);
-            using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
-            {
-                Transform(input, arguments, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlWriter writer = XmlWriter.Create(results, OutputSettings);
+            Transform(input, arguments, writer, CreateDefaultResolver());
         }
 
         public void Transform(IXPathNavigable input, XsltArgumentList? arguments, Stream results)
         {
             CheckArguments(input, results);
-            using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
-            {
-                Transform(input, arguments, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlWriter writer = XmlWriter.Create(results, OutputSettings);
+            Transform(input, arguments, writer, CreateDefaultResolver());
         }
 
         //------------------------------------------------
@@ -299,7 +267,7 @@ namespace System.Xml.Xsl
         public void Transform(XmlReader input, XmlWriter results)
         {
             CheckArguments(input, results);
-            Transform(input, (XsltArgumentList?)null, results, CreateDefaultResolver());
+            Transform(input, null, results, CreateDefaultResolver());
         }
 
         public void Transform(XmlReader input, XsltArgumentList? arguments, XmlWriter results)
@@ -311,21 +279,15 @@ namespace System.Xml.Xsl
         public void Transform(XmlReader input, XsltArgumentList? arguments, TextWriter results)
         {
             CheckArguments(input, results);
-            using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
-            {
-                Transform(input, arguments, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlWriter writer = XmlWriter.Create(results, OutputSettings);
+            Transform(input, arguments, writer, CreateDefaultResolver());
         }
 
         public void Transform(XmlReader input, XsltArgumentList? arguments, Stream results)
         {
             CheckArguments(input, results);
-            using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
-            {
-                Transform(input, arguments, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlWriter writer = XmlWriter.Create(results, OutputSettings);
+            Transform(input, arguments, writer, CreateDefaultResolver());
         }
 
         //------------------------------------------------
@@ -338,58 +300,41 @@ namespace System.Xml.Xsl
         public void Transform(string inputUri, XmlWriter results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri))
-            {
-                Transform(reader, (XsltArgumentList?)null, results, CreateDefaultResolver());
-            }
+            using XmlReader reader = XmlReader.Create(inputUri);
+            Transform(reader, null, results, CreateDefaultResolver());
         }
 
         public void Transform(string inputUri, XsltArgumentList? arguments, XmlWriter results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri))
-            {
-                Transform(reader, arguments, results, CreateDefaultResolver());
-            }
+            using XmlReader reader = XmlReader.Create(inputUri);
+            Transform(reader, arguments, results, CreateDefaultResolver());
         }
 
         public void Transform(string inputUri, XsltArgumentList? arguments, TextWriter results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri))
-            using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
-            {
-                Transform(reader, arguments, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlReader reader = XmlReader.Create(inputUri);
+            using XmlWriter writer = XmlWriter.Create(results, OutputSettings);
+            Transform(reader, arguments, writer, CreateDefaultResolver());
         }
 
         public void Transform(string inputUri, XsltArgumentList? arguments, Stream results)
         {
             CheckArguments(inputUri, results);
-            using (XmlReader reader = XmlReader.Create(inputUri))
-            using (XmlWriter writer = XmlWriter.Create(results, OutputSettings))
-            {
-                Transform(reader, arguments, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlReader reader = XmlReader.Create(inputUri);
+            using XmlWriter writer = XmlWriter.Create(results, OutputSettings);
+            Transform(reader, arguments, writer, CreateDefaultResolver());
         }
 
         public void Transform(string inputUri, string resultsFile)
         {
-            if (inputUri == null)
-                throw new ArgumentNullException(nameof(inputUri));
-
-            if (resultsFile == null)
-                throw new ArgumentNullException(nameof(resultsFile));
-
+            ArgumentNullException.ThrowIfNull(inputUri);
+            ArgumentNullException.ThrowIfNull(resultsFile);
             // SQLBUDT 276415: Prevent wiping out the content of the input file if the output file is the same
-            using (XmlReader reader = XmlReader.Create(inputUri))
-            using (XmlWriter writer = XmlWriter.Create(resultsFile, OutputSettings))
-            {
-                Transform(reader, (XsltArgumentList?)null, writer, CreateDefaultResolver());
-                writer.Close();
-            }
+            using XmlReader reader = XmlReader.Create(inputUri);
+            using XmlWriter writer = XmlWriter.Create(resultsFile, OutputSettings);
+            Transform(reader, null, writer, CreateDefaultResolver());
         }
 
         //------------------------------------------------
@@ -402,7 +347,7 @@ namespace System.Xml.Xsl
         {
             CheckArguments(input, results);
             CheckCommand();
-            _command.Execute((object)input, documentResolver, arguments, results);
+            _command.Execute(input, documentResolver, arguments, results);
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -411,29 +356,19 @@ namespace System.Xml.Xsl
         {
             CheckArguments(input, results);
             CheckCommand();
-            _command.Execute((object)input.CreateNavigator()!, documentResolver, arguments, results);
+            _command.Execute(input.CreateNavigator()!, documentResolver, arguments, results);
         }
-
-        //------------------------------------------------
-        // Helper methods
-        //------------------------------------------------
 
         private static void CheckArguments(object input, object results)
         {
-            if (input == null)
-                throw new ArgumentNullException(nameof(input));
-
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(results);
         }
 
         private static void CheckArguments(string inputUri, object results)
         {
-            if (inputUri == null)
-                throw new ArgumentNullException(nameof(inputUri));
-
-            if (results == null)
-                throw new ArgumentNullException(nameof(results));
+            ArgumentNullException.ThrowIfNull(inputUri);
+            ArgumentNullException.ThrowIfNull(results);
         }
 
         [MemberNotNull(nameof(_command))]
@@ -451,33 +386,8 @@ namespace System.Xml.Xsl
             {
                 return new XmlUrlResolver();
             }
-            else
-            {
-                return XmlNullResolver.Singleton;
-            }
-        }
 
-        //------------------------------------------------
-        // Test suites entry points
-        //------------------------------------------------
-
-        private QilExpression TestCompile(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
-        {
-            Reset();
-            CompileXsltToQil(stylesheet, settings, stylesheetResolver);
-            return _qil;
-        }
-
-        private void TestGenerate(XsltSettings settings)
-        {
-            Debug.Assert(_qil != null, "You must compile to Qil first");
-            CompileQilToMsil(settings);
-        }
-
-        private void Transform(string inputUri, XsltArgumentList? arguments, XmlWriter results, XmlResolver documentResolver)
-        {
-            _command!.Execute(inputUri, documentResolver, arguments, results);
+            return XmlNullResolver.Singleton;
         }
     }
-#endif // ! HIDE_XSL
 }

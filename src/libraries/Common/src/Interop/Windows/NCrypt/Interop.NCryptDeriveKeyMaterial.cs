@@ -15,14 +15,14 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a key from a secret agreement
         /// </summary>
-        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        private static extern ErrorCode NCryptDeriveKey(
+        [GeneratedDllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
+        private static partial ErrorCode NCryptDeriveKey(
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
-            [In] ref NCryptBufferDesc pParameterList,
-            [Out, MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
+            ref NCryptBufferDesc pParameterList,
+            [MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
             int cbDerivedKey,
-            [Out] out int pcbResult,
+            out int pcbResult,
             SecretAgreementFlags dwFlags);
 
         /// <summary>

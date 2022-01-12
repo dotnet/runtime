@@ -22,7 +22,7 @@ class Gen<T>
     }
 }
 
-public class Test
+public class Test_class_static01
 {
     public static int Main()
     {

@@ -3,10 +3,12 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.Reflection
 {
@@ -19,7 +21,13 @@ namespace System.Text.Json.Reflection
             _compilation = compilation;
         }
 
-        public Type? Resolve(Type type) => Resolve(type.FullName!);
+        public Compilation Compilation => _compilation;
+
+        public Type? Resolve(Type type)
+        {
+            Debug.Assert(!type.IsArray, "Resolution logic only capable of handling named types.");
+            return Resolve(type.FullName!);
+        }
 
         public Type? Resolve(string fullyQualifiedMetadataName)
         {

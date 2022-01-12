@@ -117,8 +117,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
   add_compile_options(-Wa,--divide)
 endif()
 
-include_directories("${CLR_SRC_NATIVE_DIR}/common")
-
 set(SOURCES
   cruntime/file.cpp
   cruntime/filecrt.cpp

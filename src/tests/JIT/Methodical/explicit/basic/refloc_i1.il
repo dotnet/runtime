@@ -17,6 +17,7 @@
   
   
 }
+.assembly extern xunit.core {}
 .module 'refloc_i1.exe'
 // MVID: {3752C643-F767-47EB-BDBF-8588A1A0B6B3}
 .namespace Test
@@ -111,6 +112,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       64 (0x40)
       .maxstack  2

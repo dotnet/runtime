@@ -20,8 +20,7 @@ from os import path
 from os.path import isfile
 from shutil import copyfile
 from coreclr_arguments import *
-from superpmi import ChangeDir, TempDir
-from superpmi_setup import run_command
+from jitutil import run_command, ChangeDir, TempDir
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -154,7 +153,7 @@ def build_and_run(coreclr_args, output_mch_name):
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
-         "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+         "--framework", "net7.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
     # Disable ReadyToRun so we always JIT R2R methods and collect them

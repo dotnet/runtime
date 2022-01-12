@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     misc/dbgmsg.cpp
@@ -12,8 +10,6 @@ Module Name:
 Abstract:
     Implementation of Debug Message utilies. Relay channel information,
     output functions, etc.
-
-
 
 --*/
 
@@ -102,7 +98,7 @@ static const char *dbg_channel_names[]=
 };
 
 // Verify the number of elements in dbg_channel_names
-static_assert_no_msg(_countof(dbg_channel_names) == DCI_LAST);
+static_assert_no_msg(ARRAY_SIZE(dbg_channel_names) == DCI_LAST);
 
 static const char *dbg_level_names[]=
 {

@@ -12,6 +12,9 @@
 // ============================================================
 
 #include "assemblyname.hpp"
+#include "assemblybindercommon.hpp"
+
+#include "common.h"
 #include "utils.hpp"
 
 #include "textualidentityparser.hpp"
@@ -26,21 +29,22 @@ namespace
     const WCHAR* s_neutralCulture = W("neutral");
 }
 
+STDAPI BinderAcquireImport(PEImage* pPEImage,
+    IMDInternalImport** pIMetaDataAssemblyImport,
+    DWORD* pdwPAFlags);
+
 namespace BINDER_SPACE
 {
     AssemblyName::AssemblyName()
     {
         m_cRef = 1;
-        m_dwNameFlags = NAME_FLAG_NONE;
+        m_isDefinition = false;
         // Default values present in every assembly name
         SetHave(AssemblyIdentity::IDENTITY_FLAG_CULTURE |
                 AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL);
     }
 
-    HRESULT AssemblyName::Init(IMDInternalImport       *pIMetaDataAssemblyImport,
-                               PEKIND                   PeKind,
-                               mdAssemblyRef            mdar /* = 0 */,
-                               BOOL                     fIsDefinition /* = TRUE */)
+    HRESULT AssemblyName::Init(PEImage* pPEImage)
     {
         HRESULT hr = S_OK;
         mdAssembly mda = 0;
@@ -51,38 +55,29 @@ namespace BINDER_SPACE
         DWORD dwRefOrDefFlags = 0;
         DWORD dwHashAlgId = 0;
 
-        if (fIsDefinition)
-        {
-            // Get the assembly token
-            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyFromScope(&mda));
-        }
+        ReleaseHolder<IMDInternalImport> pIMetaDataAssemblyImport;
+
+        PEKIND PeKind = peNone;
+        DWORD dwPAFlags[2];
+        IF_FAIL_GO(BinderAcquireImport(pPEImage, &pIMetaDataAssemblyImport, dwPAFlags));
+        IF_FAIL_GO(AssemblyBinderCommon::TranslatePEToArchitectureType(dwPAFlags, &PeKind));
+        SetArchitecture(PeKind);
+
+        _ASSERTE(pIMetaDataAssemblyImport != NULL);
+
+        // Get the assembly token
+        IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyFromScope(&mda));
 
         // Get name and metadata
-        if (fIsDefinition)
-        {
-            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyProps(
-                            mda,            // [IN] The Assembly for which to get the properties.
-                            &pvPublicKeyToken,  // [OUT] Pointer to the PublicKeyToken blob.
-                            &dwPublicKeyToken,  // [OUT] Count of bytes in the PublicKeyToken Blob.
-                            &dwHashAlgId,   // [OUT] Hash Algorithm.
-                            &pAssemblyName, // [OUT] Name.
-                            &amd,           // [OUT] Assembly MetaData.
-                            &dwRefOrDefFlags // [OUT] Flags.
-                            ));
-        }
-        else
-        {
-            IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyRefProps(
-                            mdar,            // [IN] The Assembly for which to get the properties.
-                            &pvPublicKeyToken,  // [OUT] Pointer to the PublicKeyToken blob.
-                            &dwPublicKeyToken,  // [OUT] Count of bytes in the PublicKeyToken Blob.
-                            &pAssemblyName, // [OUT] Name.
-                            &amd,           // [OUT] Assembly MetaData.
-                            NULL, // [OUT] Hash blob.
-                            NULL, // [OUT] Count of bytes in hash blob.
-                            &dwRefOrDefFlags // [OUT] Flags.
-                            ));
-        }
+        IF_FAIL_GO(pIMetaDataAssemblyImport->GetAssemblyProps(
+                        mda,            // [IN] The Assembly for which to get the properties.
+                        &pvPublicKeyToken,  // [OUT] Pointer to the PublicKeyToken blob.
+                        &dwPublicKeyToken,  // [OUT] Count of bytes in the PublicKeyToken Blob.
+                        &dwHashAlgId,   // [OUT] Hash Algorithm.
+                        &pAssemblyName, // [OUT] Name.
+                        &amd,           // [OUT] Assembly MetaData.
+                        &dwRefOrDefFlags // [OUT] Flags.
+                        ));
 
         {
             StackSString culture;
@@ -156,8 +151,6 @@ namespace BINDER_SPACE
 
             SetHave(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
         }
-
-        SetArchitecture(PeKind);
 
     Exit:
         return hr;

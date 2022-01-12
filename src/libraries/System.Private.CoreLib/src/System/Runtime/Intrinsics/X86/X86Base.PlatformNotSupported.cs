@@ -67,9 +67,15 @@ namespace System.Runtime.Intrinsics.X86
         internal static uint BitScanReverse(uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// void __cpuidex(int cpuInfo[4], int function_id, int subfunction_id);
+        /// void __cpuidex (int cpuInfo[4], int function_id, int subfunction_id);
         ///   CPUID
         /// </summary>
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_pause (void);
+        ///   PAUSE
+        /// </summary>
+        public static void Pause() { throw new PlatformNotSupportedException(); }
     }
 }

@@ -151,6 +151,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                     var endpoint = new Uri($"ws://{devToolsHost.Authority}{context.Request.Path}");
+                    int runtimeId = 0;
+                    if (context.Request.Query.TryGetValue("RuntimeId", out StringValues runtimeIdValue) &&
+                                            int.TryParse(runtimeIdValue.FirstOrDefault(), out int parsedId))
+                    {
+                        runtimeId = parsedId;
+                    }
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
@@ -159,7 +165,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         );
 
                         context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
-                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList());
+                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList(), runtimeId);
 
                         System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 

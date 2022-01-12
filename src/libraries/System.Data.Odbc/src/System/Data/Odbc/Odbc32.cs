@@ -90,15 +90,15 @@ namespace System.Data.Odbc
         {
             return ADP.InvalidOperation(SR.GetString(SR.Odbc_CantSetPropertyOnOpenConnection));
         }
-        internal static Exception CantEnableConnectionpooling(ODBC32.RetCode retcode)
+        internal static Exception CantEnableConnectionpooling(ODBC32.SQLRETURN retcode)
         {
             return ADP.DataAdapter(SR.GetString(SR.Odbc_CantEnableConnectionpooling, ODBC32.RetcodeToString(retcode)));
         }
-        internal static Exception CantAllocateEnvironmentHandle(ODBC32.RetCode retcode)
+        internal static Exception CantAllocateEnvironmentHandle(ODBC32.SQLRETURN retcode)
         {
             return ADP.DataAdapter(SR.GetString(SR.Odbc_CantAllocateEnvironmentHandle, ODBC32.RetcodeToString(retcode)));
         }
-        internal static Exception FailedToGetDescriptorHandle(ODBC32.RetCode retcode)
+        internal static Exception FailedToGetDescriptorHandle(ODBC32.SQLRETURN retcode)
         {
             return ADP.DataAdapter(SR.GetString(SR.Odbc_FailedToGetDescriptorHandle, ODBC32.RetcodeToString(retcode)));
         }
@@ -112,7 +112,7 @@ namespace System.Data.Odbc
         }
         internal const string Pwd = "pwd";
 
-        internal static void TraceODBC(int level, string method, ODBC32.RetCode retcode)
+        internal static void TraceODBC(int level, string method, ODBC32.SQLRETURN retcode)
         {
         }
 
@@ -133,7 +133,7 @@ namespace System.Data.Odbc
         }
 
         // must be public because it is serialized by OdbcException
-        internal enum RetCode : short
+        internal enum SQLRETURN : short
         {
             SUCCESS = 0,
             SUCCESS_WITH_INFO = 1,
@@ -142,18 +142,18 @@ namespace System.Data.Odbc
             NO_DATA = 100,
         }
 
-        internal static string RetcodeToString(RetCode retcode)
+        internal static string RetcodeToString(SQLRETURN retcode)
         {
             switch (retcode)
             {
-                case RetCode.SUCCESS: return "SUCCESS";
-                case RetCode.SUCCESS_WITH_INFO: return "SUCCESS_WITH_INFO";
-                case RetCode.ERROR: return "ERROR";
-                case RetCode.INVALID_HANDLE: return "INVALID_HANDLE";
-                case RetCode.NO_DATA: return "NO_DATA";
+                case SQLRETURN.SUCCESS: return "SUCCESS";
+                case SQLRETURN.SUCCESS_WITH_INFO: return "SUCCESS_WITH_INFO";
+                case SQLRETURN.ERROR: return "ERROR";
+                case SQLRETURN.INVALID_HANDLE: return "INVALID_HANDLE";
+                case SQLRETURN.NO_DATA: return "NO_DATA";
                 default:
                     Debug.Fail("Unknown enumerator passed to RetcodeToString method");
-                    goto case RetCode.ERROR;
+                    goto case SQLRETURN.ERROR;
             }
         }
 
@@ -716,17 +716,17 @@ namespace System.Data.Odbc
         internal const short SQL_RESULT_COL = 3;
 
         // Helpers
-        internal static OdbcErrorCollection GetDiagErrors(string? source, OdbcHandle hrHandle, RetCode retcode)
+        internal static OdbcErrorCollection GetDiagErrors(string? source, OdbcHandle hrHandle, SQLRETURN retcode)
         {
             OdbcErrorCollection errors = new OdbcErrorCollection();
             GetDiagErrors(errors, source, hrHandle, retcode);
             return errors;
         }
 
-        internal static void GetDiagErrors(OdbcErrorCollection errors, string? source, OdbcHandle hrHandle, RetCode retcode)
+        internal static void GetDiagErrors(OdbcErrorCollection errors, string? source, OdbcHandle hrHandle, SQLRETURN retcode)
         {
-            Debug.Assert(retcode != ODBC32.RetCode.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
-            if (RetCode.SUCCESS != retcode)
+            Debug.Assert(retcode != ODBC32.SQLRETURN.INVALID_HANDLE, "retcode must never be ODBC32.RetCode.INVALID_HANDLE");
+            if (SQLRETURN.SUCCESS != retcode)
             {
                 int NativeError;
                 short iRec = 0;
@@ -740,7 +740,7 @@ namespace System.Data.Odbc
                     ++iRec;
 
                     retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out cchActual);
-                    if ((RetCode.SUCCESS_WITH_INFO == retcode) && (message.Capacity - 1 < cchActual))
+                    if ((SQLRETURN.SUCCESS_WITH_INFO == retcode) && (message.Capacity - 1 < cchActual))
                     {
                         message.Capacity = cchActual + 1;
                         retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out cchActual);
@@ -748,7 +748,7 @@ namespace System.Data.Odbc
 
                     //Note: SUCCESS_WITH_INFO from SQLGetDiagRec would be because
                     //the buffer is not large enough for the error string.
-                    moreerrors = (retcode == RetCode.SUCCESS || retcode == RetCode.SUCCESS_WITH_INFO);
+                    moreerrors = (retcode == SQLRETURN.SUCCESS || retcode == SQLRETURN.SUCCESS_WITH_INFO);
                     if (moreerrors)
                     {
                         //Sets up the InnerException as well...

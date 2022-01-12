@@ -927,8 +927,9 @@ void DumpIL(MethodContext* mc)
 {
     CORINFO_METHOD_INFO cmi;
     unsigned int        flags = 0;
+    CORINFO_OS          os    = CORINFO_WINNT;
 
-    mc->repCompileMethod(&cmi, &flags);
+    mc->repCompileMethod(&cmi, &flags, &os);
 
     const char* moduleName = nullptr;
     const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);

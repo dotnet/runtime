@@ -56,4 +56,4 @@ FAIL:
 	ret
 }
 }
-.assembly stind_i4.exe{}
+.assembly stind_i4{}

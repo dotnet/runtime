@@ -18,6 +18,8 @@ class CILJit : public ICorJitCompiler
                               );
 
     unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
+
+    void setTargetOS(CORINFO_OS os);
 };
 
 /*****************************************************************************
@@ -57,6 +59,18 @@ FORCEINLINE
 bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     return info.compCompHnd->isJitIntrinsic(ftn);
+}
+
+FORCEINLINE
+bool Compiler::eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
+{
+    return info.compCompHnd->isFieldStatic(fldHnd);
+}
+
+FORCEINLINE
+var_types Compiler::eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd)
+{
+    return JITtype2varType(info.compCompHnd->getFieldType(fldHnd, pStructHnd));
 }
 
 FORCEINLINE

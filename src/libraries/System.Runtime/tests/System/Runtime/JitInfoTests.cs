@@ -76,7 +76,7 @@ namespace System.Runtime.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT))] // JitInfo metrics will be 0 in AOT scenarios
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAOT), nameof(PlatformDetection.IsReflectionEmitSupported))] // JitInfo metrics will be 0 in AOT scenarios
         public void JitInfoIsNotPopulated()
         {
             TimeSpan beforeCompilationTime = System.Runtime.JitInfo.GetCompilationTime();

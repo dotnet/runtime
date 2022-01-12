@@ -101,12 +101,16 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
+    # Build/Generate native prerequisites
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) -c $(buildConfig) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
+      displayName: Build and generate native prerequisites
+
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -nopgooptimize -component alljits
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -nopgooptimize -skiprestoreoptdata -component alljits
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits
         displayName: Build CoreCLR JIT
 
     - ${{ if eq(parameters.uploadAs, 'azureBlob') }}:

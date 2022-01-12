@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 //
 // Non-virtual call of System.Type.TypeHandle on result of ldtoken should not trigger typeof(XXX).TypeHandle optimization
 //
@@ -65,6 +66,9 @@ static int Main() {
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       62 (0x3e)
     .maxstack  1

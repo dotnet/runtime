@@ -700,7 +700,7 @@ class PEFileListLock : public ListLock
 {
 public:
 #ifndef DACCESS_COMPILE
-    ListLockEntry *FindFileLock(PEFile *pFile)
+    ListLockEntry *FindFileLock(PEAssembly *pPEAssembly)
     {
         STATIC_CONTRACT_NOTHROW;
         STATIC_CONTRACT_GC_NOTRIGGER;
@@ -714,7 +714,7 @@ public:
              pEntry != NULL;
              pEntry = pEntry->m_pNext)
         {
-            if (((PEFile *)pEntry->m_data)->Equals(pFile))
+            if (((PEAssembly *)pEntry->m_data)->Equals(pPEAssembly))
             {
                 return pEntry;
             }
@@ -777,7 +777,7 @@ private:
     HRESULT                 m_cachedHR;
 
 public:
-    static FileLoadLock *Create(PEFileListLock *pLock, PEFile *pFile, DomainFile *pDomainFile);
+    static FileLoadLock *Create(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainFile);
 
     ~FileLoadLock();
     DomainFile *GetDomainFile();
@@ -807,7 +807,7 @@ public:
 
 private:
 
-    FileLoadLock(PEFileListLock *pLock, PEFile *pFile, DomainFile *pDomainFile);
+    FileLoadLock(PEFileListLock *pLock, PEAssembly *pPEAssembly, DomainFile *pDomainFile);
 
     static void HolderLeave(FileLoadLock *pThis);
 
@@ -1812,11 +1812,11 @@ public:
         FindAssemblyOptions_IncludeFailedToLoad     = 0x1
     };
 
-    DomainAssembly * FindAssembly(PEAssembly * pFile, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
+    DomainAssembly * FindAssembly(PEAssembly* pPEAssembly, FindAssemblyOptions options = FindAssemblyOptions_None) DAC_EMPTY_RET(NULL);
 
 
     Assembly *LoadAssembly(AssemblySpec* pIdentity,
-                           PEAssembly *pFile,
+                           PEAssembly *pPEAssembly,
                            FileLoadLevel targetLevel);
 
     // this function does not provide caching, you must use LoadDomainAssembly
@@ -1826,11 +1826,11 @@ public:
     // resulting in multiple DomainAssembly objects that share the same PEAssembly for ngen image
     //which is violating our internal assumptions
     DomainAssembly *LoadDomainAssemblyInternal( AssemblySpec* pIdentity,
-                                                PEAssembly *pFile,
+                                                PEAssembly *pPEAssembly,
                                                 FileLoadLevel targetLevel);
 
     DomainAssembly *LoadDomainAssembly( AssemblySpec* pIdentity,
-                                        PEAssembly *pFile,
+                                        PEAssembly *pPEAssembly,
                                         FileLoadLevel targetLevel);
 
 
@@ -1859,8 +1859,8 @@ public:
     BOOL IsCached(AssemblySpec *pSpec);
 #endif // DACCESS_COMPILE
 
-    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure = FALSE);
-    BOOL RemoveFileFromCache(PEAssembly *pFile);
+    BOOL AddFileToCache(AssemblySpec* pSpec, PEAssembly *pPEAssembly, BOOL fAllowFailure = FALSE);
+    BOOL RemoveFileFromCache(PEAssembly *pPEAssembly);
 
     BOOL AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly);
     BOOL RemoveAssemblyFromCache(DomainAssembly* pAssembly);
@@ -1974,7 +1974,7 @@ public:
         return m_tpIndex;
     }
 
-    DefaultAssemblyBinder *CreateBinderContext();
+    DefaultAssemblyBinder *CreateDefaultBinder();
 
     void SetIgnoreUnhandledExceptions()
     {
@@ -2359,84 +2359,6 @@ private:
     TieredCompilationManager m_tieredCompilationManager;
 
 #endif
-
-private:
-    //-----------------------------------------------------------
-    // Static BINDER_SPACE::Assembly -> DomainAssembly mapping functions.
-    // This map does not maintain a reference count to either key or value.
-    // PEFile maintains a reference count on the BINDER_SPACE::Assembly through its code:PEFile::m_pHostAssembly field.
-    // It is removed from this hash table by code:DomainAssembly::~DomainAssembly.
-    struct HostAssemblyHashTraits : public DefaultSHashTraits<PTR_DomainAssembly>
-    {
-    public:
-        typedef PTR_BINDER_SPACE_Assembly key_t;
-
-        static key_t GetKey(element_t const & elem)
-        {
-            STATIC_CONTRACT_WRAPPER;
-            return elem->GetFile()->GetHostAssembly();
-        }
-
-        static BOOL Equals(key_t key1, key_t key2)
-        {
-            LIMITED_METHOD_CONTRACT;
-            return dac_cast<TADDR>(key1) == dac_cast<TADDR>(key2);
-        }
-
-        static count_t Hash(key_t key)
-        {
-            STATIC_CONTRACT_LIMITED_METHOD;
-            //return reinterpret_cast<count_t>(dac_cast<TADDR>(key));
-            return (count_t)(dac_cast<TADDR>(key));
-        }
-
-        static element_t Null() { return NULL; }
-        static element_t Deleted() { return (element_t)(TADDR)-1; }
-        static bool IsNull(const element_t & e) { return e == NULL; }
-        static bool IsDeleted(const element_t & e) { return dac_cast<TADDR>(e) == (TADDR)-1; }
-    };
-
-    struct OriginalFileHostAssemblyHashTraits : public HostAssemblyHashTraits
-    {
-    public:
-        static key_t GetKey(element_t const & elem)
-        {
-            STATIC_CONTRACT_WRAPPER;
-            return elem->GetOriginalFile()->GetHostAssembly();
-        }
-    };
-
-    typedef SHash<HostAssemblyHashTraits> HostAssemblyMap;
-    typedef SHash<OriginalFileHostAssemblyHashTraits> OriginalFileHostAssemblyMap;
-    HostAssemblyMap   m_hostAssemblyMap;
-    OriginalFileHostAssemblyMap   m_hostAssemblyMapForOrigFile;
-    CrstExplicitInit  m_crstHostAssemblyMap;
-    // Lock to serialize all Add operations (in addition to the "read-lock" above)
-    CrstExplicitInit  m_crstHostAssemblyMapAdd;
-
-public:
-    // Returns DomainAssembly.
-    PTR_DomainAssembly FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssembly);
-
-#ifndef DACCESS_COMPILE
-private:
-    friend void DomainAssembly::Allocate();
-    friend DomainAssembly::~DomainAssembly();
-
-    // Called from DomainAssembly::Begin.
-    void PublishHostedAssembly(
-        DomainAssembly* pAssembly);
-
-    // Called from DomainAssembly::UpdatePEFile.
-    void UpdatePublishHostedAssembly(
-        DomainAssembly* pAssembly,
-        PTR_PEFile pFile);
-
-    // Called from DomainAssembly::~DomainAssembly
-    void UnPublishHostedAssembly(
-        DomainAssembly* pAssembly);
-#endif // DACCESS_COMPILE
-
 };  // class AppDomain
 
 // Just a ref holder
@@ -2512,12 +2434,12 @@ public:
         return m_pSystemDomain;
     }
 
-    static PEAssembly* SystemFile()
+    static PEAssembly* SystemPEAssembly()
     {
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE(m_pSystemDomain);
-        return System()->m_pSystemFile;
+        return System()->m_pSystemPEAssembly;
     }
 
     static Assembly* SystemAssembly()
@@ -2708,7 +2630,7 @@ private:
     }
 #endif
 
-    PTR_PEAssembly  m_pSystemFile;      // Single assembly (here for quicker reference);
+    PTR_PEAssembly  m_pSystemPEAssembly;// Single assembly (here for quicker reference);
     PTR_Assembly    m_pSystemAssembly;  // Single assembly (here for quicker reference);
 
     GlobalLoaderAllocator m_GlobalAllocator;

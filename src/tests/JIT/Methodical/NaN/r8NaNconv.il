@@ -11,6 +11,7 @@
 {
 }
 .assembly conv {}
+.assembly extern xunit.core {}
 .module conv.exe
 .class private auto ansi beforefieldinit ConvTest
        extends [mscorlib]System.Object
@@ -412,6 +413,9 @@
 	}		
   .method public hidebysig static int32  Main() cil managed 
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  50
     .locals init ([0] bool passed )

@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging.Console
         public string TimestampFormat { get; set; }
 
         /// <summary>
-        /// Gets or sets indication whether or not UTC timezone should be used to for timestamps in logging messages. Defaults to <c>false</c>.
+        /// Gets or sets indication whether or not UTC timezone should be used to format timestamps in logging messages. Defaults to <c>false</c>.
         /// </summary>
         public bool UseUtcTimestamp { get; set; }
     }

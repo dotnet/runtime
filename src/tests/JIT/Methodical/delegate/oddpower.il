@@ -9,6 +9,7 @@
 }
 .assembly extern mscorlib {}
 .assembly oddpower {}
+.assembly extern xunit.core {}
 .class interface private abstract auto ansi Power
 {
   .method public hidebysig newslot abstract virtual 
@@ -387,6 +388,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  4
     .locals init (class OddPower V_0,

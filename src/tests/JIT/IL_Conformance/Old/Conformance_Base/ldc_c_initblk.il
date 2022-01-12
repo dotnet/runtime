@@ -64,6 +64,6 @@ END:
 }
 
 
-.assembly ldc_c_initblk.exe {}
+.assembly ldc_c_initblk {}
 
 

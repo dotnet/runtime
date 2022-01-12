@@ -17,6 +17,7 @@
   
   
 }
+.assembly extern xunit.core {}
 .module 'refarg_c.exe'
 // MVID: {E2604B1E-0A0A-41BB-B225-61A4B5873CA3}
 .namespace Test
@@ -151,6 +152,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       32 (0x20)
       .maxstack  1

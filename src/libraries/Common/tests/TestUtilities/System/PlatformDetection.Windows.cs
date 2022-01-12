@@ -36,6 +36,7 @@ namespace System
         public static bool IsNotWindowsHomeEdition => !IsWindowsHomeEdition;
         public static bool IsNotInAppContainer => !IsInAppContainer;
         public static bool IsSoundPlaySupported => IsWindows && IsNotWindowsNanoServer;
+        public static bool IsBrowserOnWindows => IsBrowser && Path.DirectorySeparatorChar == '\\';
 
         // >= Windows 10 Anniversary Update
         public static bool IsWindows10Version1607OrGreater => IsWindowsVersionOrLater(10, 0, 14393);

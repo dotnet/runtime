@@ -11,6 +11,7 @@
 .assembly 'nested' // as "nested"
 {
 }
+.assembly extern xunit.core {}
 .module nested.exe
 .namespace JitTest
 {
@@ -78,6 +79,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
       .locals (value class JitTest.Struct1 V_0,

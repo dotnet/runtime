@@ -330,6 +330,8 @@ mono_ios_runtime_init (void)
     mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP);
 #else
     mono_jit_set_aot_mode (MONO_AOT_MODE_FULL);
+    // it's for PlatformDetection.IsMonoAOT on iOS/tvOS
+    setenv ("MONO_AOT_MODE", "aot", TRUE);
 #endif
 
 #endif

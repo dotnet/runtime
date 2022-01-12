@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, ExactSpelling = true)]
-        public static extern bool KillTimer(IntPtr hwnd, IntPtr idEvent);
+        [GeneratedDllImport(Libraries.User32, ExactSpelling = true)]
+        public static partial bool KillTimer(IntPtr hwnd, IntPtr idEvent);
     }
 }

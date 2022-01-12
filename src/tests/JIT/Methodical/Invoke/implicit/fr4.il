@@ -19,6 +19,7 @@
   
   
 }
+.assembly extern xunit.core {}
 .module 'fr4.exe'
 // MVID: {B1A03CB5-0762-4E9F-BA39-E5C10C9A69AE}
 .namespace JitTest
@@ -59,6 +60,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       58 (0x3a)
       .maxstack  4

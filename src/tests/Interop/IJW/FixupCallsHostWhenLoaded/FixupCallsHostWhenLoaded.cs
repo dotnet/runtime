@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace FixupCallsHostWhenLoaded
 {
@@ -30,8 +30,8 @@ namespace FixupCallsHostWhenLoaded
 
                 IntPtr ijwModuleHandle = GetModuleHandle("IjwNativeDll.dll");
 
-                Assert.AreNotEqual(IntPtr.Zero, ijwModuleHandle);
-                Assert.IsTrue(wasModuleVTableQueried(ijwModuleHandle));
+                Assert.NotEqual(IntPtr.Zero, ijwModuleHandle);
+                Assert.True(wasModuleVTableQueried(ijwModuleHandle));
             }
             catch (Exception e)
             {

@@ -2,15 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime { auto }
 
 .assembly TypeIntrinsicsTests { }
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_TypeIntrinsics_il
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     // it's not currently possible to produce `ldtoken [type]&` in C#

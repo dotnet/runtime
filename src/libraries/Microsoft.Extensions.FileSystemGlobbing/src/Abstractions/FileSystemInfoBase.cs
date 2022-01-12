@@ -21,6 +21,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <summary>
         /// The parent directory for the current file or directory
         /// </summary>
-        public abstract DirectoryInfoBase ParentDirectory { get; }
+        public abstract DirectoryInfoBase? ParentDirectory { get; }
     }
 }

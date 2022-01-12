@@ -24,4 +24,5 @@ public:
     void Emit(int methodNumber, MethodContext* mc, ULONGLONG firstTime, ULONGLONG secondTime);
     void SetStatsTypes(char* types);
 };
+
 #endif

@@ -1,13 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Xunit.Performance;
-using Microsoft.Xunit.Performance.Api;
 using System;
-using System.Reflection;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 // Test code taken directly from https://github.com/dotnet/runtime/issues/7474
 // Laying the loop's early return path in-line can cost 30% on this micro-benchmark.
@@ -32,29 +26,6 @@ namespace Layout
 
             // Success
             return 100;
-        }
-
-        public int length = 100;
-
-        private string test1;
-        private string test2;
-
-        public SearchLoops()
-        {
-            test1 = new string('A', length);
-            test2 = new string('A', length);
-        }
-
-        [Benchmark(InnerIterationCount = 20000000)]
-        public void LoopReturnIter()
-        {
-            Benchmark.Iterate(() => LoopReturn(test1, test2));
-        }
-
-        [Benchmark(InnerIterationCount = 20000000)]
-        public void LoopGotoIter()
-        {
-            Benchmark.Iterate(() => LoopGoto(test1, test2));
         }
 
         // Variant with code written naturally -- need JIT to lay this out

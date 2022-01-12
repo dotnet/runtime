@@ -178,7 +178,7 @@ namespace System.Numerics.Tests
         private void TestConstructorArrayTooSmallException<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>().Skip(1).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 var vector = new Vector<T>(values);
             });
@@ -237,25 +237,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
 
         private void TestReadOnlySpanBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -264,25 +264,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
 
         private void TestReadOnlySpanByteBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -291,25 +291,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<byte>());
+        public void SpanBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<sbyte>());
+        public void SpanBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ushort>());
+        public void SpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<short>());
+        public void SpanBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<short>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<uint>());
+        public void SpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<int>());
+        public void SpanBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<int>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ulong>());
+        public void SpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<long>());
+        public void SpanBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<long>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<float>());
+        public void SpanBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<float>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<double>());
+        public void SpanBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<double>());
 
         private void TestSpanBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -410,7 +410,7 @@ namespace System.Numerics.Tests
         private void TestArrayBasedConstructorWithLessElements<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector<T>(values));
         }
 
         [Fact]
@@ -437,7 +437,7 @@ namespace System.Numerics.Tests
         private void TestArrayIndexBasedConstructorLessElements<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
         }
 
         #endregion Tests for Array based constructor
@@ -588,7 +588,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => vector.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, array.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => vector.CopyTo(array, array.Length - 1));
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(array, array.Length - 1));
 
             vector.CopyTo(array);
             for (int g = 0; g < array.Length; g++)
@@ -958,8 +958,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionInt64() { TestAddition<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionSingle() { TestAddition<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionDouble() { TestAddition<double>(); }
         private void TestAddition<T>() where T : struct
         {
@@ -1023,8 +1025,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void SubtractionInt64() { TestSubtraction<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionSingle() { TestSubtraction<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionDouble() { TestSubtraction<double>(); }
         private void TestSubtraction<T>() where T : struct
         {
@@ -1088,8 +1092,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationInt64() { TestMultiplication<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationSingle() { TestMultiplication<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationDouble() { TestMultiplication<double>(); }
         private void TestMultiplication<T>() where T : struct
         {
@@ -1122,8 +1128,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationWithScalarInt64() { TestMultiplicationWithScalar<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationWithScalarSingle() { TestMultiplicationWithScalar<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationWithScalarDouble() { TestMultiplicationWithScalar<double>(); }
         private void TestMultiplicationWithScalar<T>() where T : struct
         {
@@ -1164,8 +1172,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionInt64() { TestDivision<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionSingle() { TestDivision<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionDouble() { TestDivision<double>(); }
         private void TestDivision<T>() where T : struct
         {
@@ -1224,8 +1234,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void UnaryMinusInt64() { TestUnaryMinus<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusSingle() { TestUnaryMinus<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusDouble() { TestUnaryMinus<double>(); }
         private void TestUnaryMinus<T>() where T : struct
         {
@@ -1424,8 +1436,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void VectorGreaterThanInt64() { TestVectorGreaterThan<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanSingle() { TestVectorGreaterThan<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanDouble() { TestVectorGreaterThan<double>(); }
         private void TestVectorGreaterThan<T>() where T : struct
         {
@@ -1461,8 +1475,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualInt64() { TestVectorGreaterThanOrEqual<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualSingle() { TestVectorGreaterThanOrEqual<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualDouble() { TestVectorGreaterThanOrEqual<double>(); }
         private void TestVectorGreaterThanOrEqual<T>() where T : struct
         {
@@ -1714,8 +1730,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanInt64() { TestVectorLessThan<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanSingle() { TestVectorLessThan<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanDouble() { TestVectorLessThan<double>(); }
         private void TestVectorLessThan<T>() where T : struct
         {
@@ -1751,8 +1769,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanOrEqualInt64() { TestVectorLessThanOrEqual<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualSingle() { TestVectorLessThanOrEqual<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualDouble() { TestVectorLessThanOrEqual<double>(); }
         private void TestVectorLessThanOrEqual<T>() where T : struct
         {
@@ -1788,8 +1808,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanAnyInt64() { TestVectorLessThanAny<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnySingle() { TestVectorLessThanAny<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnyDouble() { TestVectorLessThanAny<double>(); }
         private void TestVectorLessThanAny<T>() where T : struct
         {
@@ -2114,8 +2136,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void ConditionalSelectInt64() { TestConditionalSelect<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectSingle() { TestConditionalSelect<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectDouble() { TestConditionalSelect<double>(); }
         private void TestConditionalSelect<T>() where T : struct
         {
@@ -2166,8 +2190,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void DotProductInt64() { TestDotProduct<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductSingle() { TestDotProduct<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductDouble() { TestDotProduct<double>(); }
         private void TestDotProduct<T>() where T : struct
         {
@@ -2202,8 +2228,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void MaxInt64() { TestMax<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxSingle() { TestMax<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxDouble() { TestMax<double>(); }
         private void TestMax<T>() where T : struct
         {
@@ -2238,8 +2266,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void MinInt64() { TestMin<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinSingle() { TestMin<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinDouble() { TestMin<double>(); }
         private void TestMin<T>() where T : struct
         {
@@ -2274,8 +2304,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void SquareRootInt64() { TestSquareRoot<long>(-1); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootSingle() { TestSquareRoot<float>(6); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootDouble() { TestSquareRoot<double>(15); }
         private void TestSquareRoot<T>(int precision = -1) where T : struct, IEquatable<T>
         {
@@ -2368,8 +2400,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void AbsInt64() { TestAbs<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsSingle() { TestAbs<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsDouble() { TestAbs<double>(); }
         private void TestAbs<T>() where T : struct
         {
@@ -2406,8 +2440,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationReflectionInt64() { TestMultiplicationReflection<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionSingle() { TestMultiplicationReflection<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionDouble() { TestMultiplicationReflection<double>(); }
         private void TestMultiplicationReflection<T>() where T : struct
         {
@@ -2443,8 +2479,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionReflectionInt64() { TestAdditionReflection<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionSingle() { TestAdditionReflection<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionDouble() { TestAdditionReflection<double>(); }
         private void TestAdditionReflection<T>() where T : struct
         {
@@ -2480,8 +2518,10 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionReflectionInt64() { TestDivisionReflection<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionSingle() { TestDivisionReflection<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionDouble() { TestDivisionReflection<double>(); }
         private void TestDivisionReflection<T>() where T : struct
         {

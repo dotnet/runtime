@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.Qil
             }
 
             if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? name + ": " + s : s);
+                this.writer.WriteComment(name != null && name.Length != 0 ? $"{name}: {s}" : s);
         }
 
         /// <summary>

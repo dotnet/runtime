@@ -25,7 +25,7 @@ G_EXTERN_C gpointer mini_llvmonly_resolve_vcall_gsharedvt (MonoObject *this_obj,
 G_EXTERN_C gpointer mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg);
 G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *imt_method);
 G_EXTERN_C MonoFtnDesc* mini_llvmonly_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *imt_method);
-G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del);
+G_EXTERN_C void mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info);
 G_EXTERN_C void mini_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method);
 
 /* Used for regular llvm as well */

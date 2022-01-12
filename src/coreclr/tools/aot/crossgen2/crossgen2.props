@@ -82,17 +82,6 @@
       />
   </ItemGroup>
 
-  <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
-       this works at runtime, but makes it difficult to debug the jit.-->
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' and Exists('$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)')">
-    <Content Remove="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
-      />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
     <Content Include="$(RuntimeBinDir)/pgort*.dll"
       CopyToOutputDirectory="PreserveNewest"

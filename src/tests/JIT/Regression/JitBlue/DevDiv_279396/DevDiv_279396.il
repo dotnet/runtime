@@ -3,6 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly DevDiv_279396 {}
+.assembly extern xunit.core {}
 .module DevDiv_279396.exe
 
 // This test originally triggered an assertion in the emitter that ensured that no lclVar or lclFld access exceeded the
@@ -20,6 +21,9 @@
 
     .method private static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         ldc.i4 100

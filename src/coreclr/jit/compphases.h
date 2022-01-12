@@ -87,6 +87,7 @@ CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,        "Insert GC Polls",             
 CompPhaseNameMacro(PHASE_DETERMINE_FIRST_COLD_BLOCK, "Determine first cold block", "COLD-BLK", false, -1, true)
 CompPhaseNameMacro(PHASE_RATIONALIZE,            "Rationalize IR",                 "RAT",      false, -1, false)
 CompPhaseNameMacro(PHASE_SIMPLE_LOWERING,        "Do 'simple' lowering",           "SMP-LWR",  false, -1, false)
+CompPhaseNameMacro(PHASE_ALIGN_LOOPS,            "Place 'align' instructions",     "LOOP-ALIGN",  false, -1, false)
 
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS,         "Local var liveness",             "LIVENESS", true, -1, false)
 CompPhaseNameMacro(PHASE_LCLVARLIVENESS_INIT,    "Local var liveness init",        "LIV-INIT", false, PHASE_LCLVARLIVENESS, false)

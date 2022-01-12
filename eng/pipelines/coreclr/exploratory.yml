@@ -1,0 +1,54 @@
+# This job definition automates the fuzzing tools Antigen/Fuzzlyn
+trigger: none
+
+schedules:
+- cron: "0 14 * * 0"
+  displayName: Sun at 6:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
+  always: true
+
+variables:
+  # Set toolName variable from pipeline name so we can use it during template expansion
+  - name: toolName
+    value: ${{ variables['Build.DefinitionName'] }}
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: outerloop
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/jit-exploratory-job.yml
+    buildConfig: checked
+    platforms:
+    # Linux tests are built on the OSX machines.
+    # - OSX_x64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      toolName: ${{ variables.toolName }}

@@ -29,30 +29,6 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-STDAPI BinderAddRefPEImage(PEImage *pPEImage)
-{
-    HRESULT hr = S_OK;
-
-    if (pPEImage != NULL)
-    {
-        pPEImage->AddRef();
-    }
-
-    return hr;
-}
-
-STDAPI BinderReleasePEImage(PEImage *pPEImage)
-{
-    HRESULT hr = S_OK;
-
-    if (pPEImage != NULL)
-    {
-        pPEImage->Release();
-    }
-
-    return hr;
-}
-
 static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
 {
     CONTRACTL
@@ -115,9 +91,7 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     }
     else
     {
-        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase,
-                                                  GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                                                  &pPrivAsm);
+        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase, &pPrivAsm);
     }
 
     if (SUCCEEDED(hr))
@@ -142,7 +116,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
     {
         PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
-        // Make sure that the IL image can be opened if the native image is not available.
+        // Make sure that the IL image can be opened.
         hr=pImage->TryOpenFile();
         if (FAILED(hr))
         {
@@ -170,7 +144,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
 
     EX_TRY
     {
-        PEImageLayoutHolder pLayout(pPEImage->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED));
+        PEImageLayout* pLayout = pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
 
         // CheckCorHeader includes check of NT headers too
         if (!pLayout->CheckCorHeader())
@@ -212,18 +186,14 @@ HRESULT BaseAssemblySpec::ParseName()
 
     EX_TRY
     {
-        NewHolder<BINDER_SPACE::AssemblyIdentityUTF8> pAssemblyIdentity;
+        BINDER_SPACE::AssemblyIdentityUTF8* pAssemblyIdentity;
         AppDomain *pDomain = ::GetAppDomain();
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
         DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
-        if (pBinder != NULL)
-        {
-            pAppContext = pBinder->GetAppContext();
-        }
 
-        hr = BINDER_SPACE::AssemblyBinderCommon::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
+        hr = pBinder->GetAppContext()->GetAssemblyIdentity(m_pAssemblyName, &pAssemblyIdentity);
 
         if (FAILED(hr))
         {

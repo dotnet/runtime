@@ -6,7 +6,6 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <ContractAssemblyPath>$(NetFxRefPath)$(MSBuildProjectName).dll</ContractAssemblyPath>
   </PropertyGroup>
   <Import Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileFullPath)'" Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

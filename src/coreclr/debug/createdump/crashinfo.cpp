@@ -13,6 +13,8 @@ CrashInfo::CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t s
     m_pid(pid),
     m_ppid(-1),
     m_hdac(nullptr),
+    m_pClrDataEnumRegions(nullptr),
+    m_pClrDataProcess(nullptr),
     m_gatherFrames(gatherFrames),
     m_crashThread(crashThread),
     m_signal(signal),
@@ -44,6 +46,15 @@ CrashInfo::~CrashInfo()
     }
     m_moduleInfos.clear();
 
+    // Clean up DAC interfaces
+    if (m_pClrDataEnumRegions != nullptr)
+    {
+        m_pClrDataEnumRegions->Release();
+    }
+    if (m_pClrDataProcess != nullptr)
+    {
+        m_pClrDataProcess->Release();
+    }
     // Unload DAC module
     if (m_hdac != nullptr)
     {
@@ -190,8 +201,16 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             thread->GetThreadStack();
         }
     }
-    // Gather all the useful memory regions from the DAC
-    if (!EnumerateMemoryRegionsWithDAC(minidumpType))
+    // Load and initialize DAC interfaces
+    if (!InitializeDAC())
+    {
+        return false;
+    }
+    if (!EnumerateManagedModules())
+    {
+        return false;
+    }
+    if (!UnwindAllThreads())
     {
         return false;
     }
@@ -204,19 +223,15 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
 // Enumerate all the memory regions using the DAC memory region support given a minidump type
 //
 bool
-CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
+CrashInfo::InitializeDAC()
 {
     ReleaseHolder<DumpDataTarget> dataTarget = new DumpDataTarget(*this);
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
-    ICLRDataEnumMemoryRegions* pClrDataEnumRegions = nullptr;
-    IXCLRDataProcess* pClrDataProcess = nullptr;
-    HRESULT hr = S_OK;
     bool result = false;
+    HRESULT hr = S_OK;
 
     if (!m_coreclrPath.empty())
     {
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED\n");
-
         // We assume that the DAC is in the same location as the libcoreclr.so module
         std::string dacPath;
         dacPath.append(m_coreclrPath);
@@ -235,140 +250,156 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
             fprintf(stderr, "GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
             goto exit;
         }
-        if ((minidumpType & MiniDumpWithFullMemory) == 0)
+        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
+        if (FAILED(hr))
         {
-            hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&pClrDataEnumRegions);
-            if (FAILED(hr))
-            {
-                fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
-                goto exit;
-            }
-            // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
-            hr = pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
-            if (FAILED(hr))
-            {
-                fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
-                goto exit;
-            }
+            fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+            goto exit;
         }
-        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&pClrDataProcess);
+        hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
         if (FAILED(hr))
         {
             fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
             goto exit;
         }
-        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
-        if (!EnumerateManagedModules(pClrDataProcess))
-        {
-            goto exit;
-        }
     }
-    else {
-        TRACE("EnumerateMemoryRegionsWithDAC: coreclr not found; not using DAC\n");
-    }
-    if (!UnwindAllThreads(pClrDataProcess))
+    else
     {
-        goto exit;
+        TRACE("InitializeDAC: coreclr not found; not using DAC\n");
     }
     result = true;
 exit:
-    if (pClrDataEnumRegions != nullptr)
-    {
-        pClrDataEnumRegions->Release();
-    }
-    if (pClrDataProcess != nullptr)
-    {
-        pClrDataProcess->Release();
-    }
     return result;
+}
+
+//
+// Enumerate all the memory regions using the DAC memory region support given a minidump type
+//
+bool
+CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
+{
+    if (m_pClrDataEnumRegions != nullptr && (minidumpType & MiniDumpWithFullMemory) == 0)
+    {
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED\n");
+
+        // Since on both Linux and MacOS all the RW regions will be added for heap
+        // dumps by createdump, the only thing differentiating a MiniDumpNormal and
+        // a MiniDumpWithPrivateReadWriteMemory is that the later uses the EnumMemory
+        // APIs. This is kind of expensive on larger applications (4 minutes, or even
+        // more), and this should already be in RW pages. Change the dump type to the
+        // faster normal one. This one already ensures necessary DAC globals, etc.
+        // without the costly assembly, module, class, type runtime data structures
+        // enumeration.
+        if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
+        {
+            char* fastHeapDumps = getenv("COMPlus_DbgEnableFastHeapDumps");
+            if (fastHeapDumps != nullptr && strcmp(fastHeapDumps, "1") == 0)
+            {
+                minidumpType = MiniDumpNormal;
+            }
+        }
+        // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
+        HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
+        if (FAILED(hr))
+        {
+            fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
+            return false;
+        }
+        TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration FINISHED\n");
+    }
+    return true;
 }
 
 //
 // Enumerate all the managed modules and replace the module mapping with the module name found.
 //
 bool
-CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
+CrashInfo::EnumerateManagedModules()
 {
     CLRDATA_ENUM enumModules = 0;
-    bool result = true;
     HRESULT hr = S_OK;
 
-    if (FAILED(hr = pClrDataProcess->StartEnumModules(&enumModules))) {
-        fprintf(stderr, "StartEnumModules FAILED %08x\n", hr);
-        return false;
-    }
-
-    while (true)
+    if (m_pClrDataProcess != nullptr)
     {
-        ReleaseHolder<IXCLRDataModule> pClrDataModule;
-        if ((hr = pClrDataProcess->EnumModule(&enumModules, &pClrDataModule)) != S_OK) {
-            break;
+        TRACE("EnumerateManagedModules: Module enumeration STARTED\n");
+
+        if (FAILED(hr = m_pClrDataProcess->StartEnumModules(&enumModules))) {
+            fprintf(stderr, "StartEnumModules FAILED %08x\n", hr);
+            return false;
         }
 
-        // Skip any dynamic modules. The Request call below on some DACs crashes on dynamic modules.
-        ULONG32 flags;
-        if ((hr = pClrDataModule->GetFlags(&flags)) != S_OK) {
-            TRACE("MODULE: GetFlags FAILED %08x\n", hr);
-            continue;
-        }
-        if (flags & CLRDATA_MODULE_IS_DYNAMIC) {
-            TRACE("MODULE: Skipping dynamic module\n");
-            continue;
-        }
-
-        DacpGetModuleData moduleData;
-        if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
+        while (true)
         {
-            TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, (uint64_t)moduleData.LoadedPEAddress, moduleData.IsDynamic,
-                moduleData.IsInMemory, moduleData.IsFileLayout, (uint64_t)moduleData.PEFile, (uint64_t)moduleData.InMemoryPdbAddress);
+            ReleaseHolder<IXCLRDataModule> pClrDataModule;
+            if ((hr = m_pClrDataProcess->EnumModule(&enumModules, &pClrDataModule)) != S_OK) {
+                break;
+            }
 
-            if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
+            // Skip any dynamic modules. The Request call below on some DACs crashes on dynamic modules.
+            ULONG32 flags;
+            if ((hr = pClrDataModule->GetFlags(&flags)) != S_OK) {
+                TRACE("MODULE: GetFlags FAILED %08x\n", hr);
+                continue;
+            }
+            if (flags & CLRDATA_MODULE_IS_DYNAMIC) {
+                TRACE("MODULE: Skipping dynamic module\n");
+                continue;
+            }
+
+            DacpGetModuleData moduleData;
+            if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
             {
-                ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
-                if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
+                TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, (uint64_t)moduleData.LoadedPEAddress, moduleData.IsDynamic,
+                    moduleData.IsInMemory, moduleData.IsFileLayout, (uint64_t)moduleData.PEAssembly, (uint64_t)moduleData.InMemoryPdbAddress);
+
+                if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
                 {
-                    std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
+                    ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
+                    if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
+                    {
+                        std::string moduleName = FormatString("%S", wszUnicodeName.GetPtr());
 
-                    // Change the module mapping name
-                    ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
+                        // Change the module mapping name
+                        ReplaceModuleMapping(moduleData.LoadedPEAddress, moduleData.LoadedPESize, moduleName);
 
-                    // Add managed module info
-                    AddModuleInfo(true, moduleData.LoadedPEAddress, pClrDataModule, moduleName);
+                        // Add managed module info
+                        AddModuleInfo(true, moduleData.LoadedPEAddress, pClrDataModule, moduleName);
+                    }
+                    else {
+                        TRACE("\nModule.GetFileName FAILED %08x\n", hr);
+                    }
                 }
                 else {
-                    TRACE("\nModule.GetFileName FAILED %08x\n", hr);
+                    TRACE("\n");
                 }
             }
             else {
-                TRACE("\n");
+                TRACE("moduleData.Request FAILED %08x\n", hr);
             }
         }
-        else {
-            TRACE("moduleData.Request FAILED %08x\n", hr);
+
+        if (enumModules != 0) {
+            m_pClrDataProcess->EndEnumModules(enumModules);
         }
+        TRACE("EnumerateManagedModules: Module enumeration FINISHED\n");
     }
-
-    if (enumModules != 0) {
-        pClrDataProcess->EndEnumModules(enumModules);
-    }
-
-    return result;
+    return true;
 }
 
 //
 // Unwind all the native threads to ensure that the dwarf unwind info is added to the core dump.
 //
 bool
-CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
+CrashInfo::UnwindAllThreads()
 {
     ReleaseHolder<ISOSDacInterface> pSos = nullptr;
-    if (pClrDataProcess != nullptr) {
-        pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
+    if (m_pClrDataProcess != nullptr) {
+        m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
     }
     // For each native and managed thread
     for (ThreadInfo* thread : m_threads)
     {
-        if (!thread->UnwindThread(pClrDataProcess, pSos)) {
+        if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
             return false;
         }
     }
@@ -827,5 +858,5 @@ FormatGuid(const GUID* guid)
 {
     uint8_t* bytes = (uint8_t*)guid;
     return FormatString("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-		bytes[3], bytes[2], bytes[1], bytes[0], bytes[5], bytes[4], bytes[7], bytes[6], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+        bytes[3], bytes[2], bytes[1], bytes[0], bytes[5], bytes[4], bytes[7], bytes[6], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
 }

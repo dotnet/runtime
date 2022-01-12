@@ -502,7 +502,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
  */
 
 #define EMIT_NEW_VARLOAD_SFLOAT(cfg,dest,var,vartype) do { \
-		if (!COMPILE_LLVM ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (!COMPILE_LLVM ((cfg)) && !m_type_is_byref ((vartype)) && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [1]; \
 			EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
 			(dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
@@ -512,7 +512,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 	} while (0)
 
 #define EMIT_NEW_VARSTORE_SFLOAT(cfg,dest,var,vartype,inst) do {	\
-		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (COMPILE_SOFT_FLOAT ((cfg)) && !m_type_is_byref ((vartype)) && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [2]; \
 			iargs [0] = (inst); \
 			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
@@ -856,10 +856,11 @@ static int ccount = 0;
         if (cfg->cbb->last_ins && MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins) && !cfg->cbb->last_ins->inst_false_bb) { \
             cfg->cbb->last_ins->inst_false_bb = (bblock); \
             mono_link_bblock ((cfg), (cfg)->cbb, (bblock)); \
-        } else if (! (cfg->cbb->last_ins && ((cfg->cbb->last_ins->opcode == OP_BR) || (cfg->cbb->last_ins->opcode == OP_BR_REG) || MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins)))) \
+        } else if (! (cfg->cbb->last_ins && ((cfg->cbb->last_ins->opcode == OP_BR) || (cfg->cbb->last_ins->opcode == OP_BR_REG) || MONO_IS_COND_BRANCH_OP (cfg->cbb->last_ins)))) { \
             mono_link_bblock ((cfg), (cfg)->cbb, (bblock)); \
-	    (cfg)->cbb->next_bb = (bblock); \
-	    (cfg)->cbb = (bblock); \
+	} \
+	(cfg)->cbb->next_bb = (bblock); \
+	(cfg)->cbb = (bblock); \
     } while (0)
 
 /* This marks a place in code where an implicit exception could be thrown */

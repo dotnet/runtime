@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly test1 {}
+.assembly extern xunit.core {}
 .class public test1
 {
   .method public  static void f1() 
@@ -25,6 +26,9 @@
   } 
   .method public  static int32 Main()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  20
     IL_0002:  call       void test1::f1()

@@ -57,7 +57,7 @@ public:
 };
 
 class ReadyToRunInfo;
-class PEFile;
+class PEAssembly;
 class PEImage;
 
 // This class represents a  ReadyToRun image with native OS-specific envelope. As of today,

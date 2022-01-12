@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly test {}
+.assembly extern xunit.core {}
 
 
 .class private auto ansi beforefieldinit test
@@ -15,6 +16,9 @@
 {
   .method public static int32 Main() cil managed
   {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 
     .entrypoint
 	.try

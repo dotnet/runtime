@@ -39,6 +39,7 @@ jobs:
       jobTemplate: /eng/pipelines/mono/templates/build-job.yml
       runtimeFlavor: mono
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
 
@@ -47,6 +48,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       jobParameters:
@@ -58,6 +60,7 @@ jobs:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
       buildConfig: release
       runtimeFlavor: mono
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       jobParameters:
@@ -76,6 +79,7 @@ jobs:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
       runtimeFlavor: mono
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Browser_wasm
       jobParameters:
@@ -98,6 +102,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       platforms:
       - Linux_arm64
       - windows_arm64
@@ -109,6 +114,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       runtimeFlavor: mono
       platforms:
       - Browser_wasm
@@ -129,6 +135,7 @@ jobs:
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       runtimeFlavor: mono
       platforms:
       - Linux_arm64
@@ -154,6 +161,7 @@ jobs:
       runtimeFlavor: aot
       platforms:
       - Linux_arm64
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -172,6 +180,7 @@ jobs:
       runtimeFlavor: coreclr
       platforms:
       - Linux_arm64
+      container: ubuntu-18.04-cross-arm64-20211022152824-b2c2436
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release

@@ -13,17 +13,17 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
-        internal static extern int RegQueryValueEx(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int[]? lpReserved,
             ref int lpType,
-            [Out] byte[]? lpData,
+            byte[]? lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
-        internal static extern int RegQueryValueEx(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int[]? lpReserved,
@@ -31,8 +31,8 @@ internal static partial class Interop
             ref int lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
-        internal static extern int RegQueryValueEx(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int[]? lpReserved,
@@ -40,8 +40,8 @@ internal static partial class Interop
             ref long lpData,
             ref int lpcbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW", ExactSpelling = true)]
-        internal static extern int RegQueryValueEx(
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegQueryValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegQueryValueEx(
             SafeRegistryHandle hKey,
             string? lpValueName,
             int[]? lpReserved,

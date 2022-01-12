@@ -2047,5 +2047,5 @@ END:
 
 
 
-.assembly ldc_mul_ovf_i1.exe{}
+.assembly ldc_mul_ovf_i1{}
 

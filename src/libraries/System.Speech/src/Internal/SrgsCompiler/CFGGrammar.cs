@@ -272,7 +272,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             //We know that in SAPI 5.0 grammar format pszWords follows header immediately.
-            if (cfgSerializedHeader.pszWords < Marshal.SizeOf(typeof(CfgSerializedHeader)))
+            if (cfgSerializedHeader.pszWords < Marshal.SizeOf<CfgSerializedHeader>())
             {
                 //This is SAPI 5.0 and SAPI 5.1 grammar format
                 header.ulRootRuleIndex = 0xFFFFFFFF;
@@ -294,7 +294,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 // Get the chars and build the string
                 if (cfgSerializedHeader.cBasePath > 0)
                 {
-                    streamHelper.Stream.Position = (int)cfgSerializedHeader.pRules + (header.rules.Length * Marshal.SizeOf(typeof(CfgRule)));
+                    streamHelper.Stream.Position = (int)cfgSerializedHeader.pRules + (header.rules.Length * Marshal.SizeOf<CfgRule>());
                     header.BasePath = streamHelper.ReadNullTerminatedString();
                 }
             }
@@ -319,7 +319,7 @@ namespace System.Speech.Internal.SrgsCompiler
             }
 
             //We know that in SAPI 5.0 grammar format pszWords follows header immediately.
-            if (pFH.pszWords < Marshal.SizeOf(typeof(CfgSerializedHeader)))
+            if (pFH.pszWords < Marshal.SizeOf<CfgSerializedHeader>())
             {
                 // Must be SAPI 6.0 or above to hold a .NET script
                 return null;
@@ -412,25 +412,25 @@ namespace System.Speech.Internal.SrgsCompiler
             //Check the rule offset
             if (pFH.cRules > 0)
             {
-                CheckSetOffsets(pFH.pRules, pFH.cRules * Marshal.SizeOf(typeof(CfgRule)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.pRules, pFH.cRules * Marshal.SizeOf<CfgRule>(), ref ullStartOffset, pFH.ulTotalSerializedSize);
             }
 
             //Check the arc offset
             if (pFH.cArcs > 0)
             {
-                CheckSetOffsets(pFH.pArcs, pFH.cArcs * Marshal.SizeOf(typeof(CfgArc)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.pArcs, pFH.cArcs * Marshal.SizeOf<CfgArc>(), ref ullStartOffset, pFH.ulTotalSerializedSize);
             }
 
             //Check the weight offset
             if (pFH.pWeights > 0)
             {
-                CheckSetOffsets(pFH.pWeights, pFH.cArcs * Marshal.SizeOf(typeof(float)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.pWeights, pFH.cArcs * sizeof(float), ref ullStartOffset, pFH.ulTotalSerializedSize);
             }
 
             //Check the semantic tag offset
             if (pFH.cTags > 0)
             {
-                CheckSetOffsets(pFH.tags, pFH.cTags * Marshal.SizeOf(typeof(CfgSemanticTag)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.tags, pFH.cTags * Marshal.SizeOf<CfgSemanticTag>(), ref ullStartOffset, pFH.ulTotalSerializedSize);
 
                 if (includeAllGrammarData)
                 {
@@ -465,17 +465,17 @@ namespace System.Speech.Internal.SrgsCompiler
             //Check the offset for the scripts
             if (pFH.cScripts > 0)
             {
-                CheckSetOffsets(pFH.pScripts, pFH.cScripts * Marshal.SizeOf(typeof(CfgScriptRef)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.pScripts, pFH.cScripts * Marshal.SizeOf<CfgScriptRef>(), ref ullStartOffset, pFH.ulTotalSerializedSize);
             }
 
             if (pFH.cIL > 0)
             {
-                CheckSetOffsets(pFH.pIL, pFH.cIL * Marshal.SizeOf(typeof(byte)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.pIL, pFH.cIL * sizeof(byte), ref ullStartOffset, pFH.ulTotalSerializedSize);
             }
 
             if (pFH.cPDB > 0)
             {
-                CheckSetOffsets(pFH.pPDB, pFH.cPDB * Marshal.SizeOf(typeof(byte)), ref ullStartOffset, pFH.ulTotalSerializedSize);
+                CheckSetOffsets(pFH.pPDB, pFH.cPDB * sizeof(byte), ref ullStartOffset, pFH.ulTotalSerializedSize);
             }
         }
 

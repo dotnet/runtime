@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 
 
@@ -34,7 +35,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test.Widget`1<T>
+.class public auto ansi beforefieldinit Test_test.Widget`1<T>
        extends [mscorlib]System.Object
 {
   .method public hidebysig instance void 
@@ -66,11 +67,14 @@ starg 0
 
 } // end of class Test.Widget`1
 
-.class public abstract auto ansi sealed beforefieldinit Test.Program
+.class public abstract auto ansi sealed beforefieldinit Test_test.Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       87 (0x57)
     .maxstack  2
@@ -81,7 +85,7 @@ starg 0
     IL_0001:  ldc.i4.0
     IL_0002:  stloc.0
     IL_0003:  ldloc.0
-    IL_0014:  call       int32 Test.Program::RunTests<object>()
+    IL_0014:  call       int32 Test_test.Program::RunTests<object>()
     IL_0019:  add
     IL_001a:  stloc.0
     IL_001b:  ldloc.0
@@ -132,8 +136,8 @@ starg 0
     .try
     {
       IL_0082:  nop
-      IL_0083:  newobj     instance void class Test.Widget`1<!!T>::.ctor()
-      IL_0088:  call       instance void class Test.Widget`1<!!T>::SyncIt()
+      IL_0083:  newobj     instance void class Test_test.Widget`1<!!T>::.ctor()
+      IL_0088:  call       instance void class Test_test.Widget`1<!!T>::SyncIt()
       IL_008d:  nop
       IL_008e:  nop
       IL_008f:  leave.s    IL_00b6

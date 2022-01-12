@@ -1968,7 +1968,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
         pfnInitializeContext2 = (PINITIALIZECONTEXT2)GetProcAddress(hm, "InitializeContext2");
     }
 
-    // Determine if the processor supports AVX so we could 
+    // Determine if the processor supports AVX so we could
     // retrieve extended registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
     if ((FeatureMask & XSTATE_MASK_AVX) != 0)
@@ -2020,7 +2020,7 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 
     *contextBuffer = buffer;
 
-#else 
+#else
     pOSContext = new (nothrow) CONTEXT;
     pOSContext->ContextFlags = CONTEXT_COMPLETE;
     *contextBuffer = NULL;
@@ -2938,7 +2938,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #ifdef _DEBUG
         // In some rare cases the stack pointer may be outside the stack limits.
         // SetThreadContext would fail assuming that we are trying to bypass CFG.
-        // 
+        //
         // NB: the check here is slightly more strict than what OS requires,
         //     but it is simple and uses only documented parts of TEB
         auto pTeb = this->GetTEB();
@@ -3331,11 +3331,16 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 STRESS_LOG3(LF_SYNC, LL_INFO10000, "    Inspecting thread 0x%x ID 0x%x coop mode = %d\n",
                     thread, thread->GetThreadId(), thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier());
 
+
                 // ::FlushProcessWriteBuffers above guarantees that the state that we see here
                 // is after the trap flag is visible to the other thread.
                 //
                 // In other words: any threads seen in preemptive mode are no longer interesting to us.
-                // if they try switch to cooperative, they would see the flag set. 
+                // if they try switch to cooperative, they would see the flag set.
+#ifdef FEATURE_PERFTRACING
+                // Mark that the thread is currently in managed code.
+                thread->SaveGCModeOnSuspension();
+#endif // FEATURE_PERFTRACING
                 if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
                 {
                     _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendFlags));
@@ -3398,7 +3403,7 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             if (thread->HasThreadStateOpportunistic(Thread::TS_GCSuspendRedirected))
             {
                 // We have seen this thead before and have redirected it.
-                // No point in suspending it again. It will not run hijackable code until it parks itself. 
+                // No point in suspending it again. It will not run hijackable code until it parks itself.
                 continue;
             }
 
@@ -4297,7 +4302,7 @@ bool Thread::SysStartSuspendForDebug(AppDomain *pAppDomain)
 
 //
 // This method is called by the debugger helper thread when it times out waiting for a set of threads to
-// synchronize. Its used to chase down threads that are not syncronizing quickly. It returns true if all the threads are
+// synchronize. Its used to chase down threads that are not synchronizing quickly. It returns true if all the threads are
 // now synchronized. This also means that we own the thread store lock.
 //
 // This can be safely called if we're already suspended.
@@ -4694,7 +4699,7 @@ void Thread::HijackThread(ReturnKind returnKind, ExecutionState *esb)
         pvHijackAddr = returnAddressHijackTarget;
     }
 #endif // TARGET_WINDOWS && TARGET_AMD64
-    
+
 #ifdef TARGET_X86
     if (returnKind == RT_Float)
     {
@@ -5515,11 +5520,11 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Flush the store buffers on all CPUs, to ensure that they all see changes made
-    // by the GC threads. This only matters on weak memory ordered processors as 
+    // by the GC threads. This only matters on weak memory ordered processors as
     // the strong memory ordered processors wouldn't have reordered the relevant reads.
     // This is needed to synchronize threads that were running in preemptive mode while
-    // the runtime was suspended and that will return to cooperative mode after the runtime 
-    // is restarted. 
+    // the runtime was suspended and that will return to cooperative mode after the runtime
+    // is restarted.
     ::FlushProcessWriteBuffers();
 #endif //TARGET_ARM || TARGET_ARM64
 
@@ -5763,7 +5768,7 @@ retry_for_debugger:
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
-    // by the GC threads. This only matters on weak memory ordered processors as 
+    // by the GC threads. This only matters on weak memory ordered processors as
     // the strong memory ordered processors wouldn't have reordered the relevant writes.
     // This is needed to synchronize threads that were running in preemptive mode thus were
     // left alone by suspension to flush their writes that they made before they switched to
@@ -5809,11 +5814,6 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     if (pThread->PreemptiveGCDisabled() != TRUE)
         return;
-
-#ifdef FEATURE_PERFTRACING
-    // Mark that the thread is currently in managed code.
-    pThread->SaveGCModeOnSuspension();
-#endif // FEATURE_PERFTRACING
 
     PCODE ip = GetIP(interruptedContext);
 

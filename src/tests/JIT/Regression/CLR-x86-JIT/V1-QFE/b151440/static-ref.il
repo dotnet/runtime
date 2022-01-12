@@ -17,12 +17,16 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_static_ref
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed noinlining
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  5
     .locals init (int32 V_0,

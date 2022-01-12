@@ -8,6 +8,7 @@
 .assembly extern legacy library mscorlib { auto }
 
 .assembly ExternalException {}
+.assembly extern xunit.core {}
 .class private auto ansi beforefieldinit ExternalClass
        extends [mscorlib]System.Object
 {
@@ -40,6 +41,9 @@
 {
   .method public hidebysig static void  Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,

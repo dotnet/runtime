@@ -20,8 +20,8 @@ internal static partial class Interop
         /// </summary>
         internal const int SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = 0x2;
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateSymbolicLinkW", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
-        private static extern bool CreateSymbolicLinkPrivate(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateSymbolicLinkW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        private static partial bool CreateSymbolicLinkPrivate(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
 
         /// <summary>
         /// Creates a symbolic link.

@@ -207,11 +207,11 @@ MachOModule::ReadLoadCommands()
                 m_segments.push_back(segment);
 
                 // Calculate the load bias for the module. This is the value to add to the vmaddr of a
-                // segment to get the actual address. 
-                if (strcmp(segment->segname, SEG_TEXT) == 0)
+                // segment to get the actual address. For shared modules, this is 0 since those segments
+                // are absolute address.
+                if (segment->fileoff == 0 && segment->filesize > 0)
                 {
                     m_loadBias = m_baseAddress - segment->vmaddr;
-                    m_reader.TraceVerbose("CMD: load bias %016llx\n", m_loadBias);
                 }
 
                 m_reader.TraceVerbose("CMD: vmaddr %016llx vmsize %016llx fileoff %016llx filesize %016llx nsects %d max %c%c%c init %c%c%c %02x %s\n",
@@ -245,6 +245,7 @@ MachOModule::ReadLoadCommands()
             // Get next load command
             command = (load_command*)((char*)command + command->cmdsize);
         }
+        m_reader.TraceVerbose("CMD: load bias %016llx\n", m_loadBias);
     }
 
     return true;

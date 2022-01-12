@@ -1366,7 +1366,7 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 	MonoReflectionMethod *ref_method = MONO_HANDLE_RAW (ref_method_h);
 	MonoReflectionAssembly *assembly = MONO_HANDLE_RAW (assembly_h);
 	MonoMethodSignature *sig;
-	MonoObjectHandle obj_h, namedarg_h, typedarg_h, minfo_h;
+	MonoObjectHandle obj_h, namedarg_h, minfo_h;
 	int i;
 
 	if (len == 0)
@@ -1374,7 +1374,6 @@ ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal 
 
 	obj_h = MONO_HANDLE_NEW (MonoObject, NULL);
 	namedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
-	typedarg_h = MONO_HANDLE_NEW (MonoObject, NULL);
 	minfo_h = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	image = assembly->assembly->image;

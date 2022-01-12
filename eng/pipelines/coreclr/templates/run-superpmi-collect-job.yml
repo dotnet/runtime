@@ -1,0 +1,188 @@
+parameters:
+  steps: []                       # optional -- any additional steps that need to happen before pulling down the jitutils repo and sending the jitutils to helix (ie building your repo)
+  variables: []                   # optional -- list of additional variables to send to the template
+  jobName: ''                     # required -- job name
+  displayName: ''                 # optional -- display name for the job. Will use jobName if not passed
+  pool: ''                        # required -- name of the Build pool
+  container: ''                   # required -- name of the container
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
+  dependsOn: ''                   # optional -- dependencies of the job
+  timeoutInMinutes: 320           # optional -- timeout for the job
+  enableTelemetry: false          # optional -- enable for telemetry
+  liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  collectionType: ''
+  collectionName: ''
+  dependOnEvaluatePaths: false
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    dependsOn: ${{ parameters.dependsOn }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    enableTelemetry: ${{ parameters.enableTelemetry }}
+    enablePublishBuildArtifacts: true
+    continueOnError: ${{ parameters.continueOnError }}
+    collectionType: $ {{ parameters.collectionType }}
+    collectionName: ${{ parameters.collectionName }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+
+    ${{ if ne(parameters.displayName, '') }}:
+      displayName: '${{ parameters.displayName }}'
+    ${{ if eq(parameters.displayName, '') }}:
+      displayName: '${{ parameters.jobName }}'
+
+    # tests collection takes longer so increase timeout to 8 hours
+    ${{ if or(eq(parameters.collectionName, 'coreclr_tests'), eq(parameters.collectionName, 'libraries_tests')) }}:
+      timeoutInMinutes: 480
+    ${{ if and(ne(parameters.collectionName, 'coreclr_tests'), ne(parameters.collectionName, 'libraries_tests')) }}:
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    variables:
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - HelixApiAccessToken: ''
+    - HelixPreCommand: ''
+    - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
+    - CollectionType: ${{ parameters.collectionType }}
+    - CollectionName: ${{ parameters.collectionName }}
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+      - name: Core_Root_Dir
+        value: '$(Build.SourcesDirectory)\artifacts\tests\coreclr\${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}\Tests\Core_Root'
+      - name: MchFilesLocation
+        value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+      - name: MergedMchFileLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+      - name: Core_Root_Dir
+        value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr/${{ parameters.osGroup }}.${{ parameters.archType }}.$(buildConfigUpper)/Tests/Core_Root'
+      - name: MchFilesLocation
+        value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+      - name: MergedMchFileLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
+      - name: SpmiLogsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
+    - ${{ if eq(parameters.collectionName, 'libraries') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'benchmarks') }}:
+      - name: InputDirectory
+        value: '$(Core_Root_Dir)'
+    - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
+      - name: InputDirectory
+        value: '$(managedTestArtifactRootFolderPath)'
+    - ${{ if eq(parameters.collectionName, 'libraries_tests') }}:
+      - name: InputDirectory
+        value: '$(Build.SourcesDirectory)/artifacts/tests/libraries/$(osGroup).$(archType).$(buildConfigUpper)'
+    workspace:
+      clean: all
+    pool:
+      ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    steps:
+    - ${{ parameters.steps }}
+  
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_collect_setup.py -source_directory $(Build.SourcesDirectory) -core_root_directory $(Core_Root_Dir) -arch $(archType) -mch_file_tag $(MchFileTag) -input_directory $(InputDirectory) -collection_name $(CollectionName) -collection_type $(CollectionType) -max_size 50 # size in MB
+      displayName: ${{ format('SuperPMI setup ({0})', parameters.osGroup) }}
+
+    # Create required directories for merged mch collection and superpmi logs
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir -p $(MergedMchFileLocation)
+          mkdir -p $(SpmiLogsLocation)
+        displayName: Create directories
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - script: |
+          mkdir $(MergedMchFileLocation)
+          mkdir $(SpmiLogsLocation)
+        displayName: Create directories
+
+      # Run superpmi collection in helix
+    - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
+      parameters:
+        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
+        HelixType: 'test/superpmi/$(CollectionName)/$(CollectionType)/$(Architecture)'
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: $(Queue)
+        HelixPreCommands: $(HelixPreCommand)
+        Creator: $(Creator)
+        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemDirectory: '$(WorkItemDirectory)'
+        CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
+        ProjectFile: 'superpmi-collect.proj'
+        BuildConfig: ${{ parameters.buildConfig }}
+        osGroup: ${{ parameters.osGroup }}
+        InputArtifacts: '$(InputArtifacts)'
+        CollectionType: '$(CollectionType)'
+        CollectionName: '$(CollectionName)'
+        continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
+
+    # Always run merge step even if collection of some partition fails so we can store collection
+    # of the partitions that succeeded. If all the partitions fail, merge-mch would fail and we won't
+    # run future steps like uploading superpmi collection.
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+      displayName: ${{ format('Merge {0}-{1} SuperPMI collections', parameters.collectionName, parameters.collectionType) }}
+      condition: always()
+
+    # If merge step above fails, then skip "Upload as artifact" and "Upload to Azure storage"
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(MergedMchFileLocation)
+        includeRootFolder: false
+        archiveType: $(archiveType)
+        tarCompression: $(tarCompression)
+        archiveExtension: $(archiveExtension)
+        artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        displayName: ${{ format('Upload artifacts SuperPMI {0}-{1} collection', parameters.collectionName, parameters.collectionType) }}
+
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+      displayName: ${{ format('Upload SuperPMI {0}-{1} collection to Azure Storage', parameters.collectionName, parameters.collectionType) }}
+      env:
+        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+    # Always upload the available logs for diagnostics
+    - task: CopyFiles@2
+      displayName: Copying superpmi.log of all partitions
+      inputs:
+        sourceFolder: '$(MchFilesLocation)'
+        contents: '**/$(CollectionName).$(CollectionType)*.log'
+        targetFolder: '$(SpmiLogsLocation)'
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI logs
+      inputs:
+        targetPath: $(SpmiLogsLocation)
+        artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish SuperPMI build logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'SuperPMI_BuildLogs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      condition: always()

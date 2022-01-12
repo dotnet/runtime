@@ -97,9 +97,9 @@ public:
     static CORINFO_LOOKUP_KIND RestoreCORINFO_LOOKUP_KIND(Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
 
     static Agnostic_CORINFO_CONST_LOOKUP StoreAgnostic_CORINFO_CONST_LOOKUP(
-        CORINFO_CONST_LOOKUP* pLookup);
+        const CORINFO_CONST_LOOKUP* pLookup);
 
-    static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(Agnostic_CORINFO_CONST_LOOKUP& lookup);
+    static CORINFO_CONST_LOOKUP RestoreCORINFO_CONST_LOOKUP(const Agnostic_CORINFO_CONST_LOOKUP& lookup);
 
     static Agnostic_CORINFO_RUNTIME_LOOKUP StoreAgnostic_CORINFO_RUNTIME_LOOKUP(
         CORINFO_RUNTIME_LOOKUP* pLookup);
@@ -459,7 +459,7 @@ inline CORINFO_LOOKUP_KIND SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(
 }
 
 inline Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(
-    CORINFO_CONST_LOOKUP* pLookup)
+    const CORINFO_CONST_LOOKUP* pLookup)
 {
     Agnostic_CORINFO_CONST_LOOKUP constLookup;
     ZeroMemory(&constLookup, sizeof(constLookup));
@@ -469,7 +469,7 @@ inline Agnostic_CORINFO_CONST_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_CO
 }
 
 inline CORINFO_CONST_LOOKUP SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(
-    Agnostic_CORINFO_CONST_LOOKUP& lookup)
+    const Agnostic_CORINFO_CONST_LOOKUP& lookup)
 {
     CORINFO_CONST_LOOKUP constLookup;
     constLookup.accessType = (InfoAccessType)lookup.accessType;

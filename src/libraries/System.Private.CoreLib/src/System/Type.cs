@@ -587,13 +587,10 @@ namespace System
             if (object.ReferenceEquals(left, right))
                 return true;
 
-            if (left is null || right is null)
-                return false;
-
             // Runtime types are never equal to non-runtime types
             // If `left` is a non-runtime type with a weird Equals implementation
             // this is where operator `==` would differ from `Equals` call.
-            if (left is RuntimeType || right is RuntimeType)
+            if (left is null || right is null || left is RuntimeType || right is RuntimeType)
                 return false;
 
             return left.Equals(right);

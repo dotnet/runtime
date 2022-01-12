@@ -31,10 +31,10 @@ namespace System.IO
             return string.Format(format!, fileName, message);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall)]
         private static extern void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static extern void GetMessageForHR(int hresult, StringHandleOnStack retString);
     }
 }

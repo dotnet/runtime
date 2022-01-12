@@ -4,7 +4,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace SafeHandleTests
 {
@@ -19,7 +19,7 @@ namespace SafeHandleTests
 
             Assert.Throws<InvalidOperationException>(() => SafeHandleNative.GetHandleAndCookie(out _, value, out h));
 
-            Assert.AreEqual(value, h.DangerousGetHandle());
+            Assert.Equal(value, h.DangerousGetHandle());
 
             // Try again, this time triggering unmarshal failure with an array.
             value = (IntPtr)456;
@@ -27,7 +27,7 @@ namespace SafeHandleTests
 
             Assert.Throws<OverflowException>(() => SafeHandleNative.GetHandleAndArray(out _, out _, value, out h));
 
-            Assert.AreEqual(value, h.DangerousGetHandle());
+            Assert.Equal(value, h.DangerousGetHandle());
         }
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
@@ -159,7 +159,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHeapAllocHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandleUwp.cs" />
-    <Compile Include="Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
   </ItemGroup>
   <!-- Interop types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
@@ -193,6 +192,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
              Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext_IntPtr.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs"
@@ -649,6 +650,7 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
@@ -661,6 +663,9 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Reference Include="System.Security.Cryptography" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' and '$(IsPartialFacadeAssembly)' != 'true'">
     <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />

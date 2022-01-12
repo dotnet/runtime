@@ -17,15 +17,17 @@ void DumpMapHeader()
     // printf("process name,");
     printf("method name,");
     printf("full signature,");
-    printf("jit flags\n");
+    printf("jit flags,");
+    printf("os\n");
 }
 
 void DumpMap(int index, MethodContext* mc)
 {
     CORINFO_METHOD_INFO cmi;
     unsigned int        flags = 0;
+    CORINFO_OS          os;
 
-    mc->repCompileMethod(&cmi, &flags);
+    mc->repCompileMethod(&cmi, &flags, &os);
 
     const char* moduleName = nullptr;
     const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
@@ -121,7 +123,7 @@ void DumpMap(int index, MethodContext* mc)
         }
     }
 
-    printf(", %s\n", SpmiDumpHelper::DumpJitFlags(rawFlags).c_str());
+    printf(", %s, %d\n", SpmiDumpHelper::DumpJitFlags(rawFlags).c_str(), (int)os);
 }
 
 int verbDumpMap::DoWork(const char* nameOfInput)

@@ -10,9 +10,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TestLibrary;
 
-public class Test
+public class Test_Finalizer
 {
-    ~Test()
+    ~Test_Finalizer()
     {
         TestFramework.LogInformation("First Alloc in Finalizer");
         GCUtil.Alloc2(1024 * 512, 30);
@@ -29,7 +29,7 @@ public class Test
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void CreateAndReleaseFinalizable()
     {
-        var t = new Test();
+        var t = new Test_Finalizer();
     }
 
     public static int Main()

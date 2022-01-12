@@ -175,6 +175,15 @@ struct _MonoArray {
 	mono_64bitaligned_t vector [MONO_ZERO_LEN_ARRAY];
 };
 
+/* match the layout of the managed definition of Span<T> */
+#define MONO_DEFINE_SPAN_OF_T(name, type)	\
+	typedef struct {	\
+		type* _pointer;	\
+		uint32_t _length;	\
+	} name;
+
+MONO_DEFINE_SPAN_OF_T (MonoSpanOfObjects, MonoObject*)
+
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
 
 struct _MonoString {
@@ -274,6 +283,32 @@ static inline void
 mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
 {
 	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
+}
+
+#define mono_span_length(span) (span->_length)
+
+#define mono_span_get(span,type,idx) (type)(!span->_pointer ? (type)0 : span->_pointer[idx])
+
+#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
+
+#define mono_span_setref(span,index,value)	\
+	do {	\
+		void **__p = (void **) mono_span_addr ((span), void*, (index));	\
+		mono_gc_wbarrier_generic_store_internal (__p, (MonoObject*)(value));	\
+		/* *__p = (value);*/	\
+	} while (0)
+
+static inline MonoSpanOfObjects
+mono_span_create_from_object_array (MonoArray *arr) {
+	MonoSpanOfObjects span;
+	if (arr != NULL) {
+		span._length = (int32_t)mono_array_length_internal (arr);
+		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
+	} else {
+		span._length = 0;
+		span._pointer = NULL;
+	}
+	return span;
 }
 
 typedef struct {
@@ -646,6 +681,7 @@ typedef struct {
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
+	gboolean (*interp_sufficient_stack)(gsize size);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);
@@ -1370,13 +1406,6 @@ typedef enum {
 	UNLOADING = 1
 } MonoManagedAssemblyLoadContextInternalState;
 
-// Keep in sync with System.Runtime.Loader.AssemblyLoadContext
-typedef struct {
-	MonoObject object;
-	MonoAssemblyLoadContext *native_assembly_load_context;
-} MonoManagedAssemblyLoadContext;
-
-TYPED_HANDLE_DECL (MonoManagedAssemblyLoadContext);
 
 /* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
  * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
@@ -1838,7 +1867,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			       MonoObject **exc, MonoError *error);
 
 MonoObject*
-mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
+mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
 				   MonoError *error);
 
 void* 
@@ -2059,7 +2088,7 @@ void
 mono_gc_wbarrier_set_field_internal (MonoObject *obj, void* field_ptr, MonoObject* value);
 
 void
-mono_gc_wbarrier_set_arrayref_internal  (MonoArray *arr, void* slot_ptr, MonoObject* value);
+mono_gc_wbarrier_set_arrayref_internal (MonoArray *arr, void* slot_ptr, MonoObject* value);
 
 void
 mono_gc_wbarrier_arrayref_copy_internal (void* dest_ptr, const void* src_ptr, int count);

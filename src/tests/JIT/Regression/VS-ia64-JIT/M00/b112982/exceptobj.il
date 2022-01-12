@@ -10,6 +10,7 @@
 .assembly excepobj
 {
 }
+.assembly extern xunit.core {}
 //	This test ensures that valid exception object is on the stack in the filter
 
 .namespace DD
@@ -18,6 +19,9 @@
   {
     .method public static int32  Main(class [mscorlib]System.String[] args) il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals (int32 V_0)

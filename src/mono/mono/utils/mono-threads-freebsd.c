@@ -9,7 +9,6 @@
 #include <mono/utils/mono-threads.h>
 #include <pthread.h>
 #include <pthread_np.h>
-#include <sys/thr.h>
 
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
@@ -30,9 +29,7 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 guint64
 mono_native_thread_os_id_get (void)
 {
-	long tid;
-	thr_self (&tid);
-	return (guint64)tid;
+	return (guint64)pthread_getthreadid_np();
 }
 
 #else

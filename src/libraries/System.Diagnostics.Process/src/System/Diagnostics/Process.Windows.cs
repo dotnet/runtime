@@ -21,6 +21,8 @@ namespace System.Diagnostics
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             if (processName == null)

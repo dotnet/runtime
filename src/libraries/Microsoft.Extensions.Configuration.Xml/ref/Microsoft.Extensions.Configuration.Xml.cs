@@ -33,6 +33,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         public static readonly Microsoft.Extensions.Configuration.Xml.XmlDocumentDecryptor Instance;
         protected XmlDocumentDecryptor() { }
         public System.Xml.XmlReader CreateDecryptingXmlReader(System.IO.Stream input, System.Xml.XmlReaderSettings settings) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         protected virtual System.Xml.XmlReader DecryptDocumentAndCreateXmlReader(System.Xml.XmlDocument document) { throw null; }
     }
     public partial class XmlStreamConfigurationProvider : Microsoft.Extensions.Configuration.StreamConfigurationProvider

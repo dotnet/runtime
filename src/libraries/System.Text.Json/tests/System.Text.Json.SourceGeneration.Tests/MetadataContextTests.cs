@@ -24,9 +24,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -37,6 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -65,10 +68,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ByteArray.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverter.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterFactory.SerializeHandler);
@@ -79,6 +84,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NullablePersonStruct.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.PersonStruct.SerializeHandler);
         }
     }
 
@@ -101,9 +108,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
+    [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
@@ -114,6 +123,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
+    [JsonSerializable(typeof(PersonStruct?))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -165,10 +175,12 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.MyNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ByteArray.SerializeHandler);
             Assert.Null(MetadataContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataContext.Default.String.SerializeHandler);
             Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverter.SerializeHandler);
             Assert.Null(MetadataContext.Default.StructWithCustomConverter.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverterFactory.SerializeHandler);
@@ -179,6 +191,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.SerializeHandler);
+            Assert.Null(MetadataContext.Default.NullablePersonStruct.SerializeHandler);
+            Assert.Null(MetadataContext.Default.PersonStruct.SerializeHandler);
         }
 
         [Fact]

@@ -13,6 +13,7 @@
 .assembly format// as "format"
 {
 }
+.assembly extern xunit.core {}
 .module format.exe
 .namespace JitTest
 {
@@ -1121,6 +1122,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  8
       IL_0000:  call       void JitTest.TestClass::TestLocals()

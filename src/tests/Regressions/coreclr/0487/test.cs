@@ -44,18 +44,18 @@ public class Gen<T>
 		{
 			IAsyncResult ar = FldEv.BeginInvoke(t,null,null);
 			ar.AsyncWaitHandle.WaitOne();
-			Test.Eval(t.Equals(FldEv.EndInvoke(ar)));
+			Test_test.Eval(t.Equals(FldEv.EndInvoke(ar)));
 		}
 		catch (NotSupportedException)
 		{
 			// expected
-			Test.Eval(true);
+			Test_test.Eval(true);
 		}
 	}
 
 }
 	
-public class Test
+public class Test_test
 {
 	public static int counter = 0;
 	public static bool result = true;

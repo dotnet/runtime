@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 
 
@@ -41,21 +42,24 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_test1
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       22 (0x16)
     .maxstack  8
 
     IL_0000:  ldc.i4.0
-    IL_0001:  call       int32 Test::sw(int32)
+    IL_0001:  call       int32 Test_test1::sw(int32)
     IL_0006:  pop
 
     IL_0007:  ldc.i4.0
-    IL_0008:  call       int32 Test::sw(int32)
+    IL_0008:  call       int32 Test_test1::sw(int32)
 
     IL_00ff:  ldc.i4 100
     IL_0100:  bne.un FAIL

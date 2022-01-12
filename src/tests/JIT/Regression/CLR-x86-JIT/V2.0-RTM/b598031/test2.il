@@ -9,6 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly switchdefaultonly1 {}
+.assembly extern xunit.core {}
 .module switchdefaultonly3_il_d.exe
 
 .class private auto ansi beforefieldinit switchdefaultonly1
@@ -17,6 +18,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       44 (0x2c)
     .maxstack  2

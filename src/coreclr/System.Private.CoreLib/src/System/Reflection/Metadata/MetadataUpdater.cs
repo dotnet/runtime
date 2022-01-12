@@ -9,10 +9,10 @@ namespace System.Reflection.Metadata
 {
     public static class MetadataUpdater
     {
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
         private static extern unsafe void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength);
 
-        [DllImport(RuntimeHelpers.QCall)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
         private static extern unsafe bool IsApplyUpdateSupported();
 
         /// <summary>

@@ -29,6 +29,7 @@
   .hash algorithm 0x00008004
   .ver 4:0:30513:0
 }
+.assembly extern xunit.core {}
 .module VectorForwarder.exe
 // MVID: {040B5898-B7A8-44DE-A50F-3465CCB7870F}
 .imagebase 0x00400000
@@ -245,6 +246,9 @@
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       72 (0x48)
     .maxstack  3

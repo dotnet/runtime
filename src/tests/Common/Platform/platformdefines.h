@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cstdint>
+#include <minipal/utils.h>
 
 #ifndef _PLATFORMDEFINES__H
 #define _PLATFORMDEFINES__H
@@ -90,8 +91,6 @@ typedef unsigned int ULONG, *PULONG;
 #endif // HOST_64BIT
 
 #define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
-
-#define ARRAYSIZE(x) (sizeof(x)/sizeof(*x))
 
 #ifndef TRUE
 #define TRUE 1
@@ -268,6 +267,12 @@ inline void CoreClrFree(void *p)
 #define strcmp TP_scmp_s
 #define strncpy_s TP_strncpy_s
 #define strcpy_s TP_strcpy_s
+#endif
+
+#if defined(TARGET_XARCH) && !defined(_MSC_VER)
+#define ENABLE_AVX __attribute__ ((target("avx")))
+#else
+#define ENABLE_AVX
 #endif
 
 #endif

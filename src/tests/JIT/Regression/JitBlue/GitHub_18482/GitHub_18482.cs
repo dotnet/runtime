@@ -12,7 +12,7 @@ public struct SequentialStruct
     public IntPtr f3;
 }
 
-class Test
+class Test_GitHub_18482
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int foo(SequentialStruct s)

@@ -100,6 +100,7 @@ namespace R2RTest
             {
                 yield return $"--perfmap";
                 yield return $"--perfmap-path:{Path.GetDirectoryName(outputFileName)}";
+                yield return $"--perfmap-format-version:{_options.PerfmapFormatVersion}";
             }
 
             if (_options.TargetArch != null)

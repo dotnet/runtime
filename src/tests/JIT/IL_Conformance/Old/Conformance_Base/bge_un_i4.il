@@ -127,4 +127,4 @@ FAIL:
 	ret
 }
 }
-.assembly bge_un_i4.exe{}
+.assembly bge_un_i4{}

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 
 #include "appdomain.hpp"
@@ -1173,7 +1172,7 @@ void SystemDomain::Init()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
         g_fAllowNativeImages = false;
 
-    m_pSystemFile = NULL;
+    m_pSystemPEAssembly = NULL;
     m_pSystemAssembly = NULL;
 
     DWORD size = 0;
@@ -1319,12 +1318,11 @@ void SystemDomain::LoadBaseSystemClasses()
 
     ETWOnStartup(LdSysBases_V1, LdSysBasesEnd_V1);
 
-    {
-        m_pSystemFile = PEAssembly::OpenSystem();
-    }
+    m_pSystemPEAssembly = PEAssembly::OpenSystem();
+
     // Only partially load the system assembly. Other parts of the code will want to access
     // the globals in this function before finishing the load.
-    m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemFile, FILE_LOAD_POST_LOADLIBRARY)->GetCurrentAssembly();
+    m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_LOADLIBRARY)->GetCurrentAssembly();
 
     // Set up binder for CoreLib
     CoreLibBinder::AttachModule(m_pSystemAssembly->GetManifestModule());
@@ -1568,7 +1566,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     if (!VolatileLoad(&fInited))
     {
         // Make sure all types are loaded so that we can use faster GetExistingClass()
-        for (unsigned i = 0; i < NumItems(reflectionInvocationTypes); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             CoreLibBinder::GetClass(reflectionInvocationTypes[i]);
         }
@@ -1578,7 +1576,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     if (!pCaller->HasInstantiation())
     {
-        for (unsigned i = 0; i < NumItems(reflectionInvocationTypes); i++)
+        for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
                 return true;
@@ -1838,6 +1836,8 @@ void AppDomain::Create()
     pDomain->InitVSD();
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
+    pDomain->CreateDefaultBinder();
+
     pDomain.SuppressRelease();
 
     m_pTheAppDomain = pDomain;
@@ -2037,17 +2037,6 @@ void AppDomain::Init()
     m_pDelayedLoaderAllocatorUnloadList = NULL;
 
     SetStage( STAGE_CREATING);
-
-
-    // The lock is taken also during stack walking (GC or profiler)
-    //  - To prevent deadlock with GC thread, we cannot trigger GC while holding the lock
-    //  - To prevent deadlock with profiler thread, we cannot allow thread suspension
-    m_crstHostAssemblyMap.Init(
-        CrstHostAssemblyMap,
-        (CrstFlags)(CRST_GC_NOTRIGGER_WHEN_TAKEN
-                    | CRST_DEBUGGER_THREAD
-                    INDEBUG(| CRST_DEBUG_ONLY_CHECK_FORBID_SUSPEND_THREAD)));
-    m_crstHostAssemblyMapAdd.Init(CrstHostAssemblyMapAdd);
 
     //Allocate the threadpool entry before the appdomain id list. Otherwise,
     //the thread pool list will be out of sync if insertion of id in
@@ -2250,7 +2239,7 @@ DispIDCache* AppDomain::SetupRefDispIDCache()
 
 #endif // FEATURE_COMINTEROP
 
-FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEFile *pFile, DomainFile *pDomainFile)
+FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainFile)
 {
     CONTRACTL
     {
@@ -2258,12 +2247,12 @@ FileLoadLock *FileLoadLock::Create(PEFileListLock *pLock, PEFile *pFile, DomainF
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(pLock->HasLock());
-        PRECONDITION(pLock->FindFileLock(pFile) == NULL);
+        PRECONDITION(pLock->FindFileLock(pPEAssembly) == NULL);
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
-    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pFile, pDomainFile));
+    NewHolder<FileLoadLock> result(new FileLoadLock(pLock, pPEAssembly, pDomainFile));
 
     pLock->AddElement(result);
     result->AddRef(); // Add one ref on behalf of the ListLock's reference. The corresponding Release() happens in FileLoadLock::CompleteLoadLevel.
@@ -2280,7 +2269,7 @@ FileLoadLock::~FileLoadLock()
         MODE_ANY;
     }
     CONTRACTL_END;
-    ((PEFile *) m_data)->Release();
+    ((PEAssembly *) m_data)->Release();
 }
 
 DomainFile *FileLoadLock::GetDomainFile()
@@ -2475,14 +2464,14 @@ UINT32 FileLoadLock::Release()
     return count;
 }
 
-FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEFile *pFile, DomainFile *pDomainFile)
-  : ListLockEntry(pLock, pFile, "File load lock"),
+FileLoadLock::FileLoadLock(PEFileListLock *pLock, PEAssembly * pPEAssembly, DomainFile *pDomainFile)
+  : ListLockEntry(pLock, pPEAssembly, "File load lock"),
     m_level((FileLoadLevel) (FILE_LOAD_CREATE)),
     m_pDomainFile(pDomainFile),
     m_cachedHR(S_OK)
 {
     WRAPPER_NO_CONTRACT;
-    pFile->AddRef();
+    pPEAssembly->AddRef();
 }
 
 void FileLoadLock::HolderLeave(FileLoadLock *pThis)
@@ -2530,7 +2519,7 @@ void AppDomain::LoadSystemAssemblies()
     //
     // Right now we have only one system assembly. We shouldn't need to add any more.
 
-    LoadAssembly(NULL, SystemDomain::System()->SystemFile(), FILE_ACTIVE);
+    LoadAssembly(NULL, SystemDomain::System()->SystemPEAssembly(), FILE_ACTIVE);
 }
 
 FileLoadLevel AppDomain::GetDomainFileLoadLevel(DomainFile *pFile)
@@ -2545,7 +2534,7 @@ FileLoadLevel AppDomain::GetDomainFileLoadLevel(DomainFile *pFile)
 
     LoadLockHolder lock(this);
 
-    FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pFile->GetFile());
+    FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pFile->GetPEAssembly());
 
     if (pLockEntry == NULL)
         return pFile->GetLoadLevel();
@@ -2575,7 +2564,7 @@ BOOL AppDomain::IsLoading(DomainFile *pFile, FileLoadLevel level)
         {
             LoadLockHolder lock(this);
 
-            pLock = (FileLoadLock *) lock->FindFileLock(pFile->GetFile());
+            pLock = (FileLoadLock *) lock->FindFileLock(pFile->GetPEAssembly());
 
             if (pLock == NULL)
             {
@@ -2612,7 +2601,7 @@ CHECK AppDomain::CheckLoading(DomainFile *pFile, FileLoadLevel level)
 
         LoadLockHolder lock(this);
 
-        pLock = (FileLoadLock *) lock->FindFileLock(pFile->GetFile());
+        pLock = (FileLoadLock *) lock->FindFileLock(pFile->GetPEAssembly());
 
         if (pLock != NULL
             && pLock->CanAcquire(level))
@@ -2698,7 +2687,7 @@ void AppDomain::LoadDomainFile(DomainFile *pFile,
         // Load some more if appropriate
         LoadLockHolder lock(this);
 
-        FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pFile->GetFile());
+        FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pFile->GetPEAssembly());
         if (pLockEntry == NULL)
         {
             _ASSERTE (!pFile->IsLoading());
@@ -2730,7 +2719,7 @@ FileLoadLevel AppDomain::GetThreadFileLoadLevel()
 
 
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
-                                  PEAssembly *pFile,
+                                  PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
 {
     CONTRACT(Assembly *)
@@ -2738,20 +2727,20 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pFile));
+        PRECONDITION(CheckPointer(pPEAssembly));
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK)); // May be NULL in recursive load case
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
 
-    DomainAssembly *pAssembly = LoadDomainAssembly(pIdentity, pFile, targetLevel);
+    DomainAssembly *pAssembly = LoadDomainAssembly(pIdentity, pPEAssembly, targetLevel);
     PREFIX_ASSUME(pAssembly != NULL);
 
     RETURN pAssembly->GetAssembly();
 }
 
 DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
-                                              PEAssembly *pFile,
+                                              PEAssembly * pPEAssembly,
                                               FileLoadLevel targetLevel)
 {
     STATIC_CONTRACT_THROWS;
@@ -2759,13 +2748,13 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
     if (pSpec == nullptr)
     {
         // skip caching, since we don't have anything to base it on
-        return LoadDomainAssemblyInternal(pSpec, pFile, targetLevel);
+        return LoadDomainAssemblyInternal(pSpec, pPEAssembly, targetLevel);
     }
 
     DomainAssembly* pRetVal = NULL;
     EX_TRY
     {
-        pRetVal = LoadDomainAssemblyInternal(pSpec, pFile, targetLevel);
+        pRetVal = LoadDomainAssemblyInternal(pSpec, pPEAssembly, targetLevel);
     }
     EX_HOOK
     {
@@ -2774,7 +2763,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
         {
             // Setup the binder reference in AssemblySpec from the PEAssembly if one is not already set.
             AssemblyBinder* pCurrentBinder = pSpec->GetBinder();
-            AssemblyBinder* pBinderFromPEAssembly = pFile->GetBinder();
+            AssemblyBinder* pBinderFromPEAssembly = pPEAssembly->GetAssemblyBinder();
 
             if (pCurrentBinder == NULL)
             {
@@ -2810,7 +2799,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
 
 
 DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
-                                              PEAssembly *pFile,
+                                              PEAssembly * pPEAssembly,
                                               FileLoadLevel targetLevel)
 {
     CONTRACT(DomainAssembly *)
@@ -2818,8 +2807,8 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pFile));
-        PRECONDITION(pFile->IsSystem() || ::GetAppDomain()==this);
+        PRECONDITION(CheckPointer(pPEAssembly));
+        PRECONDITION(::GetAppDomain()==this);
         POSTCONDITION(CheckPointer(RETVAL));
         POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
                       || RETVAL->GetLoadLevel() >= targetLevel);
@@ -2835,20 +2824,16 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     GCX_PREEMP();
 
     // Check for existing fully loaded assembly, or for an assembly which has failed during the loading process.
-    result = FindAssembly(pFile, FindAssemblyOptions_IncludeFailedToLoad);
+    result = FindAssembly(pPEAssembly, FindAssemblyOptions_IncludeFailedToLoad);
 
     if (result == NULL)
     {
         LoaderAllocator *pLoaderAllocator = NULL;
 
-        AssemblyBinder *pFileBinder = pFile->GetBinder();
-        if (pFileBinder != NULL)
-        {
-            // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
-            // marked as collectible
-            pLoaderAllocator = pFileBinder->GetLoaderAllocator();
-        }
-
+        AssemblyBinder *pAssemblyBinder = pPEAssembly->GetAssemblyBinder();
+        // Assemblies loaded with CustomAssemblyBinder need to use a different LoaderAllocator if
+        // marked as collectible
+        pLoaderAllocator = pAssemblyBinder->GetLoaderAllocator();
         if (pLoaderAllocator == NULL)
         {
             pLoaderAllocator = this->GetLoaderAllocator();
@@ -2856,22 +2841,22 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         // Allocate the DomainAssembly a bit early to avoid GC mode problems. We could potentially avoid
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
-        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(this, pFile, pLoaderAllocator);
+        NewHolder<DomainAssembly> pDomainAssembly = new DomainAssembly(this, pPEAssembly, pLoaderAllocator);
 
         LoadLockHolder lock(this);
 
         // Find the list lock entry
-        FileLoadLock * fileLock = (FileLoadLock *)lock->FindFileLock(pFile);
+        FileLoadLock * fileLock = (FileLoadLock *)lock->FindFileLock(pPEAssembly);
         bool registerNewAssembly = false;
         if (fileLock == NULL)
         {
             // Check again in case we were racing
-            result = FindAssembly(pFile, FindAssemblyOptions_IncludeFailedToLoad);
+            result = FindAssembly(pPEAssembly, FindAssemblyOptions_IncludeFailedToLoad);
             if (result == NULL)
             {
                 // We are the first one in - create the DomainAssembly
                 registerNewAssembly = true;
-                fileLock = FileLoadLock::Create(lock, pFile, pDomainAssembly);
+                fileLock = FileLoadLock::Create(lock, pPEAssembly, pDomainAssembly);
                 pDomainAssembly.SuppressRelease();
                 if (pDomainAssembly->IsCollectible())
                 {
@@ -2904,7 +2889,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
 
         if (registerNewAssembly)
         {
-            pFile->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
+            pPEAssembly->GetAssemblyBinder()->AddLoadedAssembly(pDomainAssembly->GetCurrentAssembly());
         }
     }
     else
@@ -2918,11 +2903,11 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         ThrowHR(COR_E_ASSEMBLYEXPECTED);
     }
 
-    // Cache result in all cases, since found pFile could be from a different AssemblyRef than pIdentity
+    // Cache result in all cases, since found pPEAssembly could be from a different AssemblyRef than pIdentity
     if (pIdentity == NULL)
     {
         AssemblySpec spec;
-        spec.InitializeSpec(result->GetFile());
+        spec.InitializeSpec(result->GetPEAssembly());
         GetAppDomain()->AddAssemblyToCache(&spec, result);
     }
     else
@@ -2958,26 +2943,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
 
     // Make sure we release the lock on exit
     FileLoadLockRefHolder lockRef(pLock);
-
-    // We need to perform the early steps of loading CoreLib without a domain transition.  This is
-    // important for bootstrapping purposes - we need to get CoreLib at least partially loaded
-    // into a domain before we can run serialization code to do the transition.
-    //
-    // Note that we cannot do this in general for all assemblies, because some of the security computations
-    // require the managed exposed object, which must be created in the correct app domain.
-
-    if (this != GetAppDomain()
-        && pFile->GetFile()->IsSystem()
-        && targetLevel > FILE_LOAD_ALLOCATE)
-    {
-        // Re-call the routine with a limited load level. This will cause the first part of the load to
-        // get performed in the current app domain.
-
-        pLock->AddRef();
-        LoadDomainFile(pLock, targetLevel > FILE_LOAD_ALLOCATE ? FILE_LOAD_ALLOCATE : targetLevel);
-
-        // Now continue on to complete the rest of the load, if any.
-    }
 
     // Do a quick out check for the already loaded case.
     if (pLock->GetLoadLevel() >= targetLevel)
@@ -3154,7 +3119,7 @@ void AppDomain::TryIncrementalLoad(DomainFile *pFile, FileLoadLevel workLevel, F
             }
 
             if (!EEFileLoadException::CheckType(pEx))
-                EEFileLoadException::Throw(pFile->GetFile(), pEx->GetHR(), pEx);
+                EEFileLoadException::Throw(pFile->GetPEAssembly(), pEx->GetHR(), pEx);
         }
 
         // Otherwise, we simply abort this load, and can retry later on.
@@ -3215,22 +3180,21 @@ void AppDomain::SetupSharedStatics()
     SetObjectReference( pEmptyStringHandle, StringObject::GetEmptyString());
 }
 
-DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions options/* = FindAssemblyOptions_None*/)
+DomainAssembly * AppDomain::FindAssembly(PEAssembly * pPEAssembly, FindAssemblyOptions options/* = FindAssemblyOptions_None*/)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
     const bool includeFailedToLoad = (options & FindAssemblyOptions_IncludeFailedToLoad) != 0;
 
-    if (pFile->HasHostAssembly())
+    if (pPEAssembly->HasHostAssembly())
     {
-        DomainAssembly * pDA = FindAssembly(pFile->GetHostAssembly());
+        DomainAssembly * pDA = pPEAssembly->GetHostAssembly()->GetDomainAssembly();
         if (pDA != nullptr && (pDA->IsLoaded() || (includeFailedToLoad && pDA->IsError())))
         {
             return pDA;
@@ -3246,10 +3210,9 @@ DomainAssembly * AppDomain::FindAssembly(PEAssembly * pFile, FindAssemblyOptions
 
     while (i.Next(pDomainAssembly.This()))
     {
-        PEFile * pManifestFile = pDomainAssembly->GetFile();
+        PEAssembly * pManifestFile = pDomainAssembly->GetPEAssembly();
         if (pManifestFile &&
-            !pManifestFile->IsResource() &&
-            pManifestFile->Equals(pFile))
+            pManifestFile->Equals(pPEAssembly))
         {
             // Caller already has PEAssembly, so we can give DomainAssembly away freely without added reference
             return pDomainAssembly.GetValue();
@@ -3415,7 +3378,7 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #ifndef DACCESS_COMPILE
 
-BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAllowFailure)
+BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BOOL fAllowFailure)
 {
     CONTRACTL
     {
@@ -3431,7 +3394,7 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly *pFile, BOOL fAll
     DomainCacheCrstHolderForGCCoop holder(this);
 
     // !!! suppress exceptions
-    if(!m_AssemblyCache.StoreFile(pSpec, pFile) && !fAllowFailure)
+    if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
     {
         // TODO: Disabling the below assertion as currently we experience
         // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
@@ -3541,17 +3504,17 @@ NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
     RETURN existingEntry->Handle;
 }
 
-BOOL AppDomain::RemoveFileFromCache(PEAssembly *pFile)
+BOOL AppDomain::RemoveFileFromCache(PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
         GC_TRIGGERS;
-        PRECONDITION(CheckPointer(pFile));
+        PRECONDITION(CheckPointer(pPEAssembly));
     }
     CONTRACTL_END;
 
     LoadLockHolder lock(this);
-    FileLoadLock *fileLock = (FileLoadLock *)lock->FindFileLock(pFile);
+    FileLoadLock *fileLock = (FileLoadLock *)lock->FindFileLock(pPEAssembly);
 
     if (fileLock == NULL)
         return FALSE;
@@ -3614,9 +3577,9 @@ PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/
     if (fThrow && pSpec->IsCoreLib())
     {
         CONSISTENCY_CHECK(SystemDomain::System()->SystemAssembly() != NULL);
-        PEAssembly *pFile = SystemDomain::System()->SystemFile();
-        pFile->AddRef();
-        return pFile;
+        PEAssembly * pPEAssembly = SystemDomain::System()->SystemPEAssembly();
+        pPEAssembly->AddRef();
+        return pPEAssembly;
     }
 
     return m_AssemblyCache.LookupFile(pSpec, fThrow);
@@ -3700,20 +3663,20 @@ PEAssembly * AppDomain::BindAssemblySpec(
 
                 if (boundAssembly)
                 {
-                    if (SystemDomain::SystemFile() && boundAssembly->GetAssemblyName()->IsCoreLib())
+                    if (SystemDomain::SystemPEAssembly() && boundAssembly->GetAssemblyName()->IsCoreLib())
                     {
                         // Avoid rebinding to another copy of CoreLib
-                        result = SystemDomain::SystemFile();
+                        result = SystemDomain::SystemPEAssembly();
                         result.SuppressRelease(); // Didn't get a refcount
                     }
                     else
                     {
-                        // IsSystem on the PEFile should be false, even for CoreLib satellites
-                        result = PEAssembly::Open(boundAssembly, FALSE);
+                        // IsSystem on the PEAssembly should be false, even for CoreLib satellites
+                        result = PEAssembly::Open(boundAssembly);
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
-                    AssemblyBinder* pBinder = result->GetBinder();
+                    AssemblyBinder* pBinder = result->GetAssemblyBinder();
                     _ASSERTE(pBinder != NULL);
                     pSpec->SetBinder(pBinder);
 
@@ -3864,9 +3827,9 @@ PEAssembly *AppDomain::TryResolveAssemblyUsingEvent(AssemblySpec *pSpec)
         Assembly *pAssembly = RaiseAssemblyResolveEvent(pSpec);
         if (pAssembly != nullptr)
         {
-            PEAssembly *pFile = pAssembly->GetManifestFile();
-            pFile->AddRef();
-            result = pFile;
+            PEAssembly* pPEAssembly = pAssembly->GetManifestFile();
+            pPEAssembly->AddRef();
+            result = pPEAssembly;
         }
 
         BinderTracing::ResolutionAttemptedOperation::TraceAppDomainAssemblyResolve(pSpec, result);
@@ -3927,7 +3890,7 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     }
     CONTRACTL_END;
 
-    if (pAssembly->GetFile()->IsSystem())
+    if (pAssembly->GetPEAssembly()->IsSystem())
     {
         return;
     }
@@ -4043,7 +4006,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
 }
 
 
-DefaultAssemblyBinder *AppDomain::CreateBinderContext()
+DefaultAssemblyBinder *AppDomain::CreateDefaultBinder()
 {
     CONTRACT(DefaultAssemblyBinder *)
     {
@@ -4062,7 +4025,7 @@ DefaultAssemblyBinder *AppDomain::CreateBinderContext()
         GCX_PREEMP();
 
         // Initialize the assembly binder for the default context loads for CoreCLR.
-        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::DefaultBinderSetupContext(&m_pDefaultBinder));
+        IfFailThrow(BINDER_SPACE::AssemblyBinderCommon::CreateDefaultBinder(&m_pDefaultBinder));
     }
 
     RETURN m_pDefaultBinder;
@@ -5141,7 +5104,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             }
             else
             {
-                pLoadedPEAssembly = pDomainAssembly->GetFile();
+                pLoadedPEAssembly = pDomainAssembly->GetPEAssembly();
                 if (!pLoadedPEAssembly->HasHostAssembly())
                 {
                     // Reflection emitted assemblies will not have a domain assembly.
@@ -5303,9 +5266,9 @@ SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     }
     BaseDomain::EnumMemoryRegions(flags, false);
 
-    if (m_pSystemFile.IsValid())
+    if (m_pSystemPEAssembly.IsValid())
     {
-        m_pSystemFile->EnumMemoryRegions(flags);
+        m_pSystemPEAssembly->EnumMemoryRegions(flags);
     }
     if (m_pSystemAssembly.IsValid())
     {
@@ -5360,185 +5323,6 @@ TypeEquivalenceHashTable * AppDomain::GetTypeEquivalenceCache()
 #endif //!DACCESS_COMPILE
 
 #endif //FEATURE_TYPEEQUIVALENCE
-
-#if !defined(DACCESS_COMPILE)
-
-//---------------------------------------------------------------------------------------------------------------------
-void AppDomain::PublishHostedAssembly(
-    DomainAssembly * pDomainAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    if (pDomainAssembly->GetFile()->HasHostAssembly())
-    {
-        // We have to serialize all Add operations
-        CrstHolder lockAdd(&m_crstHostAssemblyMapAdd);
-        _ASSERTE(m_hostAssemblyMap.Lookup(pDomainAssembly->GetFile()->GetHostAssembly()) == nullptr);
-
-        // Wrapper for m_hostAssemblyMap.Add that avoids call out into host
-        HostAssemblyMap::AddPhases addCall;
-
-        // 1. Preallocate one element
-        addCall.PreallocateForAdd(&m_hostAssemblyMap);
-        {
-            // 2. Take the reader lock which can be taken during stack walking
-            // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations)
-            ForbidSuspendThreadHolder suspend;
-            {
-                CrstHolder lock(&m_crstHostAssemblyMap);
-                // 3. Add the element to the hash table (no call out into host)
-                addCall.Add(pDomainAssembly);
-            }
-        }
-        // 4. Cleanup the old memory (if any)
-        addCall.DeleteOldTable();
-    }
-    else
-    {
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-void AppDomain::UpdatePublishHostedAssembly(
-    DomainAssembly * pAssembly,
-    PTR_PEFile       pFile)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END
-
-    if (pAssembly->GetFile()->HasHostAssembly())
-    {
-        // We have to serialize all Add operations
-        CrstHolder lockAdd(&m_crstHostAssemblyMapAdd);
-        {
-            // Wrapper for m_hostAssemblyMap.Add that avoids call out into host
-            OriginalFileHostAssemblyMap::AddPhases addCall;
-            bool fAddOrigFile = false;
-
-            // For cases where the pefile is being updated
-            // 1. Preallocate one element
-            if (pFile != pAssembly->GetFile())
-            {
-                addCall.PreallocateForAdd(&m_hostAssemblyMapForOrigFile);
-                fAddOrigFile = true;
-            }
-
-            {
-                // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations)
-                ForbidSuspendThreadHolder suspend;
-                {
-                    CrstHolder lock(&m_crstHostAssemblyMap);
-
-                    // Remove from hash table.
-                    _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetFile()->GetHostAssembly()) != nullptr);
-                    m_hostAssemblyMap.Remove(pAssembly->GetFile()->GetHostAssembly());
-
-                    // Update PEFile on DomainAssembly. (This may cause the key for the hash to change, which is why we need this function)
-                    pAssembly->UpdatePEFileWorker(pFile);
-
-                    _ASSERTE(fAddOrigFile == (pAssembly->GetOriginalFile() != pAssembly->GetFile()));
-                    if (fAddOrigFile)
-                    {
-                        // Add to the orig file hash table if we might be in a case where we've cached the original pefile and not the final pe file (for use during GetAssemblyIfLoaded)
-                        addCall.Add(pAssembly);
-                    }
-
-                    // Add back to the hashtable (the call to Remove above guarantees that we will not call into host for table reallocation)
-                    _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetFile()->GetHostAssembly()) == nullptr);
-                    m_hostAssemblyMap.Add(pAssembly);
-                }
-            }
-
-            // 4. Cleanup the old memory (if any)
-            if (fAddOrigFile)
-                addCall.DeleteOldTable();
-        }
-    }
-    else
-    {
-
-        pAssembly->UpdatePEFileWorker(pFile);
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------------------
-void AppDomain::UnPublishHostedAssembly(
-    DomainAssembly * pAssembly)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END
-
-    if (pAssembly->GetFile()->HasHostAssembly())
-    {
-        ForbidSuspendThreadHolder suspend;
-        {
-            CrstHolder lock(&m_crstHostAssemblyMap);
-            _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetFile()->GetHostAssembly()) != nullptr);
-            m_hostAssemblyMap.Remove(pAssembly->GetFile()->GetHostAssembly());
-
-            // We also have an entry in m_hostAssemblyMapForOrigFile. Handle that case.
-            if (pAssembly->GetOriginalFile() != pAssembly->GetFile())
-            {
-                m_hostAssemblyMapForOrigFile.Remove(pAssembly->GetOriginalFile()->GetHostAssembly());
-            }
-        }
-    }
-}
-
-#endif //!DACCESS_COMPILE
-
-//---------------------------------------------------------------------------------------------------------------------
-PTR_DomainAssembly AppDomain::FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssembly)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    if (pHostAssembly == nullptr)
-        return NULL;
-
-    {
-        ForbidSuspendThreadHolder suspend;
-        {
-            CrstHolder lock(&m_crstHostAssemblyMap);
-            PTR_DomainAssembly returnValue = m_hostAssemblyMap.Lookup(pHostAssembly);
-            if (returnValue == NULL)
-            {
-                // If not found in the m_hostAssemblyMap, look in the m_hostAssemblyMapForOrigFile
-                // This is necessary as it may happen during in a second AppDomain that the PEFile
-                // first discovered in the AppDomain may not be used by the DomainFile, but the CLRPrivBinderFusion
-                // will in some cases find the pHostAssembly associated with this no longer used PEFile
-                // instead of the PEFile that was finally decided upon.
-                returnValue = m_hostAssemblyMapForOrigFile.Lookup(pHostAssembly);
-            }
-
-            return returnValue;
-        }
-    }
-}
 
 #ifndef DACCESS_COMPILE
 // Return native image for a given composite image file name, NULL when not found.

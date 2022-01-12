@@ -2074,7 +2074,7 @@ namespace System.Xml
         {
             if (state >= State.Error)
             {
-                Debug.Fail("We should never get to this point. State = " + state);
+                Debug.Fail($"We should never get to this point. State = {state}");
                 return "Error";
             }
             else
@@ -2176,7 +2176,7 @@ namespace System.Xml
                 case State.Start:
                     if (_conformanceLevel == ConformanceLevel.Document)
                     {
-                        throw new InvalidOperationException(wrongTokenMessage + ' ' + SR.Xml_ConformanceLevelFragment);
+                        throw new InvalidOperationException($"{wrongTokenMessage} {SR.Xml_ConformanceLevelFragment}");
                     }
                     break;
             }

@@ -11,14 +11,14 @@ namespace Microsoft.Extensions.Configuration.CommandLine
     /// </summary>
     public class CommandLineConfigurationProvider : ConfigurationProvider
     {
-        private readonly Dictionary<string, string> _switchMappings;
+        private readonly Dictionary<string, string>? _switchMappings;
 
         /// <summary>
         /// Initializes a new instance.
         /// </summary>
         /// <param name="args">The command line args.</param>
         /// <param name="switchMappings">The switch mappings.</param>
-        public CommandLineConfigurationProvider(IEnumerable<string> args, IDictionary<string, string> switchMappings = null)
+        public CommandLineConfigurationProvider(IEnumerable<string> args, IDictionary<string, string>? switchMappings = null)
         {
             Args = args ?? throw new ArgumentNullException(nameof(args));
 
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// </summary>
         public override void Load()
         {
-            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
             string key, value;
 
             using (IEnumerator<string> enumerator = Args.GetEnumerator())
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
 
                     if (separator < 0)
                     {
-                        // If there is neither equal sign nor prefix in current arugment, it is an invalid format
+                        // If there is neither equal sign nor prefix in current argument, it is an invalid format
                         if (keyStartIndex == 0)
                         {
                             // Ignore invalid formats
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         }
 
                         // If the switch is a key in given switch mappings, interpret it
-                        if (_switchMappings != null && _switchMappings.TryGetValue(currentArg, out string mappedKey))
+                        if (_switchMappings != null && _switchMappings.TryGetValue(currentArg, out string? mappedKey))
                         {
                             key = mappedKey;
                         }
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                         string keySegment = currentArg.Substring(0, separator);
 
                         // If the switch is a key in given switch mappings, interpret it
-                        if (_switchMappings != null && _switchMappings.TryGetValue(keySegment, out string mappedKeySegment))
+                        if (_switchMappings != null && _switchMappings.TryGetValue(keySegment, out string? mappedKeySegment))
                         {
                             key = mappedKeySegment;
                         }

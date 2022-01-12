@@ -5219,7 +5219,7 @@ CMiniMdRW::FindGenericParamHelper(
     if (IsSorted(TBL_GenericParam))
     {
         mdToken tk;
-        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef));
+        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef));
         IfFailGo(SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
                             tk,

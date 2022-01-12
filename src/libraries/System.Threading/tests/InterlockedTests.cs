@@ -16,11 +16,15 @@ namespace System.Threading.Tests
         {
             int value = 42;
             Assert.Equal(12387, Interlocked.Add(ref value, 12345));
+            Assert.Equal(12387, value);
             Assert.Equal(12387, Interlocked.Add(ref value, 0));
+            Assert.Equal(12387, value);
             Assert.Equal(12386, Interlocked.Add(ref value, -1));
+            Assert.Equal(12386, value);
 
             value = int.MaxValue;
             Assert.Equal(int.MinValue, Interlocked.Add(ref value, 1));
+            Assert.Equal(int.MinValue, value);
         }
 
         [Fact]
@@ -28,11 +32,15 @@ namespace System.Threading.Tests
         {
             uint value = 42;
             Assert.Equal(12387u, Interlocked.Add(ref value, 12345u));
+            Assert.Equal(12387u, value);
             Assert.Equal(12387u, Interlocked.Add(ref value, 0u));
+            Assert.Equal(12387u, value);
             Assert.Equal(9386u, Interlocked.Add(ref value, 4294964295u));
+            Assert.Equal(9386u, value);
 
             value = uint.MaxValue;
             Assert.Equal(0u, Interlocked.Add(ref value, 1));
+            Assert.Equal(0u, value);
         }
 
         [Fact]
@@ -40,11 +48,15 @@ namespace System.Threading.Tests
         {
             long value = 42;
             Assert.Equal(12387, Interlocked.Add(ref value, 12345));
+            Assert.Equal(12387, value);
             Assert.Equal(12387, Interlocked.Add(ref value, 0));
+            Assert.Equal(12387, value);
             Assert.Equal(12386, Interlocked.Add(ref value, -1));
+            Assert.Equal(12386, value);
 
             value = long.MaxValue;
             Assert.Equal(long.MinValue, Interlocked.Add(ref value, 1));
+            Assert.Equal(long.MinValue, value);
         }
 
         [Fact]
@@ -52,11 +64,15 @@ namespace System.Threading.Tests
         {
             ulong value = 42;
             Assert.Equal(12387u, Interlocked.Add(ref value, 12345));
+            Assert.Equal(12387u, value);
             Assert.Equal(12387u, Interlocked.Add(ref value, 0));
+            Assert.Equal(12387u, value);
             Assert.Equal(10771u, Interlocked.Add(ref value, 18446744073709550000));
+            Assert.Equal(10771u, value);
 
             value = ulong.MaxValue;
             Assert.Equal(0u, Interlocked.Add(ref value, 1));
+            Assert.Equal(0u, value);
         }
 
         [Fact]
@@ -91,22 +107,12 @@ namespace System.Threading.Tests
             Assert.Equal(43u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void InterlockedDecrement_Int32()
         {
             int value = 42;
             Assert.Equal(41, Interlocked.Decrement(ref value));
             Assert.Equal(41, value);
-
-            List<Task> threads = new List<Task>();
-            int count = 0;
-            for (int i = 0; i < 10000; i++)
-            {
-                threads.Add(Task.Run(() => Interlocked.Increment(ref count)));
-                threads.Add(Task.Run(() => Interlocked.Decrement(ref count)));
-            }
-            Task.WaitAll(threads.ToArray());
-            Assert.Equal(0, count);
         }
 
         [Fact]
@@ -117,22 +123,12 @@ namespace System.Threading.Tests
             Assert.Equal(41u, value);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public void InterlockedDecrement_Int64()
         {
             long value = 42;
             Assert.Equal(41, Interlocked.Decrement(ref value));
             Assert.Equal(41, value);
-
-            List<Task> threads = new List<Task>();
-            long count = 0;
-            for (int i = 0; i < 10000; i++)
-            {
-                threads.Add(Task.Run(() => Interlocked.Increment(ref count)));
-                threads.Add(Task.Run(() => Interlocked.Decrement(ref count)));
-            }
-            Task.WaitAll(threads.ToArray());
-            Assert.Equal(0, count);
         }
 
         [Fact]
@@ -173,6 +169,47 @@ namespace System.Threading.Tests
             ulong value = 42;
             Assert.Equal(42u, Interlocked.Exchange(ref value, 12345u));
             Assert.Equal(12345u, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_Float()
+        {
+            float value = 42.1f;
+            Assert.Equal(42.1f, Interlocked.Exchange(ref value, 12345.1f));
+            Assert.Equal(12345.1f, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_Double()
+        {
+            double value = 42.1;
+            Assert.Equal(42.1, Interlocked.Exchange(ref value, 12345.1));
+            Assert.Equal(12345.1, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_Object()
+        {
+            var oldValue = new object();
+            var newValue = new object();
+            object value = oldValue;
+
+            Assert.Same(oldValue, Interlocked.Exchange(ref value, newValue));
+            Assert.Same(newValue, value);
+        }
+
+        [Fact]
+        public void InterlockedExchange_BoxedObject()
+        {
+            var oldValue = (object)42;
+            var newValue = (object)12345;
+            object value = oldValue;
+
+            object valueBeforeUpdate = Interlocked.Exchange(ref value, newValue);
+            Assert.Same(oldValue, valueBeforeUpdate);
+            Assert.Equal(42, (int)valueBeforeUpdate);
+            Assert.Same(newValue, value);
+            Assert.Equal(12345, (int)value);
         }
 
         [Fact]
@@ -221,6 +258,64 @@ namespace System.Threading.Tests
 
             Assert.Equal(42u, Interlocked.CompareExchange(ref value, 12345u, 42u));
             Assert.Equal(12345u, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Float()
+        {
+            float value = 42.1f;
+
+            Assert.Equal(42.1f, Interlocked.CompareExchange(ref value, 12345.1f, 41.1f));
+            Assert.Equal(42.1f, value);
+
+            Assert.Equal(42.1f, Interlocked.CompareExchange(ref value, 12345.1f, 42.1f));
+            Assert.Equal(12345.1f, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Double()
+        {
+            double value = 42.1;
+
+            Assert.Equal(42.1, Interlocked.CompareExchange(ref value, 12345.1, 41.1));
+            Assert.Equal(42.1, value);
+
+            Assert.Equal(42.1, Interlocked.CompareExchange(ref value, 12345.1, 42.1));
+            Assert.Equal(12345.1, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_Object()
+        {
+            var oldValue = new object();
+            var newValue = new object();
+            object value = oldValue;
+
+            Assert.Same(oldValue, Interlocked.CompareExchange(ref value, newValue, new object()));
+            Assert.Same(oldValue, value);
+
+            Assert.Same(oldValue, Interlocked.CompareExchange(ref value, newValue, oldValue));
+            Assert.Same(newValue, value);
+        }
+
+        [Fact]
+        public void InterlockedCompareExchange_BoxedObject()
+        {
+            var oldValue = (object)42;
+            var newValue = (object)12345;
+            object value = oldValue;
+
+            object valueBeforeUpdate = Interlocked.CompareExchange(ref value, newValue, (object)42);
+            Assert.Same(oldValue, valueBeforeUpdate);
+            Assert.Equal(42, (int)valueBeforeUpdate);
+            Assert.Same(oldValue, value);
+            Assert.Equal(42, (int)value);
+
+            valueBeforeUpdate = Interlocked.CompareExchange(ref value, newValue, oldValue);
+            Assert.Same(oldValue, valueBeforeUpdate);
+            Assert.Equal(42, (int)valueBeforeUpdate);
+            Assert.Same(newValue, value);
+            Assert.Equal(12345, (int)value);
         }
 
         [Fact]
@@ -299,6 +394,149 @@ namespace System.Threading.Tests
             ulong value = 0x12345670u;
             Assert.Equal(0x12345670u, Interlocked.Or(ref value, 0x7654321));
             Assert.Equal(0x17755771u, value);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void InterlockedIncrement_Multithreaded_Int32()
+        {
+            const int ThreadCount = 10;
+            const int IterationCount = 100;
+
+            int value = 0;
+            var threadStarted = new AutoResetEvent(false);
+            var startTest = new ManualResetEvent(false);
+            Action threadStart = () =>
+            {
+                threadStarted.Set();
+                startTest.CheckedWait();
+                for (int i = 0; i < IterationCount; ++i)
+                {
+                    Interlocked.Increment(ref value);
+                }
+            };
+
+            var waitsForThread = new Action[ThreadCount];
+            for (int i = 0; i < ThreadCount; ++i)
+            {
+                Thread t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], threadStart);
+                t.IsBackground = true;
+                t.Start();
+                threadStarted.CheckedWait();
+            }
+
+            startTest.Set();
+            foreach (var waitForThread in waitsForThread)
+            {
+                waitForThread();
+            }
+
+            Assert.Equal(ThreadCount * IterationCount, Interlocked.CompareExchange(ref value, 0, 0));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void InterlockedCompareExchange_Multithreaded_Double()
+        {
+            const int ThreadCount = 10;
+            const int IterationCount = 100;
+            const double Increment = ((long)1 << 32) + 1;
+
+            double value = 0;
+            var threadStarted = new AutoResetEvent(false);
+            var startTest = new ManualResetEvent(false);
+            Action threadStart = () =>
+            {
+                threadStarted.Set();
+                startTest.CheckedWait();
+                for (int i = 0; i < IterationCount; ++i)
+                {
+                    double oldValue = value;
+                    while (true)
+                    {
+                        double valueBeforeUpdate = Interlocked.CompareExchange(ref value, oldValue + Increment, oldValue);
+                        if (valueBeforeUpdate == oldValue)
+                        {
+                            break;
+                        }
+
+                        oldValue = valueBeforeUpdate;
+                    }
+                }
+            };
+
+            var waitsForThread = new Action[ThreadCount];
+            for (int i = 0; i < ThreadCount; ++i)
+            {
+                Thread t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], threadStart);
+                t.IsBackground = true;
+                t.Start();
+                threadStarted.CheckedWait();
+            }
+
+            startTest.Set();
+            foreach (var waitForThread in waitsForThread)
+            {
+                waitForThread();
+            }
+
+            Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.CompareExchange(ref value, 0, 0));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void InterlockedAddAndRead_Multithreaded_Int64()
+        {
+            const int ThreadCount = 10;
+            const int IterationCount = 100;
+            const long Increment = ((long)1 << 32) + 1;
+
+            long value = 0;
+            var threadStarted = new AutoResetEvent(false);
+            var startTest = new ManualResetEvent(false);
+            int completedThreadCount = 0;
+            Action threadStart = () =>
+            {
+                threadStarted.Set();
+                startTest.CheckedWait();
+                for (int i = 0; i < IterationCount; ++i)
+                {
+                    Interlocked.Add(ref value, Increment);
+                }
+
+                Interlocked.Increment(ref completedThreadCount);
+            };
+
+            var checksForThreadErrors = new Action[ThreadCount];
+            var waitsForThread = new Action[ThreadCount];
+            for (int i = 0; i < ThreadCount; ++i)
+            {
+                Thread t =
+                    ThreadTestHelpers.CreateGuardedThread(out checksForThreadErrors[i], out waitsForThread[i], threadStart);
+                t.IsBackground = true;
+                t.Start();
+                threadStarted.CheckedWait();
+            }
+
+            startTest.Set();
+            ThreadTestHelpers.WaitForConditionWithCustomDelay(
+                () => completedThreadCount >= ThreadCount,
+                () =>
+                {
+                    long valueSnapshot = Interlocked.Read(ref value);
+                    Assert.Equal((int)valueSnapshot, (int)(valueSnapshot >> 32));
+
+                    foreach (var checkForThreadErrors in checksForThreadErrors)
+                    {
+                        checkForThreadErrors();
+                    }
+
+                    Thread.Sleep(1);
+                });
+            foreach (var waitForThread in waitsForThread)
+            {
+                waitForThread();
+            }
+
+            Assert.Equal(ThreadCount, completedThreadCount);
+            Assert.Equal(ThreadCount * IterationCount * Increment, Interlocked.Read(ref value));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

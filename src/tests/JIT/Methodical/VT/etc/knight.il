@@ -15,6 +15,7 @@
 .assembly knight
 {
 }
+.assembly extern xunit.core {}
 .module knight.exe
 
 .file alignment 512
@@ -36,6 +37,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (valuetype KnightMove.SQ[0...,0...] V_0,

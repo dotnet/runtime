@@ -8,6 +8,7 @@
 .assembly extern System.Console { auto }
 
 .assembly test_2b { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi beforefieldinit Test
@@ -17,6 +18,9 @@
     .field private static int32 n
     .method private hidebysig  static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (int32 V_0)

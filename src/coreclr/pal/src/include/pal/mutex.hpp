@@ -74,8 +74,8 @@ Design
   find any other sync object with a timed wait with the necessary properties, so polling is done for timed waits.
 
 Shared memory files
-- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in /tmp/coreclr/shm/session<sessionId>/<mutexName>
-- Globally-scoped mutexes (name prefixed with Global) go in /tmp/coreclr/shm/global/<mutexName>
+- Session-scoped mutexes (name not prefixed, or prefixed with Local) go in /tmp/.dotnet/shm/session<sessionId>/<mutexName>
+- Globally-scoped mutexes (name prefixed with Global) go in /tmp/.dotnet/shm/global/<mutexName>
 - Contains shared state, and is mmap'ped into the process, see SharedMemorySharedDataHeader and NamedMutexSharedData for data
   stored
 - Creation and deletion is synchronized using an exclusive file lock on the shm directory
@@ -84,7 +84,7 @@ Shared memory files
   valid. If no other processes have the mutex open, the file is reinitialized.
 - Upon releasing the last reference to a mutex in a process, it will try to get an exclusive lock on the shared memory file to
   see if any other processes have the mutex opened. If not, the file is deleted, along with the session directory if it's empty.
-  The coreclr and shm directories are not deleted.
+  The .dotnet and shm directories are not deleted.
 - This allows managing the lifetime of mutex state based on active processes that have the mutex open. Depending on how the
   process terminated, the file may still be left over in the tmp directory, I haven't found anything that can be done about
   that.
@@ -92,7 +92,7 @@ Shared memory files
 Lock files when using file locks:
 - In addition to the shared memory file, we need another file for the actual synchronization file lock, since a file lock on the
   shared memory file is used for lifetime purposes.
-- These files go in /tmp/coreclr/lockfiles/session<sessionId>|global/<mutexName>
+- These files go in /tmp/.dotnet/lockfiles/session<sessionId>|global/<mutexName>
 - The file is empty, and is only used for file locks
 
 Process data

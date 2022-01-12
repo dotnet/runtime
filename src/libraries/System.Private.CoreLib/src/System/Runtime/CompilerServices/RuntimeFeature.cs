@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
 
         /// <summary>

@@ -50,7 +50,7 @@ namespace System
             return defaultValue;
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", CharSet = CharSet.Unicode)]
         private static extern bool GetConfigBoolValue(string configSwitchName, out bool exist);
     }
 }

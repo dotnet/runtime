@@ -18,7 +18,7 @@ public class GenType1<T>
 	
 }
 
-public class Test
+public class Test_b448208
 {
 	public static int Main()
 	{

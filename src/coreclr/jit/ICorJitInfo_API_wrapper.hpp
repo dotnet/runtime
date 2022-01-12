@@ -455,15 +455,6 @@ uint32_t WrapICorJitInfo::getClassAttribs(
     return temp;
 }
 
-bool WrapICorJitInfo::isStructRequiringStackAllocRetBuf(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(isStructRequiringStackAllocRetBuf);
-    bool temp = wrapHnd->isStructRequiringStackAllocRetBuf(cls);
-    API_LEAVE(isStructRequiringStackAllocRetBuf);
-    return temp;
-}
-
 CORINFO_MODULE_HANDLE WrapICorJitInfo::getClassModule(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -1525,6 +1516,14 @@ bool WrapICorJitInfo::notifyInstructionSetUsage(
     bool temp = wrapHnd->notifyInstructionSetUsage(instructionSet, supportEnabled);
     API_LEAVE(notifyInstructionSetUsage);
     return temp;
+}
+
+void WrapICorJitInfo::updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint)
+{
+    API_ENTER(updateEntryPointForTailCall);
+    wrapHnd->updateEntryPointForTailCall(entryPoint);
+    API_LEAVE(updateEntryPointForTailCall);
 }
 
 void WrapICorJitInfo::allocMem(

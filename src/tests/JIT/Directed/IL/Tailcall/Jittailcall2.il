@@ -5,12 +5,13 @@
 
 .module 'aaa.exe'
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'aaa'// as "aaa.exe"
+.assembly 'aaa'// as "aaa"
 {
   
   
@@ -169,6 +170,9 @@
 
     .method public static int32 Main(class [mscorlib]System.String[] Args) il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       117 (0x75)
       .maxstack  4

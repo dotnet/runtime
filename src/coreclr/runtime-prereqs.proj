@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
+    <AssemblyName>.NET Runtime</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Condition="'$(TargetOS)' == 'Windows'" Include="ToolBox/SOS/DacTableGen/DacTableGen.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
+
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;OutputPgoPathForCI" />
+</Project>
