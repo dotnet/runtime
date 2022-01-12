@@ -726,7 +726,7 @@ namespace System.Xml.Xsl.Runtime
             typBase = typBase.Prime;
             for (int i = 0; i < seq.Count; i++)
             {
-                if (!CreateXmlType(seq[0]).IsSubtypeOf(typBase))
+                if (!CreateXmlType(seq[i]).IsSubtypeOf(typBase))
                     return false;
             }
 

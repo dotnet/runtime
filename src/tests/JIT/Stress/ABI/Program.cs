@@ -17,14 +17,6 @@ namespace ABIStress
 {
     internal partial class Program
     {
-        private const int DefaultSeed = 20010415;
-        private static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
-        {
-            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
-            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
-            _ => DefaultSeed
-        };
-
         private static int Main(string[] args)
         {
             static void Usage()
@@ -32,7 +24,7 @@ namespace ABIStress
                 Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--instantiatingstubs] [--unboxingstubs] [--sharedgenericunboxingstubs] [--max-params <number>] [--no-ctrlc-summary]");
                 Console.WriteLine("Either --caller-index or --num-calls must be specified.");
                 Console.WriteLine("Example: --num-calls 100");
-                Console.WriteLine("  Stress first 100 tailcalls and pinvokes");
+                Console.WriteLine("  Stress first 100 of all kinds");
                 Console.WriteLine("Example: --tailcalls --caller-index 37 --verbose");
                 Console.WriteLine("  Stress tailcaller 37, verbose output");
                 Console.WriteLine("Example: --pinvokes --num-calls 1000");
@@ -175,7 +167,7 @@ namespace ABIStress
 
         private static Callee CreateCallee(string name, TypeEx[] candidateParamTypes)
         {
-            Random rand = new Random(Seed);
+            Random rand = new Random(GetSeed(name));
             List<TypeEx> pms = RandomParameters(candidateParamTypes, rand);
             var tc = new Callee(name, pms);
             return tc;
@@ -271,7 +263,7 @@ namespace ABIStress
                 Console.WriteLine("Invoking caller through reflection with args");
                 for (int j = 0; j < outerArgs.Length; j++)
                 {
-                    Console.Write($"arg{j}=");
+                    Console.Write($"arg{j}({outerArgs[j].GetType().Name})=");
                     DumpObject(outerArgs[j]);
                 }
             }
@@ -283,7 +275,7 @@ namespace ABIStress
                 Console.WriteLine("Invoking callee through reflection with args");
                 for (int j = 0; j < innerArgs.Length; j++)
                 {
-                    Console.Write($"arg{j}=");
+                    Console.Write($"arg{j}({innerArgs[j].GetType().Name})=");
                     DumpObject(innerArgs[j]);
                 }
             }
@@ -337,7 +329,7 @@ namespace ABIStress
             int index = 0;
             foreach (Value v in values)
             {
-                g.Emit(OpCodes.Ldstr, $"arg{index}=");
+                g.Emit(OpCodes.Ldstr, $"arg{index}({v.Type.Type.Name})=");
                 g.Emit(OpCodes.Call, s_writeString);
 
                 v.Emit(g);

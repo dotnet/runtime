@@ -601,10 +601,6 @@ uint32_t getFieldThreadLocalStoreID(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
 
-void setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod) override;
-
 void addActiveDependency(
           CORINFO_MODULE_HANDLE moduleFrom,
           CORINFO_MODULE_HANDLE moduleTo) override;
