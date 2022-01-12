@@ -96,7 +96,7 @@ hot_reload_has_modified_rows (const MonoTableInfo *table);
 static int
 hot_reload_table_num_rows_slow (MonoImage *image, int table_index);
 
-static GArray*
+static GSList*
 hot_reload_get_added_members (MonoClass *klass);
 
 static uint32_t
@@ -402,7 +402,7 @@ static void
 klass_info_destroy (gpointer value, gpointer user_data G_GNUC_UNUSED)
 {
 	MonoClassMetadataUpdateInfo *info = (MonoClassMetadataUpdateInfo *)value;
-	g_array_free (info->added_members, TRUE);
+	/* added_members is allocated from the class mempool, don't free it here */
 	/* The MonoClassMetadataUpdateField is allocated from the class mempool, don't free it here */
 	g_ptr_array_free (info->added_fields, TRUE);
 
@@ -2321,13 +2321,8 @@ add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClas
 		base_info->member_parent = g_hash_table_new (g_direct_hash, g_direct_equal);
 	}
 	MonoClassMetadataUpdateInfo *klass_info = mono_class_get_or_add_metadata_update_info (klass);
-	/* FIXME: locking for readers/writers of the GArray */
-	GArray *arr = klass_info->added_members;
-	if (!arr) {
-		arr = g_array_new (FALSE, FALSE, sizeof(uint32_t));
-		klass_info->added_members = arr;
-	}
-	g_array_append_val (arr, member_token);
+	GSList *members = klass_info->added_members;
+	klass_info->added_members = g_slist_prepend_mem_manager (m_class_get_mem_manager (klass), members, GUINT_TO_POINTER (member_token));
 	g_hash_table_insert (base_info->member_parent, GUINT_TO_POINTER (member_token), GUINT_TO_POINTER (m_class_get_type_token (klass)));
 }
 
@@ -2340,7 +2335,7 @@ add_method_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClas
 		set_delta_method_debug_info (delta_info, method_token, pdb_address);
 }
 
-static GArray*
+static GSList*
 hot_reload_get_added_members (MonoClass *klass)
 {
 	/* FIXME: locking for the GArray? */
@@ -2596,17 +2591,14 @@ hot_reload_get_static_field_addr (MonoClassField *field)
 static MonoMethod *
 hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
 {
-	GArray *arr = hot_reload_get_added_members (klass);
-	if (!arr)
+	GSList *members = hot_reload_get_added_members (klass);
+	if (!members)
 		return NULL;
 
-	/* FIXME: locking if the array grows? */
-
 	MonoImage *image = m_class_get_image (klass);
-	int count = arr->len;
 	MonoMethod *res = NULL;
-	for (int i = 0; i < count; i++) {
-		uint32_t token = g_array_index (arr, uint32_t, i);
+	for (GSList *ptr = members; ptr; ptr = ptr->next) {
+		uint32_t token = GPOINTER_TO_UINT(ptr->data);
 		if (mono_metadata_token_table (token) != MONO_TABLE_METHOD)
 			continue;
 		uint32_t idx = mono_metadata_token_index (token);

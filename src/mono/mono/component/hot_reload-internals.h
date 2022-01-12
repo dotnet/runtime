@@ -25,7 +25,7 @@ typedef struct _MonoClassRuntimeMetadataUpdateInfo {
 struct _MonoClassMetadataUpdateInfo {
 	/* FIXME: use a struct that allocates out of the MonoClass mempool! or maybe add the GArray
 	 * to the BaselineInfo for the image and cleanup from there. */
-	GArray *added_members; /* a set of Method or Field table tokens of any methods or fields added to this class */
+	GSList *added_members; /* a set of Method or Field table tokens of any methods or fields added to this class, allocated from the MonoClass mempool */
 
 	GPtrArray *added_fields; /* a set of MonoClassMetadataUpdateField* values for every added field. */
 
