@@ -1027,7 +1027,7 @@ namespace System.DirectoryServices.Protocols
         {
             if (ConnectionToDereference != IntPtr.Zero && _callbackRoutine.DereferenceConnection != null)
             {
-                LdapConnection dereferenceConnection = null;
+                LdapConnection dereferenceConnection;
                 WeakReference reference = null;
 
                 // in most cases it should be in our table

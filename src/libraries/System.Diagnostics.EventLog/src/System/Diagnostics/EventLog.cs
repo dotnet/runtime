@@ -849,7 +849,7 @@ namespace System.Diagnostics
 
                         if (sb.Length > 0)
                         {
-                            int num = -1;
+                            int num;
                             if (int.TryParse(sb.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out num))
                             {
                                 largestNumber = Math.Max(largestNumber, num);

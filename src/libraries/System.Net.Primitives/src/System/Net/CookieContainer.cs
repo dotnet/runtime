@@ -376,11 +376,11 @@ namespace System.Net
             DateTime tempUsed;
 
             CookieCollection? lruCc = null;
-            string? lruDomain = null;
+            string? lruDomain;
             string tempDomain;
 
             PathList pathList;
-            int domain_count = 0;
+            int domain_count;
             int itemp = 0;
             float remainingFraction = 1.0F;
 
@@ -1021,8 +1021,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(uri));
             }
 
-            string dummy;
-            return GetCookieHeader(uri, out dummy);
+            return GetCookieHeader(uri, out _);
         }
 
         internal string GetCookieHeader(Uri uri, out string optCookie2)

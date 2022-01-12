@@ -1442,7 +1442,7 @@ namespace System.Net.Http
                 return;
             }
 
-            X509Certificate2? clientCertificate = null;
+            X509Certificate2? clientCertificate;
             if (_clientCertificateOption == ClientCertificateOption.Manual)
             {
                 clientCertificate = CertificateHelper.GetEligibleClientCertificate(ClientCertificates);
