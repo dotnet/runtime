@@ -6,7 +6,9 @@
     <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
     <!-- Use targeting pack references instead of granular ones in the project file. -->
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
+    <!-- Disable package on release/6.0-maui branch, revert before merging back into release/6.0
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    -->
     <!-- ServicingVersion moved to ..\Directory.Build.props in order to share with test project. -->
   </PropertyGroup>
 
