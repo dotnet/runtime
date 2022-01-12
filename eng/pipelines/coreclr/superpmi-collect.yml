@@ -45,6 +45,16 @@ jobs:
       - Linux_x64
       - windows_x64
 
+# superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    jobParameters:
+      testGroup: outerloop
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
