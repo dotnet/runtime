@@ -526,7 +526,7 @@ jobs:
         extraHelixArguments: /p:BrowserHost=windows $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
-        - wasmtestonbrowser
+        - WasmTestOnBrowser
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

@@ -7,9 +7,9 @@ namespace Internal.IL.Stubs
 {
     partial class ValueTypeGetFieldHelperMethodOverride
     {
-        protected internal override int ClassCode => 2036839816;
+        protected override int ClassCode => 2036839816;
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (ValueTypeGetFieldHelperMethodOverride)other;
 
