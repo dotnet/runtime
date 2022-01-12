@@ -683,7 +683,7 @@ public:
         return static_cast<Impl*>(this)->Impl_GetBlob(nIndex, pData);
     }
     __checkReturn
-    FORCEINLINE HRESULT getRow(UINT32 nTableIndex, UINT32 nRowIndex, __deref_out void **ppRow)
+    FORCEINLINE HRESULT getRow(UINT32 nTableIndex, UINT32 nRowIndex, _Outptr_ void **ppRow)
     {
         MINIMD_POSSIBLE_INTERNAL_POINTER_EXPOSED();
         return static_cast<Impl*>(this)->Impl_GetRow(nTableIndex, nRowIndex, reinterpret_cast<BYTE **>(ppRow));

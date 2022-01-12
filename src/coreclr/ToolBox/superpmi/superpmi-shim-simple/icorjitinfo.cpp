@@ -1036,13 +1036,6 @@ uint32_t interceptor_ICJI::getFieldThreadLocalStoreID(
     return original_ICorJitInfo->getFieldThreadLocalStoreID(field, ppIndirection);
 }
 
-void interceptor_ICJI::setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod)
-{
-    original_ICorJitInfo->setOverride(pOverride, currentMethod);
-}
-
 void interceptor_ICJI::addActiveDependency(
           CORINFO_MODULE_HANDLE moduleFrom,
           CORINFO_MODULE_HANDLE moduleTo)

@@ -574,7 +574,7 @@ ClrDataValue::GetFieldByIndex(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ mdFieldDef *token)
 {
     // XXX Microsoft - Obsolete method, never implemented.
@@ -661,7 +661,7 @@ ClrDataValue::EnumField(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 nameBufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ mdFieldDef *token)
 {
     return EnumField2(handle, field, nameBufLen, nameLen, nameBuf,
@@ -674,7 +674,7 @@ ClrDataValue::EnumField2(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 nameBufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataModule** tokenScope,
     /* [out] */ mdFieldDef *token)
 {
@@ -839,7 +839,7 @@ ClrDataValue::GetFieldByToken(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ])
 {
     return GetFieldByToken2(NULL, token, field, bufLen, nameLen, nameBuf);
 }
@@ -851,7 +851,7 @@ ClrDataValue::GetFieldByToken2(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ])
 {
     HRESULT status;
 
@@ -1029,7 +1029,7 @@ HRESULT STDMETHODCALLTYPE
 ClrDataValue::GetString(
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *strLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *strLen) WCHAR str[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *strLen) WCHAR str[  ])
 {
     HRESULT status;
 
@@ -1381,7 +1381,7 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
                                IXCLRDataValue** pubValue,
                                ULONG32 nameBufRetLen,
                                ULONG32 *nameLenRet,
-                               __out_ecount_part_opt(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
+                               _Out_writes_to_opt_(nameBufRetLen, *nameLenRet) WCHAR nameBufRet[  ],
                                IXCLRDataModule** tokenScopeRet,
                                mdFieldDef *tokenRet)
 {
@@ -1991,7 +1991,7 @@ ClrDataTypeDefinition::EnumField(
     /* [out][in] */ CLRDATA_ENUM *handle,
     /* [in] */ ULONG32 nameBufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataTypeDefinition **type,
     /* [out] */ ULONG32 *flags,
     /* [out] */ mdFieldDef *token)
@@ -2005,7 +2005,7 @@ ClrDataTypeDefinition::EnumField2(
     /* [out][in] */ CLRDATA_ENUM *handle,
     /* [in] */ ULONG32 nameBufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataTypeDefinition **type,
     /* [out] */ ULONG32 *flags,
     /* [out] */ IXCLRDataModule** tokenScope,
@@ -2180,7 +2180,7 @@ ClrDataTypeDefinition::GetFieldByToken(
     /* [in] */ mdFieldDef token,
     /* [in] */ ULONG32 nameBufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataTypeDefinition **type,
     /* [out] */ ULONG32 *flags)
 {
@@ -2194,7 +2194,7 @@ ClrDataTypeDefinition::GetFieldByToken2(
     /* [in] */ mdFieldDef token,
     /* [in] */ ULONG32 nameBufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(nameBufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(nameBufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataTypeDefinition **type,
     /* [out] */ ULONG32 *flags)
 {
@@ -2276,7 +2276,7 @@ ClrDataTypeDefinition::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ])
 {
     HRESULT status = S_OK;
 
@@ -3014,7 +3014,7 @@ ClrDataTypeInstance::GetStaticFieldByIndex(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ mdFieldDef *token)
 {
     HRESULT status;
@@ -3186,7 +3186,7 @@ ClrDataTypeInstance::EnumStaticField2(
     /* [out] */ IXCLRDataValue **value,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ],
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ],
     /* [out] */ IXCLRDataModule** tokenScope,
     /* [out] */ mdFieldDef *token)
 {
@@ -3351,7 +3351,7 @@ ClrDataTypeInstance::GetStaticFieldByToken(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ])
 {
     return GetStaticFieldByToken2(NULL, token, tlsTask, field,
                                   bufLen, nameLen, nameBuf);
@@ -3365,7 +3365,7 @@ ClrDataTypeInstance::GetStaticFieldByToken2(
     /* [out] */ IXCLRDataValue **field,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ])
 {
     HRESULT status;
 
@@ -3430,7 +3430,7 @@ ClrDataTypeInstance::GetName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part_opt(bufLen, *nameLen) WCHAR nameBuf[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR nameBuf[  ])
 {
     HRESULT status = S_OK;
 

@@ -44,6 +44,7 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\VolatileIntrinsics.cs" Link="IL\Stubs\VolatileIntrinsics.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\PInvokeILCodeStreams.cs" Link="IL\Stubs\PInvokeILCodeStreams.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\Marshaller.cs" Link="Interop\IL\Marshaller.cs" />
+    <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshallerKind.cs" Link="Interop\IL\MarshallerKind.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalHelpers.cs" Link="Interop\IL\MarshalHelpers.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\IL\MarshalUtils.cs" Link="Interop\IL\MarshalUtils.cs" />
     <Compile Include="..\..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />

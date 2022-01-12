@@ -905,7 +905,7 @@ CONTEXT * pContext  // @parm Context to start the stack trace at; null for curre
 void GetStringFromAddr
 (
 DWORD_PTR dwAddr,
-__out_ecount(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
+_Out_writes_(cchMaxAssertStackLevelStringLen) LPSTR szString // Place to put string.
                 // Buffer must hold at least cchMaxAssertStackLevelStringLen.
 )
 {

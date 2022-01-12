@@ -1542,6 +1542,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> InvokeMethodInObject(int objectId, int methodId, string varName, CancellationToken token)
         {
+            valueTypes.TryGetValue(objectId, out var valueType);
+            if (valueType != null)
+                return await InvokeMethod(valueType.valueTypeBuffer, methodId, varName, token);
             using var commandParamsObjWriter = new MonoBinaryWriter();
             commandParamsObjWriter.Write(ElementType.Class, objectId);
             return await InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, varName, token);
@@ -1569,7 +1572,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return -1;
         }
 
-        public async Task<JArray> CreateJArrayForProperties(int typeId, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
+        public async Task<JArray> CreateJArrayForProperties(int typeId, ElementType elementType, ArraySegment<byte> object_buffer, JArray attributes, bool isAutoExpandable, string objectIdStr, bool isOwn, CancellationToken token)
         {
             JArray ret = new JArray();
             using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
@@ -1606,7 +1609,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             get = new
                             {
                                 type = "function",
-                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}",
+                                objectId = $"dotnet:methodId:{objectId.Value}:{getMethodId}:{elementType}",
                                 className = "Function",
                                 description = "get " + propertyNameStr + " ()",
                                 methodId = getMethodId,
@@ -1650,7 +1653,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             for (int i = 0 ; i < typesToGetProperties.Count; i++)
             {
-                var properties = await CreateJArrayForProperties(typesToGetProperties[i], valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
+                var properties = await CreateJArrayForProperties(typesToGetProperties[i], ElementType.ValueType, valueType.valueTypeBuffer, valueType.valueTypeJson, valueType.valueTypeAutoExpand, $"dotnet:valuetype:{valueType.Id}", i == 0, token);
                 ret = new JArray(ret.Union(properties));
             }
 
@@ -2375,6 +2378,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 commandParamsObjWriter.WriteObj(new DotnetObjectId("object", objectId), this);
                 var props = await CreateJArrayForProperties(
                     typeId,
+                    ElementType.Class,
                     commandParamsObjWriter.GetParameterBuffer(),
                     new JArray(objects.Values),
                     getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),

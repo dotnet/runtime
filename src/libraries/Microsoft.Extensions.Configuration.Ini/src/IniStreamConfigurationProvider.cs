@@ -50,9 +50,9 @@ namespace Microsoft.Extensions.Configuration.Ini
                     {
                         // remove the brackets
 #if NET
-                        sectionPrefix = string.Concat(line.AsSpan(1, line.Length - 2), ConfigurationPath.KeyDelimiter);
+                        sectionPrefix = string.Concat(line.AsSpan(1, line.Length - 2).Trim(), ConfigurationPath.KeyDelimiter);
 #else
-                        sectionPrefix = line.Substring(1, line.Length - 2) + ConfigurationPath.KeyDelimiter;
+                        sectionPrefix = line.Substring(1, line.Length - 2).Trim() + ConfigurationPath.KeyDelimiter;
 #endif
                         continue;
                     }
