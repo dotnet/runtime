@@ -170,6 +170,25 @@ namespace System.Runtime.Intrinsics
         public static Vector128<long> AsInt64<T>(this Vector128<T> vector)
             where T : struct => vector.As<T, long>();
 
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{IntPtr}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{IntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        public static Vector128<nint> AsNInt<T>(this Vector128<T> vector)
+            where T : struct => vector.As<T, nint>();
+
+        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{UIntPtr}" />.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to reinterpret.</param>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{UIntPtr}" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector128<nuint> AsNUInt<T>(this Vector128<T> vector)
+            where T : struct => vector.As<T, nuint>();
+
         /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{SByte}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
@@ -359,17 +378,50 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> ConvertToDouble(Vector128<long> vector)
         {
-            Unsafe.SkipInit(out Vector128<double> result);
-
-            for (int i = 0; i < Vector128<double>.Count; i++)
+            if (Sse2.IsSupported)
             {
-                var value = (double)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // Based on __m256d int64_to_double_fast_precise(const __m256i v)
+                // from https://stackoverflow.com/a/41223013/12860347. CC BY-SA 4.0
+
+                Vector128<int> lowerBits;
+
+                if (Avx2.IsSupported)
+                {
+                    lowerBits = vector.AsInt32();
+                    lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000).AsInt32(), 0b1010);           // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
+                }
+                else
+                {
+                    lowerBits = Sse2.And(vector, Create(0x00000000_FFFFFFFFL)).AsInt32();
+                    lowerBits = Sse2.Or(lowerBits, Create(0x43300000_00000000).AsInt32());
+                }
+
+                var upperBits = Sse2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
+                upperBits = Sse2.Xor(upperBits, Create(0x45300000_80000000));                                   // Flip the msb of upperBits and blend with the bit representation of double(2^84 + 2^63)
+
+                var result = Sse2.Subtract(upperBits.AsDouble(), Create(0x45300000_80100000).AsDouble());       // Compute in double precision: (upper - (2^84 + 2^63 + 2^52)) + lower
+                return Sse2.Add(result, lowerBits.AsDouble());
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector128<double> SoftwareFallback(Vector128<long> vector)
+            {
+                Unsafe.SkipInit(out Vector128<double> result);
+
+                for (int i = 0; i < Vector128<double>.Count; i++)
+                {
+                    var value = (double)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{UInt64}" /> to a <see cref="Vector128{Double}" />.</summary>
@@ -377,17 +429,50 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> ConvertToDouble(Vector128<ulong> vector)
         {
-            Unsafe.SkipInit(out Vector128<double> result);
-
-            for (int i = 0; i < Vector128<double>.Count; i++)
+            if (Sse2.IsSupported)
             {
-                var value = (double)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // Based on __m256d uint64_to_double_fast_precise(const __m256i v)
+                // from https://stackoverflow.com/a/41223013/12860347. CC BY-SA 4.0
+
+                Vector128<uint> lowerBits;
+
+                if (Avx2.IsSupported)
+                {
+                    lowerBits = vector.AsUInt32();
+                    lowerBits = Avx2.Blend(lowerBits, Create(0x43300000_00000000UL).AsUInt32(), 0b1010);        // Blend the 32 lowest significant bits of vector with the bit representation of double(2^52)
+                }
+                else
+                {
+                    lowerBits = Sse2.And(vector, Create(0x00000000_FFFFFFFFUL)).AsUInt32();
+                    lowerBits = Sse2.Or(lowerBits, Create(0x43300000_00000000UL).AsUInt32());
+                }
+
+                var upperBits = Sse2.ShiftRightLogical(vector, 32);                                             // Extract the 32 most significant bits of vector
+                upperBits = Sse2.Xor(upperBits, Create(0x45300000_00000000UL));                                 // Blend upperBits with the bit representation of double(2^84)
+
+                var result = Sse2.Subtract(upperBits.AsDouble(), Create(0x45300000_00100000UL).AsDouble());     // Compute in double precision: (upper - (2^84 + 2^52)) + lower
+                return Sse2.Add(result, lowerBits.AsDouble());
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector128<double> SoftwareFallback(Vector128<ulong> vector)
+            {
+                Unsafe.SkipInit(out Vector128<double> result);
+
+                for (int i = 0; i < Vector128<double>.Count; i++)
+                {
+                    var value = (double)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{Int32}" />.</summary>
@@ -446,17 +531,56 @@ namespace System.Runtime.Intrinsics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<float> ConvertToSingle(Vector128<uint> vector)
         {
-            Unsafe.SkipInit(out Vector128<float> result);
-
-            for (int i = 0; i < Vector128<float>.Count; i++)
+            if (Sse2.IsSupported)
             {
-                var value = (float)vector.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, value);
+                // This first bit of magic works because float can exactly represent integers up to 2^24
+                //
+                // This means everything between 0 and 2^16 (ushort.MaxValue + 1) are exact and so
+                // converting each of the upper and lower halves will give an exact result
+
+                var lowerBits = Sse2.And(vector, Create(0x0000FFFFU)).AsInt32();
+                var upperBits = Sse2.ShiftRightLogical(vector, 16).AsInt32();
+
+                var lower = Sse2.ConvertToVector128Single(lowerBits);
+                var upper = Sse2.ConvertToVector128Single(upperBits);
+
+                // This next bit of magic works because all multiples of 65536, at least up to 65535
+                // are likewise exactly representable
+                //
+                // This means that scaling upper by 65536 gives us the exactly representable base value
+                // and then the remaining lower value, which is likewise up to 65535 can be added on
+                // giving us a result that will correctly round to the nearest representable value
+
+                if (Fma.IsSupported)
+                {
+                    return Fma.MultiplyAdd(upper, Vector128.Create(65536.0f), lower);
+                }
+                else
+                {
+                    var result = Sse.Multiply(upper, Vector128.Create(65536.0f));
+                    return Sse.Add(result, lower);
+                }
+            }
+            else
+            {
+                return SoftwareFallback(vector);
             }
 
-            return result;
+            static Vector128<float> SoftwareFallback(Vector128<uint> vector)
+            {
+                Unsafe.SkipInit(out Vector128<float> result);
+
+                for (int i = 0; i < Vector128<float>.Count; i++)
+                {
+                    var value = (float)vector.GetElementUnsafe(i);
+                    result.SetElementUnsafe(i, value);
+                }
+
+                return result;
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{Single}" /> to a <see cref="Vector128{UInt32}" />.</summary>
@@ -756,6 +880,59 @@ namespace System.Runtime.Intrinsics
                 };
 
                 return Unsafe.AsRef<Vector128<long>>(pResult);
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        public static unsafe Vector128<nint> Create(nint value)
+        {
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            {
+                return Create(value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector128<nint> SoftwareFallback(nint value)
+            {
+                if (Environment.Is64BitProcess)
+                {
+                    return Create((long)value).AsNInt();
+                }
+                else
+                {
+                    return Create((int)value).AsNInt();
+                }
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
+        /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> with all elements initialized to <paramref name="value" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static unsafe Vector128<nuint> Create(nuint value)
+        {
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            {
+                return Create(value);
+            }
+
+            return SoftwareFallback(value);
+
+            static Vector128<nuint> SoftwareFallback(nuint value)
+            {
+                if (Environment.Is64BitProcess)
+                {
+                    return Create((ulong)value).AsNUInt();
+                }
+                else
+                {
+                    return Create((uint)value).AsNUInt();
+                }
             }
         }
 
@@ -1712,6 +1889,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector128{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<long> CreateScalar(long value)
         {
             if (AdvSimd.IsSupported)
@@ -1731,6 +1909,39 @@ namespace System.Runtime.Intrinsics
                 var result = Vector128<long>.Zero;
                 Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<long>, byte>(ref result), value);
                 return result;
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe Vector128<nint> CreateScalar(nint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return CreateScalar((long)value).AsNInt();
+            }
+            else
+            {
+                return CreateScalar((int)value).AsNInt();
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static unsafe Vector128<nuint> CreateScalar(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return CreateScalar((ulong)value).AsNUInt();
+            }
+            else
+            {
+                return CreateScalar((uint)value).AsNUInt();
             }
         }
 
@@ -1940,6 +2151,39 @@ namespace System.Runtime.Intrinsics
             long* pResult = stackalloc long[2];
             pResult[0] = value;
             return Unsafe.AsRef<Vector128<long>>(pResult);
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{IntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        public static unsafe Vector128<nint> CreateScalarUnsafe(nint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return CreateScalarUnsafe((long)value).AsNInt();
+            }
+            else
+            {
+                return CreateScalarUnsafe((int)value).AsNInt();
+            }
+        }
+
+        /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static unsafe Vector128<nuint> CreateScalarUnsafe(nuint value)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                return CreateScalarUnsafe((ulong)value).AsNUInt();
+            }
+            else
+            {
+                return CreateScalarUnsafe((uint)value).AsNUInt();
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>

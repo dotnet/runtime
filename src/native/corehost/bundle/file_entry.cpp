@@ -19,15 +19,18 @@ file_entry_t file_entry_t::read(reader_t &reader, uint32_t bundle_major_version,
     // First read the fixed-sized portion of file-entry
     file_entry_fixed_t fixed_data;
 
-    fixed_data.offset = *(int64_t*)reader.read_direct(sizeof(int64_t));
-    fixed_data.size   = *(int64_t*)reader.read_direct(sizeof(int64_t));
+    // NB: the file data is potentially unaligned, thus we use "read" to fetch 64bit values
+    reader.read(&fixed_data.offset, sizeof(int64_t));
+    reader.read(&fixed_data.size, sizeof(int64_t));
 
     // compressedSize is present only in v6+ headers
-    fixed_data.compressedSize = bundle_major_version >= 6 ?
-                        *(int64_t*)reader.read_direct(sizeof(int64_t)) :
-                        0;
+    fixed_data.compressedSize = 0;
+    if (bundle_major_version >= 6)
+    {
+        reader.read(&fixed_data.compressedSize, sizeof(int64_t));
+    }
 
-    fixed_data.type   = *(file_type_t*)reader.read_direct(sizeof(file_type_t));
+    fixed_data.type   = (file_type_t)reader.read_byte();
 
     file_entry_t entry(&fixed_data, force_extraction);
 

@@ -1399,6 +1399,7 @@ typedef struct {
 
 	MonoInst *lmf_var;
 	MonoInst *lmf_addr_var;
+	MonoInst *il_state_var;
 
 	MonoInst *stack_inbalance_var;
 
@@ -1452,10 +1453,6 @@ typedef struct {
 	 * instead of being generated in emit_prolog ()/emit_epilog ().
 	 */
 	guint            lmf_ir : 1;
-	/*
-	 * Whenever to use the mono_lmf TLS variable instead of indirection through the
-	 * mono_lmf_addr TLS variable.
-	 */
 	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;
@@ -1493,6 +1490,7 @@ typedef struct {
 	guint            interp_entry_only : 1;
 	guint            after_method_to_ir : 1;
 	guint            disable_inline_rgctx_fetch : 1;
+	guint            deopt : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
 	gpointer         debug_info;
@@ -1802,6 +1800,7 @@ enum {
 #define OP_PSUB OP_LSUB
 #define OP_PMUL OP_LMUL
 #define OP_PMUL_IMM OP_LMUL_IMM
+#define OP_POR_IMM OP_LOR_IMM
 #define OP_PNEG OP_LNEG
 #define OP_PCONV_TO_I1 OP_LCONV_TO_I1
 #define OP_PCONV_TO_U1 OP_LCONV_TO_U1
@@ -1832,6 +1831,7 @@ enum {
 #define OP_PSUB OP_ISUB
 #define OP_PMUL OP_IMUL
 #define OP_PMUL_IMM OP_IMUL_IMM
+#define OP_POR_IMM OP_IOR_IMM
 #define OP_PNEG OP_INEG
 #define OP_PCONV_TO_I1 OP_ICONV_TO_I1
 #define OP_PCONV_TO_U1 OP_ICONV_TO_U1
@@ -2855,7 +2855,6 @@ typedef enum {
 	MONO_CPU_X86_LZCNT	= 1 << 13,
 	MONO_CPU_X86_BMI1	= 1 << 14,
 	MONO_CPU_X86_BMI2	= 1 << 15,
-
 
 	//
 	// Dependencies (based on System.Runtime.Intrinsics.X86 class hierarchy):

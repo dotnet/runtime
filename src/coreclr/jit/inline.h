@@ -554,7 +554,6 @@ struct ClassProfileCandidateInfo
 {
     IL_OFFSET ilOffset;
     unsigned  probeIndex;
-    void*     stubAddr;
 };
 
 // GuardedDevirtualizationCandidateInfo provides information about
@@ -590,6 +589,15 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     var_types              fncRetType;
     bool                   exactContextNeedsRuntimeLookup;
     InlineContext*         inlinersContext;
+};
+
+// LateDevirtualizationInfo
+//
+// Used to fill in missing contexts during late devirtualization.
+//
+struct LateDevirtualizationInfo
+{
+    CORINFO_CONTEXT_HANDLE exactContextHnd;
 };
 
 // InlArgInfo describes inline candidate argument properties.

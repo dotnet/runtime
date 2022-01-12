@@ -7568,11 +7568,11 @@ mono_metadata_get_corresponding_field_from_generic_type_definition (MonoClassFie
 	MonoClass *gtd;
 	int offset;
 
-	if (!mono_class_is_ginst (field->parent))
+	if (!mono_class_is_ginst (m_field_get_parent (field)))
 		return field;
 
-	gtd = mono_class_get_generic_class (field->parent)->container_class;
-	offset = field - m_class_get_fields (field->parent);
+	gtd = mono_class_get_generic_class (m_field_get_parent (field))->container_class;
+	offset = field - m_class_get_fields (m_field_get_parent (field));
 	return m_class_get_fields (gtd) + offset;
 }
 
