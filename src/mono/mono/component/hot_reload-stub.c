@@ -65,9 +65,6 @@ hot_reload_stub_has_modified_rows (const MonoTableInfo *table);
 static int
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index);
 
-static GArray*
-hot_reload_stub_get_added_members (MonoClass *klass);
-
 static uint32_t
 hot_reload_stub_method_parent (MonoImage *image, uint32_t method_index);
 
@@ -107,7 +104,6 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_stub_get_updated_method_ppdb,
 	&hot_reload_stub_has_modified_rows,
 	&hot_reload_stub_table_num_rows_slow,
-	&hot_reload_stub_get_added_members,
 	&hot_reload_stub_method_parent,
 	&hot_reload_stub_metadata_linear_search,
 	&hot_reload_stub_field_parent,
@@ -222,12 +218,6 @@ static int
 hot_reload_stub_table_num_rows_slow (MonoImage *image, int table_index)
 {
 	g_assert_not_reached (); /* should always take the fast path */
-}
-
-static GArray*
-hot_reload_stub_get_added_members (MonoClass *klass)
-{
-	return NULL;
 }
 
 static uint32_t

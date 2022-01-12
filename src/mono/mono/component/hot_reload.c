@@ -141,7 +141,6 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_updated_method_ppdb,
 	&hot_reload_has_modified_rows,
 	&hot_reload_table_num_rows_slow,
-	&hot_reload_get_added_members,
 	&hot_reload_method_parent,
 	&hot_reload_metadata_linear_search,
 	&hot_reload_field_parent,
