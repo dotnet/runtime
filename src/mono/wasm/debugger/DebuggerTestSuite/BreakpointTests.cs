@@ -334,7 +334,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 15);
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 12, 12, "StaticMethod1");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            CheckBool(locals, "c", true);
+            await CheckBool(locals, "c", true);
         }
 
         [Fact]
@@ -374,7 +374,7 @@ namespace DebuggerTests
 
             pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
-            CheckBool(locals, "c", true);
+            await CheckBool(locals, "c", true);
 
             await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "StaticMethod3",
             locals_fn: async (locals) =>

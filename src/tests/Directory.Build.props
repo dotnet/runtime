@@ -157,6 +157,12 @@
     <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
   </PropertyGroup>
 
+  <!-- Don't append the RID to the output path for our test tree. Our test builds are already separated by RID
+       and including the RID breaks some of our glob expressions in issues.targets -->
+  <PropertyGroup>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Specify the target framework of the common test dependency project.json. -->
     <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
@@ -185,5 +191,8 @@
   <PropertyGroup Condition="'$(IsTestsCommonProject)' != 'true'">
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">true</BuildAsStandalone>
     <OutputType Condition="$(BuildAsStandalone)">Exe</OutputType>
+    <TestFramework>GeneratedRunner</TestFramework>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />
 </Project>

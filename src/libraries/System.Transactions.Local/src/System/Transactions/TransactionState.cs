@@ -3296,7 +3296,7 @@ namespace System.Transactions
             if (tx._outcomeSource._isoLevel == IsolationLevel.Snapshot)
             {
                 throw TransactionException.CreateInvalidOperationException(TraceSourceType.TraceSourceLtm,
-                    SR.CannotPromoteSnapshot, null, tx == null ? Guid.Empty : tx.DistributedTxId);
+                    SR.CannotPromoteSnapshot, null, tx.DistributedTxId);
             }
 
             // Assign the state

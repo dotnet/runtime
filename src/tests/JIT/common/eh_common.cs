@@ -1,23 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// Throw in catch handler
+// throw in catch handler
 
 using System;
 using System.IO;
 
 namespace TestUtil
 {
-
     // This class implements a string writer that writes to a string buffer and a
     // given text writer, which allows echoing the written string if stdout is
     // specified as the text writer.
 
     public class StringRecorder : StringWriter
     {
-        private TextWriter outStream;
-        private int outLimit;                   // maximum output size limit in characters
-        private bool bufferIsFull;              // if set, stop writting/recording output
+        private TextWriter _outStream;
+        private int _outLimit;                   // maximum output size limit in characters
+        private bool _bufferIsFull;              // if set, stop writting/recording output
 
         // Constructs a new StringRecorder that writes to the given TextWriter.
         public StringRecorder(TextWriter ostream, int olimit)
@@ -26,9 +25,9 @@ namespace TestUtil
             {
                 throw new ArgumentNullException("ostream", "Output stream cannot be null.");
             }
-            this.outStream = ostream;
-            this.outLimit = olimit;
-            this.bufferIsFull = false;
+            this._outStream = ostream;
+            this._outLimit = olimit;
+            this._bufferIsFull = false;
         }
 
         public StringRecorder(TextWriter ostream) : this(ostream, 0)
@@ -40,9 +39,9 @@ namespace TestUtil
 
         public override void Write(char c)
         {
-            if (!this.bufferIsFull)
+            if (!this._bufferIsFull)
             {
-                outStream.Write(c);
+                _outStream.Write(c);
                 base.Write(c);
                 this.CheckOverflow();
             }
@@ -50,9 +49,9 @@ namespace TestUtil
 
         public override void Write(string val)
         {
-            if (!this.bufferIsFull)
+            if (!this._bufferIsFull)
             {
-                outStream.Write(val);
+                _outStream.Write(val);
                 base.Write(val);
                 this.CheckOverflow();
             }
@@ -60,9 +59,9 @@ namespace TestUtil
 
         public override void Write(char[] buffer, int index, int count)
         {
-            if (!this.bufferIsFull)
+            if (!this._bufferIsFull)
             {
-                outStream.Write(buffer, index, count);
+                _outStream.Write(buffer, index, count);
                 base.Write(buffer, index, count);
                 this.CheckOverflow();
             }
@@ -70,10 +69,10 @@ namespace TestUtil
 
         protected void CheckOverflow()
         {
-            if (this.outLimit > 0 && this.ToString().Length > this.outLimit)
+            if (this._outLimit > 0 && this.ToString().Length > this._outLimit)
             {
-                this.bufferIsFull = true;
-                this.outStream.WriteLine("ERROR: Output exceeded maximum limit, extra output will be discarded!");
+                this._bufferIsFull = true;
+                this._outStream.WriteLine("ERROR: Output exceeded maximum limit, extra output will be discarded!");
             }
         }
     }
@@ -96,8 +95,8 @@ namespace TestUtil
 
         protected string expectedOut;
         protected string expectedError;
-        protected TextWriter stdOut;
-        protected TextWriter stdError;
+        protected static TextWriter stdOut = System.Console.Out;
+        protected static TextWriter stdError = System.Console.Error;
         protected StringWriter testOut;
         protected StringWriter testError;
 
@@ -115,16 +114,15 @@ namespace TestUtil
         {
             this.expectedOut = expOut == null ? String.Empty : expOut.ToString();
             this.expectedError = expError == null ? String.Empty : expError.ToString();
-            this.stdOut = System.Console.Out;
-            this.stdError = System.Console.Error;
-            this.testOut = new StringRecorder(this.stdOut, this.expectedOut != null ? this.expectedOut.ToString().Length * OUTPUT_LIMIT_FACTOR : 0);
-            this.testError = new StringRecorder(this.stdError, this.expectedError != null ? this.expectedError.ToString().Length * OUTPUT_LIMIT_FACTOR : 0);
         }
 
         // Start recoding by redirecting both stdout and stderr to
         // string recorders.
         public void StartRecording()
         {
+            this.testOut = new StringRecorder(stdOut, this.expectedOut != null ? this.expectedOut.ToString().Length * OUTPUT_LIMIT_FACTOR : 0);
+            this.testError = new StringRecorder(stdError, this.expectedError != null ? this.expectedError.ToString().Length * OUTPUT_LIMIT_FACTOR : 0);
+
             System.Console.SetOut(this.testOut);
             System.Console.SetError(this.testError);
         }
@@ -136,8 +134,8 @@ namespace TestUtil
             // For now we disable the ability of stop recoding, so that we still recoed until the program exits.
             // This issue came up with finally being called twice. The first time we stop recoding and from this
             // point on we loose all output.
-            //			System.Console.SetOut(this.stdOut);
-            //			System.Console.SetError(this.stdError);
+            //			System.Console.SetOut(stdOut);
+            //			System.Console.SetError(stdError);
         }
 
         // Returns true if both expected output and expected error are
@@ -216,23 +214,26 @@ namespace TestUtil
         // diff results, and it returns failed result code.
         public int VerifyOutput()
         {
+            System.Console.SetOut(stdOut);
+            System.Console.SetError(stdError);
+
             int retCode = -1;
             string diff = this.Diff();
             if (String.Empty.Equals(diff))
             {
-                //				this.stdOut.WriteLine();
-                //				this.stdOut.WriteLine("PASSED");
+                //				stdOut.WriteLine();
+                //				stdOut.WriteLine("PASSED");
                 retCode = SUCC_RET_CODE;
             }
             else
             {
-                this.stdOut.WriteLine();
-                this.stdOut.WriteLine("FAILED!");
-                this.stdOut.WriteLine();
-                this.stdOut.WriteLine("[EXPECTED OUTPUT]");
-                this.stdOut.WriteLine(this.ExpectedOutput);
-                this.stdOut.WriteLine("[DIFF RESULT]");
-                this.stdOut.WriteLine(diff);
+                stdOut.WriteLine();
+                stdOut.WriteLine("FAILED!");
+                stdOut.WriteLine();
+                stdOut.WriteLine("[EXPECTED OUTPUT]");
+                stdOut.WriteLine(this.ExpectedOutput);
+                stdOut.WriteLine("[DIFF RESULT]");
+                stdOut.WriteLine(diff);
                 retCode = FAIL_RET_CODE;
             }
             return retCode;

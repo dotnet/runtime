@@ -5489,7 +5489,8 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				*/
 				buf2 = buf;
 				decode_byte (buf, &buf, limit);
-				decode_byte (buf, &buf, limit); //ignore is boxed
+				if (CHECK_PROTOCOL_VERSION(2, 61))
+					decode_byte (buf, &buf, limit); //ignore is boxed
 				klass = decode_typeid (buf, &buf, limit, &d, &err);
 				if (err != ERR_NONE)
 					return err;

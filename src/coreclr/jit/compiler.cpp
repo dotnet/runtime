@@ -2240,169 +2240,27 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-    // The VM will set the ISA flags depending on actual hardware support.
-    // We then select which ISAs to leave enabled based on the JIT config.
-    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
+    // The VM will set the ISA flags depending on actual hardware support
+    // and any specified config switches specified by the user. The exception
+    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
+    // don't actually exist. The JIT is in charge of adding those and ensuring
+    // the total sum of flags is still valid.
+
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-    opts.compSupportsISA                            = 0;
-    opts.compSupportsISAReported                    = 0;
-    opts.compSupportsISAExactly                     = 0;
 
-#ifdef TARGET_XARCH
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-    }
+    opts.compSupportsISA         = 0;
+    opts.compSupportsISAReported = 0;
+    opts.compSupportsISAExactly  = 0;
 
-    if (!JitConfig.EnableSSE())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAES())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AES);
-    }
-
-    if (!JitConfig.EnablePCLMULQDQ())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-    }
-
-    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
-    // is a prexisting config flag that controls the SSE3+ ISAs
-    if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE3);
-    }
-
-    if (!JitConfig.EnableSSSE3())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSSE3);
-    }
-
-    if (!JitConfig.EnableSSE41())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE42())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42_X64);
-#endif
-    }
-
-    if (!JitConfig.EnablePOPCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAVX())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
-    }
-
-    if (!JitConfig.EnableFMA())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_FMA);
-    }
-
-    if (!JitConfig.EnableAVX2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
-    }
-
-    if (!JitConfig.EnableAVXVNNI())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-    }
-
-    if (!JitConfig.EnableLZCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2_X64);
-#endif // TARGET_AMD64
-    }
-
+#if defined(TARGET_XARCH)
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
 #endif // TARGET_XARCH
+
 #if defined(TARGET_ARM64)
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
-
-    if (!JitConfig.EnableArm64Aes())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Aes);
-    }
-
-    if (!JitConfig.EnableArm64Atomics())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Atomics);
-    }
-
-    if (!JitConfig.EnableArm64Crc32())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
-    }
-
-    if (!JitConfig.EnableArm64Sha1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha1);
-    }
-
-    if (!JitConfig.EnableArm64Sha256())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha256);
-    }
-
-    if (!JitConfig.EnableArm64AdvSimd())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
-    }
-#endif
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#endif // TARGET_ARM64
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
     opts.setSupportedISAs(instructionSetFlags);
