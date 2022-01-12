@@ -257,7 +257,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63672", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
@@ -270,7 +270,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63672", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedInflightConnect_ThrowsOperationCanceledException()
         {
             using (var clientSocket = new ClientWebSocket())
@@ -284,7 +284,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [ConditionalFact(nameof(WebSocketsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63671", TestPlatforms.Browser)]
         public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
         {
             var releaseServer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
