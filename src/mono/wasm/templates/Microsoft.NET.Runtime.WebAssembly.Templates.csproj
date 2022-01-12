@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageType>Template</PackageType>
+    <PackageVersion>$(ProductVersion)</PackageVersion>
+    <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates</PackageId>
+    <Title>WebAssembly Templates</Title>
+    <Authors>Microsoft</Authors>
+    <Description>Templates to create WebAssembly projects.</Description>
+    <PackageTags>dotnet-new;templates</PackageTags>
+
+    <TargetFramework>net6.0</TargetFramework>
+
+    <IncludeContentInPack>true</IncludeContentInPack>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <ContentTargetFolders>content</ContentTargetFolders>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+    <Compile Remove="**\*" />
+  </ItemGroup>
+
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="CoreCompile" />
+
+</Project>
