@@ -162,7 +162,6 @@ Roslyn4.0.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory/tests/System.Memory.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail/tests/Functional/System.Net.Mail.Functional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution/tests/PalTests/System.Net.NameResolution.Pal.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/UnitTests/System.Net.Security.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient/tests/System.Net.WebClient.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors/tests/System.Numerics.Tensors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlReader/Tests/System.Xml.RW.XmlReader.Tests.csproj" />
@@ -175,9 +174,6 @@ Roslyn4.0.Tests.csproj" />
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Test flakiness on x64 https://github.com/dotnet/runtime/issues/49937 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
-
-    <!-- Crashes on CI but passes locally https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security/tests/UnitTests/System.Net.Security.Unit.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android' and '$(TargetArchitecture)' == 'x86' and '$(RunDisabledAndroidTests)' != 'true'">
