@@ -380,8 +380,11 @@ namespace System.Net.Http.Tests
             int length = HttpRuleParser.GetHostLength(input, startIndex, allowToken);
             Assert.Equal(expectedLength, length);
 
-            string result = input.Substring(startIndex, length);
-            Assert.Equal(expectedResult, result);
+            if (length != 0)
+            {
+                string result = input.Substring(startIndex, length);
+                Assert.Equal(expectedResult, result);
+            }
         }
         #endregion
     }
