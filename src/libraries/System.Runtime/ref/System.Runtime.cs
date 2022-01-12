@@ -5624,15 +5624,11 @@ namespace System
         static float IFloatingPoint<float>.MinMagnitude(float x, float y) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Pow(float x, float y) { throw null; }
-<<<<<<< HEAD
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static float IFloatingPoint<float>.ReciprocalEstimate(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static float IFloatingPoint<float>.ReciprocalSqrtEstimate(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-=======
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
->>>>>>> upstream/main
+        static float IFloatingPoint<float>.ReciprocalEstimate(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static float IFloatingPoint<float>.ReciprocalSqrtEstimate(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Round(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Round<TInteger>(float x, TInteger digits) { throw null; }
@@ -5644,13 +5640,9 @@ namespace System
         static float IFloatingPoint<float>.ScaleB<TInteger>(float x, TInteger n) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Sin(float x) { throw null; }
-<<<<<<< HEAD
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static (float, float) IFloatingPoint<float>.SinCos(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-=======
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
->>>>>>> upstream/main
+        static (float, float) IFloatingPoint<float>.SinCos(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Sinh(float x) { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Sqrt(float x) { throw null; }
