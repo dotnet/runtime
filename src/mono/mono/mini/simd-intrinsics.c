@@ -3101,7 +3101,8 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	if (!strcmp (class_ns, "System.Runtime.Intrinsics")) {
-		if (!strcmp (class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1"))
+		// Anthony: Squeezing Vector512 intrinsics into the 64/128 codegen, will need a true impl later
+		if (!strcmp (class_name, "Vector64`1") || !strcmp (class_name, "Vector128`1") || !strcmp (class_name, "Vector512`1"))
 			return emit_vector64_vector128_t (cfg, cmethod, fsig, args);
 	}
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
