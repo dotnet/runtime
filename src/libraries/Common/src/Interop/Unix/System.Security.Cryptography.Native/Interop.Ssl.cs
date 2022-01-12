@@ -190,7 +190,7 @@ internal static partial class Interop
             Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length,
                 "GetAlpnProtocolListSerializedSize(applicationProtocols) == buffer.Length");
 
-            var offset = 0;
+            int offset = 0;
             foreach (SslApplicationProtocol protocol in applicationProtocols)
             {
                 buffer[offset++] = (byte)protocol.Protocol.Length;
@@ -202,7 +202,7 @@ internal static partial class Interop
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> applicationProtocols)
         {
             int length = GetAlpnProtocolListSerializedLength(applicationProtocols);
-            Span<byte> buffer = length <= 256 ? stackalloc byte[length] : new byte[length];
+            Span<byte> buffer = length <= 256 ? stackalloc byte[256] : new byte[length];
             SerializeAlpnProtocolList(applicationProtocols, buffer);
             return SslSetAlpnProtos(ssl, buffer);
         }
