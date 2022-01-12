@@ -1423,9 +1423,13 @@ StepWithCompactNoEncoding(const libunwindInfo* info)
 
 #if defined(TARGET_ARM64)
 
-#define ARM64_SYSCALL_OPCODE 0xd4001001
-#define ARM64_BL_OPCODE_MASK 0xec000000
-#define ARM64_BL_OPCODE      0x84000000
+#define ARM64_SYSCALL_OPCODE    0xD4001001
+#define ARM64_BL_OPCODE_MASK    0xFC000000
+#define ARM64_BL_OPCODE         0x94000000
+#define ARM64_BLR_OPCODE_MASK   0xFFFFFC00
+#define ARM64_BLR_OPCODE        0xD63F0000
+#define ARM64_BLRA_OPCODE_MASK  0xFEFFF800
+#define ARM64_BLRA_OPCODE       0xD63F0800
 
 static bool
 StepWithCompactNoEncoding(const libunwindInfo* info)
@@ -2161,17 +2165,24 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
         // If the PC is at the start of the function, the previous instruction is BL and the unwind encoding is frameless
         // with nothing on stack (0x02000000), back up PC by 1 to the previous function and get the unwind info for that
         // function.
-        if ((context->Pc == procInfo.start_ip) && (procInfo.format & (UNWIND_ARM64_MODE_MASK | UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK)) == UNWIND_ARM64_MODE_FRAMELESS)
+        if ((context->Pc == procInfo.start_ip) &&
+            (procInfo.format & (UNWIND_ARM64_MODE_MASK | UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK)) == UNWIND_ARM64_MODE_FRAMELESS)
         {
             uint32_t opcode;
             unw_word_t addr = context->Pc - sizeof(opcode);
             if (ReadValue32(&info, &addr, &opcode))
             {
                 // Is the previous instruction a BL opcode?
-                if ((opcode & ARM64_BL_OPCODE_MASK) == ARM64_BL_OPCODE)
+                if ((opcode & ARM64_BL_OPCODE_MASK) == ARM64_BL_OPCODE ||
+                    (opcode & ARM64_BLR_OPCODE_MASK) == ARM64_BLR_OPCODE ||
+                    (opcode & ARM64_BLRA_OPCODE_MASK) == ARM64_BLRA_OPCODE)
                 {
-                    TRACE("Getting unwind info for PC - 1\n");
+                    TRACE("Unwind: getting unwind info for PC - 1 opcode %08x\n", opcode);
                     result = GetProcInfo(context->Pc - 1, &procInfo, &info, &step, false);
+                }
+                else
+                {
+                    TRACE("Unwind: not BL* opcode %08x\n", opcode);
                 }
             }
         }
