@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             return "abcd";
         }
 
-        public string Double(Func<string> f) => f() + f();
+        public string Double(Func<string,string> f) => f("") + f("1");
 
     }
 }

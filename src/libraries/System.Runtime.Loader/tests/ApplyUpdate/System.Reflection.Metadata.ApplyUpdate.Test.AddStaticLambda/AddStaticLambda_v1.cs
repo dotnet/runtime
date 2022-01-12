@@ -9,10 +9,10 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
     {
         public string TestMethod()
 	{
-            return Double(static () => "abcd");
+            return Double(static (s) => s + "abcd");
         }
 
-        public string Double(Func<string> f) => f() + f();
+        public string Double(Func<string,string> f) => f("") + f("1");
 
     }
 }

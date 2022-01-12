@@ -347,7 +347,7 @@ namespace System.Reflection.Metadata
 
                 r = x.TestMethod();
 
-                Assert.Equal("abcdabcd", r);
+                Assert.Equal("abcd1abcd", r);
             });
         }
 
