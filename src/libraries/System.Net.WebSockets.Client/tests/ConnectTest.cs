@@ -170,7 +170,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        [ActiveIssue("TBD", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63681", TestPlatforms.Browser)]
         public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(Uri server)
         {
             const string AcceptedProtocol = "CustomProtocol";
