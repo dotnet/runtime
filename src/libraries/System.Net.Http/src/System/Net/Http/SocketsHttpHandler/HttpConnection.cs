@@ -258,9 +258,9 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null);
 
-            if (headers.GetEntries(out int numberOfEntries) is HeaderEntry[] entries)
+            if (headers.GetEntriesArray() is HeaderEntry[] entries)
             {
-                for (int i = 0; i < numberOfEntries; i++)
+                for (int i = 0; i < headers.Count; i++)
                 {
                     HeaderEntry header = entries[i];
 
