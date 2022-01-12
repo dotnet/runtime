@@ -61,10 +61,6 @@ namespace System.IO
                 && DirectoryExists(destFullPath))
                 throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
 
-            // If the directories aren't the same and the OS says the directory exists already, fail.
-            if (!sameDirectoryDifferentCase && Directory.Exists(destFullPath))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
-
             MoveDirectory(sourceFullPath, destFullPath);
         }
     }
