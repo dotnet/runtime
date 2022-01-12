@@ -9398,7 +9398,7 @@ CorInfoTypeWithMod CEEInfo::getArgType2 (
             TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
             if(!thPtr.IsNull())
             {
-                m_pOverride->classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
+                classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
             }
         }
         break;
