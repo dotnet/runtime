@@ -396,7 +396,7 @@ namespace Tracing.Tests.PauseOnStartValidation
 
                     // The timing is not exact. There is a small window after resuming where the mock
                     // value is still present. Retry several times to catch it.
-                    for (int i = 0; i < 32; i++)
+                    for (int i = 0; i < 1024; i++)
                     {
                         Logger.logger.Log($"Get ProcessInfo after resumption: attempt {i}");
                         // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
