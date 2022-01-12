@@ -337,7 +337,7 @@ MethodDesc* AsMethodDesc(size_t addr)
 /*******************************************************************/
 
 WCHAR* formatMethodTable(MethodTable* pMT,
-                           __out_z __inout_ecount(bufSize) WCHAR* buff,
+                           _Inout_updates_z_(bufSize) WCHAR* buff,
                            DWORD bufSize)
 {
     CONTRACTL
@@ -377,7 +377,7 @@ WCHAR* formatMethodTable(MethodTable* pMT,
 /*******************************************************************/
 
 WCHAR* formatMethodDesc(MethodDesc* pMD,
-                          __out_z __inout_ecount(bufSize) WCHAR* buff,
+                          _Inout_updates_z_(bufSize) WCHAR* buff,
                           DWORD bufSize)
 {
     CONTRACTL

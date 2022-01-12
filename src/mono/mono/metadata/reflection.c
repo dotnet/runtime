@@ -746,7 +746,7 @@ MonoReflectionFieldHandle
 mono_field_get_object_handle (MonoClass *klass, MonoClassField *field, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (field->parent), field, klass, field_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (m_field_get_parent (field)), field, klass, field_object_construct, NULL);
 }
 
 /*

@@ -48,7 +48,7 @@
         PALTestsDir=$(_PALTestsDir)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetsAndroid)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -102,6 +102,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <TargetHasHelixXHarnessSdkSupport>false</TargetHasHelixXHarnessSdkSupport>
+    <TargetHasHelixXHarnessSdkSupport Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">true</TargetHasHelixXHarnessSdkSupport>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
@@ -111,24 +116,24 @@
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- wasm and Android needs to use the host OS DotnetCliRuntime -->
+    <!-- wasm and Android need to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
     <DotNetCliRuntime Condition=" '$(TargetArchitecture)' == 'arm64' ">win-x64</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'iOSSimulator'">
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- iOSSimulator needs to use the host OS DotnetCliRuntime -->
+    <!-- Apple mobile test runs need to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>osx-x64</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
   </PropertyGroup>
@@ -197,7 +202,18 @@
 
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
       <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
+      <!-- Don't include the new merged wrappers in the legacy builds -->
       <ReducedLegacyPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+      <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
+      <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
+      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)AppBundle/**')</PublishedMergedPayloadsToExclude>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
@@ -267,13 +283,16 @@
   <Target Name="DiscoverMergedTestWrappers">
     <ItemGroup>
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" />
-      <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
     </ItemGroup>
   </Target>
 
-  <Target Name="PrepareMergedTestPayloadDirectory"
-      Outputs="%(_MergedWrapperRunScript.FileName)"
+  <Target Name="PrepareMergedTestPayloadDirectoryForDesktop"
+      Condition="'$(TargetsMobile)' != 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
+    </ItemGroup>
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperRunScript.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
@@ -300,12 +319,86 @@
     <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="$(_MergedWrapperRunScriptRelative)" />
   </Target>
 
-  <PropertyGroup>
-    <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
-    <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
-  </PropertyGroup>
+  <Target Name="PrepareMergedTestPayloadDirectoryForAndroid"
+      Condition="'$(TargetsAndroid)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers">
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+    </PropertyGroup>
 
-  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
+    <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).apk')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
+      Condition="'$(TargetsBrowser)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)')" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="$(_MergedWrapperRunScriptRelative)" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
+      Condition="'$(TargetsAppleMobile)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers">
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphone</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsiOSSimulator)' == 'true'">iphonesimulator</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetstvOS)' == 'true'">appletvos</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetstvOSSimulator)' == 'true'">appletvsimulator</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsMacCatalyst)' == 'true'">maccatalyst</XCodeSdk>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+    </ItemGroup>
+    <ItemGroup>
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktop;PrepareMergedTestPayloadDirectoryForAndroid;PrepareMergedTestPayloadDirectoryForWasm;PrepareMergedTestPayloadDirectoryForAppleMobile" />
+
+  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
     <ItemGroup>
       <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
       <LegacyPayloads Update="@(LegacyPayloads)">
@@ -317,7 +410,7 @@
     <ZipDirectory SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))" DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
   </Target>
 
-  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedPayloadDirectories" Condition="'$(IsRunningOnMobileTargets)' == 'true'">
+  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
       <MergedPayloads Update="@(MergedPayloads)">
@@ -349,7 +442,7 @@
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
-    <_XUnitParallelMode Condition=" '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator'">none</_XUnitParallelMode>
+    <_XUnitParallelMode Condition=" '$(TargetsAndroid)' == 'true' or '$(TargetsiOSSimulator)' == 'true'">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
@@ -406,8 +499,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <XUnitRunnerDll Condition=" '$(IsRunningOnMobileTargets)' == 'true' ">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
-    <XUnitRunnerDll Condition=" '$(IsRunningOnMobileTargets)' != 'true' ">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
+    <!-- When the target has XHarness support in the Helix SDK, the script runs in a powershell context. Otherwise it runs in a Batch context. -->
+    <XUnitRunnerDll Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
@@ -429,49 +523,75 @@
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
       <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
     </LegacyPayloads>
+  </ItemGroup>
 
+  <ItemGroup>
     <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
 
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadDirectory>%(FullPath)</PayloadDirectory>
-      <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)\HelixCommand.txt</PayloadHelixCommandFile>
     </MergedPayloads>
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)\HelixCommand.txt</PayloadHelixCommandFile>
       <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
       <PayloadGroup>$([System.IO.Path]::GetDirectoryName('%(MergedTestHelixCommand)').Replace('/', '-').Replace('\', '-'))</PayloadGroup>
       <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
     </MergedPayloads>
+  </ItemGroup>
 
-    <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TargetOS)' != 'windows'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+    <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)\HelixCommand.txt</PayloadHelixCommandFile>
+      <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
+      <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
+      <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
+    </MergedPayloads>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
+    <MergedPayloads Update="@(MergedPayloads)" Condition="'$(TestWrapperTargetsWindows)' != 'true'">
       <MergedTestHelixCommand>chmod +x %(MergedPayloads.MergedTestHelixCommand)%0A%(MergedPayloads.MergedTestHelixCommand)</MergedTestHelixCommand>
     </MergedPayloads>
+  </ItemGroup>
 
-    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
+    <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
+    </MergedPayloads>
+  </ItemGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
-    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition=" '$(IsRunningOnMobileTargets)' == 'false' ">
+    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>%(MergedTestHelixCommand)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 
-    <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'Android'">
+    <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessApkToTest>
     
-    <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'Android'">
+    <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
+      <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
+      <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands>%(MergedTestHelixCommand)</CustomCommands>
     </XHarnessApkToTest>
     
-    <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
@@ -479,11 +599,10 @@
       <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessAppBundleToTest>
 
-    <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
+    <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <TestTarget Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</TestTarget>
       <TestTarget Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands>%(MergedTestHelixCommand)</CustomCommands>
     </XHarnessAppBundleToTest>
 
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">

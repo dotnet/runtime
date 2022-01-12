@@ -300,8 +300,6 @@ namespace System.Text
                 // fallback buffer with the invalid data. We'll just fall through to the "consume
                 // fallback buffer" logic at the end of the method.
 
-                bool didFallback;
-
                 if (Rune.TryCreate(_charLeftOver, secondChar, out Rune rune))
                 {
                     charsConsumed = 1; // consumed the leftover high surrogate + the first char in the input buffer
@@ -320,12 +318,12 @@ namespace System.Text
                         // character from a previous operation, so we provide an index of -1 to convey that the
                         // char immediately before the current buffer was the start of the invalid sequence.
 
-                        didFallback = FallbackBuffer.Fallback(_charLeftOver, secondChar, index: -1);
+                        FallbackBuffer.Fallback(_charLeftOver, secondChar, index: -1);
                     }
                 }
                 else
                 {
-                    didFallback = FallbackBuffer.Fallback(_charLeftOver, index: -1);
+                    FallbackBuffer.Fallback(_charLeftOver, index: -1);
                 }
 
                 // Now tally the number of bytes that would've been emitted as part of fallback.

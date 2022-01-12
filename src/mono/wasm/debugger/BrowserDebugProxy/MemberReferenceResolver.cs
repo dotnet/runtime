@@ -53,7 +53,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var exceptionObject = await context.SdbAgent.GetObjectValues(int.Parse(objectId.Value), GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
+                    var exceptionObject = await context.SdbAgent.GetObjectValues(objectId.Value, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                     var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                     exceptionObjectMessage["value"]["value"] = objRet["value"]?["className"]?.Value<string>() + ": " + exceptionObjectMessage["value"]?["value"]?.Value<string>();
                     return exceptionObjectMessage["value"]?.Value<JObject>();
@@ -342,17 +342,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                         switch (objectId.Scheme)
                         {
                             case "array":
-                                rootObject["value"] = await context.SdbAgent.GetArrayValues(int.Parse(objectId.Value), token);
+                                rootObject["value"] = await context.SdbAgent.GetArrayValues(objectId.Value, token);
                                 return (JObject)rootObject["value"][elementIdx]["value"];
                             case "object":
-                                var typeIds = await context.SdbAgent.GetTypeIdFromObject(int.Parse(objectId.Value), true, token);
+                                var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
                                 int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
-                                var commandParamsObjWriter = new MonoBinaryWriter();
-                                commandParamsObjWriter.WriteObj(objectId, context.SdbAgent);
-                                var toArrayRetMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, elementAccess.Expression.ToString(), token);
+                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, methodId, elementAccess.Expression.ToString(), token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
-                                rootObject["value"] = await context.SdbAgent.GetArrayValues(int.Parse(arrayObjectId.Value), token);
+                                rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);
                                 return (JObject)rootObject["value"][elementIdx]["value"];
                             default:
                                 throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
@@ -391,7 +389,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (rootObject != null)
                 {
                     DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                    var typeIds = await context.SdbAgent.GetTypeIdFromObject(int.Parse(objectId.Value), true, token);
+                    var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
                     int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
                     var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
                     if (methodId == 0) //try to search on System.Linq.Enumerable

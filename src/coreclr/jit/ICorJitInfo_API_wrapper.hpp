@@ -1448,15 +1448,6 @@ uint32_t WrapICorJitInfo::getFieldThreadLocalStoreID(
     return temp;
 }
 
-void WrapICorJitInfo::setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod)
-{
-    API_ENTER(setOverride);
-    wrapHnd->setOverride(pOverride, currentMethod);
-    API_LEAVE(setOverride);
-}
-
 void WrapICorJitInfo::addActiveDependency(
           CORINFO_MODULE_HANDLE moduleFrom,
           CORINFO_MODULE_HANDLE moduleTo)

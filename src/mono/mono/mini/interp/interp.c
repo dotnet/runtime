@@ -758,6 +758,70 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 // Returns the size it uses on the interpreter stack
 static int
+stackval_size (MonoType *type, gboolean pinvoke)
+{
+	type = mini_native_type_replace_type (type);
+	if (m_type_is_byref (type))
+		return MINT_STACK_SLOT_SIZE;
+	switch (type->type) {
+	case MONO_TYPE_VOID:
+		return 0;
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_U4:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_R4:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_R8:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_ARRAY:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_VALUETYPE:
+		if (m_class_is_enumtype (type->data.klass)) {
+			return stackval_size (mono_class_enum_basetype_internal (type->data.klass), pinvoke);
+		} else {
+			int size;
+			if (pinvoke)
+				size = mono_class_native_size (type->data.klass, NULL);
+			else
+				size = mono_class_value_size (type->data.klass, NULL);
+			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		}
+	case MONO_TYPE_GENERICINST: {
+		if (mono_type_generic_inst_is_valuetype (type)) {
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			int size;
+			if (pinvoke)
+				size = mono_class_native_size (klass, NULL);
+			else
+				size = mono_class_value_size (klass, NULL);
+			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		}
+		return stackval_size (m_class_get_byval_arg (type->data.generic_class->container_class), pinvoke);
+	}
+	default:
+		g_error ("got type 0x%02x", type->type);
+	}
+}
+
+// Returns the size it uses on the interpreter stack
+static int
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
 	type = mini_native_type_replace_type (type);
@@ -1244,7 +1308,8 @@ static MonoFuncV mono_native_to_interp_trampoline = NULL;
 #endif
 
 #ifndef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
+static InterpMethodArguments*
+build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
 {
 	InterpMethodArguments *margs = g_malloc0 (sizeof (InterpMethodArguments));
 
@@ -1371,6 +1436,14 @@ retry:
 			margs->iargs [int_i] = sp_arg;
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->iargs [%d]: %p (vt) (frame @ %d)\n", int_i, margs->iargs [int_i], i);
+#endif
+
+#ifdef HOST_WASM
+			{
+				/* Scalar vtypes are passed by value */
+				if (mini_wasm_is_scalar_vtype (sig->params [i]))
+					margs->iargs [int_i] = *(gpointer*)margs->iargs [int_i];
+			}
 #endif
 			int_i++;
 			break;
@@ -2857,6 +2930,18 @@ static gpointer
 interp_get_interp_method (MonoMethod *method, MonoError *error)
 {
     return mono_interp_get_imethod (method, error);
+}
+
+static MonoJitInfo*
+interp_compile_interp_method (MonoMethod *method, MonoError *error)
+{
+	InterpMethod *imethod = mono_interp_get_imethod (method, error);
+	return_val_if_nok (error, NULL);
+
+	mono_interp_transform_method (imethod, get_context (), error);
+	return_val_if_nok (error, NULL);
+
+	return imethod->jinfo;
 }
 
 static InterpMethod*
@@ -6804,18 +6889,20 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPBLK) {
 			gpointer dest = LOCAL_VAR (ip [1], gpointer);
 			gpointer src = LOCAL_VAR (ip [2], gpointer);
-			if (!dest || !src)
+			guint32 size = LOCAL_VAR (ip [3], guint32);
+			if (size && (!dest || !src))
 				THROW_EX (mono_get_exception_null_reference(), ip);
-			/* FIXME: value and size may be int64... */
-			memcpy (dest, src, LOCAL_VAR (ip [3], gint32));
+			else
+				memcpy (dest, src, size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INITBLK) {
 			gpointer dest = LOCAL_VAR (ip [1], gpointer);
-			NULL_CHECK (dest);
-			/* FIXME: value and size may be int64... */
-			memset (dest, LOCAL_VAR (ip [2], gint32), LOCAL_VAR (ip [3], gint32));
+			guint32 size = LOCAL_VAR (ip [3], guint32);
+			if (size)
+				NULL_CHECK (dest);
+			memset (dest, LOCAL_VAR (ip [2], gint32), size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -7183,6 +7270,112 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 
 	/* ENDFILTER stores the result into child_frame->retval */
 	return retval.data.i ? TRUE : FALSE;
+}
+
+static gboolean
+interp_run_finally_with_il_state (gpointer il_state_ptr, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+{
+	MonoMethodILState *il_state = (MonoMethodILState*)il_state_ptr;
+	MonoMethodSignature *sig;
+	ThreadContext *context = get_context ();
+	stackval *sp, *sp_args;
+	InterpMethod *imethod;
+	FrameClauseArgs clause_args;
+	ERROR_DECL (error);
+
+	// FIXME: Optimize this ? Its only used during EH
+
+	sig = mono_method_signature_internal (il_state->method);
+	g_assert (sig);
+
+	imethod = mono_interp_get_imethod (il_state->method, error);
+	mono_error_assert_ok (error);
+
+	sp_args = sp = (stackval*)context->stack_pointer;
+
+	int findex = 0;
+	if (sig->hasthis) {
+		if (il_state->data [findex])
+			sp_args->data.p = *(gpointer*)il_state->data [findex];
+		sp_args++;
+		findex ++;
+	}
+
+	for (int i = 0; i < sig->param_count; ++i) {
+		if (il_state->data [findex]) {
+			int size = stackval_from_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		} else {
+			int size = stackval_size (sig->params [i], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		}
+		findex ++;
+	}
+
+	/* Allocate frame */
+	InterpFrame frame = {0};
+	frame.imethod = imethod;
+	frame.stack = sp;
+	frame.retval = sp;
+
+	context->stack_pointer = (guchar*)sp_args;
+	context->stack_pointer += imethod->alloca_size;
+
+	MonoMethodHeader *header = mono_method_get_header_internal (il_state->method, error);
+	mono_error_assert_ok (error);
+
+	/* Init locals */
+	if (header->num_locals)
+		memset (frame_locals (&frame) + imethod->local_offsets [0], 0, imethod->locals_size);
+	/* Copy locals from il_state */
+	int locals_start = sig->hasthis + sig->param_count;
+	for (int i = 0; i < header->num_locals; ++i) {
+		if (il_state->data [locals_start + i])
+			stackval_from_data (header->locals [i], (stackval*)(frame_locals (&frame) + imethod->local_offsets [i]), il_state->data [locals_start + i], FALSE);
+	}
+
+	memset (&clause_args, 0, sizeof (FrameClauseArgs));
+	clause_args.start_with_ip = (const guint16*)handler_ip;
+	clause_args.end_at_ip = (const guint16*)handler_ip_end;
+	clause_args.exit_clause = clause_index;
+	clause_args.exec_frame = &frame;
+
+	// this informs MINT_ENDFINALLY to return to EH
+	*(guint16**)(frame_locals (&frame) + imethod->clause_data_offsets [clause_index]) = NULL;
+
+	interp_exec_method (&frame, context, &clause_args);
+
+	/* Write back args */
+	sp_args = sp;
+	findex = 0;
+	if (sig->hasthis) {
+		// FIXME: This
+		sp_args++;
+		findex ++;
+	}
+	findex = sig->hasthis ? 1 : 0;
+	for (int i = 0; i < sig->param_count; ++i) {
+		if (il_state->data [findex]) {
+			int size = stackval_to_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		} else {
+			int size = stackval_size (sig->params [i], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		}
+		findex ++;
+	}
+	/* Write back locals */
+	for (int i = 0; i < header->num_locals; ++i) {
+		if (il_state->data [locals_start + i])
+			stackval_to_data (header->locals [i], (stackval*)(frame_locals (&frame) + imethod->local_offsets [i]), il_state->data [locals_start + i], FALSE);
+	}
+	mono_metadata_free_mh (header);
+
+	// FIXME: Restore stack ?
+	if (context->has_resume_state)
+		return TRUE;
+	else
+		return FALSE;
 }
 
 typedef struct {

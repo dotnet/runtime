@@ -24,23 +24,23 @@ bool header_fixed_t::is_valid() const
 
 header_t header_t::read(reader_t& reader)
 {
-    const header_fixed_t* fixed_header = reinterpret_cast<const header_fixed_t*>(reader.read_direct(sizeof(header_fixed_t)));
+    header_fixed_t fixed_header;
+    reader.read(&fixed_header, sizeof(header_fixed_t));
 
-    if (!fixed_header->is_valid())
+    if (!fixed_header.is_valid())
     {
         trace::error(_X("Failure processing application bundle."));
-        trace::error(_X("Bundle header version compatibility check failed. Header version: %d.%d"), fixed_header->major_version, fixed_header->minor_version);
+        trace::error(_X("Bundle header version compatibility check failed. Header version: %d.%d"), fixed_header.major_version, fixed_header.minor_version);
 
         throw StatusCode::BundleExtractionFailure;
     }
 
-    header_t header(fixed_header->major_version, fixed_header->minor_version, fixed_header->num_embedded_files);
+    header_t header(fixed_header.major_version, fixed_header.minor_version, fixed_header.num_embedded_files);
 
     // bundle_id is a component of the extraction path
     reader.read_path_string(header.m_bundle_id);
 
-    const header_fixed_v2_t *v2_header = reinterpret_cast<const header_fixed_v2_t*>(reader.read_direct(sizeof(header_fixed_v2_t)));
-    header.m_v2_header = *v2_header;
+    reader.read(&header.m_v2_header, sizeof(header_fixed_v2_t));
 
     return header;
 }

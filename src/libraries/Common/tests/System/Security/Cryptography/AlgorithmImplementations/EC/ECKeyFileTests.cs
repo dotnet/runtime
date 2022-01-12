@@ -959,6 +959,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
@@ -976,6 +977,7 @@ Tj/54rcY3i0gXT6da/r/o+qV");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public void ReadWriteEc256EncryptedPkcs8_Pbes2HighIterations()
         {
             // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations

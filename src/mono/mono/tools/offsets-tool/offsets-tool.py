@@ -252,6 +252,8 @@ class OffsetsTool:
 		]
 		self.jit_type_names = [
 			"MonoLMF",
+			"MonoLMFExt",
+			"MonoMethodILState",
 			"MonoMethodRuntimeGenericContext",
 			"MonoJitTlsData",
 			"MonoGSharedVtMethodRuntimeInfo",
