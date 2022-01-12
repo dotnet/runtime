@@ -498,6 +498,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.applyUpdates":
+                    {
+                        if (await ApplyUpdates(id, args, token))
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                        else
+                            SendResponse(id, Result.Err("ApplyUpdate failed."), token);
+                        return true;
+                    }
                 case "DotnetDebugger.addSymbolServerUrl":
                     {
                         string url = args["url"]?.Value<string>();
@@ -577,6 +585,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return false;
         }
+
+        private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
+        {
+            var context = GetContext(id);
+            string moduleGUID = args["moduleGUID"]?.Value<string>();
+            string dmeta = args["dmeta"]?.Value<string>();
+            string dil = args["dil"]?.Value<string>();
+            string dpdb = args["dpdb"]?.Value<string>();
+            var moduleId = await context.SdbAgent.GetModuleId(moduleGUID, token);
+            var applyUpdates =  await context.SdbAgent.ApplyUpdates(moduleId, dmeta, dil, dpdb, token);
+            return true;
+        }
+
         private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
         {
             var context = GetContext(id);
