@@ -455,6 +455,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> ExtractVector128(Vector256<double> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        ///
+        /// 64-bit:
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<nint> ExtractVector128(Vector256<nint> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        ///
+        /// 64-bit:
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<nuint> ExtractVector128(Vector256<nuint> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
         /// __m256 _mm256_floor_ps (__m256 a)
         ///   VROUNDPS ymm, ymm/m256, imm8(9)
         /// </summary>
@@ -548,6 +570,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> InsertVector128(Vector256<double> value, Vector128<double> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<nint> InsertVector128(Vector256<nint> value, Vector128<nint> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<nuint> InsertVector128(Vector256<nuint> value, Vector128<nuint> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
         /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
         ///   VMOVDQU ymm, m256
         /// </summary>
@@ -597,6 +641,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMOVUPD ymm, ymm/m256
         /// </summary>
         public static unsafe Vector256<double> LoadVector256(double* address) => LoadVector256(address);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
+        ///   VMOVDQU ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
+        ///   VMOVDQU ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nint> LoadVector256(nint* address) => LoadVector256(address);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
+        ///   VMOVDQU ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_loadu_si256 (__m256i const * mem_addr)
+        ///   VMOVDQU ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nuint> LoadVector256(nuint* address) => LoadVector256(address);
 
         /// <summary>
         /// __m256i _mm256_load_si256 (__m256i const * mem_addr)
@@ -650,6 +716,28 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<double> LoadAlignedVector256(double* address) => LoadAlignedVector256(address);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_load_si256 (__m256i const * mem_addr)
+        ///   VMOVDQA ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_load_si256 (__m256i const * mem_addr)
+        ///   VMOVDQA ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nint> LoadAlignedVector256(nint* address) => LoadAlignedVector256(address);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_load_si256 (__m256i const * mem_addr)
+        ///   VMOVDQA ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_load_si256 (__m256i const * mem_addr)
+        ///   VMOVDQA ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nuint> LoadAlignedVector256(nuint* address) => LoadAlignedVector256(address);
+
+        /// <summary>
         /// __m256i _mm256_lddqu_si256 (__m256i const * mem_addr)
         ///   VLDDQU ymm, m256
         /// </summary>
@@ -689,6 +777,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VLDDQU ymm, m256
         /// </summary>
         public static unsafe Vector256<ulong> LoadDquVector256(ulong* address) => LoadDquVector256(address);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_lddqu_si256 (__m256i const * mem_addr)
+        ///   VLDDQU ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_lddqu_si256 (__m256i const * mem_addr)
+        ///   VLDDQU ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nint> LoadDquVector256(nint* address) => LoadDquVector256(address);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_lddqu_si256 (__m256i const * mem_addr)
+        ///   VLDDQU ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_lddqu_si256 (__m256i const * mem_addr)
+        ///   VLDDQU ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nuint> LoadDquVector256(nuint* address) => LoadDquVector256(address);
 
         /// <summary>
         /// __m128 _mm_maskload_ps (float const * mem_addr, __m128i mask)
@@ -871,6 +981,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> Permute2x128(Vector256<double> left, Vector256<double> right, byte control) => Permute2x128(left, right, control);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<nint> Permute2x128(Vector256<nint> left, Vector256<nint> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<nuint> Permute2x128(Vector256<nuint> left, Vector256<nuint> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
         /// __m128 _mm_permutevar_ps (__m128 a, __m128i b)
         ///   VPERMILPS xmm, xmm, xmm/m128
         /// </summary>
@@ -1029,6 +1161,28 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void StoreAligned(double* address, Vector256<double> source) => StoreAligned(address, source);
 
         /// <summary>
+        /// 32-bit:
+        /// void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQA m256, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQA m256, ymm
+        /// </summary>
+        public static unsafe void StoreAligned(nint* address, Vector256<nint> source) => StoreAligned(address, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQA m256, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_store_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQA m256, ymm
+        /// </summary>
+        public static unsafe void StoreAligned(nuint* address, Vector256<nuint> source) => StoreAligned(address, source);
+
+        /// <summary>
         /// void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
         ///   VMOVNTDQ m256, ymm
         /// </summary>
@@ -1080,6 +1234,28 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void StoreAlignedNonTemporal(double* address, Vector256<double> source) => StoreAlignedNonTemporal(address, source);
 
         /// <summary>
+        /// 32-bit:
+        /// void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
+        ///   VMOVNTDQ m256, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
+        ///   VMOVNTDQ m256, ymm
+        /// </summary>
+        public static unsafe void StoreAlignedNonTemporal(nint* address, Vector256<nint> source) => StoreAlignedNonTemporal(address, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
+        ///   VMOVNTDQ m256, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_stream_si256 (__m256i * mem_addr, __m256i a)
+        ///   VMOVNTDQ m256, ymm
+        /// </summary>
+        public static unsafe void StoreAlignedNonTemporal(nuint* address, Vector256<nuint> source) => StoreAlignedNonTemporal(address, source);
+
+        /// <summary>
         /// void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)
         ///   MOVDQU m256, ymm
         /// </summary>
@@ -1129,6 +1305,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVUPD m256, ymm
         /// </summary>
         public static unsafe void Store(double* address, Vector256<double> source) => Store(address, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQU m256, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQU m256, ymm
+        /// </summary>
+        public static unsafe void Store(nint* address, Vector256<nint> source) => Store(address, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQU m256, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_storeu_si256 (__m256i * mem_addr, __m256i a)
+        ///   MOVDQU m256, ymm
+        /// </summary>
+        public static unsafe void Store(nuint* address, Vector256<nuint> source) => Store(address, source);
 
         /// <summary>
         /// __m256 _mm256_sub_ps (__m256 a, __m256 b)
@@ -1213,6 +1411,28 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestC(Vector256<double> left, Vector256<double> right) => TestC(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<nint> left, Vector256<nint> right) => TestC(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<nuint> left, Vector256<nuint> right) => TestC(left, right);
+
+        /// <summary>
         /// int _mm_testnzc_ps (__m128 a, __m128 b)
         ///   VTESTPS xmm, xmm/m128
         /// </summary>
@@ -1284,6 +1504,18 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestNotZAndNotC(Vector256<double> left, Vector256<double> right) => TestNotZAndNotC(left, right);
 
         /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<nint> left, Vector256<nint> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<nuint> left, Vector256<nuint> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
         /// int _mm_testz_ps (__m128 a, __m128 b)
         ///   VTESTPS xmm, xmm/m128
         /// </summary>
@@ -1353,6 +1585,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   VTESTPD ymm, ymm/m256
         /// </summary>
         public static bool TestZ(Vector256<double> left, Vector256<double> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<nint> left, Vector256<nint> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<nuint> left, Vector256<nuint> right) => TestZ(left, right);
 
         /// <summary>
         /// __m256 _mm256_unpackhi_ps (__m256 a, __m256 b)
