@@ -209,7 +209,10 @@ internal static partial class Interop
 
         internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, Span<byte> serializedProtocols)
         {
-            return SslSetAlpnProtos(ssl, (IntPtr)Unsafe.AsPointer(ref MemoryMarshal.GetReference(serializedProtocols)), serializedProtocols.Length);
+            fixed (byte* pBuffer = &MemoryMarshal.GetReference(serializedProtocols))
+            {
+                return SslSetAlpnProtos(ssl, (IntPtr)pBuffer, serializedProtocols.Length);
+            }
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
