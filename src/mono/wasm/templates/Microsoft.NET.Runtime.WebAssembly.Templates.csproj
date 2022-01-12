@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <PackageType>Template</PackageType>
-    <PackageVersion>$(ProductVersion)</PackageVersion>
     <PackageId>Microsoft.NET.Runtime.WebAssembly.Templates</PackageId>
     <Title>WebAssembly Templates</Title>
     <Authors>Microsoft</Authors>
@@ -25,5 +24,10 @@
 
   <Target Name="CreateManifestResourceNames" />
   <Target Name="CoreCompile" />
+  <Target Name="_SetProductVersion" DependsOnTargets="GetProductVersions" BeforeTargets="Pack">
+    <PropertyGroup>
+      <PackageVersion>$(ProductVersion)</PackageVersion>
+    </PropertyGroup>
+  </Target>
 
 </Project>
