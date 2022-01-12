@@ -2808,7 +2808,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
                                (assignedInterval->physReg == foundReg);
             unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
-            if (regSelector->isMatchingConstant() && !compiler->opts.compDbgEnC)
+            if (regSelector->isMatchingConstant() && !compiler->opts.compDbgCode)
             {
                 assert(assignedInterval->isConstant);
                 refPosition->treeNode->SetReuseRegVal();
