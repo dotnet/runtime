@@ -415,7 +415,26 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
             runtimeHelpers.fetch = (<any>config).fetch_file_cb;
         }
 
+        const max_parallel_downloads = 100;
+        // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
+        let parallel_count = 0;
+        let throttling_promise: Promise<void> | undefined = undefined;
+        let throttling_promise_resolve: Function | undefined = undefined;
+
         const load_asset = async (config: MonoConfig, asset: AllAssetEntryTypes): Promise<MonoInitFetchResult | undefined> => {
+            while (throttling_promise) {
+                await throttling_promise;
+            }
+            ++parallel_count;
+            if (parallel_count == max_parallel_downloads) {
+                if (ctx!.tracing)
+                    console.log("MONO_WASM: Throttling further parallel downloads");
+
+                throttling_promise = new Promise((resolve) => {
+                    throttling_promise_resolve = resolve;
+                });
+            }
+
             Module.addRunDependency(asset.name);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
@@ -473,12 +492,22 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                     break; // this source worked, stop searching
                 }
             }
+
+            --parallel_count;
+            if (throttling_promise && parallel_count == ((max_parallel_downloads / 2) | 0)) {
+                if (ctx!.tracing)
+                    console.log("MONO_WASM: Resuming more parallel downloads");
+                throttling_promise_resolve!();
+                throttling_promise = undefined;
+            }
+
             if (error) {
                 const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && config.ignore_pdb_load_errors);
                 if (!isOkToFail)
                     throw error;
             }
             Module.removeRunDependency(asset.name);
+
             return result;
         };
         const fetch_promises: Promise<(MonoInitFetchResult | undefined)>[] = [];
