@@ -2925,6 +2925,25 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2Value != 0)
         {
+            // Optimizes (X & 1) == 1 to (X & 1)
+            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            LIR::Use cmpUse;
+            if ((op2Value == 1) && BlockRange().TryGetUse(cmp, &cmpUse))
+            {
+                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
+                    !cmpUse.User()->OperIs(GT_JTRUE))
+                {
+                    GenTree* next = cmp->gtNext;
+
+                    cmpUse.ReplaceWith(op1);
+
+                    BlockRange().Remove(cmp->gtGetOp2());
+                    BlockRange().Remove(cmp);
+
+                    return next;
+                }
+            }
+
             //
             // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
             // into ((x AND mask) NE|EQ 0) when mask is a single bit.
@@ -3122,36 +3141,6 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         return DecomposeLongCompare(cmp);
     }
 #endif
-
-    // Optimizes (X & 1) == 1 to (X & 1)
-    //
-    //                        EQ/NE                   AND
-    //                        /  \                   /  \.
-    //                      AND   CNS 1  ->         x   CNS 1
-    //                     /   \.
-    //                    x   CNS 1
-    //
-    // The compiler requires jumps to have relop operands, so we do not fold that case.
-    if (cmp->gtGetOp1()->OperIs(GT_AND) && cmp->gtGetOp2()->IsIntegralConst(1) && !(cmp->gtFlags & GTF_RELOP_JMP_USED))
-    {
-        GenTree* op1 = cmp->gtGetOp1();
-        if (op1->gtGetOp2()->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()))
-        {
-            LIR::Use use;
-
-            GenTree* next = cmp->gtNext;
-
-            if (BlockRange().TryGetUse(cmp, &use))
-            {
-                use.ReplaceWith(op1);
-            }
-
-            BlockRange().Remove(cmp->gtGetOp2());
-            BlockRange().Remove(cmp);
-
-            return next;
-        }
-    }
 
     if (cmp->gtGetOp2()->IsIntegralConst() && !comp->opts.MinOpts())
     {
