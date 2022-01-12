@@ -343,6 +343,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:a{1,2}){4}", "a{4,8}")]
         // Nested atomic
         [InlineData("(?>(?>(?>(?>abc*))))", "(?>ab(?>c*))")]
+        [InlineData("(?>(?>(?>(?>))))", "")]
+        [InlineData("(?>(?>(?>(?>(?!)))))", "(?!)")]
+        [InlineData("(?=(?>))", "")]
         // Alternation reduction
         [InlineData("a|b", "[ab]")]
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
@@ -366,6 +369,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("hello there|hello again|hello|hello|hello|hello", "hello(?> there| again|)")]
         [InlineData("hello there|hello again|hello|hello|hello|hello|hello world", "hello(?> there| again|| world)")]
         [InlineData("hello there|hello again|hello|hello|hello|hello|hello world|hello", "hello(?> there| again|| world)")]
+        [InlineData("ab|cd|||ef", "ab|cd||ef")]
+        [InlineData("|ab|cd|e||f", "|ab|cd|ef")]
+        [InlineData("ab|cd|||||||||||ef", "ab|cd||ef")]
+        [InlineData("ab|cd|||||||||||e||f|||", "ab|cd||ef")]
+        [InlineData("ab|cd|(?!)|ef", "ab|cd|ef")]
         [InlineData("abcd(?:(?i:e)|(?i:f))", "abcd(?i:[ef])")]
         [InlineData("(?i:abcde)|(?i:abcdf)", "(?i:abcd[ef])")]
         [InlineData("xyz(?:(?i:abcde)|(?i:abcdf))", "xyz(?i:abcd[ef])")]
