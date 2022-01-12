@@ -15,7 +15,7 @@ Analysis techniques for the dependency graph.
 DependencyGraphViewer
 ====================================
 
-This application allows viewing the dependency graph produced by the CoreRT compilation.
+This application allows viewing the dependency graph produced by the AOT compilation.
 
 Usage instructions:
 1. Launch the process as an administrator
