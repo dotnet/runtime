@@ -18210,10 +18210,16 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
         case GT_RSH:
         case GT_RSZ:
         {
-            assert(!varTypeIsByte(simdBaseType) && !varTypeIsFloating(simdBaseType));
+            assert(!varTypeIsByte(simdBaseType));
+            assert(!varTypeIsFloating(simdBaseType));
             assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
+            // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
+            // exceed the number of bits available in `T`. This is roughly equivalent to
+            // x % (sizeof(T) * 8), but that is "more expensive" and only the same for unsigned
+            // inputs, where-as we have a signed-input and so negative values would differ.
+
             unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
 
             if (op2->IsCnsIntOrI())
@@ -18241,6 +18247,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                 }
                 else
                 {
+                    assert(op == GT_RSZ);
                     intrinsic = NI_AVX2_ShiftRightLogical;
                 }
             }
@@ -18254,6 +18261,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             }
             else
             {
+                assert(op == GT_RSZ);
                 intrinsic = NI_SSE2_ShiftRightLogical;
             }
             break;
@@ -18535,6 +18543,11 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             assert((op != GT_RSH) || !varTypeIsUnsigned(simdBaseType));
 
             // "over shifting" is platform specific behavior. We will match the C# behavior
+            // this requires we mask with (sizeof(T) * 8) - 1 which ensures the shift cannot
+            // exceed the number of bits available in `T`. This is roughly equivalent to
+            // x % (sizeof(T) * 8), but that is "more expensive" and only the same for unsigned
+            // inputs, where-as we have a signed-input and so negative values would differ.
+
             unsigned shiftCountMask = (genTypeSize(simdBaseType) * 8) - 1;
 
             if (op2->IsCnsIntOrI())
@@ -18553,6 +18566,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                     }
                     else
                     {
+                        assert(op == GT_RSZ);
                         intrinsic = NI_AdvSimd_ShiftRightLogicalScalar;
                     }
                 }
@@ -18566,6 +18580,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                 }
                 else
                 {
+                    assert(op == GT_RSZ);
                     intrinsic = NI_AdvSimd_ShiftRightLogical;
                 }
             }
@@ -18605,6 +18620,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                 }
                 else
                 {
+                    assert(op == GT_RSZ);
                     intrinsic = NI_AdvSimd_ShiftLogical;
                 }
             }
