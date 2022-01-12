@@ -1,14 +1,7 @@
 {
   "name": "system.net.websockets.client.tests",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
+  "private": true,
   "dependencies": {
-    "ws": "^8.4.0"
+    "ws": "8.4.0"
   }
 }
