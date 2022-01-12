@@ -172,6 +172,27 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst()
+        {
+            var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(2, QueueProcessingOrder.NewestFirst, 1,
+                   TimeSpan.Zero, 1, autoReplenishment: false));
+            var lease = limiter.Acquire(2);
+            Assert.True(lease.IsAcquired);
+
+            // Fill queue
+            var wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var lease1 = await limiter.WaitAsync(2);
+            Assert.False(lease1.IsAcquired);
+
+            limiter.TryReplenish();
+
+            lease = await wait;
+            Assert.True(lease.IsAcquired);
+        }
+
+        [Fact]
         public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
         {
             var limiter = new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1,

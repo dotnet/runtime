@@ -33,6 +33,9 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task DropsMultipleOldestWhenQueuingMoreThanLimit_NewestFirst();
 
         [Fact]
+        public abstract Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst();
+
+        [Fact]
         public abstract Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable();
 
         [Fact]

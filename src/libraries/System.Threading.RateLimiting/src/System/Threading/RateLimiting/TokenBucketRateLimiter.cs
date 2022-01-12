@@ -101,10 +101,9 @@ namespace System.Threading.RateLimiting
                     return new ValueTask<RateLimitLease>(lease);
                 }
 
-                // Don't queue if queue limit reached
-                if (_queueCount + tokenCount > _options.QueueLimit)
+                if ((long)_queueCount + tokenCount > _options.QueueLimit)
                 {
-                    if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst)
+                    if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst && tokenCount <= _options.QueueLimit)
                     {
                         // remove oldest items from queue until there is space for the newest acquisition request
                         do
@@ -114,10 +113,11 @@ namespace System.Threading.RateLimiting
                             Debug.Assert(_queueCount >= 0);
                             oldestRequest.Tcs.TrySetResult(FailedLease);
                         }
-                        while (_queueCount + tokenCount > _options.QueueLimit);
+                        while ((long)_queueCount + tokenCount > _options.QueueLimit);
                     }
                     else
                     {
+                        // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(CreateFailedTokenLease(tokenCount));
                     }
                 }

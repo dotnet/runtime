@@ -149,6 +149,25 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task DropsRequestedLeaseIfPermitCountGreaterThanQueueLimitAndNoAvailability_NewestFirst()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(2, QueueProcessingOrder.NewestFirst, 1));
+            var lease = limiter.Acquire(2);
+            Assert.True(lease.IsAcquired);
+
+            // Fill queue
+            var wait = limiter.WaitAsync(1);
+            Assert.False(wait.IsCompleted);
+
+            var lease1 = await limiter.WaitAsync(2);
+            Assert.False(lease1.IsAcquired);
+
+            lease.Dispose();
+            var lease2 = await wait;
+            Assert.True(lease2.IsAcquired);
+        }
+
+        [Fact]
         public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
         {
             var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));
