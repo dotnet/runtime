@@ -389,23 +389,18 @@ namespace System.IO
 
         private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase, bool? sourceDirectoryExists)
         {
-            if (sourceDirectoryExists is null)
-            {
-                sourceDirectoryExists = DirectoryExists(sourceFullPath);
-            }
+            sourceDirectoryExists ??= DirectoryExists(sourceFullPath);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
             // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!sourceDirectoryExists.Value && !FileExists(sourceFullPath))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-            if (!sameDirectoryDifferentCase // This check is to allow renaming of directories
-                && DirectoryExists(destFullPath))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
-
-            // Windows doesn't care if you try and copy a file via "MoveDirectory"...
-            if (FileExists(sourceFullPath))
+            if (!sourceDirectoryExists.Value)
             {
+                if (!FileExists(sourceFullPath))
+                {
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                }
+
+                // Windows doesn't care if you try and copy a file via "MoveDirectory"...
                 // ... but it doesn't like the source to have a trailing slash ...
 
                 // On Windows we end up with ERROR_INVALID_NAME, which is
@@ -415,17 +410,26 @@ namespace System.IO
                 // give DirectoryNotFound.
 
                 if (Path.EndsInDirectorySeparator(sourceFullPath))
+                {
                     throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                }
 
                 // ... but it doesn't care if the destination has a trailing separator.
                 destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
             }
 
-            if (FileExists(destFullPath))
+            if (!sameDirectoryDifferentCase) // This check is to allow renaming of directories
             {
-                // Some Unix distros will overwrite the destination file if it already exists.
-                // Throwing IOException to match Windows behavior.
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                if (DirectoryExists(destFullPath))
+                {
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
+                else if (FileExists(destFullPath))
+                {
+                    // Some Unix distros will overwrite the destination file if it already exists.
+                    // Throwing IOException to match Windows behavior.
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+                }
             }
 
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
