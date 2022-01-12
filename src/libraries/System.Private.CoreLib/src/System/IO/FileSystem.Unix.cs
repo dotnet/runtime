@@ -387,7 +387,7 @@ namespace System.IO
             }
         }
 
-        public static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath)
         {
             // Windows doesn't care if you try and copy a file via "MoveDirectory"...
             if (FileExists(sourceFullPath))
