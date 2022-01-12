@@ -32,8 +32,8 @@ namespace Microsoft.Extensions.Configuration.Ini
 
                 while (reader.Peek() != -1)
                 {
-                    string? rawLine = reader.ReadLine();
-                    string? line = rawLine?.Trim();
+                    string rawLine = reader.ReadLine()!;
+                    string line = rawLine.Trim();
 
                     // Ignore blank lines
                     if (string.IsNullOrWhiteSpace(line))
