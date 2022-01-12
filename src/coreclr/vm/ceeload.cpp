@@ -3857,7 +3857,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
 #ifdef _DEBUG
         CONTRACT_VIOLATION(ThrowsViolation);
         char szMethodName [MAX_CLASSNAME_LENGTH];
-        CEEInfo::findNameOfToken(this, pMethod, szMethodName, COUNTOF (szMethodName));
+        CEEInfo::findNameOfToken(this, pMethod, szMethodName, ARRAY_SIZE(szMethodName));
         // This used to be IJW, but changed to LW_INTEROP to reclaim a bit in our log facilities
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
