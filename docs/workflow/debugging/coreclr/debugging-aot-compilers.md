@@ -172,3 +172,7 @@ devenv /debugexe C:\git2\runtime\.dotnet\dotnet.exe "c:\git2\runtime\artifacts\t
 ```
 
 This will launch the Visual Studio debugger, with a solution setup for debugging the dotnet.exe process. By default this solution will debug the native code of the process only. To debug the managed components, edit the properties on the solution and set the `Debugger Type` to `Managed (.NET Core, .NET 5+)` or `Mixed (.NET Core, .NET 5+)`.
+
+# Debugging application size
+
+In order to troubleshoot resulting size of application produced by AOT compilers, you can follow [this guide](debuging-compiler-dependency-analysis.md)
