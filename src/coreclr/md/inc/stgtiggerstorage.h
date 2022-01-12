@@ -87,7 +87,7 @@ public:
 //*****************************************************************************
     HRESULT Init(                           // Return code.
         StgIO       *pStgIO,                // The I/O subsystem.
-        _In_ __in_z LPSTR       pVersion);  // Compiler-supplied CLR version
+        _In_ _In_z_ LPSTR       pVersion);  // Compiler-supplied CLR version
 
 //*****************************************************************************
 // Retrieves a the size and a pointer to the extra data that can optionally be
@@ -132,7 +132,7 @@ public:
 // This is not good enough to fulfill ACID props, but it ain't that bad.
 //*****************************************************************************
     HRESULT Restore(                        // Return code.
-        _In_ __in_z LPWSTR szBackup,        // If non-0, backup the file.
+        _In_ _In_z_ LPWSTR szBackup,        // If non-0, backup the file.
         int         bDeleteOnSuccess);      // Delete backup file if successful.
 
 //*****************************************************************************

@@ -191,7 +191,7 @@ namespace System.Net.Http.Headers
             if ((current < input.Length) && (input[current] == '('))
             {
                 // We have a <comment> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
-                int commentLength = 0;
+                int commentLength;
                 if (HttpRuleParser.GetCommentLength(input, current, out commentLength) != HttpParseResult.Parsed)
                 {
                     return 0; // We found a '(' character but it wasn't a valid comment. Abort.

@@ -98,7 +98,7 @@ extern "C"
 #   define __NR_membarrier  389
 #  elif defined(__aarch64__)
 #   define __NR_membarrier  283
-#  elif
+#  else
 #   error Unknown architecture
 #  endif
 # endif

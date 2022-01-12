@@ -69,8 +69,8 @@ mdToken             AsmMan::GetFileTokByName(_In_ __nullterminated char* szFileN
     return(tmp ? tmp->tkTok : mdFileNil);
 }
 
-AsmManComType*          AsmMan::GetComTypeByName(__in_opt __nullterminated char* szComTypeName,
-                                                 __in_opt __nullterminated char* szComEnclosingTypeName)
+AsmManComType*          AsmMan::GetComTypeByName(_In_opt_z_ char* szComTypeName,
+                                                 _In_opt_z_ char* szComEnclosingTypeName)
 {
     AsmManComType*  ret = NULL;
     if(szComTypeName)
@@ -102,8 +102,8 @@ AsmManComType*          AsmMan::GetComTypeByName(__in_opt __nullterminated char*
 }
 
 mdToken             AsmMan::GetComTypeTokByName(
-    __in_opt __nullterminated char* szComTypeName,
-    __in_opt __nullterminated char* szComEnclosingTypeName)
+    _In_opt_z_ char* szComTypeName,
+    _In_opt_z_ char* szComEnclosingTypeName)
 {
     AsmManComType* tmp = GetComTypeByName(szComTypeName, szComEnclosingTypeName);
     return(tmp ? tmp->tkTok : mdExportedTypeNil);
@@ -244,7 +244,7 @@ void    AsmMan::EmitFiles()
     } //end for(i = 0; tmp=m_FileLst.PEEK(i); i++)
 }
 
-void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, __in_opt __nullterminated char* szAlias, DWORD dwAttr, BOOL isRef)
+void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef)
 {
     if(!isRef && (0==strcmp(szName, "mscorlib"))) ((Assembler*)m_pAssembler)->m_fIsMscorlib = TRUE;
     if(!isRef && (m_pAssembly != NULL))

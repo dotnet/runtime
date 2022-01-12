@@ -26,8 +26,7 @@ namespace Microsoft.Interop.Analyzers
 
         public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-        public const string NoPreprocessorDefinesKey = "ConvertToGeneratedDllImport";
-        public const string WithPreprocessorDefinesKey = "ConvertToGeneratedDllImportPreprocessor";
+        private const string ConvertToGeneratedDllImportKey = "ConvertToGeneratedDllImport";
 
         private static readonly string[] s_preferredAttributeArgumentOrder =
             {
@@ -70,33 +69,18 @@ namespace Microsoft.Interop.Analyzers
             if (!TryGetAttribute(methodSymbol, dllImportAttrType, out AttributeData? dllImportAttr))
                 return;
 
-            // Register code fixes with two options for the fix - using preprocessor or not.
+            // Register code fix
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    Resources.ConvertToGeneratedDllImportNoPreprocessor,
+                    Resources.ConvertToGeneratedDllImport,
                     cancelToken => ConvertToGeneratedDllImport(
                         context.Document,
                         methodSyntax,
                         methodSymbol,
                         dllImportAttr!,
                         generatedDllImportAttrType,
-                        usePreprocessorDefines: false,
                         cancelToken),
-                    equivalenceKey: NoPreprocessorDefinesKey),
-                context.Diagnostics);
-
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    Resources.ConvertToGeneratedDllImportWithPreprocessor,
-                    cancelToken => ConvertToGeneratedDllImport(
-                        context.Document,
-                        methodSyntax,
-                        methodSymbol,
-                        dllImportAttr!,
-                        generatedDllImportAttrType,
-                        usePreprocessorDefines: true,
-                        cancelToken),
-                    equivalenceKey: WithPreprocessorDefinesKey),
+                    equivalenceKey: ConvertToGeneratedDllImportKey),
                 context.Diagnostics);
         }
 
@@ -106,7 +90,6 @@ namespace Microsoft.Interop.Analyzers
             IMethodSymbol methodSymbol,
             AttributeData dllImportAttr,
             INamedTypeSymbol generatedDllImportAttrType,
-            bool usePreprocessorDefines,
             CancellationToken cancellationToken)
         {
             DocumentEditor editor = await DocumentEditor.CreateAsync(doc, cancellationToken).ConfigureAwait(false);
@@ -142,49 +125,8 @@ namespace Microsoft.Interop.Analyzers
                     .WithIsExtern(false)
                     .WithPartial(true));
 
-            if (!usePreprocessorDefines)
-            {
-                // Replace the original method with the updated one
-                editor.ReplaceNode(methodSyntax, generatedDeclaration);
-            }
-            else
-            {
-                // #if DLLIMPORTGENERATOR_ENABLED
-                generatedDeclaration = generatedDeclaration.WithLeadingTrivia(
-                    generatedDeclaration.GetLeadingTrivia()
-                        .AddRange(new[] {
-                            SyntaxFactory.Trivia(SyntaxFactory.IfDirectiveTrivia(SyntaxFactory.IdentifierName("DLLIMPORTGENERATOR_ENABLED"), isActive: true, branchTaken: true, conditionValue: true)),
-                            SyntaxFactory.ElasticMarker
-                        }));
-
-                // #else
-                generatedDeclaration = generatedDeclaration.WithTrailingTrivia(
-                    generatedDeclaration.GetTrailingTrivia()
-                        .AddRange(new[] {
-                            SyntaxFactory.Trivia(SyntaxFactory.ElseDirectiveTrivia(isActive: false, branchTaken: false)),
-                            SyntaxFactory.ElasticMarker
-                        }));
-
-                // Sort attribute arguments so that GeneratedDllImport and DllImport match
-                MethodDeclarationSyntax updatedDeclaration = (MethodDeclarationSyntax)generator.ReplaceNode(methodSyntax, dllImportSyntax, SortDllImportAttributeArguments(dllImportSyntax, generator));
-
-                // Remove existing leading trivia - it will be on the GeneratedDllImport method
-                updatedDeclaration = updatedDeclaration.WithLeadingTrivia();
-
-                // #endif
-                updatedDeclaration = updatedDeclaration.WithTrailingTrivia(
-                    methodSyntax.GetTrailingTrivia()
-                        .AddRange(new[] {
-                            SyntaxFactory.Trivia(SyntaxFactory.EndIfDirectiveTrivia(isActive: true)),
-                            SyntaxFactory.ElasticMarker
-                        }));
-
-                // Add the GeneratedDllImport method
-                editor.InsertBefore(methodSyntax, generatedDeclaration);
-
-                // Replace the original method with the updated DllImport method
-                editor.ReplaceNode(methodSyntax, updatedDeclaration);
-            }
+            // Replace the original method with the updated one
+            editor.ReplaceNode(methodSyntax, generatedDeclaration);
 
             return editor.GetChangedDocument();
         }

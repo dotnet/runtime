@@ -555,7 +555,7 @@ namespace System.IO.Compression
         internal bool LoadLocalHeaderExtraFieldAndCompressedBytesIfNeeded()
         {
             // we should have made this exact call in _archive.Init through ThrowIfOpenable
-            Debug.Assert(IsOpenable(false, true, out string? message));
+            Debug.Assert(IsOpenable(false, true, out _));
 
             // load local header's extra fields. it will be null if we couldn't read for some reason
             if (_originallyInArchive)
@@ -641,7 +641,7 @@ namespace System.IO.Compression
 
         private Stream GetDataDecompressor(Stream compressedStreamToRead)
         {
-            Stream? uncompressedStream = null;
+            Stream? uncompressedStream;
             switch (CompressionMethod)
             {
                 case CompressionMethodValues.Deflate:

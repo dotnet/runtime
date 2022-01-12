@@ -283,7 +283,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compHWIntrinsicDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
     if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
     {
@@ -555,7 +555,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
+    return compHWIntrinsicDependsOn(isa) && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
            (
 #ifdef DEBUG
                JitConfig.EnableIncompleteISAClass() ||

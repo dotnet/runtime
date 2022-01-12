@@ -95,7 +95,7 @@ namespace System
         {
             if (value is string text)
             {
-                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out Uri? uri);
+                return Uri.TryCreate(text, UriKind.RelativeOrAbsolute, out _);
             }
             return value is Uri;
         }

@@ -337,7 +337,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void BeginNamespace(string name, string nspace)
         {
-            bool thisScope = false;
+            bool thisScope;
             if (Ref.Equal(name, _atoms.Empty))
             {
                 if (Ref.Equal(nspace, _scopeManager.DefaultNamespace))
@@ -529,7 +529,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                bool thisScope = false;
+                bool thisScope;
                 string? nspace = _scopeManager.ResolveNamespace(_mainNode.Prefix, out thisScope);
                 if (nspace != null)
                 {
@@ -575,7 +575,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        bool thisScope = false;
+                        bool thisScope;
                         string? nspace = _scopeManager.ResolveNamespace(info.Prefix, out thisScope);
                         if (nspace != null)
                         {
@@ -770,7 +770,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string GetPrefixForNamespace(string nspace)
         {
-            string? prefix = null;
+            string? prefix;
 
             if (_scopeManager.FindPrefix(nspace, out prefix))
             {

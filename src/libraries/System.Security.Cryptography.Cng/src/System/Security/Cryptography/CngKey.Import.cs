@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(provider));
 
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
-            SafeNCryptKeyHandle? keyHandle = null;
+            SafeNCryptKeyHandle? keyHandle;
             ErrorCode errorCode;
 
             if (curveName == null)
