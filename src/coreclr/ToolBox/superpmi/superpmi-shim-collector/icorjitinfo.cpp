@@ -1716,13 +1716,6 @@ uint32_t interceptor_ICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field
     return temp;
 }
 
-// Sets another object to intercept calls to "self" and current method being compiled
-void interceptor_ICJI::setOverride(ICorDynamicInfo* pOverride, CORINFO_METHOD_HANDLE currentMethod)
-{
-    mc->cr->AddCall("setOverride");
-    original_ICorJitInfo->setOverride(pOverride, currentMethod);
-}
-
 // Adds an active dependency from the context method's module to the given module
 // This is internal callback for the EE. JIT should not call it directly.
 void interceptor_ICJI::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo)

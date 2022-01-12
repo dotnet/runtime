@@ -1666,6 +1666,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
+	case FRAME_TYPE_IL_STATE:
 		g_assert (frame->ji);
 		return d->func (frame->actual_method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
 		break;

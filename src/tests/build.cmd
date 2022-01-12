@@ -15,13 +15,6 @@ for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__RepoRootDir%\src\tests"
 
-call %__RepoRootDir%\eng\native\init-vs-env.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
-
-if defined VCINSTALLDIR (
-    set "__VCToolsRoot=%VCINSTALLDIR%Auxiliary\Build"
-)
-
 :: Set the default arguments for build
 set __BuildArch=x64
 set __BuildType=Debug
@@ -196,6 +189,9 @@ set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary 
 
 echo Common MSBuild args: %__msbuildArgs%
 
+call %__RepoRootDir%\eng\native\init-vs-env.cmd %__BuildArch%
+if NOT '%ERRORLEVEL%' == '0' exit /b 1
+
 REM =========================================================================================
 REM ===
 REM === Native test build section
@@ -211,10 +207,6 @@ echo %__MsgPrefix%Commencing build of native test components for %__BuildArch%/%
 
 REM Set the environment for the native build
 
-REM Eval the output from set-cmake-path.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
-echo %__MsgPrefix%Using CMake from !CMakePath!
-
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
 if not defined NumberOfCores (
@@ -227,13 +219,6 @@ if not defined NumberOfCores (
 )
 echo %__MsgPrefix%Number of processor cores %NumberOfCores%
 
-set __VCBuildArch=x86_amd64
-if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
-if /i "%__BuildArch%" == "arm" ( set __VCBuildArch=x86_arm )
-if /i "%__BuildArch%" == "arm64" ( set __VCBuildArch=x86_arm64 )
-
-echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
-call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
 set __ExtraCmakeArgs=

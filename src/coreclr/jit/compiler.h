@@ -6032,7 +6032,7 @@ public:
 
     void fgDebugCheckFlags(GenTree* tree);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
-    void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags);
+    void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileData();
     bool fgDebugCheckIncomingProfileData(BasicBlock* block);
@@ -8729,7 +8729,7 @@ private:
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64 && !TARGET_LOONGARCH64
 
-        return compOpportunisticallyDependsOn(minimumIsa) && JitConfig.EnableHWIntrinsic();
+        return compOpportunisticallyDependsOn(minimumIsa);
 #else
         return false;
 #endif
@@ -8747,7 +8747,7 @@ private:
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        return compIsaSupportedDebugOnly(minimumIsa) && JitConfig.EnableHWIntrinsic();
+        return compIsaSupportedDebugOnly(minimumIsa);
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9154,7 +9154,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return JitConfig.EnableHWIntrinsic() ? TYP_SIMD32 : TYP_SIMD16;
+            return TYP_SIMD32;
         }
         else
         {
@@ -9195,14 +9195,13 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
+            return YMM_REGSIZE_BYTES;
         }
         else
         {
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-
             // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -9225,10 +9224,12 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
+            return YMM_REGSIZE_BYTES;
         }
         else
         {
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }

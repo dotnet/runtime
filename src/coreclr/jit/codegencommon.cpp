@@ -1369,9 +1369,10 @@ AGAIN:
 
     assert(mul == 0);
 
-    /* Special case: keep constants as 'op2' */
+    /* Special case: keep constants as 'op2', but don't do this for constant handles
+       because they don't fit I32 that we're going to check for below anyway. */
 
-    if (op1->IsCnsIntOrI())
+    if (op1->IsCnsIntOrI() && !op1->IsIconHandle())
     {
         // Presumably op2 is assumed to not be a constant (shouldn't happen if we've done constant folding)?
         tmp = op1;
