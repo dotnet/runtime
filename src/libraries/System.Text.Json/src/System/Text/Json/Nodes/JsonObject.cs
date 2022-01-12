@@ -64,7 +64,7 @@ namespace System.Text.Json.Nodes
             throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Object)));
         }
 
-        internal JsonObject(JsonElement element, JsonNodeOptions? options = null) : base(options)
+        internal JsonObject(JsonElement element, JsonNodeOptions? options = null) : this(options)
         {
             Debug.Assert(element.ValueKind == JsonValueKind.Object);
             _jsonElement = element;
