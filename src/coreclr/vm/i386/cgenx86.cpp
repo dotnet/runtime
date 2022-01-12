@@ -198,8 +198,6 @@ void EHContext::UpdateFrame(PREGDISPLAY regs)
     *regs->pEdi = this->Edi;
     *regs->pEbp = this->Ebp;
 }
-#endif // FEATURE_EH_FUNCLETS
-
 
 void UMThkCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -226,6 +224,8 @@ void UMThkCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     RETURN;
 }
+
+#endif // FEATURE_EH_FUNCLETS
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {

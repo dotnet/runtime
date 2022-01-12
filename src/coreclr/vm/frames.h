@@ -2809,12 +2809,14 @@ public:
         return GetOffsetOfDatum();
     }
 
+#ifndef FEATURE_EH_FUNCLETS
     virtual BOOL NeedsUpdateRegDisplay()
     {
         return TRUE;
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
+#endif // FEATURE_EH_FUNCLETS
 
 protected:
 
