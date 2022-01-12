@@ -21,9 +21,10 @@ namespace System.IO
             }
         }
 
-        internal static void MoveDirectory(string sourceFullPath, string destFullPath, string destinationWithSeparator, bool? sourceDirectoryExists = default)
+        internal static void MoveDirectory(string sourceFullPath, string destFullPath)
         {
-            string sourcePath = PathInternal.EnsureTrailingSeparator(sourceFullPath);
+            ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
+            ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
             ReadOnlySpan<char> sourceDirNameFromFullPath = Path.GetFileName(sourceFullPath.AsSpan());
             ReadOnlySpan<char> destDirNameFromFullPath = Path.GetFileName(destFullPath.AsSpan());
@@ -37,17 +38,17 @@ namespace System.IO
                 destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
 
             // If the destination directories are the exact same name
-            if (!sameDirectoryDifferentCase && string.Equals(sourcePath, destinationWithSeparator, fileSystemSensitivity))
+            if (!sameDirectoryDifferentCase && srcNoDirectorySeparator.Equals(destNoDirectorySeparator, fileSystemSensitivity))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourcePath.AsSpan());
-            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destinationWithSeparator.AsSpan());
+            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(srcNoDirectorySeparator);
+            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destNoDirectorySeparator);
 
             // Compare paths for the same, skip this step if we already know the paths are identical.
             if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
-            MoveDirectory(sourceFullPath, destFullPath, sameDirectoryDifferentCase, sourceDirectoryExists);
+            MoveDirectory(sourceFullPath, destFullPath, sameDirectoryDifferentCase);
         }
     }
 }

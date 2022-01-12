@@ -248,10 +248,7 @@ namespace System.IO
             if (destDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
 
-            string destinationFullPath = Path.GetFullPath(destDirName);
-            string destinationWithSeparator = PathInternal.EnsureTrailingSeparator(destinationFullPath);
-
-            FileSystem.MoveDirectory(Path.GetFullPath(sourceDirName), destinationFullPath, destinationWithSeparator);
+            FileSystem.MoveDirectory(Path.GetFullPath(sourceDirName), Path.GetFullPath(destDirName));
         }
 
         public static void Delete(string path)

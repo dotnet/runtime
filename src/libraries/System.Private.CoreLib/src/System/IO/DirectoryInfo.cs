@@ -194,13 +194,11 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
 
             string destination = Path.GetFullPath(destDirName);
-            string destinationWithSeparator = PathInternal.EnsureTrailingSeparator(destination);
 
-            FileSystem.MoveDirectory(FullPath, destination, destinationWithSeparator,
-                OperatingSystem.IsWindows() ? null : Exists); // on Windows we don't need to perform the extra check
+            FileSystem.MoveDirectory(FullPath, destination);
 
             Init(originalPath: destDirName,
-                 fullPath: destinationWithSeparator,
+                 fullPath: PathInternal.EnsureTrailingSeparator(destination),
                  fileName: null,
                  isNormalized: true);
 
