@@ -240,6 +240,24 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider.IsDisposed);
         }
 
+        [Fact]
+        public void DisposingConfigurationManagerCausesOnlySourceChangesToThrow()
+        {
+            var config = new ConfigurationManager
+            {
+                ["TestKey"] = "TestValue",
+            };
+
+            config.Dispose();
+
+            Assert.Equal("TestValue", config["TestKey"]);
+            config["TestKey"] = "TestValue2";
+            Assert.Equal("TestValue2", config["TestKey"]);
+
+            Assert.Throws<ObjectDisposedException>(() => config.AddInMemoryCollection());
+            Assert.Throws<ObjectDisposedException>(() => ((IConfigurationBuilder)config).Sources.Clear());
+        }
+
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DisposesChangeTokenRegistrationsOnDispose()
