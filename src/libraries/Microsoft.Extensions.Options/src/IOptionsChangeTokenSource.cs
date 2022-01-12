@@ -20,6 +20,6 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The name of the option instance being changed.
         /// </summary>
-        string Name { get; }
+        string? Name { get; }
     }
 }

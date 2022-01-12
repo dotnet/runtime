@@ -17,9 +17,9 @@ namespace Microsoft.Extensions.Options
         /// <param name="optionsName">The name of the options instance that failed.</param>
         /// <param name="optionsType">The options type that failed.</param>
         /// <param name="failureMessages">The validation failure messages.</param>
-        public OptionsValidationException(string optionsName, Type optionsType, IEnumerable<string> failureMessages)
+        public OptionsValidationException(string optionsName, Type optionsType, IEnumerable<string?>? failureMessages)
         {
-            Failures = failureMessages ?? new List<string>();
+            Failures = failureMessages ?? new List<string?>();
             OptionsType = optionsType ?? throw new ArgumentNullException(nameof(optionsType));
             OptionsName = optionsName ?? throw new ArgumentNullException(nameof(optionsName));
         }
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The validation failures.
         /// </summary>
-        public IEnumerable<string> Failures { get; }
+        public IEnumerable<string?> Failures { get; }
 
         /// <summary>
         /// The message is a semicolon separated list of the <see cref="Failures"/>.

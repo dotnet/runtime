@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public TOptions Create(string name)
+        public TOptions Create(string? name)
         {
             TOptions options = CreateInstance(name);
             foreach (IConfigureOptions<TOptions> setup in _setups)
@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Options
 
             if (_validations.Length > 0)
             {
-                var failures = new List<string>();
+                var failures = new List<string?>();
                 foreach (IValidateOptions<TOptions> validate in _validations)
                 {
                     ValidateOptionsResult result = validate.Validate(name, options);
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Options
                 }
                 if (failures.Count > 0)
                 {
-                    throw new OptionsValidationException(name, typeof(TOptions), failures);
+                    throw new OptionsValidationException(name!, typeof(TOptions), failures);
                 }
             }
 
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Creates a new instance of options type
         /// </summary>
-        protected virtual TOptions CreateInstance(string name)
+        protected virtual TOptions CreateInstance(string? name)
         {
             return Activator.CreateInstance<TOptions>();
         }

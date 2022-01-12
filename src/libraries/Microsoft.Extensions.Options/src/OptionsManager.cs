@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
-        private readonly OptionsCache<TOptions> _cache = new OptionsCache<TOptions>(); // Note: this is a private cache
+        private readonly OptionsCache<TOptions> _cache = new(); // Note: this is a private cache
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -34,11 +34,11 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public virtual TOptions Get(string name)
+        public virtual TOptions Get(string? name)
         {
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
 
-            if (!_cache.TryGetValue(name, out TOptions options))
+            if (!_cache.TryGetValue(name, out TOptions? options))
             {
                 // Store the options in our instance cache. Avoid closure on fast path by storing state into scoped locals.
                 IOptionsFactory<TOptions> localFactory = _factory;
