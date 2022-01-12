@@ -717,11 +717,18 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             }
 #endif // DEBUG
 
+            CORINFO_CONTEXT_HANDLE context                = nullptr;
             CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
             unsigned               methodFlags            = 0;
-            CORINFO_CONTEXT_HANDLE context                = nullptr;
             const bool             isLateDevirtualization = true;
-            bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
+            const bool             explicitTailCall       = call->IsTailPrefixedCall();
+
+            if ((call->gtCallMoreFlags & GTF_CALL_M_LATE_DEVIRT) != 0)
+            {
+                context                          = call->gtLateDevirtualizationInfo->exactContextHnd;
+                call->gtLateDevirtualizationInfo = nullptr;
+            }
+
             comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,
                                       explicitTailCall);
             *madeChanges = true;

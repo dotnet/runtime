@@ -1047,7 +1047,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 // Note:
 //    This function can be used for all imm-intrinsics (whether full-range or not),
 //    The compiler front-end (i.e. importer) is responsible to insert a range-check IR
-//    (GT_HW_INTRINSIC_CHK) for imm8 argument, so this function does not need to do range-check.
+//    (GT_BOUNDS_CHECK) for imm8 argument, so this function does not need to do range-check.
 //
 template <typename HWIntrinsicSwitchCaseBody>
 void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,

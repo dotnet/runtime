@@ -1109,6 +1109,11 @@ public:
             m_flags |= TREAT_AS_VARARG;
         }
 
+        void ClearHasThis()
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_CallConv &= ~IMAGE_CEE_CS_CALLCONV_HASTHIS;
+        }
 
     // These are protected because Reflection subclasses Metasig
     protected:

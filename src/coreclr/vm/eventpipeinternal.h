@@ -40,7 +40,7 @@ struct EventPipeSessionInfo
 //! Sets the sampling rate and enables the event pipe for the specified configuration.
 //!
 extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
-    __in_z LPCWSTR outputFile,
+    _In_z_ LPCWSTR outputFile,
     EventPipeSerializationFormat format,
     UINT32 circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
@@ -54,7 +54,7 @@ extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID);
 extern "C" bool QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
-    __in_z LPCWSTR providerName,
+    _In_z_ LPCWSTR providerName,
     EventPipeCallback pCallbackFunc);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
@@ -67,7 +67,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     UINT32 metadataLength);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(
-    __in_z LPCWSTR providerName);
+    _In_z_ LPCWSTR providerName);
 
 extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(
     INT_PTR provHandle);

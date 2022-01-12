@@ -8,7 +8,7 @@
 #include "ilasmpch.h"
 #include "assembler.h"
 
-Method::Method(Assembler *pAssembler, Class *pClass, __in __nullterminated char *pszName, BinStr* pbsSig, DWORD Attr)
+Method::Method(Assembler *pAssembler, Class *pClass, _In_ __nullterminated char *pszName, BinStr* pbsSig, DWORD Attr)
 {
 
     // default values

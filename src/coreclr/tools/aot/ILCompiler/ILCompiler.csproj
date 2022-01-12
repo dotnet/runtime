@@ -21,23 +21,22 @@
   <PropertyGroup>
     <SelfContained>true</SelfContained>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <RuntimeIdentifier>$(__DistroRid)</RuntimeIdentifier>
-
-    <!-- DistroRid is injected through environment variables in build scripts. Provide reasonable default
-         when the build is invoked directly, e.g. building inside Visual Studio -->
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(TargetsWindows)' == 'true'">win-$(TargetArchitecture)</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(TargetsLinux)' == 'true'">linux-$(TargetArchitecture)</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(TargetsOSX)' == 'true'">osx-$(TargetArchitecture)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(ToolsRID)</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup>
-    <ILCompilerVersion>7.0.0-alpha.1.21455.2</ILCompilerVersion>
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == '' and '$(RuntimeIdentifier)' == 'osx-x64'">osx.10.12-x64</ObjWriterRid>
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == '' and '$(RuntimeIdentifier)' == 'osx-arm64'">osx.11.0-arm64</ObjWriterRid>
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == ''">$(RuntimeIdentifier)</ObjWriterRid>
 
-    <ObjWriterBuildType>$(Configuration)</ObjWriterBuildType>
-    <ObjWriterBuildType Condition="'$(ObjWriterBuildType)' == 'Checked'">Debug</ObjWriterBuildType>
-
-    <ObjWriterArtifactPath Condition="'$(TargetsWindows)' == 'true'">$(ArtifactsDir)llvm-project\llvm\build\$(TargetArchitecture)\$(ObjWriterBuildType)\bin\$(LibPrefix)objwriter$(LibSuffix)</ObjWriterArtifactPath>
-    <ObjWriterArtifactPath Condition="'$(TargetsWindows)' != 'true'">$(ArtifactsDir)llvm-project\llvm\build\$(TargetArchitecture)\lib\$(LibPrefix)objwriter$(LibSuffix)</ObjWriterArtifactPath>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'linux-x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">$(runtimelinuxmuslarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'osx-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(RuntimeIdentifier)' == 'osx-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release'">true</IncludeCoreDisTools>
@@ -45,20 +44,12 @@
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(IncludeCoreDisTools)' == 'true'" />
 
-  <ItemGroup Condition="Exists('$(ObjWriterArtifactPath)')">
-    <Content Include="$(ObjWriterArtifactPath)">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-      <Pack>false</Pack>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup Condition="!Exists('$(ObjWriterArtifactPath)')">
-    <PackageReference Include="Microsoft.DotNet.ILCompiler">
-      <Version>$(ILCompilerVersion)</Version>
+  <ItemGroup>
+    <PackageReference Include="runtime.$(ObjWriterRid).Microsoft.NETCore.Runtime.ObjWriter">
+      <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
-    <Content Include="$(NuGetPackageRoot)runtime.$(RuntimeIdentifier).microsoft.dotnet.ilcompiler\$(ILCompilerVersion)\tools\$(LibPrefix)objwriter$(LibSuffix)">
+    <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>
       <Pack>false</Pack>
