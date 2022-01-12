@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace System.Net.NetworkInformation
@@ -68,20 +67,24 @@ namespace System.Net.NetworkInformation
             try
             {
                 var networkInterfaces = new AndroidNetworkInterface[interfaceCount];
-                var interfacesByIndex = new Dictionary<int, AndroidNetworkInterface>(interfaceCount);
 
                 for (int i = 0; i < interfaceCount; i++, networkInterfaceInfo++)
                 {
                     var name = Marshal.PtrToStringAnsi((IntPtr)networkInterfaceInfo->Name);
-                    var networkInterface = new AndroidNetworkInterface(name!, networkInterfaceInfo);
-                    networkInterfaces[i] = interfacesByIndex[networkInterface.Index] = networkInterface;
+                    networkInterfaces[i] = new AndroidNetworkInterface(name!, networkInterfaceInfo);
                 }
 
                 for (int i = 0; i < addressCount; i++, addressInfo++)
                 {
-                    if (interfacesByIndex.TryGetValue(addressInfo->InterfaceIndex, out var networkInterface))
+                    // there is usually just a handful of few network interfaces on Android devices
+                    // and this linear search does not have any impact on performance
+                    foreach (var networkInterface in networkInterfaces)
                     {
-                        networkInterface.AddAddress(addressInfo);
+                        if (networkInterface.Index == addressInfo->InterfaceIndex)
+                        {
+                            networkInterface.AddAddress(addressInfo);
+                            break;
+                        }
                     }
                 }
 
