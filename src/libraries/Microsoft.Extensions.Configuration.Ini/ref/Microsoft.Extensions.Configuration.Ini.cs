@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Ini
     {
         public IniStreamConfigurationProvider(Microsoft.Extensions.Configuration.Ini.IniStreamConfigurationSource source) : base (default(Microsoft.Extensions.Configuration.StreamConfigurationSource)) { }
         public override void Load(System.IO.Stream stream) { }
-        public static System.Collections.Generic.IDictionary<string, string?> Read(System.IO.Stream stream) { throw null; }
+        public static System.Collections.Generic.IDictionary<string, string> Read(System.IO.Stream stream) { throw null; }
     }
     public partial class IniStreamConfigurationSource : Microsoft.Extensions.Configuration.StreamConfigurationSource
     {
