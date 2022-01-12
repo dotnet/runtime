@@ -785,6 +785,11 @@ namespace System.Diagnostics
         public bool IsAllDataRequested { get; set;}
 
         /// <summary>
+        /// Indicate if the this Activity object is stopped
+        /// </summary>
+        public bool IsStopped { get => IsFinished; }
+
+        /// <summary>
         /// Return the flags (defined by the W3C ID specification) associated with the activity.
         /// </summary>
         public ActivityTraceFlags ActivityTraceFlags

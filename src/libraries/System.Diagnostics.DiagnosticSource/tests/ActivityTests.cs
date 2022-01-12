@@ -299,7 +299,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-
         /// <summary>
         /// Tests activity start and stop
         /// Checks Activity.Current correctness, Id generation
@@ -318,6 +317,31 @@ namespace System.Diagnostics.Tests
 
             activity.Stop();
             Assert.Null(Activity.Current);
+        }
+
+        /// <summary>
+        /// Tests Activity.IsStopped
+        /// </summary>
+        [Fact]
+        public void IsStoppedTest()
+        {
+            var activity = new Activity("activity");
+            Assert.False(activity.IsStopped);
+            activity.Start();
+            Assert.False(activity.IsStopped);
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
+            activity.Stop();
+            Assert.NotEqual(TimeSpan.Zero, activity.Duration);
+            Assert.True(activity.IsStopped);
+
+            activity = new Activity("activity");
+            Assert.False(activity.IsStopped);
+            activity.Start();
+            Assert.False(activity.IsStopped);
+            activity.SetEndTime(DateTime.UtcNow.AddMinutes(1)); // Setting end time shouldn't mark the activity as stopped
+            Assert.False(activity.IsStopped);
+            activity.Stop();
+            Assert.True(activity.IsStopped);
         }
 
         /// <summary>
