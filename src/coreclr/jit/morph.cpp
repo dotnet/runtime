@@ -14152,7 +14152,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     bool dontCseConstArguments = false;
 #if defined(FEATURE_HW_INTRINSICS)
     // Opportunistically, avoid unexpected CSE for hw intrinsics with IMM arguments
-    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
+    if (multiOp->OperIs(GT_HWINTRINSIC))
     {
         NamedIntrinsic hwIntrinsic = multiOp->AsHWIntrinsic()->GetHWIntrinsicId();
 #if defined(TARGET_XARCH)
@@ -14181,7 +14181,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
-    if (multiOp->OperIs(GT_HWINTRINSIC))
+    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
         switch (hw->GetHWIntrinsicId())
