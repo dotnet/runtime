@@ -132,6 +132,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> BlendVariable(Vector128<double> left, Vector128<double> right, Vector128<double> mask) => BlendVariable(left, right, mask);
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask)
+        ///   PBLENDVB xmm, xmm/m128, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask)
+        ///   PBLENDVB xmm, xmm/m128, xmm
+        /// </summary>
+        public static Vector128<nint> BlendVariable(Vector128<nint> left, Vector128<nint> right, Vector128<nint> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask)
+        ///   PBLENDVB xmm, xmm/m128, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_blendv_epi8 (__m128i a, __m128i b, __m128i mask)
+        ///   PBLENDVB xmm, xmm/m128, xmm
+        /// </summary>
+        public static Vector128<nuint> BlendVariable(Vector128<nuint> left, Vector128<nuint> right, Vector128<nuint> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
         /// __m128 _mm_ceil_ps (__m128 a)
         ///   ROUNDPS xmm, xmm/m128, imm8(10)
         /// </summary>
@@ -176,6 +198,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   PCMPEQQ xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> CompareEqual(Vector128<ulong> left, Vector128<ulong> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b)
+        ///   PCMPEQQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> CompareEqual(Vector128<nint> left, Vector128<nint> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// __m128i _mm_cmpeq_epi64 (__m128i a, __m128i b)
+        ///   PCMPEQQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> CompareEqual(Vector128<nuint> left, Vector128<nuint> right) => CompareEqual(left, right);
 
         /// <summary>
         /// __m128i _mm_cvtepi8_epi16 (__m128i a)
@@ -239,6 +273,62 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<long> ConvertToVector128Int64(Vector128<uint> value) => ConvertToVector128Int64(value);
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtepu8_epi32 (__m128i a)
+        ///   PMOVZXBD xmm, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtepu8_epi64 (__m128i a)
+        ///   PMOVZXBQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> ConvertToVector128NInt(Vector128<sbyte> value) => ConvertToVector128NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtepu8_epi32 (__m128i a)
+        ///   PMOVZXBD xmm, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtepu8_epi64 (__m128i a)
+        ///   PMOVZXBQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> ConvertToVector128NInt(Vector128<byte> value) => ConvertToVector128NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtepi16_epi32 (__m128i a)
+        ///   PMOVSXWD xmm, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtepi32_epi64 (__m128i a)
+        ///   PMOVSXDQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> ConvertToVector128NInt(Vector128<short> value) => ConvertToVector128NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtepi16_epi32 (__m128i a)
+        ///   PMOVSXWD xmm, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtepi32_epi64 (__m128i a)
+        ///   PMOVSXDQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> ConvertToVector128NInt(Vector128<ushort> value) => ConvertToVector128NInt(value);
+
+        /// <summary>
+        /// __m128i _mm_cvtepi32_epi64 (__m128i a)
+        ///   PMOVSXDQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> ConvertToVector128NInt(Vector128<int> value) => ConvertToVector128NInt(value);
+
+        /// <summary>
+        /// __m128i _mm_cvtepi32_epi64 (__m128i a)
+        ///   PMOVSXDQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> ConvertToVector128NInt(Vector128<uint> value) => ConvertToVector128NInt(value);
+
+        /// <summary>
         ///   PMOVSXBW xmm, m64
         /// The native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
@@ -300,6 +390,42 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<long> ConvertToVector128Int64(uint* address) => ConvertToVector128Int64(address);
 
         /// <summary>
+        ///   PMOVSXBQ xmm, m16
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector128<nint> ConvertToVector128NInt(sbyte* address) => ConvertToVector128NInt(address);
+
+        /// <summary>
+        ///   PMOVZXBQ xmm, m16
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector128<nint> ConvertToVector128NInt(byte* address) => ConvertToVector128NInt(address);
+
+        /// <summary>
+        ///   PMOVSXWQ xmm, m32
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector128<nint> ConvertToVector128NInt(short* address) => ConvertToVector128NInt(address);
+
+        /// <summary>
+        ///   PMOVZXWQ xmm, m32
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector128<nint> ConvertToVector128NInt(ushort* address) => ConvertToVector128NInt(address);
+
+        /// <summary>
+        ///   PMOVSXDQ xmm, m64
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector128<nint> ConvertToVector128NInt(int* address) => ConvertToVector128NInt(address);
+
+        /// <summary>
+        ///   PMOVZXDQ xmm, m64
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector128<nint> ConvertToVector128NInt(uint* address) => ConvertToVector128NInt(address);
+
+        /// <summary>
         /// __m128 _mm_dp_ps (__m128 a, __m128 b, const int imm8)
         ///   DPPS xmm, xmm/m128, imm8
         /// </summary>
@@ -330,6 +456,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   EXTRACTPS xmm, xmm/m32, imm8
         /// </summary>
         public static float Extract(Vector128<float> value, byte index) => Extract(value, index);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_extract_epi32 (__m128i a, const int imm8)
+        ///   PEXTRD reg/m32, xmm, imm8
+        ///
+        /// 64-bit:
+        /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
+        ///   PEXTRQ reg/m64, xmm, imm8
+        /// </summary>
+        public static nint Extract(Vector128<nint> value, byte index) => Extract(value, index);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_extract_epi32 (__m128i a, const int imm8)
+        ///   PEXTRD reg/m32, xmm, imm8
+        ///
+        /// 64-bit:
+        /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
+        ///   PEXTRQ reg/m64, xmm, imm8
+        /// </summary>
+        public static nuint Extract(Vector128<nuint> value, byte index) => Extract(value, index);
 
         /// <summary>
         /// __m128 _mm_floor_ps (__m128 a)
@@ -393,6 +541,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> Insert(Vector128<float> value, Vector128<float> data, byte index) => Insert(value, data, index);
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
+        ///   PINSRD xmm, reg/m32, imm8
+        ///
+        /// 64-bit:
+        /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
+        ///   PINSRQ xmm, reg/m64, imm8
+        /// </summary>
+        public static Vector128<nint> Insert(Vector128<nint> value, Vector128<nint> data, byte index) => Insert(value, data, index);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_insert_epi32 (__m128i a, int i, const int imm8)
+        ///   PINSRD xmm, reg/m32, imm8
+        ///
+        /// 64-bit:
+        /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
+        ///   PINSRQ xmm, reg/m64, imm8
+        /// </summary>
+        public static Vector128<nuint> Insert(Vector128<nuint> value, Vector128<nuint> data, byte index) => Insert(value, data, index);
+
+        /// <summary>
         /// __m128i _mm_max_epi8 (__m128i a, __m128i b)
         ///   PMAXSB xmm, xmm/m128
         /// </summary>
@@ -451,6 +621,12 @@ namespace System.Runtime.Intrinsics.X86
         ///   PMULDQ xmm, xmm/m128
         /// </summary>
         public static Vector128<long> Multiply(Vector128<int> left, Vector128<int> right) => Multiply(left, right);
+
+        /// <summary>
+        /// __m128i _mm_mul_epi32 (__m128i a, __m128i b)
+        ///   PMULDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> Multiply(Vector128<nint> left, Vector128<nint> right) => Multiply(left, right);
 
         /// <summary>
         /// __m128i _mm_mullo_epi32 (__m128i a, __m128i b)
@@ -671,6 +847,28 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr)
+        ///   MOVNTDQA xmm, m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr)
+        ///   MOVNTDQA xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nint> LoadAlignedVector128NonTemporal(nint* address) => LoadAlignedVector128NonTemporal(address);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr)
+        ///   MOVNTDQA xmm, m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_stream_load_si128 (const __m128i* mem_addr)
+        ///   MOVNTDQA xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nuint> LoadAlignedVector128NonTemporal(nuint* address) => LoadAlignedVector128NonTemporal(address);
+
+        /// <summary>
         /// int _mm_testc_si128 (__m128i a, __m128i b)
         ///   PTEST xmm, xmm/m128
         /// </summary>
@@ -710,6 +908,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestC(Vector128<ulong> left, Vector128<ulong> right) => TestC(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
+        public static bool TestC(Vector128<nint> left, Vector128<nint> right) => TestC(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// 
+        /// 64-bit:
+        /// int _mm_testc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
+        public static bool TestC(Vector128<nuint> left, Vector128<nuint> right) => TestC(left, right);
 
         /// <summary>
         /// int _mm_testnzc_si128 (__m128i a, __m128i b)
@@ -753,6 +973,28 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestNotZAndNotC(Vector128<ulong> left, Vector128<ulong> right) => TestNotZAndNotC(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector128<nint> left, Vector128<nint> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// int _mm_testnzc_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector128<nuint> left, Vector128<nuint> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
         /// int _mm_testz_si128 (__m128i a, __m128i b)
         ///   PTEST xmm, xmm/m128
         /// </summary>
@@ -792,5 +1034,27 @@ namespace System.Runtime.Intrinsics.X86
         ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestZ(Vector128<ulong> left, Vector128<ulong> right) => TestZ(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
+        public static bool TestZ(Vector128<nint> left, Vector128<nint> right) => TestZ(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// int _mm_testz_si128 (__m128i a, __m128i b)
+        ///   PTEST xmm, xmm/m128
+        /// </summary>
+        public static bool TestZ(Vector128<nuint> left, Vector128<nuint> right) => TestZ(left, right);
     }
 }
