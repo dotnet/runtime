@@ -3098,12 +3098,6 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-    // Sets another object to intercept calls to "self" and current method being compiled
-    virtual void setOverride(
-                ICorDynamicInfo             *pOverride,
-                CORINFO_METHOD_HANDLE       currentMethod
-                ) = 0;
-
     // Adds an active dependency from the context method's module to the given module
     // This is internal callback for the EE. JIT should not call it directly.
     virtual void addActiveDependency(
