@@ -924,7 +924,7 @@ namespace System.Runtime.Intrinsics.X86
         /// 32-bit:
         /// int _mm_testc_si128 (__m128i a, __m128i b)
         ///   PTEST xmm, xmm/m128
-        /// 
+        ///
         /// 64-bit:
         /// int _mm_testc_si128 (__m128i a, __m128i b)
         ///   PTEST xmm, xmm/m128
