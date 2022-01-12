@@ -69,10 +69,10 @@ namespace System
         public static bool IsSpeedOptimized => !IsSizeOptimized;
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
 
-        public static bool IsBrowserDomSupported => GetIsBrowserDomSupported();
-        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || GetIsBrowserDomSupported();
+        public static bool IsBrowserDomSupported => IsEnvironmentVariableTrue("IsBrowserDomSupported");
+        public static bool IsBrowserDomSupportedOrNotBrowser => IsNotBrowser || IsBrowserDomSupported;
         public static bool IsNotBrowserDomSupported => !IsBrowserDomSupported;
-        public static string Host => Environment.GetEnvironmentVariable("Host");
+        public static bool IsWebSocketSupported => IsEnvironmentVariableTrue("IsWebSocketSupported");
         public static bool LocalEchoServerIsNotAvailable => !LocalEchoServerIsAvailable;
         public static bool LocalEchoServerIsAvailable => IsBrowser;
 
@@ -495,12 +495,12 @@ namespace System
 #endif
         }
 
-        private static bool GetIsBrowserDomSupported()
+        private static bool IsEnvironmentVariableTrue(string variableName)
         {
             if (!IsBrowser)
                 return false;
 
-            var val = Environment.GetEnvironmentVariable("IsBrowserDomSupported");
+            var val = Environment.GetEnvironmentVariable(variableName);
             return (val != null && val == "true");
         }
     }
