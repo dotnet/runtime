@@ -353,7 +353,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
         /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
-        public ValidateOptionsResult Validate(string name, TOptions options)
+        public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             // null name is used to configure all named options
             if (Name == null || name == Name)
