@@ -5690,7 +5690,7 @@ ClrDataAccess::GetJitHelperName(
 #define JITHELPER(code,fn,sig) #code,
 #include <jithelpers.h>
     };
-    static_assert_no_msg(COUNTOF(s_rgHelperNames) == CORINFO_HELP_COUNT);
+    static_assert_no_msg(ARRAY_SIZE(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
 #ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
@@ -5745,7 +5745,7 @@ ClrDataAccess::RawGetMethodName(
     address &= ~THUMB_CODE;
 #endif
 
-    const UINT k_cch64BitHexFormat = COUNTOF("1234567812345678");
+    const UINT k_cch64BitHexFormat = ARRAY_SIZE("1234567812345678");
     HRESULT status;
 
     if (flags != 0)
@@ -5887,7 +5887,7 @@ ClrDataAccess::RawGetMethodName(
         // Printf failed.  Estimate a size that will be at least big enough to hold the name
         if (symbolLen)
         {
-            size_t cchSymbol = COUNTOF(s_wszFormatNameWithStubManager) +
+            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameWithStubManager) +
                 wcslen(wszStubManagerName) +
                 k_cch64BitHexFormat +
                 1;
@@ -5950,7 +5950,7 @@ NameFromMethodDesc:
         // Printf failed.  Estimate a size that will be at least big enough to hold the name
         if (symbolLen)
         {
-            size_t cchSymbol = COUNTOF(s_wszFormatNameAddressOnly) +
+            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameAddressOnly) +
                 k_cch64BitHexFormat +
                 1;
 
