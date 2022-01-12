@@ -14181,7 +14181,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
-    if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
+    if (multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
         switch (hw->GetHWIntrinsicId())
