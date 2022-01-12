@@ -848,6 +848,17 @@ public class DebuggerAttribute
         HiddenMethodDebuggerBreak();
         VisibleMethodDebuggerBreak();
     }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void NotStopOnJustMyCode()
+    {
+        currentCount++;
+    }
+
+    public static void RunStepThrough()
+    {
+        NotStopOnJustMyCode();
+    }
 }
 
 public class DebugTypeFull

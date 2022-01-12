@@ -708,10 +708,40 @@ namespace DebuggerTests
                 "VisibleMethodDebuggerBreak");
         }
 
-        [Fact]
-        public async Task StepThroughAttribute()
+        [Theory]
+        [InlineData(false)]
+        // [InlineData(true)]
+        public async Task StepThroughAttribute(bool justMyCodeEnabled)
         {
-            await SetJustMyCode(true);
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
+            var bp_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "NotStopOnJustMyCode", 0);
+            int line; 
+            string function_name;
+
+            //by default justMyCode:false -> stepInto works
+            if (justMyCodeEnabled)
+            {
+                // setting a value after loading the assembly does not have any effect on context call stack, so for true it does not work
+                // unless MonoProxy.JustMyCode is set to true before launching debugging. It should be changed to dynamic change support
+                await SetJustMyCode(true); 
+                line = bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1;
+                function_name = "RunStepThrough";
+            }
+            else
+            {
+                line = bp_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                function_name = "NotStopOnJustMyCode";
+            }
+
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunStepThrough"
+            );
+            
+            await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, 4, function_name);
         }
     }
 }

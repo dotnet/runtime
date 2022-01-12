@@ -605,7 +605,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var context = GetContext(id);
             if (!DotnetObjectId.TryParse(args["objectId"], out DotnetObjectId objectId)) {
-                return true;
+                return false;
             }
             switch (objectId.Scheme)
             {
