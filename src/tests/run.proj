@@ -775,6 +775,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
         Assemblies="@(BundleAssemblies)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
