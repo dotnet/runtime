@@ -387,8 +387,22 @@ namespace System.IO
             }
         }
 
-        private static void MoveDirectory(string sourceFullPath, string destFullPath)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase, bool? sourceDirectoryExists)
         {
+            if (sourceDirectoryExists is null)
+            {
+                sourceDirectoryExists = DirectoryExists(sourceFullPath);
+            }
+
+            // Windows will throw if the source file/directory doesn't exist, we preemptively check
+            // to make sure our cross platform behavior matches .NET Framework behavior.
+            if (!sourceDirectoryExists.Value && !FileExists(sourceFullPath))
+                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+
+            if (!sameDirectoryDifferentCase // This check is to allow renaming of directories
+                && DirectoryExists(destFullPath))
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+
             // Windows doesn't care if you try and copy a file via "MoveDirectory"...
             if (FileExists(sourceFullPath))
             {

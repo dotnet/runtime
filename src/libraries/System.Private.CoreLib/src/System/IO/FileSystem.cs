@@ -47,21 +47,7 @@ namespace System.IO
             if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
-            if (sourceDirectoryExists is null)
-            {
-                sourceDirectoryExists = DirectoryExists(sourceFullPath);
-            }
-
-            // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches .NET Framework behavior.
-            if (!sourceDirectoryExists.Value && !FileExists(sourceFullPath))
-                throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-
-            if (!sameDirectoryDifferentCase // This check is to allow renaming of directories
-                && DirectoryExists(destFullPath))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
-
-            MoveDirectory(sourceFullPath, destFullPath);
+            MoveDirectory(sourceFullPath, destFullPath, sameDirectoryDifferentCase, sourceDirectoryExists);
         }
     }
 }
