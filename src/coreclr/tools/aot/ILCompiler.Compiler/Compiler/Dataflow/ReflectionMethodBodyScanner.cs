@@ -2184,7 +2184,6 @@ namespace ILCompiler.Dataflow
                             ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
 
                             bool comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
-                            bool abstractDelegatesMethod = IsAbstractDelegatesInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
                             for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
                             {
                                 MarshalAsDescriptor marshalAsDescriptor = null;
@@ -2195,7 +2194,6 @@ namespace ILCompiler.Dataflow
                                 }
 
                                 comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
-                                abstractDelegatesMethod |= IsAbstractDelegatesInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
                             }
 
                             if (comDangerousMethod)
@@ -2204,14 +2202,6 @@ namespace ILCompiler.Dataflow
                                 reflectionContext.RecordUnrecognizedPattern(
                                     (int)DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, 
                                     new DiagnosticString(DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
-                            }
-
-                            if (abstractDelegatesMethod)
-                            {
-                                reflectionContext.AnalyzingPattern();
-                                reflectionContext.RecordUnrecognizedPattern(
-                                    (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, 
-                                    new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                             }
                         }
 
@@ -2307,41 +2297,6 @@ namespace ILCompiler.Dataflow
             }
 
             return true;
-        }
-
-        bool IsAbstractDelegatesInterop(MarshalAsDescriptor marshalInfoProvider, TypeDesc parameterType)
-        {
-            NativeTypeKind nativeType = NativeTypeKind.Default;
-            if (marshalInfoProvider != null)
-            {
-                nativeType = marshalInfoProvider.Type;
-            }
-
-            if (nativeType == NativeTypeKind.IUnknown || nativeType == NativeTypeKind.IDispatch || nativeType == NativeTypeKind.Intf)
-            {
-                // This is COM by definition
-                return false;
-            }
-
-            if (nativeType == NativeTypeKind.Default)
-            {
-                TypeSystemContext context = parameterType.Context;
-
-                if (parameterType.IsPointer)
-                    return false;
-
-                while (parameterType.IsParameterizedType)
-                    parameterType = ((ParameterizedType)parameterType).ParameterType;
-
-                if (parameterType.IsWellKnownType(WellKnownType.MulticastDelegate)
-                    || parameterType == context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType)
-                {
-                    // Delegates are special cased by interop
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         bool IsComInterop(MarshalAsDescriptor marshalInfoProvider, TypeDesc parameterType)

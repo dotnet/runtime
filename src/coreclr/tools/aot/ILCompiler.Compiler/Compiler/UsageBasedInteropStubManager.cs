@@ -5,7 +5,9 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
+using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
@@ -18,9 +20,11 @@ namespace ILCompiler
     /// </summary>
     public class UsageBasedInteropStubManager : CompilerGeneratedInteropStubManager
     {
-        public UsageBasedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration)
+        private Logger _logger;
+        public UsageBasedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration, Logger logger)
             : base(interopStateManager, pInvokeILEmitterConfiguration)
         {
+            _logger = logger;
         }
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -30,11 +34,12 @@ namespace ILCompiler
                 dependencies = dependencies ?? new DependencyList();
 
                 MethodSignature methodSig = method.Signature;
-                AddParameterMarshallingDependencies(ref dependencies, factory, methodSig.ReturnType);
+                AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig.ReturnType, new MethodReturnOrigin(method));
 
                 for (int i = 0; i < methodSig.Length; i++)
                 {
-                    AddParameterMarshallingDependencies(ref dependencies, factory, methodSig[i]);
+                    var targetContext = new ParameterOrigin(method, i);
+                    AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig[i], targetContext);
                 }
             }
 
@@ -45,11 +50,40 @@ namespace ILCompiler
             }
         }
 
-        private static void AddParameterMarshallingDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        private static bool ShouldEnableReflectionPatternReporting(MethodDesc method)
+        {
+            return ShouldEnablePatternReporting(method, "RequiresUnreferencedCodeAttribute");
+        }
+
+        private static bool ShouldEnablePatternReporting(MethodDesc method, string attributeName)
+        {
+            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", attributeName))
+                return false;
+
+            MethodDesc userMethod = ILCompiler.Logging.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method);
+            if (userMethod != null &&
+                userMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", attributeName))
+                return false;
+
+            return true;
+        }
+
+        private void AddParameterMarshallingDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, TypeDesc type, Origin memberWithRequirements)
         {
             if (type.IsDelegate)
             {
                 dependencies.Add(factory.DelegateMarshallingData((DefType)type), "Delegate marshaling");
+            }
+
+            TypeSystemContext context = type.Context;
+            if ((type.IsWellKnownType(WellKnownType.MulticastDelegate)
+                    || type == context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType))
+            {
+                var reflectionContext = new ReflectionPatternContext(_logger, ShouldEnableReflectionPatternReporting(method), method, memberWithRequirements);
+                reflectionContext.AnalyzingPattern();
+                reflectionContext.RecordUnrecognizedPattern(
+                    (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed,
+                    new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method)));
             }
 
             // struct may contain delegate fields, hence we need to add dependencies for it
@@ -63,7 +97,8 @@ namespace ILCompiler
                     if (field.IsStatic)
                         continue;
 
-                    AddParameterMarshallingDependencies(ref dependencies, factory, field.FieldType);
+                    var targetContext = new FieldOrigin(field);
+                    AddParameterMarshallingDependencies(ref dependencies, factory, method, field.FieldType, targetContext);
                 }
             }
         }
