@@ -2,19 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Metadata;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using ILLink.Shared;
-using Mono.Cecil;
+using Internal.TypeSystem;
 
-namespace Mono.Linker.Steps
+#nullable enable
+
+namespace ILCompiler
 {
     [Flags]
     public enum AllowedAssemblies
@@ -38,33 +44,33 @@ namespace Mono.Linker.Steps
         const string AllAssembliesFullName = "*";
         protected const string XmlNamespace = "";
 
-        protected readonly string _xmlDocumentLocation;
         readonly XPathNavigator _document;
-        protected readonly (EmbeddedResource Resource, AssemblyDefinition Assembly)? _resource;
-        protected readonly LinkContext _context;
+        protected readonly (ManifestResource Resource, ModuleDesc Module)? _resource;
+        private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
+        protected readonly TypeSystemContext _context;
 
-        protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, string xmlDocumentLocation)
+        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
             _context = context;
             using (documentStream)
             {
                 _document = XDocument.Load(documentStream, LoadOptions.SetLineInfo).CreateNavigator();
             }
-            _xmlDocumentLocation = xmlDocumentLocation;
+            _featureSwitchValues = featureSwitchValues;
         }
 
-        protected ProcessLinkerXmlBase(LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation)
-            : this(context, documentStream, xmlDocumentLocation)
+        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            : this(context, documentStream, featureSwitchValues)
         {
             _resource = (
-                resource ?? throw new ArgumentNullException(nameof(resource)),
+                resource.Equals(default(ManifestResource)) ? throw new ArgumentNullException(nameof(resource)) : resource,
                 resourceAssembly ?? throw new ArgumentNullException(nameof(resourceAssembly))
             );
         }
 
-        protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _context, _xmlDocumentLocation);
+        protected virtual bool ShouldProcessElement(XPathNavigator nav) => FeatureSettings.ShouldProcessElement(nav, _featureSwitchValues);
 
-        protected virtual void ProcessXml(bool stripResource, bool ignoreResource)
+        protected virtual void ProcessXml(bool ignoreResource)
         {
             if (!AllowedAssemblySelector.HasFlag(AllowedAssemblies.AnyAssembly) && _resource == null)
                 throw new InvalidOperationException("The containing assembly must be specified for XML which is restricted to modifying that assembly only.");
@@ -79,8 +85,6 @@ namespace Mono.Linker.Steps
 
                 if (_resource != null)
                 {
-                    if (stripResource)
-                        _context.Annotations.AddResourceToRemove(_resource.Value.Assembly, _resource.Value.Resource);
                     if (ignoreResource)
                         return;
                 }
@@ -92,18 +96,18 @@ namespace Mono.Linker.Steps
 
                 // For embedded XML, allow not specifying the assembly explicitly in XML.
                 if (_resource != null)
-                    ProcessAssembly(_resource.Value.Assembly, nav, warnOnUnresolvedTypes: true);
+                    ProcessAssembly(_resource.Value.Module, nav, warnOnUnresolvedTypes: true);
 
             }
-            catch (Exception ex) when (!(ex is LinkerFatalErrorException))
+            catch (Exception ex)
             {
-                throw new LinkerFatalErrorException(MessageContainer.CreateErrorMessage(null, DiagnosticId.ErrorProcessingXmlLocation, _xmlDocumentLocation), ex);
+                throw ex;
             }
         }
 
         protected virtual AllowedAssemblies AllowedAssemblySelector { get => _resource != null ? AllowedAssemblies.ContainingAssembly : AllowedAssemblies.AnyAssembly; }
 
-        bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyNameReference? assemblyName)
+        bool ShouldProcessAllAssemblies(XPathNavigator nav, [NotNullWhen(false)] out AssemblyName? assemblyName)
         {
             assemblyName = null;
             if (GetFullName(nav) == AllAssembliesFullName)
@@ -119,24 +123,24 @@ namespace Mono.Linker.Steps
             {
                 // Errors for invalid assembly names should show up even if this element will be
                 // skipped due to feature conditions.
-                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyNameReference? name);
+                bool processAllAssemblies = ShouldProcessAllAssemblies(assemblyNav, out AssemblyName? name);
                 if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies)
                 {
-                    LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
+                    //LogWarning(assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
                     continue;
                 }
 
-                AssemblyDefinition? assemblyToProcess = null;
+                ModuleDesc? assemblyToProcess = null;
                 if (!AllowedAssemblySelector.HasFlag(AllowedAssemblies.AnyAssembly))
                 {
                     Debug.Assert(!processAllAssemblies);
                     Debug.Assert(_resource != null);
-                    if (_resource.Value.Assembly.Name.Name != name!.Name)
+                    if (_resource.Value.Module.Assembly.GetName().Name != name!.Name)
                     {
-                        LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name.ToString());
+                        //LogWarning(assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name.ToString());
                         continue;
                     }
-                    assemblyToProcess = _resource.Value.Assembly;
+                    assemblyToProcess = _resource.Value.Module;
                 }
 
                 if (!ShouldProcessElement(assemblyNav))
@@ -144,18 +148,19 @@ namespace Mono.Linker.Steps
 
                 if (processAllAssemblies)
                 {
+                    throw new NotImplementedException();
                     // We could avoid loading all references in this case: https://github.com/dotnet/linker/issues/1708
-                    foreach (AssemblyDefinition assembly in _context.GetReferencedAssemblies())
-                        ProcessAssembly(assembly, assemblyNav, warnOnUnresolvedTypes: false);
+                    //foreach (ModuleDesc assembly in GetReferencedAssemblies())
+                    //    ProcessAssembly(assembly, assemblyNav, warnOnUnresolvedTypes: false);
                 }
                 else
                 {
                     Debug.Assert(!processAllAssemblies);
-                    AssemblyDefinition? assembly = assemblyToProcess ?? _context.TryResolve(name!);
+                    ModuleDesc? assembly = assemblyToProcess ?? _context.ResolveAssembly(name!);
 
                     if (assembly == null)
                     {
-                        LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
+                        //LogWarning(assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
                         continue;
                     }
 
@@ -164,9 +169,10 @@ namespace Mono.Linker.Steps
             }
         }
 
-        protected abstract void ProcessAssembly(AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes);
 
-        protected virtual void ProcessTypes(AssemblyDefinition assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
+        protected abstract void ProcessAssembly(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes);
+
+        protected virtual void ProcessTypes(ModuleDesc assembly, XPathNavigator nav, bool warnOnUnresolvedTypes)
         {
             foreach (XPathNavigator typeNav in nav.SelectChildren(TypeElementName, XmlNamespace))
             {
@@ -182,28 +188,12 @@ namespace Mono.Linker.Steps
                         continue;
                 }
 
-                TypeDefinition type = assembly.MainModule.GetType(fullname);
-
-                if (type == null && assembly.MainModule.HasExportedTypes)
-                {
-                    foreach (var exported in assembly.MainModule.ExportedTypes)
-                    {
-                        if (fullname == exported.FullName)
-                        {
-                            var resolvedExternal = ProcessExportedType(exported, assembly, typeNav);
-                            if (resolvedExternal != null)
-                            {
-                                type = resolvedExternal;
-                                break;
-                            }
-                        }
-                    }
-                }
+                TypeDesc type = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(assembly, fullname, throwIfNotFound: false);
 
                 if (type == null)
                 {
-                    if (warnOnUnresolvedTypes)
-                        LogWarning(typeNav, DiagnosticId.XmlCouldNotResolveType, fullname);
+                    //if (warnOnUnresolvedTypes)
+                    //    LogWarning(typeNav, DiagnosticId.XmlCouldNotResolveType, fullname);
                     continue;
                 }
 
@@ -211,61 +201,34 @@ namespace Mono.Linker.Steps
             }
         }
 
-        protected virtual TypeDefinition? ProcessExportedType(ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => exported.Resolve();
-
-        void MatchType(TypeDefinition type, Regex regex, XPathNavigator nav)
+        void MatchType(TypeDesc type, Regex regex, XPathNavigator nav)
         {
-            if (regex.Match(type.FullName).Success)
+            if (regex.Match(type.GetDisplayName()).Success)
                 ProcessType(type, nav);
-
-            if (!type.HasNestedTypes)
-                return;
-
-            foreach (var nt in type.NestedTypes)
-                MatchType(nt, regex, nav);
         }
 
-        protected virtual bool ProcessTypePattern(string fullname, AssemblyDefinition assembly, XPathNavigator nav)
+        protected virtual bool ProcessTypePattern(string fullname, ModuleDesc assembly, XPathNavigator nav)
         {
             Regex regex = new Regex(fullname.Replace(".", @"\.").Replace("*", "(.*)"));
 
-            foreach (TypeDefinition type in assembly.MainModule.Types)
-            {
+            foreach (TypeDesc type in assembly.GetAllTypes())
                 MatchType(type, regex, nav);
-            }
-
-            if (assembly.MainModule.HasExportedTypes)
-            {
-                foreach (var exported in assembly.MainModule.ExportedTypes)
-                {
-                    if (regex.Match(exported.FullName).Success)
-                    {
-                        var type = ProcessExportedType(exported, assembly, nav);
-                        if (type != null)
-                        {
-                            ProcessType(type, nav);
-                        }
-                    }
-                }
-            }
 
             return true;
         }
 
-        protected abstract void ProcessType(TypeDefinition type, XPathNavigator nav);
+        protected abstract void ProcessType(TypeDesc type, XPathNavigator nav);
 
-        protected void ProcessTypeChildren(TypeDefinition type, XPathNavigator nav, object? customData = null)
+        protected void ProcessTypeChildren(TypeDesc type, XPathNavigator nav, object? customData = null)
         {
             if (nav.HasChildren)
             {
                 ProcessSelectedFields(nav, type);
                 ProcessSelectedMethods(nav, type, customData);
-                ProcessSelectedEvents(nav, type, customData);
-                ProcessSelectedProperties(nav, type, customData);
             }
         }
 
-        void ProcessSelectedFields(XPathNavigator nav, TypeDefinition type)
+        void ProcessSelectedFields(XPathNavigator nav, TypeDesc type)
         {
             foreach (XPathNavigator fieldNav in nav.SelectChildren(FieldElementName, XmlNamespace))
             {
@@ -275,15 +238,15 @@ namespace Mono.Linker.Steps
             }
         }
 
-        protected virtual void ProcessField(TypeDefinition type, XPathNavigator nav)
+        protected virtual void ProcessField(TypeDesc type, XPathNavigator nav)
         {
             string signature = GetSignature(nav);
             if (!String.IsNullOrEmpty(signature))
             {
-                FieldDefinition? field = GetField(type, signature);
+                FieldDesc field = type.GetField(signature);
                 if (field == null)
                 {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, signature, type.GetDisplayName());
+                    //LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, signature, type.GetDisplayName());
                     return;
                 }
 
@@ -293,41 +256,19 @@ namespace Mono.Linker.Steps
             string name = GetName(nav);
             if (!String.IsNullOrEmpty(name))
             {
-                bool foundMatch = false;
-                if (type.HasFields)
+                foreach (FieldDesc field in type.GetFields())
                 {
-                    foreach (FieldDefinition field in type.Fields)
+                    if (field.Name == name)
                     {
-                        if (field.Name == name)
-                        {
-                            foundMatch = true;
-                            ProcessField(type, field, nav);
-                        }
+                        ProcessField(type, field, nav);
                     }
-                }
-
-                if (!foundMatch)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName());
                 }
             }
         }
 
-        protected static FieldDefinition? GetField(TypeDefinition type, string signature)
-        {
-            if (!type.HasFields)
-                return null;
+        protected virtual void ProcessField(TypeDesc type, FieldDesc field, XPathNavigator nav) { }
 
-            foreach (FieldDefinition field in type.Fields)
-                if (signature == field.FieldType.FullName + " " + field.Name)
-                    return field;
-
-            return null;
-        }
-
-        protected virtual void ProcessField(TypeDefinition type, FieldDefinition field, XPathNavigator nav) { }
-
-        void ProcessSelectedMethods(XPathNavigator nav, TypeDefinition type, object? customData)
+        void ProcessSelectedMethods(XPathNavigator nav, TypeDesc type, object? customData)
         {
             foreach (XPathNavigator methodNav in nav.SelectChildren(MethodElementName, XmlNamespace))
             {
@@ -337,169 +278,61 @@ namespace Mono.Linker.Steps
             }
         }
 
-        protected virtual void ProcessMethod(TypeDefinition type, XPathNavigator nav, object? customData)
+        protected virtual void ProcessMethod(TypeDesc type, XPathNavigator nav, object? customData)
         {
             string signature = GetSignature(nav);
             if (!String.IsNullOrEmpty(signature))
             {
-                MethodDefinition? method = GetMethod(type, signature);
-                if (method == null)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName());
-                    return;
-                }
-
-                ProcessMethod(type, method, nav, customData);
+                foreach (MethodDesc meth in type.GetMethods())
+                    if (signature == GetMethodSignature(meth, false))
+                        ProcessMethod(type, meth, nav, customData);
             }
 
             string name = GetAttribute(nav, NameAttributeName);
             if (!String.IsNullOrEmpty(name))
             {
-                bool foundMatch = false;
-                if (type.HasMethods)
+                foreach (MethodDesc method in type.GetAllMethods())
                 {
-                    foreach (MethodDefinition method in type.Methods)
+                    if (name == method.Name)
                     {
-                        if (name == method.Name)
-                        {
-                            foundMatch = true;
-                            ProcessMethod(type, method, nav, customData);
-                        }
+                        ProcessMethod(type, method, nav, customData);
                     }
                 }
-
-                if (!foundMatch)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindMethodOnType, name, type.GetDisplayName());
-                }
             }
         }
 
-        protected virtual MethodDefinition? GetMethod(TypeDefinition type, string signature) => null;
+        protected virtual MethodDesc? GetMethod(TypeDesc type, string signature) => null;
 
-        protected virtual void ProcessMethod(TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData) { }
-
-        void ProcessSelectedEvents(XPathNavigator nav, TypeDefinition type, object? customData)
+        public static string GetMethodSignature(MethodDesc meth, bool includeGenericParameters)
         {
-            foreach (XPathNavigator eventNav in nav.SelectChildren(EventElementName, XmlNamespace))
+            StringBuilder sb = new StringBuilder();
+            CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature.ReturnType);
+            sb.Append(' ');
+            sb.Append(meth.Name);
+            if (includeGenericParameters && meth.HasInstantiation)
             {
-                if (!ShouldProcessElement(eventNav))
-                    continue;
-                ProcessEvent(type, eventNav, customData);
+                sb.Append('`');
+                sb.Append(meth.Instantiation.Length);
             }
-        }
 
-        protected virtual void ProcessEvent(TypeDefinition type, XPathNavigator nav, object? customData)
-        {
-            string signature = GetSignature(nav);
-            if (!String.IsNullOrEmpty(signature))
+            sb.Append('(');
+            for (int i = 0; i < meth.Signature.Length; i++)
             {
-                EventDefinition? @event = GetEvent(type, signature);
-                if (@event == null)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName());
-                    return;
-                }
+                if (i > 0)
+                    sb.Append(',');
 
-                ProcessEvent(type, @event, nav, customData);
+                CecilTypeNameFormatter.Instance.AppendName(sb, meth.Signature[i]);
             }
 
-            string name = GetAttribute(nav, NameAttributeName);
-            if (!String.IsNullOrEmpty(name))
-            {
-                bool foundMatch = false;
-                foreach (EventDefinition @event in type.Events)
-                {
-                    if (@event.Name == name)
-                    {
-                        foundMatch = true;
-                        ProcessEvent(type, @event, nav, customData);
-                    }
-                }
-
-                if (!foundMatch)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindEventOnType, name, type.GetDisplayName());
-                }
-            }
+            sb.Append(')');
+            return sb.ToString();
         }
 
-        protected static EventDefinition? GetEvent(TypeDefinition type, string signature)
+        protected virtual void ProcessMethod(TypeDesc type, MethodDesc method, XPathNavigator nav, object? customData) { }
+
+        protected virtual AssemblyName GetAssemblyName(XPathNavigator nav)
         {
-            if (!type.HasEvents)
-                return null;
-
-            foreach (EventDefinition @event in type.Events)
-                if (signature == @event.EventType.FullName + " " + @event.Name)
-                    return @event;
-
-            return null;
-        }
-
-        protected virtual void ProcessEvent(TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData) { }
-
-        void ProcessSelectedProperties(XPathNavigator nav, TypeDefinition type, object? customData)
-        {
-            foreach (XPathNavigator propertyNav in nav.SelectChildren(PropertyElementName, XmlNamespace))
-            {
-                if (!ShouldProcessElement(propertyNav))
-                    continue;
-                ProcessProperty(type, propertyNav, customData);
-            }
-        }
-
-        protected virtual void ProcessProperty(TypeDefinition type, XPathNavigator nav, object? customData)
-        {
-            string signature = GetSignature(nav);
-            if (!String.IsNullOrEmpty(signature))
-            {
-                PropertyDefinition? property = GetProperty(type, signature);
-                if (property == null)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName());
-                    return;
-                }
-
-                ProcessProperty(type, property, nav, customData, true);
-            }
-
-            string name = GetAttribute(nav, NameAttributeName);
-            if (!String.IsNullOrEmpty(name))
-            {
-                bool foundMatch = false;
-                foreach (PropertyDefinition property in type.Properties)
-                {
-                    if (property.Name == name)
-                    {
-                        foundMatch = true;
-                        ProcessProperty(type, property, nav, customData, false);
-                    }
-                }
-
-                if (!foundMatch)
-                {
-                    LogWarning(nav, DiagnosticId.XmlCouldNotFindPropertyOnType, name, type.GetDisplayName());
-                }
-            }
-        }
-
-        protected static PropertyDefinition? GetProperty(TypeDefinition type, string signature)
-        {
-            if (!type.HasProperties)
-                return null;
-
-            foreach (PropertyDefinition property in type.Properties)
-                if (signature == property.PropertyType.FullName + " " + property.Name)
-                    return property;
-
-            return null;
-        }
-
-        protected virtual void ProcessProperty(TypeDefinition type, PropertyDefinition property, XPathNavigator nav, object? customData, bool fromSignature) { }
-
-        protected virtual AssemblyNameReference GetAssemblyName(XPathNavigator nav)
-        {
-            return AssemblyNameReference.Parse(GetFullName(nav));
+            return new AssemblyName(GetFullName(nav));
         }
 
         protected static string GetFullName(XPathNavigator nav)
@@ -522,141 +355,193 @@ namespace Mono.Linker.Steps
             return nav.GetAttribute(attribute, XmlNamespace);
         }
 
-        protected MessageOrigin GetMessageOriginForPosition(XPathNavigator position)
+        class CecilTypeNameFormatter : TypeNameFormatter
         {
-            return (position is IXmlLineInfo lineInfo)
-                    ? new MessageOrigin(_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition, _resource?.Assembly)
-                    : new MessageOrigin(_xmlDocumentLocation, 0, 0, _resource?.Assembly);
-        }
-        protected void LogWarning(string message, int warningCode, XPathNavigator position)
-        {
-            _context.LogWarning(message, warningCode, GetMessageOriginForPosition(position));
-        }
+            public static readonly CecilTypeNameFormatter Instance = new CecilTypeNameFormatter();
 
-        protected void LogWarning(XPathNavigator position, DiagnosticId id, params string[] args)
-        {
-            _context.LogWarning(GetMessageOriginForPosition(position), id, args);
-        }
-
-        public override string ToString() => GetType().Name + ": " + _xmlDocumentLocation;
-
-        public bool TryConvertValue(string value, TypeReference target, out object? result)
-        {
-            switch (target.MetadataType)
+            public override void AppendName(StringBuilder sb, ArrayType type)
             {
-                case MetadataType.Boolean:
-                    if (bool.TryParse(value, out bool bvalue))
-                    {
-                        result = bvalue ? 1 : 0;
-                        return true;
-                    }
-
-                    goto case MetadataType.Int32;
-
-                case MetadataType.Byte:
-                    if (!byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte byteresult))
-                        break;
-
-                    result = (int)byteresult;
-                    return true;
-
-                case MetadataType.SByte:
-                    if (!sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out sbyte sbyteresult))
-                        break;
-
-                    result = (int)sbyteresult;
-                    return true;
-
-                case MetadataType.Int16:
-                    if (!short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out short shortresult))
-                        break;
-
-                    result = (int)shortresult;
-                    return true;
-
-                case MetadataType.UInt16:
-                    if (!ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ushort ushortresult))
-                        break;
-
-                    result = (int)ushortresult;
-                    return true;
-
-                case MetadataType.Int32:
-                    if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
-                        break;
-
-                    result = iresult;
-                    return true;
-
-                case MetadataType.UInt32:
-                    if (!uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint uresult))
-                        break;
-
-                    result = (int)uresult;
-                    return true;
-
-                case MetadataType.Double:
-                    if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double dresult))
-                        break;
-
-                    result = dresult;
-                    return true;
-
-                case MetadataType.Single:
-                    if (!float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float fresult))
-                        break;
-
-                    result = fresult;
-                    return true;
-
-                case MetadataType.Int64:
-                    if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long lresult))
-                        break;
-
-                    result = lresult;
-                    return true;
-
-                case MetadataType.UInt64:
-                    if (!ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong ulresult))
-                        break;
-
-                    result = (long)ulresult;
-                    return true;
-
-                case MetadataType.Char:
-                    if (!char.TryParse(value, out char chresult))
-                        break;
-
-                    result = (int)chresult;
-                    return true;
-
-                case MetadataType.String:
-                    if (value is string || value == null)
-                    {
-                        result = value;
-                        return true;
-                    }
-
-                    break;
-
-                case MetadataType.ValueType:
-                    if (value is string &&
-                        _context.TryResolve(target) is TypeDefinition typeDefinition &&
-                        typeDefinition.IsEnum)
-                    {
-                        var enumField = typeDefinition.Fields.Where(f => f.IsStatic && f.Name == value).FirstOrDefault();
-                        if (enumField != null)
-                        {
-                            result = Convert.ToInt32(enumField.Constant);
-                            return true;
-                        }
-                    }
-
-                    break;
+                AppendName(sb, type.ElementType);
+                sb.Append('[');
+                if (type.Rank > 1)
+                    sb.Append(new string(',', type.Rank - 1));
+                sb.Append(']');
+            }
+            public override void AppendName(StringBuilder sb, ByRefType type)
+            {
+                AppendName(sb, type.ParameterType);
+                sb.Append('&');
             }
 
-            result = null;
-            return false;
+            public override void AppendName(StringBuilder sb, PointerType type)
+            {
+                AppendName(sb, type.ParameterType);
+                sb.Append('*');
+            }
+
+            public override void AppendName(StringBuilder sb, FunctionPointerType type)
+            {
+                sb.Append(" ");
+                AppendName(sb, type.Signature.ReturnType);
+                sb.Append(" *");
+
+                sb.Append("(");
+
+                for (int i = 0; i < type.Signature.Length; i++)
+                {
+                    var parameter = type.Signature[i];
+                    if (i > 0)
+                        sb.Append(",");
+
+                    AppendName(sb, parameter);
+                }
+
+                sb.Append(")");
+            }
+
+            public override void AppendName(StringBuilder sb, GenericParameterDesc type)
+            {
+                sb.Append(type.Name);
+            }
+            public override void AppendName(StringBuilder sb, SignatureMethodVariable type)
+            {
+            }
+            public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
+            {
+            }
+            protected override void AppendNameForInstantiatedType(StringBuilder sb, DefType type)
+            {
+                AppendName(sb, type.GetTypeDefinition());
+
+                sb.Append('<');
+
+                for (int i = 0; i < type.Instantiation.Length; i++)
+                {
+                    if (i != 0)
+                        sb.Append(',');
+
+                    AppendName(sb, type.Instantiation[i]);
+                }
+
+                sb.Append('>');
+            }
+            protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
+            {
+                if (!String.IsNullOrEmpty(type.Namespace))
+                {
+                    sb.Append(type.Namespace);
+                    sb.Append('.');
+                }
+
+                sb.Append(type.Name);
+            }
+
+            protected override void AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType)
+            {
+                AppendName(sb, containingType);
+                sb.Append('/');
+                sb.Append(nestedType.Name);
+            }
+
+#if false
+            public bool TryConvertValue(string value, TypeDesc type, out object? result)
+            {
+                switch (type.UnderlyingType.Category)
+                {
+                    case TypeFlags.Boolean:
+                        if ((bool.TryParse(value, out bool bvalue)))
+                        {
+                            result = bvalue ? 1 : 0;
+                            return true;
+                        }
+                        else
+                            goto case TypeFlags.Int32;
+
+                    case TypeFlags.Byte:
+                        if (!byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out byte byteresult))
+                            break;
+
+                        result = (int)byteresult;
+                        return true;
+
+                    case TypeFlags.SByte:
+                        if (!sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out sbyte sbyteresult))
+                            break;
+
+                        result = (int)sbyteresult;
+                        return true;
+
+                    case TypeFlags.Int16:
+                        if (!short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out short shortresult))
+                            break;
+
+                        result = (int)shortresult;
+                        return true;
+
+                    case TypeFlags.UInt16:
+                        if (!ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ushort ushortresult))
+                            break;
+
+                        result = (int)ushortresult;
+                        return true;
+
+                    case TypeFlags.Int32:
+                        if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int iresult))
+                            break;
+
+                        result = iresult;
+                        return true;
+
+                    case TypeFlags.UInt32:
+                        if (!uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint uresult))
+                            break;
+
+                        result = (int)uresult;
+                        return true;
+
+                    case TypeFlags.Double:
+                        if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double dresult))
+                            break;
+
+                        result = dresult;
+                        return true;
+
+                    case TypeFlags.Single:
+                        if (!float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float fresult))
+                            break;
+
+                        result = fresult;
+                        return true;
+
+                    case TypeFlags.Int64:
+                        if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long lresult))
+                            break;
+
+                        result = lresult;
+                        return true;
+
+                    case TypeFlags.UInt64:
+                        if (!ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out ulong ulresult))
+                            break;
+
+                        result = (long)ulresult;
+                        return true;
+
+                    case TypeFlags.Char:
+                        if (!char.TryParse(value, out char chresult))
+                            break;
+
+                        result = (int)chresult;
+                        return true;
+
+                    default:
+                        throw new NotSupportedException(type.ToString());
+                }
+
+                result = null;
+                return false;
+            }
+#endif
         }
     }
 }
