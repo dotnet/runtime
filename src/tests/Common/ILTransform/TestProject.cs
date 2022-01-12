@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Xml;
 
@@ -31,6 +32,11 @@ public struct DebugOptimize : IComparable<DebugOptimize>
     public override bool Equals(object? obj) => obj is DebugOptimize optimize && Debug == optimize.Debug && Optimize == optimize.Optimize;
 
     public override int GetHashCode() => HashCode.Combine(Debug, Optimize);
+
+    public override string ToString()
+    {
+        return string.Format("DbgOpt ({0} | {1})", Debug, Optimize);
+    }
 }
 
 public struct TestCount
@@ -39,16 +45,11 @@ public struct TestCount
     public int Pri0;
     public int Fact;
     public int ILProj;
+    public HashSet<string> Properties;
 
     public int Pri1 => Total - Pri0;
 
-    public TestCount(int total, int pri0, int fact, int il)
-    {
-        Total = total;
-        Pri0 = pri0;
-        Fact = fact;
-        ILProj = il;
-    }
+    public static TestCount New() => new TestCount() { Properties = new HashSet<string>() };
 }
 
 public class TestProject
@@ -64,51 +65,90 @@ public class TestProject
     public readonly string[] CompileFiles;
     public readonly string[] ProjectReferences;
     public readonly string TestClassName;
+    public readonly string[] TestClassBases;
+    public readonly string TestClassNamespace;
     public readonly string TestClassSourceFile;
     public readonly int TestClassLine;
     public readonly int MainMethodLine;
+    public readonly int LastUsingLine;
+    public readonly int NamespaceLine;
     public readonly bool HasFactAttribute;
+    public readonly Dictionary<string, string> AllProperties;
+    public readonly bool IsILProject;
 
     public string? TestProjectAlias;
     public string? DeduplicatedClassName;
+    public string? DeduplicatedNamespaceName;
 
     public TestProject(
         string absolutePath,
         string relativePath,
-        string outputType,
-        string clrTestKind,
-        string clrTestProjectToRun,
-        string clrTestExecutionArguments,
-        DebugOptimize debugOptimize,
-        string priority,
+        Dictionary<string, string> allProperties,
         string[] compileFiles,
         string[] projectReferences,
         string testClassName,
+        string[] testClassBases,
+        string testClassNamespace,
         string testClassSourceFile,
         int testClassLine,
         int mainMethodLine,
+        int lastUsingLine,
+        int namespaceLine,
         bool hasFactAttribute)
     {
         AbsolutePath = absolutePath;
         RelativePath = relativePath;
-        OutputType = outputType;
-        CLRTestKind = clrTestKind;
-        CLRTestProjectToRun = clrTestProjectToRun;
-        CLRTestExecutionArguments = clrTestExecutionArguments;
-        DebugOptimize = debugOptimize;
-        Priority = priority;
+        AllProperties = allProperties;
+
+        OutputType = GetProperty("OutputType");
+        CLRTestKind = GetProperty("CLRTestKind");
+        CLRTestProjectToRun = SanitizeFileName(GetProperty("CLRTestProjectToRun"), AbsolutePath);
+        CLRTestExecutionArguments = GetProperty("CLRTestExecutionArguments");
+        string debugType = InitCaps(GetProperty("DebugType"));
+        string optimize = InitCaps(GetProperty("Optimize"));
+        if (optimize == "")
+        {
+            optimize = "False";
+        }
+        DebugOptimize = new DebugOptimize(debugType, optimize);
+        Priority = GetProperty("CLRTestPriority");
+
         CompileFiles = compileFiles;
         ProjectReferences = projectReferences;
         TestClassName = testClassName;
+        TestClassBases = testClassBases;
+        TestClassNamespace = testClassNamespace;
         TestClassSourceFile = testClassSourceFile;
         TestClassLine = testClassLine;
         MainMethodLine = mainMethodLine;
+        LastUsingLine = lastUsingLine;
+        NamespaceLine = namespaceLine;
         HasFactAttribute = hasFactAttribute;
+
+        IsILProject = Path.GetExtension(RelativePath).ToLower() == ".ilproj";
     }
 
     public static bool IsIdentifier(char c)
     {
         return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
+    }
+
+    public static bool MakePublic(ref string line)
+    {
+        if (!line.Contains("public "))
+        {
+            if (line.Contains("private "))
+            {
+                line = line.Replace("private ", "public ");
+                return true;
+            }
+            else if (line.Contains("internal "))
+            {
+                line = line.Replace("internal ", "public ");
+                return true;
+            }
+        }
+        return false;
     }
 
     public static string SanitizeIdentifier(string source)
@@ -155,15 +195,109 @@ public class TestProject
 
     public static string ReplaceIdentifier(string line, string originalIdent, string targetIdent)
     {
-        int index = line.IndexOf(originalIdent);
-        int endIndex = index + originalIdent.Length;
-        if (index >= 0
-            && (index == 0 || !IsIdentifier(line[index - 1]))
-            && (endIndex >= line.Length || !IsIdentifier(line[endIndex])))
+        int startIndex = 0;
+        while (startIndex < line.Length)
         {
-            return line.Substring(0, index) + targetIdent + line.Substring(endIndex);
+            int index = line.IndexOf(originalIdent, startIndex);
+            if (index < 0)
+            {
+                break;
+            }
+            int endIndex = index + originalIdent.Length;
+            if ((index == 0 || !IsIdentifier(line[index - 1]))
+                && (endIndex >= line.Length || !IsIdentifier(line[endIndex])))
+            {
+                line = line.Substring(0, index) + targetIdent + line.Substring(endIndex);
+                startIndex = index + targetIdent.Length;
+            }
+            else
+            {
+                startIndex = index + 1;
+            }
         }
         return line;
+    }
+
+    public static bool GetILClassName(string line, out string? className)
+    {
+        int classIndex = line.IndexOf(".class");
+        int structIndex = line.IndexOf(".struct");
+        int scanIndex;
+        if (classIndex >= 0)
+        {
+            scanIndex = classIndex + 6;
+        }
+        else if (structIndex >= 0)
+        {
+            scanIndex = structIndex + 7;
+        }
+        else
+        {
+            className = null;
+            return false;
+        }
+
+        while (scanIndex < line.Length)
+        {
+            if (Char.IsWhiteSpace(line[scanIndex]))
+            {
+                scanIndex++;
+                continue;
+            }
+            if (scanIndex + 1 < line.Length && line[scanIndex] == '/' && line[scanIndex + 1] == '*')
+            {
+                scanIndex += 2;
+                while (scanIndex + 1 < line.Length && !(line[scanIndex] == '*' && line[scanIndex + 1] == '/'))
+                {
+                    scanIndex++;
+                }
+                scanIndex += 2;
+                continue;
+            }
+            if (line[scanIndex] == '\'')
+            {
+                int identStart = ++scanIndex;
+                while (scanIndex < line.Length && line[scanIndex] != '\'')
+                {
+                    scanIndex++;
+                }
+                className = line.Substring(identStart, scanIndex - identStart);
+                return true;
+            }
+            if (IsIdentifier(line[scanIndex]))
+            {
+                int identStart = scanIndex;
+                while (++scanIndex < line.Length && IsIdentifier(line[scanIndex]))
+                {
+                }
+                className = line.Substring(identStart, scanIndex - identStart);
+                switch (className)
+                {
+                    case "auto":
+                    case "ansi":
+                    case "interface":
+                    case "public":
+                    case "private":
+                    case "sealed":
+                    case "value":
+                    case "beforefieldinit":
+                    case "sequential":
+                    case "explicit":
+                    case "abstract":
+                        continue;
+
+                    case "nested":
+                        className = null;
+                        return false;
+
+                    default:
+                        return true;
+                }
+            }
+            break; // parse error
+        }
+        className = null;
+        return false;
     }
 
     public bool HasSameContentAs(TestProject project2)
@@ -217,18 +351,47 @@ public class TestProject
         return true;
     }
 
+    private string GetProperty(string name, string defaultValue = "")
+    {
+        return AllProperties.TryGetValue(name, out string? property) ? property : defaultValue;
+    }
+
+    private static string SanitizeFileName(string fileName, string projectPath)
+    {
+        string projectName = Path.GetFileNameWithoutExtension(projectPath);
+        return Path.GetFullPath(
+            fileName
+            .Replace("$(MSBuildProjectName)", projectName)
+            .Replace("$(MSBuildThisFileName)", projectName),
+            Path.GetDirectoryName(projectPath)!);
+    }
+
+    private static string InitCaps(string s)
+    {
+        if (s.Length > 0)
+        {
+            s = s.Substring(0, 1).ToUpper() + s.Substring(1);
+        }
+        if (s.Equals("pdbonly", StringComparison.OrdinalIgnoreCase))
+        {
+            s = "PdbOnly";
+        }
+        return s;
+    }
 }
 
 class TestProjectStore
 {
     private readonly List<TestProject> _projects;
     private readonly Dictionary<string, List<TestProject>> _classNameMap;
+    private readonly Dictionary<string, Dictionary<DebugOptimize, List<TestProject>>> _namespaceNameMap;
     private readonly HashSet<string> _rewrittenFiles;
 
     public TestProjectStore()
     {
         _projects = new List<TestProject>();
         _classNameMap = new Dictionary<string, List<TestProject>>();
+        _namespaceNameMap = new Dictionary<string, Dictionary<DebugOptimize, List<TestProject>>>();
         _rewrittenFiles = new HashSet<string>();
     }
 
@@ -249,11 +412,21 @@ class TestProjectStore
         }
     }
 
+    static string[] s_standardProperties = new string[]
+    {
+        "OutputType",
+        "CLRTestKind",
+        "CLRTestPriority",
+        "AllowUnsafeBlocks",
+        "DebugType",
+        "Optimize",
+    };
+
     public void DumpFolderStatistics(TextWriter writer)
     {
         for (int level = 1; level <= 3; level++)
         {
-            string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | TO FIX | PARTITIONING: {0}", level);
+            string title = string.Format("COUNT |  PRI0  |  PRI1  |  FACT  | ILPROJ | TO FIX | {0} (PROPERTIES)", level);
             writer.WriteLine(title);
             writer.WriteLine(new string('-', title.Length));
             Dictionary<string, TestCount> folderCounts = new Dictionary<string, TestCount>();
@@ -271,7 +444,10 @@ class TestProjectStore
                     folderNameBuilder.Append(folderSplit[component]);
                 }
                 string folderName = folderNameBuilder.ToString();
-                folderCounts.TryGetValue(folderName, out TestCount count);
+                if (!folderCounts.TryGetValue(folderName, out TestCount count))
+                {
+                    count = TestCount.New();
+                }
                 count.Total++;
                 if (project.Priority != "1")
                 {
@@ -285,19 +461,23 @@ class TestProjectStore
                 {
                     count.ILProj++;
                 }
+                count.Properties!.UnionWith(project.AllProperties.Keys);
                 folderCounts[folderName] = count;
             }
             foreach (KeyValuePair<string, TestCount> kvp in folderCounts.OrderBy(kvp => kvp.Key))
             {
+                string props = string.Join(' ', kvp.Value.Properties.Except(s_standardProperties).OrderBy(prop => prop));
+
                 writer.WriteLine(
-                    "{0,5} | {1,6} | {2,6} | {3,6} | {4,6} | {5,6} | {6}",
+                    "{0,5} | {1,6} | {2,6} | {3,6} | {4,6} | {5,6} | {6} ({7})",
                     kvp.Value.Total,
                     kvp.Value.Pri0,
                     kvp.Value.Pri1,
                     kvp.Value.Fact,
                     kvp.Value.ILProj,
                     kvp.Value.Pri1 - kvp.Value.Fact,
-                    kvp.Key);
+                    kvp.Key,
+                    props);
             }
             writer.WriteLine();
         }
@@ -320,6 +500,107 @@ class TestProjectStore
         {
             writer.WriteLine("{0,-10} | {1,-10} | {2}", kvp.Key.Debug, kvp.Key.Optimize, kvp.Value);
         }
+        writer.WriteLine();
+    }
+
+    public void DumpIrregularProjectSuffixes(TextWriter writer)
+    {
+        writer.WriteLine("ILPROJ projects not ending in _il_d/do/r/ro");
+        writer.WriteLine("-------------------------------------------");
+
+        foreach (TestProject project in _projects)
+        {
+            if (Path.GetExtension(project.RelativePath).ToLower() == ".ilproj")
+            {
+                string projectName = Path.GetFileNameWithoutExtension(project.RelativePath);
+                if (!projectName.EndsWith("_il_do") &&
+                    !projectName.EndsWith("_il_ro") &&
+                    !projectName.EndsWith("_il_d") &&
+                    !projectName.EndsWith("_il_r"))
+                {
+                    writer.WriteLine(project.AbsolutePath);
+                }
+            }
+        }
+
+        writer.WriteLine();
+
+        writer.WriteLine("CSPROJ projects ending in _il_d/do/r/ro");
+        writer.WriteLine("---------------------------------------");
+
+        foreach (TestProject project in _projects)
+        {
+            if (Path.GetExtension(project.RelativePath).ToLower() == ".csproj")
+            {
+                string projectName = Path.GetFileNameWithoutExtension(project.RelativePath);
+                if (projectName.EndsWith("_il_do") ||
+                    projectName.EndsWith("_il_ro") ||
+                    projectName.EndsWith("_il_d") ||
+                    projectName.EndsWith("_il_r"))
+                {
+                    writer.WriteLine(project.AbsolutePath);
+                }
+            }
+        }
+
+        writer.WriteLine("CSPROJ projects not ending in _d/_do/_r/_ro");
+        writer.WriteLine("-------------------------------------------");
+
+        foreach (TestProject project in _projects)
+        {
+            if (Path.GetExtension(project.RelativePath).ToLower() == ".csproj")
+            {
+                string projectName = Path.GetFileNameWithoutExtension(project.RelativePath);
+                if (!projectName.EndsWith("_do") &&
+                    !projectName.EndsWith("_ro") &&
+                    !projectName.EndsWith("_d") &&
+                    !projectName.EndsWith("_r"))
+                {
+                    writer.WriteLine(project.AbsolutePath);
+                }
+            }
+        }
+
+        writer.WriteLine();
+    }
+
+    public void DumpMultiProjectSources(TextWriter writer)
+    {
+        Dictionary<string, Dictionary<DebugOptimize, List<TestProject>>> potentialDuplicateMap = new Dictionary<string, Dictionary<DebugOptimize, List<TestProject>>>();
+        foreach (TestProject project in _projects)
+        {
+            foreach (string source in project.CompileFiles)
+            {
+                if (!potentialDuplicateMap.TryGetValue(source, out Dictionary<DebugOptimize, List<TestProject>>? sourceMap))
+                {
+                    sourceMap = new Dictionary<DebugOptimize, List<TestProject>>();
+                    potentialDuplicateMap.Add(source, sourceMap);
+                }
+                if (!sourceMap.TryGetValue(project.DebugOptimize, out List<TestProject>? projects))
+                {
+                    projects = new List<TestProject>();
+                    sourceMap.Add(project.DebugOptimize, projects);
+                }
+                projects.Add(project);
+            }
+        }
+
+        writer.WriteLine("SOURCES USED IN MULTIPLE PROJECTS");
+        writer.WriteLine("---------------------------------");
+
+        foreach (KeyValuePair<string, Dictionary<DebugOptimize, List<TestProject>>> sourceKvp in potentialDuplicateMap.Where(kvp => kvp.Value.Values.Any(l => l.Count > 1)).OrderBy(kvp => kvp.Key))    
+        {
+            writer.WriteLine(sourceKvp.Key);
+            foreach (KeyValuePair<DebugOptimize, List<TestProject>> debugOptKvp in sourceKvp.Value.Where(kvp => kvp.Value.Count > 1))
+            {
+                writer.WriteLine("\\- {0}", debugOptKvp.Key);
+                foreach (TestProject project in debugOptKvp.Value)
+                {
+                    writer.WriteLine("   \\- {0}", project.AbsolutePath);
+                }
+            }
+        }
+
         writer.WriteLine();
     }
 
@@ -512,7 +793,7 @@ class TestProjectStore
         writer.WriteLine();
     }
 
-    public void RewriteAllTests(bool deduplicateClassNames, string classToDeduplicate, bool addILFactAttributes)
+    public void RewriteAllTests(bool deduplicateClassNames, string classToDeduplicate, bool addILFactAttributes, bool cleanupILModuleAssembly)
     {
         HashSet<string> classNameDuplicates = new HashSet<string>(_classNameMap.Where(kvp => kvp.Value.Count > 1).Select(kvp => kvp.Key));
 
@@ -523,11 +804,82 @@ class TestProjectStore
             {
                 continue;
             }
-            new ILRewriter(project, classNameDuplicates, deduplicateClassNames, _rewrittenFiles, addILFactAttributes).Rewrite();
+            new ILRewriter(project, classNameDuplicates, deduplicateClassNames, _rewrittenFiles, addILFactAttributes, cleanupILModuleAssembly).Rewrite();
             index++;
             if (index % 500 == 0)
             {
                 Console.WriteLine("Rewritten {0} / {1} projects", index, _projects.Count);
+            }
+        }
+    }
+
+    public void UnifyDbgRelProjects()
+    {
+        foreach (TestProject testProject in _projects)
+        {
+            string dir = Path.GetDirectoryName(testProject.AbsolutePath)!;
+            string file = Path.GetFileNameWithoutExtension(testProject.RelativePath);
+            string ext = Path.GetExtension(testProject.RelativePath);
+            string renamedFile = file;
+            if (renamedFile.StartsWith("_il"))
+            {
+                renamedFile = renamedFile.Substring(3) + "_il";
+            }
+            if (renamedFile.StartsWith("_speed_dbg"))
+            {
+                renamedFile = renamedFile.Substring(10) + "_do";
+            }
+            else if (renamedFile.StartsWith("_speed_rel"))
+            {
+                renamedFile = renamedFile.Substring(10) + "_ro";
+            }
+            else if (renamedFile.StartsWith("_opt_dbg"))
+            {
+                renamedFile = renamedFile.Substring(8) + "_do";
+            }
+            else if (renamedFile.StartsWith("_opt_rel"))
+            {
+                renamedFile = renamedFile.Substring(8) + "_ro";
+            }
+            else if (renamedFile.StartsWith("_odbg"))
+            {
+                renamedFile = renamedFile.Substring(5) + "_do";
+            }
+            else if (renamedFile.StartsWith("_orel"))
+            {
+                renamedFile = renamedFile.Substring(5) + "_ro";
+            }
+            else if (renamedFile.StartsWith("_dbg"))
+            {
+                renamedFile = renamedFile.Substring(4) + "_d";
+            }
+            else if (renamedFile.StartsWith("_rel"))
+            {
+                renamedFile = renamedFile.Substring(4) + "_r";
+            }
+            if (testProject.IsILProject)
+            {
+                if (renamedFile.EndsWith("_d") && !renamedFile.EndsWith("_il_d"))
+                {
+                    renamedFile = renamedFile.Substring(0, renamedFile.Length - 2) + "_il_d";
+                }
+                else if (renamedFile.EndsWith("_do") && !renamedFile.EndsWith("_il_do"))
+                {
+                    renamedFile = renamedFile.Substring(0, renamedFile.Length - 3) + "_il_do";
+                }
+                else if (renamedFile.EndsWith("_r") && !renamedFile.EndsWith("_il_r"))
+                {
+                    renamedFile = renamedFile.Substring(0, renamedFile.Length - 2) + "_il_r";
+                }
+                else if (renamedFile.EndsWith("_ro") && !renamedFile.EndsWith("_il_ro"))
+                {
+                    renamedFile = renamedFile.Substring(0, renamedFile.Length - 3) + "_il_ro";
+                }
+            }
+            if (renamedFile != file)
+            {
+                string renamedPath = Path.Combine(dir, renamedFile + ext);
+                File.Move(testProject.AbsolutePath, renamedPath, overwrite: false);
             }
         }
     }
@@ -694,15 +1046,9 @@ class TestProjectStore
         string projectName = Path.GetFileNameWithoutExtension(relativePath);
         string projectDir = Path.GetDirectoryName(absolutePath)!;
 
-        string outputType = "";
-        string clrTestKind = "";
-        string clrTestProjectToRun = "";
-        string clrTestExecutionArguments = "";
-        string priority = "";
-        string debugType = "";
-        string optimize = "";
         List<string> compileFiles = new List<string>();
         List<string> projectReferences = new List<string>();
+        Dictionary<string, string> allProperties = new Dictionary<string, string>();
 
         XmlDocument xmlDoc = new XmlDocument();
         xmlDoc.Load(absolutePath);
@@ -714,35 +1060,9 @@ class TestProjectStore
                 {
                     foreach (XmlNode property in projectChild.ChildNodes)
                     {
-                        switch (property.Name)
+                        if (property.Name != "#comment")
                         {
-                            case "OutputType":
-                                outputType = property.InnerText;
-                                break;
-
-                            case "CLRTestPriority":
-                                priority = property.InnerText;
-                                break;
-
-                            case "CLRTestKind":
-                                clrTestKind = property.InnerText;
-                                break;
-
-                            case "CLRTestProjectToRun":
-                                clrTestProjectToRun = SanitizeFileName(property.InnerText, absolutePath);
-                                break;
-
-                            case "CLRTestExecutionArguments":
-                                clrTestExecutionArguments = property.InnerText;
-                                break;
-
-                            case "DebugType":
-                                debugType = property.InnerText;
-                                break;
-
-                            case "Optimize":
-                                optimize = property.InnerText;
-                                break;
+                            allProperties[property.Name] = property.InnerText;
                         }
                     }
                 }
@@ -786,9 +1106,13 @@ class TestProjectStore
         }
 
         string testClassName = "";
+        List<string> testClassBases = new List<string>();
+        string testClassNamespace = "";
         string testClassSourceFile = "";
         int testClassLine = -1;
         int mainMethodLine = -1;
+        int lastUsingLine = -1;
+        int namespaceLine = -1;
         bool hasFactAttribute = false;
         foreach (string compileFile in compileFiles)
         {
@@ -797,9 +1121,13 @@ class TestProjectStore
                 AnalyzeSource(
                     compileFile,
                     testClassName: ref testClassName,
+                    testClassBases: ref testClassBases,
+                    testClassNamespace: ref testClassNamespace,
                     testClassSourceFile: ref testClassSourceFile,
                     testClassLine: ref testClassLine,
                     mainMethodLine: ref mainMethodLine,
+                    lastUsingLine: ref lastUsingLine,
+                    namespaceLine: ref namespaceLine,
                     hasFactAttribute: ref hasFactAttribute);
             }
             catch (Exception ex)
@@ -809,52 +1137,48 @@ class TestProjectStore
         }
 
         _projects.Add(new TestProject(
-            absolutePath,
-            relativePath,
-            outputType,
-            clrTestKind,
-            clrTestProjectToRun,
-            clrTestExecutionArguments,
-            new DebugOptimize(InitCaps(debugType), InitCaps(optimize)),
-            priority,
-            compileFiles.ToArray(),
-            projectReferences.ToArray(),
-            testClassName,
-            testClassSourceFile,
-            testClassLine,
-            mainMethodLine,
-            hasFactAttribute));
+            absolutePath: absolutePath,
+            relativePath: relativePath,
+            allProperties: allProperties,
+            compileFiles: compileFiles.ToArray(),
+            projectReferences: projectReferences.ToArray(),
+            testClassName: testClassName,
+            testClassBases: testClassBases.ToArray(),
+            testClassNamespace: testClassNamespace,
+            testClassSourceFile: testClassSourceFile,
+            testClassLine: testClassLine,
+            mainMethodLine: mainMethodLine,
+            lastUsingLine: lastUsingLine,
+            namespaceLine: namespaceLine,
+            hasFactAttribute: hasFactAttribute));
     }
 
-    private static string SanitizeFileName(string fileName, string projectPath)
-    {
-        string projectName = Path.GetFileNameWithoutExtension(projectPath);
-        return Path.GetFullPath(
-            fileName
-            .Replace("$(MSBuildProjectName)", projectName)
-            .Replace("$(MSBuildThisFileName)", projectName),
-            Path.GetDirectoryName(projectPath)!);
-    }
-
-    private static string InitCaps(string s)
-    {
-        if (s.Length > 0)
-        {
-            s = s.Substring(0, 1).ToUpper() + s.Substring(1);
-        }
-        if (s.Equals("pdbonly", StringComparison.OrdinalIgnoreCase))
-        {
-            s = "PdbOnly";
-        }
-        return s;
-    }
-
-    private static void AnalyzeSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
+    private static void AnalyzeSource(
+        string path,
+        ref string testClassName,
+        ref List<string> testClassBases,
+        ref string testClassNamespace,
+        ref string testClassSourceFile,
+        ref int testClassLine,
+        ref int mainMethodLine,
+        ref int lastUsingLine,
+        ref int namespaceLine,
+        ref bool hasFactAttribute)
     {
         if (path.IndexOf('*') < 0 && path.IndexOf('?') < 0)
         {
             // Exact path
-            AnalyzeFileSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
+            AnalyzeFileSource(
+                path: path,
+                testClassName: ref testClassName,
+                testClassBases: ref testClassBases,
+                testClassNamespace: ref testClassNamespace,
+                testClassSourceFile: ref testClassSourceFile,
+                testClassLine: ref testClassLine,
+                mainMethodLine: ref mainMethodLine,
+                lastUsingLine: ref lastUsingLine,
+                namespaceLine: ref namespaceLine,
+                hasFactAttribute: ref hasFactAttribute);
             return;
         }
 
@@ -875,20 +1199,60 @@ class TestProjectStore
 
         foreach (string file in Directory.EnumerateFiles(directory, pattern, searchOption))
         {
-            AnalyzeFileSource(file, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
+            AnalyzeFileSource(
+                path: file,
+                testClassName: ref testClassName,
+                testClassBases: ref testClassBases,
+                testClassNamespace: ref testClassNamespace,
+                testClassSourceFile: ref testClassSourceFile,
+                testClassLine: ref testClassLine,
+                mainMethodLine: ref mainMethodLine,
+                lastUsingLine: ref lastUsingLine,
+                namespaceLine: ref namespaceLine,
+                hasFactAttribute: ref hasFactAttribute);
         }
     }
 
-    private static void AnalyzeFileSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
+    private static void AnalyzeFileSource(
+        string path,
+        ref string testClassName,
+        ref List<string> testClassBases,
+        ref string testClassNamespace,
+        ref string testClassSourceFile,
+        ref int testClassLine,
+        ref int mainMethodLine,
+        ref int lastUsingLine,
+        ref int namespaceLine,
+        ref bool hasFactAttribute)
     {
         switch (Path.GetExtension(path).ToLower())
         {
             case ".il":
-                AnalyzeILSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
+                AnalyzeILSource(
+                    path: path,
+                    testClassName: ref testClassName,
+                    testClassBases: ref testClassBases,
+                    testClassNamespace: ref testClassNamespace,
+                    testClassSourceFile: ref testClassSourceFile,
+                    testClassLine: ref testClassLine,
+                    mainMethodLine: ref mainMethodLine,
+                    lastUsingLine: ref lastUsingLine,
+                    namespaceLine: ref namespaceLine,
+                    hasFactAttribute: ref hasFactAttribute);
                 break;
 
             case ".cs":
-                AnalyzeCSSource(path, ref testClassName, ref testClassSourceFile, ref testClassLine, ref mainMethodLine, ref hasFactAttribute);
+                AnalyzeCSSource(
+                    path: path,
+                    testClassName: ref testClassName,
+                    testClassBases: ref testClassBases,
+                    testClassNamespace: ref testClassNamespace,
+                    testClassSourceFile: ref testClassSourceFile,
+                    testClassLine: ref testClassLine,
+                    mainMethodLine: ref mainMethodLine,
+                    lastUsingLine: ref lastUsingLine,
+                    namespaceLine: ref namespaceLine,
+                    hasFactAttribute: ref hasFactAttribute);
                 break;
 
             default:
@@ -907,14 +1271,24 @@ class TestProjectStore
         return indent;
     }
 
-    private static bool IsIdentifier(char c)
-    {
-        return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
-    }
-
-    private static void AnalyzeCSSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
+    private static void AnalyzeCSSource(
+        string path,
+        ref string testClassName,
+        ref List<string> testClassBases,
+        ref string testClassNamespace,
+        ref string testClassSourceFile,
+        ref int testClassLine,
+        ref int mainMethodLine,
+        ref int lastUsingLine,
+        ref int namespaceLine,
+        ref bool hasFactAttribute)
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
+
+        if (Path.GetFileName(path) == "lcs.cs")
+        {
+            Console.WriteLine("AnalyzeCSSource: {0}", path);
+        }
 
         string fileName = Path.GetFileNameWithoutExtension(path);
 
@@ -957,12 +1331,39 @@ class TestProjectStore
                             if (classNameStart >= 0)
                             {
                                 int classNameEnd = classNameStart;
-                                while (line.Length > classNameEnd && IsIdentifier(line[classNameEnd]))
+                                while (line.Length > classNameEnd && TestProject.IsIdentifier(line[classNameEnd]))
                                 {
                                     classNameEnd++;
                                 }
                                 testClassName = line.Substring(classNameStart, classNameEnd - classNameStart);
                                 testClassLine = mainLine;
+
+                                int basePos = classNameEnd;
+                                while (basePos < line.Length && Char.IsWhiteSpace(line[basePos]))
+                                {
+                                    basePos++;
+                                }
+                                if (basePos < line.Length && line[basePos] == ':')
+                                {
+                                    basePos++;
+                                    while (basePos < line.Length)
+                                    {
+                                        if (Char.IsWhiteSpace(line[basePos]) || line[basePos] == ',')
+                                        {
+                                            basePos++;
+                                            continue;
+                                        }
+                                        int baseIdentBegin = basePos;
+                                        while (basePos < line.Length && TestProject.IsIdentifier(line[basePos]))
+                                        {
+                                            basePos++;
+                                        }
+                                        if (basePos > baseIdentBegin)
+                                        {
+                                            testClassBases.Add(line.Substring(baseIdentBegin, basePos - baseIdentBegin));
+                                        }
+                                    }
+                                }
 
                                 while (--mainLine >= 0)
                                 {
@@ -972,7 +1373,7 @@ class TestProjectStore
                                     {
                                         int namespaceNameStart = namespacePos + 10;
                                         int namespaceNameEnd = namespaceNameStart;
-                                        while (namespaceNameEnd < line.Length && IsIdentifier(line[namespaceNameEnd]))
+                                        while (namespaceNameEnd < line.Length && TestProject.IsIdentifier(line[namespaceNameEnd]))
                                         {
                                             namespaceNameEnd++;
                                         }
@@ -985,99 +1386,176 @@ class TestProjectStore
                         while (--mainLine >= 0);
                     }
                 }
+                break;
             }
+        }
+
+        lastUsingLine = 0;
+        for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+        {
+            string line = lines[lineIndex];
+            if (line.StartsWith("using"))
+            {
+                lastUsingLine = lineIndex;
+            }
+        }
+
+        for (int lineIndex = lastUsingLine + 1; lineIndex < lines.Count; lineIndex++)
+        {
+            string line = lines[lineIndex].Trim();
+            if (line == "")
+            {
+                continue;
+            }
+            namespaceLine = lineIndex;
+            if (line.StartsWith("namespace "))
+            {
+                int namespaceNameStart = 10;
+                int namespaceNameEnd = namespaceNameStart;
+                while (namespaceNameEnd < line.Length && TestProject.IsIdentifier(line[namespaceNameEnd]))
+                {
+                    namespaceNameEnd++;
+                }
+                testClassNamespace = line.Substring(namespaceNameStart, namespaceNameEnd - namespaceNameStart);
+            }
+            break;
         }
     }
 
-    private static void AnalyzeILSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine, ref bool hasFactAttribute)
+    private static void AnalyzeILSource(
+        string path,
+        ref string testClassName,
+        ref List<string> testClassBases,
+        ref string testClassNamespace,
+        ref string testClassSourceFile,
+        ref int testClassLine,
+        ref int mainMethodLine,
+        ref int lastUsingLine,
+        ref int namespaceLine,
+        ref bool hasFactAttribute)
     {
+        if (Path.GetFileName(path) == "han3.il")
+        {
+            Console.WriteLine("AnalyzeILSource: {0}", path);
+        }
+
         List<string> lines = new List<string>(File.ReadAllLines(path));
 
-        for (int lineIndex = lines.Count; --lineIndex >= 0;)
+        int lineIndex = lines.Count;
+        while (--lineIndex >= 0)
         {
             string line = lines[lineIndex];
-            const string MainTag = " Main(";
-            int mainPos = line.IndexOf(MainTag);
-            if (mainPos >= 0)
+            if (line.Contains(".entrypoint"))
             {
-                mainMethodLine = lineIndex;
-                for (int factIndex = lineIndex; factIndex < lineIndex + 10 && factIndex < lines.Count; factIndex++)
-                {
-                    if (lines[factIndex].IndexOf("FactAttribute") >= 0)
-                    {
-                        hasFactAttribute = true;
-                        break;
-                    }
-                }
+                break;
             }
-            const string TestEntrypointTag = " TestEntrypoint(";
-            int entrypointPos = line.IndexOf(TestEntrypointTag);
-            if (mainPos >= 0 || entrypointPos >= 0)
+        }
+
+        while (--lineIndex >= 0 && !lines[lineIndex].Contains(".method"))
+        {
+        }
+
+        if (lineIndex >= 0 && lines[lineIndex].Contains("static"))
+        {
+            for (int endIndex = lineIndex + 2; lineIndex < endIndex; lineIndex++)
             {
-                while (--lineIndex >= 0 && testClassName == "")
+                const string MainTag = " Main(";
+                string line = lines[lineIndex];
+                int mainPos = line.IndexOf(MainTag);
+                if (mainPos >= 0)
                 {
-                    string[] components = lines[lineIndex].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    if (components.Length >= 2 && components[0] == ".class")
+                    mainMethodLine = lineIndex;
+                    for (int factIndex = lineIndex; factIndex < lineIndex + 10 && factIndex < lines.Count; factIndex++)
                     {
-                        for (int componentIndex = 1; componentIndex < components.Length; componentIndex++)
+                        if (lines[factIndex].IndexOf("FactAttribute") >= 0)
                         {
-                            string component = components[componentIndex];
-                            if (!component.StartsWith("/*") &&
-                                component != "auto" &&
-                                component != "ansi" &&
-                                component != "interface" &&
-                                component != "public" &&
-                                component != "private" &&
-                                component != "sealed" &&
-                                component != "nested" &&
-                                component != "value" &&
-                                component != "beforefieldinit" &&
-                                component != "sequential" &&
-                                component != "explicit" &&
-                                component != "abstract")
-                            {
-                                int identEnd = 0;
-                                while (identEnd < component.Length && TestProject.IsIdentifier(component[identEnd]))
-                                {
-                                    identEnd++;
-                                }
-                                testClassName = component.Substring(0, identEnd);
-                                testClassSourceFile = path;
-                                testClassLine = lineIndex;
-                                while (--lineIndex >= 0)
-                                {
-                                    components = lines[lineIndex].Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                                    if (components.Length >= 2 && components[0] == ".namespace")
-                                    {
-                                        string namespaceName = components[1];
-                                        if (namespaceName.StartsWith("\'"))
-                                        {
-                                            namespaceName = namespaceName.Substring(1, namespaceName.Length - 2);
-                                        }
-                                        testClassName = namespaceName + "." + testClassName;
-                                    }
-                                }
-                                break;
-                            }
+                            hasFactAttribute = true;
+                            break;
                         }
                     }
                 }
+                const string TestEntrypointTag = " TestEntrypoint(";
+                int entrypointPos = line.IndexOf(TestEntrypointTag);
+                if (mainPos >= 0 || entrypointPos >= 0)
+                {
+                    while (--lineIndex >= 0 && testClassName == "")
+                    {
+                        if (TestProject.GetILClassName(lines[lineIndex], out string? className))
+                        {
+                            testClassName = className!;
+                            testClassSourceFile = path;
+                            testClassLine = lineIndex;
+                            while (--lineIndex >= 0)
+                            {
+                                string[] components = lines[lineIndex].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                if (components.Length >= 2 && components[0] == ".namespace")
+                                {
+                                    string namespaceName = components[1];
+                                    if (namespaceName.StartsWith("\'"))
+                                    {
+                                        namespaceName = namespaceName.Substring(1, namespaceName.Length - 2);
+                                    }
+                                    testClassNamespace = namespaceName;
+                                    namespaceLine = lineIndex;
+                                    testClassName = namespaceName + "." + testClassName;
+                                }
+                            }
+                            break;
+                        }
+                    }
 
-                break;
+                    break;
+                }
+            }
+        }
+
+        if (namespaceLine < 0)
+        {
+            for (int index = 0; index < lines.Count; index++)
+            {
+                string line = lines[index];
+                if (line.Contains(".class") || line.Contains(".struct"))
+                {
+                    namespaceLine = index;
+                    break;
+                }
             }
         }
     }
 
     private void PopulateClassNameMap()
     {
+        HashSet<string> ilNamespaceClasses = new HashSet<string>();
+
         foreach (TestProject project in _projects.Where(p => p.TestClassName != "" && p.MainMethodLine > 0))
         {
-            if (!_classNameMap.TryGetValue(project.TestClassName!, out List<TestProject>? projectList))
+            if (!_classNameMap.TryGetValue(project.TestClassName, out List<TestProject>? projectList))
             {
                 projectList = new List<TestProject>();
-                _classNameMap.Add(project.TestClassName!, projectList);
+                _classNameMap.Add(project.TestClassName, projectList);
             }
             projectList!.Add(project);
+
+            if (project.CompileFiles.Any(f => Path.GetFileNameWithoutExtension(f) == "accum"))
+            {
+                Console.WriteLine("Project: {0}", project.AbsolutePath);
+            }
+
+            if (project.TestClassNamespace != "")
+            {
+                string namespaceClass = project.TestClassNamespace + "#" + project.TestClassName;
+                if (!_namespaceNameMap.TryGetValue(namespaceClass, out Dictionary<DebugOptimize, List<TestProject>>? debugOptProjectMap))
+                {
+                    debugOptProjectMap = new Dictionary<DebugOptimize, List<TestProject>>();
+                    _namespaceNameMap.Add(namespaceClass, debugOptProjectMap);
+                }
+                if (!debugOptProjectMap!.TryGetValue(project.DebugOptimize, out projectList))
+                {
+                    projectList = new List<TestProject>();
+                    debugOptProjectMap!.Add(project.DebugOptimize, projectList);
+                }
+                projectList!.Add(project);
+            }
         }
 
         foreach (List<TestProject> projectList in _classNameMap.Values.Where(v => v.Count > 1))
@@ -1095,6 +1573,30 @@ class TestProjectStore
                 {
                     project.DeduplicatedClassName = TestProject.SanitizeIdentifier(project.TestClassName + "_" + Path.GetFileNameWithoutExtension(project.TestClassSourceFile));
                 }
+            }
+        }
+
+        HashSet<TestProject> ilProjects = new HashSet<TestProject>(_projects.Where(prj => prj.IsILProject));
+
+        foreach (Dictionary<DebugOptimize, List<TestProject>> debugOptProjectMap in _namespaceNameMap.Values.Where(dict => dict.Values.Any(l => l.Count > 1)))
+        {
+            if (debugOptProjectMap.Values.Any(prjList => prjList.Any(prj => prj.CompileFiles.Any(f => Path.GetFileNameWithoutExtension(f) == "accum"))))
+            {
+                Console.WriteLine("accum!");
+            }
+
+            bool haveCsAndIlVersion =
+                debugOptProjectMap.Values.Any(l => l.Any(prj => prj.IsILProject)) &&
+                debugOptProjectMap.Values.Any(l => l.Any(prj => !prj.IsILProject));
+
+            foreach (TestProject project in debugOptProjectMap.Values.SelectMany(v => v))
+            {
+                string deduplicatedName = project.TestClassNamespace + "_" + Path.GetFileNameWithoutExtension(project.TestClassSourceFile);
+                if (haveCsAndIlVersion)
+                {
+                    deduplicatedName += (project.IsILProject ? "_il" : "_cs");
+                }
+                project.DeduplicatedNamespaceName = TestProject.SanitizeIdentifier(deduplicatedName);
             }
         }
     }

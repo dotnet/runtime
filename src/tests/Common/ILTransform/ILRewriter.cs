@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 
 public class ILRewriter
@@ -24,14 +25,22 @@ public class ILRewriter
     private readonly bool _deduplicateClassNames;
     private readonly HashSet<string> _rewrittenFiles;
     private readonly bool _addILFactAttributes;
+    private readonly bool _cleanupILModuleAssembly;
 
-    public ILRewriter(TestProject testProject, HashSet<string> classNameDuplicates, bool deduplicateClassNames, HashSet<string> rewrittenFiles, bool addILFactAttributes)
+    public ILRewriter(
+        TestProject testProject,
+        HashSet<string> classNameDuplicates,
+        bool deduplicateClassNames,
+        HashSet<string> rewrittenFiles,
+        bool addILFactAttributes,
+        bool cleanupILModuleAssembly)
     {
         _testProject = testProject;
         _classNameDuplicates = classNameDuplicates;
         _deduplicateClassNames = deduplicateClassNames;
         _rewrittenFiles = rewrittenFiles;
         _addILFactAttributes = addILFactAttributes;
+        _cleanupILModuleAssembly = cleanupILModuleAssembly;
     }
 
     public void Rewrite()
@@ -40,7 +49,7 @@ public class ILRewriter
         {
             RewriteFile(_testProject.TestClassSourceFile);
         }
-        if (!_deduplicateClassNames)
+        if (!_deduplicateClassNames && !_cleanupILModuleAssembly)
         {
             RewriteProject(_testProject.AbsolutePath);
         }
@@ -52,7 +61,12 @@ public class ILRewriter
         bool isILTest = Path.GetExtension(ilSource).ToLower() == ".il";
         bool rewritten = false;
 
-        if (_testProject.MainMethodLine >= 0)
+        if (Path.GetFileName(ilSource).Equals("lcs.cs", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("RewriteFile: {0}", ilSource);
+        }
+
+        if (_testProject.MainMethodLine >= 0 && !_cleanupILModuleAssembly)
         {
             int lineIndex = _testProject.MainMethodLine;
             string line = lines[lineIndex];
@@ -84,24 +98,58 @@ public class ILRewriter
                             indentedFactLines[i] = indentString + s_factLines[i];
                         }
                         lines.InsertRange(lineInBody + 1, indentedFactLines);
-                        rewritten = true;
                     }
                     else
                     {
-                        if (!line.Contains("public "))
-                        {
-                            if (line.Contains("private "))
-                            {
-                                line = line.Replace("private ", "public ");
-                            }
-                            else
-                            {
-                                line = TestProject.AddAfterIndent(line, "public ");
-                            }
-                        }
-                        lines[lineIndex] = ReplaceIdent(line, "Main", "Test");
-                        lines.Insert(lineIndex, indentString + "[Fact]");
+                        lines[lineIndex] = ReplaceIdent(line, "Main", "TestEntryPoint");
+                        lines.Insert(lineIndex++, indentString + "[Fact]");
                         rewritten = true;
+                    }
+                }
+
+                if (isILTest)
+                {
+                    while (lineIndex >= 0)
+                    {
+                        line = lines[lineIndex];
+                        if (TestProject.MakePublic(ref line))
+                        {
+                            lines[lineIndex] = line;
+                            rewritten = true;
+                        }
+                        if (line.Contains(".method "))
+                        {
+                            break;
+                        }
+                        lineIndex--;
+                    }
+                }
+                else
+                {
+                    line = lines[lineIndex];
+                    if (TestProject.MakePublic(ref line))
+                    {
+                        lines[lineIndex] = line;
+                        rewritten = true;
+                    }
+                }
+
+                foreach (string baseClassName in _testProject.TestClassBases)
+                {
+                    for (int index = 0; index < lines.Count; index++)
+                    {
+                        line = lines[index];
+                        if (index != _testProject.TestClassLine &&
+                            (line.Contains("class") || line.Contains("struct")) &&
+                            line.Contains(baseClassName))
+                        {
+                            if (TestProject.MakePublic(ref line))
+                            {
+                                lines[index] = line;
+                                rewritten = true;
+                            }
+                            break;
+                        }
                     }
                 }
 
@@ -142,7 +190,7 @@ public class ILRewriter
             }
         }
 
-        if (_testProject.TestClassLine >= 0)
+        if (_testProject.TestClassLine >= 0 && !_cleanupILModuleAssembly)
         {
             string line = lines[_testProject.TestClassLine];
             if (line.IndexOf("public") < 0)
@@ -150,6 +198,10 @@ public class ILRewriter
                 if (line.IndexOf("private ") >= 0)
                 {
                     line = line.Replace("private ", "public ");
+                }
+                else if (line.Contains("internal "))
+                {
+                    line = line.Replace("internal ", "public ");
                 }
                 else if (!isILTest)
                 {
@@ -163,7 +215,7 @@ public class ILRewriter
             }
         }
 
-        if (!_deduplicateClassNames)
+        if (!_deduplicateClassNames && !_cleanupILModuleAssembly)
         {
             bool hasXunitReference = false;
             string testName = _testProject.TestProjectAlias!;
@@ -268,41 +320,133 @@ public class ILRewriter
                     */
                 }
             }
-            else
+
+            if (_testProject.TestClassNamespace == "" && _testProject.DeduplicatedClassName != null)
             {
-                int lastUsingLine = 0;
-                bool usingXUnit = false;
-                for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+                string injectedNamespaceName = TestProject.SanitizeIdentifier("Test_" + Path.GetFileNameWithoutExtension(ilSource));
+                int lineIndex = _testProject.NamespaceLine;
+                lines.Insert(lineIndex, (isILTest ? "." : "") + "namespace " + injectedNamespaceName);
+                lines.Insert(lineIndex + 1, "{");
+                lines.Add("}");
+                for (int i = lineIndex; i < lines.Count; i++)
                 {
-                    string line = lines[lineIndex];
-                    if (line.StartsWith("using"))
+                    if (TestProject.GetILClassName(lines[i], out string? className))
                     {
-                        lastUsingLine = lineIndex;
-                        if (line.IndexOf("Xunit") >= 0)
+                        string qualifiedClassName = injectedNamespaceName + "." + className!;
+                        for (int s = lineIndex; s < lines.Count; s++)
                         {
-                            usingXUnit = true;
+                            if (s != i)
+                            {
+                                lines[s] = TestProject.ReplaceIdentifier(lines[s], className!, qualifiedClassName);
+                            }
                         }
                     }
                 }
+
+                rewritten = true;
+            }
+            else if (_testProject.DeduplicatedNamespaceName != null)
+            {
+                if (isILTest)
+                {
+                    for (int lineIndex = _testProject.NamespaceLine; lineIndex < lines.Count; lineIndex++)
+                    {
+                        lines[lineIndex] = TestProject.ReplaceIdentifier(lines[lineIndex], _testProject.TestClassNamespace, _testProject.DeduplicatedNamespaceName);
+                    }
+                }
+                else
+                {
+                    lines[_testProject.NamespaceLine] = lines[_testProject.NamespaceLine].Replace(_testProject.TestClassNamespace, _testProject.DeduplicatedNamespaceName);
+                }
+                rewritten = true;
+            }
+
+            if (!isILTest)
+            {
+                bool usingXUnit = (_testProject.LastUsingLine >= 0 && lines[_testProject.LastUsingLine].IndexOf("Xunit") >= 0);
+                int rewriteLine = _testProject.LastUsingLine;
+                rewriteLine++;
                 if (!usingXUnit)
                 {
-                    lines.Insert(lastUsingLine + 1, "using Xunit;");
+                    lines.Insert(rewriteLine++, "using Xunit;");
+                    rewritten = true;
                 }
             }
         }
 
-        /*
-        for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+        if (_cleanupILModuleAssembly && isILTest)
         {
+            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
                 if (lines[lineIndex].IndexOf(".module") >= 0)
                 {
                     lines.RemoveAt(lineIndex);
+                    rewritten = true;
                     break;
                 }
             }
+            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+            {
+                string line = lines[lineIndex];
+                int assemblyIndex = line.IndexOf(".assembly");
+                if (assemblyIndex >= 0)
+                {
+                    for (int charIndex = assemblyIndex + 9; charIndex < line.Length; charIndex++)
+                    {
+                        if (Char.IsWhiteSpace(line[charIndex]))
+                        {
+                            continue;
+                        }
+                        if (line[charIndex] == '/' && charIndex + 1 < line.Length && line[charIndex + 1] == '*')
+                        {
+                            charIndex += 2;
+                            while (charIndex + 1 < line.Length && !(line[charIndex] == '*' && line[charIndex + 1] == '/'))
+                            {
+                                charIndex++;
+                            }
+                            charIndex++;
+                            continue;
+                        }
+                        int identStart = charIndex;
+                        string assemblyName;
+                        if (line[charIndex] == '\'')
+                        {
+                            charIndex++;
+                            while (charIndex < line.Length && line[charIndex++] != '\'')
+                            {
+                            }
+                            assemblyName = line.Substring(identStart + 1, charIndex - identStart - 2);
+                        }
+                        else
+                        {
+                            while (charIndex < line.Length && TestProject.IsIdentifier(line[charIndex]))
+                            {
+                                charIndex++;
+                            }
+                            assemblyName = line.Substring(identStart, charIndex - identStart);
+
+                            if (assemblyName == "extern")
+                            {
+                                break;
+                            }
+                            if (assemblyName == "legacy" || assemblyName == "library")
+                            {
+                                continue;
+                            }
+                        }
+                        int identEnd = charIndex;
+                        string sourceName = Path.GetFileNameWithoutExtension(ilSource);
+                        if (sourceName != assemblyName)
+                        {
+                            line = line.Substring(0, identStart) + '\'' + sourceName + '\'' + line.Substring(identEnd);
+                            lines[lineIndex] = line;
+                            rewritten = true;
+                        }
+                        break;
+                    }
+                }
+            }
         }
-        */
 
         /*
         if (_testProject.DeduplicatedClassName != null)

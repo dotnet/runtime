@@ -14,6 +14,8 @@ public class ILTransform
             string classToDeduplicate = "";
             bool fixImplicitSharedLibraries = false;
             bool addILFactAttributes = false;
+            bool unifyDbgRelProjects = false;
+            bool cleanUpILModuleAssembly = false;
             foreach (string arg in args)
             {
                 if (arg[0] == '-')
@@ -38,6 +40,14 @@ public class ILTransform
                     else if (arg.StartsWith("-f"))
                     {
                         addILFactAttributes = true;
+                    }
+                    else if (arg.StartsWith("-p"))
+                    {
+                        unifyDbgRelProjects = true;
+                    }
+                    else if (arg.StartsWith("-m"))
+                    {
+                        cleanUpILModuleAssembly = true;
                     }
                     else
                     {
@@ -72,7 +82,9 @@ public class ILTransform
             {
                 testStore.DumpFolderStatistics(log);
                 testStore.DumpDebugOptimizeStatistics(log);
+                testStore.DumpIrregularProjectSuffixes(log);
                 testStore.DumpImplicitSharedLibraries(log);
+                testStore.DumpMultiProjectSources(log);
                 testStore.DumpDuplicateProjectContent(log);
                 testStore.DumpDuplicateSimpleProjectNames(log);
                 testStore.DumpDuplicateEntrypointClasses(log);
@@ -84,9 +96,13 @@ public class ILTransform
             {
                 // TODO
             }
+            else if (unifyDbgRelProjects)
+            {
+                testStore.UnifyDbgRelProjects();
+            }
             else
             {
-                testStore.RewriteAllTests(deduplicateClassNames, classToDeduplicate, addILFactAttributes);
+                testStore.RewriteAllTests(deduplicateClassNames, classToDeduplicate, addILFactAttributes, cleanUpILModuleAssembly);
                 if (!deduplicateClassNames && !addILFactAttributes)
                 {
                     testStore.GenerateAllWrappers(wrapperRoot);
