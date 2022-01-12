@@ -39,7 +39,7 @@ Once the interesting node(s) have been identified in the dependency graph window
 
 WhyDGML
 =======
-This tool visualizes paths from a node of interest to the roots.
+This tool can be used to visualize paths from a node of interest to the roots. To use it, pass command line option to the compiler to generate the DGML file (`--dgmllog name_of_output_file`) and then use this tool to find the path to the root. If you're looking at an optimized NativeAOT compilation, `--scandgmllog` might be preferable since it will have more details.
 The input to the tool is the DGML file and name of a node of interest. The output is the list of reasons why that node was included.
 
 This tool located in folder `src/coreclr/tools/aot/WhyDgml`
