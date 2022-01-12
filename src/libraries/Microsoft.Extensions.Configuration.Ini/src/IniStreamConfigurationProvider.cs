@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Configuration.Ini
 
                 while (reader.Peek() != -1)
                 {
-                    string rawLine = reader.ReadLine()!;
+                    string rawLine = reader.ReadLine()!; // Since Peak didn't return -1, stream hasn't ended.
                     string line = rawLine.Trim();
 
                     // Ignore blank lines
