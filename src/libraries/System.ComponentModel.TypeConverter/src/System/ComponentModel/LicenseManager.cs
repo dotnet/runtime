@@ -321,7 +321,7 @@ namespace System.ComponentModel
                     if (license != null)
                     {
                         license.Dispose();
-#pragma warning disable IDE0059 // ValidateInternalRecursive does not null licence all the time
+#pragma warning disable IDE0059 // ValidateInternalRecursive does not null licence all the time (https://github.com/dotnet/roslyn/issues/42761)
                         license = null;
 #pragma warning restore IDE0059
                     }

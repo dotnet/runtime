@@ -400,8 +400,6 @@ namespace System.Text.Json.Serialization.Converters
                 onSerialized.OnSerialized();
             }
 
-            _ = (T)obj; // unbox
-
             return true;
         }
 

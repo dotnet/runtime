@@ -338,7 +338,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.FreeHGlobal(berValue.bv_val);
             }
 
-            int error = 0;
+            int error;
 
             for (int formatCount = 0; formatCount < format.Length; formatCount++)
             {
