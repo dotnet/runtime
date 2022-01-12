@@ -848,7 +848,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
-                if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
+                if (j == 0 &&
+                    (method?.Info.IsHiddenFromDebugger == true ||
+                    (method?.Info.HasStepThroughAttribute == true && JustMyCode)))
                 {
                     if (event_kind == EventKind.Step)
                         context.IsSkippingHiddenMethod = true;

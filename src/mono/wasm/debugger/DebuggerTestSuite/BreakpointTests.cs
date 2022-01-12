@@ -710,7 +710,7 @@ namespace DebuggerTests
 
         [Theory]
         [InlineData(false)]
-        // [InlineData(true)]
+        [InlineData(true)]
         public async Task StepThroughAttribute(bool justMyCodeEnabled)
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
@@ -721,8 +721,6 @@ namespace DebuggerTests
             //by default justMyCode:false -> stepInto works
             if (justMyCodeEnabled)
             {
-                // setting a value after loading the assembly does not have any effect on context call stack, so for true it does not work
-                // unless MonoProxy.JustMyCode is set to true before launching debugging. It should be changed to dynamic change support
                 await SetJustMyCode(true); 
                 line = bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1;
                 function_name = "RunStepThrough";
@@ -739,8 +737,7 @@ namespace DebuggerTests
                 bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
                 bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
                 "RunStepThrough"
-            );
-            
+            );            
             await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line, 4, function_name);
         }
     }

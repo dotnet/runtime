@@ -333,6 +333,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
         public bool IsHiddenFromDebugger { get; }
+        public bool HasStepThroughAttribute { get; }
         public TypeInfo TypeInfo { get; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -377,10 +378,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        if (name == "DebuggerHiddenAttribute" ||
-                            (assembly.IsJustMyCodeEnabled() && name == "DebuggerStepThroughAttribute"))
+                        if (name == "DebuggerHiddenAttribute")
                         {
-                            this.IsHiddenFromDebugger = true;
+                            IsHiddenFromDebugger = true;
+                            break;
+                        }
+                        if (name == "DebuggerStepThroughAttribute")
+                        {
+                            HasStepThroughAttribute = true;
                             break;
                         }
 
@@ -584,7 +589,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int next_id;
         private readonly int id;
         private readonly ILogger logger;
-        private readonly MonoProxy monoProxy;
         private Dictionary<int, MethodInfo> methods = new Dictionary<int, MethodInfo>();
         private Dictionary<string, string> sourceLinkMappings = new Dictionary<string, string>();
         private readonly List<SourceFile> sources = new List<SourceFile>();
@@ -603,7 +607,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, CancellationToken token)
         {
-            this.monoProxy = monoProxy;
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
             using var asmStream = new MemoryStream(assembly);
@@ -643,11 +646,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             Populate();
-        }
-
-        public bool IsJustMyCodeEnabled()
-        {
-            return monoProxy.JustMyCode;
         }
 
         public async Task<int> GetDebugId(MonoSDBHelper sdbAgent, CancellationToken token)
