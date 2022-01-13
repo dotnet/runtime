@@ -3028,7 +3028,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<nuint> ShiftLeft(Vector128<nuint> vector, int shiftCount)
         {
@@ -3048,7 +3048,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> ShiftLeft(Vector128<sbyte> vector, int shiftCount)
         {
@@ -3068,7 +3068,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<ushort> ShiftLeft(Vector128<ushort> vector, int shiftCount)
         {
@@ -3088,7 +3088,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<uint> ShiftLeft(Vector128<uint> vector, int shiftCount)
         {
@@ -3108,7 +3108,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<ulong> ShiftLeft(Vector128<ulong> vector, int shiftCount)
         {
@@ -3123,7 +3123,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3142,7 +3142,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3161,7 +3161,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3180,7 +3180,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3199,12 +3199,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (signed) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> vector, int shiftCount)
         {
@@ -3219,7 +3219,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3238,7 +3238,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3257,7 +3257,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3276,7 +3276,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3295,7 +3295,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
@@ -3314,12 +3314,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<nuint> ShiftRightLogical(Vector128<nuint> vector, int shiftCount)
         {
@@ -3334,12 +3334,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<sbyte> ShiftRightLogical(Vector128<sbyte> vector, int shiftCount)
         {
@@ -3354,12 +3354,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> vector, int shiftCount)
         {
@@ -3374,12 +3374,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<uint> ShiftRightLogical(Vector128<uint> vector, int shiftCount)
         {
@@ -3394,12 +3394,12 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <summary>Shifts (unsigned) each element of a vector right by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
         /// <param name="shiftCount">The number of bits by which to shift each element.</param>
         /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
         [Intrinsic]
-        [CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> vector, int shiftCount)
         {
@@ -3497,7 +3497,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
-            Unsafe.WriteUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref destination), source);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
         /// <summary>Stores a vector at the given destination.</summary>
@@ -3513,7 +3513,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
             destination = ref Unsafe.Add(ref destination, (nint)elementOffset);
-            Unsafe.WriteUnaligned<Vector128<T>>(ref Unsafe.As<T, byte>(ref destination), source);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
