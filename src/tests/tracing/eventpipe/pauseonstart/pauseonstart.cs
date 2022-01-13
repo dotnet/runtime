@@ -324,6 +324,8 @@ namespace Tracing.Tests.PauseOnStartValidation
                 environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
                 duringExecution: async (pid) =>
                 {
+                    Process currentProcess = Process.GetCurrentProcess();
+
                     Stream stream = await server.AcceptAsync();
                     IpcAdvertise advertise = IpcAdvertise.Parse(stream);
                     Logger.logger.Log(advertise.ToString());
@@ -336,6 +338,7 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Logger.logger.Log($"received: {response.ToString()}");
 
                     ProcessInfo2 pi2Before = ProcessInfo2.TryParse(response.Payload);
+                    Utils.Assert(pi2Before.Commandline.Equals(currentProcess.MainModule.FileName), $"Before resuming, the commandline should be the mock value of the host executable path '{currentProcess.MainModule.FileName}'. Observed: '{pi2Before.Commandline}'");
 
                     // recycle
                     stream = await server.AcceptAsync();
@@ -392,7 +395,6 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Logger.logger.Log("Stopped EventPipeSession over standard connection");
 
                     ProcessInfo2 pi2After = default;
-                    Process currentProcess = Process.GetCurrentProcess();
 
                     // The timing is not exact. There is a small window after resuming where the mock
                     // value is still present. Retry several times to catch it.
@@ -418,7 +420,6 @@ namespace Tracing.Tests.PauseOnStartValidation
 
                     await Utils.WaitTillTimeout(retryTask, TimeSpan.FromSeconds(10));
 
-                    Utils.Assert(pi2Before.Commandline.Equals(currentProcess.MainModule.FileName), $"Before resuming, the commandline should be the mock value of the host executable path '{currentProcess.MainModule.FileName}'. Observed: '{pi2Before.Commandline}'");
                     Utils.Assert(!pi2After.Commandline.Equals(pi2Before.Commandline), $"After resuming, the commandline should be the correct value. Observed: Before='{pi2Before.Commandline}' After='{pi2After.Commandline}'");
                 }
             );
