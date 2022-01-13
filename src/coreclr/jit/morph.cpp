@@ -11556,7 +11556,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 else
                 {
                     GenTree* op1SideEffects = nullptr;
-                    gtExtractSideEffList(op1, &op1SideEffects);
+                    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
                     if (op1SideEffects != nullptr)
                     {
                         DEBUG_DESTROY_NODE(tree);

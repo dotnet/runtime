@@ -4018,7 +4018,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (opts.OptimizationEnabled())
                 {
                     GenTree* op1 = impPopStack().val;
-                    if (op1->OperIsConst() || gtFoldExpr(op1)->OperIsConst())
+                    if (op1->OperIsConst())
                     {
                         // op1 is a known constant, replace with 'true'.
                         impPopStack();
