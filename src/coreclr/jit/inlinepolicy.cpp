@@ -735,19 +735,12 @@ double DefaultPolicy::DetermineMultiplier()
         JITDUMP("\nInline candidate has arg that feeds range check.  Multiplier increased to %g.", multiplier);
     }
 
-    if (m_ConstArgFeedsIsKnownConst)
+    if (m_ConstArgFeedsIsKnownConst || (m_ArgFeedsIsKnownConst && m_IsPrejitRoot))
     {
         // if we use RuntimeHelpers.IsKnownConstant we most likely expect our function to be always inlined
-        // at least in the case of constant arguments
-        multiplier += 15;
-        JITDUMP("\nConstant argument feeds RuntimeHelpers.IsKnownConstant.  Multiplier increased to %g.", multiplier);
-    }
-
-    if (m_ArgFeedsIsKnownConst)
-    {
-        // In IsPrejitRoot we don't have callsite info so let's assume we have a constant here in order to avoid "baked"
-        // noinline
-        multiplier += m_IsPrejitRoot ? 10 : 2;
+        // at least in the case of constant arguments. In IsPrejitRoot we don't have callsite info so let's
+        // assume we have a constant here in order to avoid "baked" noinline
+        multiplier += 20;
         JITDUMP("\nConstant argument feeds RuntimeHelpers.IsKnownConstant.  Multiplier increased to %g.", multiplier);
     }
 
@@ -1395,7 +1388,7 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             {
                 SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
             }
-            else if (!m_IsForceInline && !m_HasProfile)
+            else if (!m_IsForceInline && !m_HasProfile && !m_ConstArgFeedsIsKnownConst && !m_ArgFeedsIsKnownConst)
             {
                 unsigned bbLimit = (unsigned)JitConfig.JitExtDefaultPolicyMaxBB();
                 if (m_IsPrejitRoot)
@@ -1405,7 +1398,8 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
                     bbLimit += 5 + m_Switch * 10;
                 }
                 bbLimit += m_FoldableBranch + m_FoldableSwitch * 10;
-                if ((unsigned)value > bbLimit && !m_ConstArgFeedsIsKnownConst && !m_ArgFeedsIsKnownConst)
+
+                if ((unsigned)value > bbLimit)
                 {
                     SetNever(InlineObservation::CALLEE_TOO_MANY_BASIC_BLOCKS);
                 }
