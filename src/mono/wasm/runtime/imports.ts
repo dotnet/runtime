@@ -14,28 +14,30 @@ export let BINDING: any;
 export let INTERNAL: any;
 
 // these are imported and re-exported from emscripten internals
-export let ENVIRONMENT_IS_GLOBAL: boolean;
+export let ENVIRONMENT_IS_ESM: boolean;
 export let ENVIRONMENT_IS_NODE: boolean;
 export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
 export let locateFile: Function;
 export let quit: Function;
+export let requirePromise: Promise<Function>;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setImportsAndExports(
-    imports: { isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
+    imports: { isESM: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
 ): void {
     MONO = exports.mono;
     BINDING = exports.binding;
     INTERNAL = exports.internal;
     Module = exports.module;
-    ENVIRONMENT_IS_GLOBAL = imports.isGlobal;
+    ENVIRONMENT_IS_ESM = imports.isESM;
     ENVIRONMENT_IS_NODE = imports.isNode;
     ENVIRONMENT_IS_SHELL = imports.isShell;
     ENVIRONMENT_IS_WEB = imports.isWeb;
     locateFile = imports.locateFile;
     quit = imports.quit_;
+    requirePromise = imports.requirePromise;
 }
 
 let monoConfig: MonoConfig;
