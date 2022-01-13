@@ -101,7 +101,7 @@ namespace System.Text.Json
         public bool Pop()
         {
             _currentDepth--;
-            bool inObject = false;
+            bool inObject;
             if (_currentDepth < AllocationFreeMaxDepth)
             {
                 _allocationFreeContainer >>= 1;

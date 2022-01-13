@@ -69,6 +69,8 @@ namespace System.Runtime.Intrinsics
                    (typeof(T) == typeof(short)) ||
                    (typeof(T) == typeof(int)) ||
                    (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
                    (typeof(T) == typeof(sbyte)) ||
                    (typeof(T) == typeof(float)) ||
                    (typeof(T) == typeof(ushort)) ||

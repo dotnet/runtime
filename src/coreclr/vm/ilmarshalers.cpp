@@ -4922,8 +4922,8 @@ FCIMPL3(void, MngdSafeArrayMarshaler::ConvertSpaceToManaged, MngdSafeArrayMarsha
             {
                 WCHAR strExpectedRank[64];
                 WCHAR strActualRank[64];
-                _ltow_s(pThis->m_iRank, strExpectedRank, COUNTOF(strExpectedRank), 10);
-                _ltow_s(iSafeArrayRank, strActualRank, COUNTOF(strActualRank), 10);
+                _ltow_s(pThis->m_iRank, strExpectedRank, ARRAY_SIZE(strExpectedRank), 10);
+                _ltow_s(iSafeArrayRank, strActualRank, ARRAY_SIZE(strActualRank), 10);
                 COMPlusThrow(kSafeArrayRankMismatchException, IDS_EE_SAFEARRAYRANKMISMATCH, strActualRank, strExpectedRank);
             }
         }

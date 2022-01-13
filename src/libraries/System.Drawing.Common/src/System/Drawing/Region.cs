@@ -337,7 +337,7 @@ namespace System.Drawing
                 return null;
 
             byte[] regionData = new byte[regionSize];
-            Gdip.CheckStatus(Gdip.GdipGetRegionData(new HandleRef(this, NativeRegion), regionData, regionSize, out regionSize));
+            Gdip.CheckStatus(Gdip.GdipGetRegionData(new HandleRef(this, NativeRegion), regionData, regionSize, out _));
             return new RegionData(regionData);
         }
 

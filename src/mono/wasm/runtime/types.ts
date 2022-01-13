@@ -81,6 +81,7 @@ export type AssetEntry = {
     culture?: string,
     load_remote?: boolean, // if true, an attempt will be made to load the asset from each location in @args.remote_sources.
     is_optional?: boolean // if true, any failure to load this asset will be ignored.
+    buffer?: ArrayBuffer // if provided, we don't have to fetch it
 }
 
 export interface AssemblyEntry extends AssetEntry {
@@ -162,7 +163,7 @@ export type DotnetModuleConfig = {
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
     scriptDirectory?: string,
-    onConfigLoaded?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
 
     imports?: DotnetModuleConfigImports;
@@ -186,4 +187,10 @@ export type DotnetModuleConfigImports = {
         dirname?: (path: string) => string,
     };
     url?: any;
+}
+
+export function assert(condition: unknown, messsage: string): asserts condition {
+    if (!condition) {
+        throw new Error(`Assert failed: ${messsage}`);
+    }
 }

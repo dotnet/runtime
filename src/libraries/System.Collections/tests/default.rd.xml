@@ -1,0 +1,154 @@
+<Directives>
+  <Application>
+    <Assembly Name="System.Collections.Tests">
+      <Type Name="System.Collections.Tests.BitArray_GetSetTests">
+        <Method Name="CopyTo_Size_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="CopyTo_Size_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="CopyTo_Size_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="CopyTo" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="CopyTo" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="CopyTo" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Collections.Generic.Tests.EqualityComparerTests">
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int16Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.SByteEnum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Collections.Tests.NonEquatableValueType, System.Collections.Tests" />
+        </Method>
+
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int16Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.SByteEnum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="EqualsTest" Dynamic="Required All">
+          <GenericArgument Name="System.Collections.Tests.NonEquatableValueType, System.Collections.Tests" />
+        </Method>
+
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.Int16Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.SByteEnum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableEquals" Dynamic="Required All">
+          <GenericArgument Name="System.Collections.Tests.NonEquatableValueType, System.Collections.Tests" />
+        </Method>
+
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int16Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.SByteEnum, System.Collections.Tests" />
+        </Method>
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="GetHashCodeTest" Dynamic="Required All">
+          <GenericArgument Name="System.Collections.Tests.NonEquatableValueType, System.Collections.Tests" />
+        </Method>
+
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.Int16Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.SByteEnum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="NullableGetHashCode" Dynamic="Required All">
+          <GenericArgument Name="System.Collections.Tests.NonEquatableValueType, System.Collections.Tests" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Collections.Generic.Tests.ComparerTests">
+        <Method Name="MostComparisons" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="MostComparisons" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="MostComparisons" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32Enum, System.Collections.Tests" />
+        </Method>
+        <Method Name="MostComparisons" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Collections.Tests" />
+        </Method>
+      </Type>
+    </Assembly>
+  </Application>
+</Directives>

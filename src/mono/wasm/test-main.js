@@ -124,7 +124,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
+        onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
                 set_exit_code(1,);
@@ -132,9 +132,11 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in processedArguments.setenv) {
-                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+                config.environment_variables[variable] = processedArguments.setenv[variable];
             }
-
+            config.diagnostic_tracing = !!processedArguments.diagnostic_tracing;
+        },
+        preRun: () => {
             if (!processedArguments.enable_gc) {
                 INTERNAL.mono_wasm_enable_on_demand_gc(0);
             }
@@ -281,6 +283,7 @@ function processArguments(incomingArguments) {
     let setenv = {};
     let runtime_args = [];
     let enable_gc = true;
+    let diagnostic_tracing = false;
     let working_dir = '/';
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
@@ -298,6 +301,8 @@ function processArguments(incomingArguments) {
             runtime_args.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             enable_gc = false;
+        } else if (currentArg == "--diagnostic_tracing") {
+            diagnostic_tracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
             working_dir = arg;
@@ -318,6 +323,7 @@ function processArguments(incomingArguments) {
         setenv,
         runtime_args,
         enable_gc,
+        diagnostic_tracing,
         working_dir,
     }
 }

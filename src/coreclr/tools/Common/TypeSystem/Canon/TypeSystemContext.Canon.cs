@@ -69,8 +69,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public Instantiation ConvertInstantiationToCanonForm(Instantiation instantiation, CanonicalFormKind kind)
         {
-            bool changed;
-            return ConvertInstantiationToCanonForm(instantiation, kind, out changed);
+            return ConvertInstantiationToCanonForm(instantiation, kind, out _);
         }
 
         /// <summary>

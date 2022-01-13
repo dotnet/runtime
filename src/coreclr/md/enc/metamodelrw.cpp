@@ -4116,7 +4116,7 @@ mdToken CMiniMdRW::GetToken(
     if (pColDef->m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = pColDef->m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             tkn = decodeToken(GetCol(ixTbl, ixCol, pvRecord), pCdTkn->m_pTokens, pCdTkn->m_cTokens);
@@ -4399,7 +4399,7 @@ CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
     if (ColDef.m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = ColDef.m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             cdTkn = encodeToken(RidFromToken(tk), TypeFromToken(tk), pCdTkn->m_pTokens, pCdTkn->m_cTokens);

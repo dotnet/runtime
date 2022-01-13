@@ -369,7 +369,7 @@ namespace System.IO.Packaging
         {
             Debug.Assert(s != null);
 
-            int length = 0;
+            int length;
 
             //if the parameter value does not start with a '"' then,
             //we expect a valid token. So we look for Linear White Spaces or

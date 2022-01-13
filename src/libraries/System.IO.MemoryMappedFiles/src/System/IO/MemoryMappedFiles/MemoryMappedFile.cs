@@ -162,7 +162,7 @@ namespace System.IO.MemoryMappedFiles
                 capacity = fileStream.Length;
             }
 
-            SafeMemoryMappedFileHandle? handle = null;
+            SafeMemoryMappedFileHandle? handle;
             try
             {
                 handle = CreateCore(fileStream, mapName, HandleInheritability.None,

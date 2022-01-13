@@ -307,8 +307,7 @@ namespace System.Diagnostics
         {
             get
             {
-                int? ignored;
-                return GetExited(out ignored, refresh: true);
+                return GetExited(out _, refresh: true);
             }
         }
 
@@ -679,8 +678,7 @@ namespace System.Diagnostics
                 {
                     do
                     {
-                        int exitCode;
-                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
+                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out _);
                     } while (pid > 0);
                 }
             }

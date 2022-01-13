@@ -174,8 +174,7 @@ namespace System.Data.Odbc
                 }
                 if (null == _dataCache)
                 {
-                    short cColsAffected;
-                    ODBC32.SQLRETURN retcode = this.FieldCountNoThrow(out cColsAffected);
+                    ODBC32.SQLRETURN retcode = this.FieldCountNoThrow(out _);
                     if (retcode != ODBC32.SQLRETURN.SUCCESS)
                     {
                         Connection!.HandleError(StatementHandle, retcode);
@@ -547,8 +546,7 @@ namespace System.Data.Odbc
                     {
                         if (_dataCache!.AccessIndex(i) == null)
                         {
-                            int dummy;
-                            bool isNotDbNull = QueryFieldInfo(i, ODBC32.SQL_C.BINARY, out dummy);
+                            bool isNotDbNull = QueryFieldInfo(i, ODBC32.SQL_C.BINARY, out _);
                             // if the value is DBNull, QueryFieldInfo will cache it
                             if (isNotDbNull)
                             {
@@ -672,8 +670,7 @@ namespace System.Data.Odbc
                 // case 3 - the data has variable-length type, read zero-length data to query for null
                 // QueryFieldInfo will return false only if the object cached as DbNull
                 // QueryFieldInfo will put DbNull in cache only if the SQLGetData returns SQL_NULL_DATA, otherwise it does not change it
-                int dummy;
-                return !QueryFieldInfo(i, typeMap._sql_c, out dummy);
+                return !QueryFieldInfo(i, typeMap._sql_c, out _);
             }
         }
 
@@ -1133,7 +1130,7 @@ namespace System.Data.Odbc
             //                       use the cache - preserve the original behavior to minimize regression risk
             // 4. sequential access, no cache: (fixed now) user reads the bytes/chars in sequential order (no cache)
 
-            object? cachedObj = null;                 // The cached object (if there is one)
+            object? cachedObj;                 // The cached object (if there is one)
 
             // Get cached object, ensure the correct type using explicit cast, to preserve same behavior as before
             if (isCharsBuffer)
@@ -1335,8 +1332,7 @@ namespace System.Data.Odbc
                         {
                             // for GetChars, ensure data is not null
                             // 2 bytes for '\0' termination, no data is actually read from the driver
-                            int cbLengthOrIndicator;
-                            bool isDbNull = !QueryFieldInfo(i, ODBC32.SQL_C.WCHAR, out cbLengthOrIndicator);
+                            bool isDbNull = !QueryFieldInfo(i, ODBC32.SQL_C.WCHAR, out _);
                             if (isDbNull)
                             {
                                 throw ADP.InvalidCast();
@@ -1550,7 +1546,6 @@ namespace System.Data.Odbc
         //
         private SQLLEN GetColAttribute(int iColumn, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
-            short cchNameLength = 0;
             SQLLEN numericAttribute;
             ODBC32.SQLRETURN retcode;
 
@@ -1564,11 +1559,11 @@ namespace System.Data.Odbc
             OdbcStatementHandle stmt = StatementHandle;
             if (Connection.IsV3Driver)
             {
-                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v3FieldId, Buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v3FieldId, Buffer, out _, out numericAttribute);
             }
             else if (v2FieldId != (ODBC32.SQL_COLUMN)(-1))
             {
-                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v2FieldId, Buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v2FieldId, Buffer, out _, out numericAttribute);
             }
             else
             {
@@ -1604,8 +1599,7 @@ namespace System.Data.Odbc
         private string? GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
             ODBC32.SQLRETURN retcode;
-            short cchNameLength = 0;
-            SQLLEN numericAttribute;
+            short cchNameLength;
             CNativeBuffer buffer = Buffer;
             buffer.WriteInt16(0, 0);
 
@@ -1619,11 +1613,11 @@ namespace System.Data.Odbc
 
             if (Connection.IsV3Driver)
             {
-                retcode = stmt.ColumnAttribute(i + 1, (short)v3FieldId, buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(i + 1, (short)v3FieldId, buffer, out cchNameLength, out _);
             }
             else if (v2FieldId != (ODBC32.SQL_COLUMN)(-1))
             {
-                retcode = stmt.ColumnAttribute(i + 1, (short)v2FieldId, buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(i + 1, (short)v2FieldId, buffer, out cchNameLength, out _);
             }
             else
             {
@@ -1720,8 +1714,7 @@ namespace System.Data.Odbc
         {
             // Never call GetData with anything larger than _buffer.Length-2.
             // We keep reallocating native buffers and it kills performance!!!
-            int dummy;
-            return GetData(i, sqlctype, Buffer.Length - 4, out dummy);
+            return GetData(i, sqlctype, Buffer.Length - 4, out _);
         }
 
         /// <summary>
@@ -1739,7 +1732,7 @@ namespace System.Data.Odbc
         /// <returns>false if value is DbNull, true otherwise</returns>
         private bool GetData(int i, ODBC32.SQL_C sqlctype, int cb, out int cbLengthOrIndicator)
         {
-            IntPtr cbActual = IntPtr.Zero;  // Length or an indicator value
+            IntPtr cbActual;  // Length or an indicator value
 
             if (IsCancelingCommand)
             {
@@ -2334,7 +2327,7 @@ namespace System.Data.Odbc
             string columnname;
             int ordinal;
             int keyColumns = 0;
-            IntPtr cbActual = IntPtr.Zero;
+            IntPtr cbActual;
 
             if (IsClosed || (_cmdWrapper == null))
             {
@@ -2502,7 +2495,7 @@ namespace System.Data.Odbc
 
             ODBC32.SQLRETURN retcode;
             string columnname = string.Empty;
-            string indexname = string.Empty;
+            string indexname;
             string currentindexname = string.Empty;
             int[] indexcolumnordinals = new int[16];
             int[] pkcolumnordinals = new int[16];
@@ -2511,8 +2504,8 @@ namespace System.Data.Odbc
             bool partialcolumnset = false;
             int ordinal;
             int indexordinal;
-            IntPtr cbIndexLen = IntPtr.Zero;
-            IntPtr cbColnameLen = IntPtr.Zero;
+            IntPtr cbIndexLen;
+            IntPtr cbColnameLen;
             int keyColumns = 0;
 
             // devnote: this test is already done by calling method ...
@@ -2788,7 +2781,7 @@ namespace System.Data.Odbc
                 ((localcmdtext[1] == 's') || (localcmdtext[1] == 'S')))
             {
                 // aliased table, skip the alias name
-                localcmdtext = tokenstmt.NextToken();
+                tokenstmt.NextToken();
                 localcmdtext = tokenstmt.NextToken();
                 if ((localcmdtext.Length > 0) && (localcmdtext[0] == ','))
                 {
