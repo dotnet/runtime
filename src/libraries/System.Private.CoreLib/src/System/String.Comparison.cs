@@ -1027,7 +1027,15 @@ namespace System
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public bool StartsWith(char value) => Length != 0 && _firstChar == value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool StartsWith(char value)
+        {
+            if (RuntimeHelpers.IsKnownConstant(value))
+            {
+                return _firstChar == value;
+            }
+            return Length != 0 && _firstChar == value;
+        }
 
         internal static void CheckStringComparison(StringComparison comparisonType)
         {
