@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -51,7 +52,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			if (_missing.Any ()) {
 				var missingLines = string.Join (
 					Environment.NewLine,
-					_missing.Select (md => $"({md.Attribute.GetLocation ().GetLineSpan ()}) {md.Message}"));
+					_missing.Select (md => $"({md.Attribute.Parent?.Parent?.GetLocation ().GetLineSpan ()}) {md.Message}"));
 				message += $@"Expected warnings were not generated:{Environment.NewLine}{missingLines}{Environment.NewLine}";
 			}
 			if (_unmatched.Any ()) {
@@ -183,13 +184,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var producedBy = (ProducedBy) 0x0;
 				switch (expression) {
 				case BinaryExpressionSyntax binaryExpressionSyntax:
-					Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy);
+					if (!Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
+						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= besProducedBy;
 					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
 					break;
 
 				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-					Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy);
+					if (!Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
+						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= maeProducedBy;
 					break;
 
@@ -291,6 +294,83 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var text = LinkerTestBase.GetStringFromExpression (arg.Value);
 			foreach (var diagnostic in diagnosticMessages)
 				Assert.DoesNotContain (text, diagnostic.GetMessage ());
+		}
+
+		private bool TryValidateUnrecognizedReflectionAccessPatternAttribute (AttributeSyntax attribute, List<Diagnostic> diagnostics, out int? matchIndex, out string? missingDiagnosticMessage)
+		{
+			missingDiagnosticMessage = null;
+			matchIndex = null;
+			var args = LinkerTestBase.GetAttributeArguments (attribute);
+
+			MemberDeclarationSyntax sourceMember = attribute.Ancestors ().OfType<MemberDeclarationSyntax> ().First ();
+			if (_semanticModel.GetDeclaredSymbol (sourceMember) is not ISymbol memberSymbol)
+				return false;
+
+			string sourceMemberName = memberSymbol!.GetDisplayName ();
+			string expectedReflectionMemberMethodType = LinkerTestBase.GetStringFromExpression (args["#0"], _semanticModel);
+			string expectedReflectionMemberMethodName = LinkerTestBase.GetStringFromExpression (args["#1"], _semanticModel);
+
+			var reflectionMethodParameters = new List<string> ();
+			if (args.TryGetValue ("#2", out var reflectionMethodParametersExpr) || args.TryGetValue ("reflectionMethodParameters", out reflectionMethodParametersExpr)) {
+				if (reflectionMethodParametersExpr is ArrayCreationExpressionSyntax arrayReflectionMethodParametersExpr) {
+					foreach (var rmp in arrayReflectionMethodParametersExpr.Initializer!.Expressions)
+						reflectionMethodParameters.Add (LinkerTestBase.GetStringFromExpression (rmp, _semanticModel));
+				}
+			}
+
+			var expectedStringsInMessage = new List<string> ();
+			if (args.TryGetValue ("#3", out var messageExpr) || args.TryGetValue ("message", out messageExpr)) {
+				if (messageExpr is ArrayCreationExpressionSyntax arrayMessageExpr) {
+					foreach (var m in arrayMessageExpr.Initializer!.Expressions)
+						expectedStringsInMessage.Add (LinkerTestBase.GetStringFromExpression (m, _semanticModel));
+				}
+			}
+
+			string expectedWarningCode = string.Empty;
+			if (args.TryGetValue ("#4", out var messageCodeExpr) || args.TryGetValue ("messageCode", out messageCodeExpr)) {
+				expectedWarningCode = LinkerTestBase.GetStringFromExpression (messageCodeExpr);
+				Assert.True (expectedWarningCode.StartsWith ("IL"),
+					$"The warning code specified in {messageCodeExpr.ToString ()} must start with the 'IL' prefix. Specified value: '{expectedWarningCode}'");
+			}
+
+			// Don't validate the return type because this is not included in the diagnostic messages.
+
+			var sb = new StringBuilder ();
+
+			// Format the member signature the same way Roslyn would since this is what will be included in the warning message.
+			sb.Append (expectedReflectionMemberMethodType).Append (".").Append (expectedReflectionMemberMethodName);
+			if (!expectedReflectionMemberMethodName.EndsWith (".get") &&
+				!expectedReflectionMemberMethodName.EndsWith (".set") &&
+				reflectionMethodParameters is not null)
+				sb.Append ("(").Append (string.Join (", ", reflectionMethodParameters)).Append (")");
+
+			var reflectionAccessPattern = sb.ToString ();
+
+			for (int i = 0; i < diagnostics.Count; i++) {
+				if (Matches (diagnostics[i])) {
+					matchIndex = i;
+					return true;
+				}
+			}
+
+			missingDiagnosticMessage = $"Expected to find unrecognized reflection access pattern '{(expectedWarningCode == string.Empty ? "" : expectedWarningCode + " ")}" +
+					$"{sourceMemberName}: Usage of {reflectionAccessPattern} unrecognized.";
+			return false;
+
+			bool Matches (Diagnostic diagnostic)
+			{
+				if (!string.IsNullOrEmpty (expectedWarningCode) && diagnostic.Id != expectedWarningCode)
+					return false;
+
+				// Don't check whether the message contains the source member name. Roslyn's diagnostics don't include the source
+				// member as part of the message.
+
+				foreach (var expectedString in expectedStringsInMessage)
+					if (!diagnostic.GetMessage ().Contains (expectedString))
+						return false;
+
+				return diagnostic.GetMessage ().Contains (reflectionAccessPattern);
+			}
 		}
 	}
 }
