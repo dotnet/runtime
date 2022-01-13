@@ -136,13 +136,13 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (destination.Length < HashSizeBytes)
+            if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, HashSizeBytes, source, destination);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, HashSizeInBytes, source, destination);
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, HashSizeBytes, source);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA512, HashSizeInBytes, source);
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA512, HashSizeBytes, source, cancellationToken);
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA512, HashSizeInBytes, source, cancellationToken);
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (destination.Length < HashSizeBytes)
+            if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
@@ -229,7 +229,7 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HashStreamAsync(
                 HashAlgorithmNames.SHA512,
-                HashSizeBytes,
+                HashSizeInBytes,
                 source,
                 destination,
                 cancellationToken);

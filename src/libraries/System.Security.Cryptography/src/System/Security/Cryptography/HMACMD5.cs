@@ -189,13 +189,13 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (destination.Length < HmacSizeBytes)
+            if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.MD5, HmacSizeBytes, key, source, destination);
+            return LiteHashProvider.HmacStream(HashAlgorithmNames.MD5, HashSizeInBytes, key, source, destination);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStream(HashAlgorithmNames.MD5, HmacSizeBytes, key, source);
+            return LiteHashProvider.HmacStream(HashAlgorithmNames.MD5, HashSizeInBytes, key, source);
         }
 
         /// <summary>
@@ -261,7 +261,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.MD5, HmacSizeBytes, key.Span, source, cancellationToken);
+            return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.MD5, HashSizeInBytes, key.Span, source, cancellationToken);
         }
 
         /// <summary>
@@ -319,7 +319,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (destination.Length < HmacSizeBytes)
+            if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.MD5,
-                HmacSizeBytes,
+                HashSizeInBytes,
                 key.Span,
                 source,
                 destination,

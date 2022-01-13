@@ -138,13 +138,13 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(source);
 
-            if (destination.Length < HashSizeBytes)
+            if (destination.Length < HashSizeInBytes)
                 throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeBytes, source, destination);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeInBytes, source, destination);
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography
             if (!source.CanRead)
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
-            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeBytes, source);
+            return LiteHashProvider.HashStream(HashAlgorithmNames.MD5, HashSizeInBytes, source);
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace System.Security.Cryptography
                 return ValueTask.FromException<byte[]>(
                     new ArgumentException(SR.Argument_StreamNotReadable, nameof(source)));
 
-            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.MD5, HashSizeBytes, source, cancellationToken);
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.MD5, HashSizeInBytes, source, cancellationToken);
         }
 
         /// <summary>
@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
             if (source is null)
                 return ValueTask.FromException<int>(new ArgumentNullException(nameof(source)));
 
-            if (destination.Length < HashSizeBytes)
+            if (destination.Length < HashSizeInBytes)
                 return ValueTask.FromException<int>(
                     new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination)));
 
@@ -236,7 +236,7 @@ namespace System.Security.Cryptography
 
             return LiteHashProvider.HashStreamAsync(
                 HashAlgorithmNames.MD5,
-                HashSizeBytes,
+                HashSizeInBytes,
                 source,
                 destination,
                 cancellationToken);
