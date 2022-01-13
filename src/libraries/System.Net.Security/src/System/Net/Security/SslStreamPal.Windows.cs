@@ -196,11 +196,10 @@ namespace System.Net.Security
                 protocolFlags,
                 policy);
 
-            Interop.Crypt32.CERT_CONTEXT* certificateHandle = null;
             if (certificate != null)
             {
                 secureCredential.cCreds = 1;
-                certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
+                Interop.Crypt32.CERT_CONTEXT* certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
                 secureCredential.paCred = &certificateHandle;
             }
 
@@ -253,11 +252,10 @@ namespace System.Net.Security
             Interop.SspiCli.SCH_CREDENTIALS credential = default;
             credential.dwVersion = Interop.SspiCli.SCH_CREDENTIALS.CurrentVersion;
             credential.dwFlags = flags;
-            Interop.Crypt32.CERT_CONTEXT *certificateHandle = null;
             if (certificate != null)
             {
                 credential.cCreds = 1;
-                certificateHandle = (Interop.Crypt32.CERT_CONTEXT *)certificate.Handle;
+                Interop.Crypt32.CERT_CONTEXT* certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
                 credential.paCred = &certificateHandle;
             }
 

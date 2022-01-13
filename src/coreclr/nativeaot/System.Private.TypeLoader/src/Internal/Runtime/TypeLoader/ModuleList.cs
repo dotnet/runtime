@@ -673,8 +673,7 @@ namespace Internal.Runtime.TypeLoader
                 foreach (TypeManagerHandle moduleHandle in loadedModuleHandles)
                 {
                     // Skip already registered modules.
-                    int oldModuleIndex;
-                    if (_loadedModuleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out oldModuleIndex))
+                    if (_loadedModuleMap.HandleToModuleIndex.TryGetValue(moduleHandle, out _))
                     {
                         continue;
                     }

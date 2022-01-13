@@ -70,14 +70,7 @@ else
     fi
 fi
 
-if [[ "$__TargetOS" == OSX ]]; then
-    # set default OSX deployment target
-    if [[ "$__BuildArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
-    else
-        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
-    fi
-elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+if [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iOSSimulator ]]; then

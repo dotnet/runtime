@@ -116,8 +116,8 @@ namespace System.IO.Internal
         {
             if (_basePath == null)
             {
-                string tempFileName = null;
-                bool uniqueFile = false;
+                string tempFileName;
+                bool uniqueFile;
                 int retryCount = 5000;
                 do
                 {

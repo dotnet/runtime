@@ -327,7 +327,7 @@ namespace System.Net
                     return null;
 
                 // parse the value
-                string? attrValue = null;
+                string? attrValue;
 
                 int j;
 
@@ -567,7 +567,7 @@ namespace System.Net
                     // extract the name / value pair
 
                     string? name = null;
-                    string? value = null;
+                    string? value;
 
                     if (ti >= 0)
                     {

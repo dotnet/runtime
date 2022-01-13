@@ -89,8 +89,8 @@ namespace System.Xml
             int copyPosition = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
-            IEnumerator? en = null;
+            MatchCollection? mc;
+            IEnumerator? en;
             if (underscorePos >= 0)
             {
                 if (s_decodeCharPattern == null)
@@ -201,7 +201,7 @@ namespace System.Xml
             int position = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
+            MatchCollection? mc;
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
@@ -396,9 +396,7 @@ namespace System.Xml
                 throw new ArgumentNullException(nameof(name));
             }
 
-            int colonPosition = -1;
-
-            int endPos = ValidateNames.ParseQName(name, 0, out colonPosition);
+            int endPos = ValidateNames.ParseQName(name, 0, out _);
             if (endPos != name.Length)
             {
                 throw CreateException(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, endPos), exceptionType, 0, endPos + 1);

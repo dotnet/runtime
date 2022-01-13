@@ -202,8 +202,7 @@ namespace System.Text.RegularExpressions.Generator
                 regexMethod,
                 typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
                 ns ?? string.Empty,
-                $"{typeDec.Identifier}{typeDec.TypeParameterList}",
-                typeDec.ConstraintClauses.ToString());
+                $"{typeDec.Identifier}{typeDec.TypeParameterList}");
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -214,8 +213,7 @@ namespace System.Text.RegularExpressions.Generator
                     null,
                     parent is RecordDeclarationSyntax rds2 ? $"{parent.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : parent.Keyword.ValueText,
                     ns ?? string.Empty,
-                    $"{parent.Identifier}{parent.TypeParameterList}",
-                    parent.ConstraintClauses.ToString());
+                    $"{parent.Identifier}{parent.TypeParameterList}");
 
                 current = current.ParentClass;
                 parent = parent.Parent as TypeDeclarationSyntax;
@@ -235,7 +233,7 @@ namespace System.Text.RegularExpressions.Generator
         internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
 
         /// <summary>A type holding a regex method.</summary>
-        internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name, string Constraints)
+        internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name)
         {
             public RegexType? ParentClass { get; set; }
         }

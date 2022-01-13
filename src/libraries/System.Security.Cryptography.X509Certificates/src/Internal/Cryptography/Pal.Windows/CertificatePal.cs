@@ -29,9 +29,8 @@ namespace Internal.Cryptography.Pal
             if (safeCertContextHandle.IsInvalid)
                 throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
 
-            Interop.Crypt32.DATA_BLOB dataBlob;
             int cbData = 0;
-            bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out dataBlob, ref cbData);
+            bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out Interop.Crypt32.DATA_BLOB _, ref cbData);
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
         }
 
