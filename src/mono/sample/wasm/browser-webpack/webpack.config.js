@@ -6,7 +6,6 @@ module.exports = (env) => {
     return {
         mode,
         entry: './app.js',
-
         experiments: {
             outputModule: true,
         },
