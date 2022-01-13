@@ -379,7 +379,7 @@ namespace System.Net.Http
         private static bool IsValidHostName(ReadOnlySpan<char> host)
         {
             // Also add user info (u@) to make sure 'host' doesn't include user info.
-            return Uri.TryCreate($"http://u@{host}/", UriKind.Absolute, out Uri? hostUri);
+            return Uri.TryCreate($"http://u@{host}/", UriKind.Absolute, out _);
         }
     }
 }
