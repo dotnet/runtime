@@ -1735,7 +1735,7 @@ public:
     // In this case, it must be removed by GenTreeCall::ResetArgInfo.
     bool isNonStandardArgAddedLate() const
     {
-        switch (nonStandardArgKind)
+        switch (static_cast<NonStandardArgKind>(nonStandardArgKind))
         {
             case NonStandardArgKind::None:
             case NonStandardArgKind::PInvokeFrame:
