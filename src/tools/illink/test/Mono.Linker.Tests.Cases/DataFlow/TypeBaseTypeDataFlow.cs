@@ -35,6 +35,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestNonPublicNestedTypesAreNotPropagated (typeof (TestType));
 			TestNonPublicPropertiesAreNotPropagated (typeof (TestType));
 
+			TestInterfacesPropagated (typeof (TestType));
+
 			TestCombinationOfPublicsIsPropagated (typeof (TestType));
 			TestCombinationOfNonPublicsIsNotPropagated (typeof (TestType));
 			TestCombinationOfPublicAndNonPublicsPropagatesPublicOnly (typeof (TestType));
@@ -155,6 +157,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static void TestNonPublicPropertiesAreNotPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.NonPublicProperties)] Type derivedType)
 		{
 			derivedType.BaseType.RequiresNonPublicProperties ();
+		}
+
+		static void TestInterfacesPropagated ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.Interfaces)] Type derivedType)
+		{
+			derivedType.BaseType.RequiresInterfaces ();
 		}
 
 		static void TestCombinationOfPublicsIsPropagated (

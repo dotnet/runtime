@@ -75,7 +75,7 @@ namespace LinkerAnalyzer.Core
 			var key = GetKey (method);
 
 			if (sizes.ContainsKey (key))
-				return sizes [key];
+				return sizes[key];
 
 			var msize = method.Body.CodeSize;
 			msize += method.Name.Length;
@@ -125,7 +125,7 @@ namespace LinkerAnalyzer.Core
 				else
 					Console.Write (".");
 
-				ReaderParameters parameters = new ReaderParameters () { ReadingMode = ReadingMode.Immediate, AssemblyResolver = resolver};
+				ReaderParameters parameters = new ReaderParameters () { ReadingMode = ReadingMode.Immediate, AssemblyResolver = resolver };
 				var assembly = AssemblyDefinition.ReadAssembly (file, parameters);
 				assemblies.Add (assembly);
 				foreach (var module in assembly.Modules) {
@@ -146,7 +146,7 @@ namespace LinkerAnalyzer.Core
 		public int GetSize (VertexData vertex)
 		{
 			if (sizes.ContainsKey (vertex.value))
-				return sizes [vertex.value];
+				return sizes[vertex.value];
 			return 0;
 		}
 	}
