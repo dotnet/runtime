@@ -266,12 +266,10 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(ReadOnlyMemory<byte> key, Stream source, CancellationToken cancellationToken = default)
         {
-            if (source is null)
-                return ValueTask.FromException<byte[]>(new ArgumentNullException(nameof(source)));
+            ArgumentNullException.ThrowIfNull(source);
 
             if (!source.CanRead)
-                return ValueTask.FromException<byte[]>(
-                    new ArgumentException(SR.Argument_StreamNotReadable, nameof(source)));
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             return LiteHashProvider.HmacStreamAsync(HashAlgorithmNames.SHA384, HmacSizeBytes, key.Span, source, cancellationToken);
         }
@@ -294,8 +292,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static ValueTask<byte[]> HashDataAsync(byte[] key, Stream source, CancellationToken cancellationToken = default)
         {
-            if (key is null)
-                return ValueTask.FromException<byte[]>(new ArgumentNullException(nameof(key)));
+            ArgumentNullException.ThrowIfNull(key);
 
             return HashDataAsync(new ReadOnlyMemory<byte>(key), source, cancellationToken);
         }
@@ -330,16 +327,13 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken = default)
         {
-            if (source is null)
-                return ValueTask.FromException<int>(new ArgumentNullException(nameof(source)));
+            ArgumentNullException.ThrowIfNull(source);
 
             if (destination.Length < HmacSizeBytes)
-                return ValueTask.FromException<int>(
-                    new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination)));
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
 
             if (!source.CanRead)
-                return ValueTask.FromException<int>(
-                    new ArgumentException(SR.Argument_StreamNotReadable, nameof(source)));
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
 
             return LiteHashProvider.HmacStreamAsync(
                 HashAlgorithmNames.SHA384,

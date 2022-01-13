@@ -116,25 +116,27 @@ namespace System.Security.Cryptography
         /// This takes ownership of the hash parameter and disposes of it when done.
         private static int ProcessStream<T>(T hash, Stream source, Span<byte> destination) where T : ILiteHash
         {
-            byte[] rented = CryptoPool.Rent(4096);
-
-            int maxRead = 0;
-            int read;
-
-            try
+            using (hash)
             {
-                while ((read = source.Read(rented)) > 0)
+                byte[] rented = CryptoPool.Rent(4096);
+
+                int maxRead = 0;
+                int read;
+
+                try
                 {
-                    maxRead = Math.Max(maxRead, read);
-                    hash.Append(rented.AsSpan(0, read));
-                }
+                    while ((read = source.Read(rented)) > 0)
+                    {
+                        maxRead = Math.Max(maxRead, read);
+                        hash.Append(rented.AsSpan(0, read));
+                    }
 
-                return hash.Finalize(destination);
-            }
-            finally
-            {
-                CryptoPool.Return(rented, clearSize: maxRead);
-                hash.Dispose();
+                    return hash.Finalize(destination);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: maxRead);
+                }
             }
         }
 
@@ -145,25 +147,27 @@ namespace System.Security.Cryptography
             Memory<byte> destination,
             CancellationToken cancellationToken) where T : ILiteHash
         {
-            byte[] rented = CryptoPool.Rent(4096);
-
-            int maxRead = 0;
-            int read;
-
-            try
+            using (hash)
             {
-                while ((read = await source.ReadAsync(rented, cancellationToken).ConfigureAwait(false)) > 0)
+                byte[] rented = CryptoPool.Rent(4096);
+
+                int maxRead = 0;
+                int read;
+
+                try
                 {
-                    maxRead = Math.Max(maxRead, read);
-                    hash.Append(rented.AsSpan(0, read));
-                }
+                    while ((read = await source.ReadAsync(rented, cancellationToken).ConfigureAwait(false)) > 0)
+                    {
+                        maxRead = Math.Max(maxRead, read);
+                        hash.Append(rented.AsSpan(0, read));
+                    }
 
-                return hash.Finalize(destination.Span);
-            }
-            finally
-            {
-                CryptoPool.Return(rented, clearSize: maxRead);
-                hash.Dispose();
+                    return hash.Finalize(destination.Span);
+                }
+                finally
+                {
+                    CryptoPool.Return(rented, clearSize: maxRead);
+                }
             }
         }
 
