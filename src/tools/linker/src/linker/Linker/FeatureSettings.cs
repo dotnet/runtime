@@ -3,6 +3,7 @@
 
 using System;
 using System.Xml.XPath;
+using ILLink.Shared;
 
 namespace Mono.Linker
 {
@@ -16,19 +17,19 @@ namespace Mono.Linker
 
 			var value = GetAttribute (nav, "featurevalue");
 			if (string.IsNullOrEmpty (value)) {
-				context.LogError ($"Failed to process '{documentLocation}'. Feature '{feature}' does not specify a 'featurevalue' attribute.", 1001);
+				context.LogError (null, DiagnosticId.XmlFeatureDoesNotSpecifyFeatureValue, documentLocation, feature);
 				return false;
 			}
 
 			if (!bool.TryParse (value, out bool bValue)) {
-				context.LogError ($"Failed to process '{documentLocation}'. Unsupported non-boolean feature definition '{feature}'.", 1002);
+				context.LogError (null, DiagnosticId.XmlUnsupportedNonBooleanValueForFeature, documentLocation, feature);
 				return false;
 			}
 
 			var isDefault = GetAttribute (nav, "featuredefault");
 			bool bIsDefault = false;
 			if (!string.IsNullOrEmpty (isDefault) && (!bool.TryParse (isDefault, out bIsDefault) || !bIsDefault)) {
-				context.LogError ($"Failed to process '{documentLocation}'. Unsupported value for featuredefault attribute.", 1014);
+				context.LogError (null, DiagnosticId.XmlDocumentLocationHasInvalidFeatureDefault, documentLocation);
 				return false;
 			}
 

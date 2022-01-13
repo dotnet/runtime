@@ -46,13 +46,13 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		// in case it has an annotated return value.
 		public override MultiValue VisitPropertyReference (IPropertyReferenceOperation operation, StateValue state)
 		{
-			// Base logic visits the receiver
+			// Base logic visits the receiver and arguments
 			base.VisitPropertyReference (operation, state);
 
-			var propertyMethod = GetPropertyMethod (operation);
-			// Only the getter has a return value that may be annotated.
-			if (propertyMethod.MethodKind == MethodKind.PropertyGet)
-				return new MethodReturnValue (propertyMethod);
+			var usage = operation.GetValueUsageInfo(Context.OwningSymbol);
+			if (usage.HasFlag (ValueUsageInfo.Read) && operation.Property.GetMethod is { } getMethod) {
+				return new MethodReturnValue(getMethod);
+			}
 
 			return TopValue;
 		}

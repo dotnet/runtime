@@ -59,17 +59,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 					// warning location and because warnings are disambiguated based on the operation.
 					var parentSyntax = branchValueOperation.Syntax.Parent;
 					if (parentSyntax == null)
-						throw new InvalidOperationException ();
+						return;
 
 					var parentOperation = Context.Compilation.GetSemanticModel (branchValueOperation.Syntax.SyntaxTree).GetOperation (parentSyntax);
 
 					// Analyzer doesn't support exceptional control-flow:
 					// https://github.com/dotnet/linker/issues/2273
 					if (parentOperation is IThrowOperation)
-						throw new NotImplementedException ();
+						return;
 
 					if (parentOperation is not IReturnOperation returnOperation)
-						throw new InvalidOperationException ();
+						return;
 
 					HandleReturnValue (branchValue, returnOperation);
 				}
@@ -165,32 +165,20 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return TopValue;
 		}
 
-		public static IMethodSymbol GetPropertyMethod (IPropertyReferenceOperation operation)
-		{
-			// The IPropertyReferenceOperation doesn't tell us whether this reference is to the getter or setter.
-			// For this we need to look at the containing operation.
-			var parent = operation.Parent;
-			Debug.Assert (parent != null);
-			if (parent!.Kind == OperationKind.SimpleAssignment) {
-				var assignment = (ISimpleAssignmentOperation) parent;
-				if (assignment.Target == operation) {
-					var setMethod = operation.Property.SetMethod;
-					Debug.Assert (setMethod != null);
-					return setMethod!;
-				}
-				Debug.Assert (assignment.Value == operation);
-			}
-
-			var getMethod = operation.Property.GetMethod;
-			Debug.Assert (getMethod != null);
-			return getMethod!;
-		}
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalState<TValue> state)
 		{
 			if (operation.Instance != null) {
 				var instanceValue = Visit (operation.Instance, state);
-				HandleReceiverArgument (instanceValue, GetPropertyMethod (operation), operation);
+				var usage = operation.GetValueUsageInfo(Context.OwningSymbol);
+				if (usage.HasFlag(ValueUsageInfo.Read) && operation.Property.GetMethod is {} getMethod)
+				{
+					HandleReceiverArgument(instanceValue, getMethod, operation);
+				}
+				if (usage.HasFlag(ValueUsageInfo.Write) && operation.Property.SetMethod is {} setMethod)
+				{
+					HandleReceiverArgument(instanceValue, setMethod, operation);
+				}
 			}
 
 			return TopValue;

@@ -31,9 +31,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
+
 namespace Mono.Linker
 {
 
@@ -421,7 +423,7 @@ namespace Mono.Linker
 					continue;
 
 				if (args[1].Value is not string value || !value.Equals ("True", StringComparison.OrdinalIgnoreCase)) {
-					LogWarning ($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\".", 2102, GetAssemblyLocation (assembly));
+					LogWarning (GetAssemblyLocation (assembly), DiagnosticId.InvalidIsTrimmableValue, args[1].Value.ToString () ?? "", assembly.Name.Name);
 					continue;
 				}
 
@@ -569,6 +571,22 @@ namespace Mono.Linker
 		/// This API is used for warnings defined in the linker, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
+		/// <param name="origin">Filename or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (MessageOrigin origin, DiagnosticId id, params string[] args)
+		{
+			WarnVersion version = GetWarningVersion ();
+			MessageContainer warning = MessageContainer.CreateWarningMessage (this, origin, id, version, args);
+			_cachedWarningMessageContainers.Add (warning);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
 		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
 		/// <param name="origin">Type or member where the warning is coming from</param>
@@ -578,6 +596,36 @@ namespace Mono.Linker
 		{
 			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
 			LogWarning (text, code, _origin, subcategory);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
+		/// <param name="origin">Type or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (IMemberDefinition origin, DiagnosticId id, int? ilOffset = null, params string[] args)
+		{
+			MessageOrigin _origin = new MessageOrigin (origin, ilOffset);
+			LogWarning (_origin, id, args);
+		}
+
+		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
+		/// <param name="origin">Type or member where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (IMemberDefinition origin, DiagnosticId id, params string[] args)
+		{
+			MessageOrigin _origin = new MessageOrigin (origin);
+			LogWarning (_origin, id, args);
 		}
 
 		/// <summary>
@@ -597,6 +645,21 @@ namespace Mono.Linker
 		}
 
 		/// <summary>
+		/// Display a warning message to the end user.
+		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// versions are inferred from the code, and every warning that we define is versioned.
+		/// </summary>
+		/// <param name="origin">Filename where the warning is coming from</param>
+		/// <param name="id">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md for the list of warnings and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Warning' category</returns>
+		public void LogWarning (string origin, DiagnosticId id, params string[] args)
+		{
+			MessageOrigin _origin = new MessageOrigin (origin);
+			LogWarning (_origin, id, args);
+		}
+
+		/// <summary>
 		/// Display an error message to the end user.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
@@ -607,6 +670,19 @@ namespace Mono.Linker
 		public void LogError (string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
 		{
 			var error = MessageContainer.CreateErrorMessage (text, code, subcategory, origin);
+			LogMessage (error);
+		}
+
+		/// <summary>
+		/// Display an error message to the end user.
+		/// </summary>
+		/// <param name="origin">Filename, line, and column where the error was found</param>
+		/// <param name="id">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md and https://github.com/dotnet/linker/blob/main/src/ILLink.Shared/DiagnosticId.cs for the list of errors and possibly add a new one</param>
+		/// <param name="args">Additional arguments to form a humanly readable message describing the warning</param>
+		/// <returns>New MessageContainer of 'Error' category</returns>
+		public void LogError (MessageOrigin? origin, DiagnosticId id, params string[] args)
+		{
+			var error = MessageContainer.CreateErrorMessage (origin, id, args);
 			LogMessage (error);
 		}
 
@@ -810,19 +886,19 @@ namespace Mono.Linker
 		protected virtual void ReportUnresolved (FieldReference fieldReference)
 		{
 			if (unresolved_reported.Add (fieldReference))
-				LogError ($"Field '{fieldReference.FullName}' reference could not be resolved.", 1040);
+				LogError (string.Format (SharedStrings.FailedToResolveFieldElementMessage, fieldReference.FullName), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 
 		protected virtual void ReportUnresolved (MethodReference methodReference)
 		{
 			if (unresolved_reported.Add (methodReference))
-				LogError ($"Method '{methodReference.GetDisplayName ()}' reference could not be resolved.", 1040);
+				LogError (string.Format (SharedStrings.FailedToResolveMethodElementMessage, methodReference.GetDisplayName ()), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 
 		protected virtual void ReportUnresolved (TypeReference typeReference)
 		{
 			if (unresolved_reported.Add (typeReference))
-				LogError ($"Type '{typeReference.GetDisplayName ()}' reference could not be resolved.", 1040);
+				LogError (string.Format (SharedStrings.FailedToResolveTypeElementMessage, typeReference.GetDisplayName ()), (int) DiagnosticId.FailedToResolveMetadataElement);
 		}
 	}
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -241,9 +242,7 @@ namespace Mono.Linker
 
 					break;
 				default:
-					_context.LogWarning ($"Invalid scope '{info.Scope}' used in 'UnconditionalSuppressMessageAttribute' on module '{module.Name}' " +
-						$"with target '{info.Target}'.",
-						2108, _context.GetAssemblyLocation (module.Assembly));
+					_context.LogWarning (_context.GetAssemblyLocation (module.Assembly), DiagnosticId.InvalidScopeInUnconditionalSuppressMessage, info.Scope ?? "", module.Name, info.Target ?? "");
 					break;
 				}
 			}

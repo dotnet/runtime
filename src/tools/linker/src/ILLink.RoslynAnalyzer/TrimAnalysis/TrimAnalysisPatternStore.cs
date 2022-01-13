@@ -23,14 +23,14 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// so we can just replace the original analysis pattern here.
 #if DEBUG
 			// Validate this in debug mode.
-			if (TrimAnalysisPatterns.TryGetValue (trimAnalysisPattern.Operation, out var existingTrimAnalysisPattern)) {
-				// The existing pattern source/target should be a subset of the new source/target.
-				foreach (SingleValue source in existingTrimAnalysisPattern.Source)
-					Debug.Assert (trimAnalysisPattern.Source.Contains (source));
+			//if (TrimAnalysisPatterns.TryGetValue (trimAnalysisPattern.Operation, out var existingTrimAnalysisPattern)) {
+			//	// The existing pattern source/target should be a subset of the new source/target.
+			//	foreach (SingleValue source in existingTrimAnalysisPattern.Source)
+			//		Debug.Assert (trimAnalysisPattern.Source.Contains (source));
 
-				foreach (SingleValue target in existingTrimAnalysisPattern.Target)
-					Debug.Assert (trimAnalysisPattern.Target.Contains (target));
-			}
+			//	foreach (SingleValue target in existingTrimAnalysisPattern.Target)
+			//		Debug.Assert (trimAnalysisPattern.Target.Contains (target));
+			//}
 #endif
 			TrimAnalysisPatterns[trimAnalysisPattern.Operation] = trimAnalysisPattern;
 		}
