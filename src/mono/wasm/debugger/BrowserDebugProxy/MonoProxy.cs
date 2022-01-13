@@ -697,7 +697,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     case "methodId":
                     {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, null, token);
+                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId.Value, objectId.SubValue, objectId.ElementType, null, token);
                         return sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod);
                     }
                     case "object":
@@ -723,7 +723,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 }
             }
-            catch (Exception) {
+            catch (Exception ex)
+            {
+                logger.LogDebug($"Error on getting properties of object {objectId} with scheme {objectId.Scheme}. {ex.Message}.");
                 return null;
             }
         }
