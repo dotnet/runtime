@@ -107,15 +107,10 @@ if (typeof globalThis.crypto === 'undefined') {
 }
 
 if (typeof globalThis.performance === 'undefined') {
-    if (is_node) {
-        const { performance } = require("perf_hooks");
-        globalThis.performance = performance;
-    } else {
-        // performance.now() is used by emscripten and doesn't work in JSC
-        globalThis.performance = {
-            now: function () {
-                return Date.now();
-            }
+    // performance.now() is used by emscripten and doesn't work in JSC
+    globalThis.performance = {
+        now: function () {
+            return Date.now();
         }
     }
 }
