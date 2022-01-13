@@ -119,54 +119,78 @@ if (typeof globalThis.performance === 'undefined') {
         }
     }
 }
-loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
-    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
-        disableDotnet6Compatibility: true,
-        config: null,
-        configSrc: "./mono-config.json",
-        onConfigLoaded: (config) => {
-            if (!Module.config) {
-                const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1,);
-                throw err;
-            }
-            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in processedArguments.setenv) {
-                config.environment_variables[variable] = processedArguments.setenv[variable];
-            }
-            config.diagnostic_tracing = !!processedArguments.diagnostic_tracing;
-        },
-        preRun: () => {
-            if (!processedArguments.enable_gc) {
-                INTERNAL.mono_wasm_enable_on_demand_gc(0);
-            }
-        },
-        onDotnetReady: () => {
-            let wds = Module.FS.stat(processedArguments.working_dir);
-            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-                set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
-                return;
-            }
 
-            Module.FS.chdir(processedArguments.working_dir);
-
-            App.init({ MONO, INTERNAL, BINDING, Module });
-        },
-        onAbort: (error) => {
-            console.log("ABORT: " + error);
-            const err = new Error();
-            console.log("Stacktrace: \n");
-            console.error(err.stack);
-            set_exit_code(1, error);
-        },
-    }))
-}).catch(function (err) {
-    console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
-});
+if (typeof globalThis.URL === 'undefined') {
+    globalThis.URL = class URL {
+        constructor(url) {
+            this.url = url;
+        }
+        toString() {
+            return this.url;
+        }
+    };
+}
 
 const App = {
-    init: async function ({ MONO, INTERNAL, BINDING, Module }) {
+    /** Runs a particular test
+     * @type {(method_name: string, args: any[]=, signature: any=) => return number}
+     */
+    call_test_method: function (method_name, args, signature) {
+        // note: arguments here is the array of arguments passsed to this function
+        if ((arguments.length > 2) && (typeof (signature) !== "string"))
+            throw new Error("Invalid number of arguments for call_test_method");
+
+        const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+        try {
+            return App.INTERNAL.call_static_method(fqn, args || [], signature);
+        } catch (exc) {
+            console.error("exception thrown in", fqn);
+            throw exc;
+        }
+    }
+};
+globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
+
+async function main(processedArguments) {
+    try {
+        // this is dynamic import because V8 loads this file as CommonJS. For same reason there is not top level await.
+        const { default: createDotnetRuntime } = await import('./dotnet.js');
+        const { MONO, INTERNAL, BINDING, Module } = await createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
+            disableDotnet6Compatibility: true,
+            configSrc: "./mono-config.json",
+            onConfigLoaded: () => {
+                if (!Module.config) {
+                    const err = new Error("Could not find ./mono-config.json. Cancelling run");
+                    set_exit_code(1,);
+                    throw err;
+                }
+                // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
+                for (let variable in processedArguments.setenv) {
+                    Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+                }
+                config.diagnostic_tracing = !!processedArguments.diagnostic_tracing;
+            },
+            preRun: () => {
+                if (!processedArguments.enable_gc) {
+                    INTERNAL.mono_wasm_enable_on_demand_gc(0);
+                }
+            },
+            onAbort: (error) => {
+                console.log("ABORT: " + error);
+                const err = new Error();
+                console.log("Stacktrace: \n");
+                console.error(err.stack);
+                set_exit_code(1, error);
+            },
+        }))
+
+        let wds = Module.FS.stat(processedArguments.working_dir);
+        if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+            set_exit_code(1, `Could not find working directory ${processedArguments.working_dir}`);
+            return;
+        }
+        Module.FS.chdir(processedArguments.working_dir);
+
         console.info("Initializing.....");
         Object.assign(App, { MONO, INTERNAL, BINDING, Module });
 
@@ -219,26 +243,13 @@ const App = {
         } else {
             set_exit_code(1, "Unhandled argument: " + processedArguments.applicationArgs[0]);
         }
-    },
-
-    /** Runs a particular test
-     * @type {(method_name: string, args: any[]=, signature: any=) => return number}
-     */
-    call_test_method: function (method_name, args, signature) {
-        // note: arguments here is the array of arguments passsed to this function
-        if ((arguments.length > 2) && (typeof (signature) !== "string"))
-            throw new Error("Invalid number of arguments for call_test_method");
-
-        const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
-        try {
-            return App.INTERNAL.call_static_method(fqn, args || [], signature);
-        } catch (exc) {
-            console.error("exception thrown in", fqn);
-            throw exc;
-        }
     }
-};
-globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
+    catch (err) {
+        console.error(err);
+        set_exit_code(1, err);
+        throw err;
+    }
+}
 
 function set_exit_code(exit_code, reason) {
     if (reason) {
@@ -328,9 +339,9 @@ function processArguments(incomingArguments) {
     }
 }
 
-let processedArguments = null;
 // this can't be function because of `arguments` scope
 try {
+    let processedArguments = null;
     if (is_node) {
         processedArguments = processArguments(process.argv.slice(2));
     } else if (is_browser) {
@@ -350,10 +361,10 @@ try {
     } else if (typeof WScript !== "undefined" && WScript.Arguments) {
         processedArguments = processArguments(Array.from(WScript.Arguments));
     }
+    main(processedArguments);
 } catch (e) {
     console.error(e);
 }
-
 if (is_node) {
     const modulesToLoad = processedArguments.setenv["NPM_MODULES"];
     if (modulesToLoad) {
@@ -374,44 +385,3 @@ if (is_node) {
 
 // Must be after loading npm modules.
 processedArguments.setenv["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
-
-async function loadDotnet(file) {
-    let loadScript = undefined;
-    if (typeof WScript !== "undefined") { // Chakra
-        loadScript = function (file) {
-            WScript.LoadScriptFile(file);
-            return globalThis.createDotnetRuntime;
-        };
-    } else if (is_node) { // NodeJS
-        loadScript = async function (file) {
-            return require(file);
-        };
-    } else if (is_browser) { // vanila JS in browser
-        loadScript = function (file) {
-            var loaded = new Promise((resolve, reject) => {
-                globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
-                    // this is callback we have in CJS version of the runtime
-                    resolve(createDotnetRuntime);
-                };
-                import(file).then(({ default: createDotnetRuntime }) => {
-                    // this would work with ES6 default export
-                    if (createDotnetRuntime) {
-                        resolve(createDotnetRuntime);
-                    }
-                }, reject);
-            });
-            return loaded;
-        }
-    }
-    else if (typeof globalThis.load !== 'undefined') {
-        loadScript = async function (file) {
-            globalThis.load(file)
-            return globalThis.createDotnetRuntime;
-        }
-    }
-    else {
-        throw new Error("Unknown environment, can't load config");
-    }
-
-    return loadScript(file);
-}

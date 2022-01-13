@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.ts</WasmMainJSPath>
+    <WasmMainJSPath>package.json</WasmMainJSPath>
     <!--
     <WasmEnableES6>true</WasmEnableES6>
     -->

@@ -1,1 +1,3 @@
-exports.app()
+import { main } from './app.js'
+
+main();

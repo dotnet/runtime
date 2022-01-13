@@ -7,7 +7,7 @@
     <PackageRID>browser-wasm</PackageRID>
     <NativeBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'native', '$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)'))</NativeBinDir>
     <ICULibDir>$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'browser-wasm', 'native', 'lib'))</ICULibDir>
-    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">false</WasmEnableES6>
+    <WasmEnableES6 Condition="'$(WasmEnableES6)' == ''">true</WasmEnableES6>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -74,7 +74,7 @@
       <_EmccCommonFlags Include="-s STRICT_JS=1" />      
       <_EmccCommonFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccCommonFlags Include="-s MODULARIZE=1"/>
-      <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' == 'true'" />
+      <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">

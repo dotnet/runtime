@@ -181,8 +181,15 @@ public class WasmAppBuilder : Task
         string indexHtmlPath = Path.Combine(AppDir, "index.html");
         if (!File.Exists(indexHtmlPath))
         {
-            var html = @"<html><body><script type=""text/javascript"" src=""" + mainFileName + @"""></script></body></html>";
+            var html = @"<html><body><script type=""module"" src=""" + mainFileName + @"""></script></body></html>";
             File.WriteAllText(indexHtmlPath, html);
+        }
+
+        string packageJsonPath = Path.Combine(AppDir, "package.json");
+        if (!File.Exists(packageJsonPath))
+        {
+            var json = @"{ ""type"":""module"" }";
+            File.WriteAllText(packageJsonPath, json);
         }
 
         foreach (var assembly in _assemblies)

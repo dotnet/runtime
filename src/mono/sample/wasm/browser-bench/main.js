@@ -3,6 +3,8 @@
 
 "use strict";
 
+import createDotnetRuntime from './dotnet.js'
+
 let runBenchmark;
 let setTasks;
 
@@ -76,30 +78,12 @@ class MainApp {
     }
 }
 
-globalThis.mainApp = new MainApp();
+try {
+    globalThis.mainApp = new MainApp();
 
-createDotnetRuntime(({ BINDING }) => ({
-    disableDotnet6Compatibility: true,
-    configSrc: "./mono-config.json",
-    onDotnetReady: () => {
-        try {
-            mainApp.init({ BINDING });
-        } catch (error) {
-            set_exit_code(1, error);
-            throw (error);
-        }
-    },
-    onAbort: (error) => {
-        set_exit_code(1, error);
-    },
-}));
-
-function set_exit_code(exit_code, reason) {
-    /* Set result in a tests_done element, to be read by xharness */
-    const tests_done_elem = document.createElement("label");
-    tests_done_elem.id = "tests_done";
-    tests_done_elem.innerHTML = exit_code.toString();
-    document.body.appendChild(tests_done_elem);
-
-    console.log(`WASM EXIT ${exit_code}`);
-};
+    const { BINDING } = await createDotnetRuntime();
+    mainApp.init({ BINDING });
+}
+catch (err) {
+    console.error(`WASM ERROR ${err}`);
+}

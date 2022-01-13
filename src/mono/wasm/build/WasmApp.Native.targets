@@ -110,8 +110,8 @@
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <!-- need to re-link dotnet.js when targeting ES6 -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when not targeting ES6 -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'false'" >true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
     </PropertyGroup>
@@ -121,8 +121,8 @@
       <!-- AOT==true overrides WasmBuildNative -->
       <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
-      <!-- need to re-link dotnet.js when targeting ES6 -->
-      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'true'" >true</WasmBuildNative>
+      <!-- need to re-link dotnet.js when not targeting ES6 -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableES6)' == 'false'" >true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -190,7 +190,7 @@
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0" />
-      <_EmccCommonFlags Include="-s EXPORT_ES6=1"                   Condition="'$(WasmEnableES6)' == 'true'" />
+      <_EmccCommonFlags Include="-s EXPORT_ES6=1"                   Condition="'$(WasmEnableES6)' != 'false'" />
       <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
 

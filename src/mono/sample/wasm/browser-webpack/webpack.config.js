@@ -6,9 +6,13 @@ module.exports = (env) => {
     return {
         mode,
         entry: './app.js',
+
+        experiments: {
+            outputModule: true,
+        },
         output: {
             filename: 'app.js',
-            library: { type: "umd", name: "app", export: "main" },
+            library: { type: "module" },
             path: wasmAppDir,
         }
     }
