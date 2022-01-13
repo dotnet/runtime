@@ -408,20 +408,5 @@ class C
 
 			return VerifyRequiresUnreferencedCodeAnalyzer (source);
 		}
-
-		[Fact]
-		public Task VerifyThatAnalysisOfFieldsDoesNotNullRef ()
-		{
-			var source = @"
-using System.Diagnostics.CodeAnalysis;
-
-[DynamicallyAccessedMembers (field)]
-class C
-{
-	public const DynamicallyAccessedMemberTypes field = DynamicallyAccessedMemberTypes.PublicMethods;
-}";
-
-			return VerifyRequiresUnreferencedCodeAnalyzer (source);
-		}
 	}
 }

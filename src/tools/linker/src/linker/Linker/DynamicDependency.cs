@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -74,7 +73,7 @@ namespace Mono.Linker
 			if (dynamicDependency != null)
 				return dynamicDependency;
 
-			context.LogWarning (member, DiagnosticId.DynamicDependencyAttributeCouldNotBeAnalyzed);
+			context.LogWarning ($"The 'DynamicDependencyAttribute' could not be analyzed.", 2034, member);
 			return null;
 		}
 

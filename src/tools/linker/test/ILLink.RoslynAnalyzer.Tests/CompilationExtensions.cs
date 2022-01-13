@@ -18,15 +18,17 @@ namespace ILLink.RoslynAnalyzer.Tests
 			this Compilation comp,
 			EmitOptions? options = null,
 			bool embedInteropTypes = false,
-			ImmutableArray<string> aliases = default) => EmitToPortableExecutableReference (comp, options, embedInteropTypes, aliases);
+			ImmutableArray<string> aliases = default,
+			DiagnosticDescriptor[]? expectedWarnings = null) => EmitToPortableExecutableReference (comp, options, embedInteropTypes, aliases, expectedWarnings);
 
 		public static PortableExecutableReference EmitToPortableExecutableReference (
 			this Compilation comp,
 			EmitOptions? options = null,
 			bool embedInteropTypes = false,
-			ImmutableArray<string> aliases = default)
+			ImmutableArray<string> aliases = default,
+			DiagnosticDescriptor[]? expectedWarnings = null)
 		{
-			var image = comp.EmitToArray (options);
+			var image = comp.EmitToArray (options, expectedWarnings: expectedWarnings);
 			if (comp.Options.OutputKind == OutputKind.NetModule) {
 				return ModuleMetadata.CreateFromImage (image).GetReference (display: comp.MakeSourceModuleName ());
 			} else {
@@ -37,6 +39,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		internal static ImmutableArray<byte> EmitToArray (
 			this Compilation compilation,
 			EmitOptions? options = null,
+			DiagnosticDescriptor[]? expectedWarnings = null,
 			Stream? pdbStream = null,
 			IMethodSymbol? debugEntryPoint = null,
 			Stream? sourceLinkStream = null,

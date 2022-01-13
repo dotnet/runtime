@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -25,19 +24,18 @@ namespace Mono.Linker.Steps
 				return;
 
 			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
-			var origin = new MessageOrigin (assembly);
 
 			AssemblyAction action = Context.Annotations.GetAction (assembly);
 			switch (action) {
 			case AssemblyAction.Copy:
-				Annotations.Mark (assembly.MainModule, di, origin);
+				Annotations.Mark (assembly.MainModule, di);
 				// Mark Step will take care of marking whole assembly
 				return;
 			case AssemblyAction.CopyUsed:
 			case AssemblyAction.Link:
 				break;
 			default:
-				Context.LogError (null, DiagnosticId.RootAssemblyCannotUseAction, assembly.Name.ToString (), action.ToString ());
+				Context.LogError ($"Root assembly '{assembly.Name}' cannot use action '{action}'.", 1035);
 				return;
 			}
 
@@ -50,11 +48,11 @@ namespace Mono.Linker.Steps
 			case AssemblyRootMode.EntryPoint:
 				var ep = assembly.MainModule.EntryPoint;
 				if (ep == null) {
-					Context.LogError (null, DiagnosticId.RootAssemblyDoesNotHaveEntryPoint, assembly.Name.ToString ());
+					Context.LogError ($"Root assembly '{assembly.Name}' does not have entry point.", 1034);
 					return;
 				}
 
-				Annotations.Mark (ep.DeclaringType, di, origin);
+				Annotations.Mark (ep.DeclaringType, di);
 				Annotations.AddPreservedMethod (ep.DeclaringType, ep);
 				break;
 			case AssemblyRootMode.VisibleMembers:
@@ -118,7 +116,7 @@ namespace Mono.Linker.Steps
 			//
 			assembly = Context.TryResolve (fileName);
 			if (assembly == null)
-				Context.LogError (null, DiagnosticId.RootAssemblyCouldNotBeFound, fileName);
+				Context.LogError ($"Root assembly '{fileName}' could not be found.", 1032);
 
 			return assembly;
 		}
@@ -155,7 +153,7 @@ namespace Mono.Linker.Steps
 				Annotations.SetMembersPreserve (type, preserve);
 				break;
 			default:
-				Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly), new MessageOrigin (type.Module.Assembly));
+				Annotations.Mark (type, new DependencyInfo (DependencyKind.RootAssembly, type.Module.Assembly));
 				Annotations.SetMembersPreserve (type, preserve);
 				break;
 			}
@@ -170,9 +168,8 @@ namespace Mono.Linker.Steps
 		void MarkAndPreserve (AssemblyDefinition assembly, ExportedType type, TypePreserveMembers preserve)
 		{
 			var di = new DependencyInfo (DependencyKind.RootAssembly, assembly);
-			var origin = new MessageOrigin (assembly);
-			Context.Annotations.Mark (type, di, origin);
-			Context.Annotations.Mark (assembly.MainModule, di, origin);
+			Context.Annotations.Mark (type, di);
+			Context.Annotations.Mark (assembly.MainModule, di);
 			Annotations.SetMembersPreserve (type, preserve);
 		}
 

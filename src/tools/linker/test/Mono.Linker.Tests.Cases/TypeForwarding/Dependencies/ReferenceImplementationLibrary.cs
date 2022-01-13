@@ -27,22 +27,11 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding.Dependencies
 			public static int PropertyOnNestedType { get; set; }
 		}
 
-		public class ForwardedNestedType
-		{
-		}
-
 		public static int someField = 0;
 
 		public string GetSomeValue ()
 		{
 			return null;
-		}
-	}
-
-	public class AnotherImplementationClass
-	{
-		public class ForwardedNestedType
-		{
 		}
 	}
 

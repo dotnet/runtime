@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.XPath;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -50,13 +49,13 @@ namespace Mono.Linker.Steps
 
 					// TODO: Replace with IsAttributeType check once we have it
 					if (provider is not TypeDefinition) {
-						LogWarning (argumentNav, DiagnosticId.XmlRemoveAttributeInstancesCanOnlyBeUsedOnType, attributeType.Name);
+						LogWarning ($"Internal attribute '{attributeType.Name}' can only be used on attribute types.", 2048, argumentNav);
 						continue;
 					}
 				} else {
 					string attributeFullName = GetFullName (argumentNav);
 					if (string.IsNullOrEmpty (attributeFullName)) {
-						LogWarning (argumentNav, DiagnosticId.XmlElementDoesNotContainRequiredAttributeFullname);
+						LogWarning ($"'attribute' element does not contain attribute 'fullname' or it's empty.", 2029, argumentNav);
 						continue;
 					}
 
@@ -137,7 +136,10 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition? constructor = FindBestMatchingConstructor (attributeType, arguments);
 			if (constructor == null) {
-				LogWarning (nav, DiagnosticId.XmlCouldNotFindMatchingConstructorForCustomAttribute, attributeType.GetDisplayName ());
+				LogWarning (
+					$"Could not find matching constructor for custom attribute '{attributeType.GetDisplayName ()}' arguments.",
+					2022,
+					nav);
 				return null;
 			}
 
@@ -184,13 +186,13 @@ namespace Mono.Linker.Steps
 			foreach (XPathNavigator propertyNav in nav.SelectChildren ("property", string.Empty)) {
 				string propertyName = GetName (propertyNav);
 				if (string.IsNullOrEmpty (propertyName)) {
-					LogWarning (propertyNav, DiagnosticId.XmlPropertyDoesNotContainAttributeName);
+					LogWarning ($"Property element does not contain attribute 'name'.", 2051, propertyNav);
 					continue;
 				}
 
 				PropertyDefinition? property = attributeType.Properties.Where (prop => prop.Name == propertyName).FirstOrDefault ();
 				if (property == null) {
-					LogWarning (propertyNav, DiagnosticId.XmlCouldNotFindProperty, propertyName);
+					LogWarning ($"Property '{propertyName}' could not be found.", 2052, propertyNav);
 					continue;
 				}
 
@@ -233,7 +235,7 @@ namespace Mono.Linker.Steps
 			case MetadataType.Object:
 				var argumentIterator = nav.SelectChildren ("argument", string.Empty);
 				if (argumentIterator?.MoveNext () != true) {
-					_context.LogError (null, DiagnosticId.CustomAttributeArgumentForTypeRequiresNestedNode, "System.Object", "argument");
+					_context.LogError ($"Custom attribute argument for 'System.Object' requires nested 'argument' node.", 1043);
 					return null;
 				}
 
@@ -275,14 +277,14 @@ namespace Mono.Linker.Steps
 					goto default;
 
 				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, memberWithAttribute, out TypeReference? type, out _)) {
-					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.CouldNotResolveCustomAttributeTypeValue, svalue);
+					_context.LogError ($"Could not resolve custom attribute type value '{svalue}'.", 1044, origin: GetMessageOriginForPosition (nav));
 					return null;
 				}
 
 				return new CustomAttributeArgument (typeref, type);
 			default:
 				// No support for null and arrays, consider adding - dotnet/linker/issues/1957
-				_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.UnexpectedAttributeArgumentType, typeref.GetDisplayName ());
+				_context.LogError ($"Unexpected attribute argument type '{typeref.GetDisplayName ()}'.", 1045);
 				return null;
 			}
 
@@ -293,7 +295,7 @@ namespace Mono.Linker.Steps
 					typeName = "System.String";
 
 				if (!_context.TypeNameResolver.TryResolveTypeName (typeName, memberWithAttribute, out TypeReference? typeref, out _)) {
-					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.TypeUsedWithAttributeValueCouldNotBeFound, typeName, nav.Value);
+					_context.LogError ($"The type '{typeName}' used with attribute value '{nav.Value}' could not be found.", 1041, origin: GetMessageOriginForPosition (nav));
 					return null;
 				}
 
@@ -351,7 +353,7 @@ namespace Mono.Linker.Steps
 			try {
 				return Convert.ChangeType (value, typeCode);
 			} catch {
-				_context.LogError (null, DiagnosticId.CannotConverValueToType, value.ToString () ?? "", targetType.GetDisplayName ());
+				_context.LogError ($"Cannot convert value '{value}' to type '{targetType.GetDisplayName ()}'.", 1042);
 				return null;
 			}
 		}
@@ -366,13 +368,13 @@ namespace Mono.Linker.Steps
 				try {
 					assembly = _context.TryResolve (AssemblyNameReference.Parse (assemblyName));
 					if (assembly == null) {
-						LogWarning (nav, DiagnosticId.XmlCouldNotResolveAssemblyForAttribute, assemblyName, attributeFullName);
+						LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'.", 2030, nav);
 
 						attributeType = default;
 						return false;
 					}
 				} catch (Exception) {
-					LogWarning (nav, DiagnosticId.XmlCouldNotResolveAssemblyForAttribute, assemblyName, attributeFullName);
+					LogWarning ($"Could not resolve assembly '{assemblyName}' for attribute '{attributeFullName}'.", 2030, nav);
 					attributeType = default;
 					return false;
 				}
@@ -381,7 +383,7 @@ namespace Mono.Linker.Steps
 			}
 
 			if (attributeType == null) {
-				LogWarning (nav, DiagnosticId.XmlAttributeTypeCouldNotBeFound, attributeFullName);
+				LogWarning ($"Attribute type '{attributeFullName}' could not be found.", 2031, nav);
 				return false;
 			}
 
@@ -447,7 +449,9 @@ namespace Mono.Linker.Steps
 					foreach (ParameterDefinition parameter in method.Parameters) {
 						if (paramName == parameter.Name) {
 							if (parameter.HasCustomAttributes || _attributeInfo.CustomAttributes.ContainsKey (parameter))
-								LogWarning (parameterNav, DiagnosticId.XmlMoreThanOneValyForParameterOfMethod, paramName, method.GetDisplayName ());
+								LogWarning (
+									$"More than one value specified for parameter '{paramName}' of method '{method.GetDisplayName ()}'.",
+									2024, parameterNav);
 							_attributeInfo.AddCustomAttributes (parameter, attributes);
 							break;
 						}
@@ -464,7 +468,9 @@ namespace Mono.Linker.Steps
 					firstAppearance = false;
 					PopulateAttributeInfo (method.MethodReturnType, returnNav);
 				} else {
-					LogWarning (returnNav, DiagnosticId.XmlMoreThanOneReturnElementForMethod, method.GetDisplayName ());
+					LogWarning (
+						$"There is more than one 'return' child element specified for method '{method.GetDisplayName ()}'.",
+						2023, returnNav);
 				}
 			}
 		}

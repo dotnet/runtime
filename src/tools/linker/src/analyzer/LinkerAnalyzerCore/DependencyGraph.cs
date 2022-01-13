@@ -14,8 +14,7 @@ using System.Xml;
 
 namespace LinkerAnalyzer.Core
 {
-	public class VertexData
-	{
+	public class VertexData {
 		public string value;
 		public List<int> parentIndexes;
 		public int index;
@@ -52,8 +51,7 @@ namespace LinkerAnalyzer.Core
 			}
 		}
 
-		void Load (GZipStream zipStream)
-		{
+		void Load (GZipStream zipStream) {
 			using (XmlReader reader = XmlReader.Create (zipStream)) {
 				while (reader.Read ()) {
 					switch (reader.NodeType) {
@@ -90,7 +88,7 @@ namespace LinkerAnalyzer.Core
 			VertexData vertex;
 
 			try {
-				vertex = vertices[indexes[vertexName]];
+				vertex = vertices [indexes [vertexName]];
 			} catch (KeyNotFoundException) {
 				if (create) {
 					int index = vertices.Count;
@@ -99,9 +97,9 @@ namespace LinkerAnalyzer.Core
 					indexes.Add (vertexName, index);
 					string prefix = vertexName.Substring (0, vertexName.IndexOf (':'));
 					if (counts.ContainsKey (prefix))
-						counts[prefix]++;
+						counts [prefix]++;
 					else
-						counts[prefix] = 1;
+						counts [prefix] = 1;
 					//Console.WriteLine ("prefix " + prefix + " count " + counts[prefix]);
 					if (prefix == "TypeDef") {
 						Types.Add (vertex);
@@ -115,7 +113,7 @@ namespace LinkerAnalyzer.Core
 
 		public VertexData Vertex (int index)
 		{
-			return vertices[index];
+			return vertices [index];
 		}
 
 		IEnumerable<Tuple<VertexData, int>> AddDependencies (VertexData vertex, HashSet<int> reachedVertices, int depth)

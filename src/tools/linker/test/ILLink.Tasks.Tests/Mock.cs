@@ -179,7 +179,7 @@ namespace ILLink.Tasks.Tests
 
 	public class MockXmlDependencyRecorder : IDependencyRecorder
 	{
-		public static MockXmlDependencyRecorder Singleton { get; } = new MockXmlDependencyRecorder ();
+		public static MockXmlDependencyRecorder Singleton = new MockXmlDependencyRecorder ();
 		public void RecordDependency (object source, object arget, bool marked) { }
 		public void RecordDependency (object target, in DependencyInfo reason, bool marked) { }
 	}

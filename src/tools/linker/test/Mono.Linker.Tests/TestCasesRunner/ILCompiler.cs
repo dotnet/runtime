@@ -15,20 +15,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public NPath Compile (CompilerOptions options)
 		{
 			var capturedOutput = new List<string> ();
-			var capturedError = new List<string> ();
 			var process = new Process ();
 			SetupProcess (process, options);
 			process.StartInfo.RedirectStandardOutput = true;
-			process.StartInfo.RedirectStandardError = true;
 			process.OutputDataReceived += (sender, args) => capturedOutput.Add (args.Data);
-			process.ErrorDataReceived += (sender, args) => capturedError.Add (args.Data);
 			process.Start ();
 			process.BeginOutputReadLine ();
-			process.BeginErrorReadLine ();
 			process.WaitForExit ();
 
 			if (process.ExitCode != 0) {
-				Assert.Fail ($"Failed to compile IL assembly : {options.OutputPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}{capturedError.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
+				Assert.Fail ($"Failed to compile IL assembly : {options.OutputPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
 			}
 
 			return options.OutputPath;
