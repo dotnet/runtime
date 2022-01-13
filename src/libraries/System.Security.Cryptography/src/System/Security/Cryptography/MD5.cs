@@ -17,12 +17,19 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     public abstract class MD5 : HashAlgorithm
     {
-        private const int HashSizeBits = 128;
-        private const int HashSizeBytes = HashSizeBits / 8;
+        /// <summary>
+        /// The hash size produced by the MD5 algorithm, in bits.
+        /// </summary>
+        public const int HashSizeInBits = 128;
+
+        /// <summary>
+        /// The hash size produced by the MD5 algorithm, in bytes.
+        /// </summary>
+        public const int HashSizeInBytes = HashSizeInBits / 8;
 
         protected MD5()
         {
-            HashSizeValue = HashSizeBits;
+            HashSizeValue = HashSizeInBits;
         }
 
         public static new MD5 Create() => new Implementation();
@@ -53,7 +60,7 @@ namespace System.Security.Cryptography
         /// <returns>The hash of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> source)
         {
-            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeInBytes);
 
             int written = HashData(source, buffer.AsSpan());
             Debug.Assert(written == buffer.Length);
@@ -93,14 +100,14 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HashSizeBytes)
+            if (destination.Length < HashSizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
             }
 
             bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.MD5, source, destination);
-            Debug.Assert(bytesWritten == HashSizeBytes);
+            Debug.Assert(bytesWritten == HashSizeInBytes);
 
             return true;
         }
