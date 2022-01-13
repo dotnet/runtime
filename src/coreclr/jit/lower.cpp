@@ -2710,8 +2710,9 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_XARCH
             (op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
 #ifdef FEATURE_HW_INTRINSICS
-             || emitter::DoesWriteZeroFlag(
-                    HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic()->GetHWIntrinsicId(), op1->TypeGet()))
+             || (op1->OperIs(GT_HWINTRINSIC) &&
+                 emitter::DoesWriteZeroFlag(
+                    HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic()->GetHWIntrinsicId(), op1->TypeGet())))
 #endif // FEATURE_HW_INTRINSICS
                  )
 #else // TARGET_ARM64
