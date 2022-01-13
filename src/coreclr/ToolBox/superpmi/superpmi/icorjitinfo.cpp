@@ -1074,10 +1074,10 @@ CorInfoTypeWithMod MyICJI::getArgType2(CORINFO_SIG_INFO*       sig,      /* IN *
     return value;
 }
 
-uint32_t MyICJI::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+uint32_t MyICJI::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 {
-    jitInstance->mc->cr->AddCall("getFieldTypeByHnd");
-    return jitInstance->mc->repGetFieldTypeByHnd(cls);
+    jitInstance->mc->cr->AddCall("getFieldSizeClassificationByHnd");
+    return jitInstance->mc->repGetFieldSizeClassificationByHnd(cls);
 }
 
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it

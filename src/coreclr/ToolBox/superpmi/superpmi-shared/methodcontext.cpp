@@ -2783,25 +2783,25 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
-void MethodContext::recGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls, DWORD value)
+void MethodContext::recGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls, DWORD value)
 {
-    if (GetFieldTypeByHnd == nullptr)
-        GetFieldTypeByHnd = new LightWeightMap<DWORDLONG, DWORD>();
+    if (GetFieldSizeClassificationByHnd == nullptr)
+        GetFieldSizeClassificationByHnd = new LightWeightMap<DWORDLONG, DWORD>();
 
     DWORDLONG key = (DWORDLONG)cls;
 
-    GetFieldTypeByHnd->Add((DWORDLONG)cls, value);
+    GetFieldSizeClassificationByHnd->Add((DWORDLONG)cls, value);
     //DEBUG_REC(dmpGetArgType(key, value));
 }
 
-void MethodContext::dmpGetFieldTypeByHnd(DWORDLONG key, DWORD value)
+void MethodContext::dmpGetFieldSizeClassificationByHnd(DWORDLONG key, DWORD value)
 {
-    printf("GetFieldTypeByHnd key %016llX value-%08X", key, value);
+    printf("GetFieldSizeClassificationByHnd key %016llX value-%08X", key, value);
 }
 
-DWORD MethodContext::repGetFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+DWORD MethodContext::repGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 {
-    return GetFieldTypeByHnd->Get((DWORDLONG)cls);
+    return GetFieldSizeClassificationByHnd->Get((DWORDLONG)cls);
 }
 
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)

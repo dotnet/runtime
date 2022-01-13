@@ -1393,16 +1393,16 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType2(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* flags)
+          int* pFloatFieldFlags)
 {
     mcs->AddCall("getArgType2");
-    return original_ICorJitInfo->getArgType2(sig, args, vcTypeRet, flags);
+    return original_ICorJitInfo->getArgType2(sig, args, vcTypeRet, pFloatFieldFlags);
 }
 
-uint32_t interceptor_ICJI::getFieldTypeByHnd(
+uint32_t interceptor_ICJI::getFieldSizeClassificationByHnd(
           CORINFO_CLASS_HANDLE cls)
 {
-    mcs->AddCall("getFieldTypeByHnd");
-    return original_ICorJitInfo->getFieldTypeByHnd(cls);
+    mcs->AddCall("getFieldSizeClassificationByHnd");
+    return original_ICorJitInfo->getFieldSizeClassificationByHnd(cls);
 }
 

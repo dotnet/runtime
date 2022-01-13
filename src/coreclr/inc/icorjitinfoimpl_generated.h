@@ -714,9 +714,9 @@ CorInfoTypeWithMod getArgType2(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* flags) override;
+          int* pFloatFieldFlags) override;
 
-uint32_t getFieldTypeByHnd(
+uint32_t getFieldSizeClassificationByHnd(
           CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/

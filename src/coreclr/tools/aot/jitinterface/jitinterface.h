@@ -183,8 +183,8 @@ struct JitInterfaceCallbacks
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     bool (* doesFieldBelongToClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls);
-    CorInfoTypeWithMod (* getArgType2)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int* flags);
-    uint32_t (* getFieldTypeByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    CorInfoTypeWithMod (* getArgType2)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int* pFloatFieldFlags);
+    uint32_t (* getFieldSizeClassificationByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
 
 };
 
@@ -1864,19 +1864,19 @@ public:
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* flags)
+          int* pFloatFieldFlags)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CorInfoTypeWithMod temp = _callbacks->getArgType2(_thisHandle, &pException, sig, args, vcTypeRet, flags);
+    CorInfoTypeWithMod temp = _callbacks->getArgType2(_thisHandle, &pException, sig, args, vcTypeRet, pFloatFieldFlags);
     if (pException != nullptr) throw pException;
     return temp;
 }
 
-    virtual uint32_t getFieldTypeByHnd(
+    virtual uint32_t getFieldSizeClassificationByHnd(
           CORINFO_CLASS_HANDLE cls)
 {
     CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->getFieldTypeByHnd(_thisHandle, &pException, cls);
+    uint32_t temp = _callbacks->getFieldSizeClassificationByHnd(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

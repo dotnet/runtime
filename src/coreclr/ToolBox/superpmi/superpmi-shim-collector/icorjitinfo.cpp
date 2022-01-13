@@ -1238,19 +1238,19 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType2(CORINFO_SIG_INFO*       sig,   
     return temp;
 }
 
-uint32_t interceptor_ICJI::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+uint32_t interceptor_ICJI::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 {
 
     uint32_t temp = 0;
     RunWithErrorExceptionCodeCaptureAndContinue(
     [&]()
     {
-        mc->cr->AddCall("getFieldTypeByHnd");
-        temp = original_ICorJitInfo->getFieldTypeByHnd(cls);
+        mc->cr->AddCall("getFieldSizeClassificationByHnd");
+        temp = original_ICorJitInfo->getFieldSizeClassificationByHnd(cls);
     },
     [&](DWORD exceptionCode)
     {
-        this->mc->recGetFieldTypeByHnd(cls, temp);
+        this->mc->recGetFieldSizeClassificationByHnd(cls, temp);
     });
 
     return temp;

@@ -2550,12 +2550,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static CorInfoTypeWithMod _getArgType2(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet, int* flags)
+        static CorInfoTypeWithMod _getArgType2(IntPtr thisHandle, IntPtr* ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_STRUCT_* args, CORINFO_CLASS_STRUCT_** vcTypeRet, int* pFloatFieldFlags)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getArgType2(sig, args, vcTypeRet, ref *flags);
+                return _this.getArgType2(sig, args, vcTypeRet, ref *pFloatFieldFlags);
             }
             catch (Exception ex)
             {
@@ -2565,12 +2565,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static uint _getFieldTypeByHnd(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        static uint _getFieldSizeClassificationByHnd(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFieldTypeByHnd(cls);
+                return _this.getFieldSizeClassificationByHnd(cls);
             }
             catch (Exception ex)
             {
@@ -2757,7 +2757,7 @@ namespace Internal.JitInterface
             callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
             callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_doesFieldBelongToClass;
             callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, CORINFO_ARG_LIST_STRUCT_*, CORINFO_CLASS_STRUCT_**, int*, CorInfoTypeWithMod>)&_getArgType2;
-            callbacks[173] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getFieldTypeByHnd;
+            callbacks[173] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getFieldSizeClassificationByHnd;
 
             return (IntPtr)callbacks;
         }

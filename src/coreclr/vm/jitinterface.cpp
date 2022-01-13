@@ -9326,8 +9326,8 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 // The only difference between `CEEInfo::getArgType2` and `CEEInfo::getArgType` is
 // the arg `int *pFloatFieldFlags` which denoting whether a struct-arg using float registers.
 //
-// The value of `*pFloatFieldFlags` is returned by `CEEInfo::getFieldTypeByHnd`.
-// So the encoding details of `*pFloatFieldFlags` see `CEEInfo::getFieldTypeByHnd`.
+// The value of `*pFloatFieldFlags` is returned by `CEEInfo::getFieldSizeClassificationByHnd`.
+// So the encoding details of `*pFloatFieldFlags` see `CEEInfo::getFieldSizeClassificationByHnd`.
 CorInfoTypeWithMod CEEInfo::getArgType2 (
         CORINFO_SIG_INFO*       sig,
         CORINFO_ARG_LIST_HANDLE args,
@@ -9388,7 +9388,7 @@ CorInfoTypeWithMod CEEInfo::getArgType2 (
             }
             if ((pFloatFieldFlags != NULL) && (type == ELEMENT_TYPE_VALUETYPE))
             {
-                *pFloatFieldFlags = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)typeHnd.AsTAddr());
+                *pFloatFieldFlags = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)typeHnd.AsTAddr());
             }
         }
         break;
@@ -9448,7 +9448,22 @@ CorInfoTypeWithMod CEEInfo::getArgType2 (
 // the bits[5:4] denoting whether the field size is 8-bytes:
 //   bit_4: `1` means the first field's size is 8.
 //   bit_5: `1` means the second field's size is 8.
-uint32_t CEEInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
+
+#define STRUCT_FLOAT_FIELD_ONLY_ONE   0x1
+#define STRUCT_FLOAT_FIELD_ONLY_TWO   0x8
+#define STRUCT_FLOAT_FIELD_FIRST      0x2
+#define STRUCT_FLOAT_FIELD_SECOND     0x4
+#define STRUCT_FIRST_FIELD_SIZE_IS8   0x10
+#define STRUCT_SECOND_FIELD_SIZE_IS8  0x20
+
+#define STRUCT_FIRST_FIELD_DOUBLE     (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8)
+#define STRUCT_SECOND_FIELD_DOUBLE    (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8)
+#define STRUCT_FIELD_TWO_DOUBLES      (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO)
+
+#define STRUCT_MERGE_FIRST_SECOND     (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO)
+#define STRUCT_MERGE_FIRST_SECOND_8   (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8)
+
+uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -9482,7 +9497,21 @@ uint32_t CEEInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
-                        size = 1;
+                        size = STRUCT_FLOAT_FIELD_ONLY_ONE;
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    TypeHandle th2 = pFieldStart->GetApproxFieldTypeHandleThrowing();
+                    _ASSERTE(!th2.IsNull());
+                    pMethodTable  = th2.GetMethodTable();
+                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
+                    {
+                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                    }
+                    else if (pMethodTable->GetNumIntroducedInstanceFields() == 2)
+                    {
+                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                    }
                 }
             }
             else if (numIntroducedFields == 2)
@@ -9493,28 +9522,87 @@ uint32_t CEEInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
-                        size = 2;
+                        size = STRUCT_FLOAT_FIELD_FIRST;
                     else if (fieldType == ELEMENT_TYPE_R8)
-                        size = 0x12;
+                        size = STRUCT_FIRST_FIELD_DOUBLE;
                     else if (pFieldStart[0].GetSize() == 8)
-                        size = 0x10;
+                        size = STRUCT_FIRST_FIELD_SIZE_IS8;
 
                 }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    TypeHandle th2 = pFieldStart->GetApproxFieldTypeHandleThrowing();
+                    _ASSERTE(!th2.IsNull());
+                    pMethodTable  = th2.GetMethodTable();
+                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
+                    {
+                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                        if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                        {
+                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
+                        }
+                        else if (size == 0)
+                        {
+                            size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
+                        }
+                        else
+                        {
+                            size = 0;
+                            goto _End_arg;
+                        }
+                    }
+                    else
+                    {
+                        size = 0;
+                        goto _End_arg;
+                    }
+                }
                 else if (pFieldStart[0].GetSize() == 8)
-                    size = 0x10;
+                    size = STRUCT_FIRST_FIELD_SIZE_IS8;
 
                 fieldType = pFieldStart[1].GetFieldType();
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
-                        size = size & 2 ? (size ^ 0xa) : (size | 4);
+                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
                     else if (fieldType == ELEMENT_TYPE_R8)
-                        size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                     else if (pFieldStart[1].GetSize() == 8)
-                        size |= 0x20;
+                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
+                }
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
+                {
+                    TypeHandle th2 = pFieldStart[1].GetApproxFieldTypeHandleThrowing();
+                    _ASSERTE(!th2.IsNull());
+                    pMethodTable  = th2.GetMethodTable();
+                    if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
+                    {
+                        DWORD size2 = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                        if (size2 == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                        {
+                            if (pFieldStart[1].GetSize() == 8)
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                            else
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                        }
+                        else if (size2 == 0)
+                        {
+                            size |= pFieldStart[1].GetSize() == 8 ? STRUCT_SECOND_FIELD_SIZE_IS8 : 0;
+                        }
+                        else
+                        {
+                            size = 0;
+                            goto _End_arg;
+                        }
+                    }
+                    else
+                    {
+                        size = 0;
+                        goto _End_arg;
+                    }
                 }
                 else if (pFieldStart[1].GetSize() == 8)
-                    size |= 0x20;
+                    size |= STRUCT_SECOND_FIELD_SIZE_IS8;
             }
             goto _End_arg;
         }
@@ -9542,7 +9630,6 @@ uint32_t CEEInfo::getFieldTypeByHnd(CORINFO_CLASS_HANDLE cls)
             {
                 pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
-_fields_1:
                 CorElementType fieldType = pFieldStart[0].GetFieldType();
 
                 bool isFixedBuffer = (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
@@ -9559,17 +9646,17 @@ _fields_1:
                     if (fieldType == ELEMENT_TYPE_R4)
                     {
                         if (numIntroducedFields == 1)
-                            size = 1;
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
                         else if (numIntroducedFields == 2)
-                            size = 8;
+                            size = STRUCT_FLOAT_FIELD_ONLY_TWO;
                         goto _End_arg;
                     }
                     else if (fieldType == ELEMENT_TYPE_R8)
                     {
                         if (numIntroducedFields == 1)
-                            size = 1;
+                            size = STRUCT_FLOAT_FIELD_ONLY_ONE;
                         else if (numIntroducedFields == 2)
-                            size = 0x38;
+                            size = STRUCT_FIELD_TWO_DOUBLES;
                         goto _End_arg;
                     }
                 }
@@ -9577,27 +9664,26 @@ _fields_1:
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
-                        size = 1;
+                        size = STRUCT_FLOAT_FIELD_ONLY_ONE;
                 }
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
                     if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
                     {
-                        size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pNativeFieldDescs->GetNestedNativeMethodTable());
+                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pNativeFieldDescs->GetNestedNativeMethodTable());
                         return size;
                     }
                     else
                     {
+                        pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
                         if (pNativeFieldDescs->GetNumElements() == 1)
                         {
-                            pFieldStart = pNativeFieldDescs->GetFieldDesc();
-                            goto _fields_1;
+                            size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
                         }
                         else if (pNativeFieldDescs->GetNumElements() == 2)
                         {
-                            pFieldStart = pNativeFieldDescs->GetFieldDesc();
-                            goto _fields_2;
+                            size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
                         }
                     }
                 }
@@ -9606,7 +9692,6 @@ _fields_1:
             {
                 pFieldStart = pMethodTable->GetApproxFieldDescListRaw();
 
-_fields_2:
                 if (pFieldStart->GetOffset() || !pFieldStart[1].GetOffset() || (pFieldStart[0].GetSize() > pFieldStart[1].GetOffset()))
                 {
                     goto _End_arg;
@@ -9616,21 +9701,21 @@ _fields_2:
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
-                        size = 2;
+                        size = STRUCT_FLOAT_FIELD_FIRST;
                     else if (fieldType == ELEMENT_TYPE_R8)
-                        size = 0x12;
+                        size = STRUCT_FIRST_FIELD_DOUBLE;
                     else if (pFieldStart[0].GetSize() == 8)
-                        size = 0x10;
+                        size = STRUCT_FIRST_FIELD_SIZE_IS8;
 
                     fieldType = pFieldStart[1].GetFieldType();
                     if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                     {
                         if (fieldType == ELEMENT_TYPE_R4)
-                            size = size & 0x2 ? (size ^ 0xa) : (size | 4);
+                            size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
                         else if (fieldType == ELEMENT_TYPE_R8)
-                            size = size & 0x2 ? (size ^ 0x2a) : (size | 0x24);
+                            size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                         else if (pFieldStart[1].GetSize() == 8)
-                            size |= 0x20;
+                            size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                         goto _End_arg;
                     }
                 }
@@ -9650,17 +9735,17 @@ _fields_2:
 
                         if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
                             goto _End_arg;
-                        size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if (size == 1)
                         {
                             if (pFieldStart[0].GetSize() == 8)
-                                size = 0x12;
+                                size = STRUCT_FIRST_FIELD_DOUBLE;
                             else
-                                size = 0x2;
+                                size = STRUCT_FLOAT_FIELD_FIRST;
                         }
                         else if (pFieldStart[0].GetSize() == 8)
                         {
-                            size = 0x10;
+                            size = STRUCT_FIRST_FIELD_SIZE_IS8;
                         }
                         else
                             size = 0;
@@ -9670,17 +9755,17 @@ _fields_2:
                         MethodTable* pMethodTable2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
                         if (pMethodTable2->GetNumIntroducedInstanceFields() == 1)
                         {
-                            size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
+                            size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
                             if (size == 1)
                             {
                                 if (pFieldStart[0].GetSize() == 8)
-                                    size = 0x12;
+                                    size = STRUCT_FIRST_FIELD_DOUBLE;
                                 else
-                                    size = 0x2;
+                                    size = STRUCT_FLOAT_FIELD_FIRST;
                             }
                             else if (pFieldStart[0].GetSize() == 8)
                             {
-                                size = 0x10;
+                                size = STRUCT_FIRST_FIELD_SIZE_IS8;
                             }
                             else
                                 size = 0;
@@ -9688,82 +9773,21 @@ _fields_2:
                         else
                             goto _End_arg;
                     }
-                }
-                else if (fieldType == ELEMENT_TYPE_CLASS)
-                {
-                    const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
-
-                    //bool isFixedBuffer = numIntroducedFields == 1 && (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType)
-                    //                    || fieldType == ELEMENT_TYPE_VALUETYPE)
-                    //                && (pFieldStart->GetOffset() == 0)
-                    //                && pMethodTable->HasLayout()
-                    //                && (pMethodTable->GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
-
-                    if (pNativeFieldDescs->NativeSize() > 8)
-                        goto _End_arg;
-
-                    if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
-                    {
-                        MethodTable* pMethodTable2 = pNativeFieldDescs->GetNestedNativeMethodTable();
-
-                        if (pMethodTable2->GetNumInstanceFieldBytes() > 8)
-                            goto _End_arg;
-                        size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
-                        if (size == 1)
-                        {
-                            if (pFieldStart[0].GetSize() == 8)
-                                size = 0x12;
-                            else
-                                size = 0x2;
-                        }
-                        else if (pFieldStart[0].GetSize() == 8)
-                        {
-                            size = 0x10;
-                        }
-                    }
-                    else
-                    {
-                        MethodTable* pMethodTable2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
-                        if (pMethodTable2->GetNumIntroducedInstanceFields() == 1)
-                        {
-                            size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
-                            if (size == 1)
-                            {
-                                if (pFieldStart[0].GetSize() == 8)
-                                    size = 0x12;
-                                else
-                                    size = 0x2;
-                            }
-                            else if (pFieldStart[0].GetSize() == 8)
-                            {
-                                size = 0x10;
-                            }
-                            else
-                                size = 0;
-                        }
-                        else
-                            goto _End_arg;
-                    }
-                    //else
-                    //{
-                    //    assert(!"------------should amend for LOONGARCH64!!!");
-                    //    goto _End_arg;
-                    //}
                 }
                 else if (pFieldStart[0].GetSize() == 8)
-                    size = 0x10;
+                    size = STRUCT_FIRST_FIELD_SIZE_IS8;
 
                 fieldType = pFieldStart[1].GetFieldType();
                 if (CorTypeInfo::IsPrimitiveType_NoThrow(fieldType))
                 {
                     if (fieldType == ELEMENT_TYPE_R4)
-                        size = size & 2 ? (size ^ 0xa) : (size | 4);
+                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
                     else if (fieldType == ELEMENT_TYPE_R8)
-                        size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                        size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                     else if (pFieldStart[1].GetSize() == 8)
-                        size |= 0x20;
+                        size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                 }
-                else if ((fieldType == ELEMENT_TYPE_VALUETYPE) || (fieldType == ELEMENT_TYPE_CLASS))
+                else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     MethodTable* pMethodTable2 = pFieldStart[1].LookupApproxFieldTypeHandle().AsMethodTable();
                     if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
@@ -9791,15 +9815,15 @@ _fields_2:
                                 goto _End_arg;
                             }
 
-                            if (getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pMethodTable) == 1)
+                            if (getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable) == STRUCT_FLOAT_FIELD_ONLY_ONE)
                             {
                                 if (pMethodTable->GetNumInstanceFieldBytes() == 4)
-                                    size = size & 2 ? (size ^ 0xa) : (size | 4);
+                                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
                                 else if (pMethodTable->GetNumInstanceFieldBytes() == 8)
-                                    size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                             }
-                            else if (pMethodTable->GetNumInstanceFieldBytes() == 8)//pFieldStart[1].GetSize()
-                                size |= 0x20;
+                            else if (pMethodTable->GetNumInstanceFieldBytes() == 8)
+                                size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                             else
                             {
                                 size = 0;
@@ -9811,11 +9835,11 @@ _fields_2:
                             {
                                 fieldType = pNativeFieldDescs->GetFieldDesc()[0].GetFieldType();
                                 if (fieldType == ELEMENT_TYPE_R4)
-                                    size = size & 2 ? (size ^ 0xa) : (size | 4);
+                                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
                                 else if (fieldType == ELEMENT_TYPE_R8)
-                                    size = size & 2 ? (size ^ 0x2a) : (size | 0x24);
+                                    size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
                                 else if (pNativeFieldDescs->NativeSize() == 8)
-                                    size |= 0x20;
+                                    size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                             }
                             else
                             {
@@ -9829,16 +9853,20 @@ _fields_2:
                         //}
                     }
                     else
-                    {
-                        size |= getFieldTypeByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
-                        if (!(size & 0xf))
-                            size = 0;
-                        else
-                            assert(!"------------should amend for LOONGARCH64!!!");
+                    {//whether should confirm the nested ?
+                        if (getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2) == 1)
+                        {
+                            if (pMethodTable2->GetNumInstanceFieldBytes() == 4)
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
+                            else if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
+                                size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND_8) : (size | STRUCT_SECOND_FIELD_DOUBLE);
+                        }
+                        else if (pMethodTable2->GetNumInstanceFieldBytes() == 8)
+                            size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
                 }
                 else if (pFieldStart[1].GetSize() == 8)
-                    size |= 0x20;
+                    size |= STRUCT_SECOND_FIELD_SIZE_IS8;
             }
         }
     }

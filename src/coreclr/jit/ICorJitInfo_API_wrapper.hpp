@@ -1694,20 +1694,20 @@ CorInfoTypeWithMod WrapICorJitInfo::getArgType2(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* flags)
+          int* pFloatFieldFlags)
 {
     API_ENTER(getArgType2);
-    CorInfoTypeWithMod temp = wrapHnd->getArgType2(sig, args, vcTypeRet, flags);
+    CorInfoTypeWithMod temp = wrapHnd->getArgType2(sig, args, vcTypeRet, pFloatFieldFlags);
     API_LEAVE(getArgType2);
     return temp;
 }
 
-uint32_t WrapICorJitInfo::getFieldTypeByHnd(
+uint32_t WrapICorJitInfo::getFieldSizeClassificationByHnd(
           CORINFO_CLASS_HANDLE cls)
 {
-    API_ENTER(getFieldTypeByHnd);
-    uint32_t temp = wrapHnd->getFieldTypeByHnd(cls);
-    API_LEAVE(getFieldTypeByHnd);
+    API_ENTER(getFieldSizeClassificationByHnd);
+    uint32_t temp = wrapHnd->getFieldSizeClassificationByHnd(cls);
+    API_LEAVE(getFieldSizeClassificationByHnd);
     return temp;
 }
 
