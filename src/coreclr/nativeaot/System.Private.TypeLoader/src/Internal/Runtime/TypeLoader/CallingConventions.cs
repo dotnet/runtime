@@ -67,8 +67,7 @@ namespace Internal.Runtime.CallConverter
             CorElementType typeReturnType = thReturnType.GetCorElementType();
 
             bool usesReturnBuffer;
-            uint fpReturnSizeIgnored;
-            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, methodWithReturnTypeIsVarArg, out usesReturnBuffer, out fpReturnSizeIgnored);
+            ArgIterator.ComputeReturnValueTreatment(typeReturnType, thReturnType, methodWithReturnTypeIsVarArg, out usesReturnBuffer, out _);
 
             return usesReturnBuffer;
         }

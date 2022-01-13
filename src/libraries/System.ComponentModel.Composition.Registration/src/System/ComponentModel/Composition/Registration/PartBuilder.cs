@@ -219,7 +219,7 @@ namespace System.ComponentModel.Composition.Registration
         {
             foreach (Attribute attr in member.GetCustomAttributes(typeof(Attribute), false))
             {
-                if (attr is ExportMetadataAttribute provider)
+                if (attr is ExportMetadataAttribute)
                 {
                     return true;
                 }

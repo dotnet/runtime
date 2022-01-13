@@ -221,7 +221,7 @@
 
 #include "genanalysis.h"
 
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 
@@ -2136,7 +2136,7 @@ INT32 GetLatchedExitCode (void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // Return an int uniquely describing which language this thread is using for ui.
 // ---------------------------------------------------------------------------
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
 {
     CONTRACTL{
         NOTHROW;

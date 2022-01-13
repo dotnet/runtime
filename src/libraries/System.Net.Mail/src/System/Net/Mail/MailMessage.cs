@@ -377,7 +377,7 @@ namespace System.Net.Mail
             {
                 // we should not unnecessarily use Multipart/Mixed
                 // When there is no attachement and all the alternative views are of "Alternative" types.
-                MimeMultiPart? part = null;
+                MimeMultiPart? part;
                 MimeMultiPart viewsPart = new MimeMultiPart(MimeMultiPartType.Alternative);
 
                 if (!string.IsNullOrEmpty(_body))

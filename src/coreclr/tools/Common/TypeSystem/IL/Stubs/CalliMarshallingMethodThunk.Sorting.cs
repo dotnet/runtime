@@ -8,9 +8,9 @@ namespace Internal.IL.Stubs
     // Functionality related to deterministic ordering of methods
     partial class CalliMarshallingMethodThunk
     {
-        protected internal override int ClassCode => 1594107963;
+        protected override int ClassCode => 1594107963;
 
-        protected internal override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
+        protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
         {
             var otherMethod = (CalliMarshallingMethodThunk)other;
             return comparer.Compare(_targetSignature, otherMethod._targetSignature);

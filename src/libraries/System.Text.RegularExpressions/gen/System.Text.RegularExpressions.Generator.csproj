@@ -42,6 +42,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" Link="Production\RegexPrefixAnalyzer.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexTree.cs" Link="Production\RegexTree.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
+    <Compile Include="..\src\System\Collections\HashtableExtensions.cs" Link="Production\HashtableExtensions.cs" />
   </ItemGroup>
 
 </Project>

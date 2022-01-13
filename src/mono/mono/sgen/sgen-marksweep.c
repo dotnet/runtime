@@ -2661,7 +2661,7 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 
 			if (small_objects) {
 				HEAVY_STAT (++scanned_objects);
-				scan_func (object, sgen_obj_get_descriptor (object), queue);
+				scan_func (object, sgen_obj_get_descriptor_safe (object), queue);
 			} else {
 				size_t offset = sgen_card_table_get_card_offset (obj, block_start);
 				sgen_cardtable_scan_object (object, block_obj_size, card_base + offset, ctx);

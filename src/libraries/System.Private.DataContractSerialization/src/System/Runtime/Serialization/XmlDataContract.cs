@@ -135,10 +135,9 @@ namespace System.Runtime.Serialization
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveDataContract, DataContract.GetClrTypeFullName(type))));
                 if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableCannotHaveCollectionDataContract, DataContract.GetClrTypeFullName(type))));
-                XmlSchemaType? xsdType;
                 bool hasRoot;
                 XmlQualifiedName stableName;
-                SchemaExporter.GetXmlTypeInfo(type, out stableName, out xsdType, out hasRoot);
+                SchemaExporter.GetXmlTypeInfo(type, out stableName, out _, out hasRoot);
                 this.StableName = stableName;
                 this.HasRoot = hasRoot;
                 XmlDictionary dictionary = new XmlDictionary();
@@ -356,7 +355,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                object? o = null;
+                object? o;
                 if (type == typeof(System.Xml.Linq.XElement))
                 {
                     o = new System.Xml.Linq.XElement("default");

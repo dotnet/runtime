@@ -920,7 +920,7 @@ namespace System.Diagnostics
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
-        internal static bool TryConvertIdToContext(string traceParent, string? traceState, out ActivityContext context)
+        internal static bool TryConvertIdToContext(string traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
             context = default;
             if (!IsW3CId(traceParent))
@@ -941,7 +941,8 @@ namespace System.Diagnostics
                             new ActivityTraceId(traceIdSpan.ToString()),
                             new ActivitySpanId(spanIdSpan.ToString()),
                             (ActivityTraceFlags) ActivityTraceId.HexByteFromChars(traceParent[53], traceParent[54]),
-                            traceState);
+                            traceState,
+                            isRemote);
 
             return true;
         }

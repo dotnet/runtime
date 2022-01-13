@@ -1,7 +1,9 @@
 //! Licensed to the .NET Foundation under one or more agreements.
 //! The .NET Foundation licenses this file to you under the MIT license.
-//! 
-//! This is generated file, see src/mono/wasm/runtime/rollup.config.js 
+//!
+//! This is generated file, see src/mono/wasm/runtime/rollup.config.js
+
+//! This is not considered public API with backward compatibility guarantees. 
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -153,6 +155,7 @@ declare type AssetEntry = {
     culture?: string;
     load_remote?: boolean;
     is_optional?: boolean;
+    buffer?: ArrayBuffer;
 };
 interface AssemblyEntry extends AssetEntry {
     name: "assembly";
@@ -194,10 +197,10 @@ declare type DotnetModuleConfig = {
     config?: MonoConfig | MonoConfigError;
     configSrc?: string;
     scriptDirectory?: string;
-    onConfigLoaded?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
-} & EmscriptenModule;
+} & Partial<EmscriptenModule>;
 declare type DotnetModuleConfigImports = {
     require?: (name: string) => any;
     fetch?: (url: string) => Promise<Response>;
@@ -237,7 +240,7 @@ declare function mono_wasm_load_config(configFilePath: string): Promise<void>;
 declare function mono_wasm_load_icu_data(offset: VoidPtr): boolean;
 
 declare function conv_string(mono_obj: MonoString): string | null;
-declare function js_string_to_mono_string(string: string): MonoString | null;
+declare function js_string_to_mono_string(string: string): MonoString;
 
 declare function js_to_mono_obj(js_obj: any): MonoObject;
 declare function js_typed_array_to_array(js_obj: any): MonoArray;

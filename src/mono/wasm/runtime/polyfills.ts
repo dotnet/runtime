@@ -21,6 +21,8 @@ export async function fetch_like(url: string): Promise<Response> {
             };
         }
         else if (typeof (read) === "function") {
+            // note that it can't open files with unicode names, like Straße.xml
+            // https://bugs.chromium.org/p/v8/issues/detail?id=12541
             const arrayBuffer = new Uint8Array(read(url, "binary"));
             return <Response><any>{
                 ok: true,

@@ -2240,169 +2240,27 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-    // The VM will set the ISA flags depending on actual hardware support.
-    // We then select which ISAs to leave enabled based on the JIT config.
-    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
+    // The VM will set the ISA flags depending on actual hardware support
+    // and any specified config switches specified by the user. The exception
+    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
+    // don't actually exist. The JIT is in charge of adding those and ensuring
+    // the total sum of flags is still valid.
+
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-    opts.compSupportsISA                            = 0;
-    opts.compSupportsISAReported                    = 0;
-    opts.compSupportsISAExactly                     = 0;
 
-#ifdef TARGET_XARCH
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-    }
+    opts.compSupportsISA         = 0;
+    opts.compSupportsISAReported = 0;
+    opts.compSupportsISAExactly  = 0;
 
-    if (!JitConfig.EnableSSE())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAES())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AES);
-    }
-
-    if (!JitConfig.EnablePCLMULQDQ())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-    }
-
-    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
-    // is a prexisting config flag that controls the SSE3+ ISAs
-    if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE3);
-    }
-
-    if (!JitConfig.EnableSSSE3())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSSE3);
-    }
-
-    if (!JitConfig.EnableSSE41())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE42())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42_X64);
-#endif
-    }
-
-    if (!JitConfig.EnablePOPCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAVX())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
-    }
-
-    if (!JitConfig.EnableFMA())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_FMA);
-    }
-
-    if (!JitConfig.EnableAVX2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
-    }
-
-    if (!JitConfig.EnableAVXVNNI())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-    }
-
-    if (!JitConfig.EnableLZCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2_X64);
-#endif // TARGET_AMD64
-    }
-
+#if defined(TARGET_XARCH)
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
 #endif // TARGET_XARCH
+
 #if defined(TARGET_ARM64)
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
-
-    if (!JitConfig.EnableArm64Aes())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Aes);
-    }
-
-    if (!JitConfig.EnableArm64Atomics())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Atomics);
-    }
-
-    if (!JitConfig.EnableArm64Crc32())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
-    }
-
-    if (!JitConfig.EnableArm64Sha1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha1);
-    }
-
-    if (!JitConfig.EnableArm64Sha256())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha256);
-    }
-
-    if (!JitConfig.EnableArm64AdvSimd())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
-    }
-#endif
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#endif // TARGET_ARM64
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
     opts.setSupportedISAs(instructionSetFlags);
@@ -5023,7 +4881,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
 
-#if ASSERTION_PROP
             if (doAssertionProp)
             {
                 // Assertion propagation
@@ -5042,7 +4899,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
             }
-#endif // ASSERTION_PROP
 
             if (fgModified)
             {
@@ -5340,11 +5196,38 @@ void Compiler::generatePatchpointInfo()
     const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
     PatchpointInfo* const patchpointInfo     = (PatchpointInfo*)info.compCompHnd->allocateArray(patchpointInfoSize);
 
-    // The +TARGET_POINTER_SIZE here is to account for the extra slot the runtime
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
-    patchpointInfo->Initialize(info.compLocalsCount, codeGen->genSPtoFPdelta() + TARGET_POINTER_SIZE);
+    // Patchpoint offsets always refer to "virtual frame offsets".
+    //
+    // For x64 this falls out because Tier0 frames are always FP frames, and so the FP-relative
+    // offset is what we want.
+    //
+    // For arm64, if the frame pointer is not at the top of the frame, we need to adjust the
+    // offset.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
-    JITDUMP("--OSR--- FP-SP delta is %d\n", patchpointInfo->FpToSpDelta());
+#if defined(TARGET_AMD64)
+    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
+    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // This is effectively a new slot at the bottom of the Tier0 frame.
+    //
+    const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
+    const int offsetAdjust   = 0;
+#elif defined(TARGET_ARM64)
+    // SP is not manipulated by calls so no frame size adjustment needed.
+    // Local Offsets may need adjusting, if FP is at bottom of frame.
+    //
+    const int totalFrameSize = codeGen->genTotalFrameSize();
+    const int offsetAdjust   = codeGen->genSPtoFPdelta() - totalFrameSize;
+#else
+    NYI("patchpoint info generation");
+    const int offsetAdjust   = 0;
+    const int totalFrameSize = 0;
+#endif
+
+    patchpointInfo->Initialize(info.compLocalsCount, totalFrameSize);
+
+    JITDUMP("--OSR--- Total Frame Size %d, local offset adjust is %d\n", patchpointInfo->TotalFrameSize(),
+            offsetAdjust);
 
     // We record offsets for all the "locals" here. Could restrict
     // this to just the IL locals with some extra logic, and save a bit of space,
@@ -5358,7 +5241,7 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset());
+        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset() + offsetAdjust);
 
         // Note if IL stream contained an address-of that potentially leads to exposure.
         // This bit of IL may be skipped by OSR partial importation.
@@ -5367,7 +5250,7 @@ void Compiler::generatePatchpointInfo()
             patchpointInfo->SetIsExposed(lclNum);
         }
 
-        JITDUMP("--OSR-- V%02u is at offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
+        JITDUMP("--OSR-- V%02u is at virtual offset %d%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "");
     }
 
@@ -5376,31 +5259,31 @@ void Compiler::generatePatchpointInfo()
     if (lvaReportParamTypeArg())
     {
         const int offset = lvaCachedGenericContextArgOffset();
-        patchpointInfo->SetGenericContextArgOffset(offset);
-        JITDUMP("--OSR-- cached generic context offset is FP %d\n", patchpointInfo->GenericContextArgOffset());
+        patchpointInfo->SetGenericContextArgOffset(offset + offsetAdjust);
+        JITDUMP("--OSR-- cached generic context virtual offset is %d\n", patchpointInfo->GenericContextArgOffset());
     }
 
     if (lvaKeepAliveAndReportThis())
     {
         const int offset = lvaCachedGenericContextArgOffset();
-        patchpointInfo->SetKeptAliveThisOffset(offset);
-        JITDUMP("--OSR-- kept-alive this offset is FP %d\n", patchpointInfo->KeptAliveThisOffset());
+        patchpointInfo->SetKeptAliveThisOffset(offset + offsetAdjust);
+        JITDUMP("--OSR-- kept-alive this virtual offset is %d\n", patchpointInfo->KeptAliveThisOffset());
     }
 
     if (compGSReorderStackLayout)
     {
         assert(lvaGSSecurityCookie != BAD_VAR_NUM);
         LclVarDsc* const varDsc = lvaGetDesc(lvaGSSecurityCookie);
-        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset());
-        JITDUMP("--OSR-- security cookie V%02u offset is FP %d\n", lvaGSSecurityCookie,
+        patchpointInfo->SetSecurityCookieOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- security cookie V%02u virtual offset is %d\n", lvaGSSecurityCookie,
                 patchpointInfo->SecurityCookieOffset());
     }
 
     if (lvaMonAcquired != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaMonAcquired);
-        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset());
-        JITDUMP("--OSR-- monitor acquired V%02u offset is FP %d\n", lvaMonAcquired,
+        patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
@@ -6177,7 +6060,7 @@ unsigned adler32(unsigned adler, char* buf, unsigned int len)
 }
 #endif
 
-unsigned getMethodBodyChecksum(__in_z char* code, int size)
+unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
 {
 #ifdef PSEUDORANDOM_NOP_INSERTION
     return adler32(0, code, size);
@@ -6363,6 +6246,47 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     compInitDebuggingInfo();
 
+    // If are an altjit and have patchpoint info, we might need to tweak the frame size
+    // so it's plausible for the altjit architecture.
+    //
+    if (!info.compMatchedVM && compileFlags->IsSet(JitFlags::JIT_FLAG_OSR))
+    {
+        assert(info.compLocalsCount == info.compPatchpointInfo->NumberOfLocals());
+        const int totalFrameSize = info.compPatchpointInfo->TotalFrameSize();
+
+        int frameSizeUpdate = 0;
+
+#if defined(TARGET_AMD64)
+        if ((totalFrameSize % 16) != 8)
+        {
+            frameSizeUpdate = 8;
+        }
+#elif defined(TARGET_ARM64)
+        if ((totalFrameSize % 16) != 0)
+        {
+            frameSizeUpdate = 8;
+        }
+#endif
+        if (frameSizeUpdate != 0)
+        {
+            JITDUMP("Mismatched altjit + OSR -- updating tier0 frame size from %d to %d\n", totalFrameSize,
+                    totalFrameSize + frameSizeUpdate);
+
+            // Allocate a local copy with altered frame size.
+            //
+            const unsigned        patchpointInfoSize = PatchpointInfo::ComputeSize(info.compLocalsCount);
+            PatchpointInfo* const newInfo =
+                (PatchpointInfo*)getAllocator(CMK_Unknown).allocate<char>(patchpointInfoSize);
+
+            newInfo->Initialize(info.compLocalsCount, totalFrameSize + frameSizeUpdate);
+            newInfo->Copy(info.compPatchpointInfo);
+
+            // Swap it in place.
+            //
+            info.compPatchpointInfo = newInfo;
+        }
+    }
+
 #ifdef DEBUG
     if (compIsForInlining())
     {
@@ -6494,6 +6418,24 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             const bool patchpointsOK = compCanHavePatchpoints(&reason);
             assert(patchpointsOK || (reason != nullptr));
+
+#ifdef DEBUG
+            // Optionally disable OSR by method hash.
+            //
+            if (patchpointsOK && compHasBackwardJump)
+            {
+                static ConfigMethodRange JitEnableOsrRange;
+                JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
+                const unsigned hash = impInlineRoot()->info.compMethodHash();
+                if (!JitEnableOsrRange.Contains(hash))
+                {
+                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
+                    JITDUMPEXEC(JitEnableOsrRange.Dump());
+                    JITDUMP("\n");
+                    reason = "OSR disabled by JitEnableOsrRange";
+                }
+            }
+#endif
         }
 
         if (reason != nullptr)

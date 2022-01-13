@@ -192,7 +192,7 @@ namespace System.Configuration
         {
             get
             {
-                ConfigurationPropertyCollection result = null;
+                ConfigurationPropertyCollection result;
 
                 if (PropertiesFromType(GetType(), out result))
                     ApplyValidatorsRecursive(this);
@@ -789,8 +789,7 @@ namespace System.Configuration
             // Handle some special cases of property types
             if ((result != null) && typeof(ConfigurationElement).IsAssignableFrom(result.Type))
             {
-                ConfigurationPropertyCollection unused;
-                PropertiesFromType(result.Type, out unused);
+                PropertiesFromType(result.Type, out _);
             }
 
             return result;

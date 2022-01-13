@@ -755,7 +755,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef _DEBUG
-void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, __in_z LPCSTR pszTag, UINT32 uFramesProcessed)
+void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32 uFramesProcessed)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;

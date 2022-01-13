@@ -2738,13 +2738,29 @@ void emitter::emitSplit(emitLocation*         startLoc,
                 reportCandidate = false;
             }
 
+            // Don't report a zero-size candidate. This will only occur in a stress mode with JitSplitFunctionSize
+            // set to something small, and a zero-sized IG (possibly inserted for use by the alignment code). Normally,
+            // the split size will be much larger than the maximum size of an instruction group. The invariant we want
+            // to maintain is that each fragment contains a non-zero amount of code.
+            if (reportCandidate && (candidateSize == 0))
+            {
+#ifdef DEBUG
+                if (EMITVERBOSE)
+                    printf("emitSplit: can't split at IG%02u; zero-sized candidate\n", igLastCandidate->igNum);
+#endif
+                reportCandidate = false;
+            }
+
             // Report it!
             if (reportCandidate)
             {
 #ifdef DEBUG
-                if (EMITVERBOSE && (candidateSize >= maxSplitSize))
-                    printf("emitSplit: split at IG%02u is size %d, larger than requested maximum size of %d\n",
-                           igLastCandidate->igNum, candidateSize, maxSplitSize);
+                if (EMITVERBOSE)
+                {
+                    printf("emitSplit: split at IG%02u is size %d, %s than requested maximum size of %d\n",
+                           igLastCandidate->igNum, candidateSize, (candidateSize >= maxSplitSize) ? "larger" : "less",
+                           maxSplitSize);
+                }
 #endif
 
                 // hand memory ownership to the callback function

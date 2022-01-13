@@ -86,15 +86,10 @@ do { hr = (EXPR); if(FAILED(hr)) { goto LABEL; } } while (0)
 #define _ASSERTE(expr)
 #endif
 
-#ifndef COUNTOF
-#define COUNTOF(a) (sizeof(a) / sizeof(*a))
-#endif
-
 #if !BIGENDIAN
 #define VAL16(x) x
 #define VAL32(x) x
 #endif
-
 
 //*****************************************************************************
 //

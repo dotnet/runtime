@@ -355,6 +355,7 @@ namespace Internal.ReadyToRunConstants
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Internal.TypeSystem;
 
@@ -365,23 +366,51 @@ namespace Internal.JitInterface
         ILLEGAL = 0,
         NONE = 63,
 ");
+
             foreach (string architecture in _architectures)
             {
-                int counter = 1;
                 foreach (var jitName in _architectureJitNames[architecture])
                 {
-                    tr.WriteLine($"        {architecture}_{jitName}={counter++},");
+                    tr.WriteLine($"        {architecture}_{jitName} = InstructionSet_{architecture}.{jitName},");
                 }
             }
 
-            tr.Write(@"
-    }
+            tr.Write(@"    }
 
-    public struct InstructionSetFlags : IEnumerable<InstructionSet>
+");
+
+            foreach (string architecture in _architectures)
+            {
+                tr.WriteLine($"    public enum InstructionSet_{architecture}");
+                tr.Write(@"    {
+        ILLEGAL = InstructionSet.ILLEGAL,
+        NONE = InstructionSet.NONE,
+");
+
+                int counter = 1;
+                foreach (var jitName in _architectureJitNames[architecture])
+                {
+                    tr.WriteLine($"        {jitName} = {counter++},");
+                }
+
+                tr.Write(@"    }
+
+");
+            }
+
+            tr.Write(@"    public struct InstructionSetFlags : IEnumerable<InstructionSet>
     {
-        ulong _flags;
-        
-        public void AddInstructionSet(InstructionSet instructionSet)
+        private ulong _flags;
+
+");
+
+            foreach (string architecture in _architectures)
+            {
+                tr.WriteLine($"        public IEnumerable<InstructionSet_{architecture}> {architecture}Flags => this.Select((x) => (InstructionSet_{architecture})x);");
+                tr.WriteLine();
+            }
+
+            tr.Write(@"        public void AddInstructionSet(InstructionSet instructionSet)
         {
             _flags = _flags | (((ulong)1) << (int)instructionSet);
         }
@@ -475,9 +504,9 @@ namespace Internal.JitInterface
                 tr.WriteLine("                    break;");
             }
 
-            tr.Write(@"
-                }
+            tr.Write(@"                }
             } while (!oldflags.Equals(resultflags));
+
             return resultflags;
         }
 
@@ -515,9 +544,9 @@ namespace Internal.JitInterface
                 tr.WriteLine("                    break;");
             }
 
-            tr.Write(@"
-                }
+            tr.Write(@"                }
             } while (!oldflags.Equals(resultflags));
+
             return resultflags;
         }
 
@@ -559,8 +588,8 @@ namespace Internal.JitInterface
                 }
                 tr.WriteLine("                    break;");
             }
-            tr.Write(@"
-            }
+
+            tr.Write(@"            }
         }
 
         public void Set64BitInstructionSetVariants(TargetArchitecture architecture)
@@ -586,8 +615,7 @@ namespace Internal.JitInterface
 
                 tr.WriteLine("                    break;");
             }
-            tr.Write(@"
-            }
+            tr.Write(@"            }
         }
 
         public void Set64BitInstructionSetVariantsUnconditionally(TargetArchitecture architecture)
@@ -610,13 +638,13 @@ namespace Internal.JitInterface
 
                 tr.WriteLine("                    break;");
             }
-            tr.Write(@"
-            }
+            tr.Write(@"            }
         }
     }
 }
 ");
             return;
+
             void AddReverseImplication(string architecture, string jitName, string impliedJitName)
             {
                 AddImplication(architecture, impliedJitName, jitName);

@@ -1048,6 +1048,14 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
+        /// <remarks>This isn't specific to RegexCharClass; it's just a convenient place to host it.</remarks>
+        public static bool DifferByOneBit(char a, char b, out int mask)
+        {
+            mask = a ^ b;
+            return mask != 0 && (mask & (mask - 1)) == 0;
+        }
+
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>
         /// <param name="ch">The character.</param>
         /// <param name="set">The string representation of the character class.</param>
