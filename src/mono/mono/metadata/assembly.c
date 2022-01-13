@@ -1740,8 +1740,6 @@ open_from_satellite_bundle (MonoAssemblyLoadContext *alc, const char *filename, 
 MonoImage *
 mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filename, MonoImageOpenStatus *status, const char *culture)
 {
-	//printf("Looking for assembly in bundle: %s\n", filename);
-
 	/*
 	 * we do a very simple search for bundled assemblies: it's not a general
 	 * purpose assembly loading mechanism.
@@ -1758,7 +1756,6 @@ mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc, const char *filena
 		mono_image_addref (image);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Assembly Loader loaded assembly from bundle: '%s'.", filename);
 	}
-
 	return image;
 }
 

@@ -262,7 +262,7 @@ static MonoNativeTlsKey thread_context_id;
 #if DEBUG_INTERP
 int mono_interp_traceopt = 2;
 /* If true, then we output the opcodes as we interpret them */
-static int global_tracing = 1;
+static int global_tracing = 2;
 
 static int debug_indent_level = 0;
 
@@ -2026,17 +2026,6 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	stackval *sp = (stackval*)context->stack_pointer;
 	MonoMethod *target_method = method;
 
-	#if DEBUG_INTERP
-	printf ("[ENTER] %s\n", mono_method_full_name (method, TRUE));
-
-	if (strcmp (method->name, "MonoResolveUnmanagedDll") == 0) {
-		void* first_arg = params[0];
-		ERROR_DECL (error);
-		char* first_arg_str = mono_string_to_utf8_checked_internal (first_arg, error);
-		printf ("MonoResolveUnmanagedDll wants to load unmanaged DLL: %s\n", first_arg_str);
-	}
-	#endif
-
 	error_init (error);
 	if (exc)
 		*exc = NULL;
@@ -2073,10 +2062,6 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
 	MONO_EXIT_GC_UNSAFE;
-
-	#if DEBUG_INTERP
-	printf ("[EXIT]\n");
-	#endif
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -2127,7 +2112,6 @@ interp_entry (InterpEntryData *data)
 	sp_args = sp = (stackval*)context->stack_pointer;
 
 	method = rmethod->method;
-	printf ("INTERP ENTRY at method %s\n", method->name);
 
 	if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class && !strcmp (method->name, "Invoke")) {
 		/*
@@ -2201,7 +2185,6 @@ interp_entry (InterpEntryData *data)
 static void
 do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
-	//printf ("In do_icall for op=%i, ptr=%i\n", op, ptr);
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
 
@@ -3257,10 +3240,10 @@ static long opcode_counts[MINT_LASTOP];
 	if (tracing > 1) { \
 		output_indent (); \
 		char *mn = mono_method_full_name (frame->imethod->method, FALSE); \
-		const char *disasm = mono_interp_opname(*ip) ; /*mono_interp_dis_mintop ((gint32)(ip - frame->imethod->code), TRUE, ip + 1, *ip);*/ \
+		char *disasm = mono_interp_dis_mintop ((gint32)(ip - frame->imethod->code), TRUE, ip + 1, *ip); \
 		g_print ("(%p) %s -> %s\n", mono_thread_internal_current (), mn, disasm); \
 		g_free (mn); \
-		/*g_free (disasm);*/ \
+		g_free (disasm); \
 	}
 #else
 #define DUMP_INSTR()
@@ -3488,9 +3471,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
 #endif
-	#if DEBUG_INTERP
-	g_print ("(%p) Call %s\n", mono_thread_internal_current (), mono_method_get_full_name (frame->imethod->method));
-	#endif
+	//g_print ("(%p) Call %s\n", mono_thread_internal_current (), mono_method_get_full_name (frame->imethod->method));
 
 #if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
 	mono_threads_safepoint ();

@@ -390,13 +390,11 @@ pinvoke_probe_convert_status_to_error (MonoLookupPInvokeStatus *status, MonoErro
 	case LOOKUP_PINVOKE_ERR_OK:
 		return;
 	case LOOKUP_PINVOKE_ERR_NO_LIB:
-		printf ("***** LOOKUP_PINVOKE_ERR_NO_LIB: %s\n", status->err_arg);
 		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%s", status->err_arg);
 		g_free (status->err_arg);
 		status->err_arg = NULL;
 		break;
 	case LOOKUP_PINVOKE_ERR_NO_SYM:
-		printf ("***** LOOKUP_PINVOKE_ERR_NO_SYM: %s\n", status->err_arg);
 		mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s", status->err_arg);
 		g_free (status->err_arg);
 		status->err_arg = NULL;

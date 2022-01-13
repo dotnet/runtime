@@ -1127,10 +1127,8 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	internal = thread->internal_thread;
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper", __func__, mono_native_thread_id_get ()));
-	THREAD_DEBUG (g_message ("Thread value: %i\n", start_info->thread));
 
 	if (!mono_thread_attach_internal (thread, start_info->force_attach)) {
-		THREAD_DEBUG (g_message ("Failed to attach"));
 		start_info->failed = TRUE;
 
 		mono_coop_sem_post (&start_info->registered);
@@ -1143,7 +1141,6 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 		return 0;
 	}
 
-	THREAD_DEBUG (g_message ("Setting priority"));
 	mono_thread_internal_set_priority (internal, (MonoThreadPriority)internal->priority);
 
 	tid = internal->tid;
@@ -1156,7 +1153,6 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	 * jit) sets the lmf marker.
 	 */
 
-	THREAD_DEBUG (g_message ("Calling mono_thread_start_cb"));
 	if (mono_thread_start_cb)
 		mono_thread_start_cb (tid, stack_ptr, (gpointer)start_func);
 
@@ -1167,7 +1163,6 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	mono_thread_init_apartment_state ();
 
-	THREAD_DEBUG (g_message ("Calling mono_coop_sem_post"));
 	/* Let the thread that called Start() know we're ready */
 	mono_coop_sem_post (&start_info->registered);
 
@@ -1201,13 +1196,10 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 		UNLOCK_THREAD (internal);
 	}
 
-	THREAD_DEBUG (g_message ("Before StartCallback"));
 	/* start_func is set only for unmanaged start functions */
 	if (start_func) {
-		THREAD_DEBUG (g_message ("Before start_func"));
 		start_func (start_func_arg);
 	} else {
-		THREAD_DEBUG (g_message ("Before MONO_STATIC_POINTER_INIT"));
 		/* Call a callback in the RuntimeThread class */
 		MONO_STATIC_POINTER_INIT (MonoMethod, cb)
 
@@ -1217,11 +1209,9 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 		MONO_STATIC_POINTER_INIT_END (MonoMethod, cb)
 
-		THREAD_DEBUG (g_message ("Before mono_runtime_invoke_checked"));
 		mono_runtime_invoke_checked (cb, internal, NULL, error);
 
 		if (!is_ok (error)) {
-			THREAD_DEBUG (g_message ("is_ok"));
 			MonoException *ex = mono_error_convert_to_exception (error);
 
 			g_assert (ex != NULL);
@@ -1232,7 +1222,6 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 				g_assert_not_reached ();
 			}
 		} else {
-			THREAD_DEBUG (g_message ("Got error"));
 			mono_error_cleanup (error);
 		}
 	}
@@ -1311,8 +1300,6 @@ static gboolean
 create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart start_func, gpointer start_func_arg,
 			   gint32 stack_size, MonoThreadCreateFlags flags, MonoError *error)
 {
-	THREAD_DEBUG (g_message ("In create_thread with thread ptr=%i", thread));
-
 	StartInfo *start_info = NULL;
 	MonoNativeThreadId tid;
 	gboolean ret;
@@ -1384,8 +1371,6 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 		goto done;
 	}
 
-	THREAD_DEBUG (g_message ("In create_thread with start_info->thread=%i", start_info->thread));
-
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Launching thread %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
 
 	/*
@@ -1398,6 +1383,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	mono_coop_sem_wait (&start_info->registered, MONO_SEM_FLAGS_NONE);
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Done launching thread %p (%" G_GSIZE_FORMAT ")", __func__, mono_native_thread_id_get (), internal, (gsize)internal->tid));
+
 	ret = !start_info->failed;
 
 done:
@@ -1976,7 +1962,7 @@ MonoInternalThread*
 mono_thread_internal_current (void)
 {
 	MonoInternalThread *res = GET_CURRENT_OBJECT ();
-	//THREAD_DEBUG (g_message ("%s: returning %p", __func__, res));
+	THREAD_DEBUG (g_message ("%s: returning %p", __func__, res));
 	return res;
 }
 
