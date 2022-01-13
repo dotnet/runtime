@@ -12,7 +12,6 @@ using Internal.TypeSystem.Interop;
 using Internal.JitInterface;
 
 using Debug = System.Diagnostics.Debug;
-using Internal.TypeSystem.Ecma;
 
 namespace Internal.IL.Stubs
 {
