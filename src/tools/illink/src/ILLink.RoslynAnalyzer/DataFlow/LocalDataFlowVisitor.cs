@@ -152,19 +152,31 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return TopValue;
 		}
 
+		public static IMethodSymbol GetPropertyMethod (IPropertyReferenceOperation operation)
+		{
+			// The IPropertyReferenceOperation doesn't tell us whether this reference is to the getter or setter.
+			// For this we need to look at the containing operation.
+			var parent = operation.Parent;
+			if (parent?.Kind == OperationKind.SimpleAssignment) {
+				var assignment = (ISimpleAssignmentOperation) parent;
+				if (assignment.Target == operation) {
+					var setMethod = operation.Property.SetMethod;
+					Debug.Assert (setMethod != null);
+					return setMethod!;
+				}
+				Debug.Assert (assignment.Value == operation);
+			}
+
+			var getMethod = operation.Property.GetMethod;
+			Debug.Assert (getMethod != null);
+			return getMethod!;
+		}
+
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
 			if (operation.Instance != null) {
 				var instanceValue = Visit (operation.Instance, state);
-				var usage = operation.GetValueUsageInfo(Context.OwningSymbol);
-				if (usage.HasFlag(ValueUsageInfo.Read) && operation.Property.GetMethod is {} getMethod)
-				{
-					HandleReceiverArgument(instanceValue, getMethod, operation);
-				}
-				if (usage.HasFlag(ValueUsageInfo.Write) && operation.Property.SetMethod is {} setMethod)
-				{
-					HandleReceiverArgument(instanceValue, setMethod, operation);
-				}
+				HandleReceiverArgument (instanceValue, GetPropertyMethod (operation), operation);
 			}
 
 			return TopValue;

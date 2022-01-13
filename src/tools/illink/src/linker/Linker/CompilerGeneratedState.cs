@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -46,7 +45,11 @@ namespace Mono.Linker
 						if (stateMachineType != null) {
 							if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd (stateMachineType, method)) {
 								var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
-								_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), stateMachineType.GetDisplayName ());
+								_context.LogWarning (
+									$"Methods '{method.GetDisplayName ()}' and '{alreadyAssociatedMethod.GetDisplayName ()}' are both associated with state machine type '{stateMachineType.GetDisplayName ()}'. This is currently unsupported and may lead to incorrectly reported warnings.",
+									2107,
+									new MessageOrigin (method),
+									MessageSubCategory.TrimAnalysis);
 							}
 						}
 

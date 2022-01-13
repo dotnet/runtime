@@ -241,7 +241,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 				LocalFunction<TUnknown> ();
 
 				[ExpectedWarning ("IL2087")]
-				[ExpectedWarning ("IL2087")]
 				void LocalFunction<TSecond> ()
 				{
 					typeof (TUnknown).RequiresPublicMethods ();

@@ -126,7 +126,6 @@ namespace Mono.Linker
 		{
 			TypeDefinition type;
 			var reason = new DependencyInfo (ToDependencyKind (serializerKind), provider);
-			var origin = new MessageOrigin (provider);
 
 			// Mark field and property types up-front in case the root field/property is
 			// not discovered recursively from the declaring type (for example, it may be private).
@@ -138,28 +137,28 @@ namespace Mono.Linker
 			case FieldDefinition field:
 				type = field.DeclaringType;
 				MarkRecursiveMembersInternal (field.FieldType, reason);
-				_context.Annotations.Mark (field, reason, origin);
+				_context.Annotations.Mark (field, reason);
 				break;
 			case PropertyDefinition property:
 				type = property.DeclaringType;
 				MarkRecursiveMembersInternal (property.PropertyType, reason);
 				if (property.GetMethod != null)
-					_context.Annotations.Mark (property.GetMethod, reason, origin);
+					_context.Annotations.Mark (property.GetMethod, reason);
 				if (property.SetMethod != null)
-					_context.Annotations.Mark (property.SetMethod, reason, origin);
+					_context.Annotations.Mark (property.SetMethod, reason);
 				break;
 			case MethodDefinition method:
 				type = method.DeclaringType;
-				_context.Annotations.Mark (method, reason, origin);
+				_context.Annotations.Mark (method, reason);
 				break;
 			case EventDefinition @event:
 				type = @event.DeclaringType;
 				if (@event.AddMethod != null)
-					_context.Annotations.Mark (@event.AddMethod, reason, origin);
+					_context.Annotations.Mark (@event.AddMethod, reason);
 				if (@event.InvokeMethod != null)
-					_context.Annotations.Mark (@event.InvokeMethod, reason, origin);
+					_context.Annotations.Mark (@event.InvokeMethod, reason);
 				if (@event.RemoveMethod != null)
-					_context.Annotations.Mark (@event.RemoveMethod, reason, origin);
+					_context.Annotations.Mark (@event.RemoveMethod, reason);
 				break;
 			default:
 				throw new ArgumentException ($"{nameof (provider)} has invalid provider type {provider.GetType ()}");
@@ -190,7 +189,7 @@ namespace Mono.Linker
 			if (type == null)
 				return;
 
-			_context.Annotations.Mark (type, typeReason, new MessageOrigin (reason.Source as ICustomAttributeProvider));
+			_context.Annotations.Mark (type, typeReason);
 
 			if (!RecursiveTypes.Add (type))
 				return;
@@ -207,7 +206,7 @@ namespace Mono.Linker
 						continue;
 
 					MarkRecursiveMembersInternal (field.FieldType, new DependencyInfo (DependencyKind.SerializedRecursiveType, type));
-					_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.SerializedMember, type), new MessageOrigin (type));
+					_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.SerializedMember, type));
 				}
 			}
 
@@ -222,9 +221,9 @@ namespace Mono.Linker
 
 					MarkRecursiveMembersInternal (property.PropertyType, new DependencyInfo (DependencyKind.SerializedRecursiveType, type));
 					if (get != null)
-						_context.Annotations.Mark (get, new DependencyInfo (DependencyKind.SerializedMember, type), new MessageOrigin (type));
+						_context.Annotations.Mark (get, new DependencyInfo (DependencyKind.SerializedMember, type));
 					if (set != null)
-						_context.Annotations.Mark (set, new DependencyInfo (DependencyKind.SerializedMember, type), new MessageOrigin (type));
+						_context.Annotations.Mark (set, new DependencyInfo (DependencyKind.SerializedMember, type));
 					// The property will be marked as a consequence of marking the getter/setter.
 				}
 			}
@@ -235,7 +234,7 @@ namespace Mono.Linker
 					if (!method.IsPublic || !method.IsDefaultConstructor ())
 						continue;
 
-					_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.SerializedMember, type), new MessageOrigin (type));
+					_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.SerializedMember, type));
 				}
 			}
 		}

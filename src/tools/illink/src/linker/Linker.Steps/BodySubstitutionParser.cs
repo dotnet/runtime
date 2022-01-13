@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.XPath;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -35,7 +34,7 @@ namespace Mono.Linker.Steps
 			ProcessResources (assembly, nav);
 		}
 
-		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => null;
+		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => null;
 
 		protected override bool ProcessTypePattern (string fullname, AssemblyDefinition assembly, XPathNavigator nav) => false;
 
@@ -54,7 +53,7 @@ namespace Mono.Linker.Steps
 
 			MethodDefinition? method = FindMethod (type, signature);
 			if (method == null) {
-				LogWarning (methodNav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName ());
+				LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'.", 2009, methodNav);
 				return;
 			}
 
@@ -67,7 +66,7 @@ namespace Mono.Linker.Steps
 				string value = GetAttribute (methodNav, "value");
 				if (!string.IsNullOrEmpty (value)) {
 					if (!TryConvertValue (value, method.ReturnType, out object? res)) {
-						LogWarning (methodNav, DiagnosticId.XmlInvalidValueForStub, method.GetDisplayName ());
+						LogWarning ($"Invalid value for '{method.GetDisplayName ()}' stub.", 2010, methodNav);
 						return;
 					}
 
@@ -77,7 +76,7 @@ namespace Mono.Linker.Steps
 				_substitutionInfo.SetMethodAction (method, MethodAction.ConvertToStub);
 				return;
 			default:
-				LogWarning (methodNav, DiagnosticId.XmlUnkownBodyModification, action, method.GetDisplayName ());
+				LogWarning ($"Unknown body modification '{action}' for '{method.GetDisplayName ()}'.", 2011, methodNav);
 				return;
 			}
 		}
@@ -91,22 +90,22 @@ namespace Mono.Linker.Steps
 
 			var field = type.Fields.FirstOrDefault (f => f.Name == name);
 			if (field == null) {
-				LogWarning (fieldNav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName ());
+				LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'.", 2012, fieldNav);
 				return;
 			}
 
 			if (!field.IsStatic || field.IsLiteral) {
-				LogWarning (fieldNav, DiagnosticId.XmlSubstitutedFieldNeedsToBeStatic, field.GetDisplayName ());
+				LogWarning ($"Substituted field '{field.GetDisplayName ()}' needs to be static field.", 2013, fieldNav);
 				return;
 			}
 
 			string value = GetAttribute (fieldNav, "value");
 			if (string.IsNullOrEmpty (value)) {
-				LogWarning (fieldNav, DiagnosticId.XmlMissingSubstitutionValueForField, field.GetDisplayName ());
+				LogWarning ($"Missing 'value' attribute for field '{field.GetDisplayName ()}'.", 2014, fieldNav);
 				return;
 			}
 			if (!TryConvertValue (value, field.FieldType, out object? res)) {
-				LogWarning (fieldNav, DiagnosticId.XmlInvalidSubstitutionValueForField, value, field.GetDisplayName ());
+				LogWarning ($"Invalid value '{value}' for '{field.GetDisplayName ()}'.", 2015, fieldNav);
 				return;
 			}
 
@@ -126,19 +125,19 @@ namespace Mono.Linker.Steps
 
 				string name = GetAttribute (resourceNav, "name");
 				if (String.IsNullOrEmpty (name)) {
-					LogWarning (resourceNav, DiagnosticId.XmlMissingNameAttributeInResource);
+					LogWarning ($"Missing 'name' attribute for resource.", 2038, resourceNav);
 					continue;
 				}
 
 				string action = GetAttribute (resourceNav, "action");
 				if (action != "remove") {
-					LogWarning (resourceNav, DiagnosticId.XmlInvalidValueForAttributeActionForResource, action, name);
+					LogWarning ($"Invalid value '{action}' for attribute 'action' for resource '{name}'.", 2039, resourceNav);
 					continue;
 				}
 
 				EmbeddedResource? resource = assembly.FindEmbeddedResource (name);
 				if (resource == null) {
-					LogWarning (resourceNav, DiagnosticId.XmlCouldNotFindResourceToRemoveInAssembly, name, assembly.Name.Name);
+					LogWarning ($"Could not find embedded resource '{name}' to remove in assembly '{assembly.Name.Name}'.", 2040, resourceNav);
 					continue;
 				}
 

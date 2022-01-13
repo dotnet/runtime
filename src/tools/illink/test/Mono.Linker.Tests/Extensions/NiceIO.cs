@@ -45,7 +45,7 @@ namespace Mono.Linker.Tests.Extensions
 		public NPath (string path)
 		{
 			if (path == null)
-				throw new ArgumentNullException (nameof (path));
+				throw new ArgumentNullException ();
 
 			path = ParseDriveLetter (path, out _driveLetter);
 
