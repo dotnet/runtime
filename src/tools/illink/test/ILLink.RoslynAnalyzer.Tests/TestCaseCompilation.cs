@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -16,19 +16,20 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers =
 			ImmutableArray.Create<DiagnosticAnalyzer> (
+				new RequiresDynamicCodeAnalyzer (),
 				new COMAnalyzer (),
 				new RequiresAssemblyFilesAnalyzer (),
 				new RequiresUnreferencedCodeAnalyzer (),
 				new DynamicallyAccessedMembersAnalyzer ());
 
-		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
+		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
 			string src,
 			(string, string)[]? globalAnalyzerOptions = null,
 			IEnumerable<MetadataReference>? additionalReferences = null,
 			IEnumerable<SyntaxTree>? additionalSources = null)
 			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), globalAnalyzerOptions, additionalReferences, additionalSources);
 
-		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
+		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel, List<Diagnostic> ExceptionDiagnostics)> CreateCompilation (
 			SyntaxTree src,
 			(string, string)[]? globalAnalyzerOptions = null,
 			IEnumerable<MetadataReference>? additionalReferences = null,
@@ -48,17 +49,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 				ImmutableArray<AdditionalText>.Empty,
 				new SimpleAnalyzerOptions (globalAnalyzerOptions));
 
+			var exceptionDiagnostics = new List<Diagnostic> ();
+
 			var compWithAnalyzerOptions = new CompilationWithAnalyzersOptions (
 				analyzerOptions,
-				(_1, _2, _3) => { },
+				(Exception exception, DiagnosticAnalyzer diagnosticAnalyzer, Diagnostic diagnostic) => {
+					exceptionDiagnostics.Add (diagnostic);
+				},
 				concurrentAnalysis: true,
 				logAnalyzerExecutionTime: false);
 
-			return (new CompilationWithAnalyzers (comp, SupportedDiagnosticAnalyzers, compWithAnalyzerOptions), comp.GetSemanticModel (src));
+			return (new CompilationWithAnalyzers (comp, SupportedDiagnosticAnalyzers, compWithAnalyzerOptions), comp.GetSemanticModel (src), exceptionDiagnostics);
 		}
-
-		public static async Task<Compilation> GetCompilation (string source, IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<SyntaxTree>? additionalSources = null)
-			=> (await CreateCompilation (source, additionalReferences: additionalReferences ?? Array.Empty<MetadataReference> ())).Compilation.Compilation;
 
 		class SimpleAnalyzerOptions : AnalyzerConfigOptionsProvider
 		{

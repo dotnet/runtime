@@ -10,15 +10,36 @@ using Xunit;
 using VerifyCSUSMwithRAF = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
 	ILLink.RoslynAnalyzer.RequiresAssemblyFilesAnalyzer,
 	ILLink.CodeFix.UnconditionalSuppressMessageCodeFixProvider>;
+using VerifyCSUSMwithRDC = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
+	ILLink.RoslynAnalyzer.RequiresDynamicCodeAnalyzer,
+	ILLink.CodeFix.UnconditionalSuppressMessageCodeFixProvider>;
 using VerifyCSUSMwithRUC = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
 	ILLink.RoslynAnalyzer.RequiresUnreferencedCodeAnalyzer,
 	ILLink.CodeFix.UnconditionalSuppressMessageCodeFixProvider>;
-
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
 	public class UnconditionalSuppressMessageCodeFixTests
 	{
+		static readonly string dynamicCodeAttribute = @"
+#nullable enable
+
+namespace System.Diagnostics.CodeAnalysis
+{
+	[AttributeUsage (AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
+	public sealed class RequiresDynamicCodeAttribute : Attribute
+	{
+		public RequiresDynamicCodeAttribute (string message)
+		{
+			Message = message;
+		}
+
+		public string Message { get; }
+
+		public string? Url { get; set; }
+	}
+}";
+
 		static Task VerifyUnconditionalSuppressMessageCodeFixWithRUC (
 			string source,
 			string fixedSource,
@@ -55,6 +76,26 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
 						("/.editorconfig", SourceText.From (@$"
 is_global = true
 build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
+			test.FixedState.ExpectedDiagnostics.AddRange (fixedExpected);
+			return test.RunAsync ();
+		}
+
+		static Task VerifyUnconditionalSuppressMessageCodeFixWithRDC (
+			string source,
+			string fixedSource,
+			DiagnosticResult[] baselineExpected,
+			DiagnosticResult[] fixedExpected)
+		{
+			var test = new VerifyCSUSMwithRDC.Test {
+				TestCode = source + dynamicCodeAttribute,
+				FixedCode = fixedSource + dynamicCodeAttribute,
+				ReferenceAssemblies = TestCaseUtils.Net6PreviewAssemblies
+			};
+			test.ExpectedDiagnostics.AddRange (baselineExpected);
+			test.TestState.AnalyzerConfigFiles.Add (
+						("/.editorconfig", SourceText.From (@$"
+is_global = true
+build_property.{MSBuildPropertyOptionNames.EnableAOTAnalyzer} = true")));
 			test.FixedState.ExpectedDiagnostics.AddRange (fixedExpected);
 			return test.RunAsync ();
 		}
@@ -115,6 +156,36 @@ public class C
 				baselineExpected: new[] {
 				// /0/Test0.cs(7,17): warning IL2026: Using member 'C.M1()' which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code. message.
 				VerifyCSUSMwithRAF.Diagnostic (DiagnosticId.RequiresAssemblyFiles).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", "")
+				},
+				fixedExpected: Array.Empty<DiagnosticResult> ());
+		}
+
+		[Fact]
+		public Task SuppressRequiresDynamicCodeFixer ()
+		{
+			var test = @"
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+    [RequiresDynamicCode(""message"")]
+    public int M1() => 0;
+    int M2() => M1();
+}";
+			var fixtest = @"
+using System.Diagnostics.CodeAnalysis;
+public class C
+{
+    [RequiresDynamicCode(""message"")]
+    public int M1() => 0;
+    [UnconditionalSuppressMessage(""AOT"", ""IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling."", Justification = ""<Pending>"")]
+    int M2() => M1();
+}";
+			return VerifyUnconditionalSuppressMessageCodeFixWithRDC (
+				test,
+				fixtest,
+				baselineExpected: new[] {
+				// /0/Test0.cs(7,17): warning IL2117: Members annotated with 'RequiresDynamicCodeAttribute' require dynamic access otherwise can break functionality when trimming application code. message.
+				VerifyCSUSMwithRDC.Diagnostic (DiagnosticId.RequiresDynamicCode).WithSpan (7, 17, 7, 21).WithArguments ("C.M1()", " message.", "")
 				},
 				fixedExpected: Array.Empty<DiagnosticResult> ());
 		}

@@ -3,5 +3,8 @@
     <type fullname="Mono.Linker.Tests.Cases.RequiresCapability.RequiresCapability">
       <method name="RequiresOnlyViaDescriptor" />
     </type>
+    <type fullname="Mono.Linker.Tests.Cases.RequiresCapability.RequiresCapability/RequiresOnFieldOnlyViaDescriptor">
+      <field name="Field" />
+    </type>
   </assembly>
 </linker>

@@ -40,8 +40,13 @@ namespace Mono.Linker
 			var assembly = GetAssemblyFromCustomAttributeProvider (provider);
 
 			if (!_embeddedXmlInfos.TryGetValue (assembly, out xmlInfo)) {
+				// Add an empty record - this prevents reentrancy
+				// If the embedded XML itself generates warnings, trying to log such warning
+				// may ask for attributes (suppressions) and thus we could end up in this very place again
+				// So first add a dummy record and once processed we will replace it with the real data
+				_embeddedXmlInfos.Add (assembly, new AttributeInfo ());
 				xmlInfo = EmbeddedXmlInfo.ProcessAttributes (assembly, _context);
-				_embeddedXmlInfos.Add (assembly, xmlInfo);
+				_embeddedXmlInfos[assembly] = xmlInfo;
 			}
 
 			return xmlInfo != null;

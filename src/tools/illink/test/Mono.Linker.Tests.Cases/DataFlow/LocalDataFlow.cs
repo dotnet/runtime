@@ -132,8 +132,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
 		public static void TestBranchMergeTry ()
 		{
 			string str = GetWithPublicMethods ();
@@ -155,8 +154,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
 		public static void TestBranchMergeCatch ()
 		{
 			string str = GetWithPublicMethods ();
@@ -177,8 +175,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
 		public static void TestBranchMergeFinally ()
 		{
 			string str = GetWithPublicMethods ();
