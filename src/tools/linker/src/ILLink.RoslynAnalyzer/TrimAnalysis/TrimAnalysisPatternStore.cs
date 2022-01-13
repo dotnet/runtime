@@ -3,8 +3,6 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.RoslynAnalyzer.TrimAnalysis
@@ -17,21 +15,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public void Add (TrimAnalysisPattern trimAnalysisPattern)
 		{
-			// If we already stored a trim analysis pattern for this operation,
-			// it needs to be updated. The dataflow analysis should result in purely additive
-			// changes to the trim analysis patterns generated for a given operation,
-			// so we can just replace the original analysis pattern here.
-#if DEBUG
-			// Validate this in debug mode.
-			//if (TrimAnalysisPatterns.TryGetValue (trimAnalysisPattern.Operation, out var existingTrimAnalysisPattern)) {
-			//	// The existing pattern source/target should be a subset of the new source/target.
-			//	foreach (SingleValue source in existingTrimAnalysisPattern.Source)
-			//		Debug.Assert (trimAnalysisPattern.Source.Contains (source));
-
-			//	foreach (SingleValue target in existingTrimAnalysisPattern.Target)
-			//		Debug.Assert (trimAnalysisPattern.Target.Contains (target));
-			//}
-#endif
+			// TODO: check that this doesn't lose warnings (or add instead of replace)
 			TrimAnalysisPatterns[trimAnalysisPattern.Operation] = trimAnalysisPattern;
 		}
 

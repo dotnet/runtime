@@ -24,7 +24,11 @@ namespace ILLink.Shared.DataFlow
 
 		public DefaultValueDictionary (TValue defaultValue) => (Dictionary, DefaultValue) = (null, defaultValue);
 
-		public DefaultValueDictionary (DefaultValueDictionary<TKey, TValue> other) => (Dictionary, DefaultValue) = (other.Dictionary, other.DefaultValue);
+		public DefaultValueDictionary (DefaultValueDictionary<TKey, TValue> other)
+		{
+			Dictionary = other.Dictionary == null ? null : new Dictionary<TKey, TValue> (other.Dictionary);
+			DefaultValue = other.DefaultValue;
+		}
 
 		public TValue Get (TKey key) => Dictionary?.TryGetValue (key, out var value) == true ? value : DefaultValue;
 

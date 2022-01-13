@@ -109,6 +109,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (LocalDataFlow));
 		}
 
+
+		[Fact]
+		public Task ExceptionalDataFlow ()
+		{
+			return RunTest (nameof (ExceptionalDataFlow));
+		}
+
 		[Fact]
 		public Task LocalDataFlowKeptMembers ()
 		{
