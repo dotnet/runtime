@@ -392,6 +392,15 @@ namespace System.IO
             ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
             ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
+            if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
+            {
+                // On Windows we end up with ERROR_INVALID_NAME, which is
+                // "The filename, directory name, or volume label syntax is incorrect."
+                // On Unix, rename fails with ENOTDIR, but on WASM it does not.
+                // So if the path ends with directory separator, but it's a file, we just throw.
+                throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+            }
+
             if (!sameDirectoryDifferentCase) // This check is to allow renaming of directories
             {
                 if (Interop.Sys.Stat(destNoDirectorySeparator, out _) >= 0)
