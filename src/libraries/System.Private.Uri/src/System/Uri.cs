@@ -4916,7 +4916,7 @@ namespace System
 
             bool convBackSlashes = basePart.Syntax.InFact(UriSyntaxFlags.ConvertPathSlashes);
 
-            string? left = null;
+            string? left;
 
             // check for network or local absolute path
             if (c1 == '/' || (c1 == '\\' && convBackSlashes))

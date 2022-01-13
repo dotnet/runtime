@@ -188,12 +188,12 @@ namespace System.Drawing.Printing
 
                 int bufferSize;
                 int count;
-                Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, Level, IntPtr.Zero, 0, out bufferSize, out count);
+                Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, Level, IntPtr.Zero, 0, out bufferSize, out _);
 
                 IntPtr buffer = Marshal.AllocCoTaskMem(bufferSize);
                 int returnCode = Interop.Winspool.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS,
                                                         null, Level, buffer,
-                                                        bufferSize, out bufferSize, out count);
+                                                        bufferSize, out _, out count);
                 var array = new string[count];
 
                 if (returnCode == 0)
@@ -448,7 +448,7 @@ namespace System.Drawing.Printing
             if (imageFormat.Equals(ImageFormat.Jpeg) || imageFormat.Equals(ImageFormat.Png))
             {
                 int nEscape = imageFormat.Equals(ImageFormat.Jpeg) ? Interop.Gdi32.CHECKJPEGFORMAT : Interop.Gdi32.CHECKPNGFORMAT;
-                int outData = 0;
+                int outData;
                 DeviceContext dc = CreateInformationContext(DefaultPageSettings);
                 HandleRef hdc = new HandleRef(dc, dc.Hdc);
                 try
@@ -707,7 +707,6 @@ namespace System.Drawing.Printing
 
                 string name = ReadOneDEVNAME(names, 1);
                 Interop.Kernel32.GlobalUnlock(handle);
-                names = IntPtr.Zero;
 
                 // Windows allocates them, but we have to free them
                 Interop.Kernel32.GlobalFree(data.hDevNames);
@@ -731,7 +730,6 @@ namespace System.Drawing.Printing
 
                 string name = ReadOneDEVNAME(names, 1);
                 Interop.Kernel32.GlobalUnlock(handle);
-                names = IntPtr.Zero;
 
                 // Windows allocates them, but we have to free them
                 Interop.Kernel32.GlobalFree(data.hDevNames);
@@ -761,7 +759,6 @@ namespace System.Drawing.Printing
                 string name = ReadOneDEVNAME(names, 2);
 
                 Interop.Kernel32.GlobalUnlock(handle);
-                names = IntPtr.Zero;
 
                 // Windows allocates them, but we have to free them
                 Interop.Kernel32.GlobalFree(data.hDevNames);
@@ -786,7 +783,6 @@ namespace System.Drawing.Printing
                 string name = ReadOneDEVNAME(names, 2);
 
                 Interop.Kernel32.GlobalUnlock(handle);
-                names = IntPtr.Zero;
 
                 // Windows allocates them, but we have to free them
                 Interop.Kernel32.GlobalFree(data.hDevNames);

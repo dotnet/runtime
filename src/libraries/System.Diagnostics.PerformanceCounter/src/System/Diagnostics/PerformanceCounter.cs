@@ -575,9 +575,8 @@ namespace System.Diagnostics
         {
             //No need to initialize or Demand, since NextSample already does.
             CounterSample newSample = NextSample();
-            float retVal = 0.0f;
 
-            retVal = CounterSample.Calculate(_oldSample, newSample);
+            float retVal = CounterSample.Calculate(_oldSample, newSample);
             _oldSample = newSample;
 
             return retVal;

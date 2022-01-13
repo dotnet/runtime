@@ -1,0 +1,505 @@
+<Directives>
+  <Application>
+    <Assembly Name="mscorlib" />
+    <Assembly Name="System.Threading.Overlapped">
+      <Type Name="System.Threading.Overlapped" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="System.Runtime.Tests">
+      <Type Name="System.Tests.EnumTests">
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Object, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.SimpleEnum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.ByteEnum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.SByteEnum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Int16Enum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16Enum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Int32Enum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32Enum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.Int64Enum, System.Runtime.Tests" />
+        </Method>
+        <Method Name="Parse_Generic_Invalid" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64Enum, System.Runtime.Tests" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Tests.ArrayTests">
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests">
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Reflection.BindingFlags, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Reflection.BindingFlags, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Reflection.BindingFlags, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Nullable`1[[System.Int32,System.Private.CoreLib]],System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Byte, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.SByte, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.UInt16, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Int16, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.UInt32, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Int32, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.UInt64, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Int64, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.IntPtr, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.UIntPtr, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Char, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Boolean, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Single, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Reflection.BindingFlags, System.Private.CoreLib]]" Dynamic="Required All" />
+
+      <Type Name="System.Reflection.Tests.MethodBaseTests">
+        <Method Name="MyFakeGenericMethod" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Tests.ArrayTests">
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Sort_Array_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="BinarySearch_TypesNotIComparable_ThrowsInvalidOperationException" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_TypesNotIComparable_ThrowsInvalidOperationException" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_TypesNotIComparable_ThrowsInvalidOperationException" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+SByteEnum" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int16Enum" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int32Enum" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int64Enum" />
+        </Method>
+        <Method Name="IndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+NonGenericStruct" />
+        </Method>
+
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+SByteEnum" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int16Enum" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int32Enum" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int64Enum" />
+        </Method>
+        <Method Name="LastIndexOf_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+NonGenericStruct" />
+        </Method>
+
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.SByte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Char, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Boolean, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Single, System.Private.CoreLib" />
+        </Method>
+        <Method Name="BinarySearch_SZArray" Dynamic="Required All">
+          <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int16, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int32, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Int64, System.Private.CoreLib" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.ByteEnum" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int16Enum" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int32Enum" />
+        </Method>
+        <Method Name="Fill_Generic" Dynamic="Required All">
+          <GenericArgument Name="System.Tests.ArrayTests+Int64Enum" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Tests.ArrayTests+GenericStruct`1[[System.Int32,System.Private.CoreLib]][]" Dynamic="Required All" />
+    </Assembly>
+
+    <Assembly Name="System.Private.CoreLib">
+      <Type Name="System.Array">
+        <Method Name="Resize" Dynamic="Required All">
+          <GenericArgument Name="System.Runtime.CompilerServices.Tests.RuntimeHelpersTests+TestStruct, System.Runtime.Tests" />
+        </Method>
+      </Type>
+
+    </Assembly>
+  </Application>
+</Directives>

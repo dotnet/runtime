@@ -219,7 +219,7 @@ namespace System.Security.Cryptography.Xml
             // * All others       -> hash code
             //
 
-            string keyName = null;
+            string keyName;
 #pragma warning disable CA1416 // This call site is reachable on all platforms. 'CspKeyContainerInfo.KeyContainerName' is supported on: 'windows'.
             if (cspKey != null && cspKey.CspKeyContainerInfo.KeyContainerName != null)
             {
@@ -586,7 +586,7 @@ namespace System.Security.Cryptography.Xml
 
                 // First read the input stream into our temporary stream
                 byte[] buffer = new byte[4096];
-                int readBytes = 0;
+                int readBytes;
                 do
                 {
                     readBytes = data.Read(buffer, 0, buffer.Length);

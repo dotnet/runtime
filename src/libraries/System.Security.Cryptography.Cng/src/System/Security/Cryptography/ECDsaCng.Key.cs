@@ -57,7 +57,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    int keySize = 0;
+                    int keySize;
                     // Get the proper KeySize from algorithm name
                     if (alg == CngAlgorithm.ECDsaP256)
                         keySize = 256;
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
 
         private CngKey GetKey()
         {
-            CngKey? key = null;
+            CngKey key;
 
             if (_core.IsKeyGeneratedNamedCurve())
             {
@@ -96,11 +96,10 @@ namespace System.Security.Cryptography
             }
             else
             {
-                CngAlgorithm? algorithm = null;
-                int keySize = 0;
+                CngAlgorithm algorithm;
 
                 // Map the current key size to a CNG algorithm name
-                keySize = KeySize;
+                int keySize = KeySize;
                 switch (keySize)
                 {
                     case 256: algorithm = CngAlgorithm.ECDsaP256; break;

@@ -1552,7 +1552,7 @@ namespace System.Text.Json
         {
             Debug.Assert(data[i] == (byte)'0');
             i++;
-            byte nextByte = default;
+            byte nextByte;
             if (i < data.Length)
             {
                 nextByte = data[i];
@@ -2314,7 +2314,7 @@ namespace System.Text.Json
         private bool SkipSingleLineComment(ReadOnlySpan<byte> localBuffer, out int idx)
         {
             idx = FindLineSeparator(localBuffer);
-            int toConsume = 0;
+            int toConsume;
             if (idx != -1)
             {
                 toConsume = idx;

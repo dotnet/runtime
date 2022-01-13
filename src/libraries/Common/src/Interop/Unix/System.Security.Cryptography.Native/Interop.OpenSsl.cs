@@ -219,6 +219,45 @@ internal static partial class Interop
             return sslCtx;
         }
 
+        internal static void UpdateClientCertiticate(SafeSslHandle ssl, SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            // Disable certificate selection callback. We either got certificate or we will try to proceed without it.
+            Interop.Ssl.SslSetClientCertCallback(ssl, 0);
+
+            if (sslAuthenticationOptions.CertificateContext == null)
+            {
+                return;
+            }
+
+            var credential = new SafeFreeSslCredentials(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols, sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
+            SafeX509Handle? certHandle = credential.CertHandle;
+            SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
+
+            Debug.Assert(certHandle != null);
+            Debug.Assert(certKeyHandle != null);
+
+            int retVal = Ssl.SslUseCertificate(ssl, certHandle);
+            if (1 != retVal)
+            {
+                throw CreateSslException(SR.net_ssl_use_cert_failed);
+            }
+
+            retVal = Ssl.SslUsePrivateKey(ssl, certKeyHandle);
+            if (1 != retVal)
+            {
+                throw CreateSslException(SR.net_ssl_use_private_key_failed);
+            }
+
+            if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+            {
+                if (!Ssl.AddExtraChainCertificates(ssl, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                {
+                    throw CreateSslException(SR.net_ssl_use_cert_failed);
+                }
+            }
+
+        }
+
         // This essentially wraps SSL* SSL_new()
         internal static SafeSslHandle AllocateSslHandle(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -287,6 +326,13 @@ internal static partial class Interop
                     {
                         Crypto.ErrClearError();
                     }
+
+                    if (sslAuthenticationOptions.CertSelectionDelegate != null && sslAuthenticationOptions.CertificateContext == null)
+                    {
+                        // We don't have certificate but we have callback. We should wait for remote certificate and
+                        // possible trusted issuer list.
+                        Interop.Ssl.SslSetClientCertCallback(sslHandle, 1);
+                    }
                 }
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
@@ -324,7 +370,7 @@ internal static partial class Interop
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
-        internal static bool DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
+        internal static SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
         {
             sendBuf = null;
             sendCount = 0;
@@ -344,6 +390,11 @@ internal static partial class Interop
             {
                 Exception? innerError;
                 Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
+
+                if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
+                {
+                    return SecurityStatusPalErrorCode.CredentialsNeeded;
+                }
 
                 if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
                 {
@@ -389,7 +440,8 @@ internal static partial class Interop
             {
                 context.MarkHandshakeCompleted();
             }
-            return stateOk;
+
+            return stateOk ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinueNeeded;
         }
 
         internal static int Encrypt(SafeSslHandle context, ReadOnlySpan<byte> input, ref byte[] output, out Ssl.SslErrorCode errorCode)

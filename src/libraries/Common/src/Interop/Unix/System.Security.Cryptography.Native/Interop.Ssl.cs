@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -149,6 +150,15 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static partial int SslSetData(IntPtr ssl, IntPtr data);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslUseCertificate")]
+        internal static extern int SslUseCertificate(SafeSslHandle ssl, SafeX509Handle certPtr);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslUsePrivateKey")]
+        internal static extern int SslUsePrivateKey(SafeSslHandle ssl, SafeEvpPKeyHandle keyPtr);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetClientCertCallback")]
+        internal static extern unsafe void SslSetClientCertCallback(SafeSslHandle ssl, int set);
+
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();
 
@@ -192,6 +202,28 @@ internal static partial class Interop
             return buffer;
         }
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
+        internal static extern bool SslAddExtraChainCert(SafeSslHandle ssl, SafeX509Handle x509);
+
+        internal static bool AddExtraChainCertificates(SafeSslHandle ssl, X509Certificate2[] chain)
+        {
+            // send pre-computed list of intermediates.
+            for (int i = 0; i < chain.Length; i++)
+            {
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
+                Crypto.CheckValidOpenSslHandle(dupCertHandle);
+                if (!SslAddExtraChainCert(ssl, dupCertHandle))
+                {
+                    Crypto.ErrClearError();
+                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
+                    return false;
+                }
+                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+            }
+
+            return true;
+        }
+
         internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
             string? ret = Marshal.PtrToStringAnsi(GetOpenSslCipherSuiteName(ssl, (int)cipherSuite, out int isTls12OrLowerInt));
@@ -224,6 +256,7 @@ internal static partial class Interop
             SSL_ERROR_SSL = 1,
             SSL_ERROR_WANT_READ = 2,
             SSL_ERROR_WANT_WRITE = 3,
+            SSL_ERROR_WANT_X509_LOOKUP = 4,
             SSL_ERROR_SYSCALL = 5,
             SSL_ERROR_ZERO_RETURN = 6,
 

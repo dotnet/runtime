@@ -533,7 +533,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             int originalDestinationLength = destinationBuffer.Length;
             QuicBuffer nativeBuffer;
-            int takeLength = 0;
+            int takeLength;
             int i = 0;
 
             do
