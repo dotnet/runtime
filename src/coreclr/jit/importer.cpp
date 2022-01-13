@@ -4021,7 +4021,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     if (op1->OperIsConst())
                     {
                         // op1 is a known constant, replace with 'true'.
-                        impPopStack();
                         retNode = gtNewIconNode(1);
                         JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
                         // We can also consider FTN_ADDR and typeof(T) here
