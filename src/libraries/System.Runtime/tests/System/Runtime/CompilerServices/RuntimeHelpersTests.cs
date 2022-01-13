@@ -154,7 +154,6 @@ namespace System.Runtime.CompilerServices.Tests
 
             if (RuntimeFeature.IsDynamicCodeSupported)
             {
-
                 // Generic definition without instantiation is invalid
                 Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
                     null));
