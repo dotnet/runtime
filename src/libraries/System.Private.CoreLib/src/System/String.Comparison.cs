@@ -681,7 +681,6 @@ namespace System
         }
 
         // Determines whether two Strings match.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Equals(string? a, string? b)
         {
             // if either a or b are "" - optimize Equals to just 'str?.Length == 0'
@@ -1026,7 +1025,6 @@ namespace System
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWith(char value)
         {
             if (RuntimeHelpers.IsKnownConstant(value) && value != '\0')

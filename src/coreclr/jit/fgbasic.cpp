@@ -1146,9 +1146,17 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             }
 
                             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                                if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
+                                {
+                                    compInlineResult->Note(InlineObservation::CALLEE_CONST_ARG_FEEDS_ISCONST);
+                                }
+                                else
+                                {
+                                    compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_ISCONST);
+                                }
+                                // RuntimeHelpers.IsKnownConstant is always folded into a const
                                 pushedStack.PushConstant();
                                 foldableIntrinsic = true;
-                                // we can add an additional boost if arg is really a const
                                 break;
 
                             // These are foldable if the first argument is a constant
