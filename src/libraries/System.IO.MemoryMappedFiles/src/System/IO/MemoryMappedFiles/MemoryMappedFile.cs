@@ -150,7 +150,7 @@ namespace System.IO.MemoryMappedFiles
 
             bool existed = mode switch
             {
-                FileMode.Open => true, // if it's not true, the line below is going to throw
+                FileMode.Open => true, // FileStream ctor will throw if the file doesn't exist
                 FileMode.CreateNew => false,
                 _ => File.Exists(path)
             };
