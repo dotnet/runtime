@@ -3088,7 +3088,7 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	if (m_type_is_byref(t)) {
 		if (emit_exception)
-			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed references when the built-in marshalling system is disabled.");	
+			get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed references when the runtime marshalling system is disabled.");	
 		else
 			get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		return conv_arg;
@@ -3103,7 +3103,7 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 		MonoClass* c = mono_class_from_mono_type_internal (t);
 		if (m_class_has_references(c)) {
 			if (emit_exception)
-				get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");
+				get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the runtime marshalling system is disabled.");
 			else
 				get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 			return conv_arg;
@@ -3140,7 +3140,7 @@ mono_emit_disabled_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 
 	if (emit_exception)
-		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the built-in marshalling system is disabled.");	
+		get_marshal_cb ()->emit_marshal_directive_exception (m, argnum, "Cannot marshal managed types when the runtime marshalling system is disabled.");	
 	else
 		get_marshal_cb ()->emit_marshal_scalar (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 	return conv_arg;
