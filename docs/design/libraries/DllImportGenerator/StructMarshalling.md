@@ -19,15 +19,12 @@ We've been working around another problem for a while in the runtime-integrated 
 
 I propose an opt-in design where the owner of a struct has to explicitly opt-in to usage for interop. This enables our team to add special support as desired for various types such as `Span<T>` while also avoiding the private reflection and limited type information issues mentioned above.
 
-This design would use these attributes:
+Both designs would use these attributes:
 
 ```csharp
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
 public class GeneratedMarshallingAttribute : Attribute {}
-
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-public class BlittableTypeAttribute : Attribute {}
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
 public class NativeMarshallingAttribute : Attribute
@@ -111,27 +108,18 @@ When these members are present, the source generator will call the two-parameter
 
 Type authors can pass down the `buffer` pointer to native code by defining a `Value` property that returns a pointer to the first element, generally through code using `MemoryMarshal.GetReference()` and `Unsafe.AsPointer`. If `RequiresStackBuffer` is not provided or set to `false`, the `buffer` span must be pinned to be used safely. The `buffer` span can be pinned by defining a `GetPinnableReference()` method on the native type that returns a reference to the first element of the span.
 
-### Usage
+### Determining if a type is "blittable"
 
-There are 2 usage mechanisms of these attributes.
+For this design, we need to decide how to determine a type is blittable. We have two designs that we have experimented with below, and we have decided to go with design 2.
 
-#### Usage 1, Source-generated interop
+#### Design 1: Introducing `BlittableTypeAttribute`
 
-The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type is blittable. If it is blittable, the source generator will generate a partial definition and apply the `BlittableTypeAttribute` to the struct type `S`. Otherwise, it will generate a blittable representation of the struct with the aformentioned required shape and apply the `NativeMarshallingAttribute` and point it to the blittable representation. The blittable representation can either be generated as a separate top-level type or as a nested type on `S`.
+The built-in runtime marshalling system has an issue as mentioned above that the concept of `unmanaged` is not the same as the concept of `blittable`. Additionally, due to the ref assembly issue above, we cannot rely on ref assemblies to have accurate information in terms of fields of a type. To solve these issues in combination with the desire to enable manual interop, we need to provide a way for users to signal that a given type should be blittable and that the source generator should not generate marshalling code. We'll introduce a new attribute, the `BlittableTypeAttribute`:
 
-#### Usage 2, Manual interop
-
-The user may want to manually mark their types as marshalable in this system due to specific restrictions in their code base around marshaling specific types that the source generator does not account for. We could also use this internally to support custom types in source instead of in the code generator. In this scenario, the user would apply either the `BlittableTypeAttribute` or the `NativeMarshallingAttribute` attribute to their struct type. An analyzer would validate that the struct is blittable if the `BlittableTypeAttribute` is applied or validate that the native struct type is blittable and has marshalling methods of the required shape when the `NativeMarshallingAttribute` is applied.
-
-The P/Invoke source generator (as well as the struct source generator when nested struct types are used) would use the `BlittableTypeAttribute` and `NativeMarshallingAttribute` to determine how to marshal a value type parameter or field instead of looking at the fields of the struct directly.
-
-If a structure type does not have either the `BlittableTypeAttribute` or the `NativeMarshallingAttribute` applied at the type definition, the user can supply a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a native type matching the same requirements as `NativeMarshallingAttribute`'s native type.
-
-All generated stubs will be marked with [`SkipLocalsInitAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) on supported frameworks. This does require attention when performing custom marshalling as the state of stub allocated memory will be in an undefined state.
-
-### Why do we need `BlittableTypeAttribute`?
-
-Based on the design above, it seems that we wouldn't need `BlittableTypeAttribute`. However, due to the ref assembly issue above in combination with the desire to enable manual interop, we need to provide a way for users to signal that a given type should be blittable and that the source generator should not generate marshalling code.
+```csharp
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
+public class BlittableTypeAttribute : Attribute {}
+```
 
 I'll give a specific example for where we need the `BlittableTypeAttribute` below. Let's take a scenario where we don't have `BlittableTypeAttribute`.
 
@@ -210,7 +198,7 @@ When the source generator (either Struct, P/Invoke, Reverse P/Invoke, etc.) enco
 
 If someone actively disables the analyzer or writes their types in IL, then they have stepped out of the supported scenarios and marshalling code generated for their types may be inaccurate.
 
-#### Exception: Generics
+##### Exception: Generics
 
 Because the Roslyn compiler needs to be able to validate that there are not recursive struct definitions, reference assemblies have to contain a field of a type parameter type in the reference assembly if they do in the runtime assembly. As a result, we can inspect private generic fields reliably.
 
@@ -220,6 +208,32 @@ To enable blittable generics support in this struct marshalling model, we extend
 - When the source generator discovers a generic type marked with `[BlittableType]` it will look through the fields on the type and validate that they are blittable.
 
 Since all fields typed with non-parameterized types are validated to be blittable at type definition time, we know that they are all blittable at type usage time. So, we only need to validate that the generic fields are instantiated with blittable types.
+
+#### Design 2: `DisableRuntimeMarshallingAttribute`
+
+As an alternative design, we can solve the `unmanaged` vs `blittable` dichotomy and the ref assembly problem by changing the definition of `blittable` to be the same as `unmanaged`. The `DisableRuntimeMarshallingAttribute` attribute helps us solve this problem. When applied to an assembly, this attribute causes the definition of `blittable` to change to "`unmanaged` types with no auto-layout fields" for all P/Invokes in the assembly, among other features. This definition will work for 99% of our scenarios.
+
+For the auto-layout clause, we have one small issue; today, our ref-assemblies do not expose if a value type is marked as `[StructLayout(LayoutKind.Auto)]`, so we'd still have some cases where we might have runtime failures. However, we can update the tooling used in dotnet/runtime, GenAPI, to expose this information if we so desire. Once that case is handled, we have a mechanism that we can safely use to determine, at compile time, which types are `blittable`. If we decide to not cover this case (as cases where users mark types as `LayoutKind.Auto` manually are exceptionally rare), we still have a solid design as Roslyn will automatically determine for us if a type is `unmanaged`, so we don't need to do any additional work.
+
+As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it is `blittable` without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the DllImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when custom user-defined types used. As we believe that users should be able to move over their assemblies to the new source-generated interop world as a whole assembly, we do not believe that this will cause any serious issues in adoption. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator.
+
+### Usage
+
+There are 2 usage mechanisms of these attributes.
+
+#### Usage 1, Source-generated interop
+
+The user can apply the `GeneratedMarshallingAttribute` to their structure `S`. The source generator will determine if the type is blittable. If it is blittable, the source generator will generate a partial definition and apply the `BlittableTypeAttribute` to the struct type `S`. Otherwise, it will generate a blittable representation of the struct with the aformentioned required shape and apply the `NativeMarshallingAttribute` and point it to the blittable representation. The blittable representation can either be generated as a separate top-level type or as a nested type on `S`.
+
+#### Usage 2, Manual interop
+
+The user may want to manually mark their types as marshalable with custom marshalling rules in this system due to specific restrictions in their code base around marshaling specific types that the source generator does not account for. We could also use this internally to support custom types in source instead of in the code generator. In this scenario, the user would apply either the `NativeMarshallingAttribute` attribute to their struct type. An analyzer would validate that the native struct type is blittable and has marshalling methods of the required shape when the `NativeMarshallingAttribute` is applied.
+
+The P/Invoke source generator (as well as the struct source generator when nested struct types are used) would use the `NativeMarshallingAttribute` to determine how to marshal a non-blittable value type parameter or field.
+
+If a structure type is not blittable or the `NativeMarshallingAttribute` applied at the type definition, the user can supply a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a native type matching the same requirements as `NativeMarshallingAttribute`'s native type.
+
+All generated stubs will be marked with [`SkipLocalsInitAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) on supported frameworks. This does require attention when performing custom marshalling as the state of stub allocated memory will be in an undefined state.
 
 ### Special case: Transparent Structures
 
