@@ -684,9 +684,9 @@ namespace System.Diagnostics
                 return;
             }
 
-            if (!IsFinished)
+            if (!IsStopped)
             {
-                IsFinished = true;
+                IsStopped = true;
 
                 if (Duration == TimeSpan.Zero)
                 {
@@ -783,11 +783,6 @@ namespace System.Diagnostics
         /// properties such as Links, Tags, and Events.
         /// </summary>
         public bool IsAllDataRequested { get; set;}
-
-        /// <summary>
-        /// Indicate if the this Activity object is stopped
-        /// </summary>
-        public bool IsStopped { get => IsFinished; }
 
         /// <summary>
         /// Return the flags (defined by the W3C ID specification) associated with the activity.
@@ -956,7 +951,7 @@ namespace System.Diagnostics
         /// </summary>
         public void Dispose()
         {
-            if (!IsFinished)
+            if (!IsStopped)
             {
                 Stop();
             }
@@ -1237,7 +1232,7 @@ namespace System.Diagnostics
 
         private static bool ValidateSetCurrent(Activity? activity)
         {
-            bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
+            bool canSet = activity == null || (activity.Id != null && !activity.IsStopped);
             if (!canSet)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotRunning));
@@ -1303,18 +1298,21 @@ namespace System.Diagnostics
             get => (_w3CIdFlags & ActivityTraceFlagsIsSet) != 0;
         }
 
-        private bool IsFinished
+        /// <summary>
+        /// Indicate if the this Activity object is stopped
+        /// </summary>
+        public bool IsStopped
         {
-            get => (_state & State.IsFinished) != 0;
-            set
+            get => (_state & State.IsStopped) != 0;
+            private set
             {
                 if (value)
                 {
-                    _state |= State.IsFinished;
+                    _state |= State.IsStopped;
                 }
                 else
                 {
-                    _state &= ~State.IsFinished;
+                    _state &= ~State.IsStopped;
                 }
             }
         }
@@ -1628,7 +1626,7 @@ namespace System.Diagnostics
             FormatW3C = 0b_0_00000_10,
             FormatFlags = 0b_0_00000_11,
 
-            IsFinished = 0b_1_00000_00,
+            IsStopped = 0b_1_00000_00,
         }
     }
 
