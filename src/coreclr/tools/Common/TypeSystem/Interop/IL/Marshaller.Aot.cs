@@ -1186,9 +1186,8 @@ namespace Internal.TypeSystem.Interop
             var getInstanceMethod = marshallerType.GetMethod(
                 "GetInstance",
                 new MethodSignature(MethodSignatureFlags.Static, 0, customMarshallerType, new[] { Context.GetWellKnownType(WellKnownType.String) }));
-            if (getInstanceMethod == null)
+            if (ManagedType.IsValueType || ManagedType.IsPointer)
             {
-                // ApplicationException throw here.
                 ThrowHelper.ThrowMarshalDirectiveException();
             }
 

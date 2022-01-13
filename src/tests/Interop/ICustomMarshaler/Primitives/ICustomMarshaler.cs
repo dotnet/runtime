@@ -380,7 +380,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException()
         {
-            // typeof(System.Exception): Method '[ICustomMarshaler_TargetWindows]System.Runtime.InteropServices.Tests.ICustomMarshalerTests.MarshalerOnValueTypeMethod(int32)' requires marshalling that is not yet supported by this compiler.
             Assert.Throws<MarshalDirectiveException>(() => MarshalerOnValueTypeMethod(0));
         }
 
@@ -389,7 +388,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static unsafe void Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException()
         {
-            // typeof(System.Exception): Method '[ICustomMarshaler_TargetWindows]System.Runtime.InteropServices.Tests.ICustomMarshalerTests.MarshalerOnPointerMethod(int32*)' requires marshalling that is not yet supported by this compiler.
             Assert.Throws<MarshalDirectiveException>(() => MarshalerOnPointerMethod(null));
         }
 
@@ -424,7 +422,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException()
         {
-            // typeof(System.Runtime.InteropServices.MarshalDirectiveException): Marshaling directives are invalid.
             Assert.Throws<ApplicationException>(() => NoGetInstanceMethod(""));
         }
 
@@ -444,7 +441,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_GetInstanceMethodInstanceMethod_ThrowsApplicationException()
         {
-            // typeof(System.Runtime.InteropServices.MarshalDirectiveException): Marshaling directives are invalid
             Assert.Throws<ApplicationException>(() => InstanceGetInstanceMethod(""));
         }
 
@@ -465,7 +461,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_GetInstanceMethodNoParameters_ThrowsApplicationException()
         {
-            // typeof(System.Runtime.InteropServices.MarshalDirectiveException): Marshaling directives are invalid.
             Assert.Throws<ApplicationException>(() => NoParametersGetInstanceMethod(""));
         }
 
@@ -487,7 +482,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_GetInstanceMethodNonStringParameter_ThrowsApplicationException()
         {
-            // typeof(System.Runtime.InteropServices.MarshalDirectiveException): Marshaling directives are invalid.
             Assert.Throws<ApplicationException>(() => NonStringGetInstanceMethod(""));
         }
 
@@ -509,7 +503,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_GetInstanceMethodReturnsVoid_ThrowsApplicationException()
         {
-            // typeof(System.Runtime.InteropServices.MarshalDirectiveException): Marshaling directives are invalid.
             Assert.Throws<ApplicationException>(() => VoidGetInstanceMethod(""));
         }
 
@@ -685,6 +678,7 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException()
         {
+            // throw MarshalDirectiveException, but it is unhandled (?)
             Assert.Throws<MarshalDirectiveException>(() => CustomMarshallerWithDelegateRef(84664, (ref int x) => x.ToString()));
         }
         public static int Main(String[] args)
