@@ -158,7 +158,7 @@ async function main(processedArguments) {
         const { MONO, INTERNAL, BINDING, Module } = await createDotnetRuntime(({ MONO, INTERNAL, BINDING, Module }) => ({
             disableDotnet6Compatibility: true,
             configSrc: "./mono-config.json",
-            onConfigLoaded: () => {
+            onConfigLoaded: (config) => {
                 if (!Module.config) {
                     const err = new Error("Could not find ./mono-config.json. Cancelling run");
                     set_exit_code(1,);
