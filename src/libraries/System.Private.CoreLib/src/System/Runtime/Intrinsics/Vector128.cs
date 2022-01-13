@@ -904,14 +904,11 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<nint> SoftwareFallback(nint value)
             {
-                if (Environment.Is64BitProcess)
-                {
-                    return Create((long)value).AsNInt();
-                }
-                else
-                {
-                    return Create((int)value).AsNInt();
-                }
+#if TARGET_64BIT
+                return Create((long)value).AsNInt();
+#else
+                return Create((int)value).AsNInt();
+#endif
             }
         }
 
@@ -931,14 +928,11 @@ namespace System.Runtime.Intrinsics
 
             static Vector128<nuint> SoftwareFallback(nuint value)
             {
-                if (Environment.Is64BitProcess)
-                {
-                    return Create((ulong)value).AsNUInt();
-                }
-                else
-                {
-                    return Create((uint)value).AsNUInt();
-                }
+#if TARGET_64BIT
+                return Create((ulong)value).AsNUInt();
+#else
+                return Create((uint)value).AsNUInt();
+#endif
             }
         }
 
@@ -1924,14 +1918,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<nint> CreateScalar(nint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return CreateScalar((long)value).AsNInt();
-            }
-            else
-            {
-                return CreateScalar((int)value).AsNInt();
-            }
+#if TARGET_64BIT
+            return CreateScalar((long)value).AsNInt();
+#else
+            return CreateScalar((int)value).AsNInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1941,14 +1932,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<nuint> CreateScalar(nuint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return CreateScalar((ulong)value).AsNUInt();
-            }
-            else
-            {
-                return CreateScalar((uint)value).AsNUInt();
-            }
+#if TARGET_64BIT
+            return CreateScalar((ulong)value).AsNUInt();
+#else
+            return CreateScalar((uint)value).AsNUInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -2165,14 +2153,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector128<nint> CreateScalarUnsafe(nint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return CreateScalarUnsafe((long)value).AsNInt();
-            }
-            else
-            {
-                return CreateScalarUnsafe((int)value).AsNInt();
-            }
+#if TARGET_64BIT
+            return CreateScalarUnsafe((long)value).AsNInt();
+#else
+            return CreateScalarUnsafe((int)value).AsNInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector128{UIntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
@@ -2182,14 +2167,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector128<nuint> CreateScalarUnsafe(nuint value)
         {
-            if (Environment.Is64BitProcess)
-            {
-                return CreateScalarUnsafe((ulong)value).AsNUInt();
-            }
-            else
-            {
-                return CreateScalarUnsafe((uint)value).AsNUInt();
-            }
+#if TARGET_64BIT
+            return CreateScalarUnsafe((ulong)value).AsNUInt();
+#else
+            return CreateScalarUnsafe((uint)value).AsNUInt();
+#endif
         }
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
