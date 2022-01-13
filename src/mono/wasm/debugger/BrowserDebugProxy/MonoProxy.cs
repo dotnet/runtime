@@ -1213,7 +1213,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (context.LoadedFiles != null)
                     return context.LoadedFiles;
 
-                Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(RuntimeId), token);
+                Result loaded = await SendMonoCommand(sessionId, MonoCommands.GetLoadedFiles(), token);
                 if (!loaded.IsOk)
                 {
                     Console.WriteLine($"Error on mono_wasm_get_loaded_files {loaded}");
