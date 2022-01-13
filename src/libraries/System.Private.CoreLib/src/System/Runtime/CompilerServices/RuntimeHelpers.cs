@@ -123,7 +123,7 @@ namespace System.Runtime.CompilerServices
         // Feel free to add more overloads on demand
 
         [Intrinsic]
-        internal static bool IsKnownConstant(string t) => false;
+        internal static bool IsKnownConstant(string? t) => false;
 
         [Intrinsic]
         internal static bool IsKnownConstant(char t) => false;
