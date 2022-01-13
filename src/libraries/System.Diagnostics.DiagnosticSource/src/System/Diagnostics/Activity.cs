@@ -1299,7 +1299,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Indicate if the this Activity object is stopped
+        /// Indicates whether this Activity object is stopped
         /// </summary>
         public bool IsStopped
         {
