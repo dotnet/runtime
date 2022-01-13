@@ -25,14 +25,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			if (Local != null)
 				return Local.ToString ();
-			return $"capture {CaptureId.GetHashCode ().ToString ().Substring (0, 3)}";
+			return $"capture {CaptureId.GetHashCode ()}";
 		}
 	}
 
-	// Wrapper class exists purely to substitute a concrete LocalKey for TKey of DefaultValueDictionary
-	// This is a class because it is passed to the transfer functions and expected to be modified in a
-	// way that is visible to the caller.
-	public class LocalState<TValue> : IEquatable<LocalState<TValue>>
+	// Wrapper struct exists purely to substitute a concrete LocalKey for TKey of DefaultValueDictionary
+	public struct LocalState<TValue> : IEquatable<LocalState<TValue>>
 		where TValue : IEquatable<TValue>
 	{
 		public DefaultValueDictionary<LocalKey, TValue> Dictionary;
@@ -50,7 +48,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 	// Wrapper struct exists purely to substitute a concrete LocalKey for TKey of DictionaryLattice
 	public readonly struct LocalStateLattice<TValue, TValueLattice> : ILattice<LocalState<TValue>>
-		where TValue : IEquatable<TValue>
+		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{
 		public readonly DictionaryLattice<LocalKey, TValue, TValueLattice> Lattice;
