@@ -13,8 +13,8 @@ namespace Microsoft.Extensions.Configuration.Json
     {
         private JsonConfigurationFileParser() { }
 
-        private readonly Dictionary<string, string?> _data = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Stack<string> _paths = new();
+        private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        private readonly Stack<string> _paths = new Stack<string>();
 
         public static IDictionary<string, string?> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
