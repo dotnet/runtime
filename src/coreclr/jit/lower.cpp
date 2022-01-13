@@ -2708,10 +2708,15 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
 #ifdef TARGET_XARCH
-            op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
-#else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB))
+                op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
+#ifdef FEATURE_HW_INTRINSICS
+            || emitter::DoesWriteZeroFlag(
+                   HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic()->GetHWIntrinsicId(), op1->TypeGet()))
 #endif
+#else // TARGET_ARM64
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB)
+#endif
+                )
         {
             op1->gtFlags |= GTF_SET_FLAGS;
             op1->SetUnusedValue();

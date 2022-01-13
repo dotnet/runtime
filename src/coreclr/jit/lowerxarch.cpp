@@ -3748,35 +3748,28 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
             LIR::Use use;
             if (BlockRange().TryGetUse(andNode, &use))
             {
-                // If we allow the use of BSLR where the parent is NE or EQ it will generate "blsr, test"
-                // if we prevent the use of BSLR here then "OptimizeConstCompare" may generate TEST_NE or
-                //   TEST_EQ leading to a cheaper "lea, test"
-                GenTree* user = use.User();
-                if (!(user->OperIs(GT_EQ, GT_NE) && user->gtGetOp2()->IsIntegralConst()))
-                {
-                    GenTreeHWIntrinsic* blsrNode =
-                        comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1,
-                                                         andNode->TypeIs(TYP_INT)
-                                                             ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
-                                                             : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
+                GenTreeHWIntrinsic* blsrNode =
+                    comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1,
+                                                     andNode->TypeIs(TYP_INT)
+                                                         ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
+                                                         : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
 
-                    JITDUMP("Lower: optimize AND(X, ADD(X, -1))\n");
-                    DISPNODE(andNode);
-                    JITDUMP("to:\n");
-                    DISPNODE(blsrNode);
+                JITDUMP("Lower: optimize AND(X, ADD(X, -1))\n");
+                DISPNODE(andNode);
+                JITDUMP("to:\n");
+                DISPNODE(blsrNode);
 
-                    use.ReplaceWith(blsrNode);
+                use.ReplaceWith(blsrNode);
 
-                    BlockRange().InsertBefore(andNode, blsrNode);
-                    BlockRange().Remove(andNode);
-                    BlockRange().Remove(op2);
-                    BlockRange().Remove(addOp1);
-                    BlockRange().Remove(addOp2);
+                BlockRange().InsertBefore(andNode, blsrNode);
+                BlockRange().Remove(andNode);
+                BlockRange().Remove(op2);
+                BlockRange().Remove(addOp1);
+                BlockRange().Remove(addOp2);
 
-                    ContainCheckHWIntrinsic(blsrNode);
+                ContainCheckHWIntrinsic(blsrNode);
 
-                    return blsrNode;
-                }
+                return blsrNode;
             }
         }
     }
