@@ -79,11 +79,12 @@ namespace ILCompiler
             if ((type.IsWellKnownType(WellKnownType.MulticastDelegate)
                     || type == context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType))
             {
-                var reflectionContext = new ReflectionPatternContext(_logger, ShouldEnableReflectionPatternReporting(method), method, memberWithRequirements);
-                reflectionContext.AnalyzingPattern();
-                reflectionContext.RecordUnrecognizedPattern(
+                var message = new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method));
+                _logger.LogWarning(
+                    message,
                     (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed,
-                    new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method)));
+                    method,
+                    MessageSubCategory.AotAnalysis);
             }
 
             // struct may contain delegate fields, hence we need to add dependencies for it
