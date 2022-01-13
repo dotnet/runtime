@@ -11523,9 +11523,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_RUNTIMELOOKUP:
             return fgMorphTree(op1);
 
-#ifdef TARGET_ARM
         case GT_INTRINSIC:
-            if (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round)
+        {
+            NamedIntrinsic ni = tree->AsIntrinsic()->gtIntrinsicName;
+#ifdef TARGET_ARM
+            if (ni == NI_System_Math_Round)
             {
                 switch (tree->TypeGet())
                 {
@@ -11537,8 +11539,44 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         unreached();
                 }
             }
-            break;
 #endif
+            if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
+            {
+                // Should be expanded by the time it reaches CSE phase
+                assert(!optValnumCSE_phase);
+
+                JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to ");
+                if (op1->OperIsConst())
+                {
+                    // We're lucky to catch a constant here while importer was not
+                    JITDUMP("true\n");
+                    DEBUG_DESTROY_NODE(tree, op1);
+                    tree = gtNewIconNode(1);
+                }
+                else
+                {
+                    GenTree* op1SideEffects = nullptr;
+                    gtExtractSideEffList(op1, &op1SideEffects);
+                    if (op1SideEffects != nullptr)
+                    {
+                        DEBUG_DESTROY_NODE(tree);
+                        // Keep side-effects of op1
+                        tree = gtNewOperNode(GT_COMMA, TYP_INT, op1SideEffects, gtNewIconNode(0));
+                        JITDUMP("false with side effects:\n")
+                        DISPTREE(tree);
+                    }
+                    else
+                    {
+                        JITDUMP("true\n");
+                        DEBUG_DESTROY_NODE(tree, op1);
+                        tree = gtNewIconNode(0);
+                    }
+                }
+                INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                return tree;
+            }
+        }
+        break;
 
         case GT_PUTARG_TYPE:
             return fgMorphTree(tree->AsUnOp()->gtGetOp1());

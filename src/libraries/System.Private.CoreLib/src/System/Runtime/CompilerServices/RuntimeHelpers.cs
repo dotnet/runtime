@@ -118,10 +118,14 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
 
-        /// <summary>
-        /// Returns true if input is a compile-time constant
-        /// </summary>
+
+        // The following intrinsics return true if input is a compile-time constant
+        // Feel free to add more overloads on demand
+
         [Intrinsic]
-        internal static bool IsKnownConstant<T>(T t) => false;
+        internal static bool IsKnownConstant(string t) => false;
+
+        [Intrinsic]
+        internal static bool IsKnownConstant(char t) => false;
     }
 }

@@ -4015,18 +4015,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
-                GenTree* op1 = impPopStack().val;
-                if (op1->OperIsConst() || gtFoldExpr(op1)->OperIsConst())
+                if (opts.OptimizationEnabled())
                 {
-                    // op1 is a known constant, replace with 'true'.
-                    retNode = gtNewIconNode(1);
-                    // We can also consider FTN_ADDR and typeof(T) here
-                }
-                else
-                {
-                    // op1 is not a known constant, replace with 'false'.
-                    // TODO: delay till e.g. morph and try again, maybe op1 will become a const.
-                    retNode = gtNewIconNode(0);
+                    GenTree* op1 = impPopStack().val;
+                    if (op1->OperIsConst() || gtFoldExpr(op1)->OperIsConst())
+                    {
+                        // op1 is a known constant, replace with 'true'.
+                        impPopStack();
+                        retNode = gtNewIconNode(1);
+                        JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
+                        // We can also consider FTN_ADDR and typeof(T) here
+                    }
+                    else
+                    {
+                        // op1 is not a known constant, we'll do the expansion in morph
+                        retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, ni, method);
+                        JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
+                        DISPTREE(retNode);
+                    }
                 }
                 break;
             }
