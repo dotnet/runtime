@@ -1145,6 +1145,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
+                            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                                pushedStack.PushConstant();
+                                foldableIntrinsc = true;
+                                // we can add an additional boost if arg is really a const
+                                break;
+
                             // These are foldable if the first argument is a constant
                             case NI_System_Type_get_IsValueType:
                             case NI_System_Type_GetTypeFromHandle:

@@ -117,5 +117,11 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, char, short, ushort, int, long, ulong, float, or double.</remarks>
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
+
+        /// <summary>
+        /// Returns true if input is a compile-time constant
+        /// </summary>
+        [Intrinsic]
+        internal static bool IsKnownConstant<T>(T t) => false;
     }
 }

@@ -681,8 +681,22 @@ namespace System
         }
 
         // Determines whether two Strings match.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Equals(string? a, string? b)
         {
+            // Replace SequenceEqual(strA, strB) with
+            // strB.Length == 0 if strB is a compile-time constant representing empty string
+            // Otherwise, the whole branch is eliminated
+            if (RuntimeHelpers.IsKnownConstant(a) && a?.Length == 0)
+            {
+                return b?.Length == 0;
+            }
+
+            if (RuntimeHelpers.IsKnownConstant(b) && b?.Length == 0)
+            {
+                return a?.Length == 0;
+            }
+
             if (object.ReferenceEquals(a, b))
             {
                 return true;

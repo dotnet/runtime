@@ -3879,19 +3879,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) ||
-         (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray)) &&
-        IsTargetAbi(CORINFO_CORERT_ABI))
+    switch (ni)
     {
         // CreateSpan must be expanded for NativeAOT
-        mustExpand = true;
-    }
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            mustExpand = IsTargetAbi(CORINFO_CORERT_ABI);
+            break;
 
-    if ((ni == NI_System_ByReference_ctor) || (ni == NI_System_ByReference_get_Value) ||
-        (ni == NI_System_Activator_AllocatorOf) || (ni == NI_System_Activator_DefaultConstructorOf) ||
-        (ni == NI_System_Object_MethodTableOf) || (ni == NI_System_EETypePtr_EETypePtrOf))
-    {
-        mustExpand = true;
+        case NI_System_ByReference_ctor:
+        case NI_System_ByReference_get_Value:
+        case NI_System_Activator_AllocatorOf:
+        case NI_System_Activator_DefaultConstructorOf:
+        case NI_System_Object_MethodTableOf:
+        case NI_System_EETypePtr_EETypePtrOf:
+            mustExpand = true;
+            break;
+
+        default:
+            break;
     }
 
     GenTree* retNode = nullptr;
@@ -4004,6 +4010,24 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
             {
                 retNode = impInitializeArrayIntrinsic(sig);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+            {
+                GenTree* op1 = impPopStack().val;
+                if (op1->OperIsConst()) // || gtFoldExpr(op1)->OperIsConst())
+                {
+                    // op1 is a known constant, replace with 'true'.
+                    retNode = gtNewIconNode(1);
+                    // We can also consider FTN_ADDR and typeof(T) here
+                }
+                else
+                {
+                    // op1 is not a known constant, replace with 'false'.
+                    // TODO: delay till e.g. morph and try again, maybe op1 will become a const.
+                    retNode = gtNewIconNode(0);
+                }
                 break;
             }
 
@@ -5351,6 +5375,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         else if (strcmp(methodName, "InitializeArray") == 0)
         {
             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+        }
+        else if (strcmp(methodName, "IsKnownConstant") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
         }
     }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
