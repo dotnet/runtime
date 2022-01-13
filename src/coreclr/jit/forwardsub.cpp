@@ -87,13 +87,13 @@ public:
 
     ForwardSubVisitor(Compiler* compiler, unsigned lclNum)
         : GenTreeVisitor<ForwardSubVisitor>(compiler)
-        , m_lclNum(lclNum)
         , m_use(nullptr)
         , m_node(nullptr)
+        , m_parentNode(nullptr)
+        , m_lclNum(lclNum)
         , m_count(0)
         , m_useFlags(0)
         , m_accumulatedFlags(0)
-        , m_isCallArg(false)
     {
     }
 
@@ -129,10 +129,10 @@ public:
 
                 if (!isDef && !isAddr && !isCallTarget)
                 {
-                    m_node      = node;
-                    m_use       = use;
-                    m_useFlags  = m_accumulatedFlags;
-                    m_isCallArg = parent->IsCall();
+                    m_node       = node;
+                    m_use        = use;
+                    m_useFlags   = m_accumulatedFlags;
+                    m_parentNode = parent;
                 }
             }
         }
@@ -157,6 +157,11 @@ public:
         return m_use;
     }
 
+    GenTree* GetParentNode()
+    {
+        return m_parentNode;
+    }
+
     unsigned GetFlags()
     {
         return m_useFlags;
@@ -164,17 +169,17 @@ public:
 
     bool IsCallArg()
     {
-        return m_isCallArg;
+        return m_parentNode->IsCall();
     }
 
 private:
-    unsigned  m_lclNum;
     GenTree** m_use;
     GenTree*  m_node;
+    GenTree*  m_parentNode;
+    unsigned  m_lclNum;
     int       m_count;
     unsigned  m_useFlags;
     unsigned  m_accumulatedFlags;
-    bool      m_isCallArg;
 };
 
 //------------------------------------------------------------------------
@@ -283,10 +288,11 @@ bool Compiler::fgForwardSub(Statement* stmt)
 
     // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
     // Can't substitute GT_CATCH_ARG.
+    // Can't substitute GT_LCLHEAP.
     //
-    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG))
+    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
     {
-        JITDUMP(" node to sub is qmark or catch arg\n");
+        JITDUMP(" node to sub is qmark, catch arg, or lcl heap\n");
         return false;
     }
 
@@ -357,6 +363,66 @@ bool Compiler::fgForwardSub(Statement* stmt)
         }
     }
 
+    // There are implicit assumptions downstream on where/how multi-reg ops
+    // can appear.
+    //
+    // Eg if this is a multi-reg call, parent node must be GT_ASG and the
+    // local must be specially marked.
+    //
+    // Defer forwarding these for now.
+    //
+    if (fwdSubNode->IsMultiRegCall())
+    {
+        GenTree* const parentNode = fsv.GetParentNode();
+
+        if (!parentNode->OperIs(GT_ASG))
+        {
+            JITDUMP(" multi-reg call, parent not asg\n");
+            return false;
+        }
+
+        GenTree* const parentNodeLHS = parentNode->gtGetOp1();
+
+        if (!parentNodeLHS->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP(" multi-reg call, parent not asg(lcl, ...)\n");
+            return false;
+        }
+
+        GenTreeLclVar* const parentNodeLHSLocal = parentNodeLHS->AsLclVar();
+
+        unsigned const   lhsLclNum = parentNodeLHSLocal->GetLclNum();
+        LclVarDsc* const lhsVarDsc = lvaGetDesc(lhsLclNum);
+
+        JITDUMP(" [marking V%02u as multi-reg-ret]", lhsLclNum);
+        lhsVarDsc->lvIsMultiRegRet = true;
+        parentNodeLHSLocal->SetMultiReg();
+    }
+
+    // If a method returns a multi-reg type, only forward sub locals,
+    // and ensure the local and operand have the required markup.
+    //
+    // (see eg impFixupStructReturnType)
+    //
+    if (compMethodReturnsMultiRegRetType() && fsv.GetParentNode()->OperIs(GT_RETURN))
+    {
+        if (!fwdSubNode->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP(" parent is return, fwd sub node is not lcl var\n");
+            return false;
+        }
+
+        GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
+
+        unsigned const   fwdLclNum = fwdSubNodeLocal->GetLclNum();
+        LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);
+
+        JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
+        fwdVarDsc->lvIsMultiRegRet = true;
+        fwdSubNodeLocal->SetMultiReg();
+        fwdSubNode->gtFlags |= GTF_DONT_CSE;
+    }
+
     // Optimization:
     //
     // If we are about to substitute GT_OBJ, see if we can simplify it first.
@@ -370,7 +436,7 @@ bool Compiler::fgForwardSub(Statement* stmt)
         GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
         if (optTree != nullptr)
         {
-            JITDUMP(" -- folding OBJ(ADDR(LCL...)) -- ");
+            JITDUMP(" [folding OBJ(ADDR(LCL...))]");
             fwdSubNode = optTree;
         }
     }
