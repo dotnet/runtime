@@ -1029,7 +1029,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWith(char value)
         {
-            if (RuntimeHelpers.IsKnownConstant(value))
+            if (RuntimeHelpers.IsKnownConstant(value) && value != '\0')
             {
                 return _firstChar == value;
             }
