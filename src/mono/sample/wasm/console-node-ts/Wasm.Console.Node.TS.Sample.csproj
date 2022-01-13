@@ -2,9 +2,6 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>package.json</WasmMainJSPath>
-    <!--
-    <WasmEnableES6>true</WasmEnableES6>
-    -->
   </PropertyGroup>
 
   <Target Name="TypeScript" AfterTargets="WasmBuildApp" DependsOnTargets="Build">
