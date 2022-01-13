@@ -396,24 +396,27 @@ namespace Tracing.Tests.PauseOnStartValidation
 
                     // The timing is not exact. There is a small window after resuming where the mock
                     // value is still present. Retry several times to catch it.
-                    for (int i = 0; i < 1024; i++)
+                    var retryTask = Task.Run(async () =>
                     {
-                        Logger.logger.Log($"Get ProcessInfo after resumption: attempt {i}");
-                        // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
-                        message = new IpcMessage(0x04, 0x04);
-                        Logger.logger.Log($"Sent: {message.ToString()}");
-                        response = IpcClient.SendMessage(stream, message);
-                        Logger.logger.Log($"received: {response.ToString()}");
+                        int i = 0;
+                        do {
+                            Logger.logger.Log($"Get ProcessInfo after resumption: attempt {i++}");
+                            // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+                            message = new IpcMessage(0x04, 0x04);
+                            Logger.logger.Log($"Sent: {message.ToString()}");
+                            response = IpcClient.SendMessage(stream, message);
+                            Logger.logger.Log($"received: {response.ToString()}");
 
-                        pi2After = ProcessInfo2.TryParse(response.Payload);
-                        if (!pi2After.Commandline.Equals(pi2Before.Commandline))
-                            break;
+                            pi2After = ProcessInfo2.TryParse(response.Payload);
 
-                        // recycle
-                        stream = await server.AcceptAsync();
-                        advertise = IpcAdvertise.Parse(stream);
-                        Logger.logger.Log(advertise.ToString());
-                    }
+                            // recycle
+                            stream = await server.AcceptAsync();
+                            advertise = IpcAdvertise.Parse(stream);
+                            Logger.logger.Log(advertise.ToString());
+                        } while (pi2After.Commandline.Equals(pi2Before.Commandline));
+                    });
+
+                    await Utils.WaitTillTimeout(retryTask, TimeSpan.FromSeconds(10));
 
                     Utils.Assert(pi2Before.Commandline.Equals(currentProcess.MainModule.FileName), $"Before resuming, the commandline should be the mock value of the host executable path '{currentProcess.MainModule.FileName}'. Observed: '{pi2Before.Commandline}'");
                     Utils.Assert(!pi2After.Commandline.Equals(pi2Before.Commandline), $"After resuming, the commandline should be the correct value. Observed: Before='{pi2Before.Commandline}' After='{pi2After.Commandline}'");
