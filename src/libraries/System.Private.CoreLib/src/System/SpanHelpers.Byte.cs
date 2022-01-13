@@ -36,7 +36,7 @@ namespace System
             nuint valueTailNLength = (nuint)(uint)valueTailLength;
 
             // Avx2 implies Sse2
-            if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
+            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
@@ -82,11 +82,9 @@ namespace System
 
                 do
                 {
-                    uint mask = (uint)
-                        Avx2.MoveMask(
-                            Avx2.And(
-                                Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
-                                Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
+                    Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
 
                     while (mask != 0)
                     {
@@ -129,11 +127,9 @@ namespace System
 
                 do
                 {
-                    uint mask = (uint)
-                        Sse2.MoveMask(
-                            Sse2.And(
-                                Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
-                                Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
+                    Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
 
                     while (mask != 0)
                     {
@@ -545,7 +541,7 @@ namespace System
             nuint valueTailNLength = (nuint)(uint)valueTailLength;
 
             // Avx2 implies Sse2
-            if (Sse2.IsSupported && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
+            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
@@ -589,11 +585,9 @@ namespace System
 
                 do
                 {
-                    uint mask = (uint)
-                        Avx2.MoveMask(
-                            Avx2.And(
-                                Avx2.CompareEqual(ch1, LoadVector256(ref searchSpace, (nuint)offset)),
-                                Avx2.CompareEqual(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
+                    Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
 
                     while (mask != 0)
                     {
@@ -637,11 +631,9 @@ namespace System
 
                 do
                 {
-                    uint mask = (uint)
-                        Sse2.MoveMask(
-                            Sse2.And(
-                                Sse2.CompareEqual(ch1, LoadVector128(ref searchSpace, (nuint)offset)),
-                                Sse2.CompareEqual(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)))));
+                    Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
 
                     while (mask != 0)
                     {
