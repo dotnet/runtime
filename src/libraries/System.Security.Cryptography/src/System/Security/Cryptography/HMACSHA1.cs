@@ -19,8 +19,15 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     public class HMACSHA1 : HMAC
     {
-        private const int HmacSizeBits = 160;
-        private const int HmacSizeBytes = HmacSizeBits / 8;
+        /// <summary>
+        /// The hash size produced by the HMAC SHA1 algorithm, in bits.
+        /// </summary>
+        public const int HashSizeInBits = 160;
+
+        /// <summary>
+        /// The hash size produced by the HMAC SHA1 algorithm, in bytes.
+        /// </summary>
+        public const int HashSizeInBytes = HashSizeInBits / 8;
 
         public HMACSHA1()
             : this(RandomNumberGenerator.GetBytes(BlockSize))
@@ -41,7 +48,7 @@ namespace System.Security.Cryptography
             // we just want to be explicit in all HMAC extended classes
             BlockSizeValue = BlockSize;
             HashSizeValue = _hMacCommon.HashSizeInBits;
-            Debug.Assert(HashSizeValue == HmacSizeBits);
+            Debug.Assert(HashSizeValue == HashSizeInBits);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -110,7 +117,7 @@ namespace System.Security.Cryptography
         /// <returns>The HMAC of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
         {
-            byte[] buffer = new byte[HmacSizeBytes];
+            byte[] buffer = new byte[HashSizeInBytes];
 
             int written = HashData(key, source, buffer.AsSpan());
             Debug.Assert(written == buffer.Length);
@@ -154,14 +161,14 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HmacSizeBytes)
+            if (destination.Length < HashSizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
             }
 
             bytesWritten = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA1, key, source, destination);
-            Debug.Assert(bytesWritten == HmacSizeBytes);
+            Debug.Assert(bytesWritten == HashSizeInBytes);
 
             return true;
         }
