@@ -3254,7 +3254,7 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 {
 	MonoThreadInfo *thread = mono_thread_info_current_unchecked ();
 
-#if defined(MONO_CROSS_COMPILE) || 1
+#if defined(MONO_CROSS_COMPILE) || defined(HOST_WASI)
 	ctx->valid = FALSE; //A cross compiler doesn't need to suspend.
 #elif MONO_ARCH_HAS_MONO_CONTEXT
 	MONO_CONTEXT_GET_CURRENT (ctx->ctx);

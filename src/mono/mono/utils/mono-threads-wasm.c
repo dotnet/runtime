@@ -37,18 +37,17 @@ wasm_get_stack_size (void)
 static int
 wasm_get_stack_base (void)
 {
-	//g_assert_not_reached ();
+	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
+	// Currently these hardcoded values are sufficient for a working prototype.
 	return 1;
 }
 
 static int
 wasm_get_stack_size (void)
 {
-	//g_assert_not_reached ();
-
-	// TODO: Figure out what impact this has and how to pick or determine a sensible value.
-	// Currently it seems to make no difference even if picking the value 1.
-	return 16384;
+	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
+	// Currently these hardcoded values are sufficient for a working prototype.
+	return 1;
 }
 
 #endif
@@ -203,8 +202,14 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr = (guint8*)wasm_get_stack_base ();
 	*stsize = wasm_get_stack_size ();
 #endif
-	//g_assert ((guint8*)&tmp > *staddr);
-	//g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
+
+#ifdef HOST_WASI
+	// TODO: For WASI, we need to ensure the stack is positioned correctly and reintroduce these assertions.
+	// Currently it works anyway in prototypes (except these checks would fail)
+#else
+	g_assert ((guint8*)&tmp > *staddr);
+	g_assert ((guint8*)&tmp < (guint8*)*staddr + *stsize);
+#endif
 }
 
 gboolean
@@ -262,7 +267,7 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	if (tid)
 		*tid = thread;
 
-#if 1
+#if 0
 	if (stack_size) {
 		res = pthread_attr_getstacksize (&attr, stack_size);
 		if (res != 0)
@@ -275,35 +280,7 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 		g_error ("%s: pthread_attr_destroy failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 	return TRUE;
-#elif HOST_WASI
-	/*
-	// This code actually does start up a child thread inside WAMR, but it doesn't work because I'm unable to
-	// compile with -pthread (or all the --shared-memory flags), so the child thread has blank memory.
-	pthread_cond_t cond;
-
-    if (pthread_cond_init(&cond, NULL) != 0) {
-        g_error ("Failed to init cond.\n");
-    }
-
-	pthread_t thread;
-	if (pthread_create (&thread, NULL, (gpointer (*)(gpointer)) thread_fn, thread_data) != 0) {
-        g_error ("Failed to create thread.\n");
-    }
-
-	if (tid)
-		*tid = thread;
-	
-	if (pthread_cond_destroy(&cond) != 0) {
-		g_error ("Failed to destroy cond.\n");
-	}
-	*/
-
-	// As an alternative to the above, you could just jump directly to the child thread start point
-	// and block, but this leads to a deadlock
-	//g_message ("Jumping to child thread code");
-	//thread_fn(thread_data);
-	//g_message ("Finished with child thread");
-
+#elif defined(HOST_WASI)
 	return TRUE;
 #else
 	g_assert_not_reached ();

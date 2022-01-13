@@ -26,8 +26,6 @@
 #define O_BINARY	0
 #endif
 
-char *mktemp (char *);
-
 int
 mono_mkstemp (char *templ)
 {

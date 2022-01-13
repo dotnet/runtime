@@ -572,7 +572,7 @@ unregister_thread (void *arg)
 	info = (MonoThreadInfo *) arg;
 	g_assertf (info, ""); // f includes __func__
 	g_assert (mono_thread_info_is_current (info));
-	//g_assert (mono_thread_info_is_live (info));
+	g_assert (mono_thread_info_is_live (info));
 
 	/* We only enter the GC unsafe region, as when exiting this function, the thread
 	 * will be detached, and the current MonoThreadInfo* will be destroyed. */
@@ -751,7 +751,7 @@ mono_thread_info_attach (void)
 	}
 #endif
 
-	//g_assert (mono_threads_inited);
+	g_assert (mono_threads_inited);
 
 	info = (MonoThreadInfo *) mono_native_tls_get_value (thread_info_key);
 	if (!info) {
@@ -1616,8 +1616,13 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	if (!*staddr)
 		return;
 
+#ifdef HOST_WASI
+	// TODO: Fix the stack positioning on WASI and re-enable the following check.
+	// Currently it works as a prototype anyway.
+#else
 	/* Sanity check the result */
-	//g_assert ((current > *staddr) && (current < *staddr + *stsize));
+	g_assert ((current > *staddr) && (current < *staddr + *stsize));
+#endif
 
 #ifndef TARGET_WASM
 	/* When running under emacs, sometimes staddr is not aligned to a page size */

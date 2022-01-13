@@ -12,7 +12,10 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-//#include <dlfcn.h>
+
+#ifndef HOST_WASI
+#include <dlfcn.h>
+#endif
 
 const char *
 mono_dl_get_so_prefix (void)
@@ -55,8 +58,9 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 {
 	int lflags = native_flags;
 
+#ifndef HOST_WASI // On WASI, these flags are undefined and not required
+
 	// Specifying both will default to LOCAL
-	/*
 	if (mono_flags & MONO_DL_GLOBAL && !(mono_flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
 	else
@@ -66,7 +70,8 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 		lflags |= RTLD_LAZY;
 	else
 		lflags |= RTLD_NOW;
-		*/
+
+#endif
 
 	return lflags;
 }

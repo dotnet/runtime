@@ -463,7 +463,8 @@ include(configure)
 ######################################
 
 if(GCC)
-  if(WASI)
+  if(HOST_WASI)
+    # WASI SDK only includes some required definitions if the C version is at least this new
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
   else()
     # We require C99 with some GNU extensions, e.g. `linux` macro

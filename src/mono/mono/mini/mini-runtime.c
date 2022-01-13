@@ -1598,6 +1598,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 			}
 		} else {
 			target = mono_lookup_internal_call (patch_info->data.method);
+
 			if (mono_is_missing_icall_addr (target) && run_cctors)
 				g_error ("Unregistered icall '%s'\n", mono_method_full_name (patch_info->data.method, TRUE));
 		}
@@ -4529,10 +4530,10 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_thread_info_signals_init ();
 
-	//mono_init_native_crash_info ();
+	mono_init_native_crash_info ();
 
 #ifndef MONO_CROSS_COMPILE
-	//mono_runtime_install_handlers ();
+	mono_runtime_install_handlers ();
 #endif
 	mono_threads_install_cleanup (mini_thread_cleanup);
 

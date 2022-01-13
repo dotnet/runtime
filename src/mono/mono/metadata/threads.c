@@ -94,6 +94,7 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 
 #include "icall-decl.h"
 
+/*#define THREAD_DEBUG(a) do { a; } while (0)*/
 #define THREAD_DEBUG(a)
 /*#define THREAD_WAIT_DEBUG(a) do { a; } while (0)*/
 #define THREAD_WAIT_DEBUG(a)
@@ -679,7 +680,8 @@ mono_thread_internal_set_priority (MonoInternalThread *internal, MonoThreadPrior
 	// When this API becomes available on an arbitrary thread, we can use it,
 	// not available on current Zircon
 	//
-#elif 1
+#elif HOST_WASI
+	// Thread scheduling isn't yet implemented in the WASI build
 	return;
 #else /* !HOST_WIN32 and not HOST_FUCHSIA */
 	pthread_t tid;

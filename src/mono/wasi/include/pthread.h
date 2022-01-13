@@ -1,3 +1,7 @@
+// The WASI SDK doesn't include pthread.h, but the definitions are required by various parts of the Mono sources
+// On certain runtimes such as WAMR there is actually an implementation provided for the pthread APIs so threading
+// does work. However that's not yet in the WASI standard, so we're not yet relying on being able to call any of them.
+
 #ifndef _PTHREAD_H
 #define _PTHREAD_H
 #ifdef __cplusplus
