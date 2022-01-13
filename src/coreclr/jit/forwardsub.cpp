@@ -350,6 +350,24 @@ bool Compiler::fgForwardSub(Statement* stmt)
         }
     }
 
+    // Optimization:
+    //
+    // If we are about to substitute GT_OBJ, see if we can simplify it first.
+    // Not doing so can lead to regressions...
+    //
+    // Hold off on doing this for call args for now (per issue #51569).
+    //
+    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg())
+    {
+        const bool     destroyNodes = false;
+        GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
+        if (optTree != nullptr)
+        {
+            JITDUMP(" [folding OBJ(ADDR(LCL...))]");
+            fwdSubNode = optTree;
+        }
+    }
+
     // Quirks:
     //
     // We may sometimes lose a simd type handle. Avoid substituting if so.
@@ -366,10 +384,8 @@ bool Compiler::fgForwardSub(Statement* stmt)
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
-    // Eg if this is a multi-reg call, parent node must be GT_ASG and the
-    // local must be specially marked.
-    //
-    // Defer forwarding these for now.
+    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and the
+    // local being defined must be specially marked up.
     //
     if (fwdSubNode->IsMultiRegCall())
     {
@@ -421,24 +437,6 @@ bool Compiler::fgForwardSub(Statement* stmt)
         fwdVarDsc->lvIsMultiRegRet = true;
         fwdSubNodeLocal->SetMultiReg();
         fwdSubNode->gtFlags |= GTF_DONT_CSE;
-    }
-
-    // Optimization:
-    //
-    // If we are about to substitute GT_OBJ, see if we can simplify it first.
-    // Not doing so can lead to regressions...
-    //
-    // Hold off on doing this for call args for now (per issue #51569).
-    //
-    if (fwdSubNode->OperIs(GT_OBJ) && !fsv.IsCallArg())
-    {
-        const bool     destroyNodes = false;
-        GenTree* const optTree      = fgMorphTryFoldObjAsLclVar(fwdSubNode->AsObj(), destroyNodes);
-        if (optTree != nullptr)
-        {
-            JITDUMP(" [folding OBJ(ADDR(LCL...))]");
-            fwdSubNode = optTree;
-        }
     }
 
     // Looks good, forward sub!
