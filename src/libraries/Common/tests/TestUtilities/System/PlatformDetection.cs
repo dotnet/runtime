@@ -28,6 +28,7 @@ namespace System
         public static bool IsMonoInterpreter => GetIsRunningOnMonoInterpreter();
         public static bool IsMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") == "aot";
         public static bool IsNotMonoAOT => Environment.GetEnvironmentVariable("MONO_AOT_MODE") != "aot";
+        public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
@@ -52,7 +53,7 @@ namespace System
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsX86Process => RuntimeInformation.ProcessArchitecture == Architecture.X86;
         public static bool IsNotX86Process => !IsX86Process;
-        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess);
+        public static bool IsArgIteratorSupported => IsMonoRuntime || (IsWindows && IsNotArmProcess && !IsNativeAot);
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
@@ -62,7 +63,7 @@ namespace System
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
         public static bool IsThreadingSupported => !IsBrowser;
-        public static bool IsBinaryFormatterSupported => IsNotMobile;
+        public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
@@ -116,10 +117,10 @@ namespace System
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 
-        public static bool IsLineNumbersSupported => true;
+        public static bool IsLineNumbersSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
-        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime; // matches definitions in clr.featuredefines.props
+        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
         public static bool SupportsSsl3 => GetSsl3Support();
         public static bool SupportsSsl2 => IsWindows && !PlatformDetection.IsWindows10Version1607OrGreater;
 
@@ -130,7 +131,9 @@ namespace System
         public static bool IsReflectionEmitSupported => true;
 #endif
 
-        public static bool IsInvokingStaticConstructorsSupported => true;
+        public static bool IsInvokingStaticConstructorsSupported => !IsNativeAot;
+
+        public static bool IsMetadataUpdateSupported => !IsNativeAot;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
@@ -139,6 +142,10 @@ namespace System
         public static bool IsPreciseGcSupported => !IsMonoRuntime;
 
         public static bool IsNotIntMaxValueArrayIndexSupported => s_largeArrayIsNotSupported.Value;
+
+        public static bool IsAssemblyLoadingSupported => !IsNativeAot;
+        public static bool IsMethodBodySupported => !IsNativeAot;
+        public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -159,6 +166,28 @@ namespace System
                     s_lazyNonZeroLowerBoundArraySupported = Tuple.Create<bool>(nonZeroLowerBoundArraysSupported);
                 }
                 return s_lazyNonZeroLowerBoundArraySupported.Item1;
+            }
+        }
+
+        private static volatile Tuple<bool> s_lazyMetadataTokensSupported;
+        public static bool IsMetadataTokenSupported
+        {
+            get
+            {
+                if (s_lazyMetadataTokensSupported == null)
+                {
+                    bool metadataTokensSupported = false;
+                    try
+                    {
+                        _ = typeof(PlatformDetection).MetadataToken;
+                        metadataTokensSupported = true;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+                    s_lazyMetadataTokensSupported = Tuple.Create<bool>(metadataTokensSupported);
+                }
+                return s_lazyMetadataTokensSupported.Item1;
             }
         }
 
