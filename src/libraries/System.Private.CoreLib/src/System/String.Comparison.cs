@@ -684,9 +684,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Equals(string? a, string? b)
         {
-            // Replace SequenceEqual(strA, strB) with
-            // strB.Length == 0 if strB is a compile-time constant representing empty string
-            // Otherwise, the whole branch is eliminated
+            // if either a or b are "" - optimize Equals to just 'str?.Length == 0'
+            // Otherwise, these two blocks are eliminated since IsKnownConstant is a jit-time constant
             if (RuntimeHelpers.IsKnownConstant(a) && a?.Length == 0)
             {
                 return b?.Length == 0;
