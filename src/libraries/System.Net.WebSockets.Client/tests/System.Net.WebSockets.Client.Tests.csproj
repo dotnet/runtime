@@ -6,8 +6,9 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <!-- This doesn't run on V8 because it lacks websocket support -->
     <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
   </PropertyGroup>
@@ -25,14 +26,18 @@
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' != 'Windows_NT'">
     <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
     <SetScriptCommands Include="export NODE_TLS_REJECT_UNAUTHORIZED=0" />
+    <HelixPreCommand Include="export NODE_TLS_REJECT_UNAUTHORIZED=0" />
     <!-- Restore NPM packages -->
     <RunScriptCommands Include="pushd $EXECUTION_DIR &amp;&amp; npm ci &amp;&amp; popd" />
+    <HelixPreCommand Include="npm ci" />
   </ItemGroup>
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '$(OS)' == 'Windows_NT'">
     <!-- WebSocket tests use self-signed certificates for wss protocol that are refused by NodeJS -->
     <SetScriptCommands Include="set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot;" />
+    <HelixPreCommand Include="set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot;" />
     <!-- Restore NPM packages -->
     <RunScriptCommands Include="cmd /c &quot;cd %EXECUTION_DIR% &amp;&amp; npm ci&quot;" />
+    <HelixPreCommand Include="cmd /c &quot;npm ci&quot;" />
   </ItemGroup>
 
   <!-- Browser specific files -->
