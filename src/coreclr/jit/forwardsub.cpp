@@ -405,6 +405,14 @@ bool Compiler::fgForwardSub(Statement* stmt)
             return false;
         }
 
+#if defined(TARGET_X86)
+        if (fwdSubNode->TypeGet() == TYP_LONG)
+        {
+            JITDUMP(" TYP_LONG fwd sub node, x86\n");
+            return false;
+        }
+#endif // defined(TARGET_X86)
+
         GenTreeLclVar* const parentNodeLHSLocal = parentNodeLHS->AsLclVar();
 
         unsigned const   lhsLclNum = parentNodeLHSLocal->GetLclNum();
@@ -428,6 +436,14 @@ bool Compiler::fgForwardSub(Statement* stmt)
             return false;
         }
 
+#if defined(TARGET_X86)
+        if (fwdSubNode->TypeGet() == TYP_LONG)
+        {
+            JITDUMP(" TYP_LONG fwd sub node, x86\n");
+            return false;
+        }
+#endif // defined(TARGET_X86)
+
         GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
 
         unsigned const   fwdLclNum = fwdSubNodeLocal->GetLclNum();
@@ -436,7 +452,7 @@ bool Compiler::fgForwardSub(Statement* stmt)
         JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
         fwdVarDsc->lvIsMultiRegRet = true;
         fwdSubNodeLocal->SetMultiReg();
-        fwdSubNode->gtFlags |= GTF_DONT_CSE;
+        fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
     }
 
     // Looks good, forward sub!
