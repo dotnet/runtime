@@ -21,6 +21,7 @@ namespace ILCompiler
     public class UsageBasedInteropStubManager : CompilerGeneratedInteropStubManager
     {
         private Logger _logger;
+
         public UsageBasedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration, Logger logger)
             : base(interopStateManager, pInvokeILEmitterConfiguration)
         {
@@ -34,12 +35,11 @@ namespace ILCompiler
                 dependencies = dependencies ?? new DependencyList();
 
                 MethodSignature methodSig = method.Signature;
-                AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig.ReturnType, new MethodReturnOrigin(method));
+                AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig.ReturnType);
 
                 for (int i = 0; i < methodSig.Length; i++)
                 {
-                    var targetContext = new ParameterOrigin(method, i);
-                    AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig[i], targetContext);
+                    AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig[i]);
                 }
             }
 
@@ -50,25 +50,7 @@ namespace ILCompiler
             }
         }
 
-        private static bool ShouldEnableReflectionPatternReporting(MethodDesc method)
-        {
-            return ShouldEnablePatternReporting(method, "RequiresUnreferencedCodeAttribute");
-        }
-
-        private static bool ShouldEnablePatternReporting(MethodDesc method, string attributeName)
-        {
-            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", attributeName))
-                return false;
-
-            MethodDesc userMethod = ILCompiler.Logging.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method);
-            if (userMethod != null &&
-                userMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", attributeName))
-                return false;
-
-            return true;
-        }
-
-        private void AddParameterMarshallingDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, TypeDesc type, Origin memberWithRequirements)
+        private void AddParameterMarshallingDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, TypeDesc type)
         {
             if (type.IsDelegate)
             {
@@ -98,8 +80,7 @@ namespace ILCompiler
                     if (field.IsStatic)
                         continue;
 
-                    var targetContext = new FieldOrigin(field);
-                    AddParameterMarshallingDependencies(ref dependencies, factory, method, field.FieldType, targetContext);
+                    AddParameterMarshallingDependencies(ref dependencies, factory, method, field.FieldType);
                 }
             }
         }
