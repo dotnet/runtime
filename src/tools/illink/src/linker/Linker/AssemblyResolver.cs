@@ -30,7 +30,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -126,7 +125,7 @@ namespace Mono.Linker
 			if (_context.IgnoreUnresolved)
 				_context.LogMessage ($"Ignoring unresolved assembly '{reference.Name}' reference.");
 			else
-				_context.LogError (null, DiagnosticId.CouldNotFindAssemblyReference, reference.Name);
+				_context.LogError ($"Assembly reference '{reference.Name}' could not be resolved.", 1009);
 		}
 
 		public void AddSearchDirectory (string directory)

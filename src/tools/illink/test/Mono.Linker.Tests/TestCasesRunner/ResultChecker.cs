@@ -578,7 +578,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType)
 		{
-			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out _, out _);
+			return TryVerifyKeptMemberInAssemblyAsMethod (memberName, originalType, linkedType, out MethodDefinition _originalMethod, out MethodDefinition _linkedMethod);
 		}
 
 		protected virtual bool TryVerifyKeptMemberInAssemblyAsMethod (string memberName, TypeDefinition originalType, TypeDefinition linkedType, out MethodDefinition originalMethod, out MethodDefinition linkedMethod)
@@ -724,38 +724,30 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 							int expectedWarningCodeNumber = int.Parse (expectedWarningCode.Substring (2));
 							string expectedOrigin = null;
-							bool expectedWarningFound = false;
 
-							foreach (var loggedMessage in loggedMessages) {
+							var matchedMessages = loggedMessages.Where (mc => {
+								if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
+									return false;
 
-								if (loggedMessage.Category != MessageCategory.Warning || loggedMessage.Code != expectedWarningCodeNumber)
-									continue;
-
-								bool messageNotFound = false;
-								foreach (var expectedMessage in expectedMessageContains) {
-									if (!loggedMessage.Text.Contains (expectedMessage)) {
-										messageNotFound = true;
-										break;
-									}
-								}
-								if (messageNotFound)
-									continue;
+								foreach (var expectedMessage in expectedMessageContains)
+									if (!mc.Text.Contains (expectedMessage))
+										return false;
 
 								if (fileName != null) {
-									if (loggedMessage.Origin == null)
-										continue;
+									if (mc.Origin == null)
+										return false;
 
-									var actualOrigin = loggedMessage.Origin.Value;
+									var actualOrigin = mc.Origin.Value;
 									if (actualOrigin.FileName != null) {
 										// Note: string.Compare(string, StringComparison) doesn't exist in .NET Framework API set
 										if (actualOrigin.FileName.IndexOf (fileName, StringComparison.OrdinalIgnoreCase) < 0)
-											continue;
+											return false;
 
-										if (sourceLine != null && loggedMessage.Origin?.SourceLine != sourceLine.Value)
-											continue;
+										if (sourceLine != null && mc.Origin?.SourceLine != sourceLine.Value)
+											return false;
 
-										if (sourceColumn != null && loggedMessage.Origin?.SourceColumn != sourceColumn.Value)
-											continue;
+										if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
+											return false;
 									} else {
 										// The warning was logged with member/ILoffset, so it didn't have line/column info filled
 										// but it will be computed from PDBs, so instead compare it in a string representation
@@ -769,50 +761,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 											}
 										}
 
-										string actualOriginString = actualOrigin.ToString () ?? "";
-										if (!actualOriginString.EndsWith (expectedOrigin, StringComparison.OrdinalIgnoreCase))
-											continue;
+										if (!actualOrigin.ToString ().EndsWith (expectedOrigin, StringComparison.OrdinalIgnoreCase))
+											return false;
 									}
 								} else if (isCompilerGeneratedCode == true) {
-									if (loggedMessage.Origin?.Provider is MethodDefinition methodDefinition) {
+									if (mc.Origin?.Provider is MethodDefinition methodDefinition) {
 										if (attrProvider is not IMemberDefinition expectedMember)
-											continue;
+											return false;
 
 										string actualName = methodDefinition.DeclaringType.FullName + "." + methodDefinition.Name;
 
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains ("<" + expectedMember.Name + ">")) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
+											actualName.Contains ("<" + expectedMember.Name + ">"))
+											return true;
 										if (actualName.StartsWith (expectedMember.DeclaringType.FullName) &&
-											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition)) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
+											actualName.Contains (".cctor") && (expectedMember is FieldDefinition || expectedMember is PropertyDefinition))
+											return true;
 										if (methodDefinition.Name == ".ctor" &&
-										methodDefinition.DeclaringType.FullName == expectedMember.FullName) {
-											expectedWarningFound = true;
-											loggedMessages.Remove (loggedMessage);
-											break;
-										}
+											methodDefinition.DeclaringType.FullName == expectedMember.FullName)
+											return true;
 									}
-									continue;
+
+									return false;
 								} else {
-									if (LogMessageHasSameOriginMember (loggedMessage, attrProvider)) {
-										expectedWarningFound = true;
-										loggedMessages.Remove (loggedMessage);
-										break;
-									}
-									continue;
+									return LogMessageHasSameOriginMember (mc, attrProvider);
 								}
 
-								expectedWarningFound = true;
-								loggedMessages.Remove (loggedMessage);
-								break;
-							}
+								return true;
+							}).ToList ();
 
 							var expectedOriginString = fileName == null
 								? attrProvider switch {
@@ -823,11 +799,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								} + ": "
 								: "";
 
-							Assert.IsTrue (expectedWarningFound,
+							Assert.IsTrue (
+								matchedMessages.Count > 0,
 								$"Expected to find warning: {(fileName != null ? fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "") + ": " : "")}" +
 								$"warning {expectedWarningCode}: {expectedOriginString}" +
 								$"and message containing {string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}, " +
 								$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
+
+							foreach (var matchedMessage in matchedMessages)
+								loggedMessages.Remove (matchedMessage);
 						}
 						break;
 
@@ -963,7 +943,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member)
 		{
-			return GetFullMemberNameFromDefinition (member, out _);
+			return GetFullMemberNameFromDefinition (member, out string genericMember);
 		}
 
 		static string GetFullMemberNameFromDefinition (IMetadataTokenProvider member, out string genericMember)

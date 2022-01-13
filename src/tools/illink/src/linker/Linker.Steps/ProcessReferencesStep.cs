@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using ILLink.Shared;
 
 namespace Mono.Linker.Steps
 {
@@ -38,14 +37,14 @@ namespace Mono.Linker.Steps
 				// to determine the action.
 				var assembly = Context.TryResolve (assemblyName);
 				if (assembly == null) {
-					Context.LogError (null, DiagnosticId.ReferenceAssemblyCouldNotBeLoaded, assemblyPath);
+					Context.LogError ($"Reference assembly '{assemblyPath}' could not be loaded.", 1039);
 					continue;
 				}
 
 				// If the assigned action (now taking into account the IsTrimmable attribute) requires us
 				// to root the assembly, do so.
 				if (IsFullyPreservedAction (Annotations.GetAction (assembly)))
-					Annotations.Mark (assembly.MainModule, new DependencyInfo (DependencyKind.AssemblyAction, assembly), new MessageOrigin (assembly));
+					Annotations.Mark (assembly.MainModule, new DependencyInfo (DependencyKind.AssemblyAction, assembly));
 			}
 		}
 

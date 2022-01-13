@@ -93,21 +93,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public static Type _annotatedField;
 			}
 
-			[ExpectedWarning ("IL2110", nameof (AnnotatedField._annotatedField))]
-			[ExpectedWarning ("IL2110", nameof (NestedType._annotatedField))]
-			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2110", nameof (_annotatedField))]
+			[ExpectedWarning ("IL2026", "test")]
 			static void DynamicallyAccessedMembersAll1 ()
 			{
 				typeof (AnnotatedField).RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2110", nameof (AnnotatedField._annotatedField))]
-			[ExpectedWarning ("IL2110", nameof (NestedType._annotatedField))]
-			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
+			[ExpectedWarning ("IL2110", nameof (_annotatedField))]
+			[ExpectedWarning ("IL2026", "test")]
 			static void DynamicallyAccessedMembersAll2 ()
 			{
 				typeof (AnnotatedField).RequiresAll ();
@@ -222,22 +216,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				var _ = new Action<Type> (instance.AnnotatedMethod);
 			}
 
-			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
-			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
+			[ExpectedWarning ("IL2026", "test")]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			static void DynamicallyAccessedMembersAll1 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2026", "ReflectionSuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicDependencySuppressedByRUC", "test")]
-			[ExpectedWarning ("IL2026", "DynamicallyAccessedMembersSuppressedByRUC", "test")]
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
-			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
+			[ExpectedWarning ("IL2026", "test")]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			static void DynamicallyAccessedMembersAll2 ()
 			{
@@ -464,15 +452,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedProperty).RequiresPublicProperties ();
 			}
 
-			[ExpectedWarning ("IL2026", nameof (DynamicDependencySuppressedByRUC), "test")]
-			[ExpectedWarning ("IL2026", nameof (DynamicallyAccessedMembersSuppressedByRUC), "test")]
-			[ExpectedWarning ("IL2026", nameof (ReflectionOnPropertyItselfSuppressedByRUC), "test")]
-			// Duplicated warnings for linker and analyzer see bug https://github.com/dotnet/linker/issues/2462
-			[ExpectedWarning ("IL2111", nameof (AnnotatedProperty.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (AnnotatedProperty.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (AttributeWithPropertyWithAnnotation.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (AttributeWithPropertyWithAnnotation.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (VirtualPropertyWithAnnotationGetterOnly) + ".get")]
+			[ExpectedWarning ("IL2111", nameof (PropertyWithAnnotation) + ".set")]
+			[ExpectedWarning ("IL2026", "test")]
 			[ExpectedWarning ("IL2111", nameof (VirtualPropertyWithAnnotationGetterOnly) + ".get")]
 			[UnconditionalSuppressMessage ("Test", "IL2110", Justification = "Suppress warning about backing field of PropertyWithAnnotation")]
 			static void DynamicallyAccessedMembersAll1 ()
@@ -480,15 +461,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedProperty).RequiresAll ();
 			}
 
-			[ExpectedWarning ("IL2026", nameof (DynamicDependencySuppressedByRUC), "test")]
-			[ExpectedWarning ("IL2026", nameof (DynamicallyAccessedMembersSuppressedByRUC), "test")]
-			[ExpectedWarning ("IL2026", nameof (ReflectionOnPropertyItselfSuppressedByRUC), "test")]
-			// Duplicated warnings for linker and analyzer see bug https://github.com/dotnet/linker/issues/2462
-			[ExpectedWarning ("IL2111", nameof (AnnotatedProperty.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (AnnotatedProperty.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (AttributeWithPropertyWithAnnotation.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (AttributeWithPropertyWithAnnotation.PropertyWithAnnotation) + ".set")]
-			[ExpectedWarning ("IL2111", nameof (VirtualPropertyWithAnnotationGetterOnly) + ".get")]
+			[ExpectedWarning ("IL2111", nameof (PropertyWithAnnotation) + ".set")]
+			[ExpectedWarning ("IL2026", "test")]
 			[ExpectedWarning ("IL2111", nameof (VirtualPropertyWithAnnotationGetterOnly) + ".get")]
 			[UnconditionalSuppressMessage ("Test", "IL2110", Justification = "Suppress warning about backing field of PropertyWithAnnotation")]
 			static void DynamicallyAccessedMembersAll2 ()
@@ -668,7 +642,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2111", nameof (PropertyWithLdToken))]
-			[ExpectedWarning ("IL2111", nameof (PropertyWithLdToken), ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				Expression<Func<Type>> getter = () => (new AccessThroughLdToken ()).PropertyWithLdToken;
