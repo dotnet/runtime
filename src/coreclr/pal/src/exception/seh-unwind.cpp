@@ -423,18 +423,18 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 #elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
-    unw_get_reg(cursor, UNW_LOONGARCH_R1, (unw_word_t *) &winContext->Ra);
-    unw_get_reg(cursor, UNW_LOONGARCH_R2, (unw_word_t *) &winContext->Tp);
-    unw_get_reg(cursor, UNW_LOONGARCH_R22, (unw_word_t *) &winContext->Fp);
-    unw_get_reg(cursor, UNW_LOONGARCH_R23, (unw_word_t *) &winContext->S0);
-    unw_get_reg(cursor, UNW_LOONGARCH_R24, (unw_word_t *) &winContext->S1);
-    unw_get_reg(cursor, UNW_LOONGARCH_R25, (unw_word_t *) &winContext->S2);
-    unw_get_reg(cursor, UNW_LOONGARCH_R26, (unw_word_t *) &winContext->S3);
-    unw_get_reg(cursor, UNW_LOONGARCH_R27, (unw_word_t *) &winContext->S4);
-    unw_get_reg(cursor, UNW_LOONGARCH_R28, (unw_word_t *) &winContext->S5);
-    unw_get_reg(cursor, UNW_LOONGARCH_R29, (unw_word_t *) &winContext->S6);
-    unw_get_reg(cursor, UNW_LOONGARCH_R30, (unw_word_t *) &winContext->S7);
-    unw_get_reg(cursor, UNW_LOONGARCH_R31, (unw_word_t *) &winContext->S8);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R25, (unw_word_t *) &winContext->S2);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R26, (unw_word_t *) &winContext->S3);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R27, (unw_word_t *) &winContext->S4);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R28, (unw_word_t *) &winContext->S5);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
 #else
 #error unsupported architecture
 #endif
@@ -521,18 +521,18 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
 #elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R1, &contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R2, &contextPointers->Tp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R22, &contextPointers->Fp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R23, &contextPointers->S0);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R24, &contextPointers->S1);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R25, &contextPointers->S2);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R26, &contextPointers->S3);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R27, &contextPointers->S4);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R28, &contextPointers->S5);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R29, &contextPointers->S6);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R30, &contextPointers->S7);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R31, &contextPointers->S8);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, &contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, &contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, &contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, &contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, &contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, &contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, &contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, &contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, &contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, &contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, &contextPointers->S8);
 #else
 #error unsupported architecture
 #endif

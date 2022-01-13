@@ -1684,18 +1684,18 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
 #elif defined(TARGET_LOONGARCH64)
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R1, &contextPointers->Ra);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R2, &contextPointers->Tp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R22, &contextPointers->Fp);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R23, &contextPointers->S0);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R24, &contextPointers->S1);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R25, &contextPointers->S2);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R26, &contextPointers->S3);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R27, &contextPointers->S4);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R28, &contextPointers->S5);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R29, &contextPointers->S6);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R30, &contextPointers->S7);
-    GetContextPointer(cursor, unwContext, UNW_LOONGARCH_R31, &contextPointers->S8);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, &contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, &contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, &contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, &contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, &contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, &contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, &contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, &contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, &contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, &contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, &contextPointers->S8);
 #elif defined(TARGET_S390X)
     GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
     GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);
@@ -1768,18 +1768,18 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
 #elif defined(TARGET_LOONGARCH64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
-    unw_get_reg(cursor, UNW_LOONGARCH_R1, (unw_word_t *) &winContext->Ra);
-    unw_get_reg(cursor, UNW_LOONGARCH_R2, (unw_word_t *) &winContext->Tp);
-    unw_get_reg(cursor, UNW_LOONGARCH_R22, (unw_word_t *) &winContext->Fp);
-    unw_get_reg(cursor, UNW_LOONGARCH_R23, (unw_word_t *) &winContext->S0);
-    unw_get_reg(cursor, UNW_LOONGARCH_R24, (unw_word_t *) &winContext->S1);
-    unw_get_reg(cursor, UNW_LOONGARCH_R25, (unw_word_t *) &winContext->S2);
-    unw_get_reg(cursor, UNW_LOONGARCH_R26, (unw_word_t *) &winContext->S3);
-    unw_get_reg(cursor, UNW_LOONGARCH_R27, (unw_word_t *) &winContext->S4);
-    unw_get_reg(cursor, UNW_LOONGARCH_R28, (unw_word_t *) &winContext->S5);
-    unw_get_reg(cursor, UNW_LOONGARCH_R29, (unw_word_t *) &winContext->S6);
-    unw_get_reg(cursor, UNW_LOONGARCH_R30, (unw_word_t *) &winContext->S7);
-    unw_get_reg(cursor, UNW_LOONGARCH_R31, (unw_word_t *) &winContext->S8);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R25, (unw_word_t *) &winContext->S2);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R26, (unw_word_t *) &winContext->S3);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R27, (unw_word_t *) &winContext->S4);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R28, (unw_word_t *) &winContext->S5);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
     TRACE("sp %p pc %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Pc, winContext->Fp, winContext->Tp, winContext->Ra);
 #elif defined(TARGET_S390X)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
@@ -1883,19 +1883,19 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_AARCH64_SP:   *valp = (unw_word_t)winContext->Sp; break;
     case UNW_AARCH64_PC:   *valp = (unw_word_t)winContext->Pc; break;
 #elif defined(TARGET_LOONGARCH64)
-    case UNW_LOONGARCH_R1:    *valp = (unw_word_t)winContext->Ra; break;
-    case UNW_LOONGARCH_R2:    *valp = (unw_word_t)winContext->Tp; break;
-    case UNW_LOONGARCH_R22:   *valp = (unw_word_t)winContext->Fp; break;
-    case UNW_LOONGARCH_R23:   *valp = (unw_word_t)winContext->S0; break;
-    case UNW_LOONGARCH_R24:   *valp = (unw_word_t)winContext->S1; break;
-    case UNW_LOONGARCH_R25:   *valp = (unw_word_t)winContext->S2; break;
-    case UNW_LOONGARCH_R26:   *valp = (unw_word_t)winContext->S3; break;
-    case UNW_LOONGARCH_R27:   *valp = (unw_word_t)winContext->S4; break;
-    case UNW_LOONGARCH_R28:   *valp = (unw_word_t)winContext->S5; break;
-    case UNW_LOONGARCH_R29:   *valp = (unw_word_t)winContext->S6; break;
-    case UNW_LOONGARCH_R30:   *valp = (unw_word_t)winContext->S7; break;
-    case UNW_LOONGARCH_R31:   *valp = (unw_word_t)winContext->S8; break;
-    case UNW_LOONGARCH_PC:    *valp = (unw_word_t)winContext->Pc; break;
+    case UNW_LOONGARCH64_R1:    *valp = (unw_word_t)winContext->Ra; break;
+    case UNW_LOONGARCH64_R2:    *valp = (unw_word_t)winContext->Tp; break;
+    case UNW_LOONGARCH64_R22:   *valp = (unw_word_t)winContext->Fp; break;
+    case UNW_LOONGARCH64_R23:   *valp = (unw_word_t)winContext->S0; break;
+    case UNW_LOONGARCH64_R24:   *valp = (unw_word_t)winContext->S1; break;
+    case UNW_LOONGARCH64_R25:   *valp = (unw_word_t)winContext->S2; break;
+    case UNW_LOONGARCH64_R26:   *valp = (unw_word_t)winContext->S3; break;
+    case UNW_LOONGARCH64_R27:   *valp = (unw_word_t)winContext->S4; break;
+    case UNW_LOONGARCH64_R28:   *valp = (unw_word_t)winContext->S5; break;
+    case UNW_LOONGARCH64_R29:   *valp = (unw_word_t)winContext->S6; break;
+    case UNW_LOONGARCH64_R30:   *valp = (unw_word_t)winContext->S7; break;
+    case UNW_LOONGARCH64_R31:   *valp = (unw_word_t)winContext->S8; break;
+    case UNW_LOONGARCH64_PC:    *valp = (unw_word_t)winContext->Pc; break;
 #elif defined(TARGET_S390X)
     case UNW_S390X_R6:     *valp = (unw_word_t)winContext->R6; break;
     case UNW_S390X_R7:     *valp = (unw_word_t)winContext->R7; break;
