@@ -23,7 +23,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestBranchMergeSwitch ();
 			TestBranchMergeTry ();
 			TestBranchMergeCatch ();
-			TestBranchMergeFinally ();
 
 			// The remaining tests illustrate current limitations of the analysis
 			// that we might be able to lift in the future.
@@ -36,6 +35,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestBranchTry ();
 			TestBranchCatch ();
 			TestBranchFinally ();
+			TestBranchMergeFinally ();
 
 			// These are missing warnings (potential failure at runtime)
 			TestBackwardsEdgeGoto ();
@@ -127,13 +127,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 
-		// Analyzer doesn't understand exceptional control flow yet (https://github.com/dotnet/linker/issues/2273)
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()")]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
 		public static void TestBranchMergeTry ()
 		{
 			string str = GetWithPublicMethods ();
@@ -150,13 +147,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 
-		// Analyzer doesn't understand exceptional control flow yet (https://github.com/dotnet/linker/issues/2273)
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()")]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
 		public static void TestBranchMergeCatch ()
 		{
 			string str = GetWithPublicMethods ();
@@ -171,13 +165,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			str.RequiresPublicMethods (); // warns for GetWithPublicFields
 		}
 
-
-		// Analyzer doesn't understand exceptional control flow yet (https://github.com/dotnet/linker/issues/2273)
+		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
+			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()")]
+		// Linker produces extraneous warnings
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields) + "(String)",
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
-			ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
-			nameof (LocalDataFlow) + "." + nameof (GetWithPublicFields) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
 		public static void TestBranchMergeFinally ()
 		{
@@ -189,9 +181,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			} finally {
 				str = GetWithPublicFields ();
 			}
-
-			str.RequiresPublicFields (); // warns for GetWithPublicMethods
-			str.RequiresPublicMethods (); // warns for GetWithPublicFields
+			str.RequiresPublicFields (); // should not warn
+			str.RequiresPublicMethods (); // should warn
 		}
 
 		// Analyzer gets this right (no warning), but trimmer merges all branches going forward.
@@ -267,7 +258,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// Analyzer doesn't understand exceptional control flow yet (https://github.com/dotnet/linker/issues/2273)
+		// Analyzer gets this right (no warning), but trimmer merges all branches going forward.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields),
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
@@ -284,7 +275,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// Analyzer doesn't understand exceptional control flow yet (https://github.com/dotnet/linker/issues/2273)
+		// Analyzer gets this right (no warning), but trimmer merges all branches going forward.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields),
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
@@ -300,7 +291,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		// Analyzer doesn't understand exceptional control flow yet (https://github.com/dotnet/linker/issues/2273)
+		// Analyzer gets this right (no warning), but trimmer merges all branches going forward.
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicFields),
 			nameof (LocalDataFlow) + "." + nameof (GetWithPublicMethods) + "()",
 			ProducedBy = ProducedBy.Trimmer)]
