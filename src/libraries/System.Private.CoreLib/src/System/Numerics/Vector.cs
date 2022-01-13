@@ -63,7 +63,7 @@ namespace System.Numerics
 
                 for (int index = 0; index < Vector<T>.Count; index++)
                 {
-                    var element = Scalar<T>.Abs(value.GetElementUnsafe(index));
+                    T element = Scalar<T>.Abs(value.GetElementUnsafe(index));
                     result.SetElementUnsafe(index, element);
                 }
 
@@ -251,7 +251,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<double>.Count; index++)
             {
-                var element = Scalar<double>.Ceiling(value.GetElementUnsafe(index));
+                double element = Scalar<double>.Ceiling(value.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, element);
             }
 
@@ -270,7 +270,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<float>.Count; index++)
             {
-                var element = Scalar<float>.Ceiling(value.GetElementUnsafe(index));
+                float element = Scalar<float>.Ceiling(value.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, element);
             }
 
@@ -357,7 +357,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<int>.Count; i++)
             {
-                var element = (int)value.GetElementUnsafe(i);
+                int element = (int)value.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, element);
             }
 
@@ -374,7 +374,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<long>.Count; i++)
             {
-                var element = (long)value.GetElementUnsafe(i);
+                long element = (long)value.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, element);
             }
 
@@ -391,7 +391,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<float>.Count; i++)
             {
-                var element = (float)value.GetElementUnsafe(i);
+                float element = value.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, element);
             }
 
@@ -429,7 +429,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<uint>.Count; i++)
             {
-                var element = (uint)value.GetElementUnsafe(i);
+                uint element = (uint)value.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, element);
             }
 
@@ -447,7 +447,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<ulong>.Count; i++)
             {
-                var element = (ulong)value.GetElementUnsafe(i);
+                ulong element = (ulong)value.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, element);
             }
 
@@ -477,7 +477,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                var value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
+                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
                 result = Scalar<T>.Add(result, value);
             }
 
@@ -498,7 +498,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                var value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
+                T value = Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)) ? Scalar<T>.AllBitsSet : default;
                 result.SetElementUnsafe(index, value);
             }
 
@@ -572,7 +572,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<double>.Count; index++)
             {
-                var element = Scalar<double>.Floor(value.GetElementUnsafe(index));
+                double element = Scalar<double>.Floor(value.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, element);
             }
 
@@ -591,7 +591,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<float>.Count; index++)
             {
-                var element = Scalar<float>.Floor(value.GetElementUnsafe(index));
+                float element = Scalar<float>.Floor(value.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, element);
             }
 
@@ -977,13 +977,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<double>.Count; i++)
             {
-                var value = (float)low.GetElementUnsafe(i);
+                float value = (float)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<double>.Count; i < Vector<float>.Count; i++)
             {
-                var value = (float)high.GetElementUnsafe(i - Vector<double>.Count);
+                float value = (float)high.GetElementUnsafe(i - Vector<double>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1002,13 +1002,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<short>.Count; i++)
             {
-                var value = (sbyte)low.GetElementUnsafe(i);
+                sbyte value = (sbyte)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<short>.Count; i < Vector<sbyte>.Count; i++)
             {
-                var value = (sbyte)high.GetElementUnsafe(i - Vector<short>.Count);
+                sbyte value = (sbyte)high.GetElementUnsafe(i - Vector<short>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1026,13 +1026,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<int>.Count; i++)
             {
-                var value = (short)low.GetElementUnsafe(i);
+                short value = (short)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<int>.Count; i < Vector<short>.Count; i++)
             {
-                var value = (short)high.GetElementUnsafe(i - Vector<int>.Count);
+                short value = (short)high.GetElementUnsafe(i - Vector<int>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1050,13 +1050,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<long>.Count; i++)
             {
-                var value = (int)low.GetElementUnsafe(i);
+                int value = (int)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<long>.Count; i < Vector<int>.Count; i++)
             {
-                var value = (int)high.GetElementUnsafe(i - Vector<long>.Count);
+                int value = (int)high.GetElementUnsafe(i - Vector<long>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1075,13 +1075,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<ushort>.Count; i++)
             {
-                var value = (byte)low.GetElementUnsafe(i);
+                byte value = (byte)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<ushort>.Count; i < Vector<byte>.Count; i++)
             {
-                var value = (byte)high.GetElementUnsafe(i - Vector<ushort>.Count);
+                byte value = (byte)high.GetElementUnsafe(i - Vector<ushort>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1100,13 +1100,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<uint>.Count; i++)
             {
-                var value = (ushort)low.GetElementUnsafe(i);
+                ushort value = (ushort)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<uint>.Count; i < Vector<ushort>.Count; i++)
             {
-                var value = (ushort)high.GetElementUnsafe(i - Vector<uint>.Count);
+                ushort value = (ushort)high.GetElementUnsafe(i - Vector<uint>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1125,13 +1125,13 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<ulong>.Count; i++)
             {
-                var value = (uint)low.GetElementUnsafe(i);
+                uint value = (uint)low.GetElementUnsafe(i);
                 result.SetElementUnsafe(i, value);
             }
 
             for (int i = Vector<ulong>.Count; i < Vector<uint>.Count; i++)
             {
-                var value = (uint)high.GetElementUnsafe(i - Vector<ulong>.Count);
+                uint value = (uint)high.GetElementUnsafe(i - Vector<ulong>.Count);
                 result.SetElementUnsafe(i, value);
             }
 
@@ -1166,7 +1166,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<byte>.Count; index++)
             {
-                var element = Scalar<byte>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                byte element = Scalar<byte>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1185,7 +1185,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<short>.Count; index++)
             {
-                var element = Scalar<short>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                short element = Scalar<short>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1204,7 +1204,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<int>.Count; index++)
             {
-                var element = Scalar<int>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                int element = Scalar<int>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1223,7 +1223,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<long>.Count; index++)
             {
-                var element = Scalar<long>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                long element = Scalar<long>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1242,7 +1242,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<nint>.Count; index++)
             {
-                var element = Scalar<nint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                nint element = Scalar<nint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1262,7 +1262,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<nuint>.Count; index++)
             {
-                var element = Scalar<nuint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                nuint element = Scalar<nuint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1282,7 +1282,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<sbyte>.Count; index++)
             {
-                var element = Scalar<sbyte>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                sbyte element = Scalar<sbyte>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1302,7 +1302,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<ushort>.Count; index++)
             {
-                var element = Scalar<ushort>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                ushort element = Scalar<ushort>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1322,7 +1322,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<uint>.Count; index++)
             {
-                var element = Scalar<uint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                uint element = Scalar<uint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1342,7 +1342,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<ulong>.Count; index++)
             {
-                var element = Scalar<ulong>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                ulong element = Scalar<ulong>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1361,7 +1361,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<short>.Count; index++)
             {
-                var element = Scalar<short>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                short element = Scalar<short>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1380,7 +1380,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<int>.Count; index++)
             {
-                var element = Scalar<int>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                int element = Scalar<int>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1399,7 +1399,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<long>.Count; index++)
             {
-                var element = Scalar<long>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                long element = Scalar<long>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1418,7 +1418,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<nint>.Count; index++)
             {
-                var element = Scalar<nint>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                nint element = Scalar<nint>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1438,7 +1438,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<sbyte>.Count; index++)
             {
-                var element = Scalar<sbyte>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                sbyte element = Scalar<sbyte>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1457,7 +1457,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<byte>.Count; index++)
             {
-                var element = Scalar<byte>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                byte element = Scalar<byte>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1476,7 +1476,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<short>.Count; index++)
             {
-                var element = Scalar<short>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                short element = Scalar<short>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1495,7 +1495,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<int>.Count; index++)
             {
-                var element = Scalar<int>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                int element = Scalar<int>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1514,7 +1514,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<long>.Count; index++)
             {
-                var element = Scalar<long>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                long element = Scalar<long>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1533,7 +1533,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<nint>.Count; index++)
             {
-                var element = Scalar<nint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                nint element = Scalar<nint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1553,7 +1553,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<nuint>.Count; index++)
             {
-                var element = Scalar<nuint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                nuint element = Scalar<nuint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1573,7 +1573,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<sbyte>.Count; index++)
             {
-                var element = Scalar<sbyte>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                sbyte element = Scalar<sbyte>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1593,7 +1593,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<ushort>.Count; index++)
             {
-                var element = Scalar<ushort>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                ushort element = Scalar<ushort>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1613,7 +1613,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<uint>.Count; index++)
             {
-                var element = Scalar<uint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                uint element = Scalar<uint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1633,7 +1633,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<ulong>.Count; index++)
             {
-                var element = Scalar<ulong>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                ulong element = Scalar<ulong>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1653,7 +1653,7 @@ namespace System.Numerics
 
             for (int index = 0; index < Vector<T>.Count; index++)
             {
-                var element = Scalar<T>.Sqrt(value.GetElementUnsafe(index));
+                T element = Scalar<T>.Sqrt(value.GetElementUnsafe(index));
                 result.SetElementUnsafe(index, element);
             }
 
@@ -1776,7 +1776,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<ushort>.Count; i++)
             {
-                var value = (ushort)source.GetElementUnsafe(i);
+                ushort value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1790,7 +1790,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<int>.Count; i++)
             {
-                var value = (int)source.GetElementUnsafe(i);
+                int value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1804,7 +1804,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<long>.Count; i++)
             {
-                var value = (long)source.GetElementUnsafe(i);
+                long value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1818,7 +1818,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<short>.Count; i++)
             {
-                var value = (short)source.GetElementUnsafe(i);
+                short value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1832,7 +1832,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<double>.Count; i++)
             {
-                var value = (double)source.GetElementUnsafe(i);
+                double value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1846,7 +1846,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<uint>.Count; i++)
             {
-                var value = (uint)source.GetElementUnsafe(i);
+                uint value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1860,7 +1860,7 @@ namespace System.Numerics
 
             for (int i = 0; i < Vector<ulong>.Count; i++)
             {
-                var value = (ulong)source.GetElementUnsafe(i);
+                ulong value = source.GetElementUnsafe(i);
                 lower.SetElementUnsafe(i, value);
             }
 
@@ -1874,7 +1874,7 @@ namespace System.Numerics
 
             for (int i = Vector<ushort>.Count; i < Vector<byte>.Count; i++)
             {
-                var value = (ushort)source.GetElementUnsafe(i);
+                ushort value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<ushort>.Count, value);
             }
 
@@ -1888,7 +1888,7 @@ namespace System.Numerics
 
             for (int i = Vector<int>.Count; i < Vector<short>.Count; i++)
             {
-                var value = (int)source.GetElementUnsafe(i);
+                int value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<int>.Count, value);
             }
 
@@ -1902,7 +1902,7 @@ namespace System.Numerics
 
             for (int i = Vector<long>.Count; i < Vector<int>.Count; i++)
             {
-                var value = (long)source.GetElementUnsafe(i);
+                long value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<long>.Count, value);
             }
 
@@ -1916,7 +1916,7 @@ namespace System.Numerics
 
             for (int i = Vector<short>.Count; i < Vector<sbyte>.Count; i++)
             {
-                var value = (short)source.GetElementUnsafe(i);
+                short value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<short>.Count, value);
             }
 
@@ -1930,7 +1930,7 @@ namespace System.Numerics
 
             for (int i = Vector<double>.Count; i < Vector<float>.Count; i++)
             {
-                var value = (double)source.GetElementUnsafe(i);
+                double value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<double>.Count, value);
             }
 
@@ -1944,7 +1944,7 @@ namespace System.Numerics
 
             for (int i = Vector<uint>.Count; i < Vector<ushort>.Count; i++)
             {
-                var value = (uint)source.GetElementUnsafe(i);
+                uint value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<uint>.Count, value);
             }
 
@@ -1958,7 +1958,7 @@ namespace System.Numerics
 
             for (int i = Vector<ulong>.Count; i < Vector<uint>.Count; i++)
             {
-                var value = (ulong)source.GetElementUnsafe(i);
+                ulong value = source.GetElementUnsafe(i);
                 upper.SetElementUnsafe(i - Vector<ulong>.Count, value);
             }
 
