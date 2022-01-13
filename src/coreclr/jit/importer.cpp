@@ -4016,7 +4016,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
             {
                 GenTree* op1 = impPopStack().val;
-                if (op1->OperIsConst()) // || gtFoldExpr(op1)->OperIsConst())
+                if (op1->OperIsConst() || gtFoldExpr(op1)->OperIsConst())
                 {
                     // op1 is a known constant, replace with 'true'.
                     retNode = gtNewIconNode(1);
