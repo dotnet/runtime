@@ -125,6 +125,29 @@ namespace System.Runtime.Intrinsics.X86
         ///   PADDQ xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_add_epi32 (__m128i a,  __m128i b)
+        ///   PADDD xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_add_epi64 (__m128i a,  __m128i b)
+        ///   PADDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> Add(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_add_epi32 (__m128i a,  __m128i b)
+        ///   PADDD xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_add_epi64 (__m128i a,  __m128i b)
+        ///   PADDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> Add(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_add_pd (__m128d a,  __m128d b)
         ///   ADDPD xmm, xmm/m128
@@ -198,6 +221,29 @@ namespace System.Runtime.Intrinsics.X86
         ///   PAND xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> And(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_and_si128 (__m128i a,  __m128i b)
+        ///   PAND xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_and_si128 (__m128i a,  __m128i b)
+        ///   PAND xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> And(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_and_si128 (__m128i a,  __m128i b)
+        ///   PAND xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_and_si128 (__m128i a,  __m128i b)
+        ///   PAND xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> And(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_and_pd (__m128d a, __m128d b)
         ///   ANDPD xmm, xmm/m128
@@ -244,6 +290,29 @@ namespace System.Runtime.Intrinsics.X86
         ///   PANDN xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> AndNot(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_andnot_si128 (__m128i a,  __m128i b)
+        ///   PANDN xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_andnot_si128 (__m128i a,  __m128i b)
+        ///   PANDN xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> AndNot(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_andnot_si128 (__m128i a,  __m128i b)
+        ///   PANDN xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_andnot_si128 (__m128i a,  __m128i b)
+        ///   PANDN xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> AndNot(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_andnot_pd (__m128d a, __m128d b)
         ///   ADDNPD xmm, xmm/m128
@@ -547,6 +616,29 @@ namespace System.Runtime.Intrinsics.X86
         ///   CVTPD2DQ xmm, xmm/m128
         /// </summary>
         public static Vector128<int> ConvertToVector128Int32(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtpd_epi32 (__m128d a)
+        ///   CVTPD2DQ xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtsi64_si128 (__int64 a)
+        ///   MOVQ xmm, reg/m64
+        /// </summary>
+        public static Vector128<nint> ConvertToNInt(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvttsd_epi32 (__m128d a)
+        ///   CVTPD2DQ xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvttsd_si128 (__int64 a)
+        ///   CVTTSD2SI xmm, reg/m64
+        /// </summary>
+        public static Vector128<nint> ConvertToNIntWithTruncation(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128 _mm_cvtepi32_ps (__m128i a)
         ///   CVTDQ2PS xmm, xmm/m128
@@ -585,10 +677,39 @@ namespace System.Runtime.Intrinsics.X86
         public static uint ConvertToUInt32(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// int _mm_cvtsi128_si32 (__m128i a)
+        ///   MOVD reg/m32, xmm
+        ///
+        /// 64-bit:
+        /// __int64 _mm_cvtsi128_si64 (__m128i a)
+        ///   MOVQ reg/m64, xmm
+        /// </summary>
+        public static nint ConvertToNInt(Vector128<nint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// int _mm_cvtsi128_si32 (__m128i a)
+        ///   MOVD reg/m32, xmm
+        ///
+        /// 64-bit:
+        /// __int64 _mm_cvtsi128_si64 (__m128i a)
+        ///   MOVQ reg/m64, xmm
+        /// </summary>
+        public static nuint ConvertToNUInt(Vector128<nuint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128d _mm_cvtsi32_sd (__m128d a, int b)
         ///   CVTSI2SD xmm, reg/m32
         /// </summary>
         public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, int value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128d _mm_cvtss_sd (__m128d a, __m128 b)
+        ///   CVTSS2SD xmm, xmm/m32
+        /// </summary>
+        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, nint value) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_cvtss_sd (__m128d a, __m128 b)
         ///   CVTSS2SD xmm, xmm/m32
@@ -599,6 +720,29 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVD xmm, reg/m32
         /// </summary>
         public static Vector128<int> ConvertScalarToVector128Int32(int value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtsi32_si128 (int a)
+        ///   MOVD xmm, reg/m32
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtsi64_si128 (__int64 a)
+        ///   MOVQ xmm, reg/m64
+        /// </summary>
+        public static Vector128<nint> ConvertScalarToVector128NUInt(nint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtsi32_si128 (int a)
+        ///   MOVD xmm, reg/m32
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtsi64_si128 (__int64 a)
+        ///   MOVQ xmm, reg/m64
+        /// </summary>
+        public static Vector128<nuint> ConvertScalarToVector128NUInt(nuint value) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128 _mm_cvtsd_ss (__m128 a, __m128d b)
         ///   CVTSD2SS xmm, xmm/m64
@@ -696,6 +840,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVDQU xmm, m128
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
+        ///   MOVDQU xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nint> LoadVector128(nint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_loadu_si128 (__m128i const* mem_address)
+        ///   MOVDQU xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nuint> LoadVector128(nuint* address) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_loadu_pd (double const* mem_address)
         ///   MOVUPD xmm, m128
@@ -748,6 +905,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVDQA xmm, m128
         /// </summary>
         public static unsafe Vector128<ulong> LoadAlignedVector128(ulong* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_load_si128 (__m128i const* mem_address)
+        ///   MOVDQA xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nint> LoadAlignedVector128(nint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_load_si128 (__m128i const* mem_address)
+        ///   MOVDQA xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nuint> LoadAlignedVector128(nuint* address) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_load_pd (double const* mem_address)
         ///   MOVAPD xmm, m128
@@ -792,6 +962,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVQ xmm, reg/m64
         /// </summary>
         public static unsafe Vector128<ulong> LoadScalarVector128(ulong* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        ///   MOVQ xmm, reg/m64
+        /// </summary>
+        public static unsafe Vector128<nint> LoadScalarVector128(nint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_loadl_epi64 (__m128i const* mem_addr)
+        ///   MOVQ xmm, reg/m64
+        /// </summary>
+        public static unsafe Vector128<nuint> LoadScalarVector128(nuint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// void _mm_maskmoveu_si128 (__m128i a,  __m128i mask, char* mem_address)
@@ -859,6 +1041,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVSD xmm, xmm
         /// </summary>
         public static Vector128<double> MoveScalar(Vector128<double> upper, Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_move_epi64 (__m128i a)
+        ///   MOVQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> MoveScalar(Vector128<nint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_move_epi64 (__m128i a)
+        ///   MOVQ xmm, xmm
+        /// </summary>
+        public static Vector128<nuint> MoveScalar(Vector128<nuint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_movemask_epi8 (__m128i a)
@@ -972,6 +1166,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   POR xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> Or(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_or_si128 (__m128i a,  __m128i b)
+        ///   POR xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> Or(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_or_si128 (__m128i a,  __m128i b)
+        ///   POR xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> Or(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_or_pd (__m128d a,  __m128d b)
         ///   ORPD xmm, xmm/m128
@@ -1071,6 +1278,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> ShiftLeftLogical(Vector128<ulong> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128i _mm_sll_epi64 (__m128i a, __m128i count)
+        ///   PSLLQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> ShiftLeftLogical(Vector128<nint> value, Vector128<nint> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_sll_epi64 (__m128i a, __m128i count)
+        ///   PSLLQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> ShiftLeftLogical(Vector128<nuint> value, Vector128<nuint> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_slli_epi16 (__m128i a,  int immediate)
         ///   PSLLW xmm, imm8
         /// </summary>
@@ -1143,6 +1362,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> ShiftLeftLogical128BitLane(Vector128<ulong> value, byte numBytes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
+        ///   PSLLDQ xmm, imm8
+        /// </summary>
+        public static Vector128<nint> ShiftLeftLogical128BitLane(Vector128<nint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_bslli_si128 (__m128i a, int imm8)
+        ///   PSLLDQ xmm, imm8
+        /// </summary>
+        public static Vector128<nuint> ShiftLeftLogical128BitLane(Vector128<nuint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_sra_epi16 (__m128i a, __m128i count)
         ///   PSRAW xmm, xmm/m128
         /// </summary>
@@ -1196,6 +1427,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, Vector128<ulong> count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128i _mm_srl_epi64 (__m128i a, __m128i count)
+        ///   PSRLQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> ShiftRightLogical(Vector128<nint> value, Vector128<nint> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_srl_epi64 (__m128i a, __m128i count)
+        ///   PSRLQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> ShiftRightLogical(Vector128<nuint> value, Vector128<nuint> count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_srli_epi16 (__m128i a,  int immediate)
         ///   PSRLW xmm, imm8
         /// </summary>
@@ -1225,6 +1468,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   PSRLQ xmm, imm8
         /// </summary>
         public static Vector128<ulong> ShiftRightLogical(Vector128<ulong> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_srli_epi64 (__m128i a,  int immediate)
+        ///   PSRLQ xmm, imm8
+        /// </summary>
+        public static Vector128<nint> ShiftRightLogical(Vector128<nint> value, byte count) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_srli_epi64 (__m128i a,  int immediate)
+        ///   PSRLQ xmm, imm8
+        /// </summary>
+        public static Vector128<nuint> ShiftRightLogical(Vector128<nuint> value, byte count) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
@@ -1266,6 +1521,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   PSRLDQ xmm, imm8
         /// </summary>
         public static Vector128<ulong> ShiftRightLogical128BitLane(Vector128<ulong> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
+        ///   PSRLDQ xmm, imm8
+        /// </summary>
+        public static Vector128<nint> ShiftRightLogical128BitLane(Vector128<nint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_bsrli_si128 (__m128i a, int imm8)
+        ///   PSRLDQ xmm, imm8
+        /// </summary>
+        public static Vector128<nuint> ShiftRightLogical128BitLane(Vector128<nuint> value, byte numBytes) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_sqrt_pd (__m128d a)
@@ -1313,6 +1580,18 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void StoreScalar(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// void _mm_storeu_si32 (void* mem_addr, __m128i a)
+        ///   MOVD m32, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(nint* address, Vector128<nint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_storel_epi64 (__m128i* mem_addr, __m128i a)
+        ///   MOVQ m64, xmm
+        /// </summary>
+        public static unsafe void StoreScalar(nuint* address, Vector128<nuint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm_store_si128 (__m128i* mem_addr, __m128i a)
         ///   MOVDQA m128, xmm
         /// </summary>
@@ -1352,6 +1631,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVDQA m128, xmm
         /// </summary>
         public static unsafe void StoreAligned(ulong* address, Vector128<ulong> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_store_si128 (__m128i* mem_addr, __m128i a)
+        ///   MOVDQA m128, xmm
+        /// </summary>
+        public static unsafe void StoreAligned(nint* address, Vector128<nint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_store_si128 (__m128i* mem_addr, __m128i a)
+        ///   MOVDQA m128, xmm
+        /// </summary>
+        public static unsafe void StoreAligned(nuint* address, Vector128<nuint> source) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// void _mm_store_pd (double* mem_addr, __m128d a)
         ///   MOVAPD m128, xmm
@@ -1405,6 +1697,18 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void StoreAlignedNonTemporal(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
+        ///   MOVNTDQ m128, xmm
+        /// </summary>
+        public static unsafe void StoreAlignedNonTemporal(nint* address, Vector128<nint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_stream_si128 (__m128i* mem_addr, __m128i a)
+        ///   MOVNTDQ m128, xmm
+        /// </summary>
+        public static unsafe void StoreAlignedNonTemporal(nuint* address, Vector128<nuint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)
         ///   MOVDQU m128, xmm
         /// </summary>
@@ -1451,6 +1755,18 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void Store(double* address, Vector128<double> source) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)
+        ///   MOVDQU m128, xmm
+        /// </summary>
+        public static unsafe void Store(nint* address, Vector128<nint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// void _mm_storeu_si128 (__m128i* mem_addr, __m128i a)
+        ///   MOVDQU m128, xmm
+        /// </summary>
+        public static unsafe void Store(nuint* address, Vector128<nuint> source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// void _mm_storeh_pd (double* mem_addr, __m128d a)
         ///   MOVHPD m64, xmm
         /// </summary>
@@ -1472,6 +1788,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVNTI m32, r32
         /// </summary>
         public static unsafe void StoreNonTemporal(uint* address, uint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm_stream_si32(int *p, int a)
+        ///   MOVNTI m32, r32
+        ///
+        /// 64-bit:
+        /// void _mm_stream_si64(__int64 *p, __int64 a)
+        ///   MOVNTI m64, r64
+        /// </summary>
+        public static unsafe void StoreNonTemporal(nint* address, nint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm_stream_si32(int *p, int a)
+        ///   MOVNTI m32, r32
+        ///
+        /// 64-bit:
+        /// void _mm_stream_si64(__int64 *p, __int64 a)
+        ///   MOVNTI m64, r64
+        /// </summary>
+        public static unsafe void StoreNonTemporal(nuint* address, nuint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_sub_epi8 (__m128i a,  __m128i b)
@@ -1547,6 +1885,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<ushort> SubtractSaturate(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_sub_epi32 (__m128i a,  __m128i b)
+        ///   PSUBD xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_sub_epi64 (__m128i a,  __m128i b)
+        ///   PSUBQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> Subtract(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_sub_epi32 (__m128i a,  __m128i b)
+        ///   PSUBD xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_sub_epi64 (__m128i a,  __m128i b)
+        ///   PSUBQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> Subtract(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_unpackhi_epi8 (__m128i a,  __m128i b)
         ///   PUNPCKHBW xmm, xmm/m128
         /// </summary>
@@ -1586,6 +1946,29 @@ namespace System.Runtime.Intrinsics.X86
         ///   PUNPCKHQDQ xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> UnpackHigh(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_unpackhi_epi32 (__m128i a,  __m128i b)
+        ///   PUNPCKHDQ xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_unpackhi_epi64 (__m128i a,  __m128i b)
+        ///   PUNPCKHQDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> UnpackHigh(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_unpackhi_epi32 (__m128i a,  __m128i b)
+        ///   PUNPCKHDQ xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_unpackhi_epi64 (__m128i a,  __m128i b)
+        ///   PUNPCKHQDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> UnpackHigh(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_unpackhi_pd (__m128d a,  __m128d b)
         ///   UNPCKHPD xmm, xmm/m128
@@ -1639,6 +2022,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> UnpackLow(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_unpacklo_epi32 (__m128i a,  __m128i b)
+        ///   PUNPCKLDQ xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_unpacklo_epi64 (__m128i a,  __m128i b)
+        ///   PUNPCKLQDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> UnpackLow(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_unpacklo_epi32 (__m128i a,  __m128i b)
+        ///   PUNPCKLDQ xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_unpacklo_epi64 (__m128i a,  __m128i b)
+        ///   PUNPCKLQDQ xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> UnpackLow(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m128i _mm_xor_si128 (__m128i a,  __m128i b)
         ///   PXOR xmm, xmm/m128
         /// </summary>
@@ -1678,6 +2083,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   PXOR xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> Xor(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_xor_si128 (__m128i a,  __m128i b)
+        ///   PXOR xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> Xor(Vector128<nint> left, Vector128<nint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_xor_si128 (__m128i a,  __m128i b)
+        ///   PXOR xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> Xor(Vector128<nuint> left, Vector128<nuint> right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// __m128d _mm_xor_pd (__m128d a,  __m128d b)
         ///   XORPD xmm, xmm/m128
