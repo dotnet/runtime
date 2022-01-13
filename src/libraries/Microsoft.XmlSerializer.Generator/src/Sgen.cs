@@ -444,7 +444,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private void ImportType(Type type, string defaultNamespace, List<XmlMapping> mappings, List<Type> importedTypes, bool verbose, XmlReflectionImporter importer, bool parsableerrors)
         {
-            XmlTypeMapping xmlTypeMapping = null;
+            XmlTypeMapping xmlTypeMapping;
             var localImporter = new XmlReflectionImporter(defaultNamespace);
             try
             {
@@ -475,7 +475,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static Assembly LoadAssembly(string assemblyName, bool throwOnFail)
         {
-            Assembly assembly = null;
+            Assembly assembly;
             string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);
             assembly = Assembly.LoadFile(path);
             if (assembly == null)

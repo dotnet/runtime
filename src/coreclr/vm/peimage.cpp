@@ -18,7 +18,6 @@
 
 #ifndef DACCESS_COMPILE
 
-
 CrstStatic  PEImage::s_hashLock;
 PtrHashMap *PEImage::s_Images = NULL;
 CrstStatic  PEImage::s_ijwHashLock;
@@ -95,7 +94,7 @@ PEImage::~PEImage()
     if(m_hFile!=INVALID_HANDLE_VALUE)
         CloseHandle(m_hFile);
 
-    for (unsigned int i=0;i<COUNTOF(m_pLayouts);i++)
+    for (unsigned int i=0;i<ARRAY_SIZE(m_pLayouts);i++)
     {
         if (m_pLayouts[i]!=NULL)
             m_pLayouts[i]->Release();
@@ -754,7 +753,7 @@ PEImage::PEImage():
         MODE_ANY;
     }
     CONTRACTL_END;
-    for (DWORD i=0;i<COUNTOF(m_pLayouts);i++)
+    for (DWORD i=0;i<ARRAY_SIZE(m_pLayouts);i++)
         m_pLayouts[i]=NULL ;
     m_pLayoutLock=new SimpleRWLock(PREEMPTIVE,LOCK_TYPE_DEFAULT);
 }

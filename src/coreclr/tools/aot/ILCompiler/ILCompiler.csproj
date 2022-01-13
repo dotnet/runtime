@@ -21,13 +21,7 @@
   <PropertyGroup>
     <SelfContained>true</SelfContained>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <RuntimeIdentifier>$(__DistroRid)</RuntimeIdentifier>
-
-    <!-- DistroRid is injected through environment variables in build scripts. Provide reasonable default
-         when the build is invoked directly, e.g. building inside Visual Studio -->
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(TargetsWindows)' == 'true'">win-$(TargetArchitecture)</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(TargetsLinux)' == 'true'">linux-$(TargetArchitecture)</RuntimeIdentifier>
-    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == '' and '$(TargetsOSX)' == 'true'">osx-$(TargetArchitecture)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(ToolsRID)</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup>

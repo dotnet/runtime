@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
+import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -12,6 +12,8 @@ import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
+import { DotnetPublicAPI } from "./exports";
+import { mono_on_abort } from "./run";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -20,42 +22,123 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
     runtime_is_initialized_reject = reject;
 });
 
+let ctx: DownloadAssetsContext | null = null;
 
-export async function mono_wasm_pre_init(): Promise<void> {
+export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
+    // these could be overriden on DotnetModuleConfig
+    if (!module.preInit) {
+        module.preInit = [];
+    } else if (typeof module.preInit === "function") {
+        module.preInit = [module.preInit];
+    }
+    if (!module.preRun) {
+        module.preRun = [];
+    } else if (typeof module.preRun === "function") {
+        module.preRun = [module.preRun];
+    }
+    if (!module.postRun) {
+        module.postRun = [];
+    } else if (typeof module.postRun === "function") {
+        module.postRun = [module.postRun];
+    }
+
+    // when user set configSrc or config, we are running our default startup sequence. 
+    if (module.configSrc || module.config) {
+        // execution order == [0] ==
+        // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
+        // - all user Module.preInit
+
+        // execution order == [1] ==
+        module.preInit.push(mono_wasm_pre_init);
+        // - download Module.config from configSrc
+        // - download assets like DLLs
+
+        // execution order == [2] ==
+        // - all user Module.preRun callbacks
+
+        // execution order == [3] ==
+        // - user Module.onRuntimeInitialized callback
+
+        // execution order == [4] ==
+        module.postRun.unshift(mono_wasm_after_runtime_initialized);
+        // - load DLLs into WASM memory
+        // - apply globalization and other env variables
+        // - call mono_wasm_load_runtime
+
+        // execution order == [5] ==
+        // - all user Module.postRun callbacks
+
+        // execution order == [6] ==
+        module.ready = module.ready.then(async () => {
+            // mono_wasm_runtime_is_initialized promise is resolved when finalize_startup is done
+            await mono_wasm_runtime_is_initialized;
+            // - here we resolve the promise returned by createDotnetRuntime export
+            return exportedAPI;
+            // - any code after createDotnetRuntime is executed now
+        });
+
+    }
+    // Otherwise startup sequence is up to user code, like Blazor
+
+    if (!module.onAbort) {
+        module.onAbort = () => mono_on_abort;
+    }
+}
+
+async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as DotnetModule;
-    if (!moduleExt.configSrc) {
-        return;
+
+    Module.addRunDependency("mono_wasm_pre_init");
+
+    // wait for locateFile setup on NodeJs
+    if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
+        await requirePromise;
     }
 
-    try {
-        // sets MONO.config implicitly
-        await mono_wasm_load_config(moduleExt.configSrc);
-    }
-    catch (err: any) {
-        runtime_is_initialized_reject(err);
-        throw err;
-    }
-
-    if (moduleExt.onConfigLoaded) {
+    if (moduleExt.configSrc) {
         try {
-            moduleExt.onConfigLoaded();
+            // sets MONO.config implicitly
+            await mono_wasm_load_config(moduleExt.configSrc);
         }
         catch (err: any) {
-            Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
-            Module.printErr("MONO_WASM: Stacktrace: \n");
-            Module.printErr(err.stack);
+            runtime_is_initialized_reject(err);
+            throw err;
+        }
+
+        if (moduleExt.onConfigLoaded) {
+            try {
+                await moduleExt.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
+            }
+            catch (err: any) {
+                Module.printErr("MONO_WASM: onConfigLoaded () failed: " + err);
+                Module.printErr("MONO_WASM: Stacktrace: \n");
+                Module.printErr(err.stack);
+                runtime_is_initialized_reject(err);
+                throw err;
+            }
+        }
+    }
+
+    if (moduleExt.config) {
+        try {
+            // start downloading assets asynchronously
+            // next event of emscripten would bre triggered by last `removeRunDependency`
+            await mono_download_assets(Module.config);
+        }
+        catch (err: any) {
             runtime_is_initialized_reject(err);
             throw err;
         }
     }
 
+    Module.removeRunDependency("mono_wasm_pre_init");
 }
 
-export async function mono_wasm_on_runtime_initialized(): Promise<void> {
+function mono_wasm_after_runtime_initialized(): void {
     if (!Module.config || Module.config.isError) {
         return;
     }
-    await mono_load_runtime_and_bcl_args(Module.config);
+    finalize_assets(Module.config);
     finalize_startup(Module.config);
 }
 
@@ -76,8 +159,12 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
-function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
-    const bytes = new Uint8Array(blob);
+// this need to be run only after onRuntimeInitialized event, when the memory is ready
+function _handle_fetched_asset(asset: AssetEntry, url?: string) {
+    assert(ctx, "Context is expected");
+    assert(asset.buffer, "asset.buffer is expected");
+
+    const bytes = new Uint8Array(asset.buffer);
     if (ctx.tracing)
         console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
 
@@ -110,7 +197,7 @@ function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: str
                 if (ctx.tracing)
                     console.log(`MONO_WASM: Creating directory '${parentDirectory}'`);
 
-                ctx.createPath(
+                Module.FS_createPath(
                     "/", parentDirectory, true, true // fixme: should canWrite be false?
                 );
             } else {
@@ -121,7 +208,7 @@ function _handle_fetched_asset(ctx: MonoInitContext, asset: AssetEntry, url: str
                 console.log(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
-                ctx.createDataFile(
+                Module.FS_createDataFile(
                     parentDirectory, fileName,
                     bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
                 );
@@ -302,6 +389,11 @@ export function bindings_lazy_init(): void {
 
 // Initializes the runtime and loads assemblies, debug information, and other files.
 export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoConfigError | undefined): Promise<void> {
+    await mono_download_assets(config);
+    finalize_assets(config);
+}
+
+async function mono_download_assets(config: MonoConfig | MonoConfigError | undefined): Promise<void> {
     if (!config || config.isError) {
         return;
     }
@@ -312,14 +404,15 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
 
 
         config.diagnostic_tracing = config.diagnostic_tracing || false;
-        const ctx: MonoInitContext = {
+        ctx = {
             tracing: config.diagnostic_tracing,
             pending_count: config.assets.length,
+            downloading_count: config.assets.length,
+            fetch_all_promises: null,
+            resolved_promises: [],
             loaded_assets: Object.create(null),
             // dlls and pdbs, used by blazor and the debugger
             loaded_files: [],
-            createPath: Module.FS_createPath,
-            createDataFile: Module.FS_createDataFile
         };
 
         // fetch_file_cb is legacy do we really want to support it ?
@@ -327,11 +420,37 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
             runtimeHelpers.fetch = (<any>config).fetch_file_cb;
         }
 
-        const load_asset = async (config: MonoConfig, asset: AllAssetEntryTypes): Promise<void> => {
-            // TODO Module.addRunDependency(asset.name);
+        const max_parallel_downloads = 100;
+        // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
+        let parallel_count = 0;
+        let throttling_promise: Promise<void> | undefined = undefined;
+        let throttling_promise_resolve: Function | undefined = undefined;
+
+        const load_asset = async (config: MonoConfig, asset: AllAssetEntryTypes): Promise<MonoInitFetchResult | undefined> => {
+            while (throttling_promise) {
+                await throttling_promise;
+            }
+            ++parallel_count;
+            if (parallel_count == max_parallel_downloads) {
+                if (ctx!.tracing)
+                    console.log("MONO_WASM: Throttling further parallel downloads");
+
+                throttling_promise = new Promise((resolve) => {
+                    throttling_promise_resolve = resolve;
+                });
+            }
+
+            Module.addRunDependency(asset.name);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
             let error = undefined;
+            let result: MonoInitFetchResult | undefined = undefined;
+
+            if (asset.buffer) {
+                --ctx!.downloading_count;
+                return { asset, attemptUrl: undefined };
+            }
+
             for (let sourcePrefix of sourcesList) {
                 // HACK: Special-case because MSBuild doesn't allow "" as an attribute
                 if (sourcePrefix === "./")
@@ -351,10 +470,10 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
                     attemptUrl = sourcePrefix + asset.name;
                 }
                 if (asset.name === attemptUrl) {
-                    if (ctx.tracing)
+                    if (ctx!.tracing)
                         console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}'`);
                 } else {
-                    if (ctx.tracing)
+                    if (ctx!.tracing)
                         console.log(`MONO_WASM: Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
                 try {
@@ -364,9 +483,9 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
                         continue;// next source
                     }
 
-                    const buffer = await response.arrayBuffer();
-                    _handle_fetched_asset(ctx, asset, attemptUrl, buffer);
-                    --ctx.pending_count;
+                    asset.buffer = await response.arrayBuffer();
+                    result = { asset, attemptUrl };
+                    --ctx!.downloading_count;
                     error = undefined;
                 }
                 catch (err) {
@@ -378,20 +497,51 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
                     break; // this source worked, stop searching
                 }
             }
+
+            --parallel_count;
+            if (throttling_promise && parallel_count == ((max_parallel_downloads / 2) | 0)) {
+                if (ctx!.tracing)
+                    console.log("MONO_WASM: Resuming more parallel downloads");
+                throttling_promise_resolve!();
+                throttling_promise = undefined;
+            }
+
             if (error) {
                 const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && config.ignore_pdb_load_errors);
                 if (!isOkToFail)
                     throw error;
             }
-            // TODO Module.removeRunDependency(asset.name);
+            Module.removeRunDependency(asset.name);
+
+            return result;
         };
-        const fetch_promises: Promise<void>[] = [];
+        const fetch_promises: Promise<(MonoInitFetchResult | undefined)>[] = [];
+
         // start fetching all assets in parallel
         for (const asset of config.assets) {
             fetch_promises.push(load_asset(config, asset));
         }
 
-        await Promise.all(fetch_promises);
+        ctx.fetch_all_promises = Promise.all(fetch_promises);
+        ctx.resolved_promises = await ctx.fetch_all_promises;
+    } catch (err: any) {
+        Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
+        runtime_is_initialized_reject(err);
+        throw err;
+    }
+}
+
+function finalize_assets(config: MonoConfig | MonoConfigError | undefined): void {
+    assert(config && !config.isError, "Expected config");
+    assert(ctx && ctx.downloading_count == 0, "Expected assets to be downloaded");
+
+    try {
+        for (const fetch_result of ctx.resolved_promises!) {
+            if (fetch_result) {
+                _handle_fetched_asset(fetch_result.asset, fetch_result.attemptUrl);
+                --ctx.pending_count;
+            }
+        }
 
         ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
         if (ctx.tracing) {
@@ -399,7 +549,7 @@ export async function mono_load_runtime_and_bcl_args(config: MonoConfig | MonoCo
             console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
         }
     } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in mono_load_runtime_and_bcl_args: " + err);
+        Module.printErr("MONO_WASM: Error in finalize_assets: " + err);
         runtime_is_initialized_reject(err);
         throw err;
     }
@@ -525,11 +675,17 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
     cwraps.mono_wasm_set_main_args(main_argc, main_argv);
 }
 
-export type MonoInitContext = {
+type MonoInitFetchResult = {
+    asset: AllAssetEntryTypes,
+    attemptUrl?: string,
+}
+
+export type DownloadAssetsContext = {
     tracing: boolean,
+    downloading_count: number,
     pending_count: number,
-    loaded_files: { url: string, file: string }[],
+    fetch_all_promises: Promise<(MonoInitFetchResult | undefined)[]> | null;
+    resolved_promises: (MonoInitFetchResult | undefined)[] | null;
+    loaded_files: { url?: string, file: string }[],
     loaded_assets: { [id: string]: [VoidPtr, number] },
-    createPath: Function,
-    createDataFile: Function
 }

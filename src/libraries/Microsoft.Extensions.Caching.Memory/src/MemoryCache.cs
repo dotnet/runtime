@@ -140,7 +140,7 @@ namespace Microsoft.Extensions.Caching.Memory
             bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry, coherentState);
             if (!exceedsCapacity)
             {
-                bool entryAdded = false;
+                bool entryAdded;
 
                 if (priorEntry == null)
                 {
@@ -329,11 +329,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
-            long newSize = 0L;
             for (int i = 0; i < 100; i++)
             {
                 long sizeRead = coherentState.Size;
-                newSize = sizeRead + entry.Size.Value;
+                long newSize = sizeRead + entry.Size.Value;
 
                 if (newSize < 0 || newSize > _options.SizeLimit)
                 {

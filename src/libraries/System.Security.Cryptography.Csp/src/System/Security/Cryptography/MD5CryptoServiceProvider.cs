@@ -10,21 +10,20 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class MD5CryptoServiceProvider : MD5
     {
-        private const int HashSizeBits = 128;
         private readonly IncrementalHash _incrementalHash;
         private bool _running;
 
         public MD5CryptoServiceProvider()
         {
             _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-            HashSizeValue = HashSizeBits;
+            HashSizeValue = HashSizeInBits;
         }
 
         public override void Initialize()
         {
             if (_running)
             {
-                Span<byte> destination = stackalloc byte[HashSizeBits / 8];
+                Span<byte> destination = stackalloc byte[HashSizeInBytes];
 
                 if (!_incrementalHash.TryGetHashAndReset(destination, out _))
                 {

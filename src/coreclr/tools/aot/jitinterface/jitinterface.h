@@ -159,7 +159,6 @@ struct JitInterfaceCallbacks
     InfoAccessType (* constructStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned int metaTok, void** ppValue);
     InfoAccessType (* emptyStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, void** ppValue);
     uint32_t (* getFieldThreadLocalStoreID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
-    void (* setOverride)(void * thisHandle, CorInfoExceptionClass** ppException, ICorDynamicInfo* pOverride, CORINFO_METHOD_HANDLE currentMethod);
     void (* addActiveDependency)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo);
     CORINFO_METHOD_HANDLE (* GetDelegateCtor)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd, CORINFO_CLASS_HANDLE clsHnd, CORINFO_METHOD_HANDLE targetMethodHnd, DelegateCtorArgs* pCtorData);
     void (* MethodCompileComplete)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE methHnd);
@@ -1615,15 +1614,6 @@ public:
     uint32_t temp = _callbacks->getFieldThreadLocalStoreID(_thisHandle, &pException, field, ppIndirection);
     if (pException != nullptr) throw pException;
     return temp;
-}
-
-    virtual void setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    _callbacks->setOverride(_thisHandle, &pException, pOverride, currentMethod);
-    if (pException != nullptr) throw pException;
 }
 
     virtual void addActiveDependency(

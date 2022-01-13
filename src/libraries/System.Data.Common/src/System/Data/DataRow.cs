@@ -1204,7 +1204,7 @@ namespace System.Data
                     }
                     foreach (DataColumn dc in _columns.ColumnsImplementingIChangeTracking)
                     {
-                        object? value = null;
+                        object? value;
                         if (RowState != DataRowState.Deleted)
                             value = this[dc];
                         else
@@ -1426,7 +1426,6 @@ namespace System.Data
                     _columns[i].CopyValueIntoStore(_tempRecord, storeList[i]!, (BitArray)nullbitList[i]!, storeIndex);
                 }
                 recordCount++;
-                storeIndex++;
             }
 
             return recordCount;

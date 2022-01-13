@@ -169,7 +169,7 @@ const char* ANCHORPT(_In_ __nullterminated const char* szOrig, mdToken tk)
     {
         char  szPrefix[64];
         const char* szPostfix = "</A>";
-        sprintf_s(szPrefix, COUNTOF(szPrefix), "<A NAME=A%08X>",tk);
+        sprintf_s(szPrefix, ARRAY_SIZE(szPrefix), "<A NAME=A%08X>",tk);
         g_szBuf_ANCHORPT->Shrink(0);
         appendStr(g_szBuf_ANCHORPT,szPrefix);
         appendStr(g_szBuf_ANCHORPT,szOrig);
@@ -192,7 +192,7 @@ const char* JUMPPT(_In_ __nullterminated const char* szOrig, mdToken tk)
     {
         char  szPrefix[64];
         const char* szPostfix = "</A>";
-        sprintf_s(szPrefix,COUNTOF(szPrefix), "<A HREF=#A%08X>",tk);
+        sprintf_s(szPrefix,ARRAY_SIZE(szPrefix), "<A HREF=#A%08X>",tk);
         g_szBuf_JUMPPT->Shrink(0);
         appendStr(g_szBuf_JUMPPT,szPrefix);
         appendStr(g_szBuf_JUMPPT,szOrig);

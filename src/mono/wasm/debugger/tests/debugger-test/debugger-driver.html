@@ -82,10 +82,13 @@
 		function invoke_add_with_parms (a, b) {
 			return App.int_add (a, b);
 		}
-				
 		function load_non_wasm_page () {
 			console.log("load_non_wasm_page")
 			window.location.replace("http://localhost:9400/non-wasm-page.html");
+		}
+		function load_wasm_page_without_assets () {
+			console.log("load_wasm_page_without_assets")
+			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
 		}
 		</script>
 		<script type="text/javascript" src="debugger-main.js"></script>
