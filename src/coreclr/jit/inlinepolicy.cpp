@@ -745,7 +745,8 @@ double DefaultPolicy::DetermineMultiplier()
 
     if (m_ArgFeedsIsKnownConst)
     {
-        // In IsPrejitRoot we don't have callsite info so let's assume we have a constant here in order to avoid "baked" noinline
+        // In IsPrejitRoot we don't have callsite info so let's assume we have a constant here in order to avoid "baked"
+        // noinline
         multiplier += m_IsPrejitRoot ? 10 : 2;
         JITDUMP("\nConstant argument feeds RuntimeHelpers.IsKnownConstant.  Multiplier increased to %g.", multiplier);
     }
