@@ -3941,29 +3941,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_String_get_Length:
             {
                 GenTree* op1 = impPopStack().val;
-                if (opts.OptimizationEnabled())
+                if (op1->OperIs(GT_CNS_STR))
                 {
-                    if (op1->OperIs(GT_CNS_STR))
+                    // Optimize `ldstr + String::get_Length()` to CNS_INT
+                    // e.g. "Hello".Length => 5
+                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                    if (iconNode != nullptr)
                     {
-                        // Optimize `ldstr + String::get_Length()` to CNS_INT
-                        // e.g. "Hello".Length => 5
-                        GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
-                        if (iconNode != nullptr)
-                        {
-                            retNode = iconNode;
-                            break;
-                        }
+                        retNode = iconNode;
+                        break;
                     }
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
-                    op1                   = arrLen;
                 }
-                else
-                {
-                    /* Create the expression "*(str_addr + stringLengthOffset)" */
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
-                }
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                op1                   = arrLen;
 
                 // Getting the length of a null string should throw
                 op1->gtFlags |= GTF_EXCEPT;
@@ -4309,7 +4299,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
-                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
+                if (impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
                     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
@@ -4332,7 +4322,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                if (opts.OptimizationEnabled() && compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
