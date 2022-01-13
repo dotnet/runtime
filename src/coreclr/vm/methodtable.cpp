@@ -2893,7 +2893,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
 #endif // defined(UNIX_AMD64_ABI_ITF)
 
 #if defined(TARGET_LOONGARCH64)
-int MethodTable::getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh)
+int MethodTable::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE clh)
 {
     TypeHandle th(clh);
 
@@ -3055,7 +3055,7 @@ int MethodTable::getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     methodTablePtr = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
-                    size = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr);
+                    size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)methodTablePtr);
                 }
                 //else
                 //{
@@ -3128,7 +3128,7 @@ int MethodTable::getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh)
                 {
                     //assert(!"------------should amend for LOONGARCH64!!!");
                     MethodTable* methodTablePtr2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
-                    int size2 = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                    int size2 = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
                     if ((size2 & 0xf) != (size2 & 0x3))
                     {
                         if (methodTablePtr->GetNumInstanceFieldBytes() == 8)
@@ -3159,7 +3159,7 @@ int MethodTable::getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh)
                 {
                     //assert(!"------------should amend for LOONGARCH64!!!");
                     MethodTable* methodTablePtr2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
-                    int size2 = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                    int size2 = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
                     if ((size2 & 0xf) != (size2 & 0x3))
                     {
                         if (methodTablePtr->GetNumInstanceFieldBytes() == 8)
@@ -3221,7 +3221,7 @@ int MethodTable::getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh)
                 else if (fieldType == ELEMENT_TYPE_VALUETYPE)
                 {
                     methodTablePtr = pFieldStart[1].LookupApproxFieldTypeHandle().AsMethodTable();
-                    int size2 = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr);
+                    int size2 = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)methodTablePtr);
                     if ((size2 & 0xf) != (size2 & 0x3))
                     {
                         if (methodTablePtr->GetNumInstanceFieldBytes() == 8)
@@ -3247,7 +3247,7 @@ int MethodTable::getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh)
                 else if (fieldType == ELEMENT_TYPE_CLASS)
                 {
                     MethodTable* methodTablePtr2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
-                    int size2 = getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
+                    int size2 = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)methodTablePtr2);
                     if ((size2 & 0xf) != (size2 & 0x3))
                     {
                         if (methodTablePtr->GetNumInstanceFieldBytes() == 8)

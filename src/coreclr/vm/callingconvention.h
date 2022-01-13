@@ -43,7 +43,7 @@ struct ArgLocDesc
     int     m_byteStackSize;      // Stack size in bytes
 #if defined(TARGET_LOONGARCH64)
     int     m_structFields;       // Struct field info when using Float-register except two-doubles case.
-    int     m_flag;               // flags for how the struct passed by registers.
+    int     m_structFloatFlag;    // flags for how the struct passed by registers when including float fields.
 #endif
 
 #if defined(UNIX_AMD64_ABI)
@@ -98,7 +98,7 @@ struct ArgLocDesc
         m_hfaFieldSize = 0;
 #endif // defined(TARGET_ARM64)
 #if defined(TARGET_LOONGARCH64)
-        m_flag = 0;
+        m_structFloatFlag = 0;
         m_structFields = 0;
 #endif
 #if defined(UNIX_AMD64_ABI)
@@ -880,12 +880,12 @@ public:
             {
                 if (GetArgType() == ELEMENT_TYPE_R4)
                 {
-                    pLoc->m_flag = 5;
+                    pLoc->m_structFloatFlag = 5;
                     return;//float by integer-reg.
                 }
                 else if (GetArgType() == ELEMENT_TYPE_R8)
                 {
-                    pLoc->m_flag = 6;
+                    pLoc->m_structFloatFlag = 6;
                     return;//float by integer-reg.
                 }
                 else if (!m_flags)
@@ -895,25 +895,25 @@ public:
 
                 if ((1 == m_flags) || (2 == m_flags))
                 {
-                    pLoc->m_flag = 7;//first double.
+                    pLoc->m_structFloatFlag = 7;//first double.
                     return;
                 }
 
                 if ((cSlots == 1) && (m_flags == 0x5))
                 {
-                    pLoc->m_flag = 2;//two float;    ? not case ?
+                    pLoc->m_structFloatFlag = 2;//two float;    ? not case ?
                     assert(!"----------two float;    ? not case ?------------");
                 }
                 else if ((cSlots == 1) && (m_flags & 0x1))
-                    pLoc->m_flag = 1;//first float;
+                    pLoc->m_structFloatFlag = 1;//first float;
                 else if ((cSlots == 1) && (m_flags & 0x4))
-                    pLoc->m_flag = 4;//second float;
+                    pLoc->m_structFloatFlag = 4;//second float;
                 else if ((m_flags & 0xc) && (m_flags & 0x3))
-                    pLoc->m_flag = 9;//two double.
+                    pLoc->m_structFloatFlag = 9;//two double.
                 else if (m_flags & 0xc)
-                    pLoc->m_flag = 8;//second double.
+                    pLoc->m_structFloatFlag = 8;//second double.
                 else if (m_flags & 0x3)
-                    pLoc->m_flag = 7;//first double.
+                    pLoc->m_structFloatFlag = 7;//first double.
             }
         }
         else
@@ -931,13 +931,13 @@ public:
             assert(!((cSlots == 1) && (m_flags == 0x5)));
 
             if ((cSlots == 1) && (m_flags & 0x1))
-                pLoc->m_flag = 1;//first float;
+                pLoc->m_structFloatFlag = 1;//first float;
             else if ((cSlots == 1) && (m_flags & 0x4))
-                pLoc->m_flag = 4;//second float;
+                pLoc->m_structFloatFlag = 4;//second float;
             else if (m_flags & 0xc)
-                pLoc->m_flag = 8;//second double.
+                pLoc->m_structFloatFlag = 8;//second double.
             else if (m_flags & 0x3)
-                pLoc->m_flag = 7;//first double.
+                pLoc->m_structFloatFlag = 7;//first double.
         }
     }
 
@@ -1716,17 +1716,17 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            MethodTable* methodTablePtr = nullptr;
+            MethodTable* pMethodTable = nullptr;
 
             if (!thValueType.IsTypeDesc())
-                methodTablePtr = thValueType.AsMethodTable();
+                pMethodTable = thValueType.AsMethodTable();
             else
             {
                 _ASSERTE(thValueType.IsNativeValueType());
-                methodTablePtr = thValueType.AsNativeValueType();
+                pMethodTable = thValueType.AsNativeValueType();
             }
-            _ASSERTE(methodTablePtr != nullptr);
-            flags = MethodTable::getFieldTypeByHnd((CORINFO_CLASS_HANDLE)methodTablePtr);
+            _ASSERTE(pMethodTable != nullptr);
+            flags = MethodTable::getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
             if (flags & 0xf)
             {
                 cFPRegs = flags >> 16;
@@ -1936,12 +1936,12 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             {
                 assert(!thValueType.IsTypeDesc());
 
-                MethodTable *methodTablePtr = thValueType.AsMethodTable();
-                DWORD numIntroducedFields = methodTablePtr->GetNumIntroducedInstanceFields();
+                MethodTable *pMethodTable = thValueType.AsMethodTable();
+                DWORD numIntroducedFields = pMethodTable->GetNumIntroducedInstanceFields();
 
                 if (numIntroducedFields == 1)
                 {
-                    CorElementType fieldType = methodTablePtr->GetFieldTypeByIndex(0);
+                    CorElementType fieldType = pMethodTable->GetFieldTypeByIndex(0);
                     if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
                     {
                         flags |= (2 << RETURN_FP_SIZE_SHIFT);
@@ -1949,13 +1949,13 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 }
                 else if (numIntroducedFields == 2)
                 {
-                    CorElementType fieldType = methodTablePtr->GetFieldTypeByIndex(0);
+                    CorElementType fieldType = pMethodTable->GetFieldTypeByIndex(0);
                     if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
                     {
                         flags |= (4 << RETURN_FP_SIZE_SHIFT);
                     }
 
-                    fieldType = methodTablePtr->GetFieldTypeByIndex(1);
+                    fieldType = pMethodTable->GetFieldTypeByIndex(1);
                     if ((fieldType == ELEMENT_TYPE_R4) || (fieldType == ELEMENT_TYPE_R8))
                     {
                         flags ^= (flags & (4 << RETURN_FP_SIZE_SHIFT)) ? (0x6 << RETURN_FP_SIZE_SHIFT) : (0x8 << RETURN_FP_SIZE_SHIFT);

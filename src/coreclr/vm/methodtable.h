@@ -780,7 +780,7 @@ public:
     void CheckRunClassInitAsIfConstructingThrowing();
 
 #if defined(TARGET_LOONGARCH64)
-    static int getFieldTypeByHnd(CORINFO_CLASS_HANDLE clh);
+    static int getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE clh);
 #endif
 
 #if defined(UNIX_AMD64_ABI_ITF)
