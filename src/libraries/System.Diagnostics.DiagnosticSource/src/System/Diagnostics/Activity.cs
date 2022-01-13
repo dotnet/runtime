@@ -1299,8 +1299,11 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Indicates whether this Activity object is stopped
+        /// Indicates whether this <see cref="Activity"/> object is stopped
         /// </summary>
+        /// <remarks>
+        /// When subscribing to <see cref="Activity"/> stop event using <see cref="ActivityListener.ActivityStopped"/>, the received <see cref="Activity"/> object in the event callback will have <see cref="IsStopped"/> as true.
+        /// </remarks>
         public bool IsStopped
         {
             get => (_state & State.IsStopped) != 0;
