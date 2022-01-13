@@ -848,15 +848,41 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
 
-                if (j == 0 &&
-                    (method?.Info.IsHiddenFromDebugger == true ||
-                    (method?.Info.HasStepThroughAttribute == true && JustMyCode)))
+                if (context.IsSteppingThroughMethod == true)
+                {
+                    context.IsSteppingThroughMethod = false;
+                    if (event_kind != EventKind.UserBreak && event_kind != EventKind.Breakpoint)
+                    {
+                        await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
+                }
+
+                if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
                 {
                     if (event_kind == EventKind.Step)
                         context.IsSkippingHiddenMethod = true;
                     await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                     return true;
+                }
+
+                if (j == 0 && method?.Info.HasStepThroughAttribute == true)
+                {
+                    if (event_kind == EventKind.Step)
+                    {
+                        if (context.IsResumedAfterBp)
+                            context.IsResumedAfterBp = false;
+                        else
+                            context.IsSteppingThroughMethod = true;
+
+                        await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
+                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                        return true;
+                    }
+                    if (event_kind == EventKind.Breakpoint)
+                        context.IsResumedAfterBp = true;
                 }
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);

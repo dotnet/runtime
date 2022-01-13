@@ -852,7 +852,9 @@ public class DebuggerAttribute
     [System.Diagnostics.DebuggerStepThroughAttribute]
     public static void NotStopOnJustMyCode()
     {
+        var a = 0;
         currentCount++;
+        var b = 1;
     }
 
     public static void RunStepThrough()
