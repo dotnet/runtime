@@ -133,8 +133,7 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   # inadvertently flooding the CI machines with dumps.
   if [[ ! -d "/cores" || ! "$(ls -A /cores)" ]]; then
     # FIXME: temporarily disable core dumps
-    #ulimit -c unlimited
-    true
+    ulimit -c 0
   fi
 
 elif [[ "$(uname -s)" == "Linux" ]]; then
