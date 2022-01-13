@@ -22,12 +22,12 @@
 # 4.  Lastly, it sets the pipeline variables.
 #
 # Below are the helix queues it sets depending on the OS/architecture:
-# | Arch  | windows                 | Linux                                                                                                                                |
-# |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-# | x86   | Windows.10.Amd64.X86.Rt |                                                                                                                                      |
-# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    |
-# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
-# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
+# | Arch  | windows                 | Linux                                                                                                                                | macOS          |
+# |-------|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------|----------------|
+# | x86   | Windows.10.Amd64.X86.Rt |                                                                                                                                      | -              |
+# | x64   | Windows.10.Amd64.X86.Rt | Ubuntu.1804.Amd64                                                                                                                    | OSX.1014.Amd64 |
+# | arm   | -                       | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 | -              |
+# | arm64 | Windows.10.Arm64        | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 | OSX.1100.ARM64 |
 #
 ################################################################################
 ################################################################################
