@@ -4509,7 +4509,7 @@ inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
 //
 // Arguments:
 //    tree: This node should not be referenced by anyone now
-
+//
 inline void DEBUG_DESTROY_NODE(GenTree* tree)
 {
 #ifdef DEBUG
