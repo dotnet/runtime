@@ -6,13 +6,14 @@
 import createDotnetRuntime from './dotnet.js'
 
 try {
-    const { BINDING, INTERNAL } = await createDotnetRuntime(({ MONO }) => ({
+    const { BINDING, INTERNAL } = await createDotnetRuntime(() => ({
         configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
-            MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+        onConfigLoaded: (config) => {
+            config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
+            config.diagnostic_tracing = true;
             /* For custom logging patch the functions below
-            MONO.config.environment_variables["MONO_LOG_LEVEL"] = "debug";
-            MONO.config.environment_variables["MONO_LOG_MASK"] = "all";
+            config.environment_variables["MONO_LOG_LEVEL"] = "debug";
+            config.environment_variables["MONO_LOG_MASK"] = "all";
             INTERNAL.logging = {
                 trace: function (domain, log_level, message, isFatal, dataPtr) { },
                 debugger: function (level, message) { }
