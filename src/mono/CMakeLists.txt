@@ -463,8 +463,12 @@ include(configure)
 ######################################
 
 if(GCC)
-  # We require C99 with some GNU extensions, e.g. `linux` macro
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  if(WASI)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+  else()
+    # We require C99 with some GNU extensions, e.g. `linux` macro
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  endif()
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
