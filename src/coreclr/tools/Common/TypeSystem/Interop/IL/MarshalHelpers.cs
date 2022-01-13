@@ -510,8 +510,6 @@ namespace Internal.TypeSystem.Interop
                             else
                                 return MarshallerKind.ByValArray;
                         }
-                    case NativeTypeKind.CustomMarshaler:
-                        return MarshallerKind.CustomMarshaler;
 
                     default:
                         return MarshallerKind.Invalid;
@@ -607,9 +605,6 @@ namespace Internal.TypeSystem.Interop
                 if (nativeType == NativeTypeKind.AsAny)
                     return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
                 else
-                if (nativeType == NativeTypeKind.CustomMarshaler)
-                    return MarshallerKind.CustomMarshaler;
-                else
                 if (context.Target.IsWindows)
                 {
                     if ((isField && nativeType == NativeTypeKind.Default)
@@ -676,9 +671,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsInterface)
             {
-                if (nativeType == NativeTypeKind.CustomMarshaler)
-                    return MarshallerKind.CustomMarshaler;
-                else
                 if (context.Target.IsWindows)
                     return MarshallerKind.ComInterface;
                 else
@@ -686,10 +678,7 @@ namespace Internal.TypeSystem.Interop
             }
             else
             {
-                if (nativeType == NativeTypeKind.CustomMarshaler)
-                    return MarshallerKind.CustomMarshaler;
-                else
-                    return MarshallerKind.Invalid;
+                return MarshallerKind.Invalid;
             }
         }
 
