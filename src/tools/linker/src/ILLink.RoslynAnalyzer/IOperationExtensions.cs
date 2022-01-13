@@ -50,7 +50,7 @@ namespace ILLink.RoslynAnalyzer
 				}
 
 				switch (operation.Parent) {
-				case IPatternCaseClauseOperation:
+				case IPatternCaseClauseOperation _:
 					// A declaration pattern within a pattern case clause is a
 					// write for the declared local.
 					// For example, 'x' is defined and assigned the value from 'obj' below:
@@ -60,7 +60,7 @@ namespace ILLink.RoslynAnalyzer
 					//
 					return ValueUsageInfo.Write;
 
-				case IRecursivePatternOperation:
+				case IRecursivePatternOperation _:
 					// A declaration pattern within a recursive pattern is a
 					// write for the declared local.
 					// For example, 'x' is defined and assigned the value from 'obj' below:
@@ -71,7 +71,7 @@ namespace ILLink.RoslynAnalyzer
 					//
 					return ValueUsageInfo.Write;
 
-				case ISwitchExpressionArmOperation:
+				case ISwitchExpressionArmOperation _:
 					// A declaration pattern within a switch expression arm is a
 					// write for the declared local.
 					// For example, 'x' is defined and assigned the value from 'obj' below:
@@ -81,7 +81,7 @@ namespace ILLink.RoslynAnalyzer
 					//
 					return ValueUsageInfo.Write;
 
-				case IIsPatternOperation:
+				case IIsPatternOperation _:
 					// A declaration pattern within an is pattern is a
 					// write for the declared local.
 					// For example, 'x' is defined and assigned the value from 'obj' below:
@@ -89,7 +89,7 @@ namespace ILLink.RoslynAnalyzer
 					//
 					return ValueUsageInfo.Write;
 
-				case IPropertySubpatternOperation:
+				case IPropertySubpatternOperation _:
 					// A declaration pattern within a property sub-pattern is a
 					// write for the declared local.
 					// For example, 'x' is defined and assigned the value from 'obj.Property' below:
@@ -234,8 +234,8 @@ namespace ILLink.RoslynAnalyzer
 		public static bool IsAnyCompoundAssignment (this IOperation operation)
 		{
 			switch (operation) {
-			case ICompoundAssignmentOperation:
-			case ICoalesceAssignmentOperation:
+			case ICompoundAssignmentOperation _:
+			case ICoalesceAssignmentOperation _:
 				return true;
 
 			default:

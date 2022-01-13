@@ -4,7 +4,6 @@
 using System;
 using System.Linq;
 using System.Xml;
-using ILLink.Shared;
 using Mono.Cecil;
 using Mono.Linker.Steps;
 
@@ -37,7 +36,7 @@ namespace Mono.Linker
 				marker = GetExternalResolveStep (context, rsc, assembly);
 			} catch (XmlException ex) {
 				/* This could happen if some broken XML file is embedded. */
-				context.LogError (null, DiagnosticId.XmlException, rsc.Name, ex.ToString ());
+				context.LogError ($"Error processing '{rsc.Name}': {ex}.", 1003);
 			}
 
 			if (marker != null)
@@ -58,7 +57,7 @@ namespace Mono.Linker
 				context.LogMessage ($"Processing embedded substitution descriptor '{rsc.Name}' from '{assembly.Name}'.");
 				parser = GetExternalSubstitutionParser (context, rsc, assembly);
 			} catch (XmlException ex) {
-				context.LogError (null, DiagnosticId.XmlException, rsc.Name, ex.ToString ());
+				context.LogError ($"Error processing '{rsc.Name}': {ex}.", 1003);
 			}
 
 			if (parser == null)
@@ -83,7 +82,7 @@ namespace Mono.Linker
 				context.LogMessage ($"Processing embedded '{rsc.Name}' from '{assembly.Name}'.");
 				parser = GetExternalLinkAttributesParser (context, rsc, assembly);
 			} catch (XmlException ex) {
-				context.LogError (null, DiagnosticId.XmlException, rsc.Name, ex.ToString ());
+				context.LogError ($"Error processing {rsc.Name} from {assembly.Name}: {ex}.", 1003);
 			}
 
 			if (parser == null)

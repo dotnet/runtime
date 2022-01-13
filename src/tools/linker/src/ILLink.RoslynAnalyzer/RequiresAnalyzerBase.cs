@@ -29,7 +29,6 @@ namespace ILLink.RoslynAnalyzer
 		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
 
 		private protected virtual ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)> ExtraSyntaxNodeActions { get; } = ImmutableArray<(Action<SyntaxNodeAnalysisContext> Action, SyntaxKind[] SyntaxKind)>.Empty;
-		private protected virtual ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)> ExtraSymbolActions { get; } = ImmutableArray<(Action<SymbolAnalysisContext> Action, SymbolKind[] SymbolKind)>.Empty;
 
 		public override void Initialize (AnalysisContext context)
 		{
@@ -199,9 +198,6 @@ namespace ILLink.RoslynAnalyzer
 				foreach (var extraSyntaxNodeAction in ExtraSyntaxNodeActions)
 					context.RegisterSyntaxNodeAction (extraSyntaxNodeAction.Action, extraSyntaxNodeAction.SyntaxKind);
 
-				foreach (var extraSymbolAction in ExtraSymbolActions)
-					context.RegisterSymbolAction (extraSymbolAction.Action, extraSymbolAction.SymbolKind);
-
 				void CheckAttributeInstantiation (
 					SymbolAnalysisContext symbolAnalysisContext,
 					ISymbol symbol)
@@ -225,7 +221,7 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (containingSymbol.IsInRequiresScope (RequiresAttributeName))
+					if (IsMemberInRequiresScope (containingSymbol))
 						return;
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
@@ -267,6 +263,7 @@ namespace ILLink.RoslynAnalyzer
 								ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, implementation, member, isInterface: true);
 						}
 					}
+
 				}
 			});
 		}
@@ -342,11 +339,24 @@ namespace ILLink.RoslynAnalyzer
 				message));
 		}
 
-		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2)
+		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2) => member1.HasAttribute (RequiresAttributeName) ^ member2.HasAttribute (RequiresAttributeName);
+
+		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
+		/// <summary>
+		/// True if the source of a call is considered to be annotated with the Requires... attribute
+		/// </summary>
+		protected bool IsMemberInRequiresScope (ISymbol containingSymbol)
 		{
-			bool member1HasAttribute = member1.IsOverrideInRequiresScope (RequiresAttributeName);
-			bool member2HasAttribute = member2.IsOverrideInRequiresScope (RequiresAttributeName);
-			return member1HasAttribute ^ member2HasAttribute;
+			if (containingSymbol.HasAttribute (RequiresAttributeName) ||
+				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName)) {
+				return true;
+			}
+
+			// Check also for RequiresAttribute in the associated symbol
+			if (containingSymbol is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
+				return true;
+
+			return false;
 		}
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);

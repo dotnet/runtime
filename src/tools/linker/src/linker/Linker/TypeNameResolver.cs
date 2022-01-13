@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeParsing;
-using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -63,7 +62,9 @@ namespace Mono.Linker
 			// It is common to use Type.GetType for looking if a type is available.
 			// If no type was found only warn and return null.
 			if (needsAssemblyName && origin != null) {
-				_context.LogWarning (new MessageOrigin (origin), DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeNameString);
+				_context.LogWarning ($"Type '{typeNameString}' was not found in the caller assembly nor in the base library. " +
+					$"Type name strings used for dynamically accessing a type should be assembly qualified.",
+				2105, new MessageOrigin (origin));
 			}
 
 			typeAssembly = null;
@@ -119,10 +120,10 @@ namespace Mono.Linker
 					return null;
 
 				return typeName switch {
-					ArrayTypeName => new ArrayType (elementType),
+					ArrayTypeName _ => new ArrayType (elementType),
 					MultiDimArrayTypeName multiDimArrayTypeName => new ArrayType (elementType, multiDimArrayTypeName.Rank),
-					ByRefTypeName => new ByReferenceType (elementType),
-					PointerTypeName => new PointerType (elementType),
+					ByRefTypeName _ => new ByReferenceType (elementType),
+					PointerTypeName _ => new PointerType (elementType),
 					_ => elementType
 				};
 			}

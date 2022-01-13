@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Xml.XPath;
-using ILLink.Shared;
 
 using Mono.Cecil;
 
@@ -45,10 +44,10 @@ namespace Mono.Linker.Steps
 		{
 			if (GetTypePreserve (nav) == TypePreserve.All) {
 				foreach (var type in assembly.MainModule.Types)
-					MarkAndPreserveAll (type, nav);
+					MarkAndPreserveAll (type);
 
 				foreach (var exportedType in assembly.MainModule.ExportedTypes)
-					_context.MarkingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, assembly.MainModule), GetMessageOriginForPosition (nav));
+					_context.MarkingHelpers.MarkExportedType (exportedType, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, assembly.MainModule));
 			} else {
 				ProcessTypes (assembly, nav, warnOnUnresolvedTypes);
 				ProcessNamespaces (assembly, nav);
@@ -68,31 +67,31 @@ namespace Mono.Linker.Steps
 						continue;
 
 					foundMatch = true;
-					MarkAndPreserveAll (type, nav);
+					MarkAndPreserveAll (type);
 				}
 
 				if (!foundMatch) {
-					LogWarning (namespaceNav, DiagnosticId.XmlCouldNotFindAnyTypeInNamespace, fullname);
+					LogWarning ($"Could not find any type in namespace '{fullname}'.", 2044, namespaceNav);
 				}
 			}
 		}
 
-		void MarkAndPreserveAll (TypeDefinition type, XPathNavigator nav)
+		void MarkAndPreserveAll (TypeDefinition type)
 		{
-			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			_context.Annotations.SetPreserve (type, TypePreserve.All);
 
 			if (!type.HasNestedTypes)
 				return;
 
 			foreach (TypeDefinition nested in type.NestedTypes)
-				MarkAndPreserveAll (nested, nav);
+				MarkAndPreserveAll (nested);
 		}
 
-		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav)
+		protected override TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly)
 		{
-			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
-			return base.ProcessExportedType (exported, assembly, nav);
+			_context.MarkingHelpers.MarkExportedType (exported, assembly.MainModule, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
+			return base.ProcessExportedType (exported, assembly);
 		}
 
 		protected override void ProcessType (TypeDefinition type, XPathNavigator nav)
@@ -102,11 +101,11 @@ namespace Mono.Linker.Steps
 			TypePreserve preserve = GetTypePreserve (nav);
 			switch (preserve) {
 			case TypePreserve.Fields when !type.HasFields:
-				LogWarning (nav, DiagnosticId.TypeHasNoFieldsToPreserve, type.GetDisplayName ());
+				LogWarning ($"Type '{type.GetDisplayName ()}' has no fields to preserve.", 2001, nav);
 				break;
 
 			case TypePreserve.Methods when !type.HasMethods:
-				LogWarning (nav, DiagnosticId.TypeHasNoMethodsToPreserve, type.GetDisplayName ());
+				LogWarning ($"Type '{type.GetDisplayName ()}' has no methods to preserve.", 2002, nav);
 				break;
 
 			case TypePreserve.Fields:
@@ -122,13 +121,13 @@ namespace Mono.Linker.Steps
 			if (!required)
 				return;
 
-			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+			_context.Annotations.Mark (type, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 
 			if (type.IsNested) {
 				var currentType = type;
 				while (currentType.IsNested) {
 					var parent = currentType.DeclaringType;
-					_context.Annotations.Mark (parent, new DependencyInfo (DependencyKind.DeclaringType, currentType), GetMessageOriginForPosition (nav));
+					_context.Annotations.Mark (parent, new DependencyInfo (DependencyKind.DeclaringType, currentType));
 					currentType = parent;
 				}
 			}
@@ -148,15 +147,15 @@ namespace Mono.Linker.Steps
 		protected override void ProcessField (TypeDefinition type, FieldDefinition field, XPathNavigator nav)
 		{
 			if (_context.Annotations.IsMarked (field))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, field.FullName);
+				LogWarning ($"Duplicate preserve of '{field.FullName}'.", 2025, nav);
 
-			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+			_context.Annotations.Mark (field, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 		}
 
 		protected override void ProcessMethod (TypeDefinition type, MethodDefinition method, XPathNavigator nav, object? customData)
 		{
 			if (_context.Annotations.IsMarked (method))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, method.GetDisplayName ());
+				LogWarning ($"Duplicate preserve of '{method.GetDisplayName ()}'.", 2025, nav);
 
 			_context.Annotations.MarkIndirectlyCalledMethod (method);
 			_context.Annotations.SetAction (method, MethodAction.Parse);
@@ -164,7 +163,7 @@ namespace Mono.Linker.Steps
 			if (customData is bool required && !required) {
 				_context.Annotations.AddPreservedMethod (type, method);
 			} else {
-				_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation), GetMessageOriginForPosition (nav));
+				_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.XmlDescriptor, _xmlDocumentLocation));
 			}
 		}
 
@@ -213,7 +212,7 @@ namespace Mono.Linker.Steps
 		protected override void ProcessEvent (TypeDefinition type, EventDefinition @event, XPathNavigator nav, object? customData)
 		{
 			if (_context.Annotations.IsMarked (@event))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, @event.FullName);
+				LogWarning ($"Duplicate preserve of '{@event.FullName}'.", 2025, nav);
 
 			ProcessMethod (type, @event.AddMethod, nav, customData);
 			ProcessMethod (type, @event.RemoveMethod, nav, customData);
@@ -225,7 +224,7 @@ namespace Mono.Linker.Steps
 			string[] accessors = fromSignature ? GetAccessors (nav) : _accessorsAll;
 
 			if (_context.Annotations.IsMarked (property))
-				LogWarning (nav, DiagnosticId.XmlDuplicatePreserveMember, property.FullName);
+				LogWarning ($"Duplicate preserve of '{property.FullName}'.", 2025, nav);
 
 			if (Array.IndexOf (accessors, "all") >= 0) {
 				ProcessMethodIfNotNull (type, property.GetMethod, nav, customData);
@@ -236,12 +235,12 @@ namespace Mono.Linker.Steps
 			if (property.GetMethod != null && Array.IndexOf (accessors, "get") >= 0)
 				ProcessMethod (type, property.GetMethod, nav, customData);
 			else if (property.GetMethod == null)
-				LogWarning (nav, DiagnosticId.XmlCouldNotFindGetAccesorOfPropertyOnType, property.Name, type.FullName);
+				LogWarning ($"Could not find the get accessor of property '{property.Name}' on type '{type.FullName}'.", 2018, nav);
 
 			if (property.SetMethod != null && Array.IndexOf (accessors, "set") >= 0)
 				ProcessMethod (type, property.SetMethod, nav, customData);
 			else if (property.SetMethod == null)
-				LogWarning (nav, DiagnosticId.XmlCouldNotFindSetAccesorOfPropertyOnType, property.Name, type.FullName);
+				LogWarning ($"Could not find the set accessor of property '{property.Name}' in type '{type.FullName}'.", 2019, nav);
 		}
 
 		static bool IsRequired (XPathNavigator nav)
