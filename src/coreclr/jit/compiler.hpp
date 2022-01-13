@@ -4535,7 +4535,7 @@ inline void DEBUG_DESTROY_NODE(GenTree* tree)
 //
 // Arguments:
 //    tree, ...rest: These nodes should not be referenced by anyone now
-
+//
 template <typename... T>
 void DEBUG_DESTROY_NODE(GenTree* tree, T... rest)
 {
