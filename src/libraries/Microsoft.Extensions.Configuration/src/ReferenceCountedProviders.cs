@@ -19,7 +19,10 @@ namespace Microsoft.Extensions.Configuration
         public static ReferenceCountedProviders CreateDisposed(List<IConfigurationProvider> providers) => new DisposedReferenceCountedProviders(providers);
 
         public abstract List<IConfigurationProvider> Providers { get; set; }
-        // This is only used to support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
+
+        // NonReferenceCountedProviders is only used to:
+        // 1. Support IConfigurationRoot.Providers because we cannot track the lifetime of that reference.
+        // 2. Construct DisposedReferenceCountedProviders because the providers are disposed anyway and no longer reference counted.
         public abstract List<IConfigurationProvider> NonReferenceCountedProviders { get; }
 
         public abstract void AddReference();

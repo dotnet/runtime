@@ -20,10 +20,18 @@ namespace Microsoft.Extensions.Configuration
 
         public ReferenceCountedProviders GetReference()
         {
-            // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() doesn't decrement ref count to zero
+            // Lock to ensure oldRefCountedProviders.Dispose() in ReplaceProviders() or Dispose() doesn't decrement ref count to zero
             // before calling _refCountedProviders.AddReference().
             lock (_replaceProvidersLock)
             {
+                if (_disposed)
+                {
+                    // Return a non-reference-counting ReferenceCountedProviders instance now that the ConfigurationManager is disposed.
+                    // We could preemptively throw an ODE instead, but this might break existing apps that were previously able to
+                    // continue to read configuration after disposing an ConfigurationManager.
+                    return ReferenceCountedProviders.CreateDisposed(_refCountedProviders.NonReferenceCountedProviders);
+                }
+
                 _refCountedProviders.AddReference();
                 return _refCountedProviders;
             }
@@ -46,6 +54,7 @@ namespace Microsoft.Extensions.Configuration
 
             // Decrement the reference count to the old providers. If they are being concurrently read from
             // the actual disposal of the old providers will be delayed until the final reference is released.
+            // Never dispose ReferenceCountedProviders with a lock because this may call into user code.
             oldRefCountedProviders.Dispose();
         }
 
@@ -70,16 +79,14 @@ namespace Microsoft.Extensions.Configuration
         {
             ReferenceCountedProviders oldRefCountedProviders = _refCountedProviders;
 
+            // This lock ensures that we cannot reduce the ref count to zero before GetReference() calls AddReference().
+            // Once _disposed is set, GetReference() stops reference counting.
             lock (_replaceProvidersLock)
             {
                 _disposed = true;
-
-                // Create a non-reference-counting ReferenceCountedProviders instance now that the ConfigurationManager is disposed.
-                // We could preemptively throw an ODE from ReferenceCountedProviderManager.GetReference() instead, but this might
-                // break existing apps that were previously able to continue to read configuration after disposing an ConfigurationManager.
-                _refCountedProviders = ReferenceCountedProviders.CreateDisposed(oldRefCountedProviders.Providers);
             }
 
+            // Never dispose ReferenceCountedProviders with a lock because this may call into user code.
             oldRefCountedProviders.Dispose();
         }
     }
