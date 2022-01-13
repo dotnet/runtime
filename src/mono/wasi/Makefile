@@ -2,11 +2,12 @@ TOP=$(realpath $(CURDIR)/../../..)
 CONFIG?=Release
 WASI_OBJ_DIR=$(TOP)/artifacts/obj/mono/Wasi.$(CONFIG)
 WASI_BIN_DIR=$(TOP)/artifacts/bin/mono/Wasi.$(CONFIG)
-WASI_SDK_ROOT=/home/steve/wasi-sdk-12.0
+WASI_SDK_ROOT=$(WASI_OBJ_DIR)/wasi-sdk
+WASI_SDK_CLANG=$(WASI_SDK_ROOT)/bin/clang
 
 all: build-all
 
-build-all:
+build-all: $(WASI_SDK_CLANG)
 	mkdir -p $(WASI_OBJ_DIR)
 	cd $(WASI_OBJ_DIR) && \
 	cmake -G Ninja \
@@ -23,3 +24,9 @@ build-all:
 
 	mkdir -p $(WASI_BIN_DIR)
 	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_BIN_DIR)
+
+$(WASI_SDK_CLANG):
+	mkdir -p $(WASI_SDK_ROOT)
+	cd $(WASI_SDK_ROOT) && \
+		wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz && \
+		tar xf *.gz --strip-components=1
