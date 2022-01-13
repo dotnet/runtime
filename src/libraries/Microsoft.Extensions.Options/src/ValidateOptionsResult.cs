@@ -14,12 +14,12 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Result when validation was skipped due to name not matching.
         /// </summary>
-        public static readonly ValidateOptionsResult Skip = new() { Skipped = true };
+        public static readonly ValidateOptionsResult Skip = new ValidateOptionsResult() { Skipped = true };
 
         /// <summary>
         /// Validation was successful.
         /// </summary>
-        public static readonly ValidateOptionsResult Success = new() { Succeeded = true };
+        public static readonly ValidateOptionsResult Success = new ValidateOptionsResult() { Succeeded = true };
 
         /// <summary>
         /// True if validation was successful.

@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         IOptionsMonitorCache<TOptions>
         where TOptions : class
     {
-        private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
+        private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
 
         /// <summary>
         /// Clears all options instances from the cache.
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Options
                 throw new ArgumentNullException(nameof(createOptions));
             }
 
-            name ??= Options.DefaultName;
+            name = name ?? Options.DefaultName;
             Lazy<TOptions>? value;
 
 #if NETSTANDARD2_1

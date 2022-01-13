@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
-        private readonly OptionsCache<TOptions> _cache = new(); // Note: this is a private cache
+        private readonly OptionsCache<TOptions> _cache = new OptionsCache<TOptions>(); // Note: this is a private cache
 
         /// <summary>
         /// Initializes a new instance with the specified options configurations.
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public virtual TOptions Get(string? name)
         {
-            name ??= Options.DefaultName;
+            name = name ?? Options.DefaultName;
 
             if (!_cache.TryGetValue(name, out TOptions? options))
             {

@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Options
 
         private void InvokeChanged(string? name)
         {
-            name ??= Options.DefaultName;
+            name = name ?? Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
             if (_onChange != null)
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public virtual TOptions Get(string? name)
         {
-            name ??= Options.DefaultName;
+            name = name ?? Options.DefaultName;
             return _cache.GetOrAdd(name, () => _factory.Create(name));
         }
 
