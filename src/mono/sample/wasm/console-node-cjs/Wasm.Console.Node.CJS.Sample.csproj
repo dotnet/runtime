@@ -12,6 +12,10 @@
     <ExpectedExitCode>42</ExpectedExitCode>
     <RunScriptCommand>$(ExecXHarnessCmd) wasm test --app=. --engine=NodeJS --engine-arg=--stack-trace-limit=1000 --js-file=main.cjs --output-directory=$(XHarnessOutput) --expected-exit-code $(ExpectedExitCode) -- --run $(MSBuildProjectName).dll</RunScriptCommand>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="package.json" />
+  </ItemGroup>
 
   <PropertyGroup>
     <_SampleProject>Wasm.Console.Node.CJS.Sample.csproj</_SampleProject>
