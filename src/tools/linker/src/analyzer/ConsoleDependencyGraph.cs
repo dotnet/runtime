@@ -96,7 +96,7 @@ namespace LinkerAnalyzer
 						int pi = 0, childIdx;
 
 						do {
-							childIdx = childVertex.parentIndexes [pi];
+							childIdx = childVertex.parentIndexes[pi];
 							pi++;
 						} while (visited.Contains (childIdx) && pi < childVertex.parentIndexes.Count);
 
@@ -148,13 +148,13 @@ namespace LinkerAnalyzer
 			Header ("Statistics");
 			if (verbose) {
 				foreach (var key in counts.Keys)
-					Console.WriteLine ("Vertex type:\t{0}{1}count:{2}", key, Tabs (key), counts [key]);
+					Console.WriteLine ("Vertex type:\t{0}{1}count:{2}", key, Tabs (key), counts[key]);
 			} else {
-				Console.WriteLine ("Assemblies:\t{0}", counts ["Assembly"]);
-				Console.WriteLine ("Modules:\t{0}", counts ["Module"]);
-				Console.WriteLine ("Types:\t\t{0}", counts ["TypeDef"]);
-				Console.WriteLine ("Fields:\t\t{0}", counts ["Field"]);
-				Console.WriteLine ("Methods:\t{0}", counts ["Method"]);
+				Console.WriteLine ("Assemblies:\t{0}", counts["Assembly"]);
+				Console.WriteLine ("Modules:\t{0}", counts["Module"]);
+				Console.WriteLine ("Types:\t\t{0}", counts["TypeDef"]);
+				Console.WriteLine ("Fields:\t\t{0}", counts["Field"]);
+				Console.WriteLine ("Methods:\t{0}", counts["Method"]);
 			}
 
 			Console.WriteLine ();

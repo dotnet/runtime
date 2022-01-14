@@ -131,7 +131,7 @@ namespace Mono.Linker.Tests
 			{
 			}
 
-			public static int i;
+			static int i;
 
 			[ExpectGeneratedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRefReturn")]
 			[ExpectExactlyResolvedDocumentationSignature ("M:Mono.Linker.Tests.DocumentationSignatureParserTests.A.MRefReturn")]

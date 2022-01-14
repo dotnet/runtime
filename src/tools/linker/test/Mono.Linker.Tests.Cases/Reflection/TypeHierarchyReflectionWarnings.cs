@@ -236,6 +236,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			// on the event itself (since an event access is considered to reference the annotated add method),
 			// and on the add method (if it is accessed through reflection).
 			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--")]
+			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = ProducedBy.Trimmer)]
 			public event MyEventHandler RUCEvent {
 				[Kept]
 				[ExpectedWarning ("IL2112", nameof (AnnotatedPublicEvents), "--RUC on add_RUCEvent--")]
@@ -295,11 +297,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		// This warning is redundant because the base type already has DAMT.PublicParameterlessConstructors,
 		// but we produce it anyway due to implementation difficulties in the case of DAMT.PublicConstructors.
 		[ExpectedWarning ("IL2113", "--RUC on AnnotatedPublicParameterlessConstructor()--")]
+		[ExpectedWarning ("IL2113", "--RUC on AnnotatedPublicParameterlessConstructor()--")]
 		class DerivedFromAnnotatedPublicParameterlessConstructor : AnnotatedPublicParameterlessConstructor
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
+			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--", ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
 			public DerivedFromAnnotatedPublicParameterlessConstructor () { }
 
