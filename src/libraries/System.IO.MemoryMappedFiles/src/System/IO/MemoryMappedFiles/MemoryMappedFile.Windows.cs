@@ -31,15 +31,14 @@ namespace System.IO.MemoryMappedFiles
         /// out empty).
         /// </summary>
         private static SafeMemoryMappedFileHandle CreateCore(
-            FileStream? fileStream, string? mapName, HandleInheritability inheritability,
+            SafeFileHandle? fileHandle, string? mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity, long fileSize)
         {
-            Debug.Assert(fileStream is null || fileSize >= 0);
+            Debug.Assert(fileHandle is null || fileSize >= 0);
 
-            SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
-            if (fileStream != null)
+            if (fileHandle != null)
             {
                 VerifyMemoryMappedFileAccess(access, capacity, fileSize);
             }
