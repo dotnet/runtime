@@ -46,7 +46,7 @@ static bool
 hot_reload_available (void);
 
 static void
-hot_reload_set_fastpath_data (MonoMetadataUpdateData *data, MonoDefaults *mono_defaults);
+hot_reload_set_fastpath_data (MonoMetadataUpdateData *data);
 
 static gboolean
 hot_reload_update_enabled (int *modifiable_assemblies_out);
@@ -150,8 +150,6 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_find_method_by_name,
 };
 
-static MonoDefaults *hr_mono_defaults;
-
 #define HR_GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
 
@@ -169,7 +167,7 @@ mono_class_get_##shortname##_class (void)	\
 	static MonoClass *tmp_class;	\
 	MonoClass *klass = tmp_class;	\
 	if (!klass) {	\
-		klass = mono_class_load_from_name (hr_mono_defaults->corlib, name_space, name);	\
+		klass = mono_class_load_from_name (mono_get_corlib (), name_space, name); \
 		mono_memory_barrier ();	/* FIXME excessive? */ \
 		tmp_class = klass;	\
 	}	\
@@ -191,7 +189,7 @@ mono_class_try_get_##shortname##_class (void)	\
 	MonoClass *klass = (MonoClass *)tmp_class;	\
 	mono_memory_barrier ();	\
 	if (!inited) {	\
-		klass = mono_class_try_load_from_name (hr_mono_defaults->corlib, name_space, name);	\
+		klass = mono_class_try_load_from_name (mono_get_corlib (), name_space, name); \
 		tmp_class = klass;	\
 		mono_memory_barrier ();	\
 		inited = TRUE;	\
@@ -216,10 +214,9 @@ hot_reload_available (void)
 static MonoMetadataUpdateData* metadata_update_data_ptr;
 
 static void
-hot_reload_set_fastpath_data (MonoMetadataUpdateData *ptr, MonoDefaults *mono_defaults)
+hot_reload_set_fastpath_data (MonoMetadataUpdateData *ptr)
 {
 	metadata_update_data_ptr = ptr;
-	hr_mono_defaults = mono_defaults;
 }
 
 /* TLS value is a uint32_t of the latest published generation that the thread can see */

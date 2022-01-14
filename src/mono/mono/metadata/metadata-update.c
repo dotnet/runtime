@@ -28,7 +28,7 @@ mono_metadata_update_init (void)
 {
 	memset (&mono_metadata_update_data_private, 0, sizeof (mono_metadata_update_data_private));
 	MonoComponentHotReload *comp = mono_component_hot_reload ();
-	comp->set_fastpath_data (&mono_metadata_update_data_private, &mono_defaults);
+	comp->set_fastpath_data (&mono_metadata_update_data_private);
 }
 
 gboolean

@@ -17,7 +17,7 @@
 
 typedef struct _MonoComponentHotReload {
 	MonoComponent component;
-	void (*set_fastpath_data) (MonoMetadataUpdateData *data, MonoDefaults *mono_defaults);
+	void (*set_fastpath_data) (MonoMetadataUpdateData *data);
 	gboolean (*update_enabled) (int *modifiable_assemblies_out);
 	gboolean (*no_inline) (MonoMethod *caller, MonoMethod *callee);
 	uint32_t (*thread_expose_published) (void);
