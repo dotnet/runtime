@@ -162,17 +162,7 @@ namespace System.Net.Security
         {
             for (int i = 0, j = 0; j < output.Length; i++, j += 4)
             {
-                if (BitConverter.IsLittleEndian)
-                {
-                    BinaryPrimitives.WriteUInt32LittleEndian(output.AsSpan(j), input[i]);
-                }
-                else
-                {
-                    output[j] = (byte)(input[i]);
-                    output[j + 1] = (byte)(input[i] >> 8);
-                    output[j + 2] = (byte)(input[i] >> 16);
-                    output[j + 3] = (byte)(input[i] >> 24);
-                }
+                BinaryPrimitives.WriteUInt32LittleEndian(output.AsSpan(j), input[i]);
             }
         }
 
