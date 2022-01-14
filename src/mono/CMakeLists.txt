@@ -248,8 +248,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(DISABLE_COMPONENTS 1)
 
   set(WASI_DRIVER_SOURCES
-    wasi/lib/mman.c
-    wasi/lib/synthetic-pthread.c
+    wasi/mono-wasi-driver/mman.c
+    wasi/mono-wasi-driver/stubs.c
+    wasi/mono-wasi-driver/synthetic-pthread.c
   )
   add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
   target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
