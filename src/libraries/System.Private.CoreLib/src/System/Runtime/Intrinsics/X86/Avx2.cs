@@ -82,6 +82,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> Add(Vector256<ulong> left, Vector256<ulong> right) => Add(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_add_epi32 (__m256i a, __m256i b)
+        ///   VPADDD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_add_epi64 (__m256i a, __m256i b)
+        ///   VPADDQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> Add(Vector256<nint> left, Vector256<nint> right) => Add(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_add_epi32 (__m256i a, __m256i b)
+        ///   VPADDD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_add_epi64 (__m256i a, __m256i b)
+        ///   VPADDQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> Add(Vector256<nuint> left, Vector256<nuint> right) => Add(left, right);
+
+        /// <summary>
         /// __m256i _mm256_adds_epi8 (__m256i a, __m256i b)
         ///   VPADDSB ymm, ymm, ymm/m256
         /// </summary>
@@ -157,6 +179,21 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> AlignRight(Vector256<ulong> left, Vector256<ulong> right, byte mask) => AlignRight(left, right, mask);
 
         /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<nint> AlignRight(Vector256<nint> left, Vector256<nint> right, byte mask) => AlignRight(left, right, mask);
+
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<nuint> AlignRight(Vector256<nuint> left, Vector256<nuint> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
         /// __m256i _mm256_and_si256 (__m256i a, __m256i b)
         ///   VPAND ymm, ymm, ymm/m256
         /// </summary>
@@ -198,6 +235,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> And(Vector256<ulong> left, Vector256<ulong> right) => And(left, right);
 
         /// <summary>
+        /// __m256i _mm256_and_si256 (__m256i a, __m256i b)
+        ///   VPAND ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> And(Vector256<nint> left, Vector256<nint> right) => And(left, right);
+
+        /// <summary>
+        /// __m256i _mm256_and_si256 (__m256i a, __m256i b)
+        ///   VPAND ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> And(Vector256<nuint> left, Vector256<nuint> right) => And(left, right);
+
+        /// <summary>
         /// __m256i _mm256_andnot_si256 (__m256i a, __m256i b)
         ///   VPANDN ymm, ymm, ymm/m256
         /// </summary>
@@ -237,6 +286,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPANDN ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<ulong> AndNot(Vector256<ulong> left, Vector256<ulong> right) => AndNot(left, right);
+
+        /// <summary>
+        /// __m256i _mm256_andnot_si256 (__m256i a, __m256i b)
+        ///   VPANDN ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> AndNot(Vector256<nint> left, Vector256<nint> right) => AndNot(left, right);
+
+        /// <summary>
+        /// __m256i _mm256_andnot_si256 (__m256i a, __m256i b)
+        ///   VPANDN ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> AndNot(Vector256<nuint> left, Vector256<nuint> right) => AndNot(left, right);
 
         /// <summary>
         /// __m256i _mm256_avg_epu8 (__m256i a, __m256i b)
@@ -331,6 +392,20 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> BlendVariable(Vector256<ulong> left, Vector256<ulong> right, Vector256<ulong> mask) => BlendVariable(left, right, mask);
 
         /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<nint> BlendVariable(Vector256<nint> left, Vector256<nint> right, Vector256<nint> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<nuint> BlendVariable(Vector256<nuint> left, Vector256<nuint> right, Vector256<nuint> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
         /// __m128i _mm_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB xmm, xmm
         /// </summary>
@@ -377,6 +452,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPBROADCASTQ xmm, xmm
         /// </summary>
         public static Vector128<ulong> BroadcastScalarToVector128(Vector128<ulong> value) => BroadcastScalarToVector128(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD xmm, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ xmm, xmm
+        /// </summary>
+        public static Vector128<nint> BroadcastScalarToVector128(Vector128<nint> value) => BroadcastScalarToVector128(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD xmm, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ xmm, xmm
+        /// </summary>
+        public static Vector128<nuint> BroadcastScalarToVector128(Vector128<nuint> value) => BroadcastScalarToVector128(value);
 
         /// <summary>
         /// __m128 _mm_broadcastss_ps (__m128 a)
@@ -443,6 +540,32 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<ulong> BroadcastScalarToVector128(ulong* source) => BroadcastScalarToVector128(source);
 
         /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD xmm, m32
+        ///
+        /// 64-bit:
+        /// __m128i _mm_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ xmm, m64
+        ///
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe Vector128<nint> BroadcastScalarToVector128(nint* source) => BroadcastScalarToVector128(source);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD xmm, m32
+        ///
+        /// 64-bit:
+        /// __m128i _mm_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ xmm, m64
+        ///
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe Vector128<nuint> BroadcastScalarToVector128(nuint* source) => BroadcastScalarToVector128(source);
+
+        /// <summary>
         /// __m256i _mm256_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB ymm, xmm
         /// </summary>
@@ -489,6 +612,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPBROADCASTQ ymm, xmm
         /// </summary>
         public static Vector256<ulong> BroadcastScalarToVector256(Vector128<ulong> value) => BroadcastScalarToVector256(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> BroadcastScalarToVector256(Vector128<nint> value) => BroadcastScalarToVector256(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ ymm, xmm
+        /// </summary>
+        public static Vector256<nuint> BroadcastScalarToVector256(Vector128<nuint> value) => BroadcastScalarToVector256(value);
 
         /// <summary>
         /// __m256 _mm256_broadcastss_ps (__m128 a)
@@ -555,6 +700,32 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<ulong> BroadcastScalarToVector256(ulong* source) => BroadcastScalarToVector256(source);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD ymm, m32
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ ymm, m64
+        ///
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe Vector256<nint> BroadcastScalarToVector256(nint* source) => BroadcastScalarToVector256(source);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD ymm, m32
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ ymm, m64
+        ///
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe Vector256<nuint> BroadcastScalarToVector256(nuint* source) => BroadcastScalarToVector256(source);
+
+        /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 ymm, m128
         /// The above native signature does not directly correspond to the managed signature.
@@ -604,6 +775,20 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<ulong> BroadcastVector128ToVector256(ulong* address) => BroadcastVector128ToVector256(address);
 
         /// <summary>
+        /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
+        ///   VBROADCASTI128 ymm, m128
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe Vector256<nint> BroadcastVector128ToVector256(nint* address) => BroadcastVector128ToVector256(address);
+
+        /// <summary>
+        /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
+        ///   VBROADCASTI128 ymm, m128
+        /// The above native signature does not directly correspond to the managed signature.
+        /// </summary>
+        public static unsafe Vector256<nuint> BroadcastVector128ToVector256(nuint* address) => BroadcastVector128ToVector256(address);
+
+        /// <summary>
         /// __m256i _mm256_cmpeq_epi8 (__m256i a, __m256i b)
         ///   VPCMPEQB ymm, ymm, ymm/m256
         /// </summary>
@@ -645,6 +830,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> CompareEqual(Vector256<ulong> left, Vector256<ulong> right) => CompareEqual(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b)
+        ///   VPCMPEQD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b)
+        ///   VPCMPEQQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> CompareEqual(Vector256<nint> left, Vector256<nint> right) => CompareEqual(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cmpeq_epi32 (__m256i a, __m256i b)
+        ///   VPCMPEQD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cmpeq_epi64 (__m256i a, __m256i b)
+        ///   VPCMPEQQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> CompareEqual(Vector256<nuint> left, Vector256<nuint> right) => CompareEqual(left, right);
+
+        /// <summary>
         /// __m256i _mm256_cmpgt_epi8 (__m256i a, __m256i b)
         ///   VPCMPGTB ymm, ymm, ymm/m256
         /// </summary>
@@ -664,6 +871,17 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPCMPGTQ ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<long> CompareGreaterThan(Vector256<long> left, Vector256<long> right) => CompareGreaterThan(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cmpgt_epi32 (__m256i a, __m256i b)
+        ///   VPCMPGTD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cmpgt_epi64 (__m256i a, __m256i b)
+        ///   VPCMPGTQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> CompareGreaterThan(Vector256<nint> left, Vector256<nint> right) => CompareGreaterThan(left, right);
 
         /// <summary>
         /// int _mm256_cvtsi256_si32 (__m256i a)
@@ -738,6 +956,72 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<long> ConvertToVector256Int64(Vector128<uint> value) => ConvertToVector256Int64(value);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> ConvertToVector256NInt(Vector128<sbyte> value) => ConvertToVector256NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> ConvertToVector256NInt(Vector128<byte> value) => ConvertToVector256NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> ConvertToVector256NInt(Vector128<short> value) => ConvertToVector256NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> ConvertToVector256NInt(Vector128<ushort> value) => ConvertToVector256NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> ConvertToVector256NInt(Vector128<int> value) => ConvertToVector256NInt(value);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
+        ///   VPMOVZXWD ymm, xmm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
+        ///   VPMOVZXDQ ymm, xmm
+        /// </summary>
+        public static Vector256<nint> ConvertToVector256NInt(Vector128<uint> value) => ConvertToVector256NInt(value);
+
+        /// <summary>
         ///   VPMOVSXBW ymm, m128
         /// The native signature does not exist. We provide this additional overload for completeness.
         /// </summary>
@@ -799,6 +1083,42 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<long> ConvertToVector256Int64(uint* address) => ConvertToVector256Int64(address);
 
         /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<nint> ConvertToVector256NInt(sbyte* address) => ConvertToVector256NInt(address);
+
+        /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<nint> ConvertToVector256NInt(byte* address) => ConvertToVector256NInt(address);
+
+        /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<nint> ConvertToVector256NInt(short* address) => ConvertToVector256NInt(address);
+
+        /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<nint> ConvertToVector256NInt(ushort* address) => ConvertToVector256NInt(address);
+
+        /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<nint> ConvertToVector256NInt(int* address) => ConvertToVector256NInt(address);
+
+        /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<nint> ConvertToVector256NInt(uint* address) => ConvertToVector256NInt(address);
+
+        /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
@@ -845,6 +1165,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
         public static new Vector128<ulong> ExtractVector128(Vector256<ulong> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTI128 xmm, ymm, imm8
+        /// </summary>
+        public static new Vector128<nint> ExtractVector128(Vector256<nint> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTI128 xmm, ymm, imm8
+        /// </summary>
+        public static new Vector128<nuint> ExtractVector128(Vector256<nuint> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
@@ -910,6 +1242,53 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nint> GatherVector128(nint* baseAddress, Vector128<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nuint> GatherVector128(nuint* baseAddress, Vector128<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
         /// <summary>
         /// __m128 _mm_i32gather_ps (float const* base_addr, __m128i vindex, const int scale)
         ///   VGATHERDPS xmm, vm32x, xmm
@@ -1038,6 +1417,191 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi64 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi64 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<uint> GatherVector128(uint* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi64 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<long> GatherVector128(long* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi64 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<ulong> GatherVector128(ulong* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nint> GatherVector128(nint* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_i64gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nuint> GatherVector128(nuint* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_ps (float const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPS ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_ps (float const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPS ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256 _mm256_i32gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256 _mm256_i64gather_pd (double const* base_addr, __m256i vindex, const int scale)
+        ///   VGATHERDPD ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<nint> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
         /// <summary>
         /// __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
         ///   VPGATHERDD ymm, vm32y, ymm
@@ -1102,6 +1666,53 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
+        ///   VPGATHERDD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherVector256(nint* baseAddress, Vector128<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_i32gather_epi32 (int const* base_addr, __m256i vindex, const int scale)
+        ///   VPGATHERDD ymm, vm32y, ymm
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_i32gather_epi64 (__int64 const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDQ ymm, vm32y, ymm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherVector256(nuint* baseAddress, Vector128<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector256(baseAddress, index, 1),
+                2 => GatherVector256(baseAddress, index, 2),
+                4 => GatherVector256(baseAddress, index, 4),
+                8 => GatherVector256(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
         /// <summary>
         /// __m256 _mm256_i32gather_ps (float const* base_addr, __m256i vindex, const int scale)
         ///   VGATHERDPS ymm, vm32y, ymm
@@ -1236,6 +1847,40 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
+        public static unsafe Vector128<nint> GatherMaskVector128(Vector128<nint> source, nint* baseAddress, Vector128<int> index, Vector128<nint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<nuint> GatherMaskVector128(Vector128<nuint> source, nuint* baseAddress, Vector128<int> index, Vector128<nuint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
         public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<int> index, Vector128<int> mask, byte scale)
         {
             return scale switch
@@ -1295,6 +1940,99 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector128<nint> index, Vector128<int> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector128<nint> index, Vector128<uint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<long> GatherMaskVector128(Vector128<long> source, long* baseAddress, Vector128<nint> index, Vector128<long> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_mask_i32gather_epi32 (__m128i src, int const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        ///
+        /// 64-bit:
+        /// __m128i _mm_mask_i32gather_epi64 (__m128i src, __int64 const* base_addr, __m128i vindex, __m128i mask, const int scale)
+        ///   VPGATHERDQ xmm, vm32x, xmm
+        ///
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<ulong> GatherMaskVector128(Vector128<ulong> source, ulong* baseAddress, Vector128<nint> index, Vector128<ulong> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
         /// <summary>
         /// __m128 _mm_mask_i32gather_ps (__m128 src, float const* base_addr, __m128i vindex, __m128 mask, const int scale)
         ///   VGATHERDPS xmm, vm32x, xmm
@@ -1487,6 +2225,40 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
+        /// <summary>
+        /// __m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale)
+        ///   VPGATHERDQ ymm, vm32y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nint> GatherMaskVector256(Vector256<nint> source, nint* baseAddress, Vector128<int> index, Vector256<nint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+        /// <summary>
+        /// __m256i _mm256_mask_i32gather_epi64 (__m256i src, __int64 const* base_addr, __m128i vindex, __m256i mask, const int scale)
+        ///   VPGATHERDQ ymm, vm32y, ymm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector256<nuint> GatherMaskVector256(Vector256<nuint> source, nuint* baseAddress, Vector128<int> index, Vector256<nuint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
         /// <summary>
         /// __m256 _mm256_mask_i32gather_ps (__m256 src, float const* base_addr, __m256i vindex, __m256 mask, const int scale)
         ///   VPGATHERDPS ymm, vm32y, ymm
@@ -1503,6 +2275,7 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m256d _mm256_mask_i32gather_pd (__m256d src, double const* base_addr, __m128i vindex, __m256d mask, const int scale)
         ///   VPGATHERDPD ymm, vm32y, ymm
@@ -1519,6 +2292,7 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale)
         ///   VPGATHERQD xmm, vm32y, xmm
@@ -1535,6 +2309,7 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m128i _mm256_mask_i64gather_epi32 (__m128i src, int const* base_addr, __m256i vindex, __m128i mask, const int scale)
         ///   VPGATHERQD xmm, vm32y, xmm
@@ -1551,6 +2326,7 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale)
         ///   VPGATHERQQ ymm, vm32y, ymm
@@ -1567,6 +2343,7 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m256i _mm256_mask_i64gather_epi64 (__m256i src, __int64 const* base_addr, __m256i vindex, __m256i mask, const int scale)
         ///   VPGATHERQQ ymm, vm32y, ymm
@@ -1583,6 +2360,7 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m128 _mm256_mask_i64gather_ps (__m128 src, float const* base_addr, __m256i vindex, __m128 mask, const int scale)
         ///   VGATHERQPS xmm, vm32y, xmm
@@ -1599,12 +2377,109 @@ namespace System.Runtime.Intrinsics.X86
                 _ => throw new ArgumentOutOfRangeException(nameof(scale)),
             };
         }
+
         /// <summary>
         /// __m256d _mm256_mask_i64gather_pd (__m256d src, double const* base_addr, __m256i vindex, __m256d mask, const int scale)
         ///   VGATHERQPD ymm, vm32y, ymm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
         public static unsafe Vector256<double> GatherMaskVector256(Vector256<double> source, double* baseAddress, Vector256<long> index, Vector256<double> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector128<int> GatherMaskVector128(Vector128<int> source, int* baseAddress, Vector256<nint> index, Vector128<int> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector128<uint> GatherMaskVector128(Vector128<uint> source, uint* baseAddress, Vector256<nint> index, Vector128<uint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector256<long> GatherMaskVector256(Vector128<long> source, long* baseAddress, Vector256<nint> index, Vector128<long> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector256<ulong> GatherMaskVector256(Vector128<ulong> source, ulong* baseAddress, Vector256<nint> index, Vector128<ulong> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector256<nint> GatherMaskVector256(Vector128<nint> source, nint* baseAddress, Vector256<nint> index, Vector128<nint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector256<nuint> GatherMaskVector256(Vector256<nuint> source, nuint* baseAddress, Vector256<nuint> index, Vector128<nuint> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector256(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector256(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector256(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector256(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector256<nint> index, Vector128<float> mask, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherMaskVector128(source, baseAddress, index, mask, 1),
+                2 => GatherMaskVector128(source, baseAddress, index, mask, 2),
+                4 => GatherMaskVector128(source, baseAddress, index, mask, 4),
+                8 => GatherMaskVector128(source, baseAddress, index, mask, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+
+        public static unsafe Vector256<double> GatherMaskVector256(Vector128<double> source, double* baseAddress, Vector256<nint> index, Vector128<double> mask, byte scale)
         {
             return scale switch
             {
@@ -1699,6 +2574,18 @@ namespace System.Runtime.Intrinsics.X86
         public static new Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
+        /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
+        ///   VINSERTI128 ymm, ymm, xmm, imm8
+        /// </summary>
+        public static new Vector256<nint> InsertVector128(Vector256<nint> value, Vector128<nint> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
+        ///   VINSERTI128 ymm, ymm, xmm, imm8
+        /// </summary>
+        public static new Vector256<nuint> InsertVector128(Vector256<nuint> value, Vector128<nuint> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
         /// __m256i _mm256_stream_load_si256 (__m256i const* mem_addr)
         ///   VMOVNTDQA ymm, m256
         /// </summary>
@@ -1740,6 +2627,18 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<ulong> LoadAlignedVector256NonTemporal(ulong* address) => LoadAlignedVector256NonTemporal(address);
 
         /// <summary>
+        /// __m256i _mm256_stream_load_si256 (__m256i const* mem_addr)
+        ///   VMOVNTDQA ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nint> LoadAlignedVector256NonTemporal(nint* address) => LoadAlignedVector256NonTemporal(address);
+
+        /// <summary>
+        /// __m256i _mm256_stream_load_si256 (__m256i const* mem_addr)
+        ///   VMOVNTDQA ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nuint> LoadAlignedVector256NonTemporal(nuint* address) => LoadAlignedVector256NonTemporal(address);
+
+        /// <summary>
         /// __m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)
         ///   VPMASKMOVD xmm, xmm, m128
         /// </summary>
@@ -1759,6 +2658,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPMASKMOVQ xmm, xmm, m128
         /// </summary>
         public static unsafe Vector128<ulong> MaskLoad(ulong* address, Vector128<ulong> mask) => MaskLoad(address, mask);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)
+        ///   VPMASKMOVD xmm, xmm, m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask)
+        ///   VPMASKMOVQ xmm, xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nint> MaskLoad(nint* address, Vector128<nint> mask) => MaskLoad(address, mask);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_maskload_epi32 (int const* mem_addr, __m128i mask)
+        ///   VPMASKMOVD xmm, xmm, m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_maskload_epi64 (__int64 const* mem_addr, __m128i mask)
+        ///   VPMASKMOVQ xmm, xmm, m128
+        /// </summary>
+        public static unsafe Vector128<nuint> MaskLoad(nuint* address, Vector128<nuint> mask) => MaskLoad(address, mask);
 
         /// <summary>
         /// __m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)
@@ -1782,6 +2703,28 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector256<ulong> MaskLoad(ulong* address, Vector256<ulong> mask) => MaskLoad(address, mask);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)
+        ///   VPMASKMOVD ymm, ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask)
+        ///   VPMASKMOVQ ymm, ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nint> MaskLoad(nint* address, Vector256<nint> mask) => MaskLoad(address, mask);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_maskload_epi32 (int const* mem_addr, __m256i mask)
+        ///   VPMASKMOVD ymm, ymm, m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_maskload_epi64 (__int64 const* mem_addr, __m256i mask)
+        ///   VPMASKMOVQ ymm, ymm, m256
+        /// </summary>
+        public static unsafe Vector256<nuint> MaskLoad(nuint* address, Vector256<nuint> mask) => MaskLoad(address, mask);
+
+        /// <summary>
         /// void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)
         ///   VPMASKMOVD m128, xmm, xmm
         /// </summary>
@@ -1803,6 +2746,28 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void MaskStore(ulong* address, Vector128<ulong> mask, Vector128<ulong> source) => MaskStore(address, mask, source);
 
         /// <summary>
+        /// 32-bit:
+        /// void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)
+        ///   VPMASKMOVD m128, xmm, xmm
+        ///
+        /// 64-bit:
+        /// void _mm_maskstore_epi64 (__int64* mem_addr, __m128i mask, __m128i a)
+        ///   VPMASKMOVQ m128, xmm, xmm
+        /// </summary>
+        public static unsafe void MaskStore(nint* address, Vector128<nint> mask, Vector128<nint> source) => MaskStore(address, mask, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm_maskstore_epi32 (int* mem_addr, __m128i mask, __m128i a)
+        ///   VPMASKMOVD m128, xmm, xmm
+        ///
+        /// 64-bit:
+        /// void _mm_maskstore_epi64 (__int64* mem_addr, __m128i mask, __m128i a)
+        ///   VPMASKMOVQ m128, xmm, xmm
+        /// </summary>
+        public static unsafe void MaskStore(nuint* address, Vector128<nuint> mask, Vector128<nuint> source) => MaskStore(address, mask, source);
+
+        /// <summary>
         /// void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)
         ///   VPMASKMOVD m256, ymm, ymm
         /// </summary>
@@ -1822,6 +2787,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPMASKMOVQ m256, ymm, ymm
         /// </summary>
         public static unsafe void MaskStore(ulong* address, Vector256<ulong> mask, Vector256<ulong> source) => MaskStore(address, mask, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)
+        ///   VPMASKMOVD m256, ymm, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_maskstore_epi64 (__int64* mem_addr, __m256i mask, __m256i a)
+        ///   VPMASKMOVQ m256, ymm, ymm
+        /// </summary>
+        public static unsafe void MaskStore(nint* address, Vector256<nint> mask, Vector256<nint> source) => MaskStore(address, mask, source);
+
+        /// <summary>
+        /// 32-bit:
+        /// void _mm256_maskstore_epi32 (int* mem_addr, __m256i mask, __m256i a)
+        ///   VPMASKMOVD m256, ymm, ymm
+        ///
+        /// 64-bit:
+        /// void _mm256_maskstore_epi64 (__int64* mem_addr, __m256i mask, __m256i a)
+        ///   VPMASKMOVQ m256, ymm, ymm
+        /// </summary>
+        public static unsafe void MaskStore(nuint* address, Vector256<nuint> mask, Vector256<nuint> source) => MaskStore(address, mask, source);
 
         /// <summary>
         /// __m256i _mm256_madd_epi16 (__m256i a, __m256i b)
@@ -2006,6 +2993,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> Or(Vector256<ulong> left, Vector256<ulong> right) => Or(left, right);
 
         /// <summary>
+        /// __m256i _mm256_or_si256 (__m256i a, __m256i b)
+        ///   VPOR ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> Or(Vector256<nint> left, Vector256<nint> right) => Or(left, right);
+
+        /// <summary>
+        /// __m256i _mm256_or_si256 (__m256i a, __m256i b)
+        ///   VPOR ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> Or(Vector256<nuint> left, Vector256<nuint> right) => Or(left, right);
+
+        /// <summary>
         /// __m256i _mm256_packs_epi16 (__m256i a, __m256i b)
         ///   VPACKSSWB ymm, ymm, ymm/m256
         /// </summary>
@@ -2068,6 +3067,18 @@ namespace System.Runtime.Intrinsics.X86
         public static new Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, byte control) => Permute2x128(left, right, control);
 
         /// <summary>
+        /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
+        ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static new Vector256<nint> Permute2x128(Vector256<nint> left, Vector256<nint> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2x128_si256 (__m256i a, __m256i b, const int imm8)
+        ///   VPERM2I128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static new Vector256<nuint> Permute2x128(Vector256<nuint> left, Vector256<nuint> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
         /// __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8)
         ///   VPERMQ ymm, ymm/m256, imm8
         /// </summary>
@@ -2077,6 +3088,19 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPERMQ ymm, ymm/m256, imm8
         /// </summary>
         public static Vector256<ulong> Permute4x64(Vector256<ulong> value, byte control) => Permute4x64(value, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8)
+        ///   VPERMQ ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<nint> Permute4x64(Vector256<nint> value, byte control) => Permute4x64(value, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute4x64_epi64 (__m256i a, const int imm8)
+        ///   VPERMQ ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<nuint> Permute4x64(Vector256<nuint> value, byte control) => Permute4x64(value, control);
+
         /// <summary>
         /// __m256d _mm256_permute4x64_pd (__m256d a, const int imm8)
         ///   VPERMPD ymm, ymm/m256, imm8
@@ -2131,6 +3155,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> ShiftLeftLogical(Vector256<ulong> value, Vector128<ulong> count) => ShiftLeftLogical(value, count);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_sll_epi32 (__m256i a, __m128i count)
+        ///   VPSLLD ymm, ymm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_sll_epi64 (__m256i a, __m128i count)
+        ///   VPSLLQ ymm, ymm, xmm/m128
+        /// </summary>
+        public static Vector256<nint> ShiftLeftLogical(Vector256<nint> value, Vector128<nint> count) => ShiftLeftLogical(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_sll_epi32 (__m256i a, __m128i count)
+        ///   VPSLLD ymm, ymm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_sll_epi64 (__m256i a, __m128i count)
+        ///   VPSLLQ ymm, ymm, xmm/m128
+        /// </summary>
+        public static Vector256<nuint> ShiftLeftLogical(Vector256<nuint> value, Vector128<nuint> count) => ShiftLeftLogical(value, count);
+
+        /// <summary>
         /// __m256i _mm256_slli_epi16 (__m256i a, int imm8)
         ///   VPSLLW ymm, ymm, imm8
         /// </summary>
@@ -2160,6 +3206,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSLLQ ymm, ymm, imm8
         /// </summary>
         public static Vector256<ulong> ShiftLeftLogical(Vector256<ulong> value, byte count) => ShiftLeftLogical(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_slli_epi32 (__m256i a, int imm8)
+        ///   VPSLLD ymm, ymm, imm8
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_slli_epi64 (__m256i a, int imm8)
+        ///   VPSLLQ ymm, ymm, imm8
+        /// </summary>
+        public static Vector256<nint> ShiftLeftLogical(Vector256<nint> value, byte count) => ShiftLeftLogical(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_slli_epi32 (__m256i a, int imm8)
+        ///   VPSLLD ymm, ymm, imm8
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_slli_epi64 (__m256i a, int imm8)
+        ///   VPSLLQ ymm, ymm, imm8
+        /// </summary>
+        public static Vector256<nuint> ShiftLeftLogical(Vector256<nuint> value, byte count) => ShiftLeftLogical(value, count);
 
         /// <summary>
         /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
@@ -2203,6 +3271,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> ShiftLeftLogical128BitLane(Vector256<ulong> value, byte numBytes) => ShiftLeftLogical128BitLane(value, numBytes);
 
         /// <summary>
+        /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
+        ///   VPSLLDQ ymm, ymm, imm8
+        /// </summary>
+        public static Vector256<nint> ShiftLeftLogical128BitLane(Vector256<nint> value, byte numBytes) => ShiftLeftLogical128BitLane(value, numBytes);
+
+        /// <summary>
+        /// __m256i _mm256_bslli_epi128 (__m256i a, const int imm8)
+        ///   VPSLLDQ ymm, ymm, imm8
+        /// </summary>
+        public static Vector256<nuint> ShiftLeftLogical128BitLane(Vector256<nuint> value, byte numBytes) => ShiftLeftLogical128BitLane(value, numBytes);
+
+        /// <summary>
         /// __m256i _mm256_sllv_epi32 (__m256i a, __m256i count)
         ///   VPSLLVD ymm, ymm, ymm/m256
         /// </summary>
@@ -2222,6 +3302,28 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSLLVQ ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<ulong> ShiftLeftLogicalVariable(Vector256<ulong> value, Vector256<ulong> count) => ShiftLeftLogicalVariable(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_sllv_epi32 (__m256i a, __m256i count)
+        ///   VPSLLVD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_sllv_epi64 (__m256i a, __m256i count)
+        ///   VPSLLVQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> ShiftLeftLogicalVariable(Vector256<nint> value, Vector256<nint> count) => ShiftLeftLogicalVariable(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_sllv_epi32 (__m256i a, __m256i count)
+        ///   VPSLLVD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_sllv_epi64 (__m256i a, __m256i count)
+        ///   VPSLLVQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> ShiftLeftLogicalVariable(Vector256<nuint> value, Vector256<nuint> count) => ShiftLeftLogicalVariable(value, count);
 
         /// <summary>
         /// __m128i _mm_sllv_epi32 (__m128i a, __m128i count)
@@ -2310,6 +3412,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> ShiftRightLogical(Vector256<ulong> value, Vector128<ulong> count) => ShiftRightLogical(value, count);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_srl_epi32 (__m256i a, __m128i count)
+        ///   VPSRLD ymm, ymm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_srl_epi64 (__m256i a, __m128i count)
+        ///   VPSRLQ ymm, ymm, xmm/m128
+        /// </summary>
+        public static Vector256<nint> ShiftRightLogical(Vector256<nint> value, Vector128<nint> count) => ShiftRightLogical(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_srl_epi32 (__m256i a, __m128i count)
+        ///   VPSRLD ymm, ymm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_srl_epi64 (__m256i a, __m128i count)
+        ///   VPSRLQ ymm, ymm, xmm/m128
+        /// </summary>
+        public static Vector256<nuint> ShiftRightLogical(Vector256<nuint> value, Vector128<nuint> count) => ShiftRightLogical(value, count);
+
+        /// <summary>
         /// __m256i _mm256_srli_epi16 (__m256i a, int imm8)
         ///   VPSRLW ymm, ymm, imm8
         /// </summary>
@@ -2382,6 +3506,18 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> ShiftRightLogical128BitLane(Vector256<ulong> value, byte numBytes) => ShiftRightLogical128BitLane(value, numBytes);
 
         /// <summary>
+        /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
+        ///   VPSRLDQ ymm, ymm, imm8
+        /// </summary>
+        public static Vector256<nint> ShiftRightLogical128BitLane(Vector256<nint> value, byte numBytes) => ShiftRightLogical128BitLane(value, numBytes);
+
+        /// <summary>
+        /// __m256i _mm256_bsrli_epi128 (__m256i a, const int imm8)
+        ///   VPSRLDQ ymm, ymm, imm8
+        /// </summary>
+        public static Vector256<nuint> ShiftRightLogical128BitLane(Vector256<nuint> value, byte numBytes) => ShiftRightLogical128BitLane(value, numBytes);
+
+        /// <summary>
         /// __m256i _mm256_srlv_epi32 (__m256i a, __m256i count)
         ///   VPSRLVD ymm, ymm, ymm/m256
         /// </summary>
@@ -2403,6 +3539,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> ShiftRightLogicalVariable(Vector256<ulong> value, Vector256<ulong> count) => ShiftRightLogicalVariable(value, count);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_srlv_epi32 (__m256i a, __m256i count)
+        ///   VPSRLVD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_srlv_epi64 (__m256i a, __m256i count)
+        ///   VPSRLVQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> ShiftRightLogicalVariable(Vector256<nint> value, Vector256<nuint> count) => ShiftRightLogicalVariable(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_srlv_epi32 (__m256i a, __m256i count)
+        ///   VPSRLVD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_srlv_epi64 (__m256i a, __m256i count)
+        ///   VPSRLVQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> ShiftRightLogicalVariable(Vector256<nuint> value, Vector256<nuint> count) => ShiftRightLogicalVariable(value, count);
+
+        /// <summary>
         /// __m128i _mm_srlv_epi32 (__m128i a, __m128i count)
         ///   VPSRLVD xmm, xmm, xmm/m128
         /// </summary>
@@ -2417,11 +3575,34 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSRLVQ xmm, xmm, xmm/m128
         /// </summary>
         public static Vector128<long> ShiftRightLogicalVariable(Vector128<long> value, Vector128<ulong> count) => ShiftRightLogicalVariable(value, count);
+
         /// <summary>
         /// __m128i _mm_srlv_epi64 (__m128i a, __m128i count)
         ///   VPSRLVQ xmm, xmm, xmm/m128
         /// </summary>
         public static Vector128<ulong> ShiftRightLogicalVariable(Vector128<ulong> value, Vector128<ulong> count) => ShiftRightLogicalVariable(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_srlv_epi32 (__m128i a, __m128i count)
+        ///   VPSRLVD xmm, xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_srlv_epi64 (__m128i a, __m128i count)
+        ///   VPSRLVQ xmm, xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> ShiftRightLogicalVariable(Vector128<nint> value, Vector128<nuint> count) => ShiftRightLogicalVariable(value, count);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_srlv_epi32 (__m128i a, __m128i count)
+        ///   VPSRLVD xmm, xmm, xmm/m128
+        ///
+        /// 64-bit:
+        /// __m128i _mm_srlv_epi64 (__m128i a, __m128i count)
+        ///   VPSRLVQ xmm, xmm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> ShiftRightLogicalVariable(Vector128<nuint> value, Vector128<nuint> count) => ShiftRightLogicalVariable(value, count);
 
         /// <summary>
         /// __m256i _mm256_shuffle_epi8 (__m256i a, __m256i b)
@@ -2524,6 +3705,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> Subtract(Vector256<ulong> left, Vector256<ulong> right) => Subtract(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_sub_epi32 (__m256i a, __m256i b)
+        ///   VPSUBD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_sub_epi64 (__m256i a, __m256i b)
+        ///   VPSUBQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> Subtract(Vector256<nint> left, Vector256<nint> right) => Subtract(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_sub_epi32 (__m256i a, __m256i b)
+        ///   VPSUBD ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_sub_epi64 (__m256i a, __m256i b)
+        ///   VPSUBQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> Subtract(Vector256<nuint> left, Vector256<nuint> right) => Subtract(left, right);
+
+        /// <summary>
         /// __m256i _mm256_subs_epi8 (__m256i a, __m256i b)
         ///   VPSUBSB ymm, ymm, ymm/m256
         /// </summary>
@@ -2592,6 +3795,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> UnpackHigh(Vector256<ulong> left, Vector256<ulong> right) => UnpackHigh(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_unpackhi_epi32 (__m256i a, __m256i b)
+        ///   VPUNPCKHDQ ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_unpackhi_epi64 (__m256i a, __m256i b)
+        ///   VPUNPCKHQDQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> UnpackHigh(Vector256<nint> left, Vector256<nint> right) => UnpackHigh(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_unpackhi_epi32 (__m256i a, __m256i b)
+        ///   VPUNPCKHDQ ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_unpackhi_epi64 (__m256i a, __m256i b)
+        ///   VPUNPCKHQDQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> UnpackHigh(Vector256<nuint> left, Vector256<nuint> right) => UnpackHigh(left, right);
+
+        /// <summary>
         /// __m256i _mm256_unpacklo_epi8 (__m256i a, __m256i b)
         ///   VPUNPCKLBW ymm, ymm, ymm/m256
         /// </summary>
@@ -2633,6 +3858,28 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<ulong> UnpackLow(Vector256<ulong> left, Vector256<ulong> right) => UnpackLow(left, right);
 
         /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_unpacklo_epi32 (__m256i a, __m256i b)
+        ///   VPUNPCKLDQ ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_unpacklo_epi64 (__m256i a, __m256i b)
+        ///   VPUNPCKLQDQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> UnpackLow(Vector256<nint> left, Vector256<nint> right) => UnpackLow(left, right);
+
+        /// <summary>
+        /// 32-bit:
+        /// __m256i _mm256_unpacklo_epi32 (__m256i a, __m256i b)
+        ///   VPUNPCKLDQ ymm, ymm, ymm/m256
+        ///
+        /// 64-bit:
+        /// __m256i _mm256_unpacklo_epi64 (__m256i a, __m256i b)
+        ///   VPUNPCKLQDQ ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> UnpackLow(Vector256<nuint> left, Vector256<nuint> right) => UnpackLow(left, right);
+
+        /// <summary>
         /// __m256i _mm256_xor_si256 (__m256i a, __m256i b)
         ///   VPXOR ymm, ymm, ymm/m256
         /// </summary>
@@ -2672,5 +3919,17 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPXOR ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<ulong> Xor(Vector256<ulong> left, Vector256<ulong> right) => Xor(left, right);
+
+        /// <summary>
+        /// __m256i _mm256_xor_si256 (__m256i a, __m256i b)
+        ///   VPXOR ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nint> Xor(Vector256<nint> left, Vector256<nint> right) => Xor(left, right);
+
+        /// <summary>
+        /// __m256i _mm256_xor_si256 (__m256i a, __m256i b)
+        ///   VPXOR ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<nuint> Xor(Vector256<nuint> left, Vector256<nuint> right) => Xor(left, right);
     }
 }
