@@ -6248,8 +6248,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
-            // Normal static field reference
+            assert(!fieldMayOverlap);
 
+            // Normal static field reference
             //
             // If we can we access the static's address directly
             // then pFldAddr will be NULL and
@@ -6261,6 +6262,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // We should always be able to access this static field address directly
             //
             assert(pFldAddr == nullptr);
+
+            // For boxed statics, this direct address will be for the box. We have already added
+            // the indirection for the field itself and attached the sequence, in importation.
+            bool          isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
+            FieldSeqNode* fldSeq =
+                !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(symHnd) : FieldSeqStore::NotAField();
 
 #ifdef TARGET_64BIT
             bool isStaticReadOnlyInited = false;
@@ -6275,11 +6282,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
             if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
             {
-                // The address is not directly addressible, so force it into a
-                // constant, so we handle it properly
-
-                bool         isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-                GenTreeFlags handleKind    = GTF_EMPTY;
+                // The address is not directly addressible, so force it into a constant, so we handle it properly.
+                GenTreeFlags handleKind = GTF_EMPTY;
                 if (isBoxedStatic)
                 {
                     handleKind = GTF_ICON_STATIC_BOX_PTR;
@@ -6292,8 +6296,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 {
                     handleKind = GTF_ICON_STATIC_HDL;
                 }
-                FieldSeqNode* fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd);
-                GenTree*      addr     = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
 
                 // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
                 if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
@@ -6330,9 +6333,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
                 tree->SetOper(GT_CLS_VAR);
                 tree->AsClsVar()->gtClsVarHnd = symHnd;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                tree->AsClsVar()->gtFieldSeq = fieldSeq;
+                tree->AsClsVar()->gtFieldSeq  = fldSeq;
             }
 
             return tree;
