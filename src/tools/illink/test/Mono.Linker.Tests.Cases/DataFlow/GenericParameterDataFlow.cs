@@ -360,7 +360,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void PublicMethodsMethodParameter (TypeRequiresPublicMethods<TOuter> param) { }
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsMethodReturnValue () { return null; }
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))] // Return value
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))] // Compiler generated local variable
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsMethodReturnValue () { return null; }
 
 			public void PublicFieldsMethodLocalVariable ()
