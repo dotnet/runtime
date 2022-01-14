@@ -233,6 +233,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
 			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicMethods) + "(String)",
+			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicConstructors) + "(String)",
+			ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicConstructors) + "(String)",
+			ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL2072", nameof (DataFlowStringExtensions) + "." + nameof (DataFlowStringExtensions.RequiresPublicConstructors) + "(String)",
 			ProducedBy = ProducedBy.Trimmer)]
 		public static void TestBranchSwitch ()
