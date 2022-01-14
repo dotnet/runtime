@@ -20,6 +20,7 @@ namespace System.Net.Security
             Debug.Assert(destination.Length == 128 >> 3);
             // Span<byte> buffer = stackalloc byte[64];
             Span<uint> state = stackalloc uint[4];
+            Span<uint>  count = stackalloc uint[2];
 
             // the initialize our context
             count[0] = 0;
@@ -32,15 +33,14 @@ namespace System.Net.Security
             Array.Clear(buffer, 0, 64);
             Array.Clear(x, 0, 16);
 
-            HashCore(source.ToArray(), 0, source.Length, state);
-            HashValue = HashFinal(state);
+            HashCore(source.ToArray(), 0, source.Length, state, count);
+            HashValue = HashFinal(state, count);
             byte[] result = (byte[]) HashValue.Clone();
             result.CopyTo(destination);
         }
 
         private static byte[]? HashValue;
         private static byte[] buffer = new byte[64];
-        private static uint[] count = new uint[2];
         private static uint[] x = new uint[16];
 
         private const int S11 = 3;
@@ -57,7 +57,7 @@ namespace System.Net.Security
         private const int S34 = 15;
 
         private static byte[] digest = new byte[16];
-        private static void HashCore(byte[] array, int ibStart, int cbSize, Span<uint> state)
+        private static void HashCore(byte[] array, int ibStart, int cbSize, Span<uint> state, Span<uint> count)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
@@ -87,7 +87,7 @@ namespace System.Net.Security
             Buffer.BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
         }
 
-        private static byte[] HashFinal(Span<uint> state)
+        private static byte[] HashFinal(Span<uint> state, Span<uint> count)
         {
             /* Save number of bits */
             byte[] bits = new byte[8];
@@ -96,10 +96,10 @@ namespace System.Net.Security
             /* Pad out to 56 mod 64. */
             uint index = ((count[0] >> 3) & 0x3f);
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
-            HashCore(Padding(padLen), 0, padLen, state);
+            HashCore(Padding(padLen), 0, padLen, state, count);
 
             /* Append length (before padding) */
-            HashCore(bits, 0, 8, state);
+            HashCore(bits, 0, 8, state, count);
 
             /* Store state in digest */
             Encode(digest, state);
