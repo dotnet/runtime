@@ -3798,16 +3798,9 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
 
     unsigned lclNum;
-
-    if (call->IsTailCallViaJitHelper() && originalThisExpr->IsLocal())
+    if (thisExpr->OperIs(GT_LCL_VAR))
     {
-        // For ordering purposes for the special tailcall arguments on x86, we forced the
-        // 'this' pointer in this case to a local in Compiler::fgMorphTailCall().
-        // We could possibly use this case to remove copies for all architectures and non-tailcall
-        // calls by creating a new lcl var or lcl field reference, as is done in the
-        // LowerVirtualVtableCall() code.
-        assert(originalThisExpr->OperGet() == GT_LCL_VAR);
-        lclNum = originalThisExpr->AsLclVarCommon()->GetLclNum();
+        lclNum = thisExpr->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -4606,7 +4599,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
     unsigned lclNum;
-    if (thisPtr->IsLocal())
+    if (thisPtr->OperIs(GT_LCL_VAR))
     {
         lclNum = thisPtr->AsLclVarCommon()->GetLclNum();
     }
