@@ -123,7 +123,7 @@ namespace System
 
                 } while (true);
             }
-            if (Sse2.IsSupported)
+            if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -282,7 +282,7 @@ namespace System
                         offset = 0;
                 } while (true);
             }
-            else if (Sse2.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
 

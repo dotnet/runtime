@@ -113,7 +113,7 @@ namespace System
 
                 } while (true);
             }
-            else if (Sse2.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 // Find the last unique (which is not equal to ch1) byte
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -615,7 +615,7 @@ namespace System
 
                 } while (true);
             }
-            else if (Sse2.IsSupported)
+            else if (Sse2.IsSupported || AdvSimd.IsSupported)
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
 
