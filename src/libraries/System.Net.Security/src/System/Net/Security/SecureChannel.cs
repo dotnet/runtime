@@ -730,7 +730,8 @@ namespace System.Net.Security
                     NetEventSource.Info(this, "NextMessage() returned SecurityStatusPal.CredentialsNeeded");
 
                 SetRefreshCredentialNeeded();
-                status = GenerateToken(incomingBuffer, ref nextmsg);
+                status = GenerateToken(ReadOnlySpan<byte>.Empty, ref nextmsg);
+                //status = GenerateToken(incomingBuffer, ref nextmsg);
             }
 
             ProtocolToken token = new ProtocolToken(nextmsg, status);
