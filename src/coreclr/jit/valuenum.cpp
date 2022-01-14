@@ -8834,9 +8834,22 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!wasNewobj)
                 {
+                    // Indirections off of addresses for boxed statics represent bases for
+                    // the address of the static itself. Here we will use "nullptr" for the
+                    // field sequence and assume the actual static field will be appended to
+                    // it later, as part of numbering the method table pointer offset addition.
+                    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    {
+                        assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
+                        ValueNum boxAddrVN  = addrNvnp.GetLiberal();
+                        ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
+                        ValueNum staticAddrVN =
+                            vnStore->VNForFunc(tree->TypeGet(), VNF_PtrToStatic, boxAddrVN, fieldSeqVN);
+                        tree->gtVNPair = ValueNumPair(staticAddrVN, staticAddrVN);
+                    }
                     // Is this invariant indirect expected to always return a non-null value?
                     // TODO-VNTypes: non-null indirects should only be used for TYP_REFs.
-                    if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
+                    else if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
                     {
                         assert(tree->gtFlags & GTF_IND_NONFAULTING);
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
