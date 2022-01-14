@@ -25,7 +25,7 @@ build-all: $(WASI_SDK_CLANG)
 	cd $(WASI_OBJ_DIR) && ninja
 
 	mkdir -p $(WASI_BIN_DIR)
-	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_BIN_DIR)
+	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_OBJ_DIR)/libmono-wasi-driver.a $(WASI_BIN_DIR)
 
 $(WASI_SDK_CLANG):
 	mkdir -p $(WASI_OBJ_DIR)
