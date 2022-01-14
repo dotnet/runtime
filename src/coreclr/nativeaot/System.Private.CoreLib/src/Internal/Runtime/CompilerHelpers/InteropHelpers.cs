@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -592,15 +593,25 @@ namespace Internal.Runtime.CompilerHelpers
 #endif
         }
 
-        public static unsafe object InitializeCustomMarshaller(RuntimeTypeHandle pParameterType, RuntimeTypeHandle pMarshallerType, string cookie, delegate*<string, object> getInstanceMethod)
+        public static unsafe object InitializeCustomMarshaller(RuntimeTypeHandle pParameterType, RuntimeTypeHandle pMarshallerType, RuntimeTypeHandle pICustomMarshallerType, string cookie, delegate*<string, object> getInstanceMethod)
         {
             if (getInstanceMethod == null)
             {
                 throw new ApplicationException();
             }
 
+            if (!RuntimeImports.AreTypesAssignable(pMarshallerType.ToEETypePtr(), pICustomMarshallerType.ToEETypePtr()))
+            {
+                throw new ApplicationException();
+            }
+
             var marshaller = CustomMarshallerTable.s_customMarshallersTable.GetOrAdd(new CustomMarshallerKey(pParameterType, pMarshallerType, cookie, getInstanceMethod));
             if (marshaller == null)
+            {
+                throw new ApplicationException();
+            }
+
+            if (!RuntimeImports.AreTypesAssignable(marshaller.EETypePtr, pICustomMarshallerType.ToEETypePtr()))
             {
                 throw new ApplicationException();
             }

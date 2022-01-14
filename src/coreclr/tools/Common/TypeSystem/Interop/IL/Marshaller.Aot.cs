@@ -1177,12 +1177,6 @@ namespace Internal.TypeSystem.Interop
                 ThrowHelper.ThrowMarshalDirectiveException();
             }
 
-            if (!marshallerType.CanCastTo(customMarshallerType))
-            {
-                // ApplicationException throw here.
-                ThrowHelper.ThrowMarshalDirectiveException();
-            }
-
             var getInstanceMethod = marshallerType.GetMethod(
                 "GetInstance",
                 new MethodSignature(MethodSignatureFlags.Static, 0, customMarshallerType, new[] { Context.GetWellKnownType(WellKnownType.String) }));
@@ -1201,6 +1195,7 @@ namespace Internal.TypeSystem.Interop
             ILCodeStream fnptrLoadStream = _ilCodeStreams.FunctionPointerLoadStream;
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(ManagedType));
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(marshallerType));
+            fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(customMarshallerType));
             fnptrLoadStream.Emit(ILOpcode.ldstr, emitter.NewToken(cookie));
             if (getInstanceMethod != null)
             {
