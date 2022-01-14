@@ -18,11 +18,21 @@
 PhaseStatus Compiler::fgForwardSub()
 {
     bool changed = false;
-    for (BasicBlock* const block : Blocks())
+    bool enabled = true;
+
+#if defined(DEBUG)
+    enabled = JitConfig.JitNoForwardSub() == 0;
+#endif
+
+    if (enabled)
     {
-        JITDUMP("\n\n===> " FMT_BB "\n", block->bbNum);
-        changed |= fgForwardSub(block);
+        for (BasicBlock* const block : Blocks())
+        {
+            JITDUMP("\n\n===> " FMT_BB "\n", block->bbNum);
+            changed |= fgForwardSub(block);
+        }
     }
+
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
@@ -370,7 +380,7 @@ bool Compiler::fgForwardSub(Statement* stmt)
     //
     // or,
     //
-    // if the next tree can't change the value of fwdSubNode or be adversly impacted by fwdSubNode effects
+    // if the next tree can't change the value of fwdSubNode or be impacted by fwdSubNode effects
     //
     const bool fwdSubNodeInvariant   = ((fwdSubNode->gtFlags & GTF_ALL_EFFECT) == 0);
     const bool nextTreeIsPureUpToUse = ((fsv.GetFlags() & (GTF_EXCEPT | GTF_GLOB_REF | GTF_CALL)) == 0);
@@ -392,7 +402,7 @@ bool Compiler::fgForwardSub(Statement* stmt)
 
         if ((ev.GetFlags() & GTF_GLOB_REF) != 0)
         {
-            JITDUMP(" potentially interacting effects from address-exposed locals in node to sub\n");
+            JITDUMP(" potentially interacting effects (AX locals)\n");
             return false;
         }
     }
