@@ -1490,14 +1490,6 @@ uint32_t MyICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** p
     return jitInstance->mc->repGetFieldThreadLocalStoreID(field, ppIndirection);
 }
 
-// Sets another object to intercept calls to "self" and current method being compiled
-void MyICJI::setOverride(ICorDynamicInfo* pOverride, CORINFO_METHOD_HANDLE currentMethod)
-{
-    jitInstance->mc->cr->AddCall("setOverride");
-    LogError("Hit unimplemented setOverride");
-    DebugBreakorAV(115);
-}
-
 // Adds an active dependency from the context method's module to the given module
 // This is internal callback for the EE. JIT should not call it directly.
 void MyICJI::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom, CORINFO_MODULE_HANDLE moduleTo)

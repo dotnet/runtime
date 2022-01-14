@@ -339,7 +339,7 @@ namespace System.IO.Packaging
         /// </returns>
         public override string GetAttribute(int i)
         {
-            string? result = null;
+            string? result;
 
             if (_ignoredAttributeCount == 0)
             {

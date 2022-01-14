@@ -63,7 +63,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? desc)
         {
-            IntPtr metafile = IntPtr.Zero;
+            IntPtr metafile;
 
             if (frameRect.IsEmpty)
             {
@@ -117,7 +117,7 @@ namespace System.Drawing.Imaging
             // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(fileName);
 
-            IntPtr metafile = IntPtr.Zero;
+            IntPtr metafile;
 
             if (frameRect.IsEmpty)
             {

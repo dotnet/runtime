@@ -155,6 +155,7 @@ declare type AssetEntry = {
     culture?: string;
     load_remote?: boolean;
     is_optional?: boolean;
+    buffer?: ArrayBuffer;
 };
 interface AssemblyEntry extends AssetEntry {
     name: "assembly";
@@ -195,8 +196,7 @@ declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
     configSrc?: string;
-    scriptDirectory?: string;
-    onConfigLoaded?: () => void;
+    onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
     imports?: DotnetModuleConfigImports;
 } & Partial<EmscriptenModule>;

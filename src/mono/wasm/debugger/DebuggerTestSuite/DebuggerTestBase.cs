@@ -205,7 +205,7 @@ namespace DebuggerTests
 
         // sets breakpoint by method name and line offset
         internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Action<JToken> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -236,7 +236,7 @@ namespace DebuggerTests
             if (locals_fn != null)
             {
                 var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>());
-                locals_fn(locals);
+                await locals_fn(locals);
             }
         }
 
@@ -279,31 +279,31 @@ namespace DebuggerTests
             Assert.True(false, $"Could not find variable '{name}'");
         }
 
-        internal void CheckString(JToken locals, string name, string value)
+        internal async Task CheckString(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TString(value), name).Wait();
+            await CheckValue(l["value"], TString(value), name);
         }
 
-        internal JToken CheckSymbol(JToken locals, string name, string value)
+        internal async Task<JToken> CheckSymbol(JToken locals, string name, string value)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TSymbol(value), name).Wait();
+            await CheckValue(l["value"], TSymbol(value), name);
             return l;
         }
 
-        internal JToken Check(JToken locals, string name, JObject expected)
+        internal async Task<JToken> Check(JToken locals, string name, JObject expected)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], expected, name).Wait();
+            await CheckValue(l["value"], expected, name);
             return l;
         }
 
-        internal JToken CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false, string description = null)
+        internal async Task<JToken> CheckObject(JToken locals, string name, string class_name, string subtype = null, bool is_null = false, string description = null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
             var val = l["value"];
-            CheckValue(val, TObject(class_name, is_null: is_null, description: description), name).Wait();
+            await CheckValue(val, TObject(class_name, is_null: is_null, description: description), name);
             Assert.True(val["isValueType"] == null || !val["isValueType"].Value<bool>());
 
             return l;
@@ -354,10 +354,10 @@ namespace DebuggerTests
             }
         }
 
-        internal JToken CheckBool(JToken locals, string name, bool expected)
+        internal async Task<JToken> CheckBool(JToken locals, string name, bool expected)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TBool(expected), name).Wait();
+            await CheckValue(l["value"], TBool(expected), name);
             return l;
         }
 
@@ -367,24 +367,24 @@ namespace DebuggerTests
             Assert.Equal(value, val);
         }
 
-        internal JToken CheckValueType(JToken locals, string name, string class_name, string description=null)
+        internal async Task<JToken> CheckValueType(JToken locals, string name, string class_name, string description=null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TValueType(class_name, description: description), name).Wait();
+            await CheckValue(l["value"], TValueType(class_name, description: description), name);
             return l;
         }
 
-        internal JToken CheckEnum(JToken locals, string name, string class_name, string descr)
+        internal async Task<JToken> CheckEnum(JToken locals, string name, string class_name, string descr)
         {
             var l = GetAndAssertObjectWithName(locals, name);
-            CheckValue(l["value"], TEnum(class_name, descr), name).Wait();
+            await CheckValue(l["value"], TEnum(class_name, descr), name);
             return l;
         }
 
-        internal void CheckArray(JToken locals, string name, string class_name, string description)
-           => CheckValue(
-                GetAndAssertObjectWithName(locals, name)["value"],
-                TArray(class_name, description), name).Wait();
+        internal async Task CheckArray(JToken locals, string name, string class_name, string description)
+           => await CheckValue(
+                        GetAndAssertObjectWithName(locals, name)["value"],
+                        TArray(class_name, description), name);
 
         internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label = "")
         {
@@ -902,7 +902,7 @@ namespace DebuggerTests
             var locals = frame_props.Value["result"];
             var locals_internal = frame_props.Value["internalProperties"];
             var locals_private = frame_props.Value["privateProperties"];
-            
+
             // FIXME: Should be done when generating the list in dotnet.cjs.lib.js, but not sure yet
             //        whether to remove it, and how to do it correctly.
             if (locals is JArray)

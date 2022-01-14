@@ -794,7 +794,7 @@ public class SteppingInto
 
 public class MyIncrementer
 {
-    private Func<DateTime> todayFunc = () => DateTime.Now;
+    private Func<DateTime> todayFunc = () => new DateTime(2061, 1, 5); // Wednesday
 
     public int Increment(int count)
     {
