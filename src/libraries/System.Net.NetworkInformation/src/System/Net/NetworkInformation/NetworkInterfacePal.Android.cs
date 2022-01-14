@@ -23,7 +23,7 @@ namespace System.Net.NetworkInformation
             Interop.Sys.NetworkInterfaceInfo *networkInterfaceInfo = null;
             Interop.Sys.IpAddressInfo *addressInfo = null;
 
-            if (Interop.Sys.GetNetworkInterfaces(&interfaceCount, &networkInterfaceInfo, &addressCount, &addressInfo) != 0)
+            if (Interop.Sys.GetNetworkInterfaces(ref interfaceCount, ref networkInterfaceInfo, ref addressCount, ref addressInfo) != 0)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
                 throw new NetworkInformationException(message);
@@ -31,7 +31,7 @@ namespace System.Net.NetworkInformation
 
             // the native implementation of Interop.Sys.GetNetworkInterfaces allocates one block of memory
             // for both networkInterfaceInfo and addressInfo so we only need to call free once pointing at
-            // the start of the network itnerfaces list
+            // the start of the network interfaces list
             var globalMemory = (IntPtr)networkInterfaceInfo;
 
             try
