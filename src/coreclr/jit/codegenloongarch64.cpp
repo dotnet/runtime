@@ -4563,7 +4563,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
         {
             assert(reg != REG_R21);
             ssize_t imm = op2->AsIntCon()->gtIconVal;
-            if ((tree->gtFlags & GTF_UNSIGNED) && (attr == EA_4BYTE))
+            if (attr == EA_4BYTE)
             {
                 assert(reg != REG_RA);
                 imm = (int32_t)imm;

@@ -1230,6 +1230,13 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 assert(!varTypeIsGC(varDsc));
                 spillType = lclActualType;
             }
+
+#if defined(TARGET_LOONGARCH64)
+            if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
+            {
+                spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+            }
+#endif
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
 #else
