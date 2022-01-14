@@ -668,7 +668,7 @@ namespace DebuggerTests
 
 
         [Fact]
-        public async Task DebuggerAttributeNoStopInDebuggerHidden()
+        public async Task DebuggerHiddenNoStopOnBp()
         {
             var bp_hidden = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "HiddenMethod", 1);
             var bp_visible = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "VisibleMethod", 1);
@@ -683,7 +683,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task DebuggerAttributeStopOnDebuggerHiddenCallWithDebuggerBreakCall()
+        public async Task DebuggerHiddenStopOnUserBp()
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 0);
             var init_location = await EvaluateAndCheck(

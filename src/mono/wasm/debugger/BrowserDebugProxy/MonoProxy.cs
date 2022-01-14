@@ -837,51 +837,41 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebugStore store = await LoadStore(sessionId, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
-                if (context.IsSkippingHiddenMethod == true)
-                {
-                    context.IsSkippingHiddenMethod = false;
-                    if (event_kind != EventKind.UserBreak)
-                    {
-                        await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
-                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                        return true;
-                    }
-                }
-
-                if (context.IsSteppingThroughMethod == true)
-                {
-                    context.IsSteppingThroughMethod = false;
-                    if (event_kind != EventKind.UserBreak && event_kind != EventKind.Breakpoint)
-                    {
-                        await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
-                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                        return true;
-                    }
-                }
-
-                if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
-                {
-                    if (event_kind == EventKind.Step)
-                        context.IsSkippingHiddenMethod = true;
-                    await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
-                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                var shouldReturn = await SkipMethod(
+                    isSkippable: context.IsSkippingHiddenMethod,
+                    shouldBeSkipped: event_kind != EventKind.UserBreak,
+                    StepKind.Over);
+                context.IsSkippingHiddenMethod = false;
+                if (shouldReturn)
                     return true;
-                }
 
-                if (j == 0 && method?.Info.HasStepThroughAttribute == true)
+                shouldReturn = await SkipMethod(
+                    isSkippable: context.IsSteppingThroughMethod,
+                    shouldBeSkipped: event_kind != EventKind.UserBreak && event_kind != EventKind.Breakpoint,
+                    StepKind.Over);
+                context.IsSteppingThroughMethod = false;
+                if (shouldReturn)
+                    return true;
+
+                if (j == 0 && (method?.Info.HasStepThroughAttribute == true || method?.Info.IsHiddenFromDebugger == true))
                 {
+                    if (method.Info.IsHiddenFromDebugger)
+                    {
+                        if (event_kind == EventKind.Step)
+                            context.IsSkippingHiddenMethod = true;
+                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                            return true;
+                    }
+
                     if (event_kind == EventKind.Step ||
-                        (event_kind == EventKind.Breakpoint && JustMyCode) ||
-                        (event_kind == EventKind.UserBreak && JustMyCode))
+                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
                     {
                         if (context.IsResumedAfterBp)
                             context.IsResumedAfterBp = false;
                         else if (event_kind != EventKind.UserBreak)
                             context.IsSteppingThroughMethod = true;
-
-                        await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
-                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                        return true;
+                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                            return true;
                     }
                     if (event_kind == EventKind.Breakpoint)
                         context.IsResumedAfterBp = true;
@@ -964,6 +954,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
+
+            async Task<bool> SkipMethod(bool isSkippable, bool shouldBeSkipped, StepKind stepKind)
+            {
+                if (isSkippable && shouldBeSkipped)
+                {
+                    await context.SdbAgent.Step(context.ThreadId, stepKind, token);
+                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                    return true;
+                }
+                return false;
+            }
         }
         private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
