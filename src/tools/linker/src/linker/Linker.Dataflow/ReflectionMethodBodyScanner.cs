@@ -885,10 +885,10 @@ namespace Mono.Linker.Dataflow
 						// In all other cases we may not even know which type this is about, so there's nothing we can do
 						// report it as a warning.
 						analysisContext.ReportWarning (
-							string.Format (Resources.Strings.IL2103,
+							new DiagnosticString (DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined).GetMessage (
 								DiagnosticUtilities.GetParameterNameForErrorMessage (calledMethodDefinition.Parameters[1]),
 								DiagnosticUtilities.GetMethodSignatureDisplayName (calledMethodDefinition)),
-							2103);
+							(int) DiagnosticId.PropertyAccessorParameterInLinqExpressionsCannotBeStaticallyDetermined);
 					}
 				}
 				break;
@@ -1015,7 +1015,10 @@ namespace Mono.Linker.Dataflow
 					var parameters = calledMethod.Parameters;
 					if ((parameters.Count == 3 && parameters[2].ParameterType.MetadataType == MetadataType.Boolean && methodParams[2].AsConstInt () != 0) ||
 						(parameters.Count == 5 && methodParams[4].AsConstInt () != 0)) {
-						analysisContext.ReportWarning ($"Call to '{calledMethod.GetDisplayName ()}' can perform case insensitive lookup of the type, currently ILLink can not guarantee presence of all the matching types", 2096);
+						analysisContext.ReportWarning (
+							new DiagnosticString (DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported).GetMessage (
+								calledMethod.GetDisplayName ()),
+							(int) DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported);
 						break;
 					}
 					foreach (var typeNameValue in methodParams[0]) {
@@ -1035,7 +1038,10 @@ namespace Mono.Linker.Dataflow
 							// So while we don't know which type it is, we can guarantee that it will fulfill the annotation.
 							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition, valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes));
 						} else {
-							analysisContext.ReportWarning ($"Unrecognized value passed to the parameter 'typeName' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.", 2057);
+							analysisContext.ReportWarning (
+								new DiagnosticString (DiagnosticId.UnrecognizedTypeNameInTypeGetType).GetMessage (
+									calledMethod.GetDisplayName ()),
+								(int) DiagnosticId.UnrecognizedTypeNameInTypeGetType);
 						}
 					}
 
@@ -1610,7 +1616,10 @@ namespace Mono.Linker.Dataflow
 			//
 			case IntrinsicId.Assembly_CreateInstance:
 				// For now always fail since we don't track assemblies (dotnet/linker/issues/1947)
-				analysisContext.ReportWarning ($"Parameters passed to method '{calledMethodDefinition.GetDisplayName ()}' cannot be analyzed. Consider using methods 'System.Type.GetType' and `System.Activator.CreateInstance` instead.", 2058);
+				analysisContext.ReportWarning (
+					new DiagnosticString (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed).GetMessage (
+						calledMethodDefinition.GetDisplayName ()),
+						(int) DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed);
 				break;
 
 			//
@@ -1625,7 +1634,10 @@ namespace Mono.Linker.Dataflow
 						} else if (typeHandleValue == NullValue.Instance) {
 							// Nothing to do
 						} else {
-							analysisContext.ReportWarning ($"Unrecognized value passed to the parameter 'type' of method '{calledMethodDefinition.GetDisplayName ()}'. It's not possible to guarantee the availability of the target static constructor.", 2059);
+							analysisContext.ReportWarning (
+								new DiagnosticString (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor).GetMessage (
+									calledMethodDefinition.GetDisplayName ()),
+								(int) DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor);
 						}
 					}
 				}
@@ -1667,7 +1679,10 @@ namespace Mono.Linker.Dataflow
 					}
 
 					if (comDangerousMethod) {
-						analysisContext.ReportWarning ($"P/invoke method '{calledMethodDefinition.GetDisplayName ()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.", 2050);
+						analysisContext.ReportWarning (
+							new DiagnosticString (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed).GetMessage (
+								calledMethodDefinition.GetDisplayName ()),
+							(int) DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed);
 					}
 				}
 
@@ -1852,7 +1867,10 @@ namespace Mono.Linker.Dataflow
 						if (typeNameValue is KnownStringValue typeNameStringValue) {
 							var resolvedAssembly = _context.TryResolve (assemblyNameStringValue.Contents);
 							if (resolvedAssembly == null) {
-								analysisContext.ReportWarning ($"The assembly name '{assemblyNameStringValue.Contents}' passed to method '{calledMethod.GetDisplayName ()}' references assembly which is not available.", 2061);
+								analysisContext.ReportWarning (new DiagnosticString (DiagnosticId.UnresolvedAssemblyInCreateInstance).GetMessage (
+									assemblyNameStringValue.Contents,
+									calledMethod.GetDisplayName ()),
+									(int) DiagnosticId.UnresolvedAssemblyInCreateInstance);
 								continue;
 							}
 
@@ -1868,11 +1886,19 @@ namespace Mono.Linker.Dataflow
 
 							MarkConstructorsOnType (analysisContext, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
 						} else {
-							analysisContext.ReportWarning ($"Unrecognized value passed to the parameter '{calledMethod.Parameters[1].Name}' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.", 2032);
+							analysisContext.ReportWarning (
+								new DiagnosticString (DiagnosticId.UnrecognizedParameterInMethodCreateInstance).GetMessage (
+									calledMethod.Parameters[1].Name,
+									calledMethod.GetDisplayName ()),
+								(int) DiagnosticId.UnrecognizedParameterInMethodCreateInstance);
 						}
 					}
 				} else {
-					analysisContext.ReportWarning ($"Unrecognized value passed to the parameter '{calledMethod.Parameters[0].Name}' of method '{calledMethod.GetDisplayName ()}'. It's not possible to guarantee the availability of the target type.", 2032);
+					analysisContext.ReportWarning (
+						new DiagnosticString (DiagnosticId.UnrecognizedParameterInMethodCreateInstance).GetMessage (
+							calledMethod.Parameters[0].Name,
+							calledMethod.GetDisplayName ()),
+						(int) DiagnosticId.UnrecognizedParameterInMethodCreateInstance);
 				}
 			}
 		}
@@ -1929,29 +1955,36 @@ namespace Mono.Linker.Dataflow
 					switch (targetValue) {
 					case MethodParameterValue methodParameter:
 						analysisContext.ReportWarning (
-							$"Value passed to parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter.ParameterDefinition)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.",
-							2062);
+							new DiagnosticString (DiagnosticId.MethodParameterCannotBeStaticallyDetermined).GetMessage (
+								DiagnosticUtilities.GetParameterNameForErrorMessage (methodParameter.ParameterDefinition),
+								DiagnosticUtilities.GetMethodSignatureDisplayName (methodParameter.Method)),
+							(int) DiagnosticId.MethodParameterCannotBeStaticallyDetermined);
 						break;
 					case MethodReturnValue methodReturnValue:
 						analysisContext.ReportWarning (
-							$"Value returned from method '{DiagnosticUtilities.GetMethodSignatureDisplayName (methodReturnValue.Method)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.",
-							2063);
+							new DiagnosticString (DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined).GetMessage (
+								DiagnosticUtilities.GetMethodSignatureDisplayName (methodReturnValue.Method)),
+								(int) DiagnosticId.MethodReturnValueCannotBeStaticallyDetermined);
 						break;
 					case FieldValue fieldValue:
 						analysisContext.ReportWarning (
-							$"Value assigned to {fieldValue.Field.GetDisplayName ()} can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.",
-							2064);
+							new DiagnosticString (DiagnosticId.FieldValueCannotBeStaticallyDetermined).GetMessage (
+								fieldValue.Field.GetDisplayName ()),
+								(int) DiagnosticId.FieldValueCannotBeStaticallyDetermined);
 						break;
 					case MethodThisParameterValue methodThisValue:
 						analysisContext.ReportWarning (
-							$"Value passed to implicit 'this' parameter of method '{methodThisValue.Method.GetDisplayName ()}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.",
-							2065);
+							new DiagnosticString (DiagnosticId.ImplicitThisCannotBeStaticallyDetermined).GetMessage (
+								methodThisValue.Method.GetDisplayName ()),
+								(int) DiagnosticId.ImplicitThisCannotBeStaticallyDetermined);
 						break;
 					case GenericParameterValue genericParameterValue:
 						// Unknown value to generic parameter - this is possible if the generic argument fails to resolve
 						analysisContext.ReportWarning (
-							$"Type passed to generic parameter '{genericParameterValue.GenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterValue.GenericParameter)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.",
-							2066);
+							new DiagnosticString (DiagnosticId.TypePassedToGenericParameterCannotBeStaticallyDetermined).GetMessage (
+								genericParameterValue.GenericParameter.Name,
+								DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (genericParameterValue.GenericParameter)),
+								(int) DiagnosticId.TypePassedToGenericParameterCannotBeStaticallyDetermined);
 						break;
 					default: throw new NotImplementedException ($"unsupported target value {targetValue}");
 					};

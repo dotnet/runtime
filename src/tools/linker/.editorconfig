@@ -135,9 +135,6 @@ dotnet_diagnostic.RS2008.severity = none
 # Exception type is not sufficiently specific
 dotnet_diagnostic.CA2201.severity = none
 
-# Analyzer crashes with https://github.com/dotnet/roslyn-analyzers/issues/5450
-dotnet_diagnostic.CA2252.severity = none
-
 # xUnit1004: Test methods should not be skipped
 dotnet_diagnostic.xUnit1004.severity = none
 
