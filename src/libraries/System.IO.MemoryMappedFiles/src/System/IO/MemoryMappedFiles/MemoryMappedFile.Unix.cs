@@ -34,16 +34,8 @@ namespace System.IO.MemoryMappedFiles
 
             static bool IsRegularFile(SafeFileHandle fileHandle)
             {
-                Interop.Sys.FileStatus status;
-
-                int result = Interop.Sys.FStat(fileHandle, out status);
-                if (result != 0)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
-                }
-
-                return (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
+                Interop.CheckIo(Interop.Sys.FStat(fileHandle, out Interop.Sys.FileStatus status));
+                return (status.Mode & Interop.Sys.FileTypes.S_IFREG) != 0;
             }
         }
 

@@ -72,7 +72,6 @@ namespace Microsoft.Win32.SafeHandles
             if (_fileStreamHandle != null)
             {
                 SetHandle((IntPtr) (-1));
-                _fileStreamHandle.DangerousRelease();
 
                 if (_ownsFileHandle)
                 {
@@ -80,6 +79,7 @@ namespace Microsoft.Win32.SafeHandles
                     _fileStreamHandle.Dispose();
                 }
 
+                _fileStreamHandle.DangerousRelease();
                 _fileStreamHandle = null;
             }
 

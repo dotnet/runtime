@@ -466,9 +466,9 @@ namespace System.IO.MemoryMappedFiles
             }
             finally
             {
-                if (_fileHandle != null && _leaveOpen == false)
+                if (!_leaveOpen)
                 {
-                    _fileHandle.Dispose();
+                    _fileHandle?.Dispose();
                 }
             }
         }
