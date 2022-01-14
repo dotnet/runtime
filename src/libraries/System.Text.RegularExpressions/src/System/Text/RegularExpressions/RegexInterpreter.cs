@@ -1103,6 +1103,7 @@ namespace System.Text.RegularExpressions
                         // of the backtracking stack contains the runtextpos from the start of this Go call. Replace
                         // that tracking value with the current runtextpos value if it's greater.
                         {
+                            Debug.Assert(!_rightToLeft, "UpdateBumpalongs aren't added for RTL");
                             ref int trackingpos = ref runtrack![runtrack.Length - 1];
                             if (trackingpos < runtextpos)
                             {
