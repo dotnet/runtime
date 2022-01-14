@@ -1195,7 +1195,6 @@ namespace Internal.TypeSystem.Interop
             ILCodeStream fnptrLoadStream = _ilCodeStreams.FunctionPointerLoadStream;
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(ManagedType));
             fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(marshallerType));
-            fnptrLoadStream.Emit(ILOpcode.ldtoken, emitter.NewToken(customMarshallerType));
             fnptrLoadStream.Emit(ILOpcode.ldstr, emitter.NewToken(cookie));
             if (getInstanceMethod != null)
             {
