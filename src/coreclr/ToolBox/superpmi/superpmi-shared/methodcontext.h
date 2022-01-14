@@ -363,21 +363,10 @@ public:
                        CORINFO_CLASS_HANDLE*   vcTypeRet,
                        CorInfoTypeWithMod      result,
                        DWORD                   exception);
-    void recGetArgType(CORINFO_SIG_INFO*       sig,
-                       CORINFO_ARG_LIST_HANDLE args,
-                       CORINFO_CLASS_HANDLE*   vcTypeRet,
-                       CorInfoTypeWithMod      result,
-                       int flags,
-                       DWORD                   exception);
     void dmpGetArgType(const Agnostic_GetArgType_Key& key, const Agnostic_GetArgType_Value& value);
     CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO*       sig,
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
-                                     DWORD*                  exception);
-    CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO*       sig,
-                                     CORINFO_ARG_LIST_HANDLE args,
-                                     CORINFO_CLASS_HANDLE*   vcTypeRet,
-                                     int *flags,
                                      DWORD*                  exception);
 
     void recGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls, DWORD value);

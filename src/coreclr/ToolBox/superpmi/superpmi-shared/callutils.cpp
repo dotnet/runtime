@@ -282,12 +282,7 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
         // Tweaked to use EE types instead of JIT-specific types
         CORINFO_CLASS_HANDLE typeHandle;
         DWORD                exception;
-#if defined(TARGET_LOONGARCH64)
-        int                  flags;
-        CorInfoType          type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &flags, &exception));
-#else
         CorInfoType          type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &exception));
-#endif
 
         length += strlen(TypeUtils::GetCorInfoTypeName(type));
         argList = mc->repGetArgNext(argList);
@@ -344,12 +339,7 @@ const char* CallUtils::GetMethodFullName(MethodContext* mc, CORINFO_METHOD_HANDL
         // Tweaked to use EE types instead of JIT-specific types
         CORINFO_CLASS_HANDLE typeHandle;
         DWORD                exception;
-#if defined(TARGET_LOONGARCH64)
-        int                  flags;
-        CorInfoType          type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &flags, &exception));
-#else
         CorInfoType          type = strip(mc->repGetArgType(&sig, argList, &typeHandle, &exception));
-#endif
         strcat_s(retName, length, TypeUtils::GetCorInfoTypeName(type));
 
         argList = mc->repGetArgNext(argList);
