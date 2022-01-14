@@ -3884,7 +3884,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // CreateSpan must be expanded for NativeAOT
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            mustExpand = IsTargetAbi(CORINFO_CORERT_ABI);
+            mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
             break;
 
         case NI_System_ByReference_ctor:
