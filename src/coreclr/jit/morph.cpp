@@ -5198,7 +5198,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
                                                                      asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
             if ((cnsIndex < length) && (str != nullptr))
             {
-                GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], elemTyp);
+                GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
                 INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return cnsCharNode;
             }

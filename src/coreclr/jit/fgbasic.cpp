@@ -1146,7 +1146,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             }
 
                             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
-                                if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
+                                if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
                                 {
                                     compInlineResult->Note(InlineObservation::CALLEE_CONST_ARG_FEEDS_ISCONST);
                                 }
