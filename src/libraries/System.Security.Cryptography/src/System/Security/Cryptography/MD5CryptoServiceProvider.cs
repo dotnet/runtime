@@ -16,14 +16,14 @@ namespace System.Security.Cryptography
         public MD5CryptoServiceProvider()
         {
             _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-            HashSizeValue = HashSizeInBits;
+            HashSizeValue = 128;
         }
 
         public override void Initialize()
         {
             if (_running)
             {
-                Span<byte> destination = stackalloc byte[HashSizeInBytes];
+                Span<byte> destination = stackalloc byte[128 / 8];
 
                 if (!_incrementalHash.TryGetHashAndReset(destination, out _))
                 {

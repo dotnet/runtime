@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
-using Internal.NativeCrypto;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Versioning;
@@ -21,6 +20,8 @@ namespace System.Security.Cryptography
             new KeySizes(40, 128, 8)  // csp implementation only goes up to 128
         };
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
         public RC2CryptoServiceProvider()
         {
             LegalKeySizesValue = s_legalKeySizes.CloneKeySizesArray();

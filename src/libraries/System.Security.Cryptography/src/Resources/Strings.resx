@@ -60,6 +60,9 @@
   <data name="Arg_CryptographyException" xml:space="preserve">
     <value>Error occurred during a cryptographic operation.</value>
   </data>
+  <data name="Arg_EnumIllegalVal" xml:space="preserve">
+    <value>Illegal enum value: {0}.</value>
+  </data>
   <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
     <value>Only single dimensional arrays are supported for the requested action.</value>
   </data>
@@ -138,6 +141,9 @@
   <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
     <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
   </data>
+  <data name="Cryptography_CAPI_Required" xml:space="preserve">
+    <value>'{0}' requires Windows Cryptographic API (CAPI), which is not available on this platform.</value>
+  </data>
   <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
     <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
   </data>
@@ -152,6 +158,12 @@
   </data>
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
+  </data>
+  <data name="Cryptography_CSP_NotFound" xml:space="preserve">
+    <value>The requested key container was not found.</value>
+  </data>
+  <data name="Cryptography_CSP_WrongKeySpec" xml:space="preserve">
+    <value>The specified cryptographic service provider (CSP) does not support this key algorithm: {0}.</value>
   </data>
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
@@ -228,6 +240,9 @@
   <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
     <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
   </data>
+  <data name="Cryptography_InvalidDSASignatureSize" xml:space="preserve">
+    <value>Length of the DSA signature was not 40 bytes.</value>
+  </data>
   <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
     <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Cofactor is required. Seed and Hash are optional. Other parameters are not allowed.</value>
   </data>
@@ -245,6 +260,9 @@
   </data>
   <data name="Cryptography_InvalidHashAlgorithmOid" xml:space="preserve">
     <value>The specified OID ({0}) does not represent a known hash algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidHashSize" xml:space="preserve">
+    <value>{0} algorithm hash size is {1} bytes.</value>
   </data>
   <data name="Cryptography_InvalidIVSize" xml:space="preserve">
     <value>Specified initialization vector (IV) does not match the block size for this algorithm.</value>
@@ -327,6 +345,18 @@
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
   </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidAlgorithm" xml:space="preserve">
+    <value>Algorithm is unavailable or is not supported for this operation.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_InvalidIV" xml:space="preserve">
+    <value>The Initialization vector should have the same length as the algorithm block size in bytes.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_TooManyBytes" xml:space="preserve">
+    <value>Requested number of bytes exceeds the maximum.</value>
+  </data>
+  <data name="Cryptography_PasswordDerivedBytes_ValuesFixed" xml:space="preserve">
+    <value>Value of '{0}' cannot be changed after the bytes have been retrieved.</value>
+  </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
   </data>
@@ -383,6 +413,12 @@
   </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
+  </data>
+  <data name="CryptSetKeyParam_Failed" xml:space="preserve">
+    <value>CryptSetKeyParam failed with error code {0}.</value>
+  </data>
+  <data name="CspParameter_invalid" xml:space="preserve">
+    <value>CSPParameters cannot be null</value>
   </data>
   <data name="HashNameMultipleSetNotSupported" xml:space="preserve">
     <value>Setting the hashname after it's already been set is not supported on this platform.</value>

@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
-using System;
 using System.IO;
-using System.Security.Cryptography;
 
-namespace Internal.NativeCrypto
+namespace System.Security.Cryptography
 {
     internal static partial class CapiHelper
     {
@@ -261,6 +259,20 @@ namespace Internal.NativeCrypto
             byte[] data = br.ReadBytes(count);
             Array.Reverse(data);
             return data;
+        }
+
+        internal static byte[]? TrimLargeIV(byte[]? currentIV, int blockSizeInBits)
+        {
+            int blockSizeBytes = checked((blockSizeInBits + 7) / 8);
+
+            if (currentIV?.Length > blockSizeBytes)
+            {
+                byte[] tmp = new byte[blockSizeBytes];
+                Buffer.BlockCopy(currentIV, 0, tmp, 0, tmp.Length);
+                return tmp;
+            }
+
+            return currentIV;
         }
     }
 }

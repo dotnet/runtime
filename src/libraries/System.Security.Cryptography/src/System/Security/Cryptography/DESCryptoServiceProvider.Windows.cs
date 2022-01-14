@@ -3,7 +3,6 @@
 
 using System.ComponentModel;
 using Internal.Cryptography;
-using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {

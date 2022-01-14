@@ -1,18 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Security.Cryptography;
-
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
-    internal static class HashAlgorithmNames
+    internal static partial class CapiHelper
     {
-        public const string MD5 = "MD5";
-        public const string SHA1 = "SHA1";
-        public const string SHA256 = "SHA256";
-        public const string SHA384 = "SHA384";
-        public const string SHA512 = "SHA512";
+        internal const string MD5 = "MD5";
+        internal const string SHA1 = "SHA1";
+        internal const string SHA256 = "SHA256";
+        internal const string SHA384 = "SHA384";
+        internal const string SHA512 = "SHA512";
 
         private const string OID_MD5 = "1.2.840.113549.2.5";
         private const string OID_SHA1 = "1.3.14.3.2.26";
@@ -21,7 +18,7 @@ namespace Internal.Cryptography
         private const string OID_SHA512 = "2.16.840.1.101.3.4.2.3";
 
         // For backwards compat with CapiHelper.ObjToHashAlgorithm, use "hashAlg" as name
-        public static HashAlgorithmName ObjToHashAlgorithmName(object hashAlg)
+        internal static HashAlgorithmName ObjToHashAlgorithmName(object hashAlg)
         {
             if (hashAlg == null)
                 throw new ArgumentNullException(nameof(hashAlg));
@@ -49,7 +46,7 @@ namespace Internal.Cryptography
             throw new ArgumentException(SR.Argument_InvalidValue);
         }
 
-        public static HashAlgorithmName NameOrOidToHashAlgorithmName(string nameOrOid)
+        internal static HashAlgorithmName NameOrOidToHashAlgorithmName(string nameOrOid)
         {
             HashAlgorithmName? name;
 
@@ -78,7 +75,7 @@ namespace Internal.Cryptography
         /// <summary>
         /// Map HashAlgorithm type to HashAlgorithmName without using CryptoConfig. Returns null if not found.
         /// </summary>
-        public static HashAlgorithmName? ToHashAlgorithmName(this HashAlgorithm hashAlgorithm)
+        internal static HashAlgorithmName? ToHashAlgorithmName(this HashAlgorithm hashAlgorithm)
         {
             if (hashAlgorithm is SHA1)
                 return HashAlgorithmName.SHA1;
@@ -94,7 +91,7 @@ namespace Internal.Cryptography
             return null;
         }
 
-        public static HashAlgorithmName? OidToHashAlgorithmName(string oid)
+        internal static HashAlgorithmName? OidToHashAlgorithmName(string oid)
         {
             switch (oid)
             {
@@ -113,7 +110,7 @@ namespace Internal.Cryptography
             }
         }
 
-        public static HashAlgorithmName? HashAlgorithmTypeToHashAlgorithmName(Type hashAlgType)
+        internal static HashAlgorithmName? HashAlgorithmTypeToHashAlgorithmName(Type hashAlgType)
         {
             if (typeof(SHA1).IsAssignableFrom(hashAlgType))
                 return HashAlgorithmName.SHA1;
@@ -127,6 +124,17 @@ namespace Internal.Cryptography
                 return HashAlgorithmName.MD5;
 
             return null;
+        }
+
+        internal static CryptographicException GetBadDataException()
+        {
+            const int NTE_BAD_DATA = unchecked((int)CryptKeyError.NTE_BAD_DATA);
+            return new CryptographicException(NTE_BAD_DATA);
+        }
+
+        internal static CryptographicException GetEFailException()
+        {
+            return new CryptographicException(E_FAIL);
         }
     }
 }

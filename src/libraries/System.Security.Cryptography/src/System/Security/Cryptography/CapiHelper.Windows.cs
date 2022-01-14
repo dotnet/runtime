@@ -1,19 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using static Interop.Crypt32;
 using CryptProvParam = Interop.Advapi32.CryptProvParam;
 
-namespace Internal.NativeCrypto
+namespace System.Security.Cryptography
 {
     /// <summary>
     /// Following part of CAPIHelper keeps the wrappers for all the PInvoke calls
@@ -349,7 +347,7 @@ namespace Internal.NativeCrypto
             {
                 throw GetErrorCode().ToCryptographicException();
             }
-            if (null != impType && cb == Constants.SIZE_OF_DWORD)
+            if (null != impType && cb == sizeof(uint))
             {
                 impTypeReturn = BitConverter.ToInt32(impType, 0);
             }
@@ -360,12 +358,12 @@ namespace Internal.NativeCrypto
         /// This method queries the key container and get some of it's properties.
         /// Those properties should never cause UI to display.
         /// </summary>
-        public static object GetProviderParameter(SafeProvHandle safeProvHandle, int keyNumber, int keyParam)
+        public static object GetProviderParameter(SafeProvHandle safeProvHandle, int keyNumber, ClrPropertyId keyParam)
         {
             VerifyValidHandle(safeProvHandle);
-            byte[] impType = new byte[Constants.SIZE_OF_DWORD];
-            int cb = sizeof(byte) * Constants.SIZE_OF_DWORD;
-            SafeKeyHandle safeKeyHandle = SafeKeyHandle.InvalidHandle;
+            byte[] impType = new byte[sizeof(uint)];
+            int cb = sizeof(byte) * sizeof(uint);
+            SafeCapiKeyHandle safeKeyHandle = SafeCapiKeyHandle.InvalidHandle;
             int impTypeReturn;
             int returnType = 0; //using 0 for bool and 1 for string return types
             bool retVal = false;
@@ -375,7 +373,7 @@ namespace Internal.NativeCrypto
             {
                 switch (keyParam)
                 {
-                    case Constants.CLR_EXPORTABLE:
+                    case ClrPropertyId.CLR_EXPORTABLE:
                     {
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptProvParam.PP_IMPTYPE);
                         //If implementation type is not HW
@@ -387,8 +385,8 @@ namespace Internal.NativeCrypto
                             }
                             byte[]? permissions = null;
                             int permissionsReturn = 0;
-                            permissions = new byte[Constants.SIZE_OF_DWORD];
-                            cb = sizeof(byte) * Constants.SIZE_OF_DWORD;
+                            permissions = new byte[sizeof(uint)];
+                            cb = sizeof(byte) * sizeof(uint);
                             if (!Interop.Advapi32.CryptGetKeyParam(safeKeyHandle, Interop.Advapi32.CryptGetKeyParamFlags.KP_PERMISSIONS, permissions, ref cb, 0))
                             {
                                 throw GetErrorCode().ToCryptographicException();
@@ -404,25 +402,25 @@ namespace Internal.NativeCrypto
 
                         break;
                     }
-                    case Constants.CLR_REMOVABLE:
+                    case ClrPropertyId.CLR_REMOVABLE:
                     {
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptProvParam.PP_IMPTYPE);
                         retVal = IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_REMOVABLE);
                         break;
                     }
-                    case Constants.CLR_HARDWARE:
-                    case Constants.CLR_PROTECTED:
+                    case ClrPropertyId.CLR_HARDWARE:
+                    case ClrPropertyId.CLR_PROTECTED:
                     {
                         impTypeReturn = GetProviderParameterWorker(safeProvHandle, impType, ref cb, CryptProvParam.PP_IMPTYPE);
                         retVal = IsFlagBitSet((uint)impTypeReturn, (uint)CryptGetProvParamPPImpTypeFlags.CRYPT_IMPL_HARDWARE);
                         break;
                     }
-                    case Constants.CLR_ACCESSIBLE:
+                    case ClrPropertyId.CLR_ACCESSIBLE:
                     {
                         retVal = CryptGetUserKey(safeProvHandle, keyNumber, out safeKeyHandle) ? true : false;
                         break;
                     }
-                    case Constants.CLR_UNIQUE_CONTAINER:
+                    case ClrPropertyId.CLR_UNIQUE_CONTAINER:
                     {
                         returnType = 1;
                         byte[]? pb = null;
@@ -454,7 +452,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Retrieves the handle for user public / private key pair.
         /// </summary>
-        internal static int GetUserKey(SafeProvHandle safeProvHandle, int keySpec, out SafeKeyHandle safeKeyHandle)
+        internal static int GetUserKey(SafeProvHandle safeProvHandle, int keySpec, out SafeCapiKeyHandle safeKeyHandle)
         {
             int hr = S_OK;
             VerifyValidHandle(safeProvHandle);
@@ -472,7 +470,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Generates the key if provided CSP handle is valid
         /// </summary>
-        internal static int GenerateKey(SafeProvHandle safeProvHandle, int algID, int flags, uint keySize, out SafeKeyHandle safeKeyHandle)
+        internal static int GenerateKey(SafeProvHandle safeProvHandle, int algID, int flags, uint keySize, out SafeCapiKeyHandle safeKeyHandle)
         {
             int hr = S_OK;
             VerifyValidHandle(safeProvHandle);
@@ -551,7 +549,7 @@ namespace Internal.NativeCrypto
         /// <param name="safeKeyHandle">Key handle</param>
         /// <param name="keyParam"> Key property you want to get</param>
         /// <returns>Returns the key property</returns>
-        internal static byte[] GetKeyParameter(SafeKeyHandle safeKeyHandle, int keyParam)
+        internal static byte[] GetKeyParameter(SafeCapiKeyHandle safeKeyHandle, ClrPropertyId keyParam)
         {
             byte[]? pb = null;
             int cb = 0;
@@ -559,7 +557,7 @@ namespace Internal.NativeCrypto
 
             switch (keyParam)
             {
-                case Constants.CLR_KEYLEN:
+                case ClrPropertyId.CLR_KEYLEN:
                     {
                         if (!Interop.Advapi32.CryptGetKeyParam(safeKeyHandle, Interop.Advapi32.CryptGetKeyParamFlags.KP_KEYLEN, null, ref cb, 0))
                         {
@@ -572,13 +570,13 @@ namespace Internal.NativeCrypto
                         }
                         break;
                     }
-                case Constants.CLR_PUBLICKEYONLY:
+                case ClrPropertyId.CLR_PUBLICKEYONLY:
                     {
                         pb = new byte[1];
                         pb[0] = safeKeyHandle.PublicOnly ? (byte)1 : (byte)0;
                         break;
                     }
-                case Constants.CLR_ALGID:
+                case ClrPropertyId.CLR_ALGID:
                     {
                         // returns the algorithm ID for the key
                         if (!Interop.Advapi32.CryptGetKeyParam(safeKeyHandle, Interop.Advapi32.CryptGetKeyParamFlags.KP_ALGID, null, ref cb, 0))
@@ -607,7 +605,7 @@ namespace Internal.NativeCrypto
         /// <param name="safeKeyHandle">Key handle</param>
         /// <param name="keyParam"> Key property you want to set</param>
         /// <param name="value"> Key property value you want to set</param>
-        internal static void SetKeyParameter(SafeKeyHandle safeKeyHandle, CryptGetKeyParamQueryType keyParam, byte[] value)
+        internal static void SetKeyParameter(SafeCapiKeyHandle safeKeyHandle, CryptGetKeyParamQueryType keyParam, byte[] value)
         {
             VerifyValidHandle(safeKeyHandle); //This will throw if handle is invalid
 
@@ -630,7 +628,7 @@ namespace Internal.NativeCrypto
         /// <param name="safeKeyHandle">Key handle</param>
         /// <param name="keyParam"> Key property you want to set</param>
         /// <param name="value"> Key property value you want to set</param>
-        internal static void SetKeyParameter(SafeKeyHandle safeKeyHandle, CryptGetKeyParamQueryType keyParam, int value)
+        internal static void SetKeyParameter(SafeCapiKeyHandle safeKeyHandle, CryptGetKeyParamQueryType keyParam, int value)
         {
             VerifyValidHandle(safeKeyHandle); //This will throw if handle is invalid
 
@@ -724,14 +722,14 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper function to get the key pair
         /// </summary>
-        internal static SafeKeyHandle GetKeyPairHelper(
+        internal static SafeCapiKeyHandle GetKeyPairHelper(
             CspAlgorithmType keyType,
             CspParameters parameters,
             int keySize,
             SafeProvHandle safeProvHandle)
         {
             // If the key already exists, use it, else generate a new one
-            SafeKeyHandle hKey;
+            SafeCapiKeyHandle hKey;
             int hr = CapiHelper.GetUserKey(safeProvHandle, parameters.KeyNumber, out hKey);
             if (hr != S_OK)
             {
@@ -748,7 +746,7 @@ namespace Internal.NativeCrypto
             }
 
             // check that this is indeed an RSA/DSS key.
-            byte[] algid = CapiHelper.GetKeyParameter(hKey, Constants.CLR_ALGID);
+            byte[] algid = CapiHelper.GetKeyParameter(hKey, ClrPropertyId.CLR_ALGID);
 
             int dwAlgId = BinaryPrimitives.ReadInt32LittleEndian(algid);
 
@@ -812,7 +810,7 @@ namespace Internal.NativeCrypto
         //
 
         // static
-        internal static void DecryptKey(SafeKeyHandle safeKeyHandle, byte[] encryptedData, int encryptedDataLength, bool fOAEP, out byte[] decryptedData)
+        internal static void DecryptKey(SafeCapiKeyHandle safeKeyHandle, byte[] encryptedData, int encryptedDataLength, bool fOAEP, out byte[] decryptedData)
         {
             VerifyValidHandle(safeKeyHandle);
             Debug.Assert(encryptedData != null, "Encrypted Data is null");
@@ -872,7 +870,7 @@ namespace Internal.NativeCrypto
         //    The returned value in ohRetEncryptedKey is byte-reversed from the version CAPI gives us.  This is for
         //    compatibility with previous releases of the CLR and other RSA implementations.
         //
-        internal static void EncryptKey(SafeKeyHandle safeKeyHandle, byte[] pbKey, int cbKey, bool foep, [NotNull] ref byte[]? pbEncryptedKey)
+        internal static void EncryptKey(SafeCapiKeyHandle safeKeyHandle, byte[] pbKey, int cbKey, bool foep, [NotNull] ref byte[]? pbEncryptedKey)
         {
             VerifyValidHandle(safeKeyHandle);
             Debug.Assert(pbKey != null, "pbKey is null");
@@ -904,7 +902,7 @@ namespace Internal.NativeCrypto
         }
 
         internal static int EncryptData(
-            SafeKeyHandle hKey,
+            SafeCapiKeyHandle hKey,
             ReadOnlySpan<byte> input,
             Span<byte> output,
             bool isFinal)
@@ -943,7 +941,7 @@ namespace Internal.NativeCrypto
         }
 
         internal static int DecryptData(
-            SafeKeyHandle hKey,
+            SafeCapiKeyHandle hKey,
             ReadOnlySpan<byte> input,
             Span<byte> output)
         {
@@ -967,7 +965,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for Import CSP
         /// </summary>
-        internal static void ImportKeyBlob(SafeProvHandle saveProvHandle, CspProviderFlags flags, bool addNoSaltFlag, byte[] keyBlob, out SafeKeyHandle safeKeyHandle)
+        internal static void ImportKeyBlob(SafeProvHandle saveProvHandle, CspProviderFlags flags, bool addNoSaltFlag, byte[] keyBlob, out SafeCapiKeyHandle safeKeyHandle)
         {
             // Compat note: This isn't the same check as the one done by the CLR _ImportCspBlob QCall,
             // but this does match the .NET Framework CLR behavior and the only scenarios it
@@ -987,8 +985,8 @@ namespace Internal.NativeCrypto
                 dwCapiFlags |= (int)CryptGenKeyFlags.CRYPT_NO_SALT;
             }
 
-            SafeKeyHandle hKey;
-            if (!CryptImportKey(saveProvHandle, keyBlob, SafeKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
+            SafeCapiKeyHandle hKey;
+            if (!CryptImportKey(saveProvHandle, keyBlob, SafeCapiKeyHandle.InvalidHandle, dwCapiFlags, out hKey))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
 
@@ -1006,7 +1004,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for Export CSP
         /// </summary>
-        internal static byte[] ExportKeyBlob(bool includePrivateParameters, SafeKeyHandle safeKeyHandle)
+        internal static byte[] ExportKeyBlob(bool includePrivateParameters, SafeCapiKeyHandle safeKeyHandle)
         {
             VerifyValidHandle(safeKeyHandle);
 
@@ -1014,13 +1012,13 @@ namespace Internal.NativeCrypto
             int cbRawData = 0;
             int dwBlobType = includePrivateParameters ? PRIVATEKEYBLOB : PUBLICKEYBLOB;
 
-            if (!Interop.Advapi32.CryptExportKey(safeKeyHandle, SafeKeyHandle.InvalidHandle, dwBlobType, 0, null, ref cbRawData))
+            if (!Interop.Advapi32.CryptExportKey(safeKeyHandle, SafeCapiKeyHandle.InvalidHandle, dwBlobType, 0, null, ref cbRawData))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
             pbRawData = new byte[cbRawData];
 
-            if (!Interop.Advapi32.CryptExportKey(safeKeyHandle, SafeKeyHandle.InvalidHandle, dwBlobType, 0, pbRawData, ref cbRawData))
+            if (!Interop.Advapi32.CryptExportKey(safeKeyHandle, SafeCapiKeyHandle.InvalidHandle, dwBlobType, 0, pbRawData, ref cbRawData))
             {
                 throw GetErrorCode().ToCryptographicException();
             }
@@ -1149,7 +1147,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for RSACryptoServiceProvider.SignData/SignHash apis.
         /// </summary>
-        public static byte[] SignValue(SafeProvHandle hProv, SafeKeyHandle hKey, int keyNumber, int calgKey, int calgHash, byte[] hash)
+        public static byte[] SignValue(SafeProvHandle hProv, SafeCapiKeyHandle hKey, int keyNumber, int calgKey, int calgHash, byte[] hash)
         {
             using (SafeHashHandle hHash = hProv.CreateHashHandle(hash, calgHash))
             {
@@ -1186,7 +1184,7 @@ namespace Internal.NativeCrypto
         /// <summary>
         /// Helper for RSACryptoServiceProvider.VerifyData/VerifyHash apis.
         /// </summary>
-        public static bool VerifySign(SafeProvHandle hProv, SafeKeyHandle hKey, int calgKey, int calgHash, byte[] hash, byte[] signature)
+        public static bool VerifySign(SafeProvHandle hProv, SafeCapiKeyHandle hKey, int calgKey, int calgHash, byte[] hash, byte[] signature)
         {
             switch (calgKey)
             {
@@ -1231,10 +1229,10 @@ namespace Internal.NativeCrypto
             VerifyValidHandle(hProv);
 
             SafeHashHandle? hHash = null;
-            SafeKeyHandle? hKey = null;
+            SafeCapiKeyHandle? hKey = null;
             try
             {
-                if (!CryptCreateHash(hProv, algidHash, SafeKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
+                if (!CryptCreateHash(hProv, algidHash, SafeCapiKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
@@ -1295,13 +1293,13 @@ namespace Internal.NativeCrypto
 
         // Helper method used by DeriveKey (above) to return the key contents.
         // WARNING: This function side-effects its first argument (hProv)
-        private static void UnloadKey(SafeProvHandle hProv, SafeKeyHandle hKey, [NotNull] ref byte[]? key_out, ref int cb_out)
+        private static void UnloadKey(SafeProvHandle hProv, SafeCapiKeyHandle hKey, [NotNull] ref byte[]? key_out, ref int cb_out)
         {
-            SafeKeyHandle? hPubKey = null;
+            SafeCapiKeyHandle? hPubKey = null;
             try
             {
                 // Import the public key
-                if (!CryptImportKey(hProv, RgbPubKey, SafeKeyHandle.InvalidHandle, 0, out hPubKey))
+                if (!CryptImportKey(hProv, RgbPubKey, SafeCapiKeyHandle.InvalidHandle, 0, out hPubKey))
                 {
                     int hr = Marshal.GetHRForLastWin32Error();
                     throw hr.ToCryptographicException();
@@ -1369,7 +1367,7 @@ namespace Internal.NativeCrypto
         private static SafeHashHandle? CreateHashHandle(this SafeProvHandle hProv, byte[] hash, int calgHash, bool throwOnSizeError)
         {
             SafeHashHandle? hHash;
-            if (!CryptCreateHash(hProv, calgHash, SafeKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
+            if (!CryptCreateHash(hProv, calgHash, SafeCapiKeyHandle.InvalidHandle, Interop.Advapi32.CryptCreateHashFlags.None, out hHash))
             {
                 int hr = Marshal.GetHRForLastWin32Error();
 
@@ -1431,7 +1429,7 @@ namespace Internal.NativeCrypto
         public static bool CryptGetUserKey(
             SafeProvHandle safeProvHandle,
             int dwKeySpec,
-            out SafeKeyHandle safeKeyHandle)
+            out SafeCapiKeyHandle safeKeyHandle)
         {
             bool response = Interop.Advapi32.CryptGetUserKey(safeProvHandle, dwKeySpec, out safeKeyHandle);
 
@@ -1444,7 +1442,7 @@ namespace Internal.NativeCrypto
             SafeProvHandle safeProvHandle,
             int algId,
             int dwFlags,
-            out SafeKeyHandle safeKeyHandle)
+            out SafeCapiKeyHandle safeKeyHandle)
         {
             bool response = Interop.Advapi32.CryptGenKey(safeProvHandle, algId, dwFlags, out safeKeyHandle);
 
@@ -1456,9 +1454,9 @@ namespace Internal.NativeCrypto
         public static unsafe bool CryptImportKey(
             SafeProvHandle hProv,
             ReadOnlySpan<byte> pbData,
-            SafeKeyHandle hPubKey,
+            SafeCapiKeyHandle hPubKey,
             int dwFlags,
-            out SafeKeyHandle phKey)
+            out SafeCapiKeyHandle phKey)
         {
             fixed (byte* pbDataPtr = pbData)
             {
@@ -1473,7 +1471,7 @@ namespace Internal.NativeCrypto
         public static bool CryptCreateHash(
             SafeProvHandle hProv,
             int algId,
-            SafeKeyHandle hKey,
+            SafeCapiKeyHandle hKey,
             Interop.Advapi32.CryptCreateHashFlags dwFlags,
             out SafeHashHandle phHash)
         {
@@ -1489,7 +1487,7 @@ namespace Internal.NativeCrypto
             int algId,
             SafeHashHandle phHash,
             int dwFlags,
-            out SafeKeyHandle phKey)
+            out SafeCapiKeyHandle phKey)
         {
             bool response = Interop.Advapi32.CryptDeriveKey(hProv, algId, phHash, dwFlags, out phKey);
 
@@ -1497,7 +1495,7 @@ namespace Internal.NativeCrypto
 
             return response;
         }
-    }//End of class CapiHelper : Wrappers
+    }
 
     /// <summary>
     /// All the Crypto flags are capture in following
@@ -1549,6 +1547,7 @@ namespace Internal.NativeCrypto
             KP_KEYLEN = 9,  // Length of key in bits
             KP_ALGID = 7 // Key algorithm
         }
+
         internal enum CryptGenKeyFlags : int
         {
             // dwFlag definitions for CryptGenKey
@@ -1575,5 +1574,20 @@ namespace Internal.NativeCrypto
             Rsa = 0,
             Dss = 1
         }
-    } //End CapiHelper:Flags
-} //End Namespace Internal.NativeCrypto
+
+        internal enum ClrPropertyId
+        {
+            CLR_KEYLEN = 1,
+            CLR_PUBLICKEYONLY = 2,
+            CLR_EXPORTABLE = 3,
+            CLR_REMOVABLE = 4,
+            CLR_HARDWARE = 5,
+            CLR_ACCESSIBLE = 6,
+            CLR_PROTECTED = 7,
+            CLR_UNIQUE_CONTAINER = 8,
+            CLR_ALGID = 9,
+            CLR_PP_CLIENT_HWND = 10,
+            CLR_PP_PIN = 11,
+        }
+    }
+}

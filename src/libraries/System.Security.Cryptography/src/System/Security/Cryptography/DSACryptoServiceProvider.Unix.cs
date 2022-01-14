@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
-using Internal.NativeCrypto;
 using System.IO;
 using System.Diagnostics;
 using System.Runtime.Versioning;
@@ -37,11 +36,15 @@ namespace System.Security.Cryptography
             ? s_legalKeySizesAndroid
             : s_legalKeySizesWindowsCsp;
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public DSACryptoServiceProvider()
             : this(DefaultKeySize)
         {
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public DSACryptoServiceProvider(int dwKeySize) : base()
         {
             if (dwKeySize < 0)
