@@ -1897,7 +1897,7 @@ namespace System.Text.RegularExpressions.Generator
 
                             if (i < exclusiveEnd)
                             {
-                                EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: false);
+                                EmitNode(node.Child(i), GetSubsequentOrDefault(i, node, subsequent), emitLengthChecksIfRequired: false);
                                 if (i < childCount - 1)
                                 {
                                     writer.WriteLine();
@@ -1911,7 +1911,7 @@ namespace System.Text.RegularExpressions.Generator
                         continue;
                     }
 
-                    EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: emitLengthChecksIfRequired);
+                    EmitNode(node.Child(i), GetSubsequentOrDefault(i, node, subsequent), emitLengthChecksIfRequired: emitLengthChecksIfRequired);
                     if (i < childCount - 1)
                     {
                         writer.WriteLine();
@@ -1919,7 +1919,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Gets the node to treat as the subsequent one to node.Child(index)
-                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                static RegexNode? GetSubsequentOrDefault(int index, RegexNode node, RegexNode? defaultNode)
                 {
                     int childCount = node.ChildCount();
                     for (int i = index + 1; i < childCount; i++)
@@ -1931,7 +1931,7 @@ namespace System.Text.RegularExpressions.Generator
                         }
                     }
 
-                    return subsequent;
+                    return defaultNode;
                 }
             }
 
