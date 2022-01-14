@@ -156,6 +156,8 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
 {
     assert(pkey != NULL);
     assert(p8size != NULL);
+
+    *p8size = 0;
     ERR_clear_error();
 
     PKCS8_PRIV_KEY_INFO* p8 = EVP_PKEY2PKCS8(pkey);
@@ -170,7 +172,7 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
         // Over in the managed side, we detect these invalid PKCS8 blobs and
         // convert that to a "no private key" error.
         //
-        // In OpenSSL 3, this now correctly errors, unforunately with a the error
+        // In OpenSSL 3, this now correctly errors, with the error
         // ASN1_R_ILLEGAL_ZERO_CONTENT. We want to preserve allocation failures as
         // as OutOfMemoryException. So we peek at the error. If it's a malloc
         // failure, -1 is returned to indcate "throw what is on the error queue".
