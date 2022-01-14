@@ -25,7 +25,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			OperationBlockAnalysisContext context
 		) : base (lattice, context)
 		{
-			TrimAnalysisPatterns = new TrimAnalysisPatternStore ();
+			TrimAnalysisPatterns = new TrimAnalysisPatternStore (lattice.Lattice.ValueLattice);
 		}
 
 		// Override visitor methods to create tracked values when visiting operations
@@ -122,7 +122,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			// TODO: consider not tracking patterns unless the target is something
 			// annotated with DAMT.
-			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (source, target, operation));
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisPattern (source, target, operation),
+				isReturnValue: false
+			);
 		}
 
 		public override void HandleArgument (MultiValue argumentValue, IArgumentOperation operation)
@@ -133,11 +136,10 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 			var parameter = new MethodParameterValue (operation.Parameter);
 
-			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
-				argumentValue,
-				parameter,
-				operation
-			));
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisPattern (argumentValue, parameter, operation),
+				isReturnValue: false
+			);
 		}
 
 		// Similar to HandleArgument, for an assignment operation that is really passing an argument to a property setter.
@@ -145,7 +147,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			var parameter = new MethodParameterValue (setMethod.Parameters[0]);
 
-			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (value, parameter, operation));
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisPattern (value, parameter, operation),
+				isReturnValue: false);
 		}
 
 		// Can be called for an invocation or a propertyreference
@@ -154,22 +158,20 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		{
 			MultiValue thisParameter = new MethodThisParameterValue (targetMethod!);
 
-			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
-				receiverValue,
-				thisParameter,
-				operation
-			));
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisPattern (receiverValue, thisParameter, operation),
+				isReturnValue: false
+			);
 		}
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
 		{
 			var returnParameter = new MethodReturnValue ((IMethodSymbol) Context.OwningSymbol);
 
-			TrimAnalysisPatterns.Add (new TrimAnalysisPattern (
-				returnValue,
-				returnParameter,
-				operation
-			));
+			TrimAnalysisPatterns.Add (
+				new TrimAnalysisPattern (returnValue, returnParameter, operation),
+				isReturnValue: true
+			);
 		}
 	}
 }
