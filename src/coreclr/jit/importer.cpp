@@ -11838,24 +11838,53 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef DEBUG
         // As a stress test, we can place patchpoints at the start of any block
         // that is a stack empty point and is not within a handler.
+        //
         // Todo: enable for mid-block stack empty points too.
         //
-        const int doRandomOSR = JitConfig.JitRandomOnStackReplacement();
-        if ((doRandomOSR > 0) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
+        const int  offsetOSR    = JitConfig.JitOffsetOnStackReplacement();
+        const int  randomOSR    = JitConfig.JitRandomOnStackReplacement();
+        const bool tryOffsetOSR = offsetOSR >= 0;
+        const bool tryRandomOSR = randomOSR > 0;
+
+        if ((tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
             ((block->bbFlags & BBF_PATCHPOINT) == 0))
         {
-            // Reuse the random inliner's random state.
-            // Note m_inlineStrategy is always created, even if we're not inlining.
+            // Block start can have a patchpoint. See if we should add one.
             //
-            CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(doRandomOSR);
-            const int        randomValue = (int)random->Next(100);
-            if (randomValue < doRandomOSR)
+            bool addPatchpoint = false;
+
+            // Specific offset?
+            //
+            if (tryOffsetOSR)
             {
-                JITDUMP("Random patchpoint added to " FMT_BB "\n", block->bbNum);
+                if (impCurOpcOffs == (unsigned)offsetOSR)
+                {
+                    addPatchpoint = true;
+                }
+            }
+            // Random?
+            //
+            else
+            {
+                // Reuse the random inliner's random state.
+                // Note m_inlineStrategy is always created, even if we're not inlining.
+                //
+                CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(randomOSR);
+                const int        randomValue = (int)random->Next(100);
+
+                addPatchpoint = (randomValue < randomOSR);
+            }
+
+            if (addPatchpoint)
+            {
                 block->bbFlags |= BBF_PATCHPOINT;
                 setMethodHasPatchpoint();
             }
+
+            JITDUMP("\n** %s patchpoint%s added to " FMT_BB " (il offset %u)\n", tryOffsetOSR ? "offset" : "random",
+                    addPatchpoint ? "" : " not", block->bbNum, impCurOpcOffs);
         }
+
 #endif // DEBUG
     }
 
