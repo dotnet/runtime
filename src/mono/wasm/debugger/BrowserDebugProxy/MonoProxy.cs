@@ -870,7 +870,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (j == 0 && method?.Info.HasStepThroughAttribute == true)
                 {
-                    if (event_kind == EventKind.Step)
+                    if (event_kind == EventKind.Step ||
+                        (event_kind == EventKind.Breakpoint && JustMyCode))
                     {
                         if (context.IsResumedAfterBp)
                             context.IsResumedAfterBp = false;
