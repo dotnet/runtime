@@ -14192,6 +14192,20 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
     }
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (multiOp->OperIsHWIntrinsic())
+    {
+        // See if this is foldable
+        GenTree* optTree = gtFoldHWIntrinsic(multiOp->AsHWIntrinsic());
+
+        // If we optimized, morph the result
+        if (optTree != multiOp)
+        {
+            return fgMorphTree(optTree);
+        }
+    }
+#endif
+
     return multiOp;
 }
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)

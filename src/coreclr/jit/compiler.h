@@ -3535,6 +3535,9 @@ public:
                                    GenTree*               op2,
                                    CorInfoInlineTypeCheck typeCheckInliningResult);
     GenTree* gtFoldExprCall(GenTreeCall* call);
+#ifdef FEATURE_HW_INTRINSICS
+    GenTree* gtFoldHWIntrinsic(GenTreeHWIntrinsic* node);
+#endif
     GenTree* gtFoldTypeCompare(GenTree* tree);
     GenTree* gtFoldTypeEqualityCall(bool isEq, GenTree* op1, GenTree* op2);
 

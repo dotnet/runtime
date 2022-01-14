@@ -11699,6 +11699,76 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     return call;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
+// gtFoldHWIntrinsic: see if a HWIntrinsic is foldable
+//
+// Arguments:
+//    node - HWIntrinsic node to examine
+//
+// Returns:
+//    The original node if no folding happened.
+//    An alternative tree if folding happens.
+//
+// Notes:
+//    Checks for HWIntrinsic nodes to Vector64.Create/Vector128.Create/Vector256.Create,
+//    and if the call is to one of these, attempt to optimize.
+
+GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    // Defer folding if not optimizing.
+    if (opts.OptimizationDisabled())
+    {
+        return node;
+    }
+
+    switch (node->GetHWIntrinsicId())
+    {
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        case NI_Vector128_Create:
+        {
+            if ((node->GetOperandCount() == 1) &&
+                (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
+            {
+                node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
+            }
+            break;
+        }
+#endif
+
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Create:
+        {
+            if ((node->GetOperandCount() == 1) &&
+                (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
+            {
+                node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
+            }
+            break;
+        }
+#endif
+
+#if defined(TARGET_ARM64)
+        case NI_Vector64_Create:
+        {
+            if ((node->GetOperandCount() == 1) &&
+                (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
+            {
+                node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
+            }
+            break;
+        }
+#endif
+        default:
+            break;
+    }
+
+    return node;
+}
+
+#endif
+
 //------------------------------------------------------------------------
 // gtFoldTypeEqualityCall: see if a (potential) type equality call is foldable
 //
