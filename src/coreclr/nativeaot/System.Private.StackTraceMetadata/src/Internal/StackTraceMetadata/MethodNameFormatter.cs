@@ -255,8 +255,12 @@ namespace Internal.StackTraceMetadata
                     EmitString(typeHandle.ToGenericParameterHandle(_metadataReader).GetGenericParameter(_metadataReader).Name);
                     break;
 
+                case HandleType.FunctionPointerSignature:
+                    EmitFunctionPointerTypeName(typeHandle.ToFunctionPointerSignatureHandle(_metadataReader));
+                    break;
+
                 default:
-                    Debug.Assert(false);
+                    Debug.Assert(false, $"Type handle {typeHandle.HandleType} does not handled");
                     _outputBuilder.Append("???");
                     break;
             }
@@ -405,6 +409,21 @@ namespace Internal.StackTraceMetadata
             PointerSignature pointerSig = _metadataReader.GetPointerSignature(pointerSigHandle);
             EmitTypeName(pointerSig.Type, namespaceQualified: false);
             _outputBuilder.Append('*');
+        }
+
+        /// <summary>
+        /// Emit function pointer type.
+        /// </summary>
+        /// <param name="functionPointerSigHandle">Function pointer type specification signature handle</param>
+        private void EmitFunctionPointerTypeName(FunctionPointerSignatureHandle functionPointerSigHandle)
+        {
+            FunctionPointerSignature functionPointerSig = _metadataReader.GetFunctionPointerSignature(functionPointerSigHandle);
+            _outputBuilder.Append("delegate*<");
+            MethodSignature methodSignature = functionPointerSig.Signature.GetMethodSignature(_metadataReader);
+            EmitTypeVector(methodSignature.Parameters);
+            _outputBuilder.Append(',');
+            EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
+            _outputBuilder.Append('>');
         }
 
         /// <summary>
