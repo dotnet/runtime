@@ -138,5 +138,13 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Equal("{\"name\":\"\u6D4B\u8A6611\"}", result);
         }
+
+        [Fact]
+        public static void WriteSystemObjectWithNumberHandling()
+        {
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            string result = JsonSerializer.Serialize(new object(), options);
+            Assert.Equal("{}", result);
+        }
     }
 }

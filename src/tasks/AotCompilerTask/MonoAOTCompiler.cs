@@ -802,13 +802,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {args.WorkingDir}: {envStr}{CompilerBinaryPath} {File.ReadAllText(args.ResponseFilePath, s_utf8Encoding)}");
             }
 
-            Log.LogMessage(importance, output);
-
             if (exitCode != 0)
             {
-                Log.LogError($"Precompiling failed for {assembly}");
+                Log.LogError($"Precompiling failed for {assembly}.{Environment.NewLine}{output}");
                 return false;
             }
+
+            Log.LogMessage(importance, output);
         }
         catch (Exception ex)
         {

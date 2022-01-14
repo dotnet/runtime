@@ -2,5 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 </Project>

@@ -55,6 +55,7 @@
     <Compile Include="Enumeration\ExampleTests.cs" />
     <Compile Include="Enumeration\RemovedDirectoryTests.cs" />
     <Compile Include="Enumeration\SymbolicLinksTests.cs" />
+    <Compile Include="LargeFileTests.cs" />
     <Compile Include="PathInternalTests.cs" />
     <Compile Include="RandomAccess\Base.cs" />
     <Compile Include="RandomAccess\GetLength.cs" />
@@ -76,6 +77,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Base\SymbolicLinks\BaseSymbolicLinks.Windows.cs" />
     <Compile Include="Directory\Delete.Windows.cs" />
+    <Compile Include="File\EncryptDecrypt.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options.Windows.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.Windows.cs" />

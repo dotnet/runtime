@@ -17,6 +17,14 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
+
+    <!-- tests which are not working well in XHarness + XUnit -->
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\TimerTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Simple\SimpleTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="simple.html" />
+    <WasmExtraFilesToDeploy Include="simple.js" />
   </ItemGroup>
   <ItemGroup>
     <!-- Part of the shared framework but not exposed. -->

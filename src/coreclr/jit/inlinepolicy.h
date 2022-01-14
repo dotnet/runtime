@@ -185,7 +185,7 @@ protected:
 class ExtendedDefaultPolicy : public DefaultPolicy
 {
 public:
-    ExtendedDefaultPolicy::ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
+    ExtendedDefaultPolicy(Compiler* compiler, bool isPrejitRoot)
         : DefaultPolicy(compiler, isPrejitRoot)
         , m_ProfileFrequency(0.0)
         , m_BinaryExprWithCns(0)
