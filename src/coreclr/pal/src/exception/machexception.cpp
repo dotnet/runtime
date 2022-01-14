@@ -373,19 +373,31 @@ void PAL_DispatchException(PCONTEXT pContext, PEXCEPTION_RECORD pExRecord, MachE
     g_hardware_exception_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
 
     pContext->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+    bool continueExecution;
+    {
+        PAL_SEHException exception(pExRecord, pContext, true);
 
-    PAL_SEHException exception(pExRecord, pContext, true);
+        TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
 
-    TRACE("PAL_DispatchException(EC %08x EA %p)\n", pExRecord->ExceptionCode, pExRecord->ExceptionAddress);
+        continueExecution = SEHProcessException(&exception);
+        if (continueExecution)
+        {
+            // Make a copy of the exception records so that we can free them before restoring the context
+            *pContext = *exception.ExceptionPointers.ContextRecord;
+            *pExRecord = *exception.ExceptionPointers.ExceptionRecord;
+        }
 
-    if (SEHProcessException(&exception))
+        // The exception records are destroyed by the PAL_SEHException destructor now.
+    }
+
+    if (continueExecution)
     {
 #if defined(HOST_ARM64)
         // RtlRestoreContext assembly corrupts X16 & X17, so it cannot be
         // used for GCStress=C restore
-        MachSetThreadContext(exception.ExceptionPointers.ContextRecord);
+        MachSetThreadContext(pContext);
 #else
-        RtlRestoreContext(exception.ExceptionPointers.ContextRecord, pExRecord);
+        RtlRestoreContext(pContext, pExRecord);
 #endif
     }
 

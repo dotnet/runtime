@@ -41,7 +41,7 @@ public class Program
         {
             Console.Out.WriteLine("catch");
             Console.Out.Flush();
-            throw new Exception("catch", e);  // throw; doesn't work either
+            throw new Exception("catch", e);
         }
     }
 
