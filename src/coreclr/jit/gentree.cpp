@@ -21696,29 +21696,29 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #elif defined(TARGET_LOONGARCH64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
-            DWORD numFloatFields = comp->info.compCompHnd->getFieldTypeByHnd(retClsHnd);
+            uint32_t numFloatFields = comp->info.compCompHnd->getFieldSizeClassificationByHnd(retClsHnd);
             BYTE  gcPtrs[2]      = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 
-            if (numFloatFields & 0x8)
+            if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_TWO)
             {
-                assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
-                m_regType[0]                = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1]                = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                assert((structSize > 8) == ((numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0]                = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1]                = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 comp->compFloatingPointUsed = true;
             }
-            else if (numFloatFields & 0x2)
+            else if (numFloatFields & STRUCT_FLOAT_FIELD_FIRST)
             {
-                assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
-                m_regType[0]                = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1]                = numFloatFields & 0x20 ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
+                assert((structSize > 8) == ((numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0]                = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
+                m_regType[1]                = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
                 comp->compFloatingPointUsed = true;
             }
-            else if (numFloatFields & 0x4)
+            else if (numFloatFields & STRUCT_FLOAT_FIELD_SECOND)
             {
-                assert((structSize > 8) == ((numFloatFields & 0x30) > 0));
-                m_regType[0]                = numFloatFields & 0x10 ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1]                = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                assert((structSize > 8) == ((numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
+                m_regType[0]                = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
+                m_regType[1]                = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 comp->compFloatingPointUsed = true;
             }
             else

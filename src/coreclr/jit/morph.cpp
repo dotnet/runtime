@@ -3051,14 +3051,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             {
                 assert((howToPassStruct == SPK_ByValue) || (howToPassStruct == SPK_PrimitiveType));
 
-                numFloatFields = info.compCompHnd->getFieldTypeByHnd(objClass);
+                numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(objClass);
 
-                passUsingFloatRegs = (numFloatFields & 0xf) ? true : false;
+                passUsingFloatRegs = (numFloatFields & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
                 compFloatingPointUsed |= passUsingFloatRegs;
 
-                if (numFloatFields & 7)
+                if (numFloatFields & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_TWO))
                     size = 1;
-                else if (numFloatFields & 8)
+                else if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_TWO)
                     size = 2;
             }
             else // if (passStructByRef)
@@ -4917,37 +4917,35 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             unsigned offset = baseOffset;
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
 #if defined(TARGET_LOONGARCH64)
-            DWORD numFloatFields = info.compCompHnd->getFieldTypeByHnd(objClass);
-            if ((numFloatFields & 0xe) /*&& (varDsc->lvSize() == TARGET_POINTER_SIZE)*/)
+            uint32_t numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(objClass);
+            if (numFloatFields & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
             {
-                assert((numFloatFields & 0xf) > 1);
+                assert((numFloatFields & STRUCT_HAS_FLOAT_FIELDS_MASK) > 1);
                 var_types tmp_type_1;
                 var_types tmp_type_2;
 
                 compFloatingPointUsed = true;
-                if (numFloatFields & 0x8)
+                if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_TWO)
                 {
-                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_1 = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_2 = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 }
-                else if (numFloatFields & 0x2)
+                else if (numFloatFields & STRUCT_FLOAT_FIELD_FIRST)
                 {
-                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                    // tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;type[0]
-                    tmp_type_2 = numFloatFields & 0x20 ? type[1] : TYP_INT;
+                    tmp_type_1 = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_2 = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? type[1] : TYP_INT;
                 }
-                else if (numFloatFields & 0x4)
+                else if (numFloatFields & STRUCT_FLOAT_FIELD_SECOND)
                 {
-                    // tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
-                    tmp_type_1 = numFloatFields & 0x10 ? type[0] : TYP_INT;
-                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_1 = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? type[0] : TYP_INT;
+                    tmp_type_2 = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 }
                 else
                 {
                     assert(!"----------------unimplemented type-case... on LOONGARCH");
                     unreached();
                 }
-                elemSize = numFloatFields & 0x30 ? 8 : 4;
+                elemSize = numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK ? 8 : 4;
 
                 GenTree* nextLclFld = gtNewLclFldNode(varNum, tmp_type_1, offset);
                 newArg->AddField(this, nextLclFld, offset, tmp_type_1);
@@ -5006,37 +5004,35 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
             unsigned offset = 0;
 #if defined(TARGET_LOONGARCH64)
-            DWORD numFloatFields = info.compCompHnd->getFieldTypeByHnd(objClass);
-            if (numFloatFields & 0xe)
+            uint32_t numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(objClass);
+            if (numFloatFields & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
             {
-                assert((numFloatFields & 0xf) > 1);
+                assert((numFloatFields & STRUCT_HAS_FLOAT_FIELDS_MASK) > 1);
                 var_types tmp_type_1;
                 var_types tmp_type_2;
 
                 compFloatingPointUsed = true;
-                if (numFloatFields & 0x8)
+                if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_TWO)
                 {
-                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_1 = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_2 = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 }
-                else if (numFloatFields & 0x2)
+                else if (numFloatFields & STRUCT_FLOAT_FIELD_SECOND)
                 {
-                    tmp_type_1 = numFloatFields & 0x10 ? TYP_DOUBLE : TYP_FLOAT;
-                    // tmp_type_2 = numFloatFields & 0x20 ? TYP_LONG: TYP_INT;
-                    tmp_type_2 = numFloatFields & 0x20 ? type[1] : TYP_INT;
+                    tmp_type_1 = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_2 = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? type[1] : TYP_INT;
                 }
-                else if (numFloatFields & 0x4)
+                else if (numFloatFields & STRUCT_FLOAT_FIELD_SECOND)
                 {
-                    // tmp_type_1 = numFloatFields & 0x10 ? TYP_LONG: TYP_INT;
-                    tmp_type_1 = numFloatFields & 0x10 ? type[0] : TYP_INT;
-                    tmp_type_2 = numFloatFields & 0x20 ? TYP_DOUBLE : TYP_FLOAT;
+                    tmp_type_1 = numFloatFields & STRUCT_FIRST_FIELD_SIZE_IS8 ? type[0] : TYP_INT;
+                    tmp_type_2 = numFloatFields & STRUCT_SECOND_FIELD_SIZE_IS8 ? TYP_DOUBLE : TYP_FLOAT;
                 }
                 else
                 {
                     assert(!"----------------unimplemented type-case... on LOONGARCH");
                     unreached();
                 }
-                elemSize = numFloatFields & 0x30 ? 8 : 4;
+                elemSize = numFloatFields & STRUCT_HAS_8BYTES_FIELDS_MASK ? 8 : 4;
 
                 GenTree* curItem = gtNewIndir(tmp_type_1, baseAddr);
                 // For safety all GT_IND should have at least GT_GLOB_REF set.

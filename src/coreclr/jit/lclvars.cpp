@@ -643,13 +643,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         LclVarDsc*           varDsc  = varDscInfo->varDsc;
         CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
-#if defined(TARGET_LOONGARCH64)
-        int                flags = 0;
-        CorInfoTypeWithMod corInfoType =
-            info.compCompHnd->getArgType2(&info.compMethodInfo->args, argLst, &typeHnd, &flags);
-#else
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
-#endif
         varDsc->lvIsParam = 1;
 
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
@@ -674,6 +668,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
             (argSize + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE; // the total number of slots of this argument
         bool      isHfaArg = false;
         var_types hfaType  = TYP_UNDEF;
+
+#if defined(TARGET_LOONGARCH64)
+        uint32_t floatFlags = STRUCT_NO_FLOAT_FIELD;
+        if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
+        {
+            floatFlags = info.compCompHnd->getFieldSizeClassificationByHnd(typeHnd);
+        }
+#endif
 
         // Methods that use VarArg or SoftFP cannot have HFA arguments except
         // Native varargs on arm64 unix use the regular calling convention.
@@ -895,11 +897,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 #elif defined(TARGET_LOONGARCH64)
         var_types arg1_Type = TYP_UNKNOWN;
         var_types arg2_Type = TYP_UNKNOWN;
-        if (flags & 0xf)
+        if (floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK)
         {
             assert(varTypeIsStruct(argType));
             int float_num = 0;
-            if (flags == 1)
+            if (floatFlags == STRUCT_FLOAT_FIELD_ONLY_ONE)
             {
                 assert(argSize <= 8);
                 assert(varDsc->lvExactSize <= argSize);
@@ -908,30 +910,30 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 arg1_Type             = (varDsc->lvExactSize == 8) ? TYP_DOUBLE : TYP_FLOAT;
                 canPassArgInRegisters = varDscInfo->canEnreg(arg1_Type, 1);
             }
-            else if (flags & 0x8)
+            else if (floatFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
             {
-                arg1_Type             = (flags & 0x10) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2_Type             = (flags & 0x20) ? TYP_DOUBLE : TYP_FLOAT;
+                arg1_Type             = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                arg2_Type             = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
                 float_num             = 2;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 2);
             }
-            else if (flags & 2)
+            else if (floatFlags & STRUCT_FLOAT_FIELD_FIRST)
             {
                 float_num             = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                arg1_Type = (flags & 0x10) ? TYP_DOUBLE : TYP_FLOAT;
-                arg2_Type = (flags & 0x20) ? TYP_LONG : TYP_INT;
+                arg1_Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                arg2_Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
             }
-            else if (flags & 4)
+            else if (floatFlags & STRUCT_FLOAT_FIELD_SECOND)
             {
                 float_num             = 1;
                 canPassArgInRegisters = varDscInfo->canEnreg(TYP_DOUBLE, 1);
                 canPassArgInRegisters = canPassArgInRegisters && varDscInfo->canEnreg(TYP_I_IMPL, 1);
 
-                arg1_Type = (flags & 0x10) ? TYP_LONG : TYP_INT;
-                arg2_Type = (flags & 0x20) ? TYP_DOUBLE : TYP_FLOAT;
+                arg1_Type = (floatFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_LONG : TYP_INT;
+                arg2_Type = (floatFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
             }
 
             if (!canPassArgInRegisters)

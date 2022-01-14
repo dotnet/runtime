@@ -935,14 +935,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #ifdef TARGET_LOONGARCH64
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
-        DWORD numFloatFields = info.compCompHnd->getFieldTypeByHnd(clsHnd);
+        uint32_t numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(clsHnd);
 
-        if (numFloatFields & 0x1)
+        if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_ONE)
         {
             howToReturnStruct = SPK_PrimitiveType;
             useType           = structSize > 4 ? TYP_DOUBLE : TYP_FLOAT;
         }
-        else if (numFloatFields & 0xE)
+        else if (numFloatFields & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
         {
             howToReturnStruct = SPK_ByValue;
             useType           = TYP_STRUCT;
