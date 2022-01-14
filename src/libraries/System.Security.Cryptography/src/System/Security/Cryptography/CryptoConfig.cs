@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
     {
 #if !BROWSER
         private const string AssemblyName_Cng = "System.Security.Cryptography.Cng";
-        private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
         private const string AssemblyName_X509Certificates = "System.Security.Cryptography.X509Certificates";
 
@@ -128,17 +127,18 @@ namespace System.Security.Cryptography
                 Type SHA256DefaultType = typeof(System.Security.Cryptography.SHA256Managed);
                 Type SHA384DefaultType = typeof(System.Security.Cryptography.SHA384Managed);
                 Type SHA512DefaultType = typeof(System.Security.Cryptography.SHA512Managed);
+                Type SHA1CryptoServiceProviderType = typeof(SHA1CryptoServiceProvider);
+                Type MD5CryptoServiceProviderType = typeof(MD5CryptoServiceProvider);
+                Type RSACryptoServiceProviderType = typeof(RSACryptoServiceProvider);
+                Type DSACryptoServiceProviderType = typeof(DSACryptoServiceProvider);
+                Type DESCryptoServiceProviderType = typeof(DESCryptoServiceProvider);
+                Type TripleDESCryptoServiceProviderType = typeof(TripleDESCryptoServiceProvider);
+                Type RC2CryptoServiceProviderType = typeof(RC2CryptoServiceProvider);
+                Type AesCryptoServiceProviderType = typeof(AesCryptoServiceProvider);
 #pragma warning restore SYSLIB0021
-
-                string SHA1CryptoServiceProviderType = "System.Security.Cryptography.SHA1CryptoServiceProvider, " + AssemblyName_Csp;
-                string MD5CryptoServiceProviderType = "System.Security.Cryptography.MD5CryptoServiceProvider," + AssemblyName_Csp;
-                string RSACryptoServiceProviderType = "System.Security.Cryptography.RSACryptoServiceProvider, " + AssemblyName_Csp;
-                string DSACryptoServiceProviderType = "System.Security.Cryptography.DSACryptoServiceProvider, " + AssemblyName_Csp;
-                string DESCryptoServiceProviderType = "System.Security.Cryptography.DESCryptoServiceProvider, " + AssemblyName_Csp;
-                string TripleDESCryptoServiceProviderType = "System.Security.Cryptography.TripleDESCryptoServiceProvider, " + AssemblyName_Csp;
-                string RC2CryptoServiceProviderType = "System.Security.Cryptography.RC2CryptoServiceProvider, " + AssemblyName_Csp;
-                string RNGCryptoServiceProviderType = "System.Security.Cryptography.RNGCryptoServiceProvider, " + AssemblyName_Csp;
-                string AesCryptoServiceProviderType = "System.Security.Cryptography.AesCryptoServiceProvider, " + AssemblyName_Csp;
+#pragma warning disable SYSLIB0023 // RNGCryptoServiceProvider is obsolete
+                Type RNGCryptoServiceProviderType = typeof(RNGCryptoServiceProvider);
+#pragma warning restore SYSLIB0023
 
                 string ECDsaCngType = "System.Security.Cryptography.ECDsaCng, " + AssemblyName_Cng;
 
