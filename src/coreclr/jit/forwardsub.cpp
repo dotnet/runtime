@@ -183,6 +183,50 @@ private:
 };
 
 //------------------------------------------------------------------------
+// EffectsVisitor: tree visitor to compute missing effects of a tree.
+//
+class EffectsVisitor final : public GenTreeVisitor<EffectsVisitor>
+{
+public:
+    enum
+    {
+        DoPostOrder       = true,
+        UseExecutionOrder = true
+    };
+
+    EffectsVisitor(Compiler* compiler) : GenTreeVisitor<EffectsVisitor>(compiler), m_flags(0)
+    {
+    }
+
+    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const node = *use;
+        m_flags |= node->gtFlags & GTF_ALL_EFFECT;
+
+        if (node->OperIs(GT_LCL_VAR))
+        {
+            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc*     varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (varDsc->IsAddressExposed())
+            {
+                m_flags |= GTF_GLOB_REF;
+            }
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    unsigned GetFlags()
+    {
+        return m_flags;
+    }
+
+private:
+    unsigned m_flags;
+};
+
+//------------------------------------------------------------------------
 // fgForwardSub(Statement) -- forward sub this statement's computation
 //  to the next statement, if legal and profitable
 //
@@ -336,6 +380,21 @@ bool Compiler::fgForwardSub(Statement* stmt)
         //
         JITDUMP(" potentially interacting effects\n");
         return false;
+    }
+
+    // If we're relying on purity of fwdSubNode for legality of forward sub,
+    // do some extra checks for global uses that might not be reflected in the flags.
+    //
+    if (fwdSubNodeInvariant && ((fsv.GetFlags() & (GTF_CALL | GTF_ASG)) != 0))
+    {
+        EffectsVisitor ev(this);
+        ev.WalkTree(&fwdSubNode, nullptr);
+
+        if ((ev.GetFlags() & GTF_GLOB_REF) != 0)
+        {
+            JITDUMP(" potentially interacting effects from address-exposed locals in node to sub\n");
+            return false;
+        }
     }
 
     // Finally, profitability checks.
