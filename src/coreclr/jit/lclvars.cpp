@@ -610,7 +610,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
     }
 #elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     // On System V type environment the float registers are not indexed together with the int ones.
-    varDscInfo->floatRegArgNum         = varDscInfo->intRegArgNum;
+    varDscInfo->floatRegArgNum = varDscInfo->intRegArgNum;
 #endif // TARGET*
 
     CORINFO_ARG_LIST_HANDLE argLst = info.compMethodInfo->args.args;
@@ -644,7 +644,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
-        varDsc->lvIsParam = 1;
+        varDsc->lvIsParam              = 1;
 
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
@@ -673,7 +673,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         uint32_t floatFlags = STRUCT_NO_FLOAT_FIELD;
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
-            floatFlags = info.compCompHnd->getFieldSizeClassificationByHnd(typeHnd);
+            floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
         }
 #endif
 

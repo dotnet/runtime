@@ -935,7 +935,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #ifdef TARGET_LOONGARCH64
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
-        uint32_t numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(clsHnd);
+        uint32_t numFloatFields = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
 
         if (numFloatFields & STRUCT_FLOAT_FIELD_ONLY_ONE)
         {

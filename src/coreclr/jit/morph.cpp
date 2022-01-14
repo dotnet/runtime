@@ -3051,7 +3051,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             {
                 assert((howToPassStruct == SPK_ByValue) || (howToPassStruct == SPK_PrimitiveType));
 
-                numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(objClass);
+                numFloatFields = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(objClass);
 
                 passUsingFloatRegs = (numFloatFields & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
                 compFloatingPointUsed |= passUsingFloatRegs;
@@ -4917,7 +4917,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             unsigned offset = baseOffset;
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
 #if defined(TARGET_LOONGARCH64)
-            uint32_t numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(objClass);
+            uint32_t numFloatFields = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(objClass);
             if (numFloatFields & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
             {
                 assert((numFloatFields & STRUCT_HAS_FLOAT_FIELDS_MASK) > 1);
@@ -5004,7 +5004,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             newArg          = new (this, GT_FIELD_LIST) GenTreeFieldList();
             unsigned offset = 0;
 #if defined(TARGET_LOONGARCH64)
-            uint32_t numFloatFields = info.compCompHnd->getFieldSizeClassificationByHnd(objClass);
+            uint32_t numFloatFields = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(objClass);
             if (numFloatFields & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
             {
                 assert((numFloatFields & STRUCT_HAS_FLOAT_FIELDS_MASK) > 1);
