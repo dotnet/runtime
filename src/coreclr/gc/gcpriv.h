@@ -1286,9 +1286,9 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP
-    void verify_regions (bool can_verify_gen_num);
+    void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
     void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED
