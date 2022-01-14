@@ -12,36 +12,6 @@ namespace System.Reflection
 {
     public partial class AssemblyName
     {
-        public AssemblyName(string assemblyName)
-        {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if (assemblyName.Length == 0 || assemblyName[0] == '\0')
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            if (assemblyName.Contains('\0'))
-                throw new FileLoadException("The assembly name is invalid.");
-
-            using (SafeStringMarshal name = RuntimeMarshal.MarshalString(assemblyName))
-            {
-                // TODO: Should use CoreRT AssemblyNameParser
-                if (!ParseAssemblyName(name.Value, out MonoAssemblyName nativeName, out bool isVersionDefined, out bool isTokenDefined))
-                    throw new FileLoadException("The assembly name is invalid.");
-
-                try
-                {
-                    unsafe
-                    {
-                        FillName(&nativeName, null, isVersionDefined, false, isTokenDefined);
-                    }
-                }
-                finally
-                {
-                    RuntimeMarshal.FreeAssemblyName(ref nativeName, false);
-                }
-            }
-        }
-
         internal static AssemblyName Create(IntPtr monoAssembly, string? codeBase)
         {
             AssemblyName aname = new AssemblyName();
@@ -129,8 +99,5 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe MonoAssemblyName* GetNativeName(IntPtr assemblyPtr);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ParseAssemblyName(IntPtr name, out MonoAssemblyName aname, out bool is_version_definited, out bool is_token_defined);
     }
 }

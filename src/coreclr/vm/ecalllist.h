@@ -292,7 +292,6 @@ FCFuncStart(gAssemblyLoadContextFuncs)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyNameFuncs)
-    FCFuncElement("nInit", AssemblyNameNative::Init)
     FCFuncElement("nGetFileInformation", AssemblyNameNative::GetFileInformation)
 FCFuncEnd()
 

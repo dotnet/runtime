@@ -25,6 +25,20 @@ namespace System.Reflection
         private AssemblyVersionCompatibility _versionCompatibility;
         private AssemblyNameFlags _flags;
 
+        public AssemblyName(string assemblyName)
+            : this()
+        {
+            if (assemblyName == null)
+                throw new ArgumentNullException(nameof(assemblyName));
+            if ((assemblyName.Length == 0) ||
+                (assemblyName[0] == '\0'))
+                throw new ArgumentException(SR.Format_StringZeroLength);
+
+            _name = assemblyName;
+            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(_name);
+            runtimeAssemblyName.CopyToAssemblyName(this);
+        }
+
         public AssemblyName()
         {
             _versionCompatibility = AssemblyVersionCompatibility.SameMachine;

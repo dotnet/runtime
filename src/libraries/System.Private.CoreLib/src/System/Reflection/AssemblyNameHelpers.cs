@@ -9,8 +9,13 @@ using System.Collections.Generic;
 
 namespace System.Reflection
 {
+#if CORERT
     [System.Runtime.CompilerServices.ReflectionBlocked]
-    public static partial class AssemblyNameHelpers
+    public // Needs to be public so that Reflection.Core can see it.
+#else
+    internal
+#endif
+    static partial class AssemblyNameHelpers
     {
         //
         // Converts an AssemblyName to a RuntimeAssemblyName that is free from any future mutations on the AssemblyName.
@@ -18,7 +23,7 @@ namespace System.Reflection
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyName assemblyName)
         {
             if (assemblyName.Name == null)
-                throw new ArgumentException();
+                throw new ArgumentException(SR.Argument_InvalidAssemblyName);
 
             AssemblyNameFlags flags = assemblyName.Flags;
             AssemblyContentType contentType = assemblyName.ContentType;

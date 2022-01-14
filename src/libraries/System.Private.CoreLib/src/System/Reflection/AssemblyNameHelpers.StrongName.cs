@@ -7,7 +7,12 @@ using System.Security;
 
 namespace System.Reflection
 {
-    public static partial class AssemblyNameHelpers
+#if CORERT
+    public // Needs to be public so that Reflection.Core can see it.
+#else
+    internal
+#endif
+    static partial class AssemblyNameHelpers
     {
         public static byte[]? ComputePublicKeyToken(byte[]? publicKey)
         {

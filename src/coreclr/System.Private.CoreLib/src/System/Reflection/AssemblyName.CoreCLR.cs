@@ -11,18 +11,6 @@ namespace System.Reflection
 {
     public sealed partial class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
-        public AssemblyName(string assemblyName)
-        {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if ((assemblyName.Length == 0) ||
-                (assemblyName[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            _name = assemblyName;
-            nInit();
-        }
-
         internal AssemblyName(string? name,
             byte[]? publicKey,
             byte[]? publicKeyToken,
@@ -43,9 +31,6 @@ namespace System.Reflection
             _codeBase = codeBase;
             _flags = flags;
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void nInit();
 
         // This call opens and closes the file, but does not add the
         // assembly to the domain.

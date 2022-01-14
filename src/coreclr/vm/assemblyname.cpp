@@ -60,42 +60,10 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     pImage->VerifyIsAssembly();
 
     AssemblySpec spec;
-    spec.InitializeSpec(TokenFromRid(mdtAssembly,1),pImage->GetMDImport(),NULL);
+    spec.InitializeSpec(TokenFromRid(1,mdtAssembly),pImage->GetMDImport(),NULL);
     spec.AssemblyNameInit(&gc.result, pImage);
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(gc.result);
 }
 FCIMPLEND
-
-FCIMPL1(void, AssemblyNameNative::Init, Object * refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    ASSEMBLYNAMEREF pThis = (ASSEMBLYNAMEREF) (OBJECTREF) refThisUNSAFE;
-    HRESULT hr = S_OK;
-
-    HELPER_METHOD_FRAME_BEGIN_1(pThis);
-
-    if (pThis == NULL)
-        COMPlusThrow(kNullReferenceException, W("NullReference_This"));
-
-    ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
-
-    AssemblySpec spec;
-    hr = spec.InitializeSpec(pStackingAllocator, (ASSEMBLYNAMEREF *) &pThis, TRUE);
-
-    if (SUCCEEDED(hr))
-    {
-        spec.AssemblyNameInit(&pThis,NULL);
-    }
-    else
-    {
-        ThrowHR(hr);
-    }
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-

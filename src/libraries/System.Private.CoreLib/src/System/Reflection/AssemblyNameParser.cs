@@ -14,8 +14,13 @@ namespace System.Reflection
     //
     // Parses an assembly name.
     //
+#if CORERT
     [System.Runtime.CompilerServices.ReflectionBlocked]
-    public static class AssemblyNameParser
+    public // Needs to be public so that Reflection.Core can see it.
+#else
+    internal
+#endif
+    static class AssemblyNameParser
     {
         public static void Parse(AssemblyName blank, string s)
         {
@@ -41,49 +46,51 @@ namespace System.Reflection
             string name;
             AssemblyNameLexer.Token token = lexer.GetNext(out name);
             if (token != AssemblyNameLexer.Token.String)
-                throw new FileLoadException(SR.InvalidAssemblyName);
+                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
 
             if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
-                throw new FileLoadException(SR.InvalidAssemblyName);
+                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
 
             Version? version = null;
             string? cultureName = null;
             byte[]? pkt = null;
             AssemblyNameFlags flags = 0;
 
-            LowLevelList<string> alreadySeen = new LowLevelList<string>();
+            List<string> alreadySeen = new List<string>();
             token = lexer.GetNext();
             while (token != AssemblyNameLexer.Token.End)
             {
                 if (token != AssemblyNameLexer.Token.Comma)
-                    throw new FileLoadException(SR.InvalidAssemblyName);
+                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 string attributeName;
 
                 token = lexer.GetNext(out attributeName);
                 if (token != AssemblyNameLexer.Token.String)
-                    throw new FileLoadException(SR.InvalidAssemblyName);
+                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 token = lexer.GetNext();
 
+#if CORERT
                 // Compat note: Inside AppX apps, the desktop CLR's AssemblyName parser skips past any elements that don't follow the "<Something>=<Something>" pattern.
                 //  (when running classic Windows apps, such an illegal construction throws an exception as expected.)
                 // Naturally, at least one app unwittingly takes advantage of this.
                 if (token == AssemblyNameLexer.Token.Comma || token == AssemblyNameLexer.Token.End)
                     continue;
+#endif
 
                 if (token != AssemblyNameLexer.Token.Equals)
-                    throw new FileLoadException(SR.InvalidAssemblyName);
+                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 string attributeValue;
                 token = lexer.GetNext(out attributeValue);
                 if (token != AssemblyNameLexer.Token.String)
-                    throw new FileLoadException(SR.InvalidAssemblyName);
+                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
 
                 if (attributeName == string.Empty)
-                    throw new FileLoadException(SR.InvalidAssemblyName);
+                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
 
                 for (int i = 0; i < alreadySeen.Count; i++)
                 {
                     if (alreadySeen[i].Equals(attributeName, StringComparison.OrdinalIgnoreCase))
-                        throw new FileLoadException(SR.InvalidAssemblyName); // Cannot specify the same attribute twice.
+                        throw new FileLoadException(SR.Argument_InvalidAssemblyName); // Cannot specify the same attribute twice.
                 }
                 alreadySeen.Add(attributeName);
 
@@ -116,7 +123,7 @@ namespace System.Reflection
                         // nothing to do
                     }
                     else
-                        throw new FileLoadException(SR.InvalidAssemblyName);
+                        throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 }
 
                 if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
@@ -124,7 +131,7 @@ namespace System.Reflection
                     if (attributeValue.Equals("WindowsRuntime", StringComparison.OrdinalIgnoreCase))
                         flags |= (AssemblyNameFlags)(((int)AssemblyContentType.WindowsRuntime) << 9);
                     else
-                        throw new FileLoadException(SR.InvalidAssemblyName);
+                        throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 }
 
                 // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it (as long it's not duplicated.)
@@ -137,7 +144,7 @@ namespace System.Reflection
         {
             string[] parts = attributeValue.Split('.');
             if (parts.Length > 4)
-                throw new FileLoadException(SR.InvalidAssemblyName);
+                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
             ushort[] versionNumbers = new ushort[4];
             for (int i = 0; i < versionNumbers.Length; i++)
             {
@@ -149,17 +156,17 @@ namespace System.Reflection
                     for (int j = 0; j < parts[i].Length; j++)
                     {
                         if (!char.IsDigit(parts[i][j]))
-                            throw new FileLoadException(SR.InvalidAssemblyName);
+                            throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                     }
                     if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
                     {
-                        throw new FileLoadException(SR.InvalidAssemblyName);
+                        throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                     }
                 }
             }
 
             if (versionNumbers[0] == ushort.MaxValue || versionNumbers[1] == ushort.MaxValue)
-                throw new FileLoadException(SR.InvalidAssemblyName);
+                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
             if (versionNumbers[2] == ushort.MaxValue)
                 return new Version(versionNumbers[0], versionNumbers[1]);
             if (versionNumbers[3] == ushort.MaxValue)
@@ -186,7 +193,7 @@ namespace System.Reflection
                 return Array.Empty<byte>();
 
             if (attributeValue.Length != 8 * 2)
-                throw new FileLoadException(SR.InvalidAssemblyName);
+                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
 
             byte[] pkt = new byte[8];
             int srcIndex = 0;
@@ -211,7 +218,7 @@ namespace System.Reflection
                 return ProcessorArchitecture.Amd64;
             if (attributeValue.Equals("arm", StringComparison.OrdinalIgnoreCase))
                 return ProcessorArchitecture.Arm;
-            throw new FileLoadException(SR.InvalidAssemblyName);
+            throw new FileLoadException(SR.Argument_InvalidAssemblyName);
         }
 
         private static byte ParseHexNybble(char c)
@@ -222,7 +229,7 @@ namespace System.Reflection
                 return (byte)(c - 'a' + 10);
             if (c >= 'A' && c <= 'F')
                 return (byte)(c - 'A' + 10);
-            throw new FileLoadException(SR.InvalidAssemblyName);
+            throw new FileLoadException(SR.Argument_InvalidAssemblyName);
         }
 
         private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };

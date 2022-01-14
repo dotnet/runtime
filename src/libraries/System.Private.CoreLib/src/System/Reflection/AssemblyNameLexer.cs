@@ -40,7 +40,7 @@ namespace System.Reflection
         //
         internal Token GetNext(out string tokenString)
         {
-            tokenString = null;
+            tokenString = string.Empty;
             while (char.IsWhiteSpace(_chars[_index]))
                 _index++;
 
