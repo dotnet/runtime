@@ -857,9 +857,16 @@ public class DebuggerAttribute
         var b = 1;
     }
 
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void NotStopOnJustMyCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
     public static void RunStepThrough()
     {
         NotStopOnJustMyCode();
+        NotStopOnJustMyCodeUserBp();
     }
 }
 
