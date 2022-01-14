@@ -154,7 +154,7 @@ namespace System.IO.MemoryMappedFiles
                 FileMode.CreateNew => false,
                 _ => File.Exists(path)
             };
-            FileStream fileStream = new FileStream(path, mode, GetFileAccess(access), FileShare.Read, 0x1000, FileOptions.None);
+            FileStream fileStream = new FileStream(path, mode, GetFileAccess(access), FileShare.Read, 0, FileOptions.None);
 
             if (capacity == 0 && fileStream.Length == 0)
             {

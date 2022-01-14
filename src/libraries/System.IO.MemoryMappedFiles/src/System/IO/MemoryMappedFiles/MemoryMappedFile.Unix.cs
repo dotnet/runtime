@@ -250,8 +250,7 @@ namespace System.IO.MemoryMappedFiles
 
             // Create the backing file, then immediately unlink it so that it'll be cleaned up when no longer in use.
             // Then enlarge it to the requested capacity.
-            const int DefaultBufferSize = 0x1000;
-            var fs = new FileStream(path, FileMode.CreateNew, TranslateProtectionsToFileAccess(protections), share, DefaultBufferSize);
+            var fs = new FileStream(path, FileMode.CreateNew, TranslateProtectionsToFileAccess(protections), share, 0);
             try
             {
                 Interop.CheckIo(Interop.Sys.Unlink(path));
