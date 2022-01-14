@@ -261,7 +261,8 @@ void GCLog (const char *fmt, ... );
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
 //#define dprintf(l, x)
-#define dprintf(l,x) STRESS_LOG_VA(l,x);
+//#define dprintf(l,x) STRESS_LOG_VA(l,x);
+#define dprintf(l,x) {if ((l == 1) || (l == REGIONS_LOG)) {STRESS_LOG_VA(l,x);}}
 
 #endif //SIMPLE_DPRINTF
 
@@ -2269,6 +2270,15 @@ protected:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
     void sync_promoted_bytes();
+
+    PER_HEAP
+    heap_segment* peek_first_rw_region (int gen_idx);
+
+    PER_HEAP
+    heap_segment* unlink_first_rw_region (int gen_idx);
+
+    PER_HEAP
+    void thread_rw_region_front (int gen_idx, heap_segment* region);
 
     PER_HEAP_ISOLATED
     void equalize_promoted_bytes();
