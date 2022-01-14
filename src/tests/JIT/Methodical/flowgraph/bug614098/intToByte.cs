@@ -31,7 +31,7 @@ internal class Program
 
     static private MyStruct[] s_myObjects = { new MyStruct(0x0100) };
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         MyStruct obj = s_myObjects[0];
         ushort value = obj.value;
