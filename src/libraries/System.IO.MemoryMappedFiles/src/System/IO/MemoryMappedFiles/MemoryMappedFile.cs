@@ -155,11 +155,19 @@ namespace System.IO.MemoryMappedFiles
                 _ => File.Exists(path)
             };
             SafeFileHandle fileHandle = File.OpenHandle(path, mode, GetFileAccess(access), FileShare.Read, FileOptions.None);
-            long fileSize = mode switch
+            long fileSize = 0;
+            if (mode is not (FileMode.CreateNew or FileMode.Create)) // the file is brand new and it's empty
             {
-                FileMode.CreateNew or FileMode.Create => 0, // the file is brand new
-                _ => RandomAccess.GetLength(fileHandle)
-            };
+                try
+                {
+                    fileSize = RandomAccess.GetLength(fileHandle);
+                }
+                catch
+                {
+                    fileHandle.Dispose();
+                    throw;
+                }
+            }
 
             if (capacity == 0 && fileSize == 0)
             {
