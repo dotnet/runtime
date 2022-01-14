@@ -248,6 +248,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(DISABLE_COMPONENTS 1)
 
   set(WASI_DRIVER_SOURCES
+    wasi/mono-wasi-driver/driver.c
     wasi/mono-wasi-driver/mman.c
     wasi/mono-wasi-driver/stubs.c
     wasi/mono-wasi-driver/synthetic-pthread.c

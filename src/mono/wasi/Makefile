@@ -16,7 +16,7 @@ build-all: $(WASI_SDK_CLANG)
 		-DWASI_SDK_PREFIX=$(WASI_SDK_ROOT) \
 		-DCMAKE_SYSROOT=$(WASI_SDK_ROOT)/share/wasi-sysroot \
 		-DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_ROOT)/share/cmake/wasi-sdk.cmake \
-		-DCMAKE_C_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot -I$(CURDIR)/include" \
+		-DCMAKE_C_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot -I$(CURDIR)/include -I/home/steve/runtime/src/mono" \
 		-DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_ROOT)/share/wasi-sysroot" \
 		-DENABLE_MINIMAL=jit,sgen_major_marksweep_conc,sgen_split_nursery,sgen_gc_bridge,sgen_toggleref,sgen_debug_helpers,sgen_binary_protocol,logging,shared_perfcounters,interpreter,threads,qcalls,debugger_agent,sockets,eventpipe \
 		-DDISABLE_SHARED_LIBS=1 \
@@ -26,6 +26,8 @@ build-all: $(WASI_SDK_CLANG)
 
 	mkdir -p $(WASI_BIN_DIR)
 	cp $(WASI_OBJ_DIR)/mono/mini/*.a $(WASI_OBJ_DIR)/libmono-wasi-driver.a $(WASI_BIN_DIR)
+	mkdir -p $(WASI_BIN_DIR)/include/mono-wasi
+	cp mono-wasi-driver/*.h $(WASI_BIN_DIR)/include/mono-wasi
 
 $(WASI_SDK_CLANG):
 	mkdir -p $(WASI_OBJ_DIR)
