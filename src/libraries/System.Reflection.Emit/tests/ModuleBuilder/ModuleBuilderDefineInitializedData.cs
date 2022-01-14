@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit.Tests
 {
@@ -69,10 +70,14 @@ namespace System.Reflection.Emit.Tests
             // RuntimeHelpers.CreateSpan requires data to be naturally aligned within the "PE" file. At this time CreateSpan only
             // requires alignments up to 8 bytes.
             FieldBuilder field1Byte = module.DefineInitializedData("Field1Byte", new byte[] { 1 }, FieldAttributes.Public);
-            FieldBuilder field4Byte_1 = module.DefineInitializedData("Field4Bytes_1", new byte[] { 1, 2, 3, 4 }, FieldAttributes.Public);
-            FieldBuilder field8Byte_1 = module.DefineInitializedData("Field8Bytes_1", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }, FieldAttributes.Public);
-            FieldBuilder field4Byte_2 = module.DefineInitializedData("Field4Bytes_2", new byte[] { 5, 6, 7, 8 }, FieldAttributes.Public);
-            FieldBuilder field8Byte_2 = module.DefineInitializedData("Field8Bytes_2", new byte[] { 9, 10, 11, 12, 13, 14, 15, 16 }, FieldAttributes.Public);
+            byte[] field4Byte_1_data = new byte[] { 1, 2, 3, 4 };
+            byte[] field8Byte_1_data = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+            byte[] field4Byte_2_data = new byte[] { 5, 6, 7, 8 };
+            byte[] field8Byte_2_data = new byte[] { 9, 10, 11, 12, 13, 14, 15, 16 };
+            FieldBuilder field4Byte_1 = module.DefineInitializedData("Field4Bytes_1", field4Byte_1_data, FieldAttributes.Public);
+            FieldBuilder field8Byte_1 = module.DefineInitializedData("Field8Bytes_1", field8Byte_1_data, FieldAttributes.Public);
+            FieldBuilder field4Byte_2 = module.DefineInitializedData("Field4Bytes_2", field4Byte_2_data, FieldAttributes.Public);
+            FieldBuilder field8Byte_2 = module.DefineInitializedData("Field8Bytes_2", field8Byte_2_data, FieldAttributes.Public);
             module.CreateGlobalFunctions();
 
             var checkTypeBuilder = module.DefineType("CheckType", TypeAttributes.Public);
@@ -84,10 +89,10 @@ namespace System.Reflection.Emit.Tests
 
             var checkType = checkTypeBuilder.CreateType();
 
-            CheckMethod("LoadAddress4_1", 4);
-            CheckMethod("LoadAddress4_2", 4);
-            CheckMethod("LoadAddress8_1", 8);
-            CheckMethod("LoadAddress8_2", 8);
+            CheckMethod("LoadAddress4_1", 4, field4Byte_1_data);
+            CheckMethod("LoadAddress4_2", 4, field4Byte_2_data);
+            CheckMethod("LoadAddress8_1", 8, field8Byte_1_data);
+            CheckMethod("LoadAddress8_2", 8, field8Byte_2_data);
 
             void CreateLoadAddressMethod(string name, FieldBuilder fieldBuilder)
             {
@@ -97,11 +102,16 @@ namespace System.Reflection.Emit.Tests
                 methodIL.Emit(OpCodes.Ret);
             }
 
-            void CheckMethod(string name, int minAlignmentRequired)
+            void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
             {
                 var methodToCall = checkType.GetMethod(name);
                 long address = Math.Abs((long)(IntPtr)methodToCall.Invoke(null, null));
-                Assert.Equal(name + "_0", name + "_" + (address % minAlignmentRequired).ToString());
+
+                for (int i = 0; i < dataToVerify.Length; i++)
+                {
+                    Assert.Equal(dataToVerify[i], Marshal.ReadByte(new IntPtr(address + i)));
+                }
+                Assert.Equal(name + "_0" + "_" + address.ToString(), name + "_" + (address % minAlignmentRequired).ToString() + "_" + address.ToString());
             }
         }
     }
