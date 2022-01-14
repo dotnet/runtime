@@ -8641,39 +8641,19 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair   clsVarVNPair;
                     GenTreeClsVar* clsVar = tree->AsClsVar();
                     FieldSeqNode*  fldSeq = clsVar->gtFieldSeq;
-                    assert(fldSeq != nullptr); // We need to have one.
-                    CORINFO_FIELD_HANDLE fieldHnd = clsVar->gtClsVarHnd;
-                    assert(fieldHnd != NO_FIELD_HANDLE);
-                    ValueNum selectedStaticVar = ValueNumStore::NoVN;
+                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField())); // We need to have one.
 
-                    if (fldSeq == FieldSeqStore::NotAField())
-                    {
-                        // This is the box for a "boxed static" - see "fgMorphField".
-                        assert(gtIsStaticFieldPtrToBoxedStruct(clsVar->TypeGet(), fieldHnd));
+                    // This is a reference to heap memory.
+                    // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
+                    size_t   structSize = 0;
+                    ValueNum selectedStaticVar =
+                        vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
+                    selectedStaticVar =
+                        vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
 
-                        // We will create an empty field sequence for VNF_PtrToStatic here. We will assume
-                        // the actual sequence will get appended later, when processing the TARGET_POINTER_SIZE
-                        // offset that is always added to this box to get to its payload.
-
-                        ValueNum fieldHndVN = vnStore->VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
-                        ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
-                        clsVarVNPair.SetBoth(vnStore->VNForFunc(TYP_REF, VNF_PtrToStatic, fieldHndVN, fieldSeqVN));
-                    }
-                    else
-                    {
-                        // This is a reference to heap memory.
-                        // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-
-                        size_t structSize = 0;
-                        selectedStaticVar =
-                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
-                        selectedStaticVar =
-                            vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
-
-                        clsVarVNPair.SetLiberal(selectedStaticVar);
-                        // The conservative interpretation always gets a new, unique VN.
-                        clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    }
+                    clsVarVNPair.SetLiberal(selectedStaticVar);
+                    // The conservative interpretation always gets a new, unique VN.
+                    clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
 
                     // The ValueNum returned must represent the full-sized IL-Stack value
                     // If we need to widen this value then we need to introduce a VNF_Cast here to represent
