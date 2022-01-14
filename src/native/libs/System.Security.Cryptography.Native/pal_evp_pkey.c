@@ -173,13 +173,13 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
         // convert that to a "no private key" error.
         //
         // In OpenSSL 3, this now correctly errors, with the error
-        // ASN1_R_ILLEGAL_ZERO_CONTENT. We want to preserve allocation failures as
+        // ASN1_R_ILLEGAL_ZERO_CONTENT. We want to preserve allocation failures
         // as OutOfMemoryException. So we peek at the error. If it's a malloc
         // failure, -1 is returned to indcate "throw what is on the error queue".
         // If the error is not a malloc failure, return -2 to mean "no private key".
         // If OpenSSL ever changes the error to something more to explicitly mean
         // "no private key" then we should test for that explicitly. Until then,
-        // We treat all errors, except a malloc error, to mean "no private key".
+        // we treat all errors, except a malloc error, to mean "no private key".
         unsigned long error = ERR_peek_error();
 
         // If it's not a malloc failure, assume it's because the private key is

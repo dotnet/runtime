@@ -109,20 +109,20 @@ internal static partial class Interop
 
         private static int GetPkcs8PrivateKeySize(IntPtr pkey)
         {
+            const int Success = 1;
             const int Error = -1;
             const int MissingPrivateKey = -2;
-            const int Success = 1;
 
             int ret = CryptoNative_GetPkcs8PrivateKeySize(pkey, out int p8size);
 
             switch (ret)
             {
+                case Success:
+                    return p8size;
                 case Error:
                     throw CreateOpenSslCryptographicException();
                 case MissingPrivateKey:
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-                case Success:
-                    return p8size;
                 default:
                     Debug.Fail($"Unexpected return '{ret}' value from {nameof(CryptoNative_GetPkcs8PrivateKeySize)}.");
                     throw new CryptographicException();
