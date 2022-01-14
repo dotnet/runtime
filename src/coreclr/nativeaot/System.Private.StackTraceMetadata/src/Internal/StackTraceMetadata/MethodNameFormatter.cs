@@ -256,7 +256,7 @@ namespace Internal.StackTraceMetadata
                     break;
 
                 case HandleType.FunctionPointerSignature:
-                    EmitFunctionPointerTypeName(typeHandle.ToFunctionPointerSignatureHandle(_metadataReader));
+                    EmitFunctionPointerTypeName();
                     break;
 
                 default:
@@ -414,8 +414,7 @@ namespace Internal.StackTraceMetadata
         /// <summary>
         /// Emit function pointer type.
         /// </summary>
-        /// <param name="functionPointerSigHandle">Function pointer type specification signature handle</param>
-        private void EmitFunctionPointerTypeName(FunctionPointerSignatureHandle functionPointerSigHandle)
+        private void EmitFunctionPointerTypeName()
         {
             _outputBuilder.Append("IntPtr");
         }
