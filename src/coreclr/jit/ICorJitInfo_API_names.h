@@ -176,7 +176,6 @@ DEF_CLR_API(getRelocTypeHint)
 DEF_CLR_API(getExpectedTargetArchitecture)
 DEF_CLR_API(getJitFlags)
 DEF_CLR_API(doesFieldBelongToClass)
-DEF_CLR_API(getArgType2)
 DEF_CLR_API(getFieldSizeClassificationByHnd)
 
 #undef DEF_CLR_API

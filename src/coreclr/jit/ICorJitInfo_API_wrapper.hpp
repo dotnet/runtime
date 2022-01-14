@@ -1690,18 +1690,6 @@ bool WrapICorJitInfo::doesFieldBelongToClass(
     return temp;
 }
 
-CorInfoTypeWithMod WrapICorJitInfo::getArgType2(
-          CORINFO_SIG_INFO* sig,
-          CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* pFloatFieldFlags)
-{
-    API_ENTER(getArgType2);
-    CorInfoTypeWithMod temp = wrapHnd->getArgType2(sig, args, vcTypeRet, pFloatFieldFlags);
-    API_LEAVE(getArgType2);
-    return temp;
-}
-
 uint32_t WrapICorJitInfo::getFieldSizeClassificationByHnd(
           CORINFO_CLASS_HANDLE cls)
 {

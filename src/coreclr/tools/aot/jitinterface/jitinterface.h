@@ -183,7 +183,6 @@ struct JitInterfaceCallbacks
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     bool (* doesFieldBelongToClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls);
-    CorInfoTypeWithMod (* getArgType2)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, CORINFO_CLASS_HANDLE* vcTypeRet, int* pFloatFieldFlags);
     uint32_t (* getFieldSizeClassificationByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
 
 };
@@ -1856,18 +1855,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     bool temp = _callbacks->doesFieldBelongToClass(_thisHandle, &pException, fldHnd, cls);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CorInfoTypeWithMod getArgType2(
-          CORINFO_SIG_INFO* sig,
-          CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* pFloatFieldFlags)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CorInfoTypeWithMod temp = _callbacks->getArgType2(_thisHandle, &pException, sig, args, vcTypeRet, pFloatFieldFlags);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -316,6 +316,41 @@ private:
     }
 };
 
+// NOTE:
+// while a struct-arg has no more than two fields and total size is no larger than two-pointer-size.
+// These depends on the platform's ABI rules.
+//
+// `STRUCT_NO_FLOAT_FIELD`=0 means not using the float register(s).
+//
+// the lowest four bits denoting the floating-point info:
+//   bit_0: `1` means there is only one float or double field within the struct.
+//   bit_1: `1` means only the first field is float-point type.
+//   bit_2: `1` means only the second field is float-point type.
+//   bit_3: `1` means the two fields are both float-point type.
+// the bits[5:4] denoting whether the field size is 8-bytes:
+//   bit_4: `1` means the first field's size is 8.
+//   bit_5: `1` means the second field's size is 8.
+enum StructFloatFieldInfoFlags : uint8_t
+{
+    STRUCT_NO_FLOAT_FIELD         = 0x0,
+    STRUCT_FLOAT_FIELD_ONLY_ONE   = 0x1,
+    STRUCT_FLOAT_FIELD_ONLY_TWO   = 0x8,
+    STRUCT_FLOAT_FIELD_FIRST      = 0x2,
+    STRUCT_FLOAT_FIELD_SECOND     = 0x4,
+    STRUCT_FIRST_FIELD_SIZE_IS8   = 0x10,
+    STRUCT_SECOND_FIELD_SIZE_IS8  = 0x20,
+
+    STRUCT_FIRST_FIELD_DOUBLE     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8),
+    STRUCT_SECOND_FIELD_DOUBLE    = (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8),
+    STRUCT_FIELD_TWO_DOUBLES      = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO),
+
+    STRUCT_MERGE_FIRST_SECOND     = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO),
+    STRUCT_MERGE_FIRST_SECOND_8   = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8),
+
+    STRUCT_HAS_FLOAT_FIELDS_MASK  = (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
+    STRUCT_HAS_8BYTES_FIELDS_MASK = (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8),
+};
+
 #include "corinfoinstructionset.h"
 
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
@@ -2717,13 +2752,6 @@ public:
             CORINFO_SIG_INFO*           sig,            /* IN */
             CORINFO_ARG_LIST_HANDLE     args,           /* IN */
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
-            ) = 0;
-
-    virtual CorInfoTypeWithMod getArgType2 (
-            CORINFO_SIG_INFO*           sig,            /* IN */
-            CORINFO_ARG_LIST_HANDLE     args,           /* IN */
-            CORINFO_CLASS_HANDLE       *vcTypeRet,      /* OUT */
-            int *pFloatFieldFlags = NULL
             ) = 0;
 
     // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it

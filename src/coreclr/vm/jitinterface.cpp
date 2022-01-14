@@ -9323,146 +9323,17 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
-// The only difference between `CEEInfo::getArgType2` and `CEEInfo::getArgType` is
-// the arg `int *pFloatFieldFlags` which denoting whether a struct-arg using float registers.
-//
-// The value of `*pFloatFieldFlags` is returned by `CEEInfo::getFieldSizeClassificationByHnd`.
-// So the encoding details of `*pFloatFieldFlags` see `CEEInfo::getFieldSizeClassificationByHnd`.
-CorInfoTypeWithMod CEEInfo::getArgType2 (
-        CORINFO_SIG_INFO*       sig,
-        CORINFO_ARG_LIST_HANDLE args,
-        CORINFO_CLASS_HANDLE*   vcTypeRet,
-        int *pFloatFieldFlags
-        )
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoTypeWithMod result = CorInfoTypeWithMod(CORINFO_TYPE_UNDEF);
-
-    JIT_TO_EE_TRANSITION();
-
-   _ASSERTE((BYTE*) sig->pSig <= (BYTE*) sig->args && (BYTE*) args < (BYTE*) sig->pSig + sig->cbSig);
-   _ASSERTE((BYTE*) sig->args <= (BYTE*) args);
-    INDEBUG(*vcTypeRet = CORINFO_CLASS_HANDLE((size_t)INVALID_POINTER_CC));
-
-    SigPointer ptr((unsigned __int8*) args);
-    CorElementType eType;
-    IfFailThrow(ptr.PeekElemType(&eType));
-    while (eType == ELEMENT_TYPE_PINNED)
-    {
-        result = CORINFO_TYPE_MOD_PINNED;
-        IfFailThrow(ptr.GetElemType(NULL));
-        IfFailThrow(ptr.PeekElemType(&eType));
-    }
-
-    // Now read off the "real" element type after taking any instantiations into consideration
-    SigTypeContext typeContext;
-    GetTypeContext(&sig->sigInst,&typeContext);
-
-    Module* pModule = GetModule(sig->scope);
-
-    CorElementType type = ptr.PeekElemTypeClosed(pModule, &typeContext);
-
-    TypeHandle typeHnd = TypeHandle();
-    switch (type) {
-      case ELEMENT_TYPE_VAR :
-      case ELEMENT_TYPE_MVAR :
-      case ELEMENT_TYPE_VALUETYPE :
-      case ELEMENT_TYPE_TYPEDBYREF :
-      case ELEMENT_TYPE_INTERNAL :
-      {
-            typeHnd = ptr.GetTypeHandleThrowing(pModule, &typeContext);
-            _ASSERTE(!typeHnd.IsNull());
-
-            CorElementType normType = typeHnd.GetInternalCorElementType();
-
-            // if we are looking up a value class, don't morph it to a refernece type
-            // (This can only happen in illegal IL)
-            if (!CorTypeInfo::IsObjRef(normType) || type != ELEMENT_TYPE_VALUETYPE)
-            {
-                type = normType;
-            }
-            if ((pFloatFieldFlags != NULL) && (type == ELEMENT_TYPE_VALUETYPE))
-            {
-                *pFloatFieldFlags = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)typeHnd.AsTAddr());
-            }
-        }
-        break;
-
-    case ELEMENT_TYPE_PTR:
-        // Load the type eagerly under debugger to make the eval work
-        if (!isVerifyOnly() && CORDisableJITOptimizations(pModule->GetDebuggerInfoBits()))
-        {
-            // NOTE: in some IJW cases, when the type pointed at is unmanaged,
-            // the GetTypeHandle may fail, because there is no TypeDef for such type.
-            // Usage of GetTypeHandleThrowing would lead to class load exception
-            TypeHandle thPtr = ptr.GetTypeHandleNT(pModule, &typeContext);
-            if(!thPtr.IsNull())
-            {
-                classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE(thPtr.AsPtr()));
-            }
-        }
-        break;
-
-    case ELEMENT_TYPE_VOID:
-        // void is not valid in local sigs
-        if (sig->flags & CORINFO_SIGFLAG_IS_LOCAL_SIG)
-            COMPlusThrowHR(COR_E_INVALIDPROGRAM);
-        break;
-
-    case ELEMENT_TYPE_END:
-           COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        break;
-
-    default:
-        break;
-    }
-
-    result = CorInfoTypeWithMod(result | CEEInfo::asCorInfoType(type, typeHnd, vcTypeRet));
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 // NOTE:
 // Although this is only used for LoongArch64-ABI now,
 // maybe it can be used for other architecture for getting ABI-info
 // between JIT/EE if the ABI is similar.
 //
 // Now the implementation is only focused on the float fields info,
-// while a struct-arg has no more than two fiels and total size is no larger than two-pointer-size.
+// while a struct-arg has no more than two fields and total size is no larger than two-pointer-size.
 // These depends on the platform's ABI rules.
 //
 // The returned value's encoding details whether a struct-arg using float regitsters:
-// returnd `0` means not using the float register(s).
-//
-// the lowest four bits denoting the floating-point info:
-//   bit_0: `1` means there is only one float or double field within the struct.
-//   bit_1: `1` means only the first field is float-point type.
-//   bit_2: `1` means only the second field is float-point type.
-//   bit_3: `1` means the two fiels are both float-point type.
-// the bits[5:4] denoting whether the field size is 8-bytes:
-//   bit_4: `1` means the first field's size is 8.
-//   bit_5: `1` means the second field's size is 8.
-
-#define STRUCT_FLOAT_FIELD_ONLY_ONE   0x1
-#define STRUCT_FLOAT_FIELD_ONLY_TWO   0x8
-#define STRUCT_FLOAT_FIELD_FIRST      0x2
-#define STRUCT_FLOAT_FIELD_SECOND     0x4
-#define STRUCT_FIRST_FIELD_SIZE_IS8   0x10
-#define STRUCT_SECOND_FIELD_SIZE_IS8  0x20
-
-#define STRUCT_FIRST_FIELD_DOUBLE     (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FIRST_FIELD_SIZE_IS8)
-#define STRUCT_SECOND_FIELD_DOUBLE    (STRUCT_FLOAT_FIELD_SECOND | STRUCT_SECOND_FIELD_SIZE_IS8)
-#define STRUCT_FIELD_TWO_DOUBLES      (STRUCT_FIRST_FIELD_SIZE_IS8 | STRUCT_SECOND_FIELD_SIZE_IS8 | STRUCT_FLOAT_FIELD_ONLY_TWO)
-
-#define STRUCT_MERGE_FIRST_SECOND     (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO)
-#define STRUCT_MERGE_FIRST_SECOND_8   (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_SECOND_FIELD_SIZE_IS8)
-
+// see the enum `StructFloatFieldInfoFlags`.
 uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
@@ -9475,9 +9346,9 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 
     TypeHandle th(cls);
 
-    DWORD size = 0;
-    bool useNativeLayout = false;
-    MethodTable* pMethodTable = nullptr;
+    bool useNativeLayout           = false;
+    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+    MethodTable* pMethodTable      = nullptr;
 
     if (!th.IsTypeDesc())
     {
@@ -9541,19 +9412,19 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                         {
                             size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
                         }
-                        else if (size == 0)
+                        else if (size == STRUCT_NO_FLOAT_FIELD)
                         {
                             size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_SIZE_IS8: 0;
                         }
                         else
                         {
-                            size = 0;
+                            size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
                     }
                     else
                     {
-                        size = 0;
+                        size = STRUCT_NO_FLOAT_FIELD;
                         goto _End_arg;
                     }
                 }
@@ -9591,13 +9462,13 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                         }
                         else
                         {
-                            size = 0;
+                            size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
                     }
                     else
                     {
-                        size = 0;
+                        size = STRUCT_NO_FLOAT_FIELD;
                         goto _End_arg;
                     }
                 }
@@ -9736,7 +9607,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                         if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
                             goto _End_arg;
                         size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
-                        if (size == 1)
+                        if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             if (pFieldStart[0].GetSize() == 8)
                                 size = STRUCT_FIRST_FIELD_DOUBLE;
@@ -9748,7 +9619,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                             size = STRUCT_FIRST_FIELD_SIZE_IS8;
                         }
                         else
-                            size = 0;
+                            size = STRUCT_NO_FLOAT_FIELD;
                     }
                     else
                     {
@@ -9756,7 +9627,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                         if (pMethodTable2->GetNumIntroducedInstanceFields() == 1)
                         {
                             size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
-                            if (size == 1)
+                            if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                             {
                                 if (pFieldStart[0].GetSize() == 8)
                                     size = STRUCT_FIRST_FIELD_DOUBLE;
@@ -9768,7 +9639,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                                 size = STRUCT_FIRST_FIELD_SIZE_IS8;
                             }
                             else
-                                size = 0;
+                                size = STRUCT_NO_FLOAT_FIELD;
                         }
                         else
                             goto _End_arg;
@@ -9792,7 +9663,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                     MethodTable* pMethodTable2 = pFieldStart[1].LookupApproxFieldTypeHandle().AsMethodTable();
                     if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
                     {
-                        size = 0;
+                        size = STRUCT_NO_FLOAT_FIELD;
                         goto _End_arg;
                     }
                     if (pMethodTable2->HasLayout())
@@ -9801,7 +9672,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 
                         if (pNativeFieldDescs->NativeSize() > 8)
                         {
-                            size = 0;
+                            size = STRUCT_NO_FLOAT_FIELD;
                             goto _End_arg;
                         }
 
@@ -9811,7 +9682,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 
                             if (pMethodTable->GetNumIntroducedInstanceFields() > 1)
                             {
-                                size = 0;
+                                size = STRUCT_NO_FLOAT_FIELD;
                                 goto _End_arg;
                             }
 
@@ -9826,7 +9697,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                                 size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                             else
                             {
-                                size = 0;
+                                size = STRUCT_NO_FLOAT_FIELD;
                             }
                         }
                         else
@@ -9843,7 +9714,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                             }
                             else
                             {
-                                size = 0;
+                                size = STRUCT_NO_FLOAT_FIELD;
                             }
                         }
                         //else

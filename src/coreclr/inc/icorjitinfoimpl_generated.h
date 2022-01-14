@@ -710,12 +710,6 @@ bool doesFieldBelongToClass(
           CORINFO_FIELD_HANDLE fldHnd,
           CORINFO_CLASS_HANDLE cls) override;
 
-CorInfoTypeWithMod getArgType2(
-          CORINFO_SIG_INFO* sig,
-          CORINFO_ARG_LIST_HANDLE args,
-          CORINFO_CLASS_HANDLE* vcTypeRet,
-          int* pFloatFieldFlags) override;
-
 uint32_t getFieldSizeClassificationByHnd(
           CORINFO_CLASS_HANDLE cls) override;
 
