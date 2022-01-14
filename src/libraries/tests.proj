@@ -84,6 +84,8 @@ Roslyn4.0.Tests.csproj" />
     <!-- Issue: https://github.com/dotnet/runtime/issues/53281 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
+    <!-- Issue: https://github.com/dotnet/runtime/issues/63723 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'Android'">

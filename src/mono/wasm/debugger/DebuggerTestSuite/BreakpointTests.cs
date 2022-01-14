@@ -707,5 +707,76 @@ namespace DebuggerTests
                 8,
                 "VisibleMethodDebuggerBreak");
         }
+
+        [Fact]
+        public async Task CreateGoodBreakpointAndHitGoToWasmPageWithoutAssetsComeBackAndHitAgain()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd");
+            Assert.Equal("other", pause_location["reason"]?.Value<string>());
+            Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+            var top_frame = pause_location["callFrames"][0];
+            Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+            Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+            //now check the scope
+            var scope = top_frame["scopeChain"][0];
+            Assert.Equal("local", scope["type"]);
+            Assert.Equal("IntAdd", scope["name"]);
+
+            Assert.Equal("object", scope["object"]["type"]);
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+
+            await cli.SendCommand("Debugger.resume", null, token);
+
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { load_wasm_page_without_assets(); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            await Task.Delay(1000, token);
+            run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            await Task.Delay(1000, token);
+            await insp.WaitFor(Inspector.READY);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                    var top_frame = pause_location["callFrames"][0];
+                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+                    //now check the scope
+                    var scope = top_frame["scopeChain"][0];
+                    Assert.Equal("local", scope["type"]);
+                    Assert.Equal("IntAdd", scope["name"]);
+
+                    Assert.Equal("object", scope["object"]["type"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+                    await Task.CompletedTask;
+                }
+            );
+        }
+
+
     }
 }

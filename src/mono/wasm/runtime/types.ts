@@ -162,7 +162,6 @@ export type DotnetModuleConfig = {
 
     config?: MonoConfig | MonoConfigError,
     configSrc?: string,
-    scriptDirectory?: string,
     onConfigLoaded?: (config: MonoConfig) => Promise<void>;
     onDotnetReady?: () => void;
 
