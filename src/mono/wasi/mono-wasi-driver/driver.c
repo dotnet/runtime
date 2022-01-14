@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
 #include <errno.h>
-//#include <dlfcn.h>
 #include <sys/stat.h>
 
-#define EMSCRIPTEN_KEEPALIVE
 #define INVARIANT_GLOBALIZATION 1
 
 #include <mono/metadata/assembly.h>
@@ -17,8 +16,6 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/mono-gc.h>
-// FIXME: unavailable in emscripten
-// #include <mono/metadata/gc-internals.h>
 
 #include <mono/metadata/mono-private-unstable.h>
 
@@ -28,25 +25,6 @@
 #include <mono/mini/mono-private-unstable.h>
 
 #include "wasm/runtime/pinvoke.h"
-
-#ifdef CORE_BINDINGS
-void core_initialize_internals ();
-#endif
-
-// Blazor specific custom routines - see dotnet_support.js for backing code
-void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2) {
-    assert(0);
-    return 0;
-}
-// The following two are for back-compat and will eventually be removed
-void* mono_wasm_invoke_js_marshalled (MonoString **exceptionMessage, void *asyncHandleLongPtr, MonoString *funcName, MonoString *argsJson) {
-    assert(0);
-    return 0;
-}
-void* mono_wasm_invoke_js_unmarshalled (MonoString **exceptionMessage, MonoString *funcName, void* arg0, void* arg1, void* arg2) {
-    assert(0);
-    return 0;
-}
 
 void mono_wasm_enable_debugging (int);
 
@@ -66,38 +44,11 @@ void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
 
-static MonoClass* datetime_class;
-static MonoClass* datetimeoffset_class;
-static MonoClass* uri_class;
-static MonoClass* task_class;
-static MonoClass* safehandle_class;
-static MonoClass* voidtaskresult_class;
-
-static int resolved_datetime_class = 0,
-	resolved_datetimeoffset_class = 0,
-	resolved_uri_class = 0,
-	resolved_task_class = 0,
-	resolved_safehandle_class = 0,
-	resolved_voidtaskresult_class = 0;
-
 int mono_wasm_enable_gc = 1;
-
-/* Not part of public headers */
-#define MONO_ICALL_TABLE_CALLBACKS_VERSION 2
-
-typedef struct {
-	int version;
-	void* (*lookup) (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles);
-	const char* (*lookup_icall_symbol) (void* func);
-} MonoIcallTableCallbacks;
 
 int
 mono_string_instance_is_interned (MonoString *str_raw);
 
-void
-mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
-
-int mono_regression_test_step (int verbose_level, char *image, char *method_name);
 void mono_trace_init (void);
 
 #define g_new(type, size)  ((type *) malloc (sizeof (type) * (size)))
@@ -106,25 +57,6 @@ void mono_trace_init (void);
 static MonoDomain *root_domain;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
-
-static MonoString*
-mono_wasm_invoke_js (MonoString *str, int *is_exception)
-{
-	if (str == NULL)
-		return NULL;
-
-	int native_res_len = 0;
-	int *p_native_res_len = &native_res_len;
-
-	mono_unichar2 *native_res = NULL; // TODO
-
-	if (native_res == NULL)
-		return NULL;
-
-	MonoString *res = mono_string_new_utf16 (mono_domain_get (), native_res, native_res_len);
-	free (native_res);
-	return res;
-}
 
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
@@ -137,24 +69,6 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
-MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
-void  mono_gc_deregister_root (char* addr);
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_register_root (char *start, size_t size, const char *name)
-{
-	return mono_gc_register_root (start, size, (MonoGCDescriptor)0, MONO_ROOT_SOURCE_EXTERNAL, NULL, name ? name : "mono_wasm_register_root");
-}
-
-EMSCRIPTEN_KEEPALIVE void 
-mono_wasm_deregister_root (char *addr)
-{
-	mono_gc_deregister_root (addr);
-}
-
-#ifdef DRIVER_GEN
-#include "driver-gen.c"
-#endif
 
 typedef struct WasmAssembly_ WasmAssembly;
 
@@ -166,7 +80,7 @@ struct WasmAssembly_ {
 static WasmAssembly *assemblies;
 static int assembly_count;
 
-EMSCRIPTEN_KEEPALIVE int
+int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
 {
 	int len = strlen (name);
@@ -187,23 +101,6 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	return mono_has_pdb_checksum ((char*)data, size);
 }
 
-int
-mono_wasm_assembly_already_added (const char *assembly_name)
-{
-	if (assembly_count == 0)
-		return 0;
-
-	WasmAssembly *entry = assemblies;
-	while (entry != NULL) {
-		int entry_name_minus_extn_len = strlen(entry->assembly.name) - 4;
-		if (entry_name_minus_extn_len == strlen(assembly_name) && strncmp (entry->assembly.name, assembly_name, entry_name_minus_extn_len) == 0)
-			return 1;
-		entry = entry->next;
-	}
-
-	return 0;
-}
-
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
 
 struct WasmSatelliteAssembly_ {
@@ -214,7 +111,7 @@ struct WasmSatelliteAssembly_ {
 static WasmSatelliteAssembly *satellite_assemblies;
 static int satellite_assembly_count;
 
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
 	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
@@ -224,7 +121,7 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 	++satellite_assembly_count;
 }
 
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_setenv (const char *name, const char *value)
 {
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
@@ -285,24 +182,8 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 		return SystemNativeImports;
 	if (!strcmp (name, "libSystem.Globalization.Native"))
 		return SystemGlobalizationNativeImports;
-
 	//printf("In wasm_dl_load for name %s but treating as NOT FOUND\n", name);
     return 0;
-    /*
-	void* handle = wasm_dl_lookup_pinvoke_table (name);
-	if (handle) {	
-		return handle;
-	}
-
-	if (!strcmp (name, "System.Globalization.Native"))
-		return sysglobal_native_handle;
-
-#if WASM_SUPPORTS_DLOPEN
-	return dlopen(name, flags);
-#endif
-
-	return NULL;
-    */
 }
 
 static void*
@@ -310,12 +191,6 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 {
 	if (handle == sysglobal_native_handle)
 		assert (0);
-
-#if WASM_SUPPORTS_DLOPEN
-	if (!wasm_dl_is_pinvoke_tables (handle)) {
-		return dlsym (handle, name);
-	}
-#endif
 
 	PinvokeImport *table = (PinvokeImport*)handle;
 	for (int i = 0; table [i].name; ++i) {
@@ -325,92 +200,7 @@ wasm_dl_symbol (void *handle, const char *name, char **err, void *user_data)
 	return NULL;
 }
 
-#if !defined(ENABLE_AOT) || defined(EE_MODE_LLVMONLY_INTERP)
 #define NEED_INTERP 1
-#ifndef LINK_ICALLS
-// FIXME: llvm+interp mode needs this to call icalls
-#define NEED_NORMAL_ICALL_TABLES 1
-#endif
-#endif
-
-#ifdef LINK_ICALLS
-
-#include "icall-table.h"
-
-static int
-compare_int (const void *k1, const void *k2)
-{
-	return *(int*)k1 - *(int*)k2;
-}
-
-static void*
-icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, int32_t *uses_handles)
-{
-	uint32_t token = mono_method_get_token (method);
-	assert (token);
-	assert ((token & MONO_TOKEN_METHOD_DEF) == MONO_TOKEN_METHOD_DEF);
-	uint32_t token_idx = token - MONO_TOKEN_METHOD_DEF;
-
-	int *indexes = NULL;
-	int indexes_size = 0;
-	uint8_t *handles = NULL;
-	void **funcs = NULL;
-
-	*uses_handles = 0;
-
-	const char *image_name = mono_image_get_name (mono_class_get_image (mono_method_get_class (method)));
-
-#if defined(ICALL_TABLE_mscorlib)
-	if (!strcmp (image_name, "mscorlib")) {
-		indexes = mscorlib_icall_indexes;
-		indexes_size = sizeof (mscorlib_icall_indexes) / 4;
-		handles = mscorlib_icall_handles;
-		funcs = mscorlib_icall_funcs;
-		assert (sizeof (mscorlib_icall_indexes [0]) == 4);
-	}
-#endif
-#if defined(ICALL_TABLE_corlib)
-	if (!strcmp (image_name, "System.Private.CoreLib")) {
-		indexes = corlib_icall_indexes;
-		indexes_size = sizeof (corlib_icall_indexes) / 4;
-		handles = corlib_icall_handles;
-		funcs = corlib_icall_funcs;
-		assert (sizeof (corlib_icall_indexes [0]) == 4);
-	}
-#endif
-#ifdef ICALL_TABLE_System
-	if (!strcmp (image_name, "System")) {
-		indexes = System_icall_indexes;
-		indexes_size = sizeof (System_icall_indexes) / 4;
-		handles = System_icall_handles;
-		funcs = System_icall_funcs;
-	}
-#endif
-	assert (indexes);
-
-	void *p = bsearch (&token_idx, indexes, indexes_size, 4, compare_int);
-	if (!p) {
-		return NULL;
-		printf ("wasm: Unable to lookup icall: %s\n", mono_method_get_name (method));
-		exit (1);
-	}
-
-	uint32_t idx = (int*)p - indexes;
-	*uses_handles = handles [idx];
-
-	//printf ("ICALL: %s %x %d %d\n", methodname, token, idx, (int)(funcs [idx]));
-
-	return funcs [idx];
-}
-
-static const char*
-icall_table_lookup_symbol (void *func)
-{
-	assert (0);
-	return NULL;
-}
-
-#endif
 
 /*
  * get_native_to_interp:
@@ -445,24 +235,7 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	//return addr;
 }
 
-void mono_initialize_internals ()
-{
-	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
-	// TODO: what happens when two types in different assemblies have the same FQN?
-
-	// Blazor specific custom routines - see dotnet_support.js for backing code
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
-	// The following two are for back-compat and will eventually be removed
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSMarshalled", mono_wasm_invoke_js_marshalled);
-	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJSUnmarshalled", mono_wasm_invoke_js_unmarshalled);
-
-#ifdef CORE_BINDINGS
-	core_initialize_internals();
-#endif
-
-}
-
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_register_bundled_satellite_assemblies ()
 {
 	/* In legacy satellite_assembly_count is always false */
@@ -479,8 +252,6 @@ mono_wasm_register_bundled_satellite_assemblies ()
 	}
 }
 
-void mono_wasm_link_icu_shim (void);
-
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
@@ -488,7 +259,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 	free (user_data);
 }
 
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
 	const char *interp_opts = "";
@@ -541,17 +312,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
-#ifdef ENABLE_AOT
-	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
-
-	// Defined in driver-gen.c
-	register_aot_modules ();
-#ifdef EE_MODE_LLVMONLY_INTERP
-	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY_INTERP);
-#else
-	mono_jit_set_aot_mode (MONO_AOT_MODE_LLVMONLY);
-#endif
-#else
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
 	/*
@@ -567,28 +327,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 		mono_wasm_enable_debugging (debug_level);
 	}
 
-#endif
-
-#ifdef LINK_ICALLS
-	/* Link in our own linked icall table */
-	static const MonoIcallTableCallbacks mono_icall_table_callbacks =
-	{
-		MONO_ICALL_TABLE_CALLBACKS_VERSION,
-		icall_table_lookup,
-		icall_table_lookup_symbol
-	};
-	mono_install_icall_table_callbacks (&mono_icall_table_callbacks);
-#endif
-
-#ifdef NEED_NORMAL_ICALL_TABLES
-	mono_icall_table_init ();
-#endif
-#ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
 	mono_marshal_ilgen_init ();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
-#endif
 
 	if (assembly_count) {
 		MonoBundledAssembly **bundle_array = g_new0 (MonoBundledAssembly*, assembly_count + 1);
@@ -607,11 +349,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
-	mono_initialize_internals();
 	mono_thread_set_main (mono_thread_current ());
 }
 
-EMSCRIPTEN_KEEPALIVE MonoAssembly*
+MonoAssembly*
 mono_wasm_assembly_load (const char *name)
 {
 	MonoImageOpenStatus status;
@@ -625,31 +366,31 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoClass* 
+MonoClass* 
 mono_wasm_find_corlib_class (const char *namespace, const char *name)
 {
 	return mono_class_from_name (mono_get_corlib (), namespace, name);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoClass*
+MonoClass*
 mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
 {
 	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoMethod*
+MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
 {
 	return mono_class_get_method_from_name (klass, name, arguments);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoMethod*
+MonoMethod*
 mono_wasm_get_delegate_invoke (MonoObject *delegate)
 {
 	return mono_get_delegate_invoke(mono_object_get_class (delegate));
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
+MonoObject*
 mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 {
 	if (!klass)
@@ -664,7 +405,7 @@ mono_wasm_box_primitive (MonoClass *klass, void *value, int value_size)
 	return mono_value_box (root_domain, klass, value);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
+MonoObject*
 mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], MonoObject **out_exc)
 {
 	MonoObject *exc = NULL;
@@ -695,7 +436,7 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoMethod*
+MonoMethod*
 mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 {
 	MonoImage *image;
@@ -746,13 +487,12 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	return method;
 }
 
-EMSCRIPTEN_KEEPALIVE char *
+char *
 mono_wasm_string_get_utf8 (MonoString *str)
 {
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
-EMSCRIPTEN_KEEPALIVE MonoString *
 mono_wasm_string_from_js (const char *str)
 {
 	if (str)
@@ -761,280 +501,7 @@ mono_wasm_string_from_js (const char *str)
 		return NULL;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_string_from_utf16 (const mono_unichar2 * chars, int length)
-{
-	assert (length >= 0);
-
-	if (chars)
-		return mono_string_new_utf16 (root_domain, chars, length);
-	else
-		return NULL;
-}
-
-static int
-class_is_task (MonoClass *klass)
-{
-	if (!task_class && !resolved_task_class) {
-		task_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "Task");
-		resolved_task_class = 1;
-	}
-
-	if (task_class && (klass == task_class || mono_class_is_subclass_of(klass, task_class, 0)))
-		return 1;
-
-	return 0;
-}
-
-MonoClass* mono_get_uri_class(MonoException** exc)
-{
-	MonoAssembly* assembly = mono_wasm_assembly_load ("System");
-	if (!assembly)
-		return NULL;
-	MonoClass* klass = mono_wasm_assembly_find_class(assembly, "System", "Uri");
-	return klass;
-}
-
-#define MARSHAL_TYPE_INT 1
-#define MARSHAL_TYPE_FP64 2
-#define MARSHAL_TYPE_STRING 3
-#define MARSHAL_TYPE_VT 4
-#define MARSHAL_TYPE_DELEGATE 5
-#define MARSHAL_TYPE_TASK 6
-#define MARSHAL_TYPE_OBJECT 7
-#define MARSHAL_TYPE_BOOL 8
-#define MARSHAL_TYPE_ENUM 9
-#define MARSHAL_TYPE_DATE 20
-#define MARSHAL_TYPE_DATEOFFSET 21
-#define MARSHAL_TYPE_URI 22
-#define MARSHAL_TYPE_SAFEHANDLE 23
-
-// typed array marshalling
-#define MARSHAL_ARRAY_BYTE 10
-#define MARSHAL_ARRAY_UBYTE 11
-#define MARSHAL_ARRAY_UBYTE_C 12
-#define MARSHAL_ARRAY_SHORT 13
-#define MARSHAL_ARRAY_USHORT 14
-#define MARSHAL_ARRAY_INT 15
-#define MARSHAL_ARRAY_UINT 16
-#define MARSHAL_ARRAY_FLOAT 17
-#define MARSHAL_ARRAY_DOUBLE 18
-
-#define MARSHAL_TYPE_FP32 24
-#define MARSHAL_TYPE_UINT32 25
-#define MARSHAL_TYPE_INT64 26
-#define MARSHAL_TYPE_UINT64 27
-#define MARSHAL_TYPE_CHAR 28
-#define MARSHAL_TYPE_STRING_INTERNED 29
-#define MARSHAL_TYPE_VOID 30
-
-void mono_wasm_ensure_classes_resolved ()
-{
-	if (!datetime_class && !resolved_datetime_class) {
-		datetime_class = mono_class_from_name (mono_get_corlib(), "System", "DateTime");
-		resolved_datetime_class = 1;
-	}
-	if (!datetimeoffset_class && !resolved_datetimeoffset_class) {
-		datetimeoffset_class = mono_class_from_name (mono_get_corlib(), "System", "DateTimeOffset");
-		resolved_datetimeoffset_class = 1;
-	}
-	if (!uri_class && !resolved_uri_class) {
-		MonoException** exc = NULL;
-		uri_class = mono_get_uri_class(exc);
-		resolved_uri_class = 1;
-	}
-	if (!safehandle_class && !resolved_safehandle_class) {
-		safehandle_class = mono_class_from_name (mono_get_corlib(), "System.Runtime.InteropServices", "SafeHandle");
-		resolved_safehandle_class = 1;
-	}
-	if (!voidtaskresult_class && !resolved_voidtaskresult_class) {
-		voidtaskresult_class = mono_class_from_name (mono_get_corlib(), "System.Threading.Tasks", "VoidTaskResult");
-		resolved_voidtaskresult_class = 1;
-	}
-}
-
 int
-mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
-{
-	switch (mono_type) {
-	// case MONO_TYPE_CHAR: prob should be done not as a number?
-	case MONO_TYPE_BOOLEAN:
-		return MARSHAL_TYPE_BOOL;
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
-	case MONO_TYPE_I4:
-	case MONO_TYPE_I:	// IntPtr
-		return MARSHAL_TYPE_INT;
-	case MONO_TYPE_CHAR:
-		return MARSHAL_TYPE_CHAR;
-	case MONO_TYPE_U4:  // The distinction between this and signed int is
-						// important due to how numbers work in JavaScript
-		return MARSHAL_TYPE_UINT32;
-	case MONO_TYPE_I8:
-		return MARSHAL_TYPE_INT64;
-	case MONO_TYPE_U8:
-		return MARSHAL_TYPE_UINT64;
-	case MONO_TYPE_R4:
-		return MARSHAL_TYPE_FP32;
-	case MONO_TYPE_R8:
-		return MARSHAL_TYPE_FP64;
-	case MONO_TYPE_STRING:
-		return MARSHAL_TYPE_STRING;
-	case MONO_TYPE_SZARRAY:  { // simple zero based one-dim-array
-		MonoClass *eklass = mono_class_get_element_class (klass);
-		MonoType *etype = mono_class_get_type (eklass);
-
-		switch (mono_type_get_type (etype)) {
-			case MONO_TYPE_U1:
-				return MARSHAL_ARRAY_UBYTE;
-			case MONO_TYPE_I1:
-				return MARSHAL_ARRAY_BYTE;
-			case MONO_TYPE_U2:
-				return MARSHAL_ARRAY_USHORT;
-			case MONO_TYPE_I2:
-				return MARSHAL_ARRAY_SHORT;
-			case MONO_TYPE_U4:
-				return MARSHAL_ARRAY_UINT;
-			case MONO_TYPE_I4:
-				return MARSHAL_ARRAY_INT;
-			case MONO_TYPE_R4:
-				return MARSHAL_ARRAY_FLOAT;
-			case MONO_TYPE_R8:
-				return MARSHAL_ARRAY_DOUBLE;
-			default:
-				return MARSHAL_TYPE_OBJECT;
-		}
-	}
-	default:
-		mono_wasm_ensure_classes_resolved ();
-
-		if (klass == datetime_class)
-			return MARSHAL_TYPE_DATE;
-		if (klass == datetimeoffset_class)
-			return MARSHAL_TYPE_DATEOFFSET;
-		if (uri_class && mono_class_is_assignable_from(uri_class, klass))
-			return MARSHAL_TYPE_URI;
-		if (klass == voidtaskresult_class)
-			return MARSHAL_TYPE_VOID;
-		if (mono_class_is_enum (klass))
-			return MARSHAL_TYPE_ENUM;
-		if (!mono_type_is_reference (type)) //vt
-			return MARSHAL_TYPE_VT;
-		if (mono_class_is_delegate (klass))
-			return MARSHAL_TYPE_DELEGATE;
-		if (class_is_task(klass))
-			return MARSHAL_TYPE_TASK;
-		if (safehandle_class && (klass == safehandle_class || mono_class_is_subclass_of(klass, safehandle_class, 0))) {
-			return MARSHAL_TYPE_SAFEHANDLE;
-		}
-
-		return MARSHAL_TYPE_OBJECT;
-	}
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_get_obj_type (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-
-	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
-	MonoClass *klass = mono_object_get_class (obj);
-	if ((klass == mono_get_string_class ()) &&
-		mono_string_instance_is_interned ((MonoString *)obj))
-		return MARSHAL_TYPE_STRING_INTERNED;
-
-	MonoType *type = mono_class_get_type (klass);
-	obj = NULL;
-
-	int mono_type = mono_type_get_type (type);
-
-	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result)
-{
-	int *resultI = result;
-	int64_t *resultL = result;
-	float *resultF = result;
-	double *resultD = result;
-
-	if (!obj) {
-		*resultL = 0;
-		return 0;
-	}
-
-	/* Process obj before calling into the runtime, class_from_name () can invoke managed code */
-	MonoClass *klass = mono_object_get_class (obj);
-	if ((klass == mono_get_string_class ()) &&
-		mono_string_instance_is_interned ((MonoString *)obj)) {
-		*resultL = 0;
-		return MARSHAL_TYPE_STRING_INTERNED;
-	}
-
-	MonoType *type = mono_class_get_type (klass), *original_type = type;
-
-	if (mono_class_is_enum (klass))
-		type = mono_type_get_underlying_type (type);
-	
-	int mono_type = mono_type_get_type (type);
-	
-	// FIXME: We would prefer to unbox once here but it will fail if the value isn't unboxable
-
-	switch (mono_type) {
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN:
-			*resultI = *(signed char*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_U1:
-			*resultI = *(unsigned char*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_I2:
-		case MONO_TYPE_CHAR:
-			*resultI = *(short*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_U2:
-			*resultI = *(unsigned short*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_I4:
-		case MONO_TYPE_I:
-			*resultI = *(int*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_U4:
-			// FIXME: Will this behave the way we want for large unsigned values?
-			*resultI = *(int*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_R4:
-			*resultF = *(float*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_R8:
-			*resultD = *(double*)mono_object_unbox (obj);
-			break;
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8:
-			// FIXME: At present the javascript side of things can't handle this,
-			//  but there's no reason not to future-proof this API
-			*resultL = *(int64_t*)mono_object_unbox (obj);
-			break;
-		default:
-			// If we failed to do a fast unboxing, return the original type information so
-			//  that the caller can do a proper, slow unboxing later
-			*resultL = 0;
-			obj = NULL;
-			return mono_wasm_marshal_type_from_mono_type (mono_type, klass, original_type);
-	}
-
-	// We successfully performed a fast unboxing here so use the type information
-	//  matching what we unboxed (i.e. an enum's underlying type instead of its type)
-	obj = NULL;
-	return mono_wasm_marshal_type_from_mono_type (mono_type, klass, type);
-}
-
-// FIXME: This function is retained specifically because runtime-test.js uses it
-EMSCRIPTEN_KEEPALIVE int
 mono_unbox_int (MonoObject *obj)
 {
 	if (!obj)
@@ -1068,81 +535,37 @@ mono_unbox_int (MonoObject *obj)
 	}
 }
 
-EMSCRIPTEN_KEEPALIVE int
+int
 mono_wasm_array_length (MonoArray *array)
 {
 	return mono_array_length (array);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoObject*
+MonoObject*
 mono_wasm_array_get (MonoArray *array, int idx)
 {
 	return mono_array_get (array, MonoObject*, idx);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoArray*
+MonoArray*
 mono_wasm_obj_array_new (int size)
 {
 	return mono_array_new (root_domain, mono_get_object_class (), size);
 }
 
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_obj_array_set (MonoArray *array, int idx, MonoObject *obj)
 {
 	mono_array_setref (array, idx, obj);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoArray*
+MonoArray*
 mono_wasm_string_array_new (int size)
 {
 	return mono_array_new (root_domain, mono_get_string_class (), size);
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_exec_regression (int verbose_level, char *image)
-{
-	return mono_regression_test_step (verbose_level, image, NULL) ? 0 : 1;
-}
-
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_exit (int exit_code)
-{
-	exit (exit_code);
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_set_main_args (int argc, char* argv[])
-{
-	mono_runtime_set_main_args (argc, argv);
-}
-
-/*
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_strdup (const char *s)
-{
-	return (int)strdup (s);
-}
-*/
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_parse_runtime_options (int argc, char* argv[])
-{
-	mono_jit_parse_options (argc, argv);
-}
-
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_enable_on_demand_gc (int enable)
-{
-	mono_wasm_enable_gc = enable ? 1 : 0;
-}
-
-EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_intern_string (MonoString *string) 
-{
-	return mono_string_intern (string);
-}
-
-EMSCRIPTEN_KEEPALIVE void
+void
 mono_wasm_string_get_data (
 	MonoString *string, mono_unichar2 **outChars, int *outLengthBytes, int *outIsInterned
 ) {

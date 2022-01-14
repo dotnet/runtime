@@ -72,6 +72,13 @@ prot_from_flags (int flags)
 		prot |= PROT_WRITE;
 	if (flags & MONO_MMAP_EXEC)
 		prot |= PROT_EXEC;
+	
+#if HOST_WASI
+	// The mmap in wasi-sdk rejects PROT_NONE, but otherwise disregards the flags
+	// We just need to pass an acceptable value
+	prot |= PROT_READ;
+#endif
+
 	return prot;
 }
 

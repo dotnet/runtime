@@ -1,6 +1,10 @@
 // The WASI SDK doesn't include pthread.h, but the definitions are required by various parts of the Mono sources
 // On certain runtimes such as WAMR there is actually an implementation provided for the pthread APIs so threading
-// does work. However that's not yet in the WASI standard, so we're not yet relying on being able to call any of them.
+// does work. However that's not yet in the WASI standard, so we're not yet relying on being able to call the ones
+// that really start up new threads.
+
+// This file is duplicated from https://raw.githubusercontent.com/WebAssembly/wasi-libc/659ff414560721b1660a19685110e484a081c3d4/libc-top-half/musl/include/pthread.h
+// with small edits for compatibility. We may be able to remove it once https://github.com/WebAssembly/wasi-libc/issues/209 is resolved
 
 #ifndef _PTHREAD_H
 #define _PTHREAD_H
@@ -78,6 +82,7 @@ extern "C" {
 #define PTHREAD_BARRIER_SERIAL_THREAD (-1)
 
 struct sched_param;
+#define PTHREAD_NULL ((pthread_t)0)
 
 int pthread_create(pthread_t *__restrict, const pthread_attr_t *__restrict, void *(*)(void *), void *__restrict);
 int pthread_detach(pthread_t);
@@ -214,14 +219,6 @@ void _pthread_cleanup_pop(struct __ptcb *, int);
 #define pthread_cleanup_push(f, x) do { struct __ptcb __cb; _pthread_cleanup_push(&__cb, f, x);
 #define pthread_cleanup_pop(r) _pthread_cleanup_pop(&__cb, (r)); } while(0)
 
-#ifdef _GNU_SOURCE
-struct cpu_set_t;
-int pthread_getaffinity_np(pthread_t, size_t, struct cpu_set_t *);
-int pthread_setaffinity_np(pthread_t, size_t, const struct cpu_set_t *);
-int pthread_getattr_np(pthread_t, pthread_attr_t *);
-int pthread_tryjoin_np(pthread_t, void **);
-int pthread_timedjoin_np(pthread_t, void **, const struct timespec *);
-#endif
 
 #ifdef __cplusplus
 }

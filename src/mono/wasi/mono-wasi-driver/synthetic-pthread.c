@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 #include <assert.h>
 
 #define SYNTHETIC_PTHREAD_KEYS_MAX 32

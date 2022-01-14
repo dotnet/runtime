@@ -1,6 +1,6 @@
-TOP=$(realpath $(CURDIR)/../../../../..)
+TOP=$(realpath $(CURDIR)/../../..)
 CONFIG?=Release
-WASI_SDK_VERSION=14
+WASI_SDK_VERSION=12
 
 WASI_OBJ_DIR=$(TOP)/artifacts/obj/mono/Wasi.$(CONFIG)
 WASI_BIN_DIR=$(TOP)/artifacts/bin/mono/Wasi.$(CONFIG)
