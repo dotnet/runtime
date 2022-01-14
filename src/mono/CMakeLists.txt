@@ -248,6 +248,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(DISABLE_COMPONENTS 1)
 
   set(WASI_DRIVER_SOURCES
+    wasi/lib/mman.c
     wasi/lib/synthetic-pthread.c
   )
   add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
