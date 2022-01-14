@@ -1448,7 +1448,7 @@ BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
 #elif defined(TARGET_ARM64)
         peARM64;
 #else
-        PORTABILITY_ASSERT("processArchitecture");
+        peMSIL;
 #endif
 
     return (kArchitecture == processArchitecture);
