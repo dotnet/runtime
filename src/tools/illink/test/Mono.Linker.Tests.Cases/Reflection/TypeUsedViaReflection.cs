@@ -42,6 +42,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestUnkownIgnoreCase3Params (1);
 			TestUnkownIgnoreCase5Params (1);
 			TestGenericTypeWithAnnotations ();
+
+			BaseTypeInterfaces.Test ();
 		}
 
 		[Kept]
@@ -404,6 +406,42 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				"[[Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+GenericTypeWithAnnotations_InnerType, test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null]]," +
 				" test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			Type.GetType (reflectionTypeKeptString);
+		}
+
+		[Kept]
+		class BaseTypeInterfaces
+		{
+			[Kept]
+			interface ITest
+			{
+				[Kept]
+				void Method ();
+			}
+
+			[Kept]
+			[KeptInterface (typeof (ITest))]
+			class BaseType : ITest
+			{
+				[Kept]
+				public void Method () { }
+			}
+
+			[Kept]
+			[KeptBaseType (typeof (BaseType))]
+			[KeptInterface (typeof (ITest))]
+			class DerivedType : BaseType, ITest
+			{
+				[Kept]
+				public void Method () { }
+			}
+
+			[Kept]
+			public static void Test ()
+			{
+				ITest t = null;
+				t.Method ();
+				typeof (DerivedType).GetInterfaces ();
+			}
 		}
 	}
 }

@@ -810,7 +810,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Linq.Expressions.Expression
-			// 
+			//
 			// static Call (Type, String, Type[], Expression[])
 			//
 			case IntrinsicId.Expression_Call: {
@@ -865,7 +865,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Linq.Expressions.Expression
-			// 
+			//
 			// static Property (Expression, MethodInfo)
 			//
 			case IntrinsicId.Expression_Property when calledMethod.HasParameterOfType (1, "System.Reflection", "MethodInfo"): {
@@ -895,7 +895,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Linq.Expressions.Expression
-			// 
+			//
 			// static Field (Expression, Type, String)
 			// static Property (Expression, Type, String)
 			//
@@ -928,7 +928,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Linq.Expressions.Expression
-			// 
+			//
 			// static New (Type)
 			//
 			case IntrinsicId.Expression_New: {
@@ -945,7 +945,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Object
-			// 
+			//
 			// GetType()
 			//
 			case IntrinsicId.Object_GetType: {
@@ -1026,7 +1026,7 @@ namespace Mono.Linker.Dataflow
 							} else {
 								_markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition));
 								methodReturnValue = MultiValueLattice.Meet (methodReturnValue, new SystemTypeValue (foundType));
-								_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType));
+								_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType), analysisContext.Origin);
 							}
 						} else if (typeNameValue == NullValue.Instance) {
 							// Nothing to do
@@ -1178,7 +1178,7 @@ namespace Mono.Linker.Dataflow
 					}
 
 					// If the parent type (all the possible values) has DynamicallyAccessedMemberTypes.All it means its nested types are also fully marked
-					// (see MarkStep.MarkEntireType - it will recursively mark entire type on nested types). In that case we can annotate 
+					// (see MarkStep.MarkEntireType - it will recursively mark entire type on nested types). In that case we can annotate
 					// the returned type (the nested type) with DynamicallyAccessedMemberTypes.All as well.
 					// Note it's OK to blindly overwrite any potential annotation on the return value from the method definition
 					// since DynamicallyAccessedMemberTypes.All is a superset of any other annotation.
@@ -1247,6 +1247,9 @@ namespace Mono.Linker.Dataflow
 
 								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicProperties))
 									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.PublicProperties;
+
+								if (valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces))
+									propagatedMemberTypes |= DynamicallyAccessedMemberTypes.Interfaces;
 							}
 
 							methodReturnValue = MultiValueLattice.Meet (methodReturnValue, GetMethodReturnValue (calledMethodDefinition, propagatedMemberTypes));
@@ -1453,7 +1456,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Activator
-			// 
+			//
 			// static CreateInstance (System.Type type)
 			// static CreateInstance (System.Type type, bool nonPublic)
 			// static CreateInstance (System.Type type, params object?[]? args)
@@ -1529,7 +1532,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Activator
-			// 
+			//
 			// static CreateInstance (string assemblyName, string typeName)
 			// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
 			// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
@@ -1540,7 +1543,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Activator
-			// 
+			//
 			// static CreateInstanceFrom (string assemblyFile, string typeName)
 			// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
 			// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
@@ -1551,7 +1554,7 @@ namespace Mono.Linker.Dataflow
 
 			//
 			// System.Activator
-			// 
+			//
 			// static T CreateInstance<T> ()
 			//
 			// Note: If the when condition returns false it would be an overload which we don't recognize, so just fall through to the default case
@@ -1918,7 +1921,7 @@ namespace Mono.Linker.Dataflow
 					} else {
 						MarkType (analysisContext, typeRef);
 						MarkTypeForDynamicallyAccessedMembers (analysisContext, foundType, targetValue.DynamicallyAccessedMemberTypes, DependencyKind.DynamicallyAccessedMember);
-						_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, foundType));
+						_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.DynamicallyAccessedMember, foundType), analysisContext.Origin);
 					}
 				} else if (uniqueValue == NullValue.Instance) {
 					// Ignore - probably unreachable path as it would fail at runtime anyway.
