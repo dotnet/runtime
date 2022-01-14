@@ -18,8 +18,8 @@ namespace Microsoft.Extensions.Logging.Generators
 
             private static readonly string s_generatedTypeSummary =
                 "<summary> " +
-                "The implementation of this type is subject to change without further notice, " +
-                "do not use it directly in your code. " +
+                "This API supports the logging infrastructure and is not intended to be used directly from your code. " +
+                "It is subject to change in the future. " +
                 "</summary>";
             private static readonly string s_generatedCodeAttribute =
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
