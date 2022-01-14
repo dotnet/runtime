@@ -1105,7 +1105,7 @@
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="Argument_InvalidAssemblyName" xml:space="preserve">
-    <value>The given assembly name or codebase was invalid</value>
+    <value>The given assembly name or codebase was invalid.</value>
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>
@@ -3876,9 +3876,6 @@
   </data>
   <data name="TypeInitialization_Type_NoTypeAvailable" xml:space="preserve">
     <value>A type initializer threw an exception. To determine which type, inspect the InnerException's StackTrace property.</value>
-  </data>
-  <data name="InvalidAssemblyName" xml:space="preserve">
-    <value>The given assembly name or codebase was invalid</value>
   </data>
   <data name="Security_InvalidAssemblyPublicKey" xml:space="preserve">
     <value>Invalid assembly public key.</value>
