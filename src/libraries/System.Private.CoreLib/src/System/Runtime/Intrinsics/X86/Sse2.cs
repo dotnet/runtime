@@ -626,7 +626,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_cvtsi64_si128 (__int64 a)
         ///   MOVQ xmm, reg/m64
         /// </summary>
-        public static Vector128<nint> ConvertToNInt(Vector128<double> value) => ConvertToNInt(value);
+        public static nint ConvertToNInt(Vector128<double> value) => ConvertToNInt(value);
 
         /// <summary>
         /// 32-bit:
@@ -637,7 +637,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_cvttsd_si128 (__int64 a)
         ///   CVTTSD2SI xmm, reg/m64
         /// </summary>
-        public static Vector128<nint> ConvertToNIntWithTruncation(Vector128<double> value) => ConvertToNIntWithTruncation(value);
+        public static nint ConvertToNIntWithTruncation(Vector128<double> value) => ConvertToNIntWithTruncation(value);
 
         /// <summary>
         /// __m128 _mm_cvtepi32_ps (__m128i a)
