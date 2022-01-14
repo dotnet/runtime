@@ -358,7 +358,7 @@ namespace System.ComponentModel
 
                 for (int i = 0; i < list.Count;)
                 {
-                    int savedIndex = -1;
+                    int savedIndex;
                     object? typeId = list[i]?.TypeId;
                     if (typeId == null)
                     {
@@ -417,7 +417,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(componentClass));
             }
 
-            MethodInfo? result = null;
+            MethodInfo? result;
             if (publicOnly)
             {
                 result = componentClass.GetMethod(name, args);

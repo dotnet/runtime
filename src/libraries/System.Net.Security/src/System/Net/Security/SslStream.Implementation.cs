@@ -1361,7 +1361,7 @@ namespace System.Net.Security
         // Returns TLS Frame size.
         private int GetFrameSize(ReadOnlySpan<byte> buffer)
         {
-            int payloadSize = -1;
+            int payloadSize;
             switch (_framing)
             {
                 case Framing.Unified:

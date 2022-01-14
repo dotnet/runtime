@@ -142,7 +142,7 @@ namespace System.Xml.Schema
             { // Done
                 _inlineSchemaParser.FinishParsing();
                 XmlSchema? schema = _inlineSchemaParser.XmlSchema;
-                string? inlineNS = null;
+                string? inlineNS;
                 if (schema != null && schema.ErrorCount == 0)
                 {
                     try
@@ -187,7 +187,7 @@ namespace System.Xml.Schema
         private object? ValidateChildElement()
         {
             object? particle = null;
-            int errorCode = 0;
+            int errorCode;
             if (context!.NeedValidateChildren)
             {
                 if (context.IsNill)

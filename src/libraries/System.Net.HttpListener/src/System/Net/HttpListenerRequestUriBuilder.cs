@@ -94,7 +94,7 @@ namespace System.Net
 
         private void BuildRequestUriUsingRawPath()
         {
-            bool isValid = false;
+            bool isValid;
 
             // Initialize 'rawPath' only if really needed; i.e. if we build the request Uri from the raw Uri.
             _rawPath = GetPath(_rawUri);
@@ -172,7 +172,7 @@ namespace System.Net
             Debug.Assert(encoding != null, "'encoding' must be assigned.");
 
             int index = 0;
-            char current = '\0';
+            char current;
             Debug.Assert(_rawPath != null);
             while (index < _rawPath.Length)
             {

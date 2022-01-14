@@ -490,7 +490,6 @@ namespace Internal.Cryptography.Pal
                     }
                     else
                     {
-                        osStatus = mapping.OSStatus;
                         errorString = mapping.ErrorString;
                     }
 

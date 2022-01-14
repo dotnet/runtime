@@ -75,7 +75,6 @@ namespace System.Reflection.Runtime.TypeInfos
             if (binder == null)
                 binder = DefaultBinder;
 
-            bool bDefaultBinder = (binder == DefaultBinder);
             #endregion
 
             #region Delegate to Activator.CreateInstance
@@ -320,7 +319,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
                 for (int i = 0; i < semiFinalists.Length; i++)
                 {
-                    MethodInfo semiFinalist = null;
+                    MethodInfo semiFinalist;
 
                     if (isSetProperty)
                     {

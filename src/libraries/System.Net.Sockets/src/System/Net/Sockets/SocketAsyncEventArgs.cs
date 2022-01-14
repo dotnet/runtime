@@ -866,7 +866,7 @@ namespace System.Net.Sockets
                 LogBuffer(bytesTransferred);
             }
 
-            SocketError socketError = SocketError.Success;
+            SocketError socketError;
             switch (_completedOperation)
             {
                 case SocketAsyncOperation.Accept:
