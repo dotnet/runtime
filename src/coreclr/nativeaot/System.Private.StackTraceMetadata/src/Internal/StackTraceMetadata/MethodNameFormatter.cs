@@ -417,13 +417,7 @@ namespace Internal.StackTraceMetadata
         /// <param name="functionPointerSigHandle">Function pointer type specification signature handle</param>
         private void EmitFunctionPointerTypeName(FunctionPointerSignatureHandle functionPointerSigHandle)
         {
-            FunctionPointerSignature functionPointerSig = _metadataReader.GetFunctionPointerSignature(functionPointerSigHandle);
-            _outputBuilder.Append("delegate*<");
-            MethodSignature methodSignature = functionPointerSig.Signature.GetMethodSignature(_metadataReader);
-            EmitTypeVector(methodSignature.Parameters);
-            _outputBuilder.Append(',');
-            EmitTypeName(methodSignature.ReturnType, namespaceQualified: false);
-            _outputBuilder.Append('>');
+            _outputBuilder.Append("IntPtr");
         }
 
         /// <summary>
