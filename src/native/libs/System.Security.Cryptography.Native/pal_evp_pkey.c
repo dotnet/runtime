@@ -152,20 +152,49 @@ EVP_PKEY* CryptoNative_DecodePkcs8PrivateKey(const uint8_t* buf, int32_t len, in
     return key;
 }
 
-int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey)
+int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
 {
     assert(pkey != NULL);
+    assert(p8size != NULL);
+    ERR_clear_error();
 
     PKCS8_PRIV_KEY_INFO* p8 = EVP_PKEY2PKCS8(pkey);
 
     if (p8 == NULL)
     {
+        // OpenSSL 1.1 and 3 have a behavioral change with EVP_PKEY2PKCS8
+        // with regard to handling EVP_PKEYs that do not contain a private key.
+        //
+        // In OpenSSL 1.1, it would always succeed, but the private parameters
+        // would be missing (thus making an invalid PKCS8 structure).
+        // Over in the managed side, we detect these invalid PKCS8 blobs and
+        // convert that to a "no private key" error.
+        //
+        // In OpenSSL 3, this now correctly errors, unforunately with a the error
+        // ASN1_R_ILLEGAL_ZERO_CONTENT. We want to preserve allocation failures as
+        // as OutOfMemoryException. So we peek at the error. If it's a malloc
+        // failure, -1 is returned to indcate "throw what is on the error queue".
+        // If the error is not a malloc failure, return -2 to mean "no private key".
+        // If OpenSSL ever changes the error to something more to explicitly mean
+        // "no private key" then we should test for that explicitly. Until then,
+        // We treat all errors, except a malloc error, to mean "no private key".
+        unsigned long error = ERR_peek_error();
+
+        // If it's not a malloc failure, assume it's because the private key is
+        // missing.
+        if (ERR_GET_REASON(error) != ERR_R_MALLOC_FAILURE)
+        {
+            ERR_clear_error();
+            return -2;
+        }
+
         return -1;
     }
 
-    int ret = i2d_PKCS8_PRIV_KEY_INFO(p8, NULL);
+    *p8size = i2d_PKCS8_PRIV_KEY_INFO(p8, NULL);
     PKCS8_PRIV_KEY_INFO_free(p8);
-    return ret;
+
+    return *p8size < 0 ? -1 : 1;
 }
 
 int32_t CryptoNative_EncodePkcs8PrivateKey(EVP_PKEY* pkey, uint8_t* buf)
