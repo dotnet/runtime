@@ -685,14 +685,14 @@ namespace System
         {
             // if either a or b are "" - optimize Equals to just 'str?.Length == 0'
             // Otherwise, these two blocks are eliminated since IsKnownConstant is a jit-time constant
-            if (RuntimeHelpers.IsKnownConstant(a) && a?.Length == 0)
+            if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length == 0)
             {
-                return b?.Length == 0;
+                return b != null && b.Length == 0;
             }
 
-            if (RuntimeHelpers.IsKnownConstant(b) && b?.Length == 0)
+            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length == 0)
             {
-                return a?.Length == 0;
+                return a != null && a.Length == 0;
             }
 
             if (object.ReferenceEquals(a, b))
