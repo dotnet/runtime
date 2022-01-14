@@ -1217,9 +1217,9 @@ bool interceptor_ICJI::doesFieldBelongToClass(
     return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
 }
 
-uint32_t interceptor_ICJI::getFieldSizeClassificationByHnd(
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE cls)
 {
-    return original_ICorJitInfo->getFieldSizeClassificationByHnd(cls);
+    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(cls);
 }
 

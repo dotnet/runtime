@@ -1210,15 +1210,15 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     return temp;
 }
 
-uint32_t interceptor_ICJI::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
 
     uint32_t temp = 0;
     RunWithErrorExceptionCodeCaptureAndContinue(
     [&]()
     {
-        mc->cr->AddCall("getFieldSizeClassificationByHnd");
-        temp = original_ICorJitInfo->getFieldSizeClassificationByHnd(cls);
+        mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+        temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(cls);
     },
     [&](DWORD exceptionCode)
     {

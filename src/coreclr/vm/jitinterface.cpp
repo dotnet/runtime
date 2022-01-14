@@ -9334,7 +9334,7 @@ CorInfoTypeWithMod CEEInfo::getArgType (
 //
 // The returned value's encoding details whether a struct-arg using float regitsters:
 // see the enum `StructFloatFieldInfoFlags`.
-uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
+uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
         NOTHROW;
@@ -9377,11 +9377,11 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                     pMethodTable  = th2.GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                     }
                     else if (pMethodTable->GetNumIntroducedInstanceFields() == 2)
                     {
-                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                     }
                 }
             }
@@ -9407,7 +9407,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                     pMethodTable  = th2.GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             size = pFieldStart[0].GetSize() == 8 ? STRUCT_FIRST_FIELD_DOUBLE : STRUCT_FLOAT_FIELD_FIRST;
@@ -9448,7 +9448,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                     pMethodTable  = th2.GetMethodTable();
                     if (pMethodTable->GetNumIntroducedInstanceFields() == 1)
                     {
-                        DWORD size2 = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                        DWORD size2 = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         if (size2 == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             if (pFieldStart[1].GetSize() == 8)
@@ -9542,7 +9542,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                     const NativeFieldDescriptor *pNativeFieldDescs = pMethodTable->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
                     if (pNativeFieldDescs->GetCategory() == NativeFieldCategory::NESTED)
                     {
-                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pNativeFieldDescs->GetNestedNativeMethodTable());
+                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pNativeFieldDescs->GetNestedNativeMethodTable());
                         return size;
                     }
                     else
@@ -9550,11 +9550,11 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                         pMethodTable = pNativeFieldDescs->GetNestedNativeMethodTable();
                         if (pNativeFieldDescs->GetNumElements() == 1)
                         {
-                            size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                            size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         }
                         else if (pNativeFieldDescs->GetNumElements() == 2)
                         {
-                            size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable);
+                            size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable);
                         }
                     }
                 }
@@ -9606,7 +9606,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
 
                         if ((pMethodTable2->GetNumInstanceFieldBytes() > 8) || (pMethodTable2->GetNumIntroducedInstanceFields() > 1))
                             goto _End_arg;
-                        size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
+                        size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                         if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                         {
                             if (pFieldStart[0].GetSize() == 8)
@@ -9626,7 +9626,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                         MethodTable* pMethodTable2 = pFieldStart[0].LookupApproxFieldTypeHandle().AsMethodTable();
                         if (pMethodTable2->GetNumIntroducedInstanceFields() == 1)
                         {
-                            size = getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2);
+                            size = getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2);
                             if (size == STRUCT_FLOAT_FIELD_ONLY_ONE)
                             {
                                 if (pFieldStart[0].GetSize() == 8)
@@ -9686,7 +9686,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                                 goto _End_arg;
                             }
 
-                            if (getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable) == STRUCT_FLOAT_FIELD_ONLY_ONE)
+                            if (getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable) == STRUCT_FLOAT_FIELD_ONLY_ONE)
                             {
                                 if (pMethodTable->GetNumInstanceFieldBytes() == 4)
                                     size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);
@@ -9725,7 +9725,7 @@ uint32_t CEEInfo::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
                     }
                     else
                     {//whether should confirm the nested ?
-                        if (getFieldSizeClassificationByHnd((CORINFO_CLASS_HANDLE)pMethodTable2) == 1)
+                        if (getLoongArch64PassStructInRegisterFlags((CORINFO_CLASS_HANDLE)pMethodTable2) == 1)
                         {
                             if (pMethodTable2->GetNumInstanceFieldBytes() == 4)
                                 size = size & STRUCT_FLOAT_FIELD_FIRST ? (size ^ STRUCT_MERGE_FIRST_SECOND) : (size | STRUCT_FLOAT_FIELD_SECOND);

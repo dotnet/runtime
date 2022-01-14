@@ -1060,9 +1060,9 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     return value;
 }
 
-uint32_t MyICJI::getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
+uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
 {
-    jitInstance->mc->cr->AddCall("getFieldSizeClassificationByHnd");
+    jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
     return jitInstance->mc->repGetFieldSizeClassificationByHnd(cls);
 }
 

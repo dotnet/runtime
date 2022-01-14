@@ -2927,7 +2927,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private uint getFieldSizeClassificationByHnd(CORINFO_CLASS_STRUCT_* cls)
+        private uint getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_STRUCT_* cls)
         {
             throw new NotImplementedException("For LoongArch64, would be implemented later");
         }

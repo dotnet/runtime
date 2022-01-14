@@ -710,7 +710,7 @@ bool doesFieldBelongToClass(
           CORINFO_FIELD_HANDLE fldHnd,
           CORINFO_CLASS_HANDLE cls) override;
 
-uint32_t getFieldSizeClassificationByHnd(
+uint32_t getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE cls) override;
 
 /**********************************************************************************/

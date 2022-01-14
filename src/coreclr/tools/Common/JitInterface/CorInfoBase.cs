@@ -2550,12 +2550,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        static uint _getFieldSizeClassificationByHnd(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
+        static uint _getLoongArch64PassStructInRegisterFlags(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getFieldSizeClassificationByHnd(cls);
+                return _this.getLoongArch64PassStructInRegisterFlags(cls);
             }
             catch (Exception ex)
             {
@@ -2741,7 +2741,7 @@ namespace Internal.JitInterface
             callbacks[169] = (delegate* unmanaged<IntPtr, IntPtr*, uint>)&_getExpectedTargetArchitecture;
             callbacks[170] = (delegate* unmanaged<IntPtr, IntPtr*, CORJIT_FLAGS*, uint, uint>)&_getJitFlags;
             callbacks[171] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, CORINFO_CLASS_STRUCT_*, byte>)&_doesFieldBelongToClass;
-            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getFieldSizeClassificationByHnd;
+            callbacks[172] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getLoongArch64PassStructInRegisterFlags;
 
             return (IntPtr)callbacks;
         }

@@ -325,4 +325,4 @@ FUNCTIONS
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
     bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
-    uint32_t getFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls);
+    uint32_t getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls);

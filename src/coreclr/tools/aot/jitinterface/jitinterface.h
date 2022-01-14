@@ -183,7 +183,7 @@ struct JitInterfaceCallbacks
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
     bool (* doesFieldBelongToClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls);
-    uint32_t (* getFieldSizeClassificationByHnd)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
+    uint32_t (* getLoongArch64PassStructInRegisterFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
 
 };
 
@@ -1859,11 +1859,11 @@ public:
     return temp;
 }
 
-    virtual uint32_t getFieldSizeClassificationByHnd(
+    virtual uint32_t getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE cls)
 {
     CorInfoExceptionClass* pException = nullptr;
-    uint32_t temp = _callbacks->getFieldSizeClassificationByHnd(_thisHandle, &pException, cls);
+    uint32_t temp = _callbacks->getLoongArch64PassStructInRegisterFlags(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -1690,12 +1690,12 @@ bool WrapICorJitInfo::doesFieldBelongToClass(
     return temp;
 }
 
-uint32_t WrapICorJitInfo::getFieldSizeClassificationByHnd(
+uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
           CORINFO_CLASS_HANDLE cls)
 {
-    API_ENTER(getFieldSizeClassificationByHnd);
-    uint32_t temp = wrapHnd->getFieldSizeClassificationByHnd(cls);
-    API_LEAVE(getFieldSizeClassificationByHnd);
+    API_ENTER(getLoongArch64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(cls);
+    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
     return temp;
 }
 
