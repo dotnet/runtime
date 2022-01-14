@@ -246,7 +246,12 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(DISABLE_COMPONENTS 1)
-  add_library(mono-wasi-driver STATIC wasi/lib/synthetic-pthread.c)
+
+  set(WASI_DRIVER_SOURCES
+    wasi/lib/synthetic-pthread.c
+  )
+  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
+  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
   install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
