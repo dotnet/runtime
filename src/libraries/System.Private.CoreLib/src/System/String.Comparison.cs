@@ -683,8 +683,8 @@ namespace System
         // Determines whether two Strings match.
         public static bool Equals(string? a, string? b)
         {
-            // if either a or b are "" - optimize Equals to just 'str?.Length == 0'
-            // Otherwise, these two blocks are eliminated since IsKnownConstant is a jit-time constant
+            // Transform 'str == ""' to 'str != null && str.Length == 0' if either a or b are jit-time
+            // constants. Otherwise, these two blocks are eliminated
             if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length == 0)
             {
                 return b != null && b.Length == 0;
