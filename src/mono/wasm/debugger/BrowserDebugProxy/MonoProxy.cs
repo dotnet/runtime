@@ -871,11 +871,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (j == 0 && method?.Info.HasStepThroughAttribute == true)
                 {
                     if (event_kind == EventKind.Step ||
-                        (event_kind == EventKind.Breakpoint && JustMyCode))
+                        (event_kind == EventKind.Breakpoint && JustMyCode) ||
+                        (event_kind == EventKind.UserBreak && JustMyCode))
                     {
                         if (context.IsResumedAfterBp)
                             context.IsResumedAfterBp = false;
-                        else
+                        else if (event_kind != EventKind.UserBreak)
                             context.IsSteppingThroughMethod = true;
 
                         await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);

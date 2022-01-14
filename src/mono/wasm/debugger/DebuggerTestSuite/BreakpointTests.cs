@@ -796,20 +796,31 @@ namespace DebuggerTests
         [Theory]
         [InlineData(false, "Debugger.resume")]
         [InlineData(false, "Debugger.stepInto")]
+        [InlineData(true, "Debugger.stepInto")]
+        [InlineData(true, "Debugger.resume")]
         public async Task StepThroughAttributeWithUserBp(bool justMyCodeEnabled, string debuggingFunction)
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 2);
             var bp_outside_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 3);
+            
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunStepThrough"
+            );
+            
             int line1, line2; 
             string function_name1, function_name2;
 
             if (justMyCodeEnabled)
             {
                 await SetJustMyCode(true); 
-                line1 = bp_init.Value["locations"][0]["lineNumber"].Value<int>() + 1;
+                line1 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>() - 1;
                 function_name1 = "RunStepThrough";
-                line2 = 0;
-                function_name2 = "";
+                line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                function_name2 = "RunStepThrough";
             }
             else
             {
@@ -818,14 +829,6 @@ namespace DebuggerTests
                 line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
                 function_name2 = "RunStepThrough";
             }
-
-            var init_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",
-                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
-                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                "RunStepThrough"
-            );
             await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, function_name1);
             await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, 4, function_name2);
         }
