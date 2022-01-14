@@ -1,20 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
-using System.Security.Cryptography;
-using Internal.NativeCrypto;
-using Microsoft.Win32.SafeHandles;
-using static Internal.NativeCrypto.CapiHelper;
+using Internal.Cryptography;
+using static System.Security.Cryptography.CapiHelper;
 
-namespace Internal.Cryptography
+namespace System.Security.Cryptography
 {
     internal sealed class BasicSymmetricCipherCsp : BasicSymmetricCipher
     {
         private readonly bool _encrypting;
         private SafeProvHandle _hProvider;
-        private SafeKeyHandle _hKey;
+        private SafeCapiKeyHandle _hKey;
 
         public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, bool addNoSaltFlag, byte[]? iv, bool encrypting, int feedbackSize, int paddingSizeInBytes)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
@@ -46,7 +43,7 @@ namespace Internal.Cryptography
         {
             if (disposing)
             {
-                SafeKeyHandle hKey = _hKey;
+                SafeCapiKeyHandle hKey = _hKey;
                 _hKey = null!;
                 if (hKey != null)
                 {
@@ -110,9 +107,9 @@ namespace Internal.Cryptography
             return numBytesWritten;
         }
 
-        private static SafeKeyHandle ImportCspBlob(SafeProvHandle safeProvHandle, int algId, byte[] rawKey, bool addNoSaltFlag)
+        private static SafeCapiKeyHandle ImportCspBlob(SafeProvHandle safeProvHandle, int algId, byte[] rawKey, bool addNoSaltFlag)
         {
-            SafeKeyHandle safeKeyHandle;
+            SafeCapiKeyHandle safeKeyHandle;
             byte[] keyBlob = ToPlainTextKeyBlob(algId, rawKey);
             ImportKeyBlob(safeProvHandle, (CspProviderFlags)0, addNoSaltFlag, keyBlob, out safeKeyHandle);
             // Note if plain text import fails, .NET Framework falls back to "ExponentOfOneImport" which is not handled here

@@ -8,5 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Security.SecureString\ref\System.Security.SecureString.csproj" />
   </ItemGroup>
 </Project>

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.Cryptography;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -16,6 +15,8 @@ namespace System.Security.Cryptography
         };
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2CryptoServiceProvider")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
         public RC2CryptoServiceProvider()
         {
             _impl = RC2.Create();
@@ -32,10 +33,10 @@ namespace System.Security.Cryptography
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
 
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) =>
-            _impl.CreateEncryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
+            _impl.CreateEncryptor(rgbKey, CapiHelper.TrimLargeIV(rgbIV, BlockSize));
 
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) =>
-            _impl.CreateDecryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
+            _impl.CreateDecryptor(rgbKey, CapiHelper.TrimLargeIV(rgbIV, BlockSize));
 
         protected override void Dispose(bool disposing)
         {

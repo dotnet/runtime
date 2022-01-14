@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -68,10 +67,10 @@ namespace System.Security.Cryptography
         public override void GenerateKey() => _impl.GenerateKey();
 
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) =>
-            _impl.CreateEncryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
+            _impl.CreateEncryptor(rgbKey, CapiHelper.TrimLargeIV(rgbIV, BlockSize));
 
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) =>
-            _impl.CreateDecryptor(rgbKey, Helpers.TrimLargeIV(rgbIV, BlockSize));
+            _impl.CreateDecryptor(rgbKey, CapiHelper.TrimLargeIV(rgbIV, BlockSize));
 
         protected override void Dispose(bool disposing)
         {

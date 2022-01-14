@@ -3,7 +3,7 @@
 
 using System.IO;
 
-namespace Internal.NativeCrypto
+namespace System.Security.Cryptography
 {
     internal static partial class CapiHelper
     {

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Internal.NativeCrypto;
-using Microsoft.Win32.SafeHandles;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -49,7 +47,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                object? retVal = ReadKeyParameterSilent(Constants.CLR_ACCESSIBLE, throwOnNotFound: false);
+                object? retVal = ReadKeyParameterSilent(CapiHelper.ClrPropertyId.CLR_ACCESSIBLE, throwOnNotFound: false);
 
                 if (retVal == null)
                 {
@@ -74,7 +72,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                return (bool)ReadKeyParameterSilent(Constants.CLR_EXPORTABLE)!;
+                return (bool)ReadKeyParameterSilent(CapiHelper.ClrPropertyId.CLR_EXPORTABLE)!;
             }
         }
 
@@ -85,7 +83,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (bool)ReadDeviceParameterVerifyContext(Constants.CLR_HARDWARE);
+                return (bool)ReadDeviceParameterVerifyContext(CapiHelper.ClrPropertyId.CLR_HARDWARE);
             }
         }
 
@@ -135,7 +133,7 @@ namespace System.Security.Cryptography
                     return true;
                 }
 
-                return (bool)ReadKeyParameterSilent(Constants.CLR_PROTECTED)!;
+                return (bool)ReadKeyParameterSilent(CapiHelper.ClrPropertyId.CLR_PROTECTED)!;
             }
         }
 
@@ -179,7 +177,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (bool)ReadDeviceParameterVerifyContext(Constants.CLR_REMOVABLE);
+                return (bool)ReadDeviceParameterVerifyContext(CapiHelper.ClrPropertyId.CLR_REMOVABLE);
             }
         }
 
@@ -190,14 +188,14 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return (string)ReadKeyParameterSilent(Constants.CLR_UNIQUE_CONTAINER)!;
+                return (string)ReadKeyParameterSilent(CapiHelper.ClrPropertyId.CLR_UNIQUE_CONTAINER)!;
             }
         }
 
         /// <summary>
         /// Read a parameter from the current key using CRYPT_SILENT, to avoid any potential UI prompts.
         /// </summary>
-        private object? ReadKeyParameterSilent(int keyParam, bool throwOnNotFound = true)
+        private object? ReadKeyParameterSilent(CapiHelper.ClrPropertyId keyParam, bool throwOnNotFound = true)
         {
             const uint SilentFlags = (uint)Interop.Advapi32.CryptAcquireContextFlags.CRYPT_SILENT;
 
@@ -224,7 +222,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Read a parameter using VERIFY_CONTEXT to read from the device being targeted by _parameters
         /// </summary>
-        private object ReadDeviceParameterVerifyContext(int keyParam)
+        private object ReadDeviceParameterVerifyContext(CapiHelper.ClrPropertyId keyParam)
         {
             CspParameters parameters = new CspParameters(_parameters);
 

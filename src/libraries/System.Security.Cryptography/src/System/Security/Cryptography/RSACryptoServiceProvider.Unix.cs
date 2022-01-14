@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
-using Internal.NativeCrypto;
 using System.IO;
 using System.Runtime.Versioning;
 
@@ -15,9 +14,11 @@ namespace System.Security.Cryptography
         private readonly RSA _impl;
         private bool _publicOnly;
 
+        [UnsupportedOSPlatform("browser")]
         public RSACryptoServiceProvider()
             : this(DefaultKeySize) { }
 
+        [UnsupportedOSPlatform("browser")]
         public RSACryptoServiceProvider(int dwKeySize)
         {
             if (dwKeySize < 0)
@@ -205,13 +206,13 @@ namespace System.Security.Cryptography
             _impl.TrySignData(data, destination, hashAlgorithm, padding, out bytesWritten);
 
         public byte[] SignData(byte[] buffer, int offset, int count, object halg) =>
-            _impl.SignData(buffer, offset, count, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
+            _impl.SignData(buffer, offset, count, CapiHelper.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public byte[] SignData(byte[] buffer, object halg) =>
-            _impl.SignData(buffer, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
+            _impl.SignData(buffer, CapiHelper.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public byte[] SignData(Stream inputStream, object halg) =>
-            _impl.SignData(inputStream, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
+            _impl.SignData(inputStream, CapiHelper.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             padding == null ? throw new ArgumentNullException(nameof(padding)) :
@@ -230,14 +231,14 @@ namespace System.Security.Cryptography
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
-            HashAlgorithmName algName = HashAlgorithmNames.NameOrOidToHashAlgorithmName(str);
+            HashAlgorithmName algName = CapiHelper.NameOrOidToHashAlgorithmName(str);
             return _impl.SignHash(rgbHash, algName, RSASignaturePadding.Pkcs1);
         }
 
         public override string ToXmlString(bool includePrivateParameters) => _impl.ToXmlString(includePrivateParameters);
 
         public bool VerifyData(byte[] buffer, object halg, byte[] signature) =>
-            _impl.VerifyData(buffer, signature, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
+            _impl.VerifyData(buffer, signature, CapiHelper.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public override bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
             padding == null ? throw new ArgumentNullException(nameof(padding)) :
@@ -281,7 +282,7 @@ namespace System.Security.Cryptography
 
             return VerifyHash(
                 (ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature,
-                HashAlgorithmNames.NameOrOidToHashAlgorithmName(str), RSASignaturePadding.Pkcs1);
+                CapiHelper.NameOrOidToHashAlgorithmName(str), RSASignaturePadding.Pkcs1);
         }
 
         // UseMachineKeyStore has no effect in Unix

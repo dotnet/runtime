@@ -5,7 +5,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
-using Internal.NativeCrypto;
 
 namespace System.Security.Cryptography
 {
@@ -14,7 +13,7 @@ namespace System.Security.Cryptography
         private int _keySize;
         private readonly CspParameters _parameters;
         private readonly bool _randomKeyContainer;
-        private SafeKeyHandle? _safeKeyHandle;
+        private SafeCapiKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
         private readonly SHA1 _sha1;
         private static volatile CspProviderFlags s_useMachineKeyStore;
@@ -23,6 +22,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Initializes a new instance of the DSACryptoServiceProvider class.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public DSACryptoServiceProvider()
             : this(
                   new CspParameters(CapiHelper.DefaultDssProviderType,
@@ -36,6 +37,8 @@ namespace System.Security.Cryptography
         /// Initializes a new instance of the DSACryptoServiceProvider class with the specified key size.
         /// </summary>
         /// <param name="dwKeySize">The size of the key for the asymmetric algorithm in bits.</param>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public DSACryptoServiceProvider(int dwKeySize)
             : this(dwKeySize,
                   new CspParameters(CapiHelper.DefaultDssProviderType,
@@ -83,7 +86,7 @@ namespace System.Security.Cryptography
             if (!_randomKeyContainer)
             {
                 // Force-read the SafeKeyHandle property, which will summon it into existence.
-                SafeKeyHandle localHandle = SafeKeyHandle;
+                SafeCapiKeyHandle localHandle = SafeKeyHandle;
                 Debug.Assert(localHandle != null);
             }
         }
@@ -126,7 +129,7 @@ namespace System.Security.Cryptography
 
                     if (current != null)
                     {
-                        SafeKeyHandle? keyHandle = _safeKeyHandle;
+                        SafeCapiKeyHandle? keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
                         keyHandle?.Dispose();
                         current.Dispose();
@@ -137,7 +140,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private SafeKeyHandle SafeKeyHandle
+        private SafeCapiKeyHandle SafeKeyHandle
         {
             get
             {
@@ -147,7 +150,7 @@ namespace System.Security.Cryptography
                     {
                         if (_safeKeyHandle == null)
                         {
-                            SafeKeyHandle hKey = CapiHelper.GetKeyPairHelper(
+                            SafeCapiKeyHandle hKey = CapiHelper.GetKeyPairHelper(
                                 CapiHelper.CspAlgorithmType.Dss,
                                 _parameters,
                                 _keySize,
@@ -169,7 +172,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeKeyHandle? current = _safeKeyHandle;
+                    SafeCapiKeyHandle? current = _safeKeyHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -192,7 +195,7 @@ namespace System.Security.Cryptography
             {
                 // .NET Framework compat: Read the SafeKeyHandle property to force the key to load,
                 // because it might throw here.
-                SafeKeyHandle localHandle = SafeKeyHandle;
+                SafeCapiKeyHandle localHandle = SafeKeyHandle;
                 Debug.Assert(localHandle != null);
 
                 return new CspKeyContainerInfo(_parameters, _randomKeyContainer);
@@ -203,7 +206,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_KEYLEN);
+                byte[] keySize = CapiHelper.GetKeyParameter(SafeKeyHandle, CapiHelper.ClrPropertyId.CLR_KEYLEN);
                 _keySize = BinaryPrimitives.ReadInt32LittleEndian(keySize);
                 return _keySize;
             }
@@ -246,7 +249,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                byte[] publicKey = CapiHelper.GetKeyParameter(SafeKeyHandle, Constants.CLR_PUBLICKEYONLY);
+                byte[] publicKey = CapiHelper.GetKeyParameter(SafeKeyHandle, CapiHelper.ClrPropertyId.CLR_PUBLICKEYONLY);
                 return (publicKey[0] == 1);
             }
         }
@@ -336,7 +339,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            SafeKeyHandle safeKeyHandle;
+            SafeCapiKeyHandle safeKeyHandle;
 
             if (IsPublic(keyBlob))
             {
