@@ -1,8 +1,10 @@
 TOP=$(realpath $(CURDIR)/../../..)
 CONFIG?=Release
+WASI_SDK_VERSION=14
+
 WASI_OBJ_DIR=$(TOP)/artifacts/obj/mono/Wasi.$(CONFIG)
 WASI_BIN_DIR=$(TOP)/artifacts/bin/mono/Wasi.$(CONFIG)
-WASI_SDK_ROOT=$(WASI_OBJ_DIR)/wasi-sdk-14.0
+WASI_SDK_ROOT=$(WASI_OBJ_DIR)/wasi-sdk-$(WASI_SDK_VERSION).0
 WASI_SDK_CLANG=$(WASI_SDK_ROOT)/bin/clang
 
 all: build-all
@@ -28,5 +30,5 @@ build-all: $(WASI_SDK_CLANG)
 $(WASI_SDK_CLANG):
 	mkdir -p $(WASI_OBJ_DIR)
 	cd $(WASI_OBJ_DIR) && \
-		wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-14/wasi-sdk-14.0-linux.tar.gz && \
-		tar xf *.gz
+		wget https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WASI_SDK_VERSION)/wasi-sdk-$(WASI_SDK_VERSION).0-linux.tar.gz && \
+		tar xf wasi-sdk-*.tar.gz
