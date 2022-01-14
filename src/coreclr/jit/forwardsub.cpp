@@ -290,9 +290,17 @@ bool Compiler::fgForwardSub(Statement* stmt)
     // Can't substitute GT_CATCH_ARG.
     // Can't substitute GT_LCLHEAP.
     //
+    // Don't substitute a no return call (trips up morph in some cases).
+    //
     if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
     {
         JITDUMP(" node to sub is qmark, catch arg, or lcl heap\n");
+        return false;
+    }
+
+    if (fwdSubNode->IsCall() && fwdSubNode->AsCall()->IsNoReturn())
+    {
+        JITDUMP(" node to sub is no return call\n");
         return false;
     }
 
@@ -405,13 +413,13 @@ bool Compiler::fgForwardSub(Statement* stmt)
             return false;
         }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
         if (fwdSubNode->TypeGet() == TYP_LONG)
         {
-            JITDUMP(" TYP_LONG fwd sub node, x86\n");
+            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
             return false;
         }
-#endif // defined(TARGET_X86)
+#endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const parentNodeLHSLocal = parentNodeLHS->AsLclVar();
 
@@ -436,13 +444,13 @@ bool Compiler::fgForwardSub(Statement* stmt)
             return false;
         }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
         if (fwdSubNode->TypeGet() == TYP_LONG)
         {
-            JITDUMP(" TYP_LONG fwd sub node, x86\n");
+            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
             return false;
         }
-#endif // defined(TARGET_X86)
+#endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const fwdSubNodeLocal = fwdSubNode->AsLclVar();
 
