@@ -8,33 +8,24 @@ namespace System.IO.MemoryMappedFiles
     public partial class MemoryMappedFile
     {
         // This will verify file access and return file size. fileSize will return -1 for special devices.
-        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, out long fileSize)
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream? fileStream, long fileSize, out bool isRegularFile)
         {
-            fileSize = -1;
+            isRegularFile = false;
 
             if (fileStream != null)
             {
-                Interop.Sys.FileStatus status;
-
-                int result = Interop.Sys.FStat(fileStream.SafeFileHandle, out status);
-                if (result != 0)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
-                }
-
-                bool isRegularFile = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
+                // the length has already been fetched by FileStream.Length, if it's > 0 it's a regular file and there is no need for FStat sys-call
+                isRegularFile = fileSize > 0 || IsRegularFile(fileStream.SafeFileHandle);
 
                 if (isRegularFile)
                 {
-                    fileSize = status.Size;
-                    if (access == MemoryMappedFileAccess.Read && capacity > status.Size)
+                    if (access == MemoryMappedFileAccess.Read && capacity > fileSize)
                     {
                         throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
                     }
 
                     // one can always create a small view if they do not want to map an entire file
-                    if (fileStream.Length > capacity)
+                    if (fileSize > capacity)
                     {
                         throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
                     }
@@ -44,6 +35,20 @@ namespace System.IO.MemoryMappedFiles
                         throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
                     }
                 }
+            }
+
+            static bool IsRegularFile(SafeFileHandle fileHandle)
+            {
+                Interop.Sys.FileStatus status;
+
+                int result = Interop.Sys.FStat(fileHandle, out status);
+                if (result != 0)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
+                }
+
+                return (status.Mode & Interop.Sys.FileTypes.S_IFCHR) == 0;
             }
         }
 
@@ -55,9 +60,9 @@ namespace System.IO.MemoryMappedFiles
         private static SafeMemoryMappedFileHandle CreateCore(
             FileStream? fileStream, string? mapName,
             HandleInheritability inheritability, MemoryMappedFileAccess access,
-            MemoryMappedFileOptions options, long capacity)
+            MemoryMappedFileOptions options, long capacity, long fileSize)
         {
-            VerifyMemoryMappedFileAccess(access, capacity, fileStream, out long fileSize);
+            VerifyMemoryMappedFileAccess(access, capacity, fileStream, fileSize, out bool isRegularFile);
 
             if (mapName != null)
             {
@@ -76,7 +81,7 @@ namespace System.IO.MemoryMappedFiles
             bool ownsFileStream = false;
             if (fileStream != null)
             {
-                if (fileSize >= 0 && capacity > fileSize)
+                if (isRegularFile && fileSize >= 0 && capacity > fileSize)
                 {
                     // This map is backed by a file.  Make sure the file's size is increased to be
                     // at least as big as the requested capacity of the map for Write* access.
@@ -125,7 +130,7 @@ namespace System.IO.MemoryMappedFiles
         {
             // Since we don't support mapName != null, CreateOrOpenCore can't
             // be used to Open an existing map, and thus is identical to CreateCore.
-            return CreateCore(null, mapName, inheritability, access, options, capacity);
+            return CreateCore(null, mapName, inheritability, access, options, capacity, -1);
         }
 
         /// <summary>
