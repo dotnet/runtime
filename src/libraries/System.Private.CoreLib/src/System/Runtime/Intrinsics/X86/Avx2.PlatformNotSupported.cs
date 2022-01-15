@@ -548,7 +548,7 @@ namespace System.Runtime.Intrinsics.X86
         /// 64-bit:
         /// __m128i _mm_broadcastq_epi64 (__m128i a)
         ///   VPBROADCASTQ xmm, m64
-        /// 
+        ///
         /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<nint> BroadcastScalarToVector128(nint* source) => BroadcastScalarToVector128(source);
@@ -561,7 +561,7 @@ namespace System.Runtime.Intrinsics.X86
         /// 64-bit:
         /// __m128i _mm_broadcastq_epi64 (__m128i a)
         ///   VPBROADCASTQ xmm, m64
-        /// 
+        ///
         /// The above native signature does not directly correspond to the managed signature.
         /// </summary>
         public static unsafe Vector128<nuint> BroadcastScalarToVector128(nuint* source) => BroadcastScalarToVector128(source);
@@ -1371,7 +1371,7 @@ namespace System.Runtime.Intrinsics.X86
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
         public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector256<long> index, byte scale) { throw new PlatformNotSupportedException(); }
-        
+
         /// <summary>
         /// 32-bit:
         /// __m128i _mm_i32gather_epi64 (int const* base_addr, __m128i vindex, const int scale)
