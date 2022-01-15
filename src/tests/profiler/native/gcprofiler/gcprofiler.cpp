@@ -98,7 +98,7 @@ HRESULT GCProfiler::ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[
     if (_gcStarts != _allocatedByClassCalls)
     {
         _failures++;
-        printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Expected ObjectsAllocatedByClass Calls == GCStart. AllocatedByClassCalls=%d, Start=%d\n", (int)_gcStarts, (int)_gcFinishes);
+        printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Expected ObjectsAllocatedByClass Calls == GCStart. AllocatedByClassCalls=%d, GCStart=%d\n", (int)_allocatedByClassCalls, (int)_gcStarts);
     }
 
     return S_OK;
