@@ -429,7 +429,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         || name.Find(i, ':')
         || name.Find(i, '/'))
     {
-        COMPlusThrow(kArgumentException, W("Argument_InvalidAssemblyName"));
+        COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
     }
 
     // Set up the assembly manifest metadata

@@ -18,7 +18,7 @@ namespace System.Reflection
         public static RuntimeAssemblyName ToRuntimeAssemblyName(this AssemblyName assemblyName)
         {
             if (assemblyName.Name == null)
-                throw new ArgumentException(SR.Argument_InvalidAssemblyName);
+                throw new ArgumentException(SR.InvalidAssemblyName);
 
             AssemblyNameFlags flags = assemblyName.Flags;
             AssemblyContentType contentType = assemblyName.ContentType;

@@ -50,10 +50,10 @@ namespace System.Reflection
             string name;
             AssemblyNameLexer.Token token = lexer.GetNext(out name);
             if (token != AssemblyNameLexer.Token.String)
-                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                throw new FileLoadException(SR.InvalidAssemblyName);
 
             if (name == string.Empty || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
-                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                throw new FileLoadException(SR.InvalidAssemblyName);
 
             Version? version = null;
             string? cultureName = null;
@@ -65,28 +65,28 @@ namespace System.Reflection
             while (token != AssemblyNameLexer.Token.End)
             {
                 if (token != AssemblyNameLexer.Token.Comma)
-                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                    throw new FileLoadException(SR.InvalidAssemblyName);
                 string attributeName;
 
                 token = lexer.GetNext(out attributeName);
                 if (token != AssemblyNameLexer.Token.String)
-                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                    throw new FileLoadException(SR.InvalidAssemblyName);
                 token = lexer.GetNext();
 
                 if (token != AssemblyNameLexer.Token.Equals)
-                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                    throw new FileLoadException(SR.InvalidAssemblyName);
                 string attributeValue;
                 token = lexer.GetNext(out attributeValue);
                 if (token != AssemblyNameLexer.Token.String)
-                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                    throw new FileLoadException(SR.InvalidAssemblyName);
 
                 if (attributeName == string.Empty)
-                    throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                    throw new FileLoadException(SR.InvalidAssemblyName);
 
                 for (int i = 0; i < alreadySeen.Count; i++)
                 {
                     if (alreadySeen[i].Equals(attributeName, StringComparison.OrdinalIgnoreCase))
-                        throw new FileLoadException(SR.Argument_InvalidAssemblyName); // Cannot specify the same attribute twice.
+                        throw new FileLoadException(SR.InvalidAssemblyName); // Cannot specify the same attribute twice.
                 }
                 alreadySeen.Add(attributeName);
 
@@ -119,7 +119,7 @@ namespace System.Reflection
                         // nothing to do
                     }
                     else
-                        throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                        throw new FileLoadException(SR.InvalidAssemblyName);
                 }
 
                 if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
@@ -127,7 +127,7 @@ namespace System.Reflection
                     if (attributeValue.Equals("WindowsRuntime", StringComparison.OrdinalIgnoreCase))
                         flags |= (AssemblyNameFlags)(((int)AssemblyContentType.WindowsRuntime) << 9);
                     else
-                        throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                        throw new FileLoadException(SR.InvalidAssemblyName);
                 }
 
                 // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it (as long it's not duplicated.)
@@ -141,7 +141,7 @@ namespace System.Reflection
         {
             string[] parts = attributeValue.Split('.');
             if (parts.Length > 4)
-                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                throw new FileLoadException(SR.InvalidAssemblyName);
             ushort[] versionNumbers = new ushort[4];
             for (int i = 0; i < versionNumbers.Length; i++)
             {
@@ -153,17 +153,17 @@ namespace System.Reflection
                     for (int j = 0; j < parts[i].Length; j++)
                     {
                         if (!char.IsDigit(parts[i][j]))
-                            throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                            throw new FileLoadException(SR.InvalidAssemblyName);
                     }
                     if (!(ushort.TryParse(parts[i], out versionNumbers[i])))
                     {
-                        throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                        throw new FileLoadException(SR.InvalidAssemblyName);
                     }
                 }
             }
 
             if (versionNumbers[0] == ushort.MaxValue || versionNumbers[1] == ushort.MaxValue)
-                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                throw new FileLoadException(SR.InvalidAssemblyName);
             if (versionNumbers[2] == ushort.MaxValue)
                 return new Version(versionNumbers[0], versionNumbers[1]);
             if (versionNumbers[3] == ushort.MaxValue)
@@ -190,7 +190,7 @@ namespace System.Reflection
                 return Array.Empty<byte>();
 
             if (attributeValue.Length != 8 * 2)
-                throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+                throw new FileLoadException(SR.InvalidAssemblyName);
 
             byte[] pkt = new byte[8];
             int srcIndex = 0;
@@ -215,7 +215,7 @@ namespace System.Reflection
                 return ProcessorArchitecture.Amd64;
             if (attributeValue.Equals("arm", StringComparison.OrdinalIgnoreCase))
                 return ProcessorArchitecture.Arm;
-            throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+            throw new FileLoadException(SR.InvalidAssemblyName);
         }
 
         private static byte ParseHexNybble(char c)
@@ -226,7 +226,7 @@ namespace System.Reflection
                 return (byte)(c - 'a' + 10);
             if (c >= 'A' && c <= 'F')
                 return (byte)(c - 'A' + 10);
-            throw new FileLoadException(SR.Argument_InvalidAssemblyName);
+            throw new FileLoadException(SR.InvalidAssemblyName);
         }
 
         private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };
