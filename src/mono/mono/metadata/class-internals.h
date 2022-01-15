@@ -987,6 +987,10 @@ typedef struct {
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
 
+MONO_COMPONENT_API
+MonoDefaults *
+mono_get_defaults (void);
+
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
 
