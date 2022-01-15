@@ -252,7 +252,7 @@ namespace System.Text.RegularExpressions
 
         private RegexNode ScanRegex()
         {
-            char ch = '@'; // nonspecial ch, means at beginning
+            char ch;
             bool isQuantifier = false;
 
             StartGroup(new RegexNode(RegexNode.Capture, _options, 0, -1));
@@ -563,7 +563,7 @@ namespace System.Text.RegularExpressions
          */
         private RegexCharClass? ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
-            char ch = '\0';
+            char ch;
             char chPrev = '\0';
             bool inRange = false;
             bool firstChar = true;
@@ -2346,5 +2346,27 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Number of characters to the right of the current parsing position.</summary>
         private int CharsRight() => _pattern.Length - _currentPos;
+
+        /// <summary>Gets group name from its number.</summary>
+        internal static string GroupNameFromNumber(Hashtable? caps, string[]? capslist, int capsize, int i)
+        {
+            if (capslist is null)
+            {
+                if ((uint)i < (uint)capsize)
+                {
+                    return ((uint)i).ToString();
+                }
+            }
+            else
+            {
+                if ((caps is null || caps.TryGetValue(i, out i)) &&
+                    (uint)i < (uint)capslist.Length)
+                {
+                    return capslist[i];
+                }
+            }
+
+            return string.Empty;
+        }
     }
 }

@@ -525,7 +525,6 @@ void DomainFile::LoadLibrary()
     }
     CONTRACTL_END;
 
-    GetPEAssembly()->EnsureLoaded();
 }
 
 void DomainFile::PostLoadLibrary()

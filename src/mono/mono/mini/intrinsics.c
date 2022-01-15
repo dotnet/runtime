@@ -2262,7 +2262,7 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 MonoInst*
 mini_emit_inst_for_field_load (MonoCompile *cfg, MonoClassField *field)
 {
-	MonoClass *klass = field->parent;
+	MonoClass *klass = m_field_get_parent (field);
 	const char *klass_name_space = m_class_get_name_space (klass);
 	const char *klass_name = m_class_get_name (klass);
 	MonoImage *klass_image = m_class_get_image (klass);

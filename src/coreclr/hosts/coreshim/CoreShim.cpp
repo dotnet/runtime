@@ -375,7 +375,7 @@ HRESULT coreclr::Initialize(
     HMODULE mod = ::GetModuleHandleW(W("CoreRun.exe"));
     if (mod != NULL)
     {
-        using GetCurrentClrDetailsFunc = HRESULT(*)(void **clrInstance, unsigned int *appDomainId);
+        using GetCurrentClrDetailsFunc = HRESULT(__cdecl *)(void **clrInstance, unsigned int *appDomainId);
         auto getCurrentClrDetails = (GetCurrentClrDetailsFunc)::GetProcAddress(mod, "GetCurrentClrDetails");
         RETURN_IF_FAILED(getCurrentClrDetails(&_clrInst, &_appDomainId));
         if (_clrInst != nullptr)

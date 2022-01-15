@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
+    <NativeAotMultimoduleIncompatible>true</NativeAotMultimoduleIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Reflection.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <NativeAotProjectLines>
+      <![CDATA[
+  <ItemGroup>
+    <IlcArg Include="--reflectedonly" />
+  </ItemGroup>
+      ]]>
+    </NativeAotProjectLines>
+  </PropertyGroup>
+</Project>

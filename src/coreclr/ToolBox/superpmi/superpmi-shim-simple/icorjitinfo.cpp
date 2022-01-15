@@ -12,10 +12,10 @@
 #include "spmiutil.h"
 
 
-bool interceptor_ICJI::isJitIntrinsic(
+bool interceptor_ICJI::isIntrinsic(
           CORINFO_METHOD_HANDLE ftn)
 {
-    return original_ICorJitInfo->isJitIntrinsic(ftn);
+    return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
 uint32_t interceptor_ICJI::getMethodAttribs(
@@ -141,13 +141,6 @@ void interceptor_ICJI::expandRawHandleIntrinsic(
           CORINFO_GENERICHANDLE_RESULT* pResult)
 {
     original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
-}
-
-CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand)
-{
-    return original_ICorJitInfo->getIntrinsicID(method, pMustExpand);
 }
 
 bool interceptor_ICJI::isIntrinsicType(
@@ -597,6 +590,12 @@ unsigned interceptor_ICJI::getArrayRank(
     return original_ICorJitInfo->getArrayRank(cls);
 }
 
+CorInfoArrayIntrinsic interceptor_ICJI::getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    return original_ICorJitInfo->getArrayIntrinsicID(ftn);
+}
+
 void* interceptor_ICJI::getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size)
@@ -1035,13 +1034,6 @@ uint32_t interceptor_ICJI::getFieldThreadLocalStoreID(
           void** ppIndirection)
 {
     return original_ICorJitInfo->getFieldThreadLocalStoreID(field, ppIndirection);
-}
-
-void interceptor_ICJI::setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod)
-{
-    original_ICorJitInfo->setOverride(pOverride, currentMethod);
 }
 
 void interceptor_ICJI::addActiveDependency(

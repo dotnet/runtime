@@ -17,7 +17,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'addsub.exe'
 // MVID: {964B45BB-9F5B-4A2B-9ECD-E062E2FE8E23}
 .namespace JitTest
 {

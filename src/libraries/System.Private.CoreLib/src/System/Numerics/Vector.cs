@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 using Internal.Runtime.CompilerServices;
 
@@ -311,17 +312,19 @@ namespace System.Numerics
         /// <param name="value">The vector to convert.</param>
         /// <returns>The converted vector.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector<double> ConvertToDouble(Vector<long> value)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int i = 0; i < Vector<double>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var element = (double)value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{UInt64}" /> to a <see cref="Vector{Double}" />.</summary>
@@ -329,17 +332,19 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value)
         {
-            Unsafe.SkipInit(out Vector<double> result);
-
-            for (int i = 0; i < Vector<double>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var element = (double)value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                Debug.Assert(Vector<double>.Count == Vector256<double>.Count);
+                return Vector256.ConvertToDouble(value.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(Vector<double>.Count == Vector128<double>.Count);
+                return Vector128.ConvertToDouble(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{Int32}" />.</summary>
@@ -398,17 +403,19 @@ namespace System.Numerics
         /// <returns>The converted vector.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector<float> ConvertToSingle(Vector<uint> value)
         {
-            Unsafe.SkipInit(out Vector<float> result);
-
-            for (int i = 0; i < Vector<float>.Count; i++)
+            if (Avx2.IsSupported)
             {
-                var element = (float)value.GetElementUnsafe(i);
-                result.SetElementUnsafe(i, element);
+                Debug.Assert(Vector<float>.Count == Vector256<float>.Count);
+                return Vector256.ConvertToSingle(value.AsVector256()).AsVector();
             }
-
-            return result;
+            else
+            {
+                Debug.Assert(Vector<float>.Count == Vector128<float>.Count);
+                return Vector128.ConvertToSingle(value.AsVector128()).AsVector();
+            }
         }
 
         /// <summary>Converts a <see cref="Vector{Single}" /> to a <see cref="Vector{UInt32}" />.</summary>
@@ -1146,6 +1153,492 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> OnesComplement<T>(Vector<T> value)
             where T : struct => ~value;
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<byte> ShiftLeft(Vector<byte> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<byte> result);
+
+            for (int index = 0; index < Vector<byte>.Count; index++)
+            {
+                var element = Scalar<byte>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<short> ShiftLeft(Vector<short> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<short> result);
+
+            for (int index = 0; index < Vector<short>.Count; index++)
+            {
+                var element = Scalar<short>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<int> ShiftLeft(Vector<int> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<int> result);
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                var element = Scalar<int>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<long> ShiftLeft(Vector<long> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<long> result);
+
+            for (int index = 0; index < Vector<long>.Count; index++)
+            {
+                var element = Scalar<long>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nint> ShiftLeft(Vector<nint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<nint> result);
+
+            for (int index = 0; index < Vector<nint>.Count; index++)
+            {
+                var element = Scalar<nint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nuint> ShiftLeft(Vector<nuint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<nuint> result);
+
+            for (int index = 0; index < Vector<nuint>.Count; index++)
+            {
+                var element = Scalar<nuint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<sbyte> ShiftLeft(Vector<sbyte> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<sbyte> result);
+
+            for (int index = 0; index < Vector<sbyte>.Count; index++)
+            {
+                var element = Scalar<sbyte>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<ushort> ShiftLeft(Vector<ushort> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<ushort> result);
+
+            for (int index = 0; index < Vector<ushort>.Count; index++)
+            {
+                var element = Scalar<ushort>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<uint> ShiftLeft(Vector<uint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<uint> result);
+
+            for (int index = 0; index < Vector<uint>.Count; index++)
+            {
+                var element = Scalar<uint>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector left by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted left by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<ulong> ShiftLeft(Vector<ulong> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<ulong> result);
+
+            for (int index = 0; index < Vector<ulong>.Count; index++)
+            {
+                var element = Scalar<ulong>.ShiftLeft(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<short> ShiftRightArithmetic(Vector<short> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<short> result);
+
+            for (int index = 0; index < Vector<short>.Count; index++)
+            {
+                var element = Scalar<short>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<int> ShiftRightArithmetic(Vector<int> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<int> result);
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                var element = Scalar<int>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<long> ShiftRightArithmetic(Vector<long> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<long> result);
+
+            for (int index = 0; index < Vector<long>.Count; index++)
+            {
+                var element = Scalar<long>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nint> ShiftRightArithmetic(Vector<nint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<nint> result);
+
+            for (int index = 0; index < Vector<nint>.Count; index++)
+            {
+                var element = Scalar<nint>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<sbyte> ShiftRightArithmetic(Vector<sbyte> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<sbyte> result);
+
+            for (int index = 0; index < Vector<sbyte>.Count; index++)
+            {
+                var element = Scalar<sbyte>.ShiftRightArithmetic(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<byte> ShiftRightLogical(Vector<byte> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<byte> result);
+
+            for (int index = 0; index < Vector<byte>.Count; index++)
+            {
+                var element = Scalar<byte>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<short> ShiftRightLogical(Vector<short> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<short> result);
+
+            for (int index = 0; index < Vector<short>.Count; index++)
+            {
+                var element = Scalar<short>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<int> ShiftRightLogical(Vector<int> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<int> result);
+
+            for (int index = 0; index < Vector<int>.Count; index++)
+            {
+                var element = Scalar<int>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<long> ShiftRightLogical(Vector<long> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<long> result);
+
+            for (int index = 0; index < Vector<long>.Count; index++)
+            {
+                var element = Scalar<long>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nint> ShiftRightLogical(Vector<nint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<nint> result);
+
+            for (int index = 0; index < Vector<nint>.Count; index++)
+            {
+                var element = Scalar<nint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<nuint> ShiftRightLogical(Vector<nuint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<nuint> result);
+
+            for (int index = 0; index < Vector<nuint>.Count; index++)
+            {
+                var element = Scalar<nuint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<sbyte> ShiftRightLogical(Vector<sbyte> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<sbyte> result);
+
+            for (int index = 0; index < Vector<sbyte>.Count; index++)
+            {
+                var element = Scalar<sbyte>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<ushort> ShiftRightLogical(Vector<ushort> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<ushort> result);
+
+            for (int index = 0; index < Vector<ushort>.Count; index++)
+            {
+                var element = Scalar<ushort>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<uint> ShiftRightLogical(Vector<uint> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<uint> result);
+
+            for (int index = 0; index < Vector<uint>.Count; index++)
+            {
+                var element = Scalar<uint>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
+
+        /// <summary>Shifts each element of a vector right by the specified amount.</summary>
+        /// <param name="value">The vector whose elements are to be shifted.</param>
+        /// <param name="shiftCount">The number of bits by which to shift each element.</param>
+        /// <returns>A vector whose elements where shifted right by <paramref name="shiftCount" />.</returns>
+        [Intrinsic]
+        [CLSCompliantAttribute(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<ulong> ShiftRightLogical(Vector<ulong> value, int shiftCount)
+        {
+            Unsafe.SkipInit(out Vector<ulong> result);
+
+            for (int index = 0; index < Vector<ulong>.Count; index++)
+            {
+                var element = Scalar<ulong>.ShiftRightLogical(value.GetElementUnsafe(index), shiftCount);
+                result.SetElementUnsafe(index, element);
+            }
+
+            return result;
+        }
 
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
         /// <param name="value">The vector whose square root is to be computed.</param>

@@ -1566,35 +1566,7 @@ public:
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
 
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-
         m_instrCount++;
-    }
-};
-
-//------------------------------------------------------------------------
-// SuppressProbesFunctor: functor that resets IR back to the state
-//   it had if there were no class probes.
-//
-class SuppressProbesFunctor
-{
-private:
-    unsigned& m_cleanupCount;
-
-public:
-    SuppressProbesFunctor(unsigned& cleanupCount) : m_cleanupCount(cleanupCount)
-    {
-    }
-
-    void operator()(Compiler* compiler, GenTreeCall* call)
-    {
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-
-        m_cleanupCount++;
     }
 };
 
@@ -1615,7 +1587,6 @@ public:
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
-    void SuppressProbes() override;
 };
 
 //------------------------------------------------------------------------
@@ -1701,37 +1672,6 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
     {
         visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
     }
-}
-
-//------------------------------------------------------------------------
-// ClassProbeInstrumentor::SuppressProbes: clean up if we're not instrumenting
-//
-// Notes:
-//   Currently we're hijacking the gtCallStubAddr of the call node to hold
-//   a pointer to the profile candidate info.
-//
-//   We must undo this, if not instrumenting.
-//
-void ClassProbeInstrumentor::SuppressProbes()
-{
-    unsigned                                 cleanupCount = 0;
-    SuppressProbesFunctor                    suppressProbes(cleanupCount);
-    ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
-
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
-        {
-            continue;
-        }
-
-        for (Statement* const stmt : block->Statements())
-        {
-            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
-    }
-
-    assert(cleanupCount == m_comp->info.compClassProbeCount);
 }
 
 //------------------------------------------------------------------------

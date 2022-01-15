@@ -13,7 +13,6 @@
 }
 .assembly extern xunit.core {}
 
-.module 'switch11.exe'
 
 .class public auto ansi Test_switch11
        extends ['mscorlib']System.Object

@@ -4,7 +4,7 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endfunction()
 
@@ -92,6 +92,10 @@ function(find_unwind_libs UnwindLibs)
 
     if(CLR_CMAKE_HOST_ARCH_ARM64)
       find_library(UNWIND_ARCH NAMES unwind-aarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      find_library(UNWIND_ARCH NAMES unwind-loongarch64)
     endif()
 
     if(CLR_CMAKE_HOST_ARCH_AMD64)
@@ -373,6 +377,25 @@ function(install_symbol_file symbol_file destination_path)
       install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
+  endif()
+endfunction()
+
+function(install_static_library targetName destination component)
+  if (NOT "${component}" STREQUAL "${targetName}")
+    get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
+    list(FIND definedComponents "${component}" componentIdx)
+    if (${componentIdx} EQUAL -1)
+      message(FATAL_ERROR "The ${component} component is not defined. Add a call to `add_component(${component})` to define the component in the build.")
+    endif()
+    add_dependencies(${component} ${targetName})
+  endif()
+  install (TARGETS ${targetName} DESTINATION ${destination} COMPONENT ${component})
+  if (WIN32)
+    set_target_properties(${targetName} PROPERTIES
+        COMPILE_PDB_NAME "${targetName}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )
+    install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()
 endfunction()
 

@@ -9,7 +9,6 @@
 .assembly extern mscorlib {}
 .assembly convX {}
 .assembly extern xunit.core {}
-.module convX.exe
 .class private auto ansi beforefieldinit convX
        extends [mscorlib]System.Object
 {

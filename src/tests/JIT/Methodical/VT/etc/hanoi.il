@@ -13,7 +13,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module hanoi.exe
 .namespace JitTest
 {
   .class value private auto ansi sealed CI

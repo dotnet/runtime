@@ -155,6 +155,7 @@ enum BasicBlockFlags : unsigned __int64;
 struct InlineCandidateInfo;
 struct GuardedDevirtualizationCandidateInfo;
 struct ClassProfileCandidateInfo;
+struct LateDevirtualizationInfo;
 
 typedef unsigned short AssertionIndex;
 
@@ -579,7 +580,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
-    GTF_ARR_BOUND_INBND         = 0x80000000, // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
+    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proved this check is always in-bounds
 
     GTF_ARRLEN_ARR_IDX          = 0x80000000, // GT_ARR_LENGTH -- Length which feeds into an array index expression
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
@@ -762,7 +763,6 @@ struct GenTree
 
     unsigned char gtLIRFlags; // Used for nodes that are in LIR. See LIR::Flags in lir.h for the various flags.
 
-#if ASSERTION_PROP
     AssertionInfo gtAssertionInfo;
 
     bool GeneratesAssertion() const
@@ -784,7 +784,6 @@ struct GenTree
     {
         gtAssertionInfo = info;
     }
-#endif
 
     //
     // Cost metrics on the node. Don't allow direct access to the variable for setting.
@@ -1685,32 +1684,6 @@ public:
         return (gtOper == GT_JTRUE) || (gtOper == GT_JCMP) || (gtOper == GT_JCC);
     }
 
-    static bool OperIsBoundsCheck(genTreeOps op)
-    {
-        if (op == GT_ARR_BOUNDS_CHECK)
-        {
-            return true;
-        }
-#ifdef FEATURE_SIMD
-        if (op == GT_SIMD_CHK)
-        {
-            return true;
-        }
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        if (op == GT_HW_INTRINSIC_CHK)
-        {
-            return true;
-        }
-#endif // FEATURE_HW_INTRINSICS
-        return false;
-    }
-
-    bool OperIsBoundsCheck() const
-    {
-        return OperIsBoundsCheck(OperGet());
-    }
-
 #ifdef DEBUG
     bool NullOp1Legal() const
     {
@@ -1750,7 +1723,8 @@ public:
         }
     }
 
-    static inline bool RequiresNonNullOp2(genTreeOps oper);
+    bool        OperSupportsReverseOps() const;
+    static bool RequiresNonNullOp2(genTreeOps oper);
     bool IsValidCallArgument();
 #endif // DEBUG
 
@@ -1971,15 +1945,6 @@ public:
     // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
-    // If returns "true", "this" may represent the address of a static or instance field
-    // (or a field of such a field, in the case of an object field of type struct).
-    // If returns "true", then either "*pObj" is set to the object reference,
-    // or "*pStatic" is set to the baseAddr or offset to be added to the "*pFldSeq"
-    // Only one of "*pObj" or "*pStatic" will be set, the other one will be null.
-    // The boolean return value only indicates that "this" *may* be a field address
-    // -- the field sequence must also be checked.
-    // If it is a field address, the field sequence will be a sequence of length >= 1,
-    // starting with an instance or static field, and optionally continuing with struct fields.
     bool IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq);
 
     // Requires "this" to be the address of an array (the child of a GT_IND labeled with GTF_IND_ARR_INDEX).
@@ -2285,6 +2250,8 @@ public:
     bool Precedes(GenTree* other);
 
     bool IsInvariant() const;
+
+    bool IsNeverNegative(Compiler* comp) const;
 
     bool IsReuseRegVal() const
     {
@@ -3673,11 +3640,6 @@ struct GenTreeField : public GenTreeUnOp
     GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
         : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
-        if (obj != nullptr)
-        {
-            gtFlags |= (obj->gtFlags & GTF_ALL_EFFECT);
-        }
-
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
 #endif
@@ -3689,7 +3651,7 @@ struct GenTreeField : public GenTreeUnOp
     }
 #endif
 
-    // The object this field belongs to. May be "nullptr", e. g. for static fields.
+    // The object this field belongs to. Will be "nullptr" for static fields.
     // Note that this is an address, i. e. for struct fields it will be ADDR(STRUCT).
     GenTree* GetFldObj() const
     {
@@ -3786,7 +3748,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-
+    GTF_CALL_M_LATE_DEVIRT             = 0x10000000, // this call has late devirtualzation info
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -4755,10 +4717,11 @@ struct GenTreeCall final : public GenTree
 
     void ResetArgInfo();
 
-    GenTreeCallFlags     gtCallMoreFlags;  // in addition to gtFlags
-    gtCallTypes          gtCallType : 3;   // value from the gtCallTypes enumeration
-    var_types            gtReturnType : 5; // exact return type
-    CORINFO_CLASS_HANDLE gtRetClsHnd;      // The return type handle of the call if it is a struct; always available
+    GenTreeCallFlags     gtCallMoreFlags;    // in addition to gtFlags
+    gtCallTypes          gtCallType : 3;     // value from the gtCallTypes enumeration
+    var_types            gtReturnType : 5;   // exact return type
+    CORINFO_CLASS_HANDLE gtRetClsHnd;        // The return type handle of the call if it is a struct; always available
+    void*                gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
 
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
@@ -4767,7 +4730,7 @@ struct GenTreeCall final : public GenTree
         InlineCandidateInfo*                  gtInlineCandidateInfo;
         GuardedDevirtualizationCandidateInfo* gtGuardedDevirtualizationCandidateInfo;
         ClassProfileCandidateInfo*            gtClassProfileCandidateInfo;
-        void*                                 gtStubCallStubAddr; // GTF_CALL_VIRT_STUB - these are never inlined
+        LateDevirtualizationInfo*             gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
@@ -5007,7 +4970,6 @@ struct GenTreeQmark : public GenTreeOp
 
 struct GenTreeIntrinsic : public GenTreeOp
 {
-    CorInfoIntrinsics     gtIntrinsicId;
     NamedIntrinsic        gtIntrinsicName;
     CORINFO_METHOD_HANDLE gtMethodHandle; // Method handle of the method which is treated as an intrinsic.
 
@@ -5016,31 +4978,17 @@ struct GenTreeIntrinsic : public GenTreeOp
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
-    GenTreeIntrinsic(var_types             type,
-                     GenTree*              op1,
-                     CorInfoIntrinsics     intrinsicId,
-                     NamedIntrinsic        intrinsicName,
-                     CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr)
-        , gtIntrinsicId(intrinsicId)
-        , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(var_types type, GenTree* op1, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, nullptr), gtIntrinsicName(intrinsicName), gtMethodHandle(methodHandle)
     {
-        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
+        assert(intrinsicName != NI_Illegal);
     }
 
-    GenTreeIntrinsic(var_types             type,
-                     GenTree*              op1,
-                     GenTree*              op2,
-                     CorInfoIntrinsics     intrinsicId,
-                     NamedIntrinsic        intrinsicName,
-                     CORINFO_METHOD_HANDLE methodHandle)
-        : GenTreeOp(GT_INTRINSIC, type, op1, op2)
-        , gtIntrinsicId(intrinsicId)
-        , gtIntrinsicName(intrinsicName)
-        , gtMethodHandle(methodHandle)
+    GenTreeIntrinsic(
+        var_types type, GenTree* op1, GenTree* op2, NamedIntrinsic intrinsicName, CORINFO_METHOD_HANDLE methodHandle)
+        : GenTreeOp(GT_INTRINSIC, type, op1, op2), gtIntrinsicName(intrinsicName), gtMethodHandle(methodHandle)
     {
-        assert(intrinsicId != CORINFO_INTRINSIC_Illegal || intrinsicName != NI_Illegal);
+        assert(intrinsicName != NI_Illegal);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -5754,19 +5702,19 @@ public:
 };
 
 // This takes:
-// - a comparison value (generally an array length),
+// - a length value
 // - an index value, and
 // - the label to jump to if the index is out of range.
 // - the "kind" of the throw block to branch to on failure
 // It generates no result.
-
+//
 struct GenTreeBoundsChk : public GenTreeOp
 {
-    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
+    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
-    GenTreeBoundsChk(genTreeOps oper, var_types type, GenTree* index, GenTree* arrLen, SpecialCodeKind kind)
-        : GenTreeOp(oper, type, index, arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
+    GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
+        : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length), gtIndRngFailBB(nullptr), gtThrowKind(kind)
     {
         gtFlags |= GTF_EXCEPT;
     }
@@ -5777,19 +5725,19 @@ struct GenTreeBoundsChk : public GenTreeOp
 #endif
 
     // If this check is against GT_ARR_LENGTH, returns array reference, else "NULL".
-    GenTree* GetArray()
+    GenTree* GetArray() const
     {
         return GetArrayLength()->OperIs(GT_ARR_LENGTH) ? GetArrayLength()->AsArrLen()->ArrRef() : nullptr;
     }
 
     // The index expression.
-    GenTree* GetIndex()
+    GenTree* GetIndex() const
     {
         return gtOp1;
     }
 
-    // An expression for the length of the array being indexed.
-    GenTree* GetArrayLength()
+    // An expression for the length.
+    GenTree* GetArrayLength() const
     {
         return gtOp2;
     }
@@ -7786,8 +7734,7 @@ inline GenTree* GenTree::gtGetOp1() const
 }
 
 #ifdef DEBUG
-/* static */
-inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
+/* static */ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
 {
     switch (oper)
     {
@@ -7822,6 +7769,21 @@ inline bool GenTree::RequiresNonNullOp2(genTreeOps oper)
         default:
             return false;
     }
+}
+
+inline bool GenTree::OperSupportsReverseOps() const
+{
+    if (OperIsBinary() && !OperIs(GT_COMMA, GT_INTRINSIC, GT_BOUNDS_CHECK))
+    {
+        return (AsOp()->gtGetOp1() != nullptr) && (AsOp()->gtGetOp2() != nullptr);
+    }
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+    if (OperIsMultiOp())
+    {
+        return AsMultiOp()->GetOperandCount() == 2;
+    }
+#endif // FEATURE_SIMD || FEATURE_HW_INTRINSICS
+    return false;
 }
 #endif // DEBUG
 

@@ -1996,7 +1996,7 @@ namespace System.Reflection.Emit
 
                 if (meth.IsGenericMethodDefinition)
                 {
-                    int dummy = meth.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
+                    _ = meth.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
                 }
 
                 MethodAttributes methodAttrs = meth.Attributes;

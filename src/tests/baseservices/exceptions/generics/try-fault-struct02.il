@@ -14,7 +14,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'try-finally01'
+.assembly 'try-fault-struct02'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -24,7 +24,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module 'try-finally01.exe'
 // MVID: {736049C4-A4DA-41B1-895D-B9E4A517BBE4}
 .imagebase 0x00400000
 .subsystem 0x00000003

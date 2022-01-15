@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly '20param3c' {}
+.assembly '25paramMixed' {}
 .assembly extern xunit.core {}
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object

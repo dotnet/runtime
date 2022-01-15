@@ -297,8 +297,10 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
-        [Fact]
-        public async Task Valid_ClassWithNamespace()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Valid_ClassWithNamespace(bool allowUnsafe)
         {
             Assert.Empty(await RunGenerator(@"
                 using System.Text.RegularExpressions;
@@ -310,7 +312,7 @@ namespace System.Text.RegularExpressions.Generator.Tests
                         private static partial Regex Valid();
                     }
                 }
-            ", compile: true));
+            ", compile: true, allowUnsafe: allowUnsafe));
         }
 
         [Fact]
@@ -440,6 +442,30 @@ namespace System.Text.RegularExpressions.Generator.Tests
             ", compile: true));
         }
 
+        [Fact]
+        public async Task Valid_ClassWithGenericConstraints()
+        {
+            Assert.Empty(await RunGenerator(@"
+                using D;
+                using System.Text.RegularExpressions;
+                namespace A
+                {
+                    public partial class B<U>
+                    {
+                        private partial class C<T> where T : IBlah
+                        {
+                            [RegexGenerator(""ab"")]
+                            private static partial Regex Valid();
+                        }
+                    }
+                }
+                namespace D
+                {
+                    internal interface IBlah { }
+                }
+            ", compile: true));
+        }
+
         public static IEnumerable<object[]> Valid_Modifiers_MemberData()
         {
             foreach (string type in new[] { "class", "struct", "record", "record struct", "record class", "interface" })
@@ -557,13 +583,13 @@ namespace System.Text.RegularExpressions.Generator.Tests
         }
 
         private async Task<IReadOnlyList<Diagnostic>> RunGenerator(
-            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, CancellationToken cancellationToken = default)
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
                 .WithMetadataReferences(additionalRefs is not null ? s_refs.Concat(additionalRefs) : s_refs)
-                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe)
                 .WithNullableContextOptions(NullableContextOptions.Enable))
                 .WithParseOptions(new CSharpParseOptions(langVersion))
                 .AddDocument("RegexGenerator.g.cs", SourceText.From(code, Encoding.UTF8)).Project;

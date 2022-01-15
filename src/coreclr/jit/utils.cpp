@@ -1131,10 +1131,10 @@ UINT FixedBitVect::bitVectGetNextAndClear()
     return bitNum;
 }
 
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
+int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
+                    _In_reads_(cbBufSize) char*                             pBufStart,
+                    size_t                                                  cbBufSize,
+                    _In_z_ const char*                                      fmt,
                     ...)
 {
     assert(fmt);
