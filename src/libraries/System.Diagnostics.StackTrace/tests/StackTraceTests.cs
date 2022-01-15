@@ -317,7 +317,14 @@ namespace System.Diagnostics.Tests
         {
             // This is sepate from ToString_Invoke_ReturnsExpected since unsafe cannot be used for iterators
             var stackTrace = FunctionPointerParameter(null);
-            Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(IntPtr x)", stackTrace.ToString());
+            if (PlatformDetection.IsMonoRuntime)
+            {
+                Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(MonoFNPtrFakeClass x)", stackTrace.ToString());
+            }
+            else
+            {
+                Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(IntPtr x)", stackTrace.ToString());
+            }
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
