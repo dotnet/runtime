@@ -18,6 +18,10 @@
     <Compile Include="Vectors\Vector256Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
     <Compile Include="X86\PopcntTests.cs" />
+    <Compile Include="X86\SseTests.ConvertScalarToVector128Single.cs" />
+    <Compile Include="X86\SseTests.ConvertToNInt.cs" />
+    <Compile Include="X86\SseTests.ConvertToNIntWithTruncation.cs" />
+    <Compile Include="X86\SseTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
