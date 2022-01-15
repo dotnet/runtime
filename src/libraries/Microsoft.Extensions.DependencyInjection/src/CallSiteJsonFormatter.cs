@@ -149,7 +149,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 Builder.Append('}');
             }
 
-            public void StartProperty(string? name)
+            public void StartProperty(string name)
             {
                 if (!_firstItem)
                 {
@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
-            public void WriteProperty(string? name, object? value)
+            public void WriteProperty(string name, object? value)
             {
                 StartProperty(name);
                 if (value != null)
