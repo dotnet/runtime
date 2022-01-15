@@ -13,11 +13,6 @@
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/63802")] -->
-    <DefineConstants>$(DefineConstants);BUILDING_NETFX</DefineConstants>
-  </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="..\Common\CollectionTests\CollectionTests.AsyncEnumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.AsyncEnumerable.cs" />
     <Compile Include="..\Common\CollectionTests\CollectionTests.Concurrent.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\CollectionTests\CollectionTests.Concurrent.cs" />

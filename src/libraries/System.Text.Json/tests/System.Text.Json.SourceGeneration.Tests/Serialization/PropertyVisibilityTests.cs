@@ -249,7 +249,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
-#if !BUILDING_NETFX
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
@@ -424,7 +424,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithNewSlotAttributedDecimalProperty))]
         [JsonSerializable(typeof(ClassWithNewSlotDecimalProperty))]
         [JsonSerializable(typeof(LargeStructWithValueAndReferenceTypes))]
-#if !BUILDING_NETFX
+#if !NETFRAMEWORK
         [JsonSerializable(typeof(ClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(WrapperForClassWithUnsupportedBigInteger))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedBigInteger))]
