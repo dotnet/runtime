@@ -20,18 +20,18 @@ namespace System.Reflection
         {
             public AssemblyNameParts(string name, Version? version, string? cultureName, AssemblyNameFlags flags, byte[]? publicKeyOrToken)
             {
-                m_name = name;
-                m_version = version;
-                m_cultureName = cultureName;
-                m_flags = flags;
-                m_publicKeyOrToken = publicKeyOrToken;
+                _name = name;
+                _version = version;
+                _cultureName = cultureName;
+                _flags = flags;
+                _publicKeyOrToken = publicKeyOrToken;
             }
 
-            public string m_name;
-            public Version? m_version;
-            public string? m_cultureName;
-            public AssemblyNameFlags m_flags;
-            public byte[]? m_publicKeyOrToken;
+            public string _name;
+            public Version? _version;
+            public string? _cultureName;
+            public AssemblyNameFlags _flags;
+            public byte[]? _publicKeyOrToken;
         }
 
         public static AssemblyNameParts Parse(string s)

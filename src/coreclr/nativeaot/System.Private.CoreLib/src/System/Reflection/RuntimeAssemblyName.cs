@@ -37,7 +37,7 @@ namespace System.Reflection
         public static RuntimeAssemblyName Parse(string name)
         {
             AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(name);
-            return new RuntimeAssemblyName(parts.m_name, parts.m_version, parts.m_cultureName, parts.m_flags, parts.m_publicKeyOrToken);
+            return new RuntimeAssemblyName(parts._name, parts._version, parts._cultureName, parts._flags, parts._publicKeyOrToken);
         }
 
         // Simple name.

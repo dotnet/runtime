@@ -35,24 +35,24 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
             AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(assemblyName);
-            this.Name = parts.m_name;
-            this.Version = parts.m_version;
-            this.CultureName = parts.m_cultureName;
-            this.Flags = parts.m_flags.ExtractAssemblyNameFlags();
-            this.ContentType = parts.m_flags.ExtractAssemblyContentType();
+            this.Name = parts._name;
+            this.Version = parts._version;
+            this.CultureName = parts._cultureName;
+            this.Flags = parts._flags.ExtractAssemblyNameFlags();
+            this.ContentType = parts._flags.ExtractAssemblyContentType();
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            this.ProcessorArchitecture = parts.m_flags.ExtractProcessorArchitecture();
+            this.ProcessorArchitecture = parts._flags.ExtractProcessorArchitecture();
 #pragma warning restore SYSLIB0037
 
-            if (parts.m_publicKeyOrToken != null)
+            if (parts._publicKeyOrToken != null)
             {
                 if (0 != (this.Flags & AssemblyNameFlags.PublicKey))
                 {
-                    this.SetPublicKey(parts.m_publicKeyOrToken);
+                    this.SetPublicKey(parts._publicKeyOrToken);
                 }
                 else
                 {
-                    this.SetPublicKeyToken(parts.m_publicKeyOrToken);
+                    this.SetPublicKeyToken(parts._publicKeyOrToken);
                 }
             }
         }
