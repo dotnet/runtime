@@ -52,6 +52,7 @@ namespace JIT.HardwareIntrinsics.X86
                 ["CompareUnordered.Single"] = CompareUnorderedSingle,
                 ["CompareScalarUnordered.Single"] = CompareScalarUnorderedSingle,
                 ["ConvertScalarToVector128Single.Single"] = ConvertScalarToVector128SingleSingle,
+                ["ConvertScalarToVector128Single.Single"] = ConvertScalarToVector128SingleSingle,
                 ["Divide.Single"] = DivideSingle,
                 ["DivideScalar.Single"] = DivideScalarSingle,
                 ["LoadVector128.Single"] = LoadVector128Single,
@@ -66,6 +67,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["Subtract.Single"] = SubtractSingle,
                 ["SubtractScalar.Single"] = SubtractScalarSingle,
                 ["Xor.Single"] = XorSingle,
+                ["ConvertToNInt.Vector128Single"] = ConvertToNIntVector128Single,
+                ["ConvertToNIntWithTruncation.Vector128Single"] = ConvertToNIntWithTruncationVector128Single,
             };
         }
     }

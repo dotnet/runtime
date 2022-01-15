@@ -93,7 +93,7 @@ namespace JIT.HardwareIntrinsics.X86
         private struct TestStruct
         {
             public Vector128<Single> _fld1;
-            public Int32 _fld2;
+            public IntPtr _fld2;
 
             public static TestStruct Create()
             {
@@ -101,7 +101,7 @@ namespace JIT.HardwareIntrinsics.X86
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref testStruct._fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-                _data2 = TestLibrary.Generator.GetInt32();
+                _data2 = TestLibrary.Generator.GetIntPtr();
                 testStruct._fld2 = _data2;
                 return testStruct;
             }
@@ -121,21 +121,21 @@ namespace JIT.HardwareIntrinsics.X86
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Single>>() / sizeof(Single);
 
         private static Single[] _data1 = new Single[Op1ElementCount];
-        private static Int32 _data2;
+        private static IntPtr _data2;
 
         private static Vector128<Single> _clsVar1;
-        private static Int32 _clsVar2;
+        private static IntPtr _clsVar2;
 
         private Vector128<Single> _fld1;
-        private Int32 _fld2;
+        private IntPtr _fld2;
 
-        private SimpleBinaryOpConvTest__DataTable<Single, Single, Int32> _dataTable;
+        private SimpleBinaryOpConvTest__DataTable<Single, Single, IntPtr> _dataTable;
 
         static SimpleBinaryOpConvTest__ConvertScalarToVector128SingleSingle()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            _data2 = TestLibrary.Generator.GetInt32();
+            _data2 = TestLibrary.Generator.GetIntPtr();
             _clsVar2 = _data2;
         }
 
@@ -145,10 +145,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Single>>());
-            _data2 = TestLibrary.Generator.GetInt32();
+            _data2 = TestLibrary.Generator.GetIntPtr();
             _fld2 = _data2;
 
-            _dataTable = new SimpleBinaryOpConvTest__DataTable<Single, Single, Int32>(_data1, _data2, new Single[RetElementCount], LargestVectorSize);
+            _dataTable = new SimpleBinaryOpConvTest__DataTable<Single, Single, IntPtr>(_data1, _data2, new Single[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse.IsSupported;
@@ -198,7 +198,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Sse).GetMethod(nameof(Sse.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(Int32) })
+            var result = typeof(Sse).GetMethod(nameof(Sse.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(IntPtr) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Single>>(_dataTable.inArray1Ptr),
                                         _dataTable.inData2
@@ -212,7 +212,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(Sse).GetMethod(nameof(Sse.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(Int32) })
+            var result = typeof(Sse).GetMethod(nameof(Sse.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(IntPtr) })
                                      .Invoke(null, new object[] {
                                         Sse.LoadVector128((Single*)(_dataTable.inArray1Ptr)),
                                         _dataTable.inData2
@@ -226,7 +226,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
 
-            var result = typeof(Sse).GetMethod(nameof(Sse.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(Int32) })
+            var result = typeof(Sse).GetMethod(nameof(Sse.ConvertScalarToVector128Single), new Type[] { typeof(Vector128<Single>), typeof(IntPtr) })
                                      .Invoke(null, new object[] {
                                         Sse.LoadAlignedVector128((Single*)(_dataTable.inArray1Ptr)),
                                         _dataTable.inData2
@@ -341,7 +341,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<Single> left, Int32 right, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Single> left, IntPtr right, void* result, [CallerMemberName] string method = "")
         {
             Single[] inArray1 = new Single[Op1ElementCount];
             Single[] outArray = new Single[RetElementCount];
@@ -352,7 +352,7 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(inArray1, right, outArray, method);
         }
 
-        private void ValidateResult(void* left, Int32 right, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* left, IntPtr right, void* result, [CallerMemberName] string method = "")
         {
             Single[] inArray1 = new Single[Op1ElementCount];
             Single[] outArray = new Single[RetElementCount];
@@ -363,9 +363,9 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(inArray1, right, outArray, method);
         }
 
-        private void ValidateResult(Single[] left, Int32 right, Single[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(Single[] left, IntPtr right, Single[] result, [CallerMemberName] string method = "")
         {
-            if ((float)right != result[0])
+            if ((nint)right != result[0])
             {
                 Succeeded = false;
             }
@@ -383,7 +383,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!Succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sse)}.{nameof(Sse.ConvertScalarToVector128Single)}<Single>(Vector128<Single>, Int32): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse)}.{nameof(Sse.ConvertScalarToVector128Single)}<Single>(Vector128<Single>, IntPtr): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
