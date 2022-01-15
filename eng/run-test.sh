@@ -31,7 +31,7 @@ usage()
     echo "                                      default: Debug"
     echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD, illumos or Solaris)"
     echo "                                      default: detect current OS"
-    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
+    echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64, loongarch64)"
     echo "                                      default: detect current architecture"
     echo
     echo "Execution options:"
