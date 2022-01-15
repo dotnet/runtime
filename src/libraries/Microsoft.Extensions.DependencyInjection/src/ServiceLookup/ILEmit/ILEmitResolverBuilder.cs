@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private struct GeneratedMethod
         {
-            public Func<ServiceProviderEngineScope, object> Lambda;
+            public Func<ServiceProviderEngineScope, object?> Lambda;
 
             public ILEmitResolverBuilderRuntimeContext Context;
             public DynamicMethod DynamicMethod;
@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _buildTypeDelegate = (key, cs) => BuildTypeNoCache(cs);
         }
 
-        public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
+        public Func<ServiceProviderEngineScope, object?> Build(ServiceCallSite callSite)
         {
             return BuildType(callSite).Lambda;
         }
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             return new GeneratedMethod()
             {
-                Lambda = (Func<ServiceProviderEngineScope, object>)dynamicMethod.CreateDelegate(typeof(Func<ServiceProviderEngineScope, object>), runtimeContext),
+                Lambda = (Func<ServiceProviderEngineScope, object?>)dynamicMethod.CreateDelegate(typeof(Func<ServiceProviderEngineScope, object?>), runtimeContext),
                 Context = runtimeContext,
                 DynamicMethod = dynamicMethod
             };
