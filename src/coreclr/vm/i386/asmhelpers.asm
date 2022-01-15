@@ -1413,8 +1413,16 @@ public _ThePreStubPatchLabel@0
 _ThePreStubPatch@0 endp
 
 _TheUMEntryPrestub@0 proc public
+    ; push argument registers
+    push        ecx
+    push        edx
+
     push    eax     ; UMEntryThunk*
     call    _TheUMEntryPrestubWorker@4
+
+    ; pop argument registers
+    pop         edx
+    pop         ecx
 
     ; eax = PCODE
     jmp     eax     ; Tail Jmp
