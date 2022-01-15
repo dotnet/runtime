@@ -40,6 +40,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(CovariantDerived), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(CovariantDerivedGeneric<string>), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(IgnoredPropertyBase), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -86,6 +94,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.PersonStruct.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.CovariantDerived.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.CovariantDerivedGenericString.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.IgnoredPropertyBase.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NotIgnoredPropertyBase.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.IgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
         }
     }
 
@@ -124,6 +140,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
+    [JsonSerializable(typeof(CovariantDerived))]
+    [JsonSerializable(typeof(CovariantDerivedGeneric<string>))]
+    [JsonSerializable(typeof(IgnoredPropertyBase))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase))]
+    [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived))]
+    [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -193,6 +217,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.SerializeHandler);
             Assert.Null(MetadataContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.Null(MetadataContext.Default.PersonStruct.SerializeHandler);
+            Assert.Null(MetadataContext.Default.CovariantDerived.SerializeHandler);
+            Assert.Null(MetadataContext.Default.CovariantDerivedGenericString.SerializeHandler);
+            Assert.Null(MetadataContext.Default.IgnoredPropertyBase.SerializeHandler);
+            Assert.Null(MetadataContext.Default.NotIgnoredPropertyBase.SerializeHandler);
+            Assert.Null(MetadataContext.Default.IgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.Null(MetadataContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+            Assert.Null(MetadataContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.Null(MetadataContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
         }
 
         [Fact]

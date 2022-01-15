@@ -41,6 +41,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
+    [JsonSerializable(typeof(CovariantDerived))]
+    [JsonSerializable(typeof(CovariantDerivedGeneric<string>))]
+    [JsonSerializable(typeof(IgnoredPropertyBase))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase))]
+    [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived))]
+    [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -88,6 +96,15 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
             Assert.Null(MetadataAndSerializationContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.PersonStruct.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantDerived.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantDerivedGenericString.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+
         }
     }
 }

@@ -158,4 +158,52 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string FirstName { get; set; }
         public string LastName { get; set; }
     }
+
+
+
+    public class CovariantBase
+    {
+        [JsonIgnore]
+        public virtual object Id { get; }
+    }
+    public class CovariantDerived : CovariantBase
+    {
+        [JsonIgnore]
+        public override string Id { get; }
+    }
+    public class CovariantDerivedGeneric<T> : CovariantBase
+        where T : class
+    {
+        [JsonIgnore]
+        public override T Id { get; }
+    }
+
+    public class IgnoredPropertyBase
+    {
+        [JsonIgnore]
+        public string Id { get; set; }
+    }
+    public class NotIgnoredPropertyBase
+    {
+        public string Id { get; set; }
+    }
+
+    public class IgnoredPropertyBase_NotIgnoredPropertyDerived : IgnoredPropertyBase
+    {
+        public new string Id { get; set; }
+    }
+    public class NotIgnoredPropertyBase_IgnoredPropertyDerived : NotIgnoredPropertyBase
+    {
+        [JsonIgnore]
+        public new string Id { get; set; }
+    }
+    public class NotIgnoredPropertyBase_NotIgnoredPropertyDerived : NotIgnoredPropertyBase
+    {
+        public new string Id { get; set; }
+    }
+    public class IgnoredPropertyBase_IgnoredPropertyDerived : IgnoredPropertyBase
+    {
+        [JsonIgnore]
+        public new string Id { get; set; }
+    }
 }

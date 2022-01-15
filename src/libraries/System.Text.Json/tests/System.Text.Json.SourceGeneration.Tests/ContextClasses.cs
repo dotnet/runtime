@@ -47,6 +47,14 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
         public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
+        public JsonTypeInfo<CovariantDerived> CovariantDerived { get; }
+        public JsonTypeInfo<CovariantDerivedGeneric<string>> CovariantDerivedGenericString { get; }
+        public JsonTypeInfo<IgnoredPropertyBase> IgnoredPropertyBase { get; }
+        public JsonTypeInfo<NotIgnoredPropertyBase> NotIgnoredPropertyBase { get; }
+        public JsonTypeInfo<IgnoredPropertyBase_NotIgnoredPropertyDerived> IgnoredPropertyBase_NotIgnoredPropertyDerived { get; }
+        public JsonTypeInfo<IgnoredPropertyBase_IgnoredPropertyDerived> IgnoredPropertyBase_IgnoredPropertyDerived { get; }
+        public JsonTypeInfo<NotIgnoredPropertyBase_NotIgnoredPropertyDerived> NotIgnoredPropertyBase_NotIgnoredPropertyDerived { get; }
+        public JsonTypeInfo<NotIgnoredPropertyBase_IgnoredPropertyDerived> NotIgnoredPropertyBase_IgnoredPropertyDerived { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

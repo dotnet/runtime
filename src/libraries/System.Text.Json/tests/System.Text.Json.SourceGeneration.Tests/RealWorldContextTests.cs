@@ -882,5 +882,121 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("Jane", person.Value.FirstName);
             Assert.Equal("Doe", person.Value.LastName);
         }
+
+        [Fact]
+        public void JsonIgnoreForCovariantProperties()
+        {
+            var derived = new CovariantDerived();
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(derived, DefaultContext.CovariantDerived));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(derived, DefaultContext.CovariantDerived);
+                JsonTestHelper.AssertJsonEqual(@"{}", json);
+                derived = JsonSerializer.Deserialize(json, DefaultContext.CovariantDerived);
+                Assert.Null(derived.Id);
+            }
+        }
+
+        [Fact]
+        public void JsonIgnoreForCovariantGenericProperties()
+        {
+            var derived = new CovariantDerivedGeneric<string>();
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(derived, DefaultContext.CovariantDerivedGenericString));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(derived, DefaultContext.CovariantDerivedGenericString);
+                JsonTestHelper.AssertJsonEqual(@"{}", json);
+
+                derived = JsonSerializer.Deserialize(json, DefaultContext.CovariantDerivedGenericString);
+                Assert.Null(derived.Id);
+            }
+        }
+
+        [Fact]
+        public void JsonIgnoreForHiddenProperties_IgnoredBase_NotIgnoredDerived()
+        {
+            var derived = new IgnoredPropertyBase_NotIgnoredPropertyDerived { Id = "Test" };
+
+            string json = JsonSerializer.Serialize(derived, DefaultContext.IgnoredPropertyBase_NotIgnoredPropertyDerived);
+            JsonTestHelper.AssertJsonEqual("{\"Id\":\"Test\"}", json);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.IgnoredPropertyBase_NotIgnoredPropertyDerived));
+            }
+            else
+            {
+                derived = JsonSerializer.Deserialize(json, DefaultContext.IgnoredPropertyBase_NotIgnoredPropertyDerived);
+                Assert.Equal("Test", derived.Id);
+            }
+        }
+
+        [Fact]
+        public void JsonIgnoreForHiddenProperties_NotIgnoredBase_IgnoredDerived()
+        {
+            var derived = new NotIgnoredPropertyBase_IgnoredPropertyDerived { Id = "Test" };
+
+            string json = JsonSerializer.Serialize(derived, DefaultContext.NotIgnoredPropertyBase_IgnoredPropertyDerived);
+            JsonTestHelper.AssertJsonEqual("{\"Id\":null}", json);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.NotIgnoredPropertyBase_IgnoredPropertyDerived));
+            }
+            else
+            {
+                derived = JsonSerializer.Deserialize(json, DefaultContext.NotIgnoredPropertyBase_IgnoredPropertyDerived);
+                Assert.Null(derived.Id);
+            }
+        }
+
+        [Fact]
+        public void JsonIgnoreForHiddenProperties_IgnoredBase_IgnoredDerived()
+        {
+            var derived = new IgnoredPropertyBase_IgnoredPropertyDerived { Id = "Test" };
+
+            string json = JsonSerializer.Serialize(derived, DefaultContext.IgnoredPropertyBase_IgnoredPropertyDerived);
+            JsonTestHelper.AssertJsonEqual(@"{}", json);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.IgnoredPropertyBase_IgnoredPropertyDerived));
+            }
+            else
+            {
+                derived = JsonSerializer.Deserialize(json, DefaultContext.IgnoredPropertyBase_IgnoredPropertyDerived);
+                Assert.Null(derived.Id);
+            }
+        }
+
+        [Fact]
+        public void JsonIgnoreForHiddenProperties_NotIgnoredBase_NotIgnoredDerived()
+        {
+            var derived = new NotIgnoredPropertyBase_NotIgnoredPropertyDerived { Id = "Test" };
+
+            string json = JsonSerializer.Serialize(derived, DefaultContext.NotIgnoredPropertyBase_NotIgnoredPropertyDerived);
+            JsonTestHelper.AssertJsonEqual("{\"Id\":\"Test\"}", json);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                // Deserialization not supported in fast path serialization only mode
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, DefaultContext.NotIgnoredPropertyBase_NotIgnoredPropertyDerived));
+            }
+            else
+            {
+                derived = JsonSerializer.Deserialize(json, DefaultContext.NotIgnoredPropertyBase_NotIgnoredPropertyDerived);
+                Assert.Equal("Test", derived.Id);
+            }
+        }
     }
 }

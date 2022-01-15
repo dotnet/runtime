@@ -1115,7 +1115,7 @@ namespace System.Text.Json.SourceGeneration
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
                     ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>();
-                    ignoredMembers.Add(propGenSpec.ClrName, propGenSpec);
+                    ignoredMembers.TryAdd(propGenSpec.ClrName, propGenSpec);
                 }
             }
 

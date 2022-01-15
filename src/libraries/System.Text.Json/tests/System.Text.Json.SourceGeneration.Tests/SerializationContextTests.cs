@@ -41,6 +41,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
+    [JsonSerializable(typeof(CovariantDerived))]
+    [JsonSerializable(typeof(CovariantDerivedGeneric<string>))]
+    [JsonSerializable(typeof(IgnoredPropertyBase))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase))]
+    [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived))]
+    [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -80,6 +88,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(CovariantDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(CovariantDerivedGeneric<string>), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(IgnoredPropertyBase), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -120,6 +136,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(PersonStruct?), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(CovariantDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(CovariantDerivedGeneric<string>), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(IgnoredPropertyBase), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -169,6 +193,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => SerializationContext.Default.StructWithBadCustomConverter.SerializeHandler);
             Assert.Null(SerializationContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(SerializationContext.Default.PersonStruct.SerializeHandler);
+            Assert.Null(SerializationContext.Default.CovariantDerived.SerializeHandler);
+            Assert.Null(SerializationContext.Default.CovariantDerivedGenericString.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.IgnoredPropertyBase.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.NotIgnoredPropertyBase.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.IgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
         }
 
         [Fact]
@@ -492,6 +524,14 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.PersonStruct.SerializeHandler);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.CovariantDerived.SerializeHandler);
+            Assert.Null(SerializationWithPerTypeAttributeContext.Default.CovariantDerivedGenericString.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.IgnoredPropertyBase.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.NotIgnoredPropertyBase.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.IgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
         }
     }
 }

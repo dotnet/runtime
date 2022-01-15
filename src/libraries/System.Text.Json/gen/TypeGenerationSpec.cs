@@ -222,7 +222,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (propGenSpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
                 {
-                    (ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>()).Add(memberName, propGenSpec);
+                    (ignoredMembers ??= new Dictionary<string, PropertyGenerationSpec>()).TryAdd(memberName, propGenSpec);
                 }
             }
 
