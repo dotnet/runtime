@@ -2840,8 +2840,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // When both addresses are not 16-byte aligned the CopyBlock instruction sequence starts with padding
     // str instruction. For example, when both addresses are 8-byte aligned the instruction sequence looks like
     //
-    // ldr D_simdReg1, [srcReg, #srcOffset]
-    // str D_simdReg1, [dstReg, #dstOffset]
+    // ldr X_intReg1, [srcReg, #srcOffset]
+    // str X_intReg1, [dstReg, #dstOffset]
     // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+8]
     // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+8]
     // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+40]
