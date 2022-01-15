@@ -469,16 +469,9 @@ namespace Microsoft.Extensions.Configuration
                     instance: args[1],
                     config: child,
                     options: options);
-                if (item is not null)
+                if (item != null)
                 {
-                    if (keyType == typeof(string))
-                    {
-                        setter.SetValue(dictionary, item, new object[] { key });
-                    }
-                    else if (keyTypeIsEnum)
-                    {
-                        setter.SetValue(dictionary, item, new object[] { key });
-                    }
+                    setter.SetValue(dictionary, item, new object[] { key });
                 }
             }
         }
