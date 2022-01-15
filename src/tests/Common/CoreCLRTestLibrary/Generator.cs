@@ -61,13 +61,17 @@ namespace TestLibrary
 		
 		public static nint GetIntPtr(Int32 new_seed) {
             Seed = new_seed;
-            return (nint) GetInt32();
+            return GetIntPtr();
 		}
+		
+		public static nint GetIntPtr() => (nint) GetInt32();
 		
 		public static nuint GetUIntPtr(Int32 new_seed) {
             Seed = new_seed;
-            return (nuint) GetUInt32();
+            return GetUIntPtr();
 		}
+		
+		public static nuint GetUIntPtr() => (nuint) GetUInt32();
 
         // returns a non-negative Int64 between 0 and Int64.MaxValue
         public static Int64 GetInt64(Int32 new_seed)
