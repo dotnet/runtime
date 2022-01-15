@@ -2,17 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
-using System.Runtime;
 using System.Security;
 
 namespace System.Reflection
 {
-#if CORERT
-    public // Needs to be public so that Reflection.Core can see it.
-#else
-    internal
-#endif
-    static partial class AssemblyNameHelpers
+    internal static partial class AssemblyNameHelpers
     {
         public static byte[]? ComputePublicKeyToken(byte[]? publicKey)
         {

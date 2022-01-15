@@ -14,23 +14,27 @@ namespace System.Reflection
     //
     // Parses an assembly name.
     //
-#if CORERT
-    [System.Runtime.CompilerServices.ReflectionBlocked]
-    public // Needs to be public so that Reflection.Core can see it.
-#else
-    internal
-#endif
-    static class AssemblyNameParser
+    internal static class AssemblyNameParser
     {
-        public static void Parse(AssemblyName blank, string s)
+        public struct AssemblyNameParts
         {
-            if (s == null)
-                throw new ArgumentNullException(nameof(s));
-            RuntimeAssemblyName runtimeAssemblyName = Parse(s);
-            runtimeAssemblyName.CopyToAssemblyName(blank);
+            public AssemblyNameParts(string name, Version? version, string? cultureName, AssemblyNameFlags flags, byte[]? publicKeyOrToken)
+            {
+                m_name = name;
+                m_version = version;
+                m_cultureName = cultureName;
+                m_flags = flags;
+                m_publicKeyOrToken = publicKeyOrToken;
+            }
+
+            public string m_name;
+            public Version? m_version;
+            public string? m_cultureName;
+            public AssemblyNameFlags m_flags;
+            public byte[]? m_publicKeyOrToken;
         }
 
-        public static RuntimeAssemblyName Parse(string s)
+        public static AssemblyNameParts Parse(string s)
         {
             Debug.Assert(s != null);
 
@@ -137,7 +141,8 @@ namespace System.Reflection
                 // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it (as long it's not duplicated.)
                 token = lexer.GetNext();
             }
-            return new RuntimeAssemblyName(name, version, cultureName, flags, pkt);
+
+            return new AssemblyNameParts(name, version, cultureName, flags, pkt);
         }
 
         private static Version ParseVersion(string attributeValue)

@@ -24,7 +24,6 @@ System.Reflection.MetadataAssemblyResolver</PackageDescription>
     <Compile Include="System\Reflection\MetadataLoadContext.Loading.cs" />
     <Compile Include="System\Reflection\MetadataLoadContext.Resolving.cs" />
     <Compile Include="System\Reflection\PathAssemblyResolver.cs" />
-    <Compile Include="System\Reflection\Runtime\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\Runtime\SignatureTypeExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\ConstructorPolicies.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\EventPolicies.cs" />
@@ -146,6 +145,8 @@ System.Reflection.MetadataAssemblyResolver</PackageDescription>
     <Compile Include="System\Reflection\TypeLoading\Types\RoType.TypeClassification.cs" />
     <Compile Include="System\Reflection\TypeLoading\Types\RoWrappedType.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\AssemblyNameHelpers.cs"
+             Link="System\Reflection\AssemblyNameHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />

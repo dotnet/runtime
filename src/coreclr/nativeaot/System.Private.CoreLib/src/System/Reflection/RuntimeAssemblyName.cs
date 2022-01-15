@@ -14,13 +14,7 @@ namespace System.Reflection
     //
     // We use this as our internal interchange type and only convert to and from the public AssemblyName class at public boundaries.
     //
-#if CORERT
-    [System.Runtime.CompilerServices.ReflectionBlocked]
-    public // Needs to be public so that Reflection.Core can see it.
-#else
-    internal
-#endif
-    sealed class RuntimeAssemblyName : IEquatable<RuntimeAssemblyName>
+    public sealed class RuntimeAssemblyName : IEquatable<RuntimeAssemblyName>
     {
         public RuntimeAssemblyName(string name, Version? version, string? cultureName, AssemblyNameFlags flags, byte[]? publicKeyOrToken)
         {
@@ -38,6 +32,12 @@ namespace System.Reflection
 
             // Optional public key (if Flags.PublicKey == true) or public key token.
             this.PublicKeyOrToken = publicKeyOrToken;
+        }
+
+        public static RuntimeAssemblyName Parse(string name)
+        {
+            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(name);
+            return new RuntimeAssemblyName(parts.m_name, parts.m_version, parts.m_cultureName, parts.m_flags, parts.m_publicKeyOrToken);
         }
 
         // Simple name.

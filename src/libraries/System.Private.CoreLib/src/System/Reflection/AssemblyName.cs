@@ -34,9 +34,27 @@ namespace System.Reflection
                 (assemblyName[0] == '\0'))
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
-            _name = assemblyName;
-            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(_name);
-            runtimeAssemblyName.CopyToAssemblyName(this);
+            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(assemblyName);
+            this.Name = parts.m_name;
+            this.Version = parts.m_version;
+            this.CultureName = parts.m_cultureName;
+            this.Flags = parts.m_flags.ExtractAssemblyNameFlags();
+            this.ContentType = parts.m_flags.ExtractAssemblyContentType();
+#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
+            this.ProcessorArchitecture = parts.m_flags.ExtractProcessorArchitecture();
+#pragma warning restore SYSLIB0037
+
+            if (parts.m_publicKeyOrToken != null)
+            {
+                if (0 != (this.Flags & AssemblyNameFlags.PublicKey))
+                {
+                    this.SetPublicKey(parts.m_publicKeyOrToken);
+                }
+                else
+                {
+                    this.SetPublicKeyToken(parts.m_publicKeyOrToken);
+                }
+            }
         }
 
         public AssemblyName()
@@ -178,14 +196,9 @@ namespace System.Reflection
                 _flags |= AssemblyNameFlags.PublicKey;
         }
 
-        private byte[]? ComputePublicKeyToken()
-        {
-            return AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
-        }
-
         // The compressed version of the public key formed from a truncated hash.
         // Will throw a SecurityException if _publicKey is invalid
-        public byte[]? GetPublicKeyToken() => _publicKeyToken ??= ComputePublicKeyToken();
+        public byte[]? GetPublicKeyToken() => _publicKeyToken ??= AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
 
         public void SetPublicKeyToken(byte[]? publicKeyToken)
         {
@@ -238,7 +251,7 @@ namespace System.Reflection
                     return string.Empty;
 
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
-                byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();
+                byte[]? pkt = _publicKeyToken ?? AssemblyNameHelpers.ComputePublicKeyToken(_publicKey);
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType);
             }
         }
