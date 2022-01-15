@@ -3735,46 +3735,62 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
 
     GenTree* op1 = andNode->gtGetOp1();
-    GenTree* op2 = andNode->gtGetOp2();
-    if (op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_ADD) && !comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
+    if (!op1->OperIs(GT_LCL_VAR) || comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
     {
-        GenTree* addOp1 = op2->gtGetOp1();
-        GenTree* addOp2 = op2->gtGetOp2();
-        if (addOp2->IsIntegralConst(-1) && addOp1->OperIs(GT_LCL_VAR) &&
-            (addOp1->AsLclVar()->GetLclNum() == op1->AsLclVar()->GetLclNum()) &&
-            ((op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64)) ||
-             comp->compOpportunisticallyDependsOn(InstructionSet_BMI1)))
-        {
-            LIR::Use use;
-            if (BlockRange().TryGetUse(andNode, &use))
-            {
-                GenTreeHWIntrinsic* blsrNode =
-                    comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1,
-                                                     andNode->TypeIs(TYP_INT)
-                                                         ? NamedIntrinsic::NI_BMI1_ResetLowestSetBit
-                                                         : NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit);
-
-                JITDUMP("Lower: optimize AND(X, ADD(X, -1))\n");
-                DISPNODE(andNode);
-                JITDUMP("to:\n");
-                DISPNODE(blsrNode);
-
-                use.ReplaceWith(blsrNode);
-
-                BlockRange().InsertBefore(andNode, blsrNode);
-                BlockRange().Remove(andNode);
-                BlockRange().Remove(op2);
-                BlockRange().Remove(addOp1);
-                BlockRange().Remove(addOp2);
-
-                ContainCheckHWIntrinsic(blsrNode);
-
-                return blsrNode;
-            }
-        }
+        return nullptr;
     }
 
-    return nullptr;
+    GenTree* op2 = andNode->gtGetOp2();
+    GenTree* addOp2 = op2->gtGetOp2();
+    if (!op2->OperIs(GT_ADD) || !addOp2->IsIntegralConst(-1))
+    {
+        return nullptr;
+    }
+
+    GenTree* addOp1 = op2->gtGetOp1();
+    if (!addOp1->OperIs(GT_LCL_VAR) || (addOp1->AsLclVar()->GetLclNum() != op1->AsLclVar()->GetLclNum()))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+    if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit;
+    }
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_ResetLowestSetBit;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(andNode, &use))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* blsrNode = comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1, intrinsic);
+
+    JITDUMP("Lower: optimize AND(X, ADD(X, -1))\n");
+    DISPNODE(andNode);
+    JITDUMP("to:\n");
+    DISPNODE(blsrNode);
+
+    use.ReplaceWith(blsrNode);
+
+    BlockRange().InsertBefore(andNode, blsrNode);
+    BlockRange().Remove(andNode);
+    BlockRange().Remove(op2);
+    BlockRange().Remove(addOp1);
+    BlockRange().Remove(addOp2);
+
+    ContainCheckHWIntrinsic(blsrNode);
+
+    return blsrNode;
 }
 
 #endif // FEATURE_HW_INTRINSICS
