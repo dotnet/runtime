@@ -1383,45 +1383,39 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Finds the guaranteed beginning character of the node, or null if none exists.</summary>
-        public char? FindStartingCharacter()
+        public (char Char, string? String)? FindStartingCharacterOrString()
         {
             RegexNode? node = this;
             while (true)
             {
-                if (node is null || (node.Options & RegexOptions.RightToLeft) != 0)
+                if (node is not null && (node.Options & RegexOptions.RightToLeft) == 0)
                 {
-                    return null;
-                }
+                    switch (node.Type)
+                    {
+                        case One:
+                        case Oneloop or Oneloopatomic or Onelazy when node.M > 0:
+                            if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(node.Ch))
+                            {
+                                return (node.Ch, null);
+                            }
+                            break;
 
-                char c;
-                switch (node.Type)
-                {
-                    case One:
-                    case Oneloop or Oneloopatomic or Onelazy when node.M > 0:
-                        c = node.Ch;
-                        break;
+                        case Multi:
+                            if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(node.Str.AsSpan()))
+                            {
+                                return ('\0', node.Str);
+                            }
+                            break;
 
-                    case Multi:
-                        c = node.Str![0];
-                        break;
-
-                    case Atomic:
-                    case Concatenate:
-                    case Capture:
-                    case Group:
-                    case Loop or Lazyloop when node.M > 0:
-                    case Require:
-                        node = node.Child(0);
-                        continue;
-
-                    default:
-                        return null;
-                }
-
-                if ((node.Options & RegexOptions.IgnoreCase) == 0 ||
-                    !RegexCharClass.ParticipatesInCaseConversion(c))
-                {
-                    return c;
+                        case Atomic:
+                        case Concatenate:
+                        case Capture:
+                        case Group:
+                        case Loop or Lazyloop when node.M > 0:
+                        case Require:
+                            node = node.Child(0);
+                            continue;
+                    }
                 }
 
                 return null;
