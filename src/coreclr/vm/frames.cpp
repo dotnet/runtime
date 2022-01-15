@@ -63,21 +63,12 @@ void Frame::Log() {
 
     MethodDesc* method = GetFunction();
 
-#ifdef TARGET_X86
-    if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
-        method = ((UMThkCallFrame*) this)->GetUMEntryThunk()->GetMethod();
-#endif
-
     STRESS_LOG3(LF_STUBS, LL_INFO1000000, "STUBS: In Stub with Frame %p assoc Method %pM FrameType = %pV\n", this, method, *((void**) this));
 
     char buff[64];
     const char* frameType;
     if (GetVTablePtr() == PrestubMethodFrame::GetMethodFrameVPtr())
         frameType = "PreStub";
-#ifdef TARGET_X86
-    else if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
-        frameType = "UMThkCallFrame";
-#endif
     else if (GetVTablePtr() == PInvokeCalliFrame::GetMethodFrameVPtr())
     {
         sprintf_s(buff, ARRAY_SIZE(buff), "PInvoke CALLI target" FMT_ADDR,
@@ -1602,32 +1593,6 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 #endif // !DACCESS_COMPILE
 
 #endif // FEATURE_COMINTEROP
-
-
-#ifdef TARGET_X86
-
-PTR_UMEntryThunk UMThkCallFrame::GetUMEntryThunk()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_UMEntryThunk>(GetDatum());
-}
-
-#ifdef DACCESS_COMPILE
-void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    WRAPPER_NO_CONTRACT;
-    UnmanagedToManagedFrame::EnumMemoryRegions(flags);
-
-    // Pieces of the UMEntryThunk need to be saved.
-    UMEntryThunk *pThunk = GetUMEntryThunk();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pThunk), sizeof(UMEntryThunk));
-
-    UMThunkMarshInfo *pMarshInfo = pThunk->GetUMThunkMarshInfo();
-    DacEnumMemoryRegion(dac_cast<TADDR>(pMarshInfo), sizeof(UMThunkMarshInfo));
-}
-#endif
-
-#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 

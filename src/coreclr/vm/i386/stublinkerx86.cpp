@@ -2448,42 +2448,19 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 
 #if defined(TARGET_X86)
 
-#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL) && defined(FEATURE_COMINTEROP)
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
 {
     STANDARD_VM_CONTRACT;
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (UMThkCallFrame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, UMThkCallFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, UMEntryThunk::GetOffsetOfMethodDesc());
+    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
+    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
+    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
 
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
-    }
-
-#ifdef FEATURE_COMINTEROP
-    else if (pFrameVptr == ComMethodFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
-
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
-    }
-#endif // FEATURE_COMINTEROP
-
-    // Unrecognized frame vtbl
-    else
-    {
-        _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubProlog with profiling turned on.");
-    }
+    // Push arguments and notify profiler
+    X86EmitPushImm32(COR_PRF_TRANSITION_CALL);      // Reason
+    X86EmitPushReg(kECX);                           // MethodDesc*
+    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerUnmanagedToManagedTransitionMD), 2*sizeof(void*));
 }
 
 
@@ -2492,47 +2469,20 @@ VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-#ifdef FEATURE_COMINTEROP
-        PRECONDITION(pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr() || pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
-#else
-        PRECONDITION(pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr());
-#endif // FEATURE_COMINTEROP
+        PRECONDITION(pFrameVptr == ComMethodFrame::GetMethodFrameVPtr());
     }
     CONTRACTL_END;
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (UMThkCallFrame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, UMThkCallFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, UMEntryThunk::GetOffsetOfMethodDesc());
+    // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
+    X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
+    X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
 
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
-    }
-
-#ifdef FEATURE_COMINTEROP
-    else if (pFrameVptr == ComMethodFrame::GetMethodFrameVPtr())
-    {
-        // Load the methoddesc into ECX (Frame->m_pvDatum->m_pMD)
-        X86EmitIndexRegLoad(kECX, regFrame, ComMethodFrame::GetOffsetOfDatum());
-        X86EmitIndexRegLoad(kECX, kECX, ComCallMethodDesc::GetOffsetOfMethodDesc());
-
-        // Push arguments and notify profiler
-        X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
-        X86EmitPushReg(kECX);                           // MethodDesc*
-        X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
-    }
-#endif // FEATURE_COMINTEROP
-
-    // Unrecognized frame vtbl
-    else
-    {
-        _ASSERTE(!"Unrecognized vtble passed to EmitComMethodStubEpilog with profiling turned on.");
-    }
+    // Push arguments and notify profiler
+    X86EmitPushImm32(COR_PRF_TRANSITION_RETURN);    // Reason
+    X86EmitPushReg(kECX);                           // MethodDesc*
+    X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
 }
-#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL
+#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL && FEATURE_COMINTEROP
 
 
 #ifndef FEATURE_STUBS_AS_IL
@@ -2585,13 +2535,6 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
     // lea esi, [esp+4] ;; set ESI -> new frame
     X86EmitEspOffset(0x8d, kESI, 4);    // lea ESI, [ESP+4]
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Preserve argument registers for thiscall/fastcall
-        X86EmitPushReg(kECX);
-        X86EmitPushReg(kEDX);
-    }
-
     // Emit Setup thread
     EmitSetup(rgRareLabels[0]);  // rareLabel for rare setup
     EmitLabel(rgRejoinLabels[0]); // rejoin label for rare setup
@@ -2640,23 +2583,6 @@ void StubLinkerCPU::EmitComMethodStubProlog(TADDR pFrameVptr,
     // mov [ebx + Thread.GetFrame()], esi
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kESI);
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // push UnmanagedToManagedExceptHandler
-        X86EmitPushImmPtr((LPVOID)UMThunkPrestubHandler);
-
-        // mov eax, fs:[0]
-        static const BYTE codeSEH1[] = { 0x64, 0xA1, 0x0, 0x0, 0x0, 0x0};
-        EmitBytes(codeSEH1, sizeof(codeSEH1));
-
-        // push eax
-        X86EmitPushReg(kEAX);
-
-        // mov dword ptr fs:[0], esp
-        static const BYTE codeSEH2[] = { 0x64, 0x89, 0x25, 0x0, 0x0, 0x0, 0x0};
-        EmitBytes(codeSEH2, sizeof(codeSEH2));
-    }
-
 #if _DEBUG
     if (Frame::ShouldLogTransitions())
     {
@@ -2693,19 +2619,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
 
     EmitCheckGSCookie(kESI, UnmanagedToManagedFrame::GetOffsetOfGSCookie());
 
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // if we are using exceptions, unlink the SEH
-        // mov ecx,[esp]  ;;pointer to the next exception record
-        X86EmitEspOffset(0x8b, kECX, 0);
-
-        // mov dword ptr fs:[0], ecx
-        static const BYTE codeSEH[] = { 0x64, 0x89, 0x0D, 0x0, 0x0, 0x0, 0x0 };
-        EmitBytes(codeSEH, sizeof(codeSEH));
-
-        X86EmitAddEsp(sizeof(EXCEPTION_REGISTRATION_RECORD));
-    }
-
     // mov [ebx + Thread.GetFrame()], edi  ;; restore previous frame
     X86EmitIndexRegStore(kEBX, Thread::GetOffsetOfCurrentFrame(), kEDI);
 
@@ -2714,13 +2627,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     //-----------------------------------------------------------------------
     EmitEnable(rgRareLabels[2]); // rare gc
     EmitLabel(rgRejoinLabels[2]);        // rejoin for rare gc
-
-    if (pFrameVptr == UMThkCallFrame::GetMethodFrameVPtr())
-    {
-        // Restore argument registers for thiscall/fastcall
-        X86EmitPopReg(kEDX);
-        X86EmitPopReg(kECX);
-    }
 
     // add esp, popstack
     X86EmitAddEsp(sizeof(GSCookie) + UnmanagedToManagedFrame::GetOffsetOfCalleeSavedRegisters());
