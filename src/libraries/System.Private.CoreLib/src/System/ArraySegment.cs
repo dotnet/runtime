@@ -197,7 +197,7 @@ namespace System
 
             int index = System.Array.IndexOf<T>(_array!, item, _offset, _count);
 
-            Debug.Assert(index == -1 ||
+            Debug.Assert(index < 0 ||
                             (index >= _offset && index < _offset + _count));
 
             return index >= 0 ? index - _offset : -1;
@@ -238,7 +238,7 @@ namespace System
 
             int index = System.Array.IndexOf<T>(_array!, item, _offset, _count);
 
-            Debug.Assert(index == -1 ||
+            Debug.Assert(index < 0 ||
                             (index >= _offset && index < _offset + _count));
 
             return index >= 0;

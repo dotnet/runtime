@@ -28,7 +28,7 @@ namespace System
         /// <summary>Initializes the map based on the specified values.</summary>
         /// <param name="charMap">A pointer to the beginning of a <see cref="ProbabilisticMap"/>.</param>
         /// <param name="values">The values to set in the map.</param>
-        public static unsafe void InitializeProbabilisticMap(uint* charMap, ReadOnlySpan<char> values)
+        public static unsafe void Initialize(uint* charMap, ReadOnlySpan<char> values)
         {
 #if DEBUG
             for (int i = 0; i < Size; i++)

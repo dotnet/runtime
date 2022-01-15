@@ -434,7 +434,7 @@ namespace System
             // We continue to support these but expect them to be incredibly rare.  As such, we
             // optimize for correctly formed strings where all the digits are valid hex, and only
             // fall back to supporting these other forms if parsing fails.
-            if (guidString.IndexOfAny('X', 'x', '+') != -1 && TryCompatParsing(guidString, ref result))
+            if (guidString.IndexOfAny('X', 'x', '+') >= 0 && TryCompatParsing(guidString, ref result))
             {
                 return true;
             }

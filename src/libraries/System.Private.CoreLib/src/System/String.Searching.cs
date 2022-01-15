@@ -81,7 +81,7 @@ namespace System
 
             int result = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, startIndex), value, count);
 
-            return result == -1 ? result : result + startIndex;
+            return result < 0 ? result : result + startIndex;
         }
 
         // Returns the index of the first occurrence of any specified character in the current instance.
@@ -121,7 +121,7 @@ namespace System
 
             int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
 
-            return result == -1 ? result : result + startIndex;
+            return result < 0 ? result : result + startIndex;
         }
 
        /*
@@ -291,7 +291,7 @@ namespace System
             int startSearchAt = startIndex + 1 - count;
             int result = SpanHelpers.LastIndexOf(ref Unsafe.Add(ref _firstChar, startSearchAt), value, count);
 
-            return result == -1 ? result : result + startSearchAt;
+            return result < 0 ? result : result + startSearchAt;
         }
 
         // Returns the index of the last occurrence of any specified character in the current instance.
@@ -339,7 +339,7 @@ namespace System
             int startSearchAt = startIndex + 1 - count;
             int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startSearchAt), count).LastIndexOfAny(anyOf);
 
-            return result == -1 ? result : result + startSearchAt;
+            return result < 0 ? result : result + startSearchAt;
         }
 
         // Returns the index of the last occurrence of any character in value in the current instance.

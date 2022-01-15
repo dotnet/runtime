@@ -281,13 +281,13 @@ namespace System
                         span.Length);
 
                 if (Unsafe.SizeOf<T>() == sizeof(int))
-                    return -1 != SpanHelpers.IndexOfValueType(
+                    return 0 <= SpanHelpers.IndexOfValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value),
                         span.Length);
 
                 if (Unsafe.SizeOf<T>() == sizeof(long))
-                    return -1 != SpanHelpers.IndexOfValueType(
+                    return 0 <= SpanHelpers.IndexOfValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
@@ -320,13 +320,13 @@ namespace System
                         span.Length);
 
                 if (Unsafe.SizeOf<T>() == sizeof(int))
-                    return -1 != SpanHelpers.IndexOfValueType(
+                    return 0 <= SpanHelpers.IndexOfValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, int>(ref value),
                         span.Length);
 
                 if (Unsafe.SizeOf<T>() == sizeof(long))
-                    return -1 != SpanHelpers.IndexOfValueType(
+                    return 0 <= SpanHelpers.IndexOfValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, long>(ref value),
                         span.Length);
@@ -821,7 +821,7 @@ namespace System
             ProbabilisticMap map = default;
 
             uint* charMap = (uint*)&map;
-            ProbabilisticMap.InitializeProbabilisticMap(charMap, valuesSpan);
+            ProbabilisticMap.Initialize(charMap, valuesSpan);
 
             ref char cur = ref searchSpace;
             while (searchSpaceLength != 0)
@@ -988,7 +988,7 @@ namespace System
             ProbabilisticMap map = default;
 
             uint* charMap = (uint*)&map;
-            ProbabilisticMap.InitializeProbabilisticMap(charMap, valuesSpan);
+            ProbabilisticMap.Initialize(charMap, valuesSpan);
 
             ref char cur = ref Unsafe.Add(ref searchSpace, searchSpaceLength - 1);
             while (searchSpaceLength != 0)
