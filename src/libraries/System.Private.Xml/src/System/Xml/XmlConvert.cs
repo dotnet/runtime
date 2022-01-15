@@ -587,7 +587,7 @@ namespace System.Xml
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
             if (pos != -1)
             {
-                throw new XmlException(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(content, pos), 0, pos + 1);
+                throw new XmlException(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(content), 0, pos + 1);
             }
 
             return content;
