@@ -100,9 +100,8 @@ namespace System
                             {
                                 return offset + bitPos;
                             }
-
-                            // Clear the lowest set bit (BLSR on xarch)
-                            mask &= mask - 1;
+                            // Clear the lowest set bit
+                            mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
 
@@ -152,9 +151,8 @@ namespace System
                             {
                                 return offset + bitPos;
                             }
-
-                            // Clear the lowest set bit (BLSR on xarch)
-                            mask &= mask - 1;
+                            // Clear the lowest set bit
+                            mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
                     offset += Vector128<byte>.Count;
@@ -615,9 +613,8 @@ namespace System
                             {
                                 return bitPos + offset;
                             }
-
                             // Clear the highest set bit.
-                            mask &= ~(uint)(1 << bitPos);
+                            mask = BitOperations.ResetBit(mask, bitPos);
                         }
                     }
 
@@ -667,9 +664,8 @@ namespace System
                             {
                                 return bitPos + offset;
                             }
-
                             // Clear the highest set bit.
-                            mask &= ~(uint)(1 << bitPos);
+                            mask = BitOperations.ResetBit(mask, bitPos);
                         }
                     }
 
