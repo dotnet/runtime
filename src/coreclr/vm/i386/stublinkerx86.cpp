@@ -37,7 +37,6 @@
 #include "runtimecallablewrapper.h"
 #include "comcache.h"
 #include "olevariant.h"
-#include "notifyexternals.h"
 #endif // FEATURE_COMINTEROP
 
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
@@ -3546,49 +3545,6 @@ VOID StubLinkerCPU::EmitDisable(CodeLabel *pForwardRef, BOOL fCallIn, X86Reg Thr
 
     // jnz RarePath
     X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
-
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
-    // If we are checking whether the current thread holds the loader lock, vector
-    // such cases to the rare disable pathway, where we can check again.
-    if (fCallIn && ShouldCheckLoaderLock())
-    {
-        X86EmitPushReg(kEAX);
-        X86EmitPushReg(kEDX);
-
-        if (ThreadReg == kECX)
-            X86EmitPushReg(kECX);
-
-        // BOOL AuxUlibIsDLLSynchronizationHeld(BOOL *IsHeld)
-        //
-        // So we need to be sure that both the return value and the passed BOOL are both TRUE.
-        // If either is FALSE, then the call failed or the lock is not held.  Either way, the
-        // probe should not fire.
-
-        X86EmitPushReg(kEDX);               // BOOL temp
-        Emit8(0x54);                        // push ESP because arg is &temp
-        X86EmitCall(NewExternalCodeLabel((LPVOID) AuxUlibIsDLLSynchronizationHeld), 0);
-
-        // callee has popped.
-        X86EmitPopReg(kEDX);                // recover temp
-
-        CodeLabel   *pPopLabel = NewCodeLabel();
-
-        Emit16(0xc085);                     // test eax, eax
-        X86EmitCondJump(pPopLabel, X86CondCode::kJZ);
-
-        Emit16(0xd285);                     // test edx, edx
-
-        EmitLabel(pPopLabel);               // retain the conditional flags across the pops
-
-        if (ThreadReg == kECX)
-            X86EmitPopReg(kECX);
-
-        X86EmitPopReg(kEDX);
-        X86EmitPopReg(kEAX);
-
-        X86EmitCondJump(pForwardRef, X86CondCode::kJNZ);
-    }
-#endif
 
 #ifdef _DEBUG
     if (ThreadReg != kECX)
