@@ -2812,7 +2812,9 @@ public:
 #ifndef FEATURE_EH_FUNCLETS
     virtual BOOL NeedsUpdateRegDisplay()
     {
-        return TRUE;
+        // We need to update it only for the cases when a method marked with UnmanagedCallersOnly
+        // is called by a managed method via an unmanaged function pointer.
+        return ExecutionManager::IsManagedCode(GetReturnAddress());
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);

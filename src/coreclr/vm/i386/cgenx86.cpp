@@ -211,16 +211,23 @@ void UMThkCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
     CONTRACT_END;
 
-    CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
+    // We need to update it only for the cases when a method marked with UnmanagedCallersOnly
+    // is called by a managed method via an unmanaged function pointer.
+    if (ExecutionManager::IsManagedCode(GetReturnAddress()))
+    {
+        CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
-    pRD->PCTAddr = GetReturnAddressPtr();
+        pRD->PCTAddr = GetReturnAddressPtr();
 #define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
-    ENUM_CALLEE_SAVED_REGISTERS();
+        ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
-    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
-    UINT cbStackPop = GetUMEntryThunk()->GetMethod()->CbStackPop();
-    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+        pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
+
+        UINT cbStackPop = GetUMEntryThunk()->GetMethod()->CbStackPop();
+
+        pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+    }
 
     RETURN;
 }
