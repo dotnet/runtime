@@ -14149,18 +14149,45 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
     gtUpdateNodeOperSideEffects(multiOp);
+
+    bool dontCseConstArguments = false;
+#if defined(FEATURE_HW_INTRINSICS)
+    // Opportunistically, avoid unexpected CSE for hw intrinsics with IMM arguments
+    if (multiOp->OperIs(GT_HWINTRINSIC))
+    {
+        NamedIntrinsic hwIntrinsic = multiOp->AsHWIntrinsic()->GetHWIntrinsicId();
+#if defined(TARGET_XARCH)
+        if (HWIntrinsicInfo::lookupCategory(hwIntrinsic) == HW_Category_IMM)
+        {
+            dontCseConstArguments = true;
+        }
+#elif defined(TARGET_ARMARCH)
+        if (HWIntrinsicInfo::HasImmediateOperand(hwIntrinsic))
+        {
+            dontCseConstArguments = true;
+        }
+#endif
+    }
+#endif
+
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
         multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
+
+        if (dontCseConstArguments && (*use)->OperIsConst())
+        {
+            (*use)->SetDoNotCSE();
+        }
     }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
         switch (hw->GetHWIntrinsicId())
         {
+#if defined(TARGET_XARCH)
             case NI_SSE_Xor:
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
@@ -14186,6 +14213,36 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 }
                 break;
             }
+#endif
+
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+#endif
+            {
+                bool hwAllArgsAreConst = true;
+                for (GenTree** use : multiOp->UseEdges())
+                {
+                    if (!(*use)->OperIsConst())
+                    {
+                        hwAllArgsAreConst = false;
+                        break;
+                    }
+                }
+
+                // Avoid unexpected CSE for constant arguments for Vector_.Create
+                // but only if all arguments are constants.
+                if (hwAllArgsAreConst)
+                {
+                    for (GenTree** use : multiOp->UseEdges())
+                    {
+                        (*use)->SetDoNotCSE();
+                    }
+                }
+            }
+            break;
 
             default:
                 break;
