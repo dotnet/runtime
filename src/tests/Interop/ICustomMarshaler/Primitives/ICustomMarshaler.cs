@@ -396,7 +396,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void Parameter_NullICustomMarshaler_ThrowsTypeLoadException()
         {
-            // typeof(System.Runtime.InteropServices.MarshalDirectiveException): Marshaling directives are invalid.
             Assert.Throws<TypeLoadException>(() => NullCustomMarshalerMethod(""));
         }
 
@@ -709,7 +708,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_GetInstanceMethodThrows_ThrowsActualException();
                 Parameter_MarshalManagedToNativeThrows_ThrowsActualException();
                 Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
-                Field_ParentIsStruct_ThrowsTypeLoadException();
+                //Field_ParentIsStruct_ThrowsTypeLoadException();
                 Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
                 DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
             }

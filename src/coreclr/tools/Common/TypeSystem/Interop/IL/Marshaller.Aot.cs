@@ -1162,7 +1162,7 @@ namespace Internal.TypeSystem.Interop
             if (marshallerType == null)
             {
                 // TypeLoadException throw here.
-                ThrowHelper.ThrowMarshalDirectiveException();
+                ThrowHelper.ThrowTypeLoadException();
             }
 
             if (marshallerType.IsGenericDefinition)

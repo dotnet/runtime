@@ -51,6 +51,12 @@ namespace Internal.TypeSystem
             ThrowTypeLoadException(id, Format.Type(type), Format.OwningModule(type));
         }
 
+        [System.Diagnostics.DebuggerHidden]
+        public static void ThrowTypeLoadException()
+        {
+            ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, string.Empty, string.Empty);
+        }
+
         private static partial class Format
         {
             public static string OwningModule(MethodDesc method)
