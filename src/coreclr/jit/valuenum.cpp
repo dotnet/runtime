@@ -7802,8 +7802,24 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 GenTree*      baseAddr = nullptr;
                 FieldSeqNode* fldSeq   = nullptr;
 
+                if (argIsVNFunc && funcApp.m_func == VNF_PtrToStatic)
+                {
+                    FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[1]);
+                    assert(fldSeq != nullptr); // We should never see an empty sequence here.
+
+                    if (fldSeq != FieldSeqStore::NotAField())
+                    {
+                        ValueNum newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                             rhsVNPair.GetLiberal(), lhs->TypeGet());
+                        recordGcHeapStore(tree, newHeapVN DEBUGARG("static field store"));
+                    }
+                    else
+                    {
+                        fgMutateGcHeap(tree DEBUGARG("indirect store at NotAField PtrToStatic address"));
+                    }
+                }
                 // Is the LHS an array index expression?
-                if (argIsVNFunc && funcApp.m_func == VNF_PtrToArrElem)
+                else if (argIsVNFunc && funcApp.m_func == VNF_PtrToArrElem)
                 {
                     CORINFO_CLASS_HANDLE elemTypeEq =
                         CORINFO_CLASS_HANDLE(vnStore->ConstantValue<ssize_t>(funcApp.m_args[0]));
