@@ -85,7 +85,8 @@ namespace System
                     Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    if (!cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd != Vector256<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -100,8 +101,8 @@ namespace System
                                 return offset + bitPos;
                             }
 
-                            // Clear lowest set bit
-                            mask = Bmi1.IsSupported ? Bmi1.ResetLowestSetBit(mask) : mask & (mask - 1);
+                            // Clear the lowest set bit (BLSR on xarch)
+                            mask &= mask - 1;
                         }
                     }
 
@@ -135,11 +136,9 @@ namespace System
                     Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    // On Platforms with SSE41 and ARM64 use fast "is all zero" check
-                    // it's especially important for ARM64 where ExtractMostSignificantBits is expensive
-                    // but it also shows nice numbers on XArch
-                    bool useFastAllZeroCheck = Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
-                    if (!useFastAllZeroCheck || !cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    // it's especially important for ARM where ExtractMostSignificantBits is not cheap
+                    if (cmpAnd != Vector128<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -154,8 +153,8 @@ namespace System
                                 return offset + bitPos;
                             }
 
-                            // Clear lowest set bit
-                            mask = Bmi1.IsSupported ? Bmi1.ResetLowestSetBit(mask) : mask & (mask - 1);
+                            // Clear the lowest set bit (BLSR on xarch)
+                            mask &= mask - 1;
                         }
                     }
                     offset += Vector128<byte>.Count;
@@ -600,7 +599,8 @@ namespace System
                     Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    if (!cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd != Vector256<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -650,11 +650,9 @@ namespace System
                     Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    // On Platforms with SSE41 and ARM64 use fast "is all zero" check
-                    // it's especially important for ARM64 where ExtractMostSignificantBits is expensive
-                    // but it also shows nice numbers on XArch
-                    bool useFastAllZeroCheck = Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
-                    if (!useFastAllZeroCheck || !cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    // it's especially important for ARM where ExtractMostSignificantBits is not cheap
+                    if (cmpAnd != Vector128<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -2257,29 +2255,6 @@ namespace System
             // Find the first lane that is set inside compareResult.
             matchedLane = BitOperations.TrailingZeroCount(selectedLanes) >> 2;
             return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsAllZero(this Vector128<byte> vector)
-        {
-            // TODO: JIT should emit it for `vector == Vector128<byte>.Zero, see
-            // https://github.com/dotnet/runtime/issues/63829
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                return AdvSimd.Arm64.MaxAcross(vector).ToScalar() == 0;
-            }
-
-            // Currently, this helper is only used when SSE41 is available on xarch
-            // so no need for SSE2 MoveMask here
-            Debug.Assert(Sse41.IsSupported);
-            return Sse41.TestZ(vector, vector);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsAllZero(this Vector256<byte> vector)
-        {
-            Debug.Assert(Avx.IsSupported);
-            return Avx.TestZ(vector, vector);
         }
     }
 }

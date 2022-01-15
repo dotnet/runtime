@@ -90,7 +90,8 @@ namespace System
                     Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    if (!cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd != Vector256<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -107,7 +108,7 @@ namespace System
                                 return index + charPos;
                             }
 
-                            // Clear two lowest set bits
+                            // Clear two the lowest set bits
                             if (Bmi1.IsSupported)
                                 mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
                             else
@@ -145,11 +146,9 @@ namespace System
                     Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    // On Platforms with SSE41 and ARM64 use fast "is all zero" check
-                    // it's especially important for ARM64 where ExtractMostSignificantBits is expensive
-                    // but it also shows nice numbers on XArch
-                    bool useFastAllZeroCheck = Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
-                    if (!useFastAllZeroCheck || !cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    // it's especially important for ARM where ExtractMostSignificantBits is not cheap
+                    if (cmpAnd != Vector128<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -266,7 +265,8 @@ namespace System
                     Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    if (!cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd != Vector256<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -283,7 +283,6 @@ namespace System
                             {
                                 return charPos + offset;
                             }
-
                             mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
                         }
                     }
@@ -317,11 +316,9 @@ namespace System
                     Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    // On Platforms with SSE41 and ARM64 use fast "is all zero" check
-                    // it's especially important for ARM64 where ExtractMostSignificantBits is expensive
-                    // but it also shows nice numbers on XArch
-                    bool useFastAllZeroCheck = Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
-                    if (!useFastAllZeroCheck || !cmpAnd.IsAllZero())
+                    // Early out: cmpAnd is all zeros
+                    // it's especially important for ARM where ExtractMostSignificantBits is not cheap
+                    if (cmpAnd != Vector128<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
                         while (mask != 0)
@@ -338,8 +335,7 @@ namespace System
                             {
                                 return charPos + offset;
                             }
-
-                            mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
+                            mask &= ~(uint)(0b11 << bitPos); // clear two the highest set bits.
                         }
                     }
 
