@@ -73,14 +73,6 @@ namespace System.Reflection
                     throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 token = lexer.GetNext();
 
-#if CORERT
-                // Compat note: Inside AppX apps, the desktop CLR's AssemblyName parser skips past any elements that don't follow the "<Something>=<Something>" pattern.
-                //  (when running classic Windows apps, such an illegal construction throws an exception as expected.)
-                // Naturally, at least one app unwittingly takes advantage of this.
-                if (token == AssemblyNameLexer.Token.Comma || token == AssemblyNameLexer.Token.End)
-                    continue;
-#endif
-
                 if (token != AssemblyNameLexer.Token.Equals)
                     throw new FileLoadException(SR.Argument_InvalidAssemblyName);
                 string attributeValue;
