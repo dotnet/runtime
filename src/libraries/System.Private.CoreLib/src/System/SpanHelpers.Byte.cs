@@ -35,8 +35,7 @@ namespace System
             int offset = 0;
             nuint valueTailNLength = (nuint)(uint)valueTailLength;
 
-            // Avx2 implies Sse2
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
+            if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
@@ -113,7 +112,7 @@ namespace System
 
                 } while (true);
             }
-            else if (Sse2.IsSupported || AdvSimd.IsSupported)
+            else
             {
                 // Find the last unique (which is not equal to ch1) byte
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -540,8 +539,7 @@ namespace System
             int offset = 0;
             nuint valueTailNLength = (nuint)(uint)valueTailLength;
 
-            // Avx2 implies Sse2
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
+            if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
@@ -615,7 +613,7 @@ namespace System
 
                 } while (true);
             }
-            else if (Sse2.IsSupported || AdvSimd.IsSupported)
+            else
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
 

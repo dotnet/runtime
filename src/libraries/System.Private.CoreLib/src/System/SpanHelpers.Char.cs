@@ -35,8 +35,7 @@ namespace System
             ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
             nuint valueTailByteLength = (nuint)(uint)valueTailLength * 2;
 
-            // Avx2 implies Sse2
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
+            if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
@@ -123,7 +122,7 @@ namespace System
 
                 } while (true);
             }
-            if (Sse2.IsSupported || AdvSimd.IsSupported)
+            else
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -200,8 +199,7 @@ namespace System
             ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
             nuint valueTailByteLength = (nuint)(uint)valueTailLength * 2;
 
-            // Avx2 implies Sse2
-            if ((Sse2.IsSupported || AdvSimd.IsSupported) && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
+            if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
@@ -282,7 +280,7 @@ namespace System
                         offset = 0;
                 } while (true);
             }
-            else if (Sse2.IsSupported || AdvSimd.IsSupported)
+            else
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
 
