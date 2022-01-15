@@ -113,6 +113,9 @@ dotnet_diagnostic.IDE0082.severity = warning
 # IDE0083: Use is not pattern matching
 #dotnet_diagnostic.IDE0083.severity = warning // requires new C# for Mono
 
+# IDE0110: Remove unnecessary discard
+dotnet_diagnostic.IDE0110.severity = warning
+
 ## CA analyzer rules
 dotnet_analyzer_diagnostic.category-performance.severity = warning
 dotnet_analyzer_diagnostic.category-maintainability.severity = warning
@@ -132,9 +135,6 @@ dotnet_diagnostic.RS2008.severity = none
 # Exception type is not sufficiently specific
 dotnet_diagnostic.CA2201.severity = none
 
-# Analyzer crashes with https://github.com/dotnet/roslyn-analyzers/issues/5450
-dotnet_diagnostic.CA2252.severity = none
-
 # xUnit1004: Test methods should not be skipped
 dotnet_diagnostic.xUnit1004.severity = none
 
@@ -142,6 +142,9 @@ dotnet_diagnostic.xUnit1004.severity = none
 
 # CA1822: Mark members as static
 dotnet_diagnostic.CA1822.severity = none
+
+# IDE0060: Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = none
 
 [external**]
 dotnet_analyzer_diagnostic.severity = none
