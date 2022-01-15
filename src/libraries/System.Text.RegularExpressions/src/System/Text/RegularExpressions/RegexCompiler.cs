@@ -1997,11 +1997,19 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Type is RegexNode.UpdateBumpalong, $"Unexpected type: {node.Type}");
 
-                // base.runtextpos = pos;
+                // if (base.runtextpos < pos)
+                // {
+                //     base.runtextpos = pos;
+                // }
                 TransferSliceStaticPosToPos();
+                Ldthisfld(s_runtextposField);
+                Ldloc(pos);
+                Label skipUpdate = DefineLabel();
+                Bge(skipUpdate);
                 Ldthis();
                 Ldloc(pos);
                 Stfld(s_runtextposField);
+                MarkLabel(skipUpdate);
             }
 
             // Emits code for a concatenation

@@ -1815,7 +1815,10 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Type is RegexNode.UpdateBumpalong, $"Unexpected type: {node.Type}");
 
                 TransferSliceStaticPosToPos();
-                writer.WriteLine("base.runtextpos = pos;");
+                using (EmitBlock(writer, "if (base.runtextpos < pos)"))
+                {
+                    writer.WriteLine("base.runtextpos = pos;");
+                }
             }
 
             // Emits code for a concatenation
