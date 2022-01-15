@@ -88,27 +88,31 @@ namespace System
                 {
                     Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, LoadVector256(ref searchSpace, index));
                     Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance));
-                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
+                    Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    while (mask != 0)
+                    if (!cmpAnd.IsAllZero())
                     {
-                        int bitPos = BitOperations.TrailingZeroCount(mask);
-                        // div by 2 (shr) because we work with 2-byte chars
-                        int charPos = (int)((uint)bitPos / 2);
-                        if (valueTailByteLength == 1 || // we already matched two chars
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                ref valueTail,
-                                valueTailByteLength))
+                        uint mask = cmpAnd.ExtractMostSignificantBits();
+                        while (mask != 0)
                         {
-                            return index + charPos;
-                        }
+                            int bitPos = BitOperations.TrailingZeroCount(mask);
+                            // div by 2 (shr) because we work with 2-byte chars
+                            int charPos = (int)((uint)bitPos / 2);
+                            if (valueTailByteLength == 1 || // we already matched two chars
+                                SequenceEqual(
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                                    ref valueTail,
+                                    valueTailByteLength))
+                            {
+                                return index + charPos;
+                            }
 
-                        // Clear two lowest set bits
-                        if (Bmi1.IsSupported)
-                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
-                        else
-                            mask &= ~(uint)(0b11 << bitPos);
+                            // Clear two lowest set bits
+                            if (Bmi1.IsSupported)
+                                mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                            else
+                                mask &= ~(uint)(0b11 << bitPos);
+                        }
                     }
 
                     index += Vector256<ushort>.Count;
@@ -139,27 +143,35 @@ namespace System
                 {
                     Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, LoadVector128(ref searchSpace, index));
                     Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance));
-                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
+                    Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    while (mask != 0)
+                    // On Platforms with SSE41 and ARM64 use fast "is all zero" check
+                    // it's especially important for ARM64 where ExtractMostSignificantBits is expensive
+                    // but it also shows nice numbers on XArch
+                    bool useFastAllZeroCheck = Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
+                    if (!useFastAllZeroCheck || !cmpAnd.IsAllZero())
                     {
-                        int bitPos = BitOperations.TrailingZeroCount(mask);
-                        // div by 2 (shr) because we work with 2-byte chars
-                        int charPos = (int)((uint)bitPos / 2);
-                        if (valueTailByteLength == 1 || // we already matched two chars
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                ref valueTail,
-                                valueTailByteLength))
+                        uint mask = cmpAnd.ExtractMostSignificantBits();
+                        while (mask != 0)
                         {
-                            return index + charPos;
-                        }
+                            int bitPos = BitOperations.TrailingZeroCount(mask);
+                            // div by 2 (shr) because we work with 2-byte chars
+                            int charPos = (int)((uint)bitPos / 2);
+                            if (valueTailByteLength == 1 || // we already matched two chars
+                                SequenceEqual(
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                                    ref valueTail,
+                                    valueTailByteLength))
+                            {
+                                return index + charPos;
+                            }
 
-                        // Clear two lowest set bits
-                        if (Bmi1.IsSupported)
-                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
-                        else
-                            mask &= ~(uint)(0b11 << bitPos);
+                            // Clear two lowest set bits
+                            if (Bmi1.IsSupported)
+                                mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                            else
+                                mask &= ~(uint)(0b11 << bitPos);
+                        }
                     }
 
                     index += Vector128<ushort>.Count;
@@ -252,24 +264,28 @@ namespace System
 
                     Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, LoadVector256(ref searchSpace, (nuint)offset));
                     Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
-                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
+                    Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    while (mask != 0)
+                    if (!cmpAnd.IsAllZero())
                     {
-                        // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                        int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
-                        int charPos = (int)((uint)bitPos / 2);
-
-                        if (valueTailByteLength == 1 || // we already matched two chars
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
-                                ref valueTail,
-                                valueTailByteLength))
+                        uint mask = cmpAnd.ExtractMostSignificantBits();
+                        while (mask != 0)
                         {
-                            return charPos + offset;
-                        }
+                            // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                            int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
+                            int charPos = (int)((uint)bitPos / 2);
 
-                        mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
+                            if (valueTailByteLength == 1 || // we already matched two chars
+                                SequenceEqual(
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
+                                    ref valueTail,
+                                    valueTailByteLength))
+                            {
+                                return charPos + offset;
+                            }
+
+                            mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
+                        }
                     }
 
                     offset -= Vector256<ushort>.Count;
@@ -299,24 +315,32 @@ namespace System
                 {
                     Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, LoadVector128(ref searchSpace, (nuint)offset));
                     Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
-                    uint mask = (cmpCh1 & cmpCh2).AsByte().ExtractMostSignificantBits();
+                    Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
 
-                    while (mask != 0)
+                    // On Platforms with SSE41 and ARM64 use fast "is all zero" check
+                    // it's especially important for ARM64 where ExtractMostSignificantBits is expensive
+                    // but it also shows nice numbers on XArch
+                    bool useFastAllZeroCheck = Sse41.IsSupported || AdvSimd.Arm64.IsSupported;
+                    if (!useFastAllZeroCheck || !cmpAnd.IsAllZero())
                     {
-                        // unlike IndexOf, here we use LZCNT to process matches starting from the end
-                        int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
-                        int charPos = (int)((uint)bitPos / 2);
-
-                        if (valueTailByteLength == 1 || // we already matched two chars
-                            SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
-                                ref valueTail,
-                                valueTailByteLength))
+                        uint mask = cmpAnd.ExtractMostSignificantBits();
+                        while (mask != 0)
                         {
-                            return charPos + offset;
-                        }
+                            // unlike IndexOf, here we use LZCNT to process matches starting from the end
+                            int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
+                            int charPos = (int)((uint)bitPos / 2);
 
-                        mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
+                            if (valueTailByteLength == 1 || // we already matched two chars
+                                SequenceEqual(
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
+                                    ref valueTail,
+                                    valueTailByteLength))
+                            {
+                                return charPos + offset;
+                            }
+
+                            mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
+                        }
                     }
 
                     offset -= Vector128<ushort>.Count;
