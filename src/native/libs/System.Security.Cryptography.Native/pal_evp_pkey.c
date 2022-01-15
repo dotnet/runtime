@@ -180,7 +180,10 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
         // If OpenSSL ever changes the error to something more to explicitly mean
         // "no private key" then we should test for that explicitly. Until then,
         // we treat all errors, except a malloc error, to mean "no private key".
-        unsigned long error = ERR_peek_error();
+
+        const char* file = NULL;
+        int line = 0;
+        unsigned long error = ERR_peek_error_line(&file, &line);
 
         // If it's not a malloc failure, assume it's because the private key is
         // missing.
@@ -189,6 +192,11 @@ int32_t CryptoNative_GetPkcs8PrivateKeySize(EVP_PKEY* pkey, int32_t* p8size)
             ERR_clear_error();
             return -2;
         }
+
+        // It is a malloc failure. Clear the error queue and set the error
+        // as a malloc error so it's the only error in the queue.
+        ERR_clear_error();
+        ERR_put_error(ERR_GET_LIB(error), 0, ERR_R_MALLOC_FAILURE, file, line);
 
         return -1;
     }
