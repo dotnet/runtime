@@ -90,12 +90,11 @@
 //    |   |
 //    |   +-TPMethodFrame       - for calls on transparent proxy
 //    |
+#ifdef FEATURE_COMINTEROP
 //    +-UnmanagedToManagedFrame - this frame represents a transition from
 //    | |                         unmanaged code back to managed code. It's
 //    | |                         main functions are to stop COM+ exception
 //    | |                         propagation and to expose unmanaged parameters.
-//    | |
-#ifdef FEATURE_COMINTEROP
 //    | |
 //    | +-ComMethodFrame        - this frame represents a transition from
 //    |   |                       com to com+
@@ -201,8 +200,8 @@ FRAME_TYPE_NAME(HelperMethodFrame_3OBJ)
 FRAME_TYPE_NAME(HelperMethodFrame_PROTECTOBJ)
 FRAME_ABSTRACT_TYPE_NAME(FramedMethodFrame)
 FRAME_TYPE_NAME(MulticastFrame)
-FRAME_ABSTRACT_TYPE_NAME(UnmanagedToManagedFrame)
 #ifdef FEATURE_COMINTEROP
+FRAME_ABSTRACT_TYPE_NAME(UnmanagedToManagedFrame)
 FRAME_TYPE_NAME(ComMethodFrame)
 FRAME_TYPE_NAME(ComPlusMethodFrame)
 FRAME_TYPE_NAME(ComPrestubMethodFrame)
@@ -1797,6 +1796,8 @@ public:
 };
 
 
+#ifdef FEATURE_COMINTEROP
+
 //-----------------------------------------------------------------------
 // Transition frame from unmanaged to managed
 //-----------------------------------------------------------------------
@@ -1904,8 +1905,6 @@ protected:
     TADDR           m_ReturnAddress;  // return address into unmanaged code
 #endif
 };
-
-#ifdef FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------
 // This frame represents a transition from COM to COM+

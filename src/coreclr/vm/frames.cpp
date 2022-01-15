@@ -1917,16 +1917,18 @@ VOID InlinedCallFrame::Init()
 }
 
 
-
+#ifdef FEATURE_COMINTEROP
 void UnmanagedToManagedFrame::ExceptionUnwind()
 {
     WRAPPER_NO_CONTRACT;
 
     AppDomain::ExceptionUnwind(this);
 }
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_COMINTEROP
 PCODE UnmanagedToManagedFrame::GetReturnAddress()
 {
     WRAPPER_NO_CONTRACT;
@@ -1945,6 +1947,7 @@ PCODE UnmanagedToManagedFrame::GetReturnAddress()
         return pRetAddr;
     }
 }
+#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 //=================================================================================

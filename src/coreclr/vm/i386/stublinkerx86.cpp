@@ -2446,9 +2446,9 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 #endif // TARGET_UNIX
 }
 
-#if defined(TARGET_X86)
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
-#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL) && defined(FEATURE_COMINTEROP)
+#if defined(PROFILING_SUPPORTED)
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
 {
     STANDARD_VM_CONTRACT;
@@ -2482,10 +2482,8 @@ VOID StubLinkerCPU::EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame)
     X86EmitPushReg(kECX);                           // MethodDesc*
     X86EmitCall(NewExternalCodeLabel((LPVOID) ProfilerManagedToUnmanagedTransitionMD), 2*sizeof(void*));
 }
-#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL && FEATURE_COMINTEROP
+#endif // PROFILING_SUPPORTED
 
-
-#ifndef FEATURE_STUBS_AS_IL
 //========================================================================
 //  Prolog for entering managed code from COM
 //  pushes the appropriate frame ptr
@@ -2668,7 +2666,6 @@ void StubLinkerCPU::EmitComMethodStubEpilog(TADDR pFrameVptr,
     EmitLabel(rgRareLabels[0]);  // label for rare setup thread
     EmitRareSetup(rgRejoinLabels[0], /*fThrow*/ TRUE); // emit rare setup thread
 }
-#endif // !FEATURE_STUBS_AS_IL
 
 //---------------------------------------------------------------
 // Emit code to store the setup current Thread structure in eax.
@@ -2699,16 +2696,12 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
 {
     STANDARD_VM_CONTRACT;
 
-#ifndef FEATURE_COMINTEROP
-    _ASSERTE(fThrow);
-#else // !FEATURE_COMINTEROP
     if (!fThrow)
     {
         X86EmitPushReg(kESI);
         X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockReturnHr), sizeof(void*));
     }
     else
-#endif // !FEATURE_COMINTEROP
     {
         X86EmitCall(NewExternalCodeLabel((LPVOID) CreateThreadBlockThrow), 0);
     }
@@ -2718,10 +2711,6 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
     X86EmitNearJump(pRejoinPoint);
 }
 
-//========================================================================
-#endif // TARGET_X86
-//========================================================================
-#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 //========================================================================
 //  Epilog for stubs that enter managed code from COM
 //
@@ -2827,8 +2816,8 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
     EmitRareSetup(rgRejoinLabels[0],/*fThrow*/ FALSE); // emit rare setup thread
 }
 
-//========================================================================
 #endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
+
 
 #if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
 /*==============================================================================
@@ -3344,7 +3333,7 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 #endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 
 
-#ifdef TARGET_X86
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 //-----------------------------------------------------------------------
 // Generates the inline portion of the code to enable preemptive GC. Hopefully,
@@ -3529,7 +3518,6 @@ VOID StubLinkerCPU::EmitRareDisable(CodeLabel *pRejoinPoint)
     X86EmitNearJump(pRejoinPoint);
 }
 
-#ifdef FEATURE_COMINTEROP
 //-----------------------------------------------------------------------
 // Generates the out-of-line portion of the code to disable preemptive GC.
 // After the work is done, the code normally jumps back to the "pRejoinPoint"
@@ -3561,10 +3549,8 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 
     X86EmitNearJump(pExitPoint);
 }
-#endif // FEATURE_COMINTEROP
 
-#endif // TARGET_X86
-
+#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
