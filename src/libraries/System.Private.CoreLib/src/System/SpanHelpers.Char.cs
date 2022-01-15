@@ -94,7 +94,7 @@ namespace System
                     if (cmpAnd != Vector256<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
-                        while (mask != 0)
+                        do
                         {
                             int bitPos = BitOperations.TrailingZeroCount(mask);
                             // div by 2 (shr) because we work with 2-byte chars
@@ -113,7 +113,7 @@ namespace System
                                 mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
                             else
                                 mask &= ~(uint)(0b11 << bitPos);
-                        }
+                        } while (mask != 0);
                     }
 
                     index += Vector256<ushort>.Count;
@@ -151,7 +151,7 @@ namespace System
                     if (cmpAnd != Vector128<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
-                        while (mask != 0)
+                        do
                         {
                             int bitPos = BitOperations.TrailingZeroCount(mask);
                             // div by 2 (shr) because we work with 2-byte chars
@@ -170,7 +170,7 @@ namespace System
                                 mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
                             else
                                 mask &= ~(uint)(0b11 << bitPos);
-                        }
+                        } while (mask != 0);
                     }
 
                     index += Vector128<ushort>.Count;
@@ -269,7 +269,7 @@ namespace System
                     if (cmpAnd != Vector256<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
-                        while (mask != 0)
+                        do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
@@ -284,7 +284,7 @@ namespace System
                                 return charPos + offset;
                             }
                             mask &= ~(uint)(0b11 << bitPos); // clear two highest set bits.
-                        }
+                        } while (mask != 0);
                     }
 
                     offset -= Vector256<ushort>.Count;
@@ -321,7 +321,7 @@ namespace System
                     if (cmpAnd != Vector128<byte>.Zero)
                     {
                         uint mask = cmpAnd.ExtractMostSignificantBits();
-                        while (mask != 0)
+                        do
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
@@ -336,7 +336,7 @@ namespace System
                                 return charPos + offset;
                             }
                             mask &= ~(uint)(0b11 << bitPos); // clear two the highest set bits.
-                        }
+                        } while (mask != 0);
                     }
 
                     offset -= Vector128<ushort>.Count;
