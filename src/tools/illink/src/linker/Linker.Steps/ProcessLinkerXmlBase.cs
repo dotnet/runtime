@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -91,7 +92,7 @@ namespace Mono.Linker.Steps
 					ProcessAssembly (_resource.Value.Assembly, nav, warnOnUnresolvedTypes: true);
 
 			} catch (Exception ex) when (!(ex is LinkerFatalErrorException)) {
-				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage ($"Error processing '{_xmlDocumentLocation}'", 1013), ex);
+				throw new LinkerFatalErrorException (MessageContainer.CreateErrorMessage (null, DiagnosticId.ErrorProcessingXmlLocation, _xmlDocumentLocation), ex);
 			}
 		}
 
@@ -114,7 +115,7 @@ namespace Mono.Linker.Steps
 				// skipped due to feature conditions.
 				bool processAllAssemblies = ShouldProcessAllAssemblies (assemblyNav, out AssemblyNameReference? name);
 				if (processAllAssemblies && AllowedAssemblySelector != AllowedAssemblies.AllAssemblies) {
-					LogWarning ($"XML contains unsupported wildcard for assembly 'fullname' attribute.", 2100, assemblyNav);
+					LogWarning (assemblyNav, DiagnosticId.XmlUnsuportedWildcard);
 					continue;
 				}
 
@@ -123,7 +124,7 @@ namespace Mono.Linker.Steps
 					Debug.Assert (!processAllAssemblies);
 					Debug.Assert (_resource != null);
 					if (_resource.Value.Assembly.Name.Name != name!.Name) {
-						LogWarning ($"Embedded XML in assembly '{_resource.Value.Assembly.Name.Name}' contains assembly 'fullname' attribute for another assembly '{name}'.", 2101, assemblyNav);
+						LogWarning (assemblyNav, DiagnosticId.AssemblyWithEmbeddedXmlApplyToAnotherAssembly, _resource.Value.Assembly.Name.Name, name.ToString ());
 						continue;
 					}
 					assemblyToProcess = _resource.Value.Assembly;
@@ -141,7 +142,7 @@ namespace Mono.Linker.Steps
 					AssemblyDefinition? assembly = assemblyToProcess ?? _context.TryResolve (name!);
 
 					if (assembly == null) {
-						LogWarning ($"Could not resolve assembly '{name!.Name}'.", 2007, assemblyNav);
+						LogWarning (assemblyNav, DiagnosticId.XmlCouldNotResolveAssembly, name!.Name);
 						continue;
 					}
 
@@ -171,7 +172,7 @@ namespace Mono.Linker.Steps
 				if (type == null && assembly.MainModule.HasExportedTypes) {
 					foreach (var exported in assembly.MainModule.ExportedTypes) {
 						if (fullname == exported.FullName) {
-							var resolvedExternal = ProcessExportedType (exported, assembly);
+							var resolvedExternal = ProcessExportedType (exported, assembly, typeNav);
 							if (resolvedExternal != null) {
 								type = resolvedExternal;
 								break;
@@ -182,7 +183,7 @@ namespace Mono.Linker.Steps
 
 				if (type == null) {
 					if (warnOnUnresolvedTypes)
-						LogWarning ($"Could not resolve type '{fullname}'.", 2008, typeNav);
+						LogWarning (typeNav, DiagnosticId.XmlCouldNotResolveType, fullname);
 					continue;
 				}
 
@@ -190,7 +191,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly) => exported.Resolve ();
+		protected virtual TypeDefinition? ProcessExportedType (ExportedType exported, AssemblyDefinition assembly, XPathNavigator nav) => exported.Resolve ();
 
 		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
 		{
@@ -215,7 +216,7 @@ namespace Mono.Linker.Steps
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var exported in assembly.MainModule.ExportedTypes) {
 					if (regex.Match (exported.FullName).Success) {
-						var type = ProcessExportedType (exported, assembly);
+						var type = ProcessExportedType (exported, assembly, nav);
 						if (type != null) {
 							ProcessType (type, nav);
 						}
@@ -253,7 +254,7 @@ namespace Mono.Linker.Steps
 			if (!String.IsNullOrEmpty (signature)) {
 				FieldDefinition? field = GetField (type, signature);
 				if (field == null) {
-					LogWarning ($"Could not find field '{signature}' on type '{type.GetDisplayName ()}'.", 2012, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindFieldOnType, signature, type.GetDisplayName ());
 					return;
 				}
 
@@ -273,7 +274,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					LogWarning ($"Could not find field '{name}' on type '{type.GetDisplayName ()}'.", 2012, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindFieldOnType, name, type.GetDisplayName ());
 				}
 			}
 		}
@@ -307,7 +308,7 @@ namespace Mono.Linker.Steps
 			if (!String.IsNullOrEmpty (signature)) {
 				MethodDefinition? method = GetMethod (type, signature);
 				if (method == null) {
-					LogWarning ($"Could not find method '{signature}' on type '{type.GetDisplayName ()}'.", 2009, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindMethodOnType, signature, type.GetDisplayName ());
 					return;
 				}
 
@@ -327,7 +328,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					LogWarning ($"Could not find method '{name}' on type '{type.GetDisplayName ()}'.", 2009, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindMethodOnType, name, type.GetDisplayName ());
 				}
 			}
 		}
@@ -351,7 +352,7 @@ namespace Mono.Linker.Steps
 			if (!String.IsNullOrEmpty (signature)) {
 				EventDefinition? @event = GetEvent (type, signature);
 				if (@event == null) {
-					LogWarning ($"Could not find event '{signature}' on type '{type.GetDisplayName ()}'.", 2016, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindEventOnType, signature, type.GetDisplayName ());
 					return;
 				}
 
@@ -369,7 +370,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					LogWarning ($"Could not find event '{name}' on type '{type.GetDisplayName ()}'.", 2016, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindEventOnType, name, type.GetDisplayName ());
 				}
 			}
 		}
@@ -403,7 +404,7 @@ namespace Mono.Linker.Steps
 			if (!String.IsNullOrEmpty (signature)) {
 				PropertyDefinition? property = GetProperty (type, signature);
 				if (property == null) {
-					LogWarning ($"Could not find property '{signature}' on type '{type.GetDisplayName ()}'.", 2017, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindPropertyOnType, signature, type.GetDisplayName ());
 					return;
 				}
 
@@ -421,7 +422,7 @@ namespace Mono.Linker.Steps
 				}
 
 				if (!foundMatch) {
-					LogWarning ($"Could not find property '{name}' on type '{type.GetDisplayName ()}'.", 2017, nav);
+					LogWarning (nav, DiagnosticId.XmlCouldNotFindPropertyOnType, name, type.GetDisplayName ());
 				}
 			}
 		}
@@ -468,12 +469,17 @@ namespace Mono.Linker.Steps
 		protected MessageOrigin GetMessageOriginForPosition (XPathNavigator position)
 		{
 			return (position is IXmlLineInfo lineInfo)
-					? new MessageOrigin (_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition)
-					: new MessageOrigin (_xmlDocumentLocation);
+					? new MessageOrigin (_xmlDocumentLocation, lineInfo.LineNumber, lineInfo.LinePosition, _resource?.Assembly)
+					: new MessageOrigin (_xmlDocumentLocation, 0, 0, _resource?.Assembly);
 		}
 		protected void LogWarning (string message, int warningCode, XPathNavigator position)
 		{
 			_context.LogWarning (message, warningCode, GetMessageOriginForPosition (position));
+		}
+
+		protected void LogWarning (XPathNavigator position, DiagnosticId id, params string[] args)
+		{
+			_context.LogWarning (GetMessageOriginForPosition (position), id, args);
 		}
 
 		public override string ToString () => GetType ().Name + ": " + _xmlDocumentLocation;

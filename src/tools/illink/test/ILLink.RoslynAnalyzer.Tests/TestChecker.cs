@@ -183,13 +183,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var producedBy = (ProducedBy) 0x0;
 				switch (expression) {
 				case BinaryExpressionSyntax binaryExpressionSyntax:
-					Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy);
+					if (!Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy))
+						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= besProducedBy;
 					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
 					break;
 
 				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-					Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy);
+					if (!Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy))
+						throw new ArgumentException ("Expression must be a ProducedBy value", nameof (expression));
 					producedBy |= maeProducedBy;
 					break;
 

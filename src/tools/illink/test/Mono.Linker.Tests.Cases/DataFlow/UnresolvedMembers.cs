@@ -43,7 +43,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{ }
 
 		[Kept]
-		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument")]
+		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument")] // Local variable type
+		[ExpectedWarning ("IL2066", "TypeWithUnresolvedGenericArgument")] // Called method declaring type
 		[ExpectedWarning ("IL2066", nameof (MethodWithUnresolvedGenericArgument))]
 		static void UnresolvedGenericArgument ()
 		{

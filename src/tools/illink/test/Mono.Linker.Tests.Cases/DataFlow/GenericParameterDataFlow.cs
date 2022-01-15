@@ -360,7 +360,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public void PublicMethodsMethodParameter (TypeRequiresPublicMethods<TOuter> param) { }
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsMethodReturnValue () { return null; }
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))]
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))] // Return value
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>))] // Compiler generated local variable
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsMethodReturnValue () { return null; }
 
 			public void PublicFieldsMethodLocalVariable ()
@@ -703,7 +704,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 				TestWithRequirements ();
 				TestWithRequirementsFromParam (null);
+				TestWithRequirementsFromParamWithMismatch (null);
 				TestWithRequirementsFromGenericParam<TestType> ();
+				TestWithRequirementsFromGenericParamWithMismatch<TestType> ();
 
 				TestWithNoRequirements ();
 				TestWithNoRequirementsFromParam (null);
@@ -774,10 +777,28 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
 			}
 
+			// https://github.com/dotnet/linker/issues/2428
+			// [ExpectedWarning ("IL2071", "'T'")]
+			[ExpectedWarning ("IL2070", "'this'")]
+			static void TestWithRequirementsFromParamWithMismatch (
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+			{
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (type);
+			}
+
 			static void TestWithRequirementsFromGenericParam<
 				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T> ()
 			{
 				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (T));
+			}
+
+			// https://github.com/dotnet/linker/issues/2428
+			// [ExpectedWarning ("IL2091", "'T'")]
+			[ExpectedWarning ("IL2090", "'this'")] // Note that this actually produces a warning which should not be possible to produce right now
+			static void TestWithRequirementsFromGenericParamWithMismatch<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] TInput> ()
+			{
+				typeof (GenericWithPublicFieldsArgument<>).MakeGenericType (typeof (TInput));
 			}
 
 			class GenericWithPublicFieldsArgument<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>

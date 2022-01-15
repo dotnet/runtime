@@ -462,6 +462,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		[ExpectedWarning ("IL2091", nameof (Activator), nameof (Activator.CreateInstance) + "<T>")]
+		[ExpectedWarning ("IL2091", nameof (Activator), nameof (Activator.CreateInstance) + "<T>")]
 		// Warnings are currently duplicated in NETCORE (annotation and intrinsics) - but they're not identical in this case.
 		// See https://github.com/dotnet/linker/issues/1483
 		private static void TestCreateInstanceOfTWithNoConstraint<T> ()
