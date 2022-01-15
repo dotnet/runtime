@@ -138,7 +138,6 @@ namespace Internal.IL.Stubs
                         MarshallerType.Argument,
                         direction,
                         marshallers,
-                        interopStateManager,
                         indexOffset + parameterMetadata.Index,
                         flags,
                         parameterMetadata.Return);

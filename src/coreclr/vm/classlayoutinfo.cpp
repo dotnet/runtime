@@ -228,8 +228,11 @@ namespace
 
     RawFieldPlacementInfo GetFieldPlacementInfo(CorElementType corElemType, TypeHandle pNestedType)
     {
+        RawFieldPlacementInfo placementInfo;
         // Initialize offset to a dummy value as we set it to the correct value later.
-        RawFieldPlacementInfo placementInfo { (UINT32)-1, TARGET_POINTER_SIZE, TARGET_POINTER_SIZE };
+        placementInfo.m_offset = (UINT32)-1;
+        placementInfo.m_size = TARGET_POINTER_SIZE;
+        placementInfo.m_alignment = TARGET_POINTER_SIZE;
         // This type may qualify for ManagedSequential. Collect managed size and alignment info.
         if (CorTypeInfo::IsPrimitiveType(corElemType))
         {

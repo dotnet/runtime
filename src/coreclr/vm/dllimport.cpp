@@ -3287,13 +3287,13 @@ BOOL NDirect::MarshalingRequired(
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
 
-    // We enable the built-in marshalling system whenever it is enabled on the module as a whole
-    // or when the call is a COM interop call. COM interop calls are already using a significant portion of the built-in
+    // We enable the runtime marshalling system whenever it is enabled on the module as a whole
+    // or when the call is a COM interop call. COM interop calls are already using a significant portion of the runtime
     // marshalling system just to function at all, so we aren't going to disable the parameter marshalling;
     // we'd rather have developers use the feature flag to diable the whole COM interop subsystem at once.
-    bool builtInMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
+    bool runtimeMarshallingEnabled = pModule->IsRuntimeMarshallingEnabled();
 #ifdef FEATURE_COMINTEROP
-    builtInMarshallingEnabled |= pMD && pMD->IsComPlusCall();
+    runtimeMarshallingEnabled |= pMD && pMD->IsComPlusCall();
 #endif
 
     for (ULONG i = 0; i < numArgs; i++)
@@ -3309,7 +3309,7 @@ BOOL NDirect::MarshalingRequired(
                 IfFailThrow(arg.GetElemType(NULL)); // skip ELEMENT_TYPE_PTR
                 IfFailThrow(arg.PeekElemType(&type));
 
-                if (builtInMarshallingEnabled && type == ELEMENT_TYPE_VALUETYPE)
+                if (runtimeMarshallingEnabled && type == ELEMENT_TYPE_VALUETYPE)
                 {
                     if ((arg.HasCustomModifier(pModule,
                                               "Microsoft.VisualC.NeedsCopyConstructorModifier",
@@ -3340,18 +3340,18 @@ BOOL NDirect::MarshalingRequired(
             {
                 TypeHandle hndArgType = arg.GetTypeHandleThrowing(pModule, &emptyTypeContext);
 
-                // When the built-in runtime marshalling system is disabled, we don't support
+                // When the runtime runtime marshalling system is disabled, we don't support
                 // any types that contain gc pointers, but all "unmanaged" types are treated as blittable
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
-                if (!builtInMarshallingEnabled &&
+                if (!runtimeMarshallingEnabled &&
                     (hndArgType.GetMethodTable()->ContainsPointers()
                         || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {
                     return TRUE;
                 }
-                else if (builtInMarshallingEnabled && !hndArgType.IsBlittable() && !hndArgType.IsEnum())
+                else if (runtimeMarshallingEnabled && !hndArgType.IsBlittable() && !hndArgType.IsEnum())
                 {
-                    // When the built-in runtime marshalling system is enabled, we do special handling
+                    // When the runtime runtime marshalling system is enabled, we do special handling
                     // for any types that aren't blittable or enums.
                     return TRUE;
                 }
@@ -3370,7 +3370,7 @@ BOOL NDirect::MarshalingRequired(
                 // When runtime marshalling is enabled:
                 // Bool requires marshaling
                 // Char may require marshaling (MARSHAL_TYPE_ANSICHAR)
-                if (builtInMarshallingEnabled)
+                if (runtimeMarshallingEnabled)
                 {
                     return TRUE;
                 }
@@ -3400,10 +3400,10 @@ BOOL NDirect::MarshalingRequired(
         // check for explicit MarshalAs
         NativeTypeParamInfo paramInfo;
 
-        // We only check the MarshalAs info when the built-in marshalling system is enabled.
+        // We only check the MarshalAs info when the runtime marshalling system is enabled.
         // We ignore MarshalAs when the system is disabled, so no reason to disqualify from inlining
         // when it is present.
-        if (builtInMarshallingEnabled && pParamTokenArray[i] != mdParamDefNil)
+        if (runtimeMarshallingEnabled && pParamTokenArray[i] != mdParamDefNil)
         {
             if (!ParseNativeTypeInfo(pParamTokenArray[i], pMDImport, &paramInfo) ||
                 paramInfo.m_NativeType != NATIVE_TYPE_DEFAULT)
@@ -3621,7 +3621,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
 #endif // _DEBUG
 
-    bool builtInMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pModule->IsRuntimeMarshallingEnabled();
+    bool runtimeMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pModule->IsRuntimeMarshallingEnabled();
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);
@@ -3644,7 +3644,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
 
     if (SF_IsVarArgStub(dwStubFlags))
     {
-        if (!builtInMarshallingEnabled)
+        if (!runtimeMarshallingEnabled)
         {
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_VARARGS);
         }
@@ -3655,7 +3655,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
 
     if (nlFlags & nlfLastError)
     {
-        if (!builtInMarshallingEnabled)
+        if (!runtimeMarshallingEnabled)
         {
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_SETLASTERROR);
         }
@@ -3664,14 +3664,14 @@ static void CreateNDirectStubWorker(StubState*               pss,
 
     // This has been in the product since forward P/Invoke via delegates was
     // introduced. It's wrong, but please keep it for backward compatibility.
-    if (builtInMarshallingEnabled && SF_IsDelegateStub(dwStubFlags))
+    if (runtimeMarshallingEnabled && SF_IsDelegateStub(dwStubFlags))
         pss->SetLastError(TRUE);
 
     pss->BeginEmit(dwStubFlags);
 
     if (-1 != iLCIDArg)
     {
-        if (!builtInMarshallingEnabled)
+        if (!runtimeMarshallingEnabled)
         {
             COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_LCID);
         }
@@ -3680,7 +3680,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         iLCIDArg++;
     }
 
-    if (!builtInMarshallingEnabled && SF_IsHRESULTSwapping(dwStubFlags))
+    if (!runtimeMarshallingEnabled && SF_IsHRESULTSwapping(dwStubFlags))
     {
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_DISABLEDMARSHAL_PRESERVESIG);
     }

@@ -393,37 +393,31 @@ namespace Internal.TypeSystem.Interop
             MarshallerType marshallerType,
             MarshalDirection direction,
             Marshaller[] marshallers,
-#if !READYTORUN
-            InteropStateManager interopStateManager,
-#endif
             int index,
             PInvokeFlags flags,
             bool isReturn)
         {
-            MarshallerKind marshallerKind = MarshalHelpers.GetRuntimeDisabledMarshallingMarshallerKind(parameterType);
+            MarshallerKind marshallerKind = MarshalHelpers.GetDisabledMarshallerKind(parameterType);
 
             TypeSystemContext context = parameterType.Context;
             // Create the marshaller based on MarshallerKind
             Marshaller marshaller = CreateMarshaller(marshallerKind);
             marshaller.Context = context;
-#if !READYTORUN
-            marshaller.InteropStateManager = interopStateManager;
-#endif
             marshaller.MarshallerKind = marshallerKind;
             marshaller.MarshallerType = marshallerType;
             marshaller.ElementMarshallerKind = MarshallerKind.Unknown;
             marshaller.ManagedParameterType = parameterType;
-            marshaller.ManagedType = parameterType.IsByRef ? parameterType.GetParameterType() : parameterType;
+            marshaller.ManagedType = parameterType;
             marshaller.Return = isReturn;
-            marshaller.IsManagedByRef = parameterType.IsByRef;
-            marshaller.IsNativeByRef = marshaller.IsManagedByRef;
+            marshaller.IsManagedByRef = false;
+            marshaller.IsNativeByRef = false;
             marshaller.MarshalDirection = direction;
             marshaller.MarshalAsDescriptor = null;
             marshaller.Marshallers = marshallers;
             marshaller.Index = index;
             marshaller.PInvokeFlags = flags;
             marshaller.In = true;
-            marshaller.Out = marshaller.IsManagedByRef;
+            marshaller.Out = false;
             return marshaller;
         }
         #endregion

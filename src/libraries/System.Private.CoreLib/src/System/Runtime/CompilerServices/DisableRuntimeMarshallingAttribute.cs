@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Mark up the program to indicate various legacy or new opt-in behaviors.
-**
-**
-=============================================================================*/
-
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -23,7 +14,7 @@ namespace System.Runtime.CompilerServices
     /// and unmanaged function pointer invocations:
     ///
     /// - All value types that do not contain reference type fields recursively (<c>unmanaged</c> in C#) are blittable
-    /// - Value types that recursively have any fields that are not enums and have <c>[StructLayout(LayoutKind.Auto)]</c> are disallowed from interop.
+    /// - Value types that recursively have any fields that have <c>[StructLayout(LayoutKind.Auto)]</c> are disallowed from interop.
     /// - All reference types are disallowed from usage in interop scenarios.
     /// - SetLastError support in P/Invokes is disabled.
     /// - varargs support is disabled.

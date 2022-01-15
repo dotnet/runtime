@@ -1058,7 +1058,7 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 
 namespace
 {
-    MarshalInfo::MarshalType GetDisabledMarshallingMarshalerType(
+    MarshalInfo::MarshalType GetDisabledMarshalerType(
         Module* pModule,
         SigPointer sig,
         const SigTypeContext * pTypeContext,
@@ -1235,21 +1235,21 @@ MarshalInfo::MarshalInfo(Module* pModule,
     m_byref = TRUE;
 #endif
 
-    // For COM IL-stub scenarios, we do not support disabling the built-in marshalling support.
+    // For COM IL-stub scenarios, we do not support disabling the runtime marshalling support.
     // The runtime-integrated COM support uses a significant portion of the marshalling infrastructure as well as
     // quite a bit of its own custom marshalling infrastructure to function in basically any aspect.
     // As a result, disabling marshalling in COM scenarios isn't useful. Instead, we recommend that people set the
-    // feature switch to false to disable the built-in COM support if they want it disabled.
-    // For field marshalling scenarios, we also don't disable built-in marshalling. If we're already in a field
-    // marshalling scenario, we've already decided that the context for the owning type is using built-in marshalling,
-    // so the fields of the struct should also use built-in marshalling.
-    const bool useBuiltInMarshalling = ms != MARSHAL_SCENARIO_NDIRECT || pModule->IsRuntimeMarshallingEnabled();
+    // feature switch to false to disable the runtime COM support if they want it disabled.
+    // For field marshalling scenarios, we also don't disable runtime marshalling. If we're already in a field
+    // marshalling scenario, we've already decided that the context for the owning type is using runtime marshalling,
+    // so the fields of the struct should also use runtime marshalling.
+    const bool useRuntimeMarshalling = ms != MARSHAL_SCENARIO_NDIRECT || pModule->IsRuntimeMarshallingEnabled();
 
-    if (!useBuiltInMarshalling)
+    if (!useRuntimeMarshalling)
     {
         m_in = TRUE;
         m_byref = FALSE;
-        m_type = GetDisabledMarshallingMarshalerType(
+        m_type = GetDisabledMarshalerType(
             pModule,
             sig,
             pTypeContext,
@@ -3003,7 +3003,7 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
         // When we generate IL stubs when marshalling is disabled,
         // we reuse the blittable value class marshalling mechanism.
         // In that scenario, only GetNumInstanceFieldBytes will return the correct value.
-        // GetNativeSize will return the size for when built-in marshalling is enabled.
+        // GetNativeSize will return the size for when runtime marshalling is enabled.
         if (mtype == MARSHAL_TYPE_BLITTABLEVALUECLASS)
         {
             return (UINT16) m_pMT->GetNumInstanceFieldBytes();

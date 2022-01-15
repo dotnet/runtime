@@ -76,6 +76,7 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                 case MarshallerKind.Struct:
                 case MarshallerKind.LayoutClass:
+                    Debug.Assert(interopStateManager is not null, "An InteropStateManager is required to look up the native representation of a non-blittable struct or class with layout.");
                     return interopStateManager.GetStructMarshallingNativeType((MetadataType)type);
 #endif
 
@@ -845,14 +846,19 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        internal static MarshallerKind GetRuntimeDisabledMarshallingMarshallerKind(
+        internal static MarshallerKind GetDisabledMarshallerKind(
             TypeDesc type)
         {
             if (type.Category == TypeFlags.Void)
             {
                 return MarshallerKind.VoidReturn;
             }
-            if (type.IsPrimitive)
+            else if (type.IsByRef)
+            {
+                // Managed refs are not supported when runtime marshalling is disabled.
+                return MarshallerKind.Invalid;
+            }
+            else if (type.IsPrimitive)
             {
                 return MarshallerKind.BlittableValue;
             }
