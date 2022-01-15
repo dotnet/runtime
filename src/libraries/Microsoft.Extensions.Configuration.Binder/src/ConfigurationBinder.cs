@@ -457,25 +457,26 @@ namespace Microsoft.Extensions.Configuration
                 // We only support string and enum keys
                 return;
             }
-
+            MethodInfo tryGetValue = dictionaryType.GetMethod("TryGetValue")!;
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
+                var key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                var args = new object?[] { key, null };
+                var _ = tryGetValue.Invoke(dictionary, args);
                 object? item = BindInstance(
                     type: valueType,
-                    instance: null,
+                    instance: args[1],
                     config: child,
                     options: options);
-                if (item != null)
+                if (item is not null)
                 {
                     if (keyType == typeof(string))
                     {
-                        string key = child.Key;
                         setter.SetValue(dictionary, item, new object[] { key });
                     }
                     else if (keyTypeIsEnum)
                     {
-                        object key = Enum.Parse(keyType, child.Key);
                         setter.SetValue(dictionary, item, new object[] { key });
                     }
                 }
