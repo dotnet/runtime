@@ -999,61 +999,6 @@ namespace System.Runtime.InteropServices
         public UnmanagedFunctionPointerAttribute(System.Runtime.InteropServices.CallingConvention callingConvention) { }
         public System.Runtime.InteropServices.CallingConvention CallingConvention { get { throw null; } }
     }
-    public enum UnmanagedType
-    {
-        Bool = 2,
-        I1 = 3,
-        U1 = 4,
-        I2 = 5,
-        U2 = 6,
-        I4 = 7,
-        U4 = 8,
-        I8 = 9,
-        U8 = 10,
-        R4 = 11,
-        R8 = 12,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling as Currency may be unavailable in future releases.")]
-        Currency = 15,
-        BStr = 19,
-        LPStr = 20,
-        LPWStr = 21,
-        LPTStr = 22,
-        ByValTStr = 23,
-        IUnknown = 25,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        IDispatch = 26,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        Struct = 27,
-        Interface = 28,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        SafeArray = 29,
-        ByValArray = 30,
-        SysInt = 31,
-        SysUInt = 32,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling as VBByRefString may be unavailable in future releases.")]
-        VBByRefStr = 34,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling as AnsiBStr may be unavailable in future releases.")]
-        AnsiBStr = 35,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling as TBstr may be unavailable in future releases.")]
-        TBStr = 36,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        VariantBool = 37,
-        FunctionPtr = 38,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Marshalling arbitrary types may be unavailable in future releases. Specify the type you wish to marshal as.")]
-        AsAny = 40,
-        LPArray = 42,
-        LPStruct = 43,
-        CustomMarshaler = 44,
-        Error = 45,
-        IInspectable = 46,
-        HString = 47,
-        LPUTF8Str = 48,
-    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public enum VarEnum
     {

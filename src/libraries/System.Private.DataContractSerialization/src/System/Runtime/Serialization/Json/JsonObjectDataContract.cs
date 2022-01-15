@@ -110,8 +110,7 @@ namespace System.Runtime.Serialization.Json
 
         private static object ParseJsonNumber(string value)
         {
-            TypeCode unusedTypeCode;
-            return ParseJsonNumber(value, out unusedTypeCode);
+            return ParseJsonNumber(value, out _);
         }
     }
 }

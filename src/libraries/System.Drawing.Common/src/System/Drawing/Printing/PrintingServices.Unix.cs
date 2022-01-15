@@ -202,7 +202,7 @@ namespace System.Drawing.Printing
 
             settings.PrinterCapabilities.Clear();
 
-            IntPtr dests = IntPtr.Zero, ptr = IntPtr.Zero, ptr_printer, ppd_handle = IntPtr.Zero;
+            IntPtr dests = IntPtr.Zero, ptr, ptr_printer, ppd_handle;
             string name = string.Empty;
             CUPS_DESTS printer_dest;
             PPD_FILE ppd;

@@ -1038,8 +1038,8 @@ namespace Internal.Reflection.Execution
                 if (!hasEntrypoint)
                     continue;
 
-                uint entryMethodHandleOrNameAndSigRaw = entryParser.GetUnsigned();
-                uint entryDeclaringTypeRaw = entryParser.GetUnsigned();
+                entryParser.SkipInteger(); // entryMethodHandleOrNameAndSigRaw
+                entryParser.SkipInteger(); // entryDeclaringTypeRaw
 
                 IntPtr entryMethodEntrypoint = externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
                 functionPointers.Add(new FunctionPointerOffsetPair(entryMethodEntrypoint, parserOffset));
@@ -1401,8 +1401,7 @@ namespace Internal.Reflection.Execution
         //
         public sealed override bool TryGetMethodFromHandleAndType(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle, out QMethodDefinition methodHandle, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
         {
-            RuntimeTypeHandle dummy;
-            return TryGetMethodFromHandle(runtimeMethodHandle, out dummy, out methodHandle, out genericMethodTypeArgumentHandles);
+            return TryGetMethodFromHandle(runtimeMethodHandle, out _, out methodHandle, out genericMethodTypeArgumentHandles);
         }
 
         //
@@ -1410,7 +1409,6 @@ namespace Internal.Reflection.Execution
         //
         public unsafe sealed override bool TryGetFieldFromHandle(RuntimeFieldHandle runtimeFieldHandle, out RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
-            declaringTypeHandle = default(RuntimeTypeHandle);
             fieldHandle = default(FieldHandle);
 
             string fieldName;
@@ -1446,8 +1444,7 @@ namespace Internal.Reflection.Execution
         //
         public sealed override bool TryGetFieldFromHandleAndType(RuntimeFieldHandle runtimeFieldHandle, RuntimeTypeHandle declaringTypeHandle, out FieldHandle fieldHandle)
         {
-            RuntimeTypeHandle dummy;
-            return TryGetFieldFromHandle(runtimeFieldHandle, out dummy, out fieldHandle);
+            return TryGetFieldFromHandle(runtimeFieldHandle, out _, out fieldHandle);
         }
 
         /// <summary>
