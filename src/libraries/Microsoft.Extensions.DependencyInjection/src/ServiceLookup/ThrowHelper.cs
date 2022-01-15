@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
@@ -9,6 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     internal static class ThrowHelper
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [DoesNotReturn]
         internal static void ThrowObjectDisposedException()
         {
             throw new ObjectDisposedException(nameof(IServiceProvider));

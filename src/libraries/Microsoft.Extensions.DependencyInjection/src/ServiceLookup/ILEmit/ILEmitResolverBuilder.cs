@@ -9,33 +9,33 @@ using System.Reflection.Emit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class ILEmitResolverBuilder : CallSiteVisitor<ILEmitResolverBuilderContext, object>
+    internal sealed class ILEmitResolverBuilder : CallSiteVisitor<ILEmitResolverBuilderContext, object?>
     {
         private static readonly MethodInfo ResolvedServicesGetter = typeof(ServiceProviderEngineScope).GetProperty(
-            nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
+            nameof(ServiceProviderEngineScope.ResolvedServices), BindingFlags.Instance | BindingFlags.NonPublic)!.GetMethod!;
 
         private static readonly MethodInfo ScopeLockGetter = typeof(ServiceProviderEngineScope).GetProperty(
-            nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic).GetMethod;
+            nameof(ServiceProviderEngineScope.Sync), BindingFlags.Instance | BindingFlags.NonPublic)!.GetMethod!;
 
         private static readonly MethodInfo ScopeIsRootScope = typeof(ServiceProviderEngineScope).GetProperty(
-            nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public).GetMethod;
+            nameof(ServiceProviderEngineScope.IsRootScope), BindingFlags.Instance | BindingFlags.Public)!.GetMethod!;
 
         private static readonly MethodInfo CallSiteRuntimeResolverResolveMethod = typeof(CallSiteRuntimeResolver).GetMethod(
-            nameof(CallSiteRuntimeResolver.Resolve), BindingFlags.Public | BindingFlags.Instance);
+            nameof(CallSiteRuntimeResolver.Resolve), BindingFlags.Public | BindingFlags.Instance)!;
 
         private static readonly MethodInfo CallSiteRuntimeResolverInstanceField = typeof(CallSiteRuntimeResolver).GetProperty(
-            nameof(CallSiteRuntimeResolver.Instance), BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance).GetMethod;
+            nameof(CallSiteRuntimeResolver.Instance), BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance)!.GetMethod!;
 
-        private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
-        private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
-        private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
+        private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories))!;
+        private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants))!;
+        private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle))!;
 
         private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors()[0];
 
         private sealed class ILEmitResolverBuilderRuntimeContext
         {
-            public object[] Constants;
-            public Func<IServiceProvider, object>[] Factories;
+            public object?[]? Constants;
+            public Func<IServiceProvider, object>[]? Factories;
         }
 
         private struct GeneratedMethod
@@ -124,7 +124,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
 
-        protected override object VisitDisposeCache(ServiceCallSite transientCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitDisposeCache(ServiceCallSite transientCallSite, ILEmitResolverBuilderContext argument)
         {
             if (transientCallSite.CaptureDisposable)
             {
@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override object VisitConstructor(ConstructorCallSite constructorCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitConstructor(ConstructorCallSite constructorCallSite, ILEmitResolverBuilderContext argument)
         {
             // new T([create arguments])
             foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
 
             argument.Generator.Emit(OpCodes.Newobj, constructorCallSite.ConstructorInfo);
-            if (constructorCallSite.ImplementationType.IsValueType)
+            if (constructorCallSite.ImplementationType!.IsValueType)
             {
                 argument.Generator.Emit(OpCodes.Box, constructorCallSite.ImplementationType);
             }
@@ -160,13 +160,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override object VisitRootCache(ServiceCallSite callSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitRootCache(ServiceCallSite callSite, ILEmitResolverBuilderContext argument)
         {
             AddConstant(argument, CallSiteRuntimeResolver.Instance.Resolve(callSite, _rootScope));
             return null;
         }
 
-        protected override object VisitScopeCache(ServiceCallSite scopedCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitScopeCache(ServiceCallSite scopedCallSite, ILEmitResolverBuilderContext argument)
         {
             GeneratedMethod generatedMethod = BuildType(scopedCallSite);
 
@@ -186,20 +186,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override object VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
         {
             AddConstant(argument, constantCallSite.DefaultValue);
             return null;
         }
 
-        protected override object VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, ILEmitResolverBuilderContext argument)
         {
             // [return] ProviderScope
             argument.Generator.Emit(OpCodes.Ldarg_1);
             return null;
         }
 
-        protected override object VisitIEnumerable(IEnumerableCallSite enumerableCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitIEnumerable(IEnumerableCallSite enumerableCallSite, ILEmitResolverBuilderContext argument)
         {
             if (enumerableCallSite.ServiceCallSites.Length == 0)
             {
@@ -235,7 +235,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override object VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
+        protected override object? VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
         {
             if (argument.Factories == null)
             {
@@ -256,11 +256,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        private void AddConstant(ILEmitResolverBuilderContext argument, object value)
+        private void AddConstant(ILEmitResolverBuilderContext argument, object? value)
         {
             if (argument.Constants == null)
             {
-                argument.Constants = new List<object>();
+                argument.Constants = new List<object?>();
             }
 
             // this.Constants[i]
@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
             // new ServiceCacheKey(typeof(key.Type), key.Slot)
-            argument.Generator.Emit(OpCodes.Ldtoken, key.Type);
+            argument.Generator.Emit(OpCodes.Ldtoken, key.Type!);
             argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);
             argument.Generator.Emit(OpCodes.Ldc_I4, key.Slot);
             argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);

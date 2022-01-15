@@ -45,20 +45,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 #if NETFRAMEWORK || NETSTANDARD2_0
             return RunOnEmptyStackCore(static s =>
             {
-                var t = (Tuple<Func<T1, T2, TR>, T1, T2>)s;
+                var t = (Tuple<Func<T1, T2, TR>, T1, T2>)s!;
                 return t.Item1(t.Item2, t.Item3);
             }, Tuple.Create(action, arg1, arg2));
 #else
             // Prefer ValueTuple when available to reduce dependencies on Tuple
             return RunOnEmptyStackCore(static s =>
             {
-                var t = ((Func<T1, T2, TR>, T1, T2))s;
+                var t = ((Func<T1, T2, TR>, T1, T2))s!;
                 return t.Item1(t.Item2, t.Item3);
             }, (action, arg1, arg2));
 #endif
         }
 
-        private R RunOnEmptyStackCore<R>(Func<object, R> action, object state)
+        private R RunOnEmptyStackCore<R>(Func<object?, R> action, object? state)
         {
             _executionStackCount++;
 
