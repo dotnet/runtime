@@ -182,7 +182,7 @@ namespace System.Xml
                 int i;
                 if ((i = XmlCharType.IsOnlyWhitespaceWithPos(ws)) != -1)
                 {
-                    throw new ArgumentException(SR.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws)));
+                    throw new ArgumentException(SR.Format(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(ws, i)));
                 }
             }
 

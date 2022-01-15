@@ -194,8 +194,12 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_InvalidECNamedCurve);
                 }
 
-                if (Oid == null ||
-                    (string.IsNullOrEmpty(Oid.FriendlyName) && string.IsNullOrEmpty(Oid.Value)))
+                if (Oid == null)
+                {
+                    throw new ArgumentNullException(nameof(Oid));
+                }
+
+                if (string.IsNullOrEmpty(Oid.FriendlyName) && string.IsNullOrEmpty(Oid.Value))
                 {
                     throw new ArgumentException(SR.Format(SR.Cryptography_InvalidCurveOid, Oid.Value));
                 }

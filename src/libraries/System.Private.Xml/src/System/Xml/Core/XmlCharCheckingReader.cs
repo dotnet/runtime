@@ -618,7 +618,7 @@ namespace System.Xml
             int i;
             if ((i = XmlCharType.IsOnlyWhitespaceWithPos(value)) != -1)
             {
-                Throw(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(value));
+                Throw(SR.Xml_InvalidWhitespaceCharacter, XmlException.BuildCharExceptionArgs(value, i));
             }
         }
 
