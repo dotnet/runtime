@@ -391,6 +391,7 @@ namespace System.Diagnostics.Tests
         private static StackTrace OneParameter(int x) => new StackTrace();
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace TwoParameters(int x, string y) => new StackTrace();
+
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private unsafe static StackTrace FunctionPointerParameter(delegate*<void> x) => new StackTrace();
 
