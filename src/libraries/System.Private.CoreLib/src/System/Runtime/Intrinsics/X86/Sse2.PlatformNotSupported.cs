@@ -730,6 +730,17 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_cvtsi64_si128 (__int64 a)
         ///   MOVQ xmm, reg/m64
         /// </summary>
+        public static Vector128<nint> ConvertScalarToVector128NInt(nint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// 32-bit:
+        /// __m128i _mm_cvtsi32_si128 (int a)
+        ///   MOVD xmm, reg/m32
+        ///
+        /// 64-bit:
+        /// __m128i _mm_cvtsi64_si128 (__int64 a)
+        ///   MOVQ xmm, reg/m64
+        /// </summary>
         public static Vector128<nint> ConvertScalarToVector128NUInt(nint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
