@@ -2320,7 +2320,7 @@ HRESULT CordbObjectValue::GetLength(ULONG32 *pcchString)
 // Return Value: S_OK or CORDBG_E_INVALID_OBJECT, CORDBG_E_OBJECT_NEUTERED, or E_INVALIDARG  on failure
 HRESULT CordbObjectValue::GetString(ULONG32 cchString,
                                     ULONG32 *pcchString,
-                                    __out_ecount_opt(cchString) WCHAR szString[])
+                                    _Out_writes_bytes_opt_(cchString) WCHAR szString[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);

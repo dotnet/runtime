@@ -73,8 +73,12 @@
 #ifndef HOST_WIN32
 #include <sys/socket.h>
 #endif
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
+#ifdef INTERNAL_ZLIB
+#include <external/zlib/zlib.h>
+#else
 #include <zlib.h>
+#endif
 #endif
 
 #ifdef HOST_WIN32
@@ -316,7 +320,7 @@ struct _MonoProfiler {
 	MonoProfilerHandle handle;
 
 	FILE* file;
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	gzFile gzfile;
 #endif
 
@@ -1065,7 +1069,7 @@ dump_header (void)
 	p = write_header_string (p, arch);
 	p = write_header_string (p, os);
 
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	if (log_profiler.gzfile) {
 		gzwrite (log_profiler.gzfile, hbuf, p - hbuf);
 	} else
@@ -1156,7 +1160,7 @@ dump_buffer (LogBuffer *buf)
 		p = write_int64 (p, buf->thread_id);
 		p = write_int64 (p, buf->method_base);
 
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 		if (log_profiler.gzfile) {
 			gzwrite (log_profiler.gzfile, hbuf, p - hbuf);
 			gzwrite (log_profiler.gzfile, buf->buf, buf->cursor - buf->buf);
@@ -3082,7 +3086,7 @@ log_shutdown (MonoProfiler *prof)
 	g_assert (!(state & 0xFFFF) && "Why is the reader count still non-zero?");
 	g_assert (!(state >> 16) && "Why is the exclusive lock still held?");
 
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	if (prof->gzfile)
 		gzclose (prof->gzfile);
 #endif
@@ -4145,7 +4149,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		exit (1);
 	}
 
-#if defined (HAVE_SYS_ZLIB)
+#ifndef DISABLE_LOG_PROFILER_GZ
 	if (log_config.use_zip)
 		log_profiler.gzfile = gzdopen (fileno (log_profiler.file), "wb");
 #endif

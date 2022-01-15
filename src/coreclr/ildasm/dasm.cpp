@@ -149,14 +149,14 @@ ULONG                   g_ulMetaInfoFilter = MDInfo::dumpDefault;
 // Validator module type.
 DWORD g_ValModuleType = ValidatorModuleTypeInvalid;
 IMetaDataDispenserEx *g_pDisp = NULL;
-void DisplayFile(__in __nullterminated WCHAR* szFile,
+void DisplayFile(_In_ __nullterminated WCHAR* szFile,
                  BOOL isFile,
                  ULONG DumpFilter,
-                 __in_opt __nullterminated WCHAR* szObjFile,
+                 _In_opt_z_ WCHAR* szObjFile,
                  strPassBackFn pDisplayString);
 extern mdMethodDef      g_tkEntryPoint; // integration with MetaInfo
 
-DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName); // see DRES.CPP
+DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName); // see DRES.CPP
 
 struct VTableRef
 {
@@ -183,7 +183,7 @@ void DumpCustomAttributeProps(mdToken tkCA, mdToken tkType, mdToken tkOwner, BYT
 WCHAR* RstrW(unsigned id)
 {
     static WCHAR buffer[1024];
-    DWORD cchBuff = (DWORD)COUNTOF(buffer);
+    DWORD cchBuff = (DWORD)ARRAY_SIZE(buffer);
     WCHAR* buff = (WCHAR*)buffer;
     memset(buffer,0,sizeof(buffer));
     switch(id)
@@ -221,7 +221,7 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CANTACCESSW32RES:
         case IDS_E_CANTOPENW32RES:
         case IDS_ERRORREOPENINGFILE:
-            wcscpy_s(buffer,COUNTOF(buffer),W("// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("// "));
             buff +=3;
             cchBuff -= 3;
             break;
@@ -232,12 +232,12 @@ WCHAR* RstrW(unsigned id)
         case IDS_E_CODESIZE:
         case IDS_W_CREATEDMRES:
         case IDS_E_READINGMRES:
-            wcscpy_s(buffer,COUNTOF(buffer),W("%s// "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("%s// "));
             buff +=5;
             cchBuff -= 5;
             break;
         case IDS_E_NORVA:
-            wcscpy_s(buffer,COUNTOF(buffer),W("/* "));
+            wcscpy_s(buffer,ARRAY_SIZE(buffer),W("/* "));
             buff += 3;
             cchBuff -= 3;
             break;
@@ -1343,7 +1343,7 @@ mdToken ResolveTypeDefReflectionNotation(IMDInternalImport *pIMDI,
 }
 
 mdToken ResolveTypeRefReflectionNotation(IMDInternalImport *pIMDI,
-                                         __in __nullterminated const char* szNamespace,
+                                         _In_ __nullterminated const char* szNamespace,
                                          __inout __nullterminated char* szName,
                                          mdToken tkResScope)
 {
@@ -2844,7 +2844,7 @@ void DumpPermissions(mdToken tkOwner, void* GUICookie)
 }
 
 void PrettyPrintMethodSig(__inout __nullterminated char* szString, unsigned* puStringLen, CQuickBytes* pqbMemberSig, PCCOR_SIGNATURE pComSig, ULONG cComSig,
-                          __inout __nullterminated char* buff, __in_opt __nullterminated char* szArgPrefix, void* GUICookie)
+                          __inout __nullterminated char* buff, _In_opt_z_ char* szArgPrefix, void* GUICookie)
 {
     unsigned uMaxWidth = 40;
     if(g_fDumpHTML || g_fDumpRTF) uMaxWidth = 240;
@@ -3030,7 +3030,7 @@ BOOL PrettyPrintGP(                     // prints name of generic param, or retu
 }
 
 // Pretty-print formal type parameters for a class or method
-char *DumpGenericPars(__inout_ecount(SZSTRING_SIZE) char* szString, mdToken tok, void* GUICookie/*=NULL*/, BOOL fSplit/*=FALSE*/)
+char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok, void* GUICookie/*=NULL*/, BOOL fSplit/*=FALSE*/)
 {
     WCHAR *wzArgName = wzUniBuf;
     ULONG chName;
@@ -3695,7 +3695,7 @@ BOOL DumpMethod(mdToken FuncToken, const char *pszClassName, DWORD dwEntryPointT
                 if (FAILED(g_pImport->GetParamDefProps(tkArg, &wSequence, &dwAttr, &szName)))
                 {
                     char sz[256];
-                    sprintf_s(sz, COUNTOF(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
+                    sprintf_s(sz, ARRAY_SIZE(sz), RstrUTF(IDS_E_INVALIDRECORD), tkArg);
                     printError(GUICookie, sz);
                     continue;
                 }
@@ -6923,7 +6923,7 @@ void DumpVtable(void* GUICookie)
     }
 }
 // MetaInfo integration:
-void DumpMI(__in __nullterminated const char *str)
+void DumpMI(_In_ __nullterminated const char *str)
 {
     static BOOL fInit = TRUE;
     static char* szStr = &szString[0];
@@ -6955,7 +6955,7 @@ void DumpMI(__in __nullterminated const char *str)
     }
 }
 
-void DumpMetaInfo(__in __nullterminated const WCHAR* pwzFileName, __in_opt __nullterminated const char* pszObjFileName, void* GUICookie)
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ const char* pszObjFileName, void* GUICookie)
 {
     const WCHAR* pch = wcsrchr(pwzFileName,L'.');
 
@@ -7334,7 +7334,7 @@ void CloseNamespace(__inout __nullterminated char* szString)
     }
 }
 
-FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
+FILE* OpenOutput(_In_ __nullterminated const WCHAR* wzFileName)
 {
     FILE*   pfile = NULL;
         if(g_uCodePage == 0xFFFFFFFF) _wfopen_s(&pfile,wzFileName,W("wb"));
@@ -7348,7 +7348,7 @@ FILE* OpenOutput(__in __nullterminated const WCHAR* wzFileName)
     return pfile;
 }
 
-FILE* OpenOutput(__in __nullterminated const char* szFileName)
+FILE* OpenOutput(_In_ __nullterminated const char* szFileName)
 {
     return OpenOutput(UtfToUnicode(szFileName));
 }

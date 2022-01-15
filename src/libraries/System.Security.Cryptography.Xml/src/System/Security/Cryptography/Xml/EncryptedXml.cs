@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (cipherData.CipherReference.CipherValue != null)
                     return cipherData.CipherReference.CipherValue;
-                Stream decInputStream = null;
+                Stream decInputStream;
                 if (cipherData.CipherReference.Uri == null)
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
@@ -269,7 +269,7 @@ namespace System.Security.Cryptography.Xml
             if (encryptedData == null)
                 throw new ArgumentNullException(nameof(encryptedData));
 
-            int initBytesSize = 0;
+            int initBytesSize;
             // If the Uri is not provided by the application, try to get it from the EncryptionMethod
             if (symmetricAlgorithmUri == null)
             {
@@ -397,8 +397,8 @@ namespace System.Security.Cryptography.Xml
             KeyInfoX509Data kiX509Data;
             KeyInfoRetrievalMethod kiRetrievalMethod;
             KeyInfoEncryptedKey kiEncKey;
-            EncryptedKey ek = null;
-            bool fOAEP = false;
+            EncryptedKey ek;
+            bool fOAEP;
 
             while (keyInfoEnum.MoveNext())
             {
@@ -691,7 +691,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Padding = origPadding;
             }
 
-            byte[] output = null;
+            byte[] output;
             if (_mode == CipherMode.ECB)
             {
                 output = cipher;

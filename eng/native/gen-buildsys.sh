@@ -7,13 +7,11 @@ scriptroot="$( cd -P "$( dirname "$0" )" && pwd )"
 
 if [[ "$#" -lt 4 ]]; then
   echo "Usage..."
-  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <compiler> <compiler major version> <compiler minor version> [build flavor] [ninja] [scan-build] [cmakeargs]"
+  echo "gen-buildsys.sh <path to top level CMakeLists.txt> <path to intermediate directory> <Architecture> <compiler> [build flavor] [ninja] [scan-build] [cmakeargs]"
   echo "Specify the path to the top level CMake file."
   echo "Specify the path that the build system files are generated in."
   echo "Specify the target architecture."
   echo "Specify the name of compiler (clang or gcc)."
-  echo "Specify the major version of compiler."
-  echo "Specify the minor version of compiler."
   echo "Optionally specify the build configuration (flavor.) Defaults to DEBUG."
   echo "Optionally specify 'scan-build' to enable build with clang static analyzer."
   echo "Use the Ninja generator instead of the Unix Makefiles generator."
@@ -23,12 +21,10 @@ fi
 
 build_arch="$3"
 compiler="$4"
-majorVersion="$5"
-minorVersion="$6"
 
 if [[ "$compiler" != "default" ]]; then
     nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
-    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
+    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler"
 
     CCC_CC="$CC"
     CCC_CXX="$CXX"
@@ -43,7 +39,7 @@ scan_build=OFF
 generator="Unix Makefiles"
 __UnprocessedCMakeArgs=""
 
-for i in "${@:7}"; do
+for i in "${@:5}"; do
     upperI="$(echo "$i" | tr "[:lower:]" "[:upper:]")"
     case "$upperI" in
       # Possible build types are DEBUG, CHECKED, RELEASE, RELWITHDEBINFO.

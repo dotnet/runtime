@@ -27,11 +27,9 @@ namespace Microsoft.Extensions.Hosting
         /// This method is called when the <see cref="IHostedService" /> starts. The implementation should return a task that represents
         /// the lifetime of the long running operation(s) being performed.
         /// </summary>
-        /// <param name="stoppingToken">
-        /// Triggered when <see cref="IHostedService.StopAsync(CancellationToken)" /> is called.
-        /// The service task should interpret and handle cancellation requests appearing on this token.
-        /// </param>
-        /// <returns>A <see cref="Task" /> that represents the long running service.</returns>
+        /// <param name="stoppingToken">Triggered when <see cref="IHostedService.StopAsync(CancellationToken)"/> is called.</param>
+        /// <returns>A <see cref="Task"/> that represents the long running operations.</returns>
+        /// <remarks>See <see href="https://docs.microsoft.com/dotnet/core/extensions/workers">Worker Services in .NET</see> for implementation guidelines.</remarks>
         protected abstract Task ExecuteAsync(CancellationToken stoppingToken);
 
         /// <summary>

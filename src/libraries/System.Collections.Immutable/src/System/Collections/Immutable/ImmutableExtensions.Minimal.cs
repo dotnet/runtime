@@ -103,7 +103,7 @@ namespace System.Collections.Immutable
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
             // IList is the GCD of what the following types implement.
-            if (sequence is IList<T> listInterface)
+            if (sequence is IList<T>)
             {
                 if (sequence is List<T> list)
                 {

@@ -195,6 +195,7 @@ typedef struct {
 	LLVMValueRef long_bb_break_var;
 	int *gc_var_indexes;
 	LLVMValueRef gc_pin_area;
+	LLVMValueRef il_state;
 } EmitContext;
 
 typedef struct {
@@ -2371,7 +2372,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 	if (ctx->llvm_only) {
 		clause = get_most_deep_clause (cfg, ctx, bb);
 
-		if (clause) {
+		if (!ctx->cfg->deopt && clause) {
 			g_assert (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags == MONO_EXCEPTION_CLAUSE_FAULT);
 
 			/*
@@ -3816,11 +3817,15 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				return;
 			/* Could be already created by an OP_VPHI */
 			if (!ctx->addresses [var->dreg]) {
-				if (var->flags & MONO_INST_LMF)
-					ctx->addresses [var->dreg] = build_alloca_llvm_type_name (ctx, LLVMArrayType (LLVMInt8Type (), MONO_ABI_SIZEOF (MonoLMF)), sizeof (target_mgreg_t), "entry_lmf");
-				else
-					ctx->addresses [var->dreg] = build_named_alloca (ctx, var->inst_vtype, "entry");
-				//LLVMSetValueName (ctx->addresses [var->dreg], g_strdup_printf ("vreg_loc_%d", var->dreg));
+				if (var->flags & MONO_INST_LMF) {
+					// FIXME: Allocate a smaller struct in the deopt case
+					int size = cfg->deopt ? MONO_ABI_SIZEOF (MonoLMFExt) : MONO_ABI_SIZEOF (MonoLMF);
+					ctx->addresses [var->dreg] = build_alloca_llvm_type_name (ctx, LLVMArrayType (LLVMInt8Type (), size), sizeof (target_mgreg_t), "lmf");
+				} else {
+					char *name = g_strdup_printf ("vreg_loc_%d", var->dreg);
+					ctx->addresses [var->dreg] = build_named_alloca (ctx, var->inst_vtype, name);
+					g_free (name);
+				}
 			}
 			ctx->vreg_cli_types [var->dreg] = var->inst_vtype;
 		}
@@ -4029,6 +4034,72 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			emit_gc_pin (ctx, builder, var->dreg);
 	}
 #endif
+
+	if (cfg->deopt) {
+		LLVMValueRef addr, index [2];
+		MonoMethodHeader *header = cfg->header;
+		int nfields = sig->hasthis + sig->param_count + header->num_locals + 2;
+		LLVMTypeRef *types = g_alloca (nfields * sizeof (LLVMTypeRef));
+		int findex = 0;
+		/* method */
+		types [findex ++] = IntPtrType ();
+		/* il_offset */
+		types [findex ++] = LLVMInt32Type ();
+		int data_start = findex;
+		/* data */
+		if (sig->hasthis)
+			types [findex ++] = IntPtrType ();
+		for (int i = 0; i < sig->param_count; ++i)
+			types [findex ++] = LLVMPointerType (type_to_llvm_type (ctx, sig->params [i]), 0);
+		for (int i = 0; i < header->num_locals; ++i)
+			types [findex ++] = LLVMPointerType (type_to_llvm_type (ctx, header->locals [i]), 0);
+		g_assert (findex == nfields);
+		char *name = g_strdup_printf ("%s_il_state", ctx->method_name);
+		LLVMTypeRef il_state_type = LLVMStructCreateNamed (ctx->module->context, name);
+		LLVMStructSetBody (il_state_type, types, nfields, FALSE);
+		g_free (name);
+
+		ctx->il_state = build_alloca_llvm_type_name (ctx, il_state_type, 0, "il_state");
+		g_assert (cfg->il_state_var);
+		ctx->addresses [cfg->il_state_var->dreg] = ctx->il_state;
+
+		/* Set il_state->il_offset = -1 */
+		index [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		index [1] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
+		addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+		LLVMBuildStore (ctx->builder, LLVMConstInt (types [1], -1, FALSE), addr);
+
+		/*
+		 * Set il_state->data [i] to either the address of the arg/local, or NULL.
+		 * Because of mono_liveness_handle_exception_clauses (), all locals used/reachable from
+		 * clauses are supposed to be volatile, so they have an address.
+		 */
+		findex = data_start;
+		for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
+			LLVMValueRef var_addr = ctx->addresses [cfg->args [i]->dreg];
+
+			index [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			index [1] = LLVMConstInt (LLVMInt32Type (), findex, FALSE);
+			addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+			if (var_addr)
+				LLVMBuildStore (ctx->builder, var_addr, convert (ctx, addr, LLVMPointerType (LLVMTypeOf (var_addr), 0)));
+			else
+				LLVMBuildStore (ctx->builder, LLVMConstNull (types [findex]), addr);
+			findex ++;
+		}
+		for (int i = 0; i < header->num_locals; ++i) {
+			LLVMValueRef var_addr = ctx->addresses [cfg->locals [i]->dreg];
+
+			index [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			index [1] = LLVMConstInt (LLVMInt32Type (), findex, FALSE);
+			addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+			if (var_addr)
+				LLVMBuildStore (ctx->builder, LLVMBuildBitCast (builder, var_addr, types [findex], ""), addr);
+			else
+				LLVMBuildStore (ctx->builder, LLVMConstNull (types [findex]), addr);
+			findex ++;
+		}
+	}
 
 	/* Initialize the method if needed */
 	if (cfg->compile_aot) {
@@ -7287,7 +7358,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			val = call_intrins (ctx, intrins, args, "");
 			values [ins->dreg] = LLVMBuildExtractValue (builder, val, 0, dname);
 			ovf = LLVMBuildExtractValue (builder, val, 1, "");
-			emit_cond_system_exception (ctx, bb, "OverflowException", ovf, FALSE);
+			emit_cond_system_exception (ctx, bb, ins->inst_exc_name, ovf, FALSE);
 			if (!ctx_ok (ctx))
 				break;
 			builder = ctx->builder;
@@ -11005,7 +11076,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			}
 
 			if (ctx->llvm_only) {
-				emit_resume_eh (ctx, bb);
+				if (!cfg->deopt) {
+					emit_resume_eh (ctx, bb);
+				} else {
+					/* Not needed */
+					LLVMBuildUnreachable (builder);
+				}
 			} else {
 				LLVMTypeRef icall_sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
 				if (ctx->cfg->compile_aot) {

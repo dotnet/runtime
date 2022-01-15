@@ -38,6 +38,10 @@
     <RunScriptCommands Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
+  </ItemGroup>
+
   <!--
     Unit/Functional/Integration test support.
     Supported runners: xunit.

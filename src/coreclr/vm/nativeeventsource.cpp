@@ -13,7 +13,7 @@
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 
-extern "C" void QCALLTYPE LogEventSource(__in_z int eventID, __in_z LPCWSTR eventName, __in_z LPCWSTR eventSourceName, __in_z LPCWSTR payload)
+extern "C" void QCALLTYPE LogEventSource(_In_z_ int eventID, _In_z_ LPCWSTR eventName, _In_z_ LPCWSTR eventSourceName, _In_z_ LPCWSTR payload)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -44,7 +44,7 @@ extern "C" BOOL QCALLTYPE IsEventSourceLoggingEnabled()
 // change genRuntimeEventSources.py script to not emit the body that throws NotImplementedException for the event that
 // want to be fired from managed code.
 // See https://github.com/dotnet/runtime/pull/47829 for an example of how to do this.
-extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStart(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStart(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -54,7 +54,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStart(__in_z uint activeWorke
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStop(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStop(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -64,7 +64,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadStop(__in_z uint activeWorker
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolWorkerThreadWait(__in_z uint activeWorkerThreadCount, __in_z uint retiredWorkerThreadCount, __in_z short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkerThreadWait(_In_z_ uint activeWorkerThreadCount, _In_z_ uint retiredWorkerThreadCount, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -74,7 +74,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadWait(__in_z uint activeWorker
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentSample(__in_z double throughput, __in_z short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentSample(_In_z_ double throughput, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -84,7 +84,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentSample(__in_z doubl
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z double averageThroughput, __in_z uint newWorkerThreadCount, __in_z uint reason, __in_z short clrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentAdjustment(_In_z_ double averageThroughput, _In_z_ uint newWorkerThreadCount, _In_z_ uint reason, _In_z_ short clrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -94,7 +94,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentAdjustment(__in_z d
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentStats(__in_z double duration, __in_z double throughput, __in_z double threadWave, __in_z double throughputWave, __in_z double throughputErrorEstimate, __in_z double AverageThroughputErrorEstimate, __in_z double ThroughputRatio, __in_z double confidence, __in_z double newControlSetting, __in_z short newThreadWaveMagnitude, __in_z short ClrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentStats(_In_z_ double duration, _In_z_ double throughput, _In_z_ double threadWave, _In_z_ double throughputWave, _In_z_ double throughputErrorEstimate, _In_z_ double AverageThroughputErrorEstimate, _In_z_ double ThroughputRatio, _In_z_ double confidence, _In_z_ double newControlSetting, _In_z_ short newThreadWaveMagnitude, _In_z_ short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -104,7 +104,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentStats(__in_z double
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolIOEnqueue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z bool multiDequeues, __in_z short ClrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ bool multiDequeues, _In_z_ short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -114,7 +114,7 @@ extern "C" void QCALLTYPE LogThreadPoolIOEnqueue(__in_z void* nativeOverlapped, 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolIODequeue(__in_z void* nativeOverlapped, __in_z void* overlapped, __in_z short ClrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolIODequeue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -124,7 +124,7 @@ extern "C" void QCALLTYPE LogThreadPoolIODequeue(__in_z void* nativeOverlapped, 
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE LogThreadPoolWorkingThreadCount(__in_z uint count, __in_z short ClrInstanceID)
+extern "C" void QCALLTYPE LogThreadPoolWorkingThreadCount(_In_z_ uint count, _In_z_ short ClrInstanceID)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;

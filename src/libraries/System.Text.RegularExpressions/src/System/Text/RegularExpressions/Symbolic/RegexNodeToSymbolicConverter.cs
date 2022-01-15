@@ -484,7 +484,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             bool IsDotStar(RegexNode node) => node.Type == RegexNode.Setloop && Convert(node, topLevel: false).IsAnyStar;
 
-            bool IsIntersect(RegexNode node) => node.Type == RegexNode.Testgroup && node.ChildCount() > 2 && IsNothing(node.Child(2));
+            bool IsIntersect(RegexNode node) => node.Type == RegexNode.Testgroup && IsNothing(node.Child(2));
 
             bool TryGetIntersection(RegexNode node, [Diagnostics.CodeAnalysis.NotNullWhen(true)] out List<RegexNode>? conjuncts)
             {

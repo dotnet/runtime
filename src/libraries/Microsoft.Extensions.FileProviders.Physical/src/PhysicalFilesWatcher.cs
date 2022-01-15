@@ -439,7 +439,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             }
         }
 
-        private static string NormalizePath(string filter) => filter = filter.Replace('\\', '/');
+        private static string NormalizePath(string filter) => filter.Replace('\\', '/');
 
         private static bool IsDirectoryPath(string path)
         {
