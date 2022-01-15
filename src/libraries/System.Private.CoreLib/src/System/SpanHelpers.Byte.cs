@@ -112,7 +112,8 @@ namespace System
 
                 } while (true);
             }
-            else
+
+            if (Vector128.IsHardwareAccelerated)
             {
                 // Find the last unique (which is not equal to ch1) byte
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -564,8 +565,8 @@ namespace System
             }
             return -1;
 
-        // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
-        // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
+            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
+            // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_BYTES:
             if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<byte>.Count)
             {
@@ -613,7 +614,7 @@ namespace System
 
                 } while (true);
             }
-            else
+            if (Vector128.IsHardwareAccelerated)
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
 

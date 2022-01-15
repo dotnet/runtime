@@ -122,7 +122,8 @@ namespace System
 
                 } while (true);
             }
-            else
+
+            if (Vector128.IsHardwareAccelerated)
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -229,10 +230,9 @@ namespace System
             }
             return -1;
 
-        // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
-        // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
+            // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
+            // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-
             if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<ushort>.Count)
             {
                 offset = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
@@ -280,7 +280,8 @@ namespace System
                         offset = 0;
                 } while (true);
             }
-            else
+
+            if (Vector128.IsHardwareAccelerated)
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
 
