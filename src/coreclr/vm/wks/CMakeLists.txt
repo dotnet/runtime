@@ -34,17 +34,14 @@ if (CLR_CMAKE_TARGET_WIN32)
     endif (CLR_CMAKE_HOST_ARCH_I386)
 
     # Convert AsmConstants.h into AsmConstants.inc
-    find_program(POWERSHELL powershell)
-    if (POWERSHELL STREQUAL "POWERSHELL-NOTFOUND")
-        message(FATAL_ERROR "POWERSHELL not found")
-    endif()
+    h2inc("${VM_DIR}/${ARCH_SOURCES_DIR}/asmconstants.h" "${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.tmp")
 
     # Get the current list of definitions
     get_compile_definitions(DEFINITIONS)
+
     add_custom_command(
         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.inc"
         DEPENDS ${VM_DIR}/${ARCH_SOURCES_DIR}/asmconstants.h
-        COMMAND ${POWERSHELL} -NoProfile -ExecutionPolicy Bypass -NonInteractive \"& \"\"${VM_DIR}/h2inc.ps1\"\"\" \"\"\"${VM_DIR}/${ARCH_SOURCES_DIR}/asmconstants.h\"\"\" >"${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.tmp"
         COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} /EP "${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.tmp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.inc"
     )
 
