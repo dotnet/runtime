@@ -26,7 +26,7 @@ namespace IntelHardwareIntrinsicTest
                     var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArrayPtr);
                     var i2 = Sse.ConvertToNInt(vf1);
 
-                    if (i2 != ((int)floatTable.inArray[0]))
+                    if (i2 != ((nint)(int)floatTable.inArray[0]))
                     {
                         Console.WriteLine("SSE ConvertToNInt failed on float:");
                         Console.WriteLine(i2);
