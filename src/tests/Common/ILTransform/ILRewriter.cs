@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 
 public class ILRewriter
@@ -61,7 +62,7 @@ public class ILRewriter
         bool isILTest = Path.GetExtension(ilSource).ToLower() == ".il";
         bool rewritten = false;
 
-        if (Path.GetFileName(ilSource).Equals("lcs.cs", StringComparison.OrdinalIgnoreCase))
+        if (Path.GetFileName(ilSource).Equals("instance.cs", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine("RewriteFile: {0}", ilSource);
         }
@@ -112,12 +113,14 @@ public class ILRewriter
                     while (lineIndex >= 0)
                     {
                         line = lines[lineIndex];
-                        if (TestProject.MakePublic(ref line))
+                        bool isMethodLine = line.Contains(".method ");
+                        if (TestProject.MakePublic(ref line, force: isMethodLine))
                         {
                             lines[lineIndex] = line;
                             rewritten = true;
+                            break;
                         }
-                        if (line.Contains(".method "))
+                        if (isMethodLine)
                         {
                             break;
                         }
@@ -127,11 +130,9 @@ public class ILRewriter
                 else
                 {
                     line = lines[lineIndex];
-                    if (TestProject.MakePublic(ref line))
-                    {
-                        lines[lineIndex] = line;
-                        rewritten = true;
-                    }
+                    TestProject.MakePublic(ref line, force: true);
+                    lines[lineIndex] = line;
+                    rewritten = true;
                 }
 
                 foreach (string baseClassName in _testProject.TestClassBases)
@@ -143,7 +144,7 @@ public class ILRewriter
                             (line.Contains("class") || line.Contains("struct")) &&
                             line.Contains(baseClassName))
                         {
-                            if (TestProject.MakePublic(ref line))
+                            if (TestProject.MakePublic(ref line, force: true))
                             {
                                 lines[index] = line;
                                 rewritten = true;

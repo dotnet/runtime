@@ -133,7 +133,7 @@ public class TestProject
         return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
     }
 
-    public static bool MakePublic(ref string line)
+    public static bool MakePublic(ref string line, bool force)
     {
         if (!line.Contains("public "))
         {
@@ -145,6 +145,20 @@ public class TestProject
             else if (line.Contains("internal "))
             {
                 line = line.Replace("internal ", "public ");
+                return true;
+            }
+            else if (force)
+            {
+                int charIndex = 0;
+                while (charIndex < line.Length && Char.IsWhiteSpace(line[charIndex]))
+                {
+                    charIndex++;
+                }
+                while (charIndex < line.Length && !Char.IsWhiteSpace(line[charIndex]))
+                {
+                    charIndex++;
+                }
+                line = line.Substring(0, charIndex) + " public" + line.Substring(charIndex);
                 return true;
             }
         }
