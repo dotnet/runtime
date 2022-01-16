@@ -4426,6 +4426,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	end = td->ip + header->code_size;
 
 	td->cbb = td->entry_bb = (InterpBasicBlock*)mono_mempool_alloc0 (td->mempool, sizeof (InterpBasicBlock));
+	if (td->gen_sdb_seq_points)
+		td->basic_blocks = g_list_prepend_mempool (td->mempool, td->basic_blocks, td->cbb);
+
 	td->cbb->index = td->bb_count++;
 	td->cbb->native_offset = -1;
 	td->cbb->stack_height = td->sp - td->stack;

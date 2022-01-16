@@ -153,7 +153,9 @@ namespace System.Runtime.InteropServices
             if (_numBytes == Uninitialized)
                 throw NotInitialized();
 
+#pragma warning disable IDE0059 // https://github.com/dotnet/roslyn/issues/42761
             pointer = null;
+#pragma warning restore IDE0059
 
             bool junk = false;
             DangerousAddRef(ref junk);

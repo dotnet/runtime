@@ -296,7 +296,7 @@ namespace System.Text.Json
 
         private bool GetNextSpan()
         {
-            ReadOnlyMemory<byte> memory = default;
+            ReadOnlyMemory<byte> memory;
             while (true)
             {
                 Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() != null);
@@ -630,7 +630,7 @@ namespace System.Text.Json
         {
             Debug.Assert(span.Length > 0);
 
-            int indexOfFirstMismatch = 0;
+            int indexOfFirstMismatch;
 
             int minLength = Math.Min(span.Length, literal.Length);
 

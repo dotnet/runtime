@@ -171,14 +171,12 @@ namespace System.Data.Odbc
             if (null != parentHandle)
             {
                 parentHandle.DangerousRelease();
-                parentHandle = null;
             }
             return true;
         }
 
         internal ODBC32.SQLRETURN GetDiagnosticField(out string sqlState)
         {
-            short cbActual;
             // ODBC (MSDN) documents it expects a buffer large enough to hold 5(+L'\0') unicode characters
             StringBuilder sb = new StringBuilder(6);
             ODBC32.SQLRETURN retcode = Interop.Odbc.SQLGetDiagFieldW(
@@ -188,7 +186,7 @@ namespace System.Data.Odbc
                 ODBC32.SQL_DIAG_SQLSTATE,
                 sb,
                 checked((short)(2 * sb.Capacity)), // expects number of bytes, see \\kbinternal\kb\articles\294\1\69.HTM
-                out cbActual);
+                out _);
             ODBC.TraceODBC(3, "SQLGetDiagFieldW", retcode);
             if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
             {

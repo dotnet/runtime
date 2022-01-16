@@ -142,6 +142,17 @@ Sets the specified protocols in the SSL_CTX options.
 PALEXPORT void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols);
 
 /*
+Sets internal callback for client certificate selection is set is positive.
+It will unset callback if set is zero.
+*/
+PALEXPORT void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set);
+
+/*=======
+Sets session caching. 0 is disabled.
+*/
+PALEXPORT void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode);
+
+/*
 Shims the SSL_new method.
 
 Returns the new SSL instance.
@@ -272,6 +283,22 @@ Returns the certificate chain presented by the peer.
 PALEXPORT X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl);
 
 /*
+Shims the SSL_use_certificate method.
+
+Returns 1 upon success, otherwise 0.
+*/
+PALEXPORT int32_t CryptoNative_SslUseCertificate(SSL* ssl, X509* x);
+
+/*
+Shims the SSL_use_PrivateKey method.
+
+Returns 1 upon success, otherwise 0.
+*/
+PALEXPORT int32_t CryptoNative_SslUsePrivateKey(SSL* ssl, EVP_PKEY* pkey);
+
+
+
+/*
 Shims the SSL_CTX_use_certificate method.
 
 Returns 1 upon success, otherwise 0.
@@ -358,12 +385,20 @@ Shims the SSL_session_reused macro.
 PALEXPORT int32_t CryptoNative_SslSessionReused(SSL* ssl);
 
 /*
-adds the given certificate to the extra chain certificates associated with ctx.
+Adds the given certificate to the extra chain certificates associated with ctx.
 
 libssl frees the x509 object.
 Returns 1 if success and 0 in case of failure
 */
 PALEXPORT int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509);
+
+/*
+Adds the given certificate to the extra chain certificates associated with ssl state.
+
+libssl frees the x509 object.
+Returns 1 if success and 0 in case of failure
+*/
+PALEXPORT int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509);
 
 /*
 Shims the ssl_ctx_set_alpn_select_cb method.

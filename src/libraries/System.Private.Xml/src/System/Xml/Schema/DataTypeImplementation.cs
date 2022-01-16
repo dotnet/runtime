@@ -577,7 +577,7 @@ namespace System.Xml.Schema
 
         internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
-            Exception? exception = null;
+            Exception? exception;
             typedValue = null;
 
             if (value == null)
@@ -2093,7 +2093,7 @@ namespace System.Xml.Schema
                 goto Error;
             }
 
-            DateTime dateTimeValue = DateTime.MinValue;
+            DateTime dateTimeValue;
             try
             {
                 dateTimeValue = (DateTime)dateTime;
@@ -2472,7 +2472,7 @@ namespace System.Xml.Schema
             exception = binaryFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            byte[]? byteArrayValue = null;
+            byte[]? byteArrayValue;
             try
             {
                 byteArrayValue = XmlConvert.FromBinHexString(s, false);
@@ -2573,7 +2573,7 @@ namespace System.Xml.Schema
             exception = binaryFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            byte[]? byteArrayValue = null;
+            byte[]? byteArrayValue;
             try
             {
                 byteArrayValue = Convert.FromBase64String(s);
@@ -2773,7 +2773,7 @@ namespace System.Xml.Schema
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            XmlQualifiedName? qname = null;
+            XmlQualifiedName? qname;
             try
             {
                 string prefix;
@@ -3109,7 +3109,7 @@ namespace System.Xml.Schema
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
             if (exception != null) goto Error;
 
-            XmlQualifiedName? qname = null;
+            XmlQualifiedName? qname;
             try
             {
                 string prefix;

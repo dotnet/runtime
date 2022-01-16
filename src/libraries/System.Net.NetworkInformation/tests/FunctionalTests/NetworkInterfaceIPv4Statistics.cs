@@ -70,6 +70,17 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]  // This API is not supported on Android
+        public void BasicTest_GetIPv4InterfaceStatistics_NotSupported_Android()
+        {
+            // This API is not actually IPv4 specific.
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => nic.GetIPv4Statistics());
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.OSX)]  // Some APIs are not supported on OSX
         public void BasicTest_GetIPv4InterfaceStatistics_Success_OSX()
         {

@@ -233,8 +233,7 @@ internal static partial class Interop
         internal static IntPtr[]? SSLStreamGetPeerCertificates(SafeSslHandle ssl)
         {
             IntPtr[]? ptrs;
-            int count;
-            Interop.AndroidCrypto.SSLStreamGetPeerCertificates(ssl, out ptrs, out count);
+            Interop.AndroidCrypto.SSLStreamGetPeerCertificates(ssl, out ptrs, out _);
             return ptrs;
         }
 

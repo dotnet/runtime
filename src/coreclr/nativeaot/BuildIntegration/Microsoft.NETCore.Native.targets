@@ -117,6 +117,13 @@ The .NET Foundation licenses this file to you under the MIT license.
     <DefaultFrameworkAssemblies Include="@(PrivateSdkAssemblies)" />
   </ItemGroup>
 
+  <ItemDefinitionGroup>
+    <ManagedBinary>
+      <IlcRspFile>$(NativeIntermediateOutputPath)\%(Filename).ilc.rsp</IlcRspFile>
+      <IlcOutputFile>$(NativeIntermediateOutputPath)\%(Filename).$(IlcOutputFileExt)</IlcOutputFile>
+    </ManagedBinary>
+  </ItemDefinitionGroup>
+
   <Target Name="_ComputeManagedAssemblyForILLink"
           AfterTargets="_ComputeManagedAssemblyToLink"
           Condition="'$(NativeCompilationDuringPublish)' == 'true'">
@@ -187,9 +194,9 @@ The .NET Foundation licenses this file to you under the MIT license.
     <MSBuild Projects="@(ProjectToBuild)" BuildInParallel="true" />
   </Target>
 
-  <Target Name="IlcCompile"
+  <Target Name="WriteIlcRspFileForCompilation"
       Inputs="@(IlcCompileInput);@(RdXmlFile)"
-      Outputs="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename)$(IlcOutputFileExt)"
+      Outputs="%(ManagedBinary.IlcRspFile)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
     <!-- Set up default properties that have their defaults in the 6.0 SDK (Can be dropped once we drop 5.0 support) -->
@@ -284,8 +291,13 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp" Lines="@(IlcArg)" Overwrite="true" />
+    <WriteLinesToFile File="%(ManagedBinary.IlcRspFile)" Lines="@(IlcArg)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
 
+  <Target Name="IlcCompile"
+      Inputs="@(IlcCompileInput);@(RdXmlFile);%(ManagedBinary.IlcRspFile)"
+      Outputs="%(ManagedBinary.IlcOutputFile)"
+      DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
     <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
@@ -356,7 +368,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
       <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'OSX'">true</_IgnoreLinkerWarnings>
     </PropertyGroup>
-    
+
     <Exec Command="$(CppLinker) @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
     <Exec Command="$(CppLibCreator) @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'" />
 

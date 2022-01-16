@@ -328,7 +328,7 @@ namespace System.Drawing
 
         public object Clone()
         {
-            IntPtr newimage = IntPtr.Zero;
+            IntPtr newimage;
             int status = Gdip.GdipCloneImage(nativeImage, out newimage);
             Gdip.CheckStatus(status);
 
