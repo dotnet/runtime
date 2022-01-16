@@ -18,9 +18,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ExtractLowestSetBitUInt32()
+        private static void AndNotUIntPtr()
         {
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUInt32();
+            var test = new ScalarBinaryOpTest__AndNotUIntPtr();
 
             if (test.IsSupported)
             {
@@ -61,45 +61,54 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarUnaryOpTest__ExtractLowestSetBitUInt32
+    public sealed unsafe class ScalarBinaryOpTest__AndNotUIntPtr
     {
         private struct TestStruct
         {
-            public UInt32 _fld;
+            public UIntPtr _fld1;
+            public UIntPtr _fld2;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                testStruct._fld = TestLibrary.Generator.GetUInt32();
+                testStruct._fld1 = TestLibrary.Generator.GetUIntPtr();
+                testStruct._fld2 = TestLibrary.Generator.GetUIntPtr();
+
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarUnaryOpTest__ExtractLowestSetBitUInt32 testClass)
+            public void RunStructFldScenario(ScalarBinaryOpTest__AndNotUIntPtr testClass)
             {
-                var result = Bmi1.ExtractLowestSetBit(_fld);
-                testClass.ValidateResult(_fld, result);
+                var result = Bmi1.AndNot(_fld1, _fld2);
+                testClass.ValidateResult(_fld1, _fld2, result);
             }
         }
 
-        private static UInt32 _data;
+        private static UIntPtr _data1;
+        private static UIntPtr _data2;
 
-        private static UInt32 _clsVar;
+        private static UIntPtr _clsVar1;
+        private static UIntPtr _clsVar2;
 
-        private UInt32 _fld;
+        private UIntPtr _fld1;
+        private UIntPtr _fld2;
 
-        static ScalarUnaryOpTest__ExtractLowestSetBitUInt32()
+        static ScalarBinaryOpTest__AndNotUIntPtr()
         {
-            _clsVar = TestLibrary.Generator.GetUInt32();
+            _clsVar1 = TestLibrary.Generator.GetUIntPtr();
+            _clsVar2 = TestLibrary.Generator.GetUIntPtr();
         }
 
-        public ScalarUnaryOpTest__ExtractLowestSetBitUInt32()
+        public ScalarBinaryOpTest__AndNotUIntPtr()
         {
             Succeeded = true;
 
-            
-            _fld = TestLibrary.Generator.GetUInt32();
-            _data = TestLibrary.Generator.GetUInt32();
+            _fld1 = TestLibrary.Generator.GetUIntPtr();
+            _fld2 = TestLibrary.Generator.GetUIntPtr();
+
+            _data1 = TestLibrary.Generator.GetUIntPtr();
+            _data2 = TestLibrary.Generator.GetUIntPtr();
         }
 
         public bool IsSupported => Bmi1.IsSupported;
@@ -110,62 +119,66 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Bmi1.ExtractLowestSetBit(
-                Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data))
+            var result = Bmi1.AndNot(
+                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1)),
+                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data2))
             );
 
-            ValidateResult(_data, result);
+            ValidateResult(_data1, _data2, result);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.ExtractLowestSetBit), new Type[] { typeof(UInt32) })
+            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.AndNot), new Type[] { typeof(UIntPtr), typeof(UIntPtr) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data))
+                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1)),
+                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data2))
                                      });
 
-            ValidateResult(_data, (UInt32)result);
+            ValidateResult(_data1, _data2, (UIntPtr)result);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Bmi1.ExtractLowestSetBit(
-                _clsVar
+            var result = Bmi1.AndNot(
+                _clsVar1,
+                _clsVar2
             );
 
-            ValidateResult(_clsVar, result);
+            ValidateResult(_clsVar1, _clsVar2, result);
         }
 
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data = Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data));
-            var result = Bmi1.ExtractLowestSetBit(data);
+            var data1 = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1));
+            var data2 = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data2));
+            var result = Bmi1.AndNot(data1, data2);
 
-            ValidateResult(data, result);
+            ValidateResult(data1, data2, result);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUInt32();
-            var result = Bmi1.ExtractLowestSetBit(test._fld);
+            var test = new ScalarBinaryOpTest__AndNotUIntPtr();
+            var result = Bmi1.AndNot(test._fld1, test._fld2);
 
-            ValidateResult(test._fld, result);
+            ValidateResult(test._fld1, test._fld2, result);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Bmi1.ExtractLowestSetBit(_fld);
-            ValidateResult(_fld, result);
+            var result = Bmi1.AndNot(_fld1, _fld2);
+            ValidateResult(_fld1, _fld2, result);
         }
 
         public void RunStructLclFldScenario()
@@ -173,9 +186,9 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Bmi1.ExtractLowestSetBit(test._fld);
+            var result = Bmi1.AndNot(test._fld1, test._fld2);
 
-            ValidateResult(test._fld, result);
+            ValidateResult(test._fld1, test._fld2, result);
         }
 
         public void RunStructFldScenario()
@@ -207,16 +220,17 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UInt32 data, UInt32 result, [CallerMemberName] string method = "")
+        private void ValidateResult(UIntPtr left, UIntPtr right, UIntPtr result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
-            isUnexpectedResult = ((unchecked((nuint)(-(int)data)) & data) != result);
+            isUnexpectedResult = ((~left & right) != result);
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.ExtractLowestSetBit)}<UInt32>(UInt32): ExtractLowestSetBit failed:");
-                TestLibrary.TestFramework.LogInformation($"    data: {data}");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.AndNot)}<UIntPtr>(UIntPtr, UIntPtr): AndNot failed:");
+                TestLibrary.TestFramework.LogInformation($"    left: {left}");
+                TestLibrary.TestFramework.LogInformation($"   right: {right}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

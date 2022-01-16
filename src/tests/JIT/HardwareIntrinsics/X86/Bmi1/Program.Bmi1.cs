@@ -12,12 +12,19 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestList = new Dictionary<string, Action>() {
                 ["AndNot.UInt32"] = AndNotUInt32,
+                ["AndNot.UIntPtr"] = AndNotUIntPtr,
                 ["ExtractLowestSetBit.UInt32"] = ExtractLowestSetBitUInt32,
+                ["ExtractLowestSetBit.UIntPtr"] = ExtractLowestSetBitUIntPtr,
                 ["GetMaskUpToLowestSetBit.UInt32"] = GetMaskUpToLowestSetBitUInt32,
+                ["GetMaskUpToLowestSetBit.UIntPtr"] = GetMaskUpToLowestSetBitUIntPtr,
                 ["ResetLowestSetBit.UInt32"] = ResetLowestSetBitUInt32,
+                ["ResetLowestSetBit.UIntPtr"] = ResetLowestSetBitUIntPtr,
                 ["TrailingZeroCount.UInt32"] = TrailingZeroCountUInt32,
+                ["TrailingZeroCount.UIntPtr"] = TrailingZeroCountUIntPtr,
                 ["BitFieldExtract.UInt32.3Op"] = BitFieldExtractUInt323Op,
                 ["BitFieldExtract.UInt32"] = BitFieldExtractUInt32,
+                ["BitFieldExtract.UIntPtr.3Op"] = BitFieldExtractUIntPtr3Op,
+                ["BitFieldExtract.UIntPtr"] = BitFieldExtractUIntPtr,
             };
         }
     }

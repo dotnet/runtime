@@ -18,9 +18,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ExtractLowestSetBitUInt32()
+        private static void TrailingZeroCountUIntPtr()
         {
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUInt32();
+            var test = new ScalarUnaryOpTest__TrailingZeroCountUIntPtr();
 
             if (test.IsSupported)
             {
@@ -61,45 +61,45 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarUnaryOpTest__ExtractLowestSetBitUInt32
+    public sealed unsafe class ScalarUnaryOpTest__TrailingZeroCountUIntPtr
     {
         private struct TestStruct
         {
-            public UInt32 _fld;
+            public UIntPtr _fld;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                testStruct._fld = TestLibrary.Generator.GetUInt32();
+                testStruct._fld = TestLibrary.Generator.GetUIntPtr();
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarUnaryOpTest__ExtractLowestSetBitUInt32 testClass)
+            public void RunStructFldScenario(ScalarUnaryOpTest__TrailingZeroCountUIntPtr testClass)
             {
-                var result = Bmi1.ExtractLowestSetBit(_fld);
+                var result = Bmi1.TrailingZeroCount(_fld);
                 testClass.ValidateResult(_fld, result);
             }
         }
 
-        private static UInt32 _data;
+        private static UIntPtr _data;
 
-        private static UInt32 _clsVar;
+        private static UIntPtr _clsVar;
 
-        private UInt32 _fld;
+        private UIntPtr _fld;
 
-        static ScalarUnaryOpTest__ExtractLowestSetBitUInt32()
+        static ScalarUnaryOpTest__TrailingZeroCountUIntPtr()
         {
-            _clsVar = TestLibrary.Generator.GetUInt32();
+            _clsVar = TestLibrary.Generator.GetUIntPtr();
         }
 
-        public ScalarUnaryOpTest__ExtractLowestSetBitUInt32()
+        public ScalarUnaryOpTest__TrailingZeroCountUIntPtr()
         {
             Succeeded = true;
 
             
-            _fld = TestLibrary.Generator.GetUInt32();
-            _data = TestLibrary.Generator.GetUInt32();
+            _fld = TestLibrary.Generator.GetUIntPtr();
+            _data = TestLibrary.Generator.GetUIntPtr();
         }
 
         public bool IsSupported => Bmi1.IsSupported;
@@ -110,8 +110,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Bmi1.ExtractLowestSetBit(
-                Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data))
+            var result = Bmi1.TrailingZeroCount(
+                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data))
             );
 
             ValidateResult(_data, result);
@@ -121,19 +121,19 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.ExtractLowestSetBit), new Type[] { typeof(UInt32) })
+            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.TrailingZeroCount), new Type[] { typeof(UIntPtr) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data))
+                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data))
                                      });
 
-            ValidateResult(_data, (UInt32)result);
+            ValidateResult(_data, (UIntPtr)result);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Bmi1.ExtractLowestSetBit(
+            var result = Bmi1.TrailingZeroCount(
                 _clsVar
             );
 
@@ -144,8 +144,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data = Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data));
-            var result = Bmi1.ExtractLowestSetBit(data);
+            var data = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data));
+            var result = Bmi1.TrailingZeroCount(data);
 
             ValidateResult(data, result);
         }
@@ -154,8 +154,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUInt32();
-            var result = Bmi1.ExtractLowestSetBit(test._fld);
+            var test = new ScalarUnaryOpTest__TrailingZeroCountUIntPtr();
+            var result = Bmi1.TrailingZeroCount(test._fld);
 
             ValidateResult(test._fld, result);
         }
@@ -164,7 +164,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Bmi1.ExtractLowestSetBit(_fld);
+            var result = Bmi1.TrailingZeroCount(_fld);
             ValidateResult(_fld, result);
         }
 
@@ -173,7 +173,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Bmi1.ExtractLowestSetBit(test._fld);
+            var result = Bmi1.TrailingZeroCount(test._fld);
 
             ValidateResult(test._fld, result);
         }
@@ -207,15 +207,15 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UInt32 data, UInt32 result, [CallerMemberName] string method = "")
+        private void ValidateResult(UIntPtr data, UIntPtr result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
-            isUnexpectedResult = ((unchecked((nuint)(-(int)data)) & data) != result);
+            nuint expectedResult = 0; for (int index = 0; ((data >> index) & 1) == 0; index++) { expectedResult++; } isUnexpectedResult = (expectedResult != result);
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.ExtractLowestSetBit)}<UInt32>(UInt32): ExtractLowestSetBit failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.TrailingZeroCount)}<UIntPtr>(UIntPtr): TrailingZeroCount failed:");
                 TestLibrary.TestFramework.LogInformation($"    data: {data}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
