@@ -12,7 +12,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000)]
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010)]
     [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_10000000, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000000)]
-    public void ExtractLowestSetBit_nuint_64Bit(long value, long expectedResult)
+    public void ExtractLowestSetBit_nuint_64Bit(ulong value, ulong expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -25,7 +25,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b00000000_00000000_00000000_00000000, 0b00000000_00000000_00000000_00000000)]
     [InlineData(0b00000000_00000000_00000000_00000010, 0b00000000_00000000_00000000_00000010)]
     [InlineData(0b11111111_11111111_11111111_11111100, 0b00000000_00000000_00000000_00000100)]
-    public void ExtractLowestSetBit_nuint_32Bit(int value, int expectedResult)
+    public void ExtractLowestSetBit_nuint_32Bit(uint value, uint expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;

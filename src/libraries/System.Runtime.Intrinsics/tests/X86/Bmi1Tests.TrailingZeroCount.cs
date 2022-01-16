@@ -13,7 +13,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010, 1)]
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000110, 1)]
     [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_10000000, 7)]
-    public void TrailingZeroCount_nuint_64Bit(long value, long expectedResult)
+    public void TrailingZeroCount_nuint_64Bit(ulong value, ulong expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -27,7 +27,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b00000000_00000000_00000000_00000010, 1)]
     [InlineData(0b00000000_00000000_00000000_00000110, 1)]
     [InlineData(0b11111111_11111111_11111111_11111100, 2)]
-    public void TrailingZeroCount_nuint_32Bit(int value, int expectedResult)
+    public void TrailingZeroCount_nuint_32Bit(uint value, uint expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;

@@ -16,7 +16,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111, 0, 32, 0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111)]
     [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111, 0, 31, 0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111110)]
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00011100, 2, 3, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000111)]
-    public void BitFieldExtract_byte_nuint_64Bit(long value, byte start, byte end, long expectedResult)
+    public void BitFieldExtract_byte_nuint_64Bit(ulong value, byte start, byte end, ulong expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -32,7 +32,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b11111111_11111111_11111111_11111111, 0, 32, 0b11111111_11111111_11111111_11111111)]
     [InlineData(0b11111111_11111111_11111111_11111111, 0, 31, 0b11111111_11111111_11111111_11111110)]
     [InlineData(0b00000000_00000000_00000000_00011100, 2, 3, 0b00000000_00000000_00000000_00000111)]
-    public void BitFieldExtract_byte_nuint_32Bit(int value, byte start, byte end, int expectedResult)
+    public void BitFieldExtract_byte_nuint_32Bit(uint value, byte start, byte end, uint expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -43,7 +43,7 @@ public sealed partial class Bmi1Tests
 
     [ConditionalTheory(nameof(Run64BitTests))]
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 0, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000)]
-    public void BitFieldExtract_ushort_nuint_64Bit(long value, ushort control, long expectedResult)
+    public void BitFieldExtract_ushort_nuint_64Bit(ulong value, ushort control, ulong expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -54,7 +54,7 @@ public sealed partial class Bmi1Tests
 
     [ConditionalTheory(nameof(Run32BitTests))]
     [InlineData(0b00000000_00000000_00000000_00000000, 0, 0b00000000_00000000_00000000_00000000)]
-    public void BitFieldExtract_ushort_nuint_32Bit(int value, ushort control, int expectedResult)
+    public void BitFieldExtract_ushort_nuint_32Bit(uint value, ushort control, uint expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;

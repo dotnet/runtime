@@ -13,7 +13,7 @@ public sealed partial class LzcntTests
     [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111, 0)]
     [InlineData(0b01111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111, 1)]
     [InlineData(0b00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 3)]
-    public void LeadingZeroCount_nuint_64Bit(long value, long expectedResult)
+    public void LeadingZeroCount_nuint_64Bit(ulong value, ulong expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -27,7 +27,7 @@ public sealed partial class LzcntTests
     [InlineData(0b11111111_11111111_11111111_11111111, 0)]
     [InlineData(0b01111111_11111111_11111111_11111111, 1)]
     [InlineData(0b00010000_00000000_00000000_00000000, 3)]
-    public void LeadingZeroCount_nuint_32Bit(int value, int expectedResult)
+    public void LeadingZeroCount_nuint_32Bit(uint value, uint expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
