@@ -313,18 +313,12 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/11354", TestRuntimes.Mono)]
         public unsafe void ToString_FunctionPointerSignature()
         {
             // This is sepate from ToString_Invoke_ReturnsExpected since unsafe cannot be used for iterators
             var stackTrace = FunctionPointerParameter(null);
-            if (PlatformDetection.IsMonoRuntime)
-            {
-                Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(MonoFNPtrFakeClass x)", stackTrace.ToString());
-            }
-            else
-            {
-                Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(IntPtr x)", stackTrace.ToString());
-            }
+            Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(IntPtr x)", stackTrace.ToString());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
