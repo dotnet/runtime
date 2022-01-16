@@ -63,6 +63,8 @@
     <Compile Include="Subtract.Single.cs" />
     <Compile Include="SubtractScalar.Single.cs" />
     <Compile Include="Xor.Single.cs" />
+    <Compile Include="ConvertToNInt.Vector128Single.cs" />
+    <Compile Include="ConvertToNIntWithTruncation.Vector128Single.cs" />
     <Compile Include="Program.Sse1.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
