@@ -180,21 +180,21 @@ private:
     int32_t GenerateRandomStartOffset();
 
 private:
-#ifdef TARGET_XARCH
+
     // There does not seem to be an easy way find the size of a library on Unix.
     // So this constant represents an approximation of the libcoreclr size (on debug build)
     // that can be used to calculate an approximate location of the memory that
     // is in 2GB range from the coreclr library. In addition, having precise size of libcoreclr
     // is not necessary for the calculations.
-    static const int32_t CoreClrLibrarySize = 100 * 1024 * 1024;
+    static const int32_t CoreClrLibrarySize = 32 * 1024 * 1024;
 
+#ifdef TARGET_XARCH
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
     // entire libcoreclr to be located in a 2GB range.
     static const int32_t MaxExecutableMemorySize = 0x7FFF0000;// 2GB - 64KB
 #else
-    // Smaller values for ARM64 where relative calls/jumps only work within 128MB
-    static const int32_t CoreClrLibrarySize = 32 * 1024 * 1024;
+    // Smaller size for ARM64 where relative calls/jumps only work within 128MB
     static const int32_t MaxExecutableMemorySize = 0x7FF0000; // 128MB - 64KB
 #endif
 
