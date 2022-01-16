@@ -191,10 +191,11 @@ private:
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
     // entire libcoreclr to be located in a 2GB range.
-    static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
+    static const int32_t MaxExecutableMemorySize = 0x7FFF0000;// 2GB - 64KB
 #else
-    static const int32_t CoreClrLibrarySize = 16 * 1024 * 1024;
-    static const int32_t MaxExecutableMemorySize = 128 * 1024 * 1024;
+    // Smaller values for ARM64 where relative calls/jumps only work within 128MB
+    static const int32_t CoreClrLibrarySize = 32 * 1024 * 1024;
+    static const int32_t MaxExecutableMemorySize = 0x7FF0000; // 128MB - 64KB
 #endif
 
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
