@@ -17,6 +17,8 @@
     <Compile Include="Vectors\Vector128Tests.cs" />
     <Compile Include="Vectors\Vector256Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
+    <Compile Include="X86\LzcntTests.cs" />
+    <Compile Include="X86\LzcntTests.LeadingZeroCount.cs" />
     <Compile Include="X86\PopcntTests.cs" />
     <Compile Include="X86\PopcntTests.PopCount.cs" />
     <Compile Include="X86\SseTests.ConvertScalarToVector128Single.cs" />
