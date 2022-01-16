@@ -17,12 +17,6 @@
 #include "clrversion.h"
 #include "../dlls/mscorrc/resource.h"
 #include "ex.h"
-#if !defined(FEATURE_CORESYSTEM)
-#undef NTDDI_VERSION
-#define NTDDI_VERSION NTDDI_WIN7
-#include "commctrl.h"
-#endif
-
 
 BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 {

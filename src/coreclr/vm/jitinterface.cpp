@@ -12818,8 +12818,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             "Jitted Entry at" FMT_ADDR "method %s::%s %s\n", DBG_ADDR(nativeEntry),
              ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
 
-#if defined(FEATURE_CORESYSTEM)
-
 #ifdef _DEBUG
         LPCUTF8 pszDebugClassName = ftn->m_pszDebugClassName;
         LPCUTF8 pszDebugMethodName = ftn->m_pszDebugMethodName;
@@ -12833,7 +12831,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
         //DbgPrintf("Jitted Entry at" FMT_ADDR "method %s::%s %s size %08x\n", DBG_ADDR(nativeEntry),
         //          pszDebugClassName, pszDebugMethodName, pszDebugMethodSignature, sizeOfCode);
-#endif
 
         ClrFlushInstructionCache(nativeEntry, sizeOfCode);
         ret = (PCODE)nativeEntry;
