@@ -1375,7 +1375,18 @@ namespace System.Net.Http
             TransportContext? transportContext = null;
             if (IsSecure)
             {
-                SslStream sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                SslStream? sslStream = stream as SslStream;
+                if (sslStream == null)
+                {
+                    sslStream = await ConnectHelper.EstablishSslConnectionAsync(GetSslOptionsForRequest(request), request, async, stream, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        Trace($"Connected with custom SslStream: alpn='${sslStream.NegotiatedApplicationProtocol.ToString()}'");
+                    }
+                }
                 transportContext = sslStream.TransportContext;
                 stream = sslStream;
             }
