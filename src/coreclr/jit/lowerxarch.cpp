@@ -3740,9 +3740,14 @@ GenTree* Lowering::LowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
         return nullptr;
     }
 
-    GenTree* op2    = andNode->gtGetOp2();
+    GenTree* op2 = andNode->gtGetOp2();
+    if (!op2->OperIs(GT_ADD))
+    {
+        return nullptr;
+    }
+
     GenTree* addOp2 = op2->gtGetOp2();
-    if (!op2->OperIs(GT_ADD) || !addOp2->IsIntegralConst(-1))
+    if (!addOp2->IsIntegralConst(-1))
     {
         return nullptr;
     }
