@@ -9,11 +9,12 @@ namespace System.Runtime.Intrinsics.Tests.X86;
 public sealed partial class PopcntTests
 {
     [ConditionalTheory(nameof(Run64BitTests))]
-    [InlineData(0b00000000, 0)]
-    [InlineData(0b11111111, 8)]
-    [InlineData(0b00000111, 3)]
-    [InlineData(0b11100000, 3)]
-    [InlineData(0b10101010, 4)]
+    [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 0)]
+    [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111, 64)]
+    [InlineData(0b00000111_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 3)]
+    [InlineData(0b11100000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 3)]
+    [InlineData(0b10101010_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 4)]
+    [InlineData(0b11111111_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 8)]
     public void PopCount_nuint_64Bit(long value, long expectedResult)
     {
         nuint nativeValue = (nuint)value;
@@ -24,11 +25,12 @@ public sealed partial class PopcntTests
     }
 
     [ConditionalTheory(nameof(Run32BitTests))]
-    [InlineData(0b0000, 0)]
-    [InlineData(0b1111, 4)]
-    [InlineData(0b0111, 3)]
-    [InlineData(0b1110, 3)]
-    [InlineData(0b1010, 2)]
+    [InlineData(0b00000000_00000000_00000000_00000000, 0)]
+    [InlineData(0b11111111_11111111_11111111_11111111, 32)]
+    [InlineData(0b10100000_00000000_00000000_00000000, 2)]
+    [InlineData(0b01110000_00000000_00000000_00000000, 3)]
+    [InlineData(0b11110000_00000000_00000000_00000000, 4)]
+    [InlineData(0b11100000_00010000_00000100_00000000, 5)]
     public void PopCount_nuint_32Bit(int value, int expectedResult)
     {
         nuint nativeValue = (nuint)value;
