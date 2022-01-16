@@ -850,6 +850,42 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.NotNull, nullabilityContext.Create(tryGetOutParameters[0]).ReadState);
         }
 
+        public static IEnumerable<object[]> NestedGenericsCorrectOrderData()
+        {
+            yield return new object[] {
+                "MethodReturnsNonTupleNonTupleNullStringNullStringNullString",
+                new[] { NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.Nullable },
+                new[] { typeof(Tuple<Tuple<string, string>, string>), typeof(Tuple<string, string>), typeof(string), typeof(string), typeof(string) }
+            };
+            yield return new object[] {
+                "MethodReturnsNonTupleNonTupleNullStringNullStringNonString",
+                new[] { NullabilityState.NotNull, NullabilityState.NotNull, NullabilityState.Nullable, NullabilityState.Nullable, NullabilityState.NotNull },
+                new[] { typeof(Tuple<Tuple<string, string>, string>), typeof(Tuple<string, string>), typeof(string), typeof(string), typeof(string) }
+            };
+        }
+
+        [Theory]
+        [MemberData(nameof(NestedGenericsCorrectOrderData))]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
+        public void NestedGenericsCorrectOrderTest(string methodName, NullabilityState[] nullStates, Type[] types)
+        {
+            NullabilityInfo parentInfo = nullabilityContext.Create(typeof(TypeWithNotNullContext).GetMethod(methodName)!.ReturnParameter);
+            var dataIndex = 0;
+            Examine(parentInfo);
+            Assert.Equal(nullStates.Length, dataIndex);
+            Assert.Equal(types.Length, dataIndex);
+
+            void Examine(NullabilityInfo info)
+            {
+                Assert.Equal(types[dataIndex], info.Type);
+                Assert.Equal(nullStates[dataIndex++], info.ReadState);
+                for (var i = 0; i < info.GenericTypeArguments.Length; i++)
+                {
+                    Examine(info.GenericTypeArguments[i]);
+                }
+            }
+        }
+
         public static IEnumerable<object[]> NestedGenericsReturnParameterData()
         {
             // public IEnumerable<Tuple<(string name, object? value), int>?> MethodReturnsEnumerableNonTupleNonNonNullValueTupleNonNullNon() => null!;
@@ -1089,6 +1125,8 @@ namespace System.Reflection.Tests
         public IEnumerable<GenericStruct<Tuple<string, object?>?, int>?>? MethodReturnsEnumerableNullStructNullNonNullTupleNonNullNull() => null;
         public IEnumerable<Tuple<GenericStruct<string, object?>?, int>?>? MethodReturnsEnumerableNullTupleNullNonNullStructNonNullNull() => null;
         public IEnumerable<(GenericStruct<string, object?> str, int? count)> MethodReturnsEnumerableNonValueTupleNonNullNonStructNonNullNon() => null!;
+        public Tuple<Tuple<string?, string?>, string?> MethodReturnsNonTupleNonTupleNullStringNullStringNullString() => null!;
+        public Tuple<Tuple<string?, string?>, string> MethodReturnsNonTupleNonTupleNullStringNullStringNonString() => null!;
         public void MethodNullNonNullNonNon(string? s, IDictionary<Type, string?[]> dict) { }
         public void MethodNonNullNonNullNotNull(string s, [NotNull] IDictionary<Type, string[]?>? dict) { dict = new Dictionary<Type, string[]?>(); }
         public void MethodNullNonNullNullNon(string? s, IDictionary<Type, string?[]?> dict) { }
