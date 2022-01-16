@@ -8,6 +8,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ConvertToNIntWithTruncation.Vector128Single.cs" />
+    <Compile Include="ConvertToNIntWithTruncation.cs" />
   </ItemGroup>
 </Project>
