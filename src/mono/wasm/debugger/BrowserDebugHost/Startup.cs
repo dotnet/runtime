@@ -60,48 +60,20 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal static class DebugExtensions
     {
-        public static Dictionary<string, string> MapValues(Dictionary<string, string> response, HttpContext context, Uri debuggerHost)
-        {
-            var filtered = new Dictionary<string, string>();
-            HttpRequest request = context.Request;
-
-            foreach (string key in response.Keys)
-            {
-                switch (key)
-                {
-                    case "devtoolsFrontendUrl":
-                        string front = response[key];
-                        filtered[key] = $"{debuggerHost.Scheme}://{debuggerHost.Authority}{front.Replace($"ws={debuggerHost.Authority}", $"ws={request.Host}")}";
-                        break;
-                    case "webSocketDebuggerUrl":
-                        var page = new Uri(response[key]);
-                        filtered[key] = $"{page.Scheme}://{request.Host}{page.PathAndQuery}";
-                        break;
-                    default:
-                        filtered[key] = response[key];
-                        break;
-                }
-            }
-            return filtered;
-        }
-
-        public static IApplicationBuilder UseDebugProxy(this IApplicationBuilder app, ProxyOptions options) =>
-            UseDebugProxy(app, options, MapValues);
 
         public static IApplicationBuilder UseDebugProxy(
             this IApplicationBuilder app,
-            ProxyOptions options,
-            Func<Dictionary<string, string>, HttpContext, Uri, Dictionary<string, string>> mapFunc)
+            ProxyOptions options)
         {
             Uri devToolsHost = options.DevToolsUrl;
             app.UseRouter(router =>
             {
                 router.MapGet("/", Copy);
                 router.MapGet("/favicon.ico", Copy);
-                router.MapGet("json", RewriteArray);
-                router.MapGet("json/list", RewriteArray);
-                router.MapGet("json/version", RewriteSingle);
-                router.MapGet("json/new", RewriteSingle);
+                router.MapGet("json", Copy);
+                router.MapGet("json/list", Copy);
+                router.MapGet("json/version", Copy);
+                router.MapGet("json/new", Copy);
                 router.MapGet("devtools/page/{pageId}", ConnectProxy);
                 router.MapGet("devtools/browser/{pageId}", ConnectProxy);
 
@@ -111,7 +83,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     PathString requestPath = request.Path;
                     return $"{devToolsHost.Scheme}://{devToolsHost.Authority}{request.Path}{request.QueryString}";
                 }
-
                 async Task Copy(HttpContext context)
                 {
                     using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) })
@@ -124,22 +95,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         await context.Response.Body.WriteAsync(bytes);
 
                     }
-                }
-
-                async Task RewriteSingle(HttpContext context)
-                {
-                    Dictionary<string, string> version = await ProxyGetJsonAsync<Dictionary<string, string>>(GetEndpoint(context));
-                    context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync(
-                        JsonSerializer.Serialize(mapFunc(version, context, devToolsHost)));
-                }
-
-                async Task RewriteArray(HttpContext context)
-                {
-                    Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context));
-                    Dictionary<string, string>[] alteredTabs = tabs.Select(t => mapFunc(t, context, devToolsHost)).ToArray();
-                    context.Response.ContentType = "application/json";
-                    await context.Response.WriteAsync(JsonSerializer.Serialize(alteredTabs));
                 }
 
                 async Task ConnectProxy(HttpContext context)
