@@ -137,24 +137,20 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Abs(double value)
         {
-            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/fabs.c
-
-            const ulong signMask = 0x7FFFFFFFFFFFFFFF;
+            const ulong mask = 0x7FFFFFFFFFFFFFFF;
             ulong raw = BitConverter.DoubleToUInt64Bits(value);
 
-            return BitConverter.UInt64BitsToDouble(raw & signMask);
+            return BitConverter.UInt64BitsToDouble(raw & mask);
         }
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float value)
         {
-            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/fabsf.c
-
-            const uint signMask = 0x7FFFFFFF;
+            const uint mask = 0x7FFFFFFF;
             uint raw = BitConverter.SingleToUInt32Bits(value);
 
-            return BitConverter.UInt32BitsToSingle(raw & signMask);
+            return BitConverter.UInt32BitsToSingle(raw & mask);
         }
 
         [DoesNotReturn]
