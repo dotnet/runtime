@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -219,9 +220,13 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void CaseSensitive()
         {
+            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator"))
+            {
+                return;
+            }
+
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testFile = Path.Combine(testDir.FullName, GetTestFileName());
             using (File.Create(testFile + "AAAA"))
