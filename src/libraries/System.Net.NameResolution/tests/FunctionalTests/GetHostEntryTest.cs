@@ -309,9 +309,12 @@ namespace System.Net.NameResolution.Tests
             OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Dns.GetHostEntryAsync(TestSettings.LocalHost, cts.Token));
             Assert.Equal(cts.Token, oce.CancellationToken);
         }
+    }
 
+    [Collection(nameof(DisableParallelization))]
+    public class GetHostEntryTest_Cancellation
+    {
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43816")] // Race condition outlined below.
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         [Fact]
         public async Task DnsGetHostEntry_PostCancelledToken_Throws()
