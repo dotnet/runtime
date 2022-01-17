@@ -15,6 +15,7 @@ namespace System.IO.Tests
         public static void RenamedEventArgs_ctor_NonPathPropertiesAreSetCorrectly(WatcherChangeTypes changeType, string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
+
             Assert.Equal(changeType, args.ChangeType);
             Assert.Equal(name, args.Name);
             Assert.Equal(oldName, args.OldName);
@@ -43,8 +44,6 @@ namespace System.IO.Tests
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
             Assert.Equal(expectedOldFullPath, args.OldFullPath);
-            Assert.Equal(name, args.Name);
-            Assert.Equal(oldName, args.OldName);
         }
 
         [Theory]
@@ -55,11 +54,9 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            directory = AppendDirectorySeparator(directory);
+            directory = PathInternal.EnsureTrailingSeparator(directory);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
-            Assert.Equal(name, args.Name);
-            Assert.Equal(oldName, args.OldName);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
         }
 
         [Theory]
@@ -70,11 +67,9 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            directory = AppendDirectorySeparator(directory);
+            directory = PathInternal.EnsureTrailingSeparator(directory);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
-            Assert.Equal(name, args.Name);
-            Assert.Equal(oldName, args.OldName);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
         }
 
         [Theory]
@@ -84,8 +79,7 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + oldName, args.OldFullPath);
-            Assert.Equal(name, args.Name);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + oldName, args.OldFullPath);
         }
 
         [Theory]
@@ -96,8 +90,7 @@ namespace System.IO.Tests
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory, args.OldFullPath);
-            Assert.Equal(name, args.Name);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory, args.OldFullPath);
         }
 
         [Fact]
@@ -106,18 +99,5 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => new RenamedEventArgs((WatcherChangeTypes)0, "", "foo.txt", "bar.txt"));
             Assert.Throws<ArgumentNullException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, "foo.txt", "bar.txt"));
         }
-
-        #region Test Helpers
-
-        private static string AppendDirectorySeparator(string directory)
-        {
-            if (!directory.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-            {
-                directory += Path.DirectorySeparatorChar;
-            }
-            return directory;
-        }
-
-        #endregion
     }
 }

@@ -7,11 +7,17 @@ namespace System.IO.Tests
 {
     public class FileSystemEventArgsTests
     {
-        [Fact]
-        public static void FileSystemEventArgs_ctor_ChangeType_IsSetCorrectly()
+        [Theory]
+        [InlineData(WatcherChangeTypes.Changed, "C:\\bar", "foo.txt")]
+        [InlineData(WatcherChangeTypes.All, "C:\\bar", "foo.txt")]
+        [InlineData((WatcherChangeTypes)0, "C:\\bar", "")]
+        [InlineData((WatcherChangeTypes)0, "C:\\bar", null)]
+        public static void FileSystemEventArgs_ctor_NonPathPropertiesAreSetCorrectly(WatcherChangeTypes changeType, string directory, string name)
         {
-            FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.Deleted, "bar", "foo.txt");
-            Assert.Equal(WatcherChangeTypes.Deleted, args.ChangeType);
+            FileSystemEventArgs args = new FileSystemEventArgs(changeType, directory, name);
+
+            Assert.Equal(changeType, args.ChangeType);
+            Assert.Equal(name, args.Name);
         }
 
         [Theory]
@@ -23,7 +29,6 @@ namespace System.IO.Tests
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
             Assert.Equal(expectedFullPath, args.FullPath);
-            Assert.Equal(name, args.Name);
         }
 
         [Theory]
@@ -35,7 +40,6 @@ namespace System.IO.Tests
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
             Assert.Equal(expectedFullPath, args.FullPath);
-            Assert.Equal(name, args.Name);
         }
 
         [Theory]
@@ -46,10 +50,9 @@ namespace System.IO.Tests
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
-            directory = AppendDirectorySeparator(directory);
+            directory = PathInternal.EnsureTrailingSeparator(directory);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory + name, args.FullPath);
-            Assert.Equal(name, args.Name);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory + name, args.FullPath);
         }
 
         [Theory]
@@ -60,10 +63,9 @@ namespace System.IO.Tests
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
-            directory = AppendDirectorySeparator(directory);
+            directory = PathInternal.EnsureTrailingSeparator(directory);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory + name, args.FullPath);
-            Assert.Equal(name, args.Name);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory + name, args.FullPath);
         }
 
         [Theory]
@@ -73,8 +75,7 @@ namespace System.IO.Tests
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + name, args.FullPath);
-            Assert.Equal(name, args.Name);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + name, args.FullPath);
         }
 
         [Theory]
@@ -84,8 +85,7 @@ namespace System.IO.Tests
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory, args.FullPath);
-            Assert.Equal(name, args.Name);
+            Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory, args.FullPath);
         }
 
         [Fact]
@@ -94,18 +94,5 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentNullException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, "foo.txt"));
             Assert.Throws<ArgumentException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, "", "foo.txt"));
         }
-
-        #region Test Helpers
-
-        private static string AppendDirectorySeparator(string directory)
-        {
-            if (!directory.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
-            {
-                directory += Path.DirectorySeparatorChar;
-            }
-            return directory;
-        }
-
-        #endregion
     }
 }
