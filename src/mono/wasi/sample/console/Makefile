@@ -5,6 +5,9 @@ BIN_DIR=WasiConsoleApp/bin/$(CONFIG)/net7.0
 
 all: console.wasm $(BIN_DIR)/WasiConsoleApp.dll
 
+run: all
+	wasmtime --dir=. console.wasm
+
 run-wasmer: all
 	wasmer --dir=. console.wasm
 
