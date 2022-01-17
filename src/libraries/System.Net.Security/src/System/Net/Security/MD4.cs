@@ -46,8 +46,25 @@ namespace System.Net.Security
             buffer.Fill(0);
 
             HashCore(source, 0, source.Length, state, count, buffer);
-            HashFinal(state, count, destination, buffer);
+
+            /* Save number of bits */
+            Span<byte> bits = stackalloc byte[8];
+            Encode(bits, count);
+
+            /* Pad out to 56 mod 64. */
+            uint index = ((count[0] >> 3) & 0x3f);
+            int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
+            Span<byte> padding = stackalloc byte[padLen];
+            padding[0] = 0x80;
+            HashCore(padding, 0, padLen, state, count, buffer);
+
+            /* Append length (before padding) */
+            HashCore(bits, 0, 8, state, count, buffer);
+
+            /* Write state to destination */
+            Encode(destination, state);
         }
+
         private static void HashCore(ReadOnlySpan<byte> input, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer)
         {
             /* Compute number of bytes mod 64 */
@@ -78,25 +95,25 @@ namespace System.Net.Security
             BlockCopy(input, ibStart + i, buffer, index, (cbSize - i));
         }
 
-        private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination, Span<byte> buffer)
-        {
-            /* Save number of bits */
-            Span<byte> bits = stackalloc byte[8];
-            Encode(bits, count);
+        // private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination, Span<byte> buffer)
+        // {
+        //     /* Save number of bits */
+        //     Span<byte> bits = stackalloc byte[8];
+        //     Encode(bits, count);
 
-            /* Pad out to 56 mod 64. */
-            uint index = ((count[0] >> 3) & 0x3f);
-            int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
-            Span<byte> padding = stackalloc byte[padLen];
-            padding[0] = 0x80;
-            HashCore(padding, 0, padLen, state, count, buffer);
+        //     /* Pad out to 56 mod 64. */
+        //     uint index = ((count[0] >> 3) & 0x3f);
+        //     int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
+        //     Span<byte> padding = stackalloc byte[padLen];
+        //     padding[0] = 0x80;
+        //     HashCore(padding, 0, padLen, state, count, buffer);
 
-            /* Append length (before padding) */
-            HashCore(bits, 0, 8, state, count, buffer);
+        //     /* Append length (before padding) */
+        //     HashCore(bits, 0, 8, state, count, buffer);
 
-            /* Store state in digest */
-            Encode(destination, state);
-        }
+        //     /* Store state in digest */
+        //     Encode(destination, state);
+        // }
 
         //--- private methods ---------------------------------------------------
 
