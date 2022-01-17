@@ -7,6 +7,7 @@ namespace System.Drawing.Tests
 {
     public partial class BrushTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Fact]
         public void FromHandle()
         {

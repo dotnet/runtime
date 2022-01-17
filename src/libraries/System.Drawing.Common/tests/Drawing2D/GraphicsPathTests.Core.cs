@@ -8,6 +8,7 @@ namespace System.Drawing.Drawing2D.Tests
 {
     public partial class GraphicsPathTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [Fact]
         public void FromHandle()
         {
