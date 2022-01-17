@@ -3792,25 +3792,28 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     assert(thisArgNode != nullptr);
     assert(thisArgNode->gtOper == GT_PUTARG_REG);
-    GenTree* originalThisExpr = thisArgNode->AsOp()->gtOp1;
-    GenTree* thisExpr         = originalThisExpr;
+    GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
 
-    unsigned lclNum;
+    GenTree* base;
     if (thisExpr->OperIs(GT_LCL_VAR))
     {
-        lclNum = thisExpr->AsLclVarCommon()->GetLclNum();
+        base = comp->gtNewLclvNode(thisExpr->AsLclVar()->GetLclNum(), thisExpr->TypeGet());
+    }
+    else if (thisExpr->OperIs(GT_LCL_FLD))
+    {
+        base = comp->gtNewLclFldNode(thisExpr->AsLclFld()->GetLclNum(), thisExpr->TypeGet(), thisExpr->AsLclFld()->GetLclOffs());
     }
     else
     {
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
+        base = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
         LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
 
         thisExpr = thisExprUse.Def(); // it's changed; reload it.
-        lclNum   = delegateInvokeTmp;
     }
 
     // replace original expression feeding into thisPtr with
@@ -3828,8 +3831,6 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     // the control target is
     // [originalThis + firstTgtOffs]
-
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, originalThisExpr->TypeGet(), lclNum);
 
     unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
@@ -4599,7 +4600,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
     unsigned lclNum;
-    if (thisPtr->OperIs(GT_LCL_VAR))
+    if (thisPtr->OperIsLocal())
     {
         lclNum = thisPtr->AsLclVarCommon()->GetLclNum();
     }
