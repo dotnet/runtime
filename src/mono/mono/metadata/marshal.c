@@ -4981,14 +4981,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 er
 }
 
 guint32
-ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper (MonoQCallTypeHandle type_handle, MonoBoolean throwIfNotMarshalable, MonoError *error)
 {
-	if (MONO_HANDLE_IS_NULL (rtype)) {
-		mono_error_set_argument_null (error, "type", "");
-		return 0;
-	}
-
-	MonoType * const type = MONO_HANDLE_GETVAL (rtype, type);
+	MonoType * const type = type_handle.type;
 	MonoClass * const klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
 		return 0;
@@ -5006,12 +5001,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 
 	guint32 align;
 	return (guint32)mono_marshal_type_size (type, NULL, &align, FALSE, m_class_is_unicode (klass));
-}
-
-guint32
-ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper (MonoReflectionTypeHandle rtype, MonoBoolean throwIfNotMarshalable, MonoError *error)
-{
-	return ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (rtype, error);
 }
 
 void
@@ -5209,14 +5198,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	mono_struct_delete_old (klass, (char *)src);
 }
 
-MonoDelegateHandle
-ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error)
+void
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (MonoQCallTypeHandle type_handle, void *ftn, MonoObjectHandleOnStack res, MonoError *error)
 {
-	MonoClass *klass = mono_type_get_class_internal (MONO_HANDLE_GETVAL (type, type));
+	MonoClass *klass = mono_type_get_class_internal (type_handle.type);
 	if (!mono_class_init_checked (klass, error))
-		return MONO_HANDLE_CAST (MonoDelegate, NULL_HANDLE);
+		return;
 
-	return mono_ftnptr_to_delegate_impl (klass, ftn, error);
+	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (mono_ftnptr_to_delegate_impl (klass, ftn, error)));
 }
 
 gpointer
@@ -5226,9 +5215,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateIn
 }
 
 MonoBoolean
-ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoReflectionTypeHandle type_h, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle)
 {
-	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (type_h, type));
+	MonoClass *klass = mono_class_from_mono_type_internal (type_handle.type);
 
 	if (m_class_get_rank (klass)) {
 		MonoClass *eklass = m_class_get_element_class (klass);

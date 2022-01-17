@@ -260,7 +260,7 @@ namespace System.IO.Packaging
             : base(packageFileAccess)
         {
             ZipArchive? zipArchive = null;
-            ContentTypeHelper? contentTypeHelper = null;
+            ContentTypeHelper? contentTypeHelper;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
 
@@ -302,7 +302,7 @@ namespace System.IO.Packaging
             : base(packageFileAccess)
         {
             ZipArchive? zipArchive = null;
-            ContentTypeHelper? contentTypeHelper = null;
+            ContentTypeHelper? contentTypeHelper;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
 

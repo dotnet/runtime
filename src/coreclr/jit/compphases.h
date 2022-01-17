@@ -79,9 +79,7 @@ CompPhaseNameMacro(PHASE_OPTIMIZE_INDEX_CHECKS,  "Optimize index checks",       
 CompPhaseNameMacro(PHASE_OPTIMIZE_VALNUM_CSES,   "Optimize Valnum CSEs",           "OPT-CSE",  false, -1, false)
 CompPhaseNameMacro(PHASE_VN_COPY_PROP,           "VN based copy prop",             "CP-PROP",  false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_BRANCHES,      "Redundant branch opts",          "OPT-BR",   false, -1, false)
-#if ASSERTION_PROP
 CompPhaseNameMacro(PHASE_ASSERTION_PROP_MAIN,    "Assertion prop",                 "AST-PROP", false, -1, false)
-#endif
 CompPhaseNameMacro(PHASE_OPT_UPDATE_FLOW_GRAPH,  "Update flow graph opt pass",     "UPD-FG-O", false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_EDGE_WEIGHTS2,  "Compute edge weights (2, false)","EDG-WGT2", false, -1, false)
 CompPhaseNameMacro(PHASE_INSERT_GC_POLLS,        "Insert GC Polls",                "GC-POLLS", false, -1, true)

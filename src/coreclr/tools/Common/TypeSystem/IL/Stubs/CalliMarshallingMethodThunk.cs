@@ -79,6 +79,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "CalliMarshallingMethodThunk";
+            }
+        }
+
         public override PInvokeMetadata GetPInvokeMethodMetadata()
         {
             // Return PInvokeAttributes.PreserveSig to circumvent marshalling required checks

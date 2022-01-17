@@ -905,7 +905,7 @@ namespace System.Xml.Schema
 
         private void CompileSimpleContentExtension(XmlSchemaComplexType complexType, XmlSchemaSimpleContentExtension simpleExtension)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             if (complexType.Redefined != null && simpleExtension.BaseTypeName == complexType.Redefined.QualifiedName)
             {
                 baseType = (XmlSchemaComplexType)complexType.Redefined;
@@ -946,7 +946,7 @@ namespace System.Xml.Schema
 
         private void CompileSimpleContentRestriction(XmlSchemaComplexType complexType, XmlSchemaSimpleContentRestriction simpleRestriction)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             XmlSchemaDatatype? datatype = null;
             if (complexType.Redefined != null && simpleRestriction.BaseTypeName == complexType.Redefined.QualifiedName)
             {
@@ -1034,7 +1034,7 @@ namespace System.Xml.Schema
 
         private void CompileComplexContentExtension(XmlSchemaComplexType complexType, XmlSchemaComplexContent complexContent, XmlSchemaComplexContentExtension complexExtension)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             if (complexType.Redefined != null && complexExtension.BaseTypeName == complexType.Redefined.QualifiedName)
             {
                 baseType = (XmlSchemaComplexType)complexType.Redefined;
@@ -1105,7 +1105,7 @@ namespace System.Xml.Schema
 
         private void CompileComplexContentRestriction(XmlSchemaComplexType complexType, XmlSchemaComplexContent complexContent, XmlSchemaComplexContentRestriction complexRestriction)
         {
-            XmlSchemaComplexType? baseType = null;
+            XmlSchemaComplexType? baseType;
             if (complexType.Redefined != null && complexRestriction.BaseTypeName == complexType.Redefined.QualifiedName)
             {
                 baseType = (XmlSchemaComplexType)complexType.Redefined;
@@ -1988,8 +1988,8 @@ namespace System.Xml.Schema
 
         private bool IsParticleEmptiable(XmlSchemaParticle particle)
         {
-            decimal minOccurs, maxOccurs;
-            CalculateEffectiveTotalRange(particle, out minOccurs, out maxOccurs);
+            decimal minOccurs;
+            CalculateEffectiveTotalRange(particle, out minOccurs, out _);
             return minOccurs == decimal.Zero;
         }
 
@@ -2453,7 +2453,7 @@ namespace System.Xml.Schema
                 return;
             }
             xa.IsProcessing = true;
-            SchemaAttDef? decl = null;
+            SchemaAttDef? decl;
             try
             {
                 if (!xa.RefName.IsEmpty)
@@ -2618,7 +2618,7 @@ namespace System.Xml.Schema
             }
 
             xi.IsProcessing = true;
-            CompiledIdentityConstraint? compic = null;
+            CompiledIdentityConstraint? compic;
             try
             {
                 SchemaNamespaceManager xnmgr = new SchemaNamespaceManager(xi);

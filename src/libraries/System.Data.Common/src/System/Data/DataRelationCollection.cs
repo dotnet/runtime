@@ -336,11 +336,10 @@ namespace System.Data
             if ((null != name) && (0 < name.Length))
             {
                 int count = List.Count;
-                int result = 0;
                 for (int i = 0; i < count; i++)
                 {
                     DataRelation relation = (DataRelation)List[i]!;
-                    result = NamesEqual(relation.RelationName, name, false, GetDataSet().Locale);
+                    int result = NamesEqual(relation.RelationName, name, false, GetDataSet().Locale);
                     if (result == 1)
                     {
                         return i;

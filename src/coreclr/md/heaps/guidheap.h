@@ -74,14 +74,14 @@ public:
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32           nIndex,
-        __deref_out GUID UNALIGNED **ppGuid)
+        _Outptr_ GUID UNALIGNED **ppGuid)
     {
         return m_GuidPool.GetGuid(nIndex, ppGuid);
     }
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32                 nIndex,
-        __deref_out const GUID UNALIGNED **ppGuid) const
+        _Outptr_ const GUID UNALIGNED **ppGuid) const
     {
         return const_cast<StgPoolReadOnly &>(m_GuidPool).GetGuid(nIndex, const_cast<GUID UNALIGNED **>(ppGuid));
     }
@@ -170,14 +170,14 @@ public:
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32           nIndex,
-        __deref_out GUID UNALIGNED **ppGuid)
+        _Outptr_ GUID UNALIGNED **ppGuid)
     {
         return m_GuidPool.GetGuid(nIndex, ppGuid);
     }
     __checkReturn
     inline HRESULT GetGuid(
                     UINT32                 nIndex,
-        __deref_out const GUID UNALIGNED **ppGuid) const
+        _Outptr_ const GUID UNALIGNED **ppGuid) const
     {
         return const_cast<StgGuidPool &>(m_GuidPool).GetGuid(nIndex, const_cast<GUID UNALIGNED **>(ppGuid));
     }
@@ -205,7 +205,7 @@ public:
 
     __checkReturn
     inline HRESULT SaveToStream(
-        __in IStream *pStream) const
+        _In_ IStream *pStream) const
     {
         return const_cast<StgGuidPool &>(m_GuidPool).PersistToStream(pStream);
     }
@@ -220,8 +220,8 @@ public:
     // Returns error code otherwise (and fills *pnIndex with 0 - an invalid GUID index).
     __checkReturn
     inline HRESULT AddGuid(
-        __in  const GUID *pGuid,
-        __out UINT32     *pnIndex)
+        _In_  const GUID *pGuid,
+        _Out_ UINT32     *pnIndex)
     {
         return m_GuidPool.AddGuid(pGuid, pnIndex);
     }

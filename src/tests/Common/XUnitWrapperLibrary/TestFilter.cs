@@ -9,17 +9,17 @@ namespace XUnitWrapperLibrary;
 
 public class TestFilter
 {
-    interface ISearchClause
+    public interface ISearchClause
     {
         bool IsMatch(string fullyQualifiedName, string displayName, string[] traits);
     }
 
-    enum TermKind
+    public enum TermKind
     {
         FullyQualifiedName,
         DisplayName
     }
-    sealed class NameClause : ISearchClause
+    public sealed class NameClause : ISearchClause
     {
         public NameClause(TermKind kind, string filter, bool substring)
         {
@@ -48,7 +48,7 @@ public class TestFilter
         }
     }
 
-    sealed class AndClause : ISearchClause
+    public sealed class AndClause : ISearchClause
     {
         private ISearchClause _left;
         private ISearchClause _right;
@@ -62,7 +62,7 @@ public class TestFilter
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) && _right.IsMatch(fullyQualifiedName, displayName, traits);
     }
 
-    sealed class OrClause : ISearchClause
+    public sealed class OrClause : ISearchClause
     {
         private ISearchClause _left;
         private ISearchClause _right;
@@ -76,7 +76,7 @@ public class TestFilter
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) || _right.IsMatch(fullyQualifiedName, displayName, traits);
     }
 
-    sealed class NotClause : ISearchClause
+    public sealed class NotClause : ISearchClause
     {
         private ISearchClause _inner;
 
@@ -97,6 +97,11 @@ public class TestFilter
             throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
         }
         _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
+    }
+
+    public TestFilter(ISearchClause filter)
+    {
+        _filter = filter;
     }
 
     public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null) => _filter is null ? true : _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());

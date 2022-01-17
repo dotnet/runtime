@@ -317,33 +317,6 @@ CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the regis
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
 
-// clang-format off
-
-#if defined(TARGET_ARM64)
-CONFIG_INTEGER(EnableHWIntrinsic,       W("EnableHWIntrinsic"), 1)
-CONFIG_INTEGER(EnableArm64Aes,          W("EnableArm64Aes"), 1)
-CONFIG_INTEGER(EnableArm64Atomics,      W("EnableArm64Atomics"), 1)
-CONFIG_INTEGER(EnableArm64Crc32,        W("EnableArm64Crc32"), 1)
-CONFIG_INTEGER(EnableArm64Dcpop,        W("EnableArm64Dcpop"), 1)
-CONFIG_INTEGER(EnableArm64Dp,           W("EnableArm64Dp"), 1)
-CONFIG_INTEGER(EnableArm64Fcma,         W("EnableArm64Fcma"), 1)
-CONFIG_INTEGER(EnableArm64Fp,           W("EnableArm64Fp"), 1)
-CONFIG_INTEGER(EnableArm64Fp16,         W("EnableArm64Fp16"), 1)
-CONFIG_INTEGER(EnableArm64Jscvt,        W("EnableArm64Jscvt"), 1)
-CONFIG_INTEGER(EnableArm64Lrcpc,        W("EnableArm64Lrcpc"), 1)
-CONFIG_INTEGER(EnableArm64Pmull,        W("EnableArm64Pmull"), 1)
-CONFIG_INTEGER(EnableArm64Sha1,         W("EnableArm64Sha1"), 1)
-CONFIG_INTEGER(EnableArm64Sha256,       W("EnableArm64Sha256"), 1)
-CONFIG_INTEGER(EnableArm64Sha512,       W("EnableArm64Sha512"), 1)
-CONFIG_INTEGER(EnableArm64Sha3,         W("EnableArm64Sha3"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd,      W("EnableArm64AdvSimd"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd_v81,  W("EnableArm64AdvSimd_v81"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd_Fp16, W("EnableArm64AdvSimd_Fp16"), 1)
-CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
-CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
-CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
-#endif // defined(TARGET_ARM64)
-
 // clang-format on
 
 #ifdef FEATURE_SIMD

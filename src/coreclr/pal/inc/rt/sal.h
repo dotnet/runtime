@@ -2648,12 +2648,6 @@ buffer, use the table in the buffer annotations section.
 -------------------------------------------------------------------------------
 */
 
-// These macros conflict with c++ headers.
-#ifndef PAL_STDCPP_COMPAT
-#define __in                                                     _SAL1_Source_(__in, (), _In_)
-#define __out                                                    _SAL1_Source_(__out, (), _Out_)
-#endif // !PAL_STDCPP_COMPAT
-
 #define __ecount(size)                                           _SAL1_Source_(__ecount, (size), __notnull __elem_writableTo(size))
 #define __bcount(size)                                           _SAL1_Source_(__bcount, (size), __notnull __byte_writableTo(size))
 #define __in_ecount(size)                                        _SAL1_Source_(__in_ecount, (size), _In_reads_(size))

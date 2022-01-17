@@ -161,7 +161,7 @@ namespace System.Numerics
                 if ((uint)row >= 4)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
+                Vector4 vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
                 return vrow[column];
             }
             set
@@ -169,7 +169,7 @@ namespace System.Numerics
                 if ((uint)row >= 4)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
+                ref Vector4 vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row);
                 var tmp = Vector4.WithElement(vrow, column, value);
                 vrow = tmp;
             }

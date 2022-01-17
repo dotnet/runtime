@@ -22,7 +22,7 @@ namespace System.Threading
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            throw new PlatformNotSupportedException(SR.NotSupported_Overlapped);
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
         }
 
         public void Dispose()

@@ -14341,8 +14341,8 @@ void Debugger::SendRawLogMessage(
 // the creation/modification of a LogSwitch
 void Debugger::SendLogSwitchSetting(int iLevel,
                                     int iReason,
-                                    __in_z LPCWSTR pLogSwitchName,
-                                    __in_z LPCWSTR pParentSwitchName)
+                                    _In_z_ LPCWSTR pLogSwitchName,
+                                    _In_z_ LPCWSTR pParentSwitchName)
 {
     CONTRACTL
     {
@@ -15854,7 +15854,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
 
 
 // notification when a SQL connection begins
-void Debugger::CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName)
+void Debugger::CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName)
 {
     CONTRACTL
     {

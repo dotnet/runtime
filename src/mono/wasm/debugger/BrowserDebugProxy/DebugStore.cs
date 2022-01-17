@@ -21,6 +21,7 @@ using Microsoft.CodeAnalysis.Debugging;
 using System.IO.Compression;
 using System.Reflection;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -475,14 +476,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class TypeInfo
     {
+        private readonly ILogger logger;
         internal AssemblyInfo assembly;
         private TypeDefinition type;
         private List<MethodInfo> methods;
         internal int Token { get; }
         internal string Namespace { get; }
 
-        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type)
+        public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableFields = new();
+        public Dictionary<string, DebuggerBrowsableState?> DebuggerBrowsableProperties = new();
+
+        public TypeInfo(AssemblyInfo assembly, TypeDefinitionHandle typeHandle, TypeDefinition type, ILogger logger)
         {
+            this.logger = logger;
             this.assembly = assembly;
             var metadataReader = assembly.asmMetadataReader;
             Token = MetadataTokens.GetToken(metadataReader, typeHandle);
@@ -500,6 +506,63 @@ namespace Microsoft.WebAssembly.Diagnostics
                 FullName = Namespace + "." + Name;
             else
                 FullName = Name;
+
+            foreach (var field in type.GetFields())
+            {
+                try
+                {
+                    var fieldDefinition = metadataReader.GetFieldDefinition(field);
+                    var fieldName = metadataReader.GetString(fieldDefinition.Name);
+                    AppendToBrowsable(DebuggerBrowsableFields, fieldDefinition.GetCustomAttributes(), fieldName);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to read browsable attributes of a field. ({ex.Message})");
+                    continue;
+                }
+            }
+
+            foreach (var prop in type.GetProperties())
+            {
+                try
+                {
+                    var propDefinition = metadataReader.GetPropertyDefinition(prop);
+                    var propName = metadataReader.GetString(propDefinition.Name);
+                    AppendToBrowsable(DebuggerBrowsableProperties, propDefinition.GetCustomAttributes(), propName);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug($"Failed to read browsable attributes of a property. ({ex.Message})");
+                    continue;
+                }
+            }
+
+            void AppendToBrowsable(Dictionary<string, DebuggerBrowsableState?> dict, CustomAttributeHandleCollection customAttrs, string fieldName)
+            {
+                foreach (var cattr in customAttrs)
+                {
+                    try
+                    {
+                        var ctorHandle = metadataReader.GetCustomAttribute(cattr).Constructor;
+                        if (ctorHandle.Kind != HandleKind.MemberReference)
+                            continue;
+                        var container = metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
+                        var valueBytes = metadataReader.GetBlobBytes(metadataReader.GetCustomAttribute(cattr).Value);
+                        var attributeName = metadataReader.GetString(metadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
+                        if (attributeName != "DebuggerBrowsableAttribute")
+                            continue;
+                        var state = (DebuggerBrowsableState)valueBytes[2];
+                        if (!Enum.IsDefined(typeof(DebuggerBrowsableState), state))
+                            continue;
+                        dict.Add(fieldName, state);
+                        break;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+            }
         }
 
         public TypeInfo(AssemblyInfo assembly, string name)
@@ -514,7 +577,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString() => "TypeInfo('" + FullName + "')";
     }
-
 
     internal class AssemblyInfo
     {
@@ -642,7 +704,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (DocumentHandle dh in asmMetadataReader.Documents)
             {
-                var document = asmMetadataReader.GetDocument(dh);
+                asmMetadataReader.GetDocument(dh);
             }
 
             if (pdbMetadataReader != null)
@@ -652,7 +714,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
 
-                var typeInfo = new TypeInfo(this, type, typeDefinition);
+                var typeInfo = new TypeInfo(this, type, typeDefinition, logger);
                 TypesByName[typeInfo.FullName] = typeInfo;
                 TypesByToken[typeInfo.Token] = typeInfo;
                 if (pdbMetadataReader != null)
@@ -680,7 +742,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                 }
             }
-
         }
 
         private void ProcessSourceLink()
@@ -969,7 +1030,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public IEnumerable<SourceFile> Add(SessionId id, string name, byte[] assembly_data, byte[] pdb_data, CancellationToken token)
         {
-            AssemblyInfo assembly = null;
+            AssemblyInfo assembly;
             try
             {
                 assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, token);
