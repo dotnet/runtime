@@ -332,8 +332,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal LocalScopeHandleCollection localScopes;
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
-        public bool IsHiddenFromDebugger { get; }
-        public bool HasStepThroughAttribute { get; }
+        public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -371,6 +370,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 StartLocation = new SourceLocation(this, start);
                 EndLocation = new SourceLocation(this, end);
 
+                DebuggerAttrInfo = new DebuggerAttributesInfo();
                 foreach (var cattr in methodDef.GetCustomAttributes())
                 {
                     var ctorHandle = asmMetadataReader.GetCustomAttribute(cattr).Constructor;
@@ -378,16 +378,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        if (name == "DebuggerHiddenAttribute")
+                        var stopSearch = true;
+                        switch (name)
                         {
-                            IsHiddenFromDebugger = true;
-                            break;
+                            case "DebuggerHiddenAttribute":
+                                DebuggerAttrInfo.HasDebuggerHidden = true;
+                                break;
+                            case "DebuggerStepThroughAttribute":
+                                DebuggerAttrInfo.HasStepThrough = true;
+                                break;
+                            case "DebuggerNonUserCodeAttribute":
+                                DebuggerAttrInfo.HasNonUserCode = true;
+                                break;
+                            default:
+                                stopSearch = false;
+                                break;
                         }
-                        if (name == "DebuggerStepThroughAttribute")
-                        {
-                            HasStepThroughAttribute = true;
+                        if (stopSearch)
                             break;
-                        }
 
                     }
                 }
@@ -478,6 +486,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
 
         public override string ToString() => "MethodInfo(" + Name + ")";
+
+        public class DebuggerAttributesInfo
+        {
+            public bool HasDebuggerHidden { get; internal set; }
+            public bool HasStepThrough { get; internal set; }
+            public bool HasNonUserCode { get; internal set; }
+        }
     }
 
     internal class TypeInfo
