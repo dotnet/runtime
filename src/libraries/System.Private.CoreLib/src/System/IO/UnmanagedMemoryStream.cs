@@ -46,7 +46,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-        private CachedCompletedTask<int> _lastReadTask; // The last successful task returned from ReadAsync
+        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         /// <summary>
         /// Creates a closed stream.

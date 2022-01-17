@@ -32,7 +32,7 @@ namespace System.IO
         private readonly bool _exposable;   // Whether the array can be returned to the user.
         private bool _isOpen;      // Is this stream open or closed?
 
-        private CachedCompletedTask<int> _lastReadTask; // The last successful task returned from ReadAsync
+        private CachedCompletedInt32Task _lastReadTask; // The last successful task returned from ReadAsync
 
         private const int MemStreamMaxLength = int.MaxValue;
 

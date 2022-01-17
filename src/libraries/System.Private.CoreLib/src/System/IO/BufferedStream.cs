@@ -54,7 +54,7 @@ namespace System.IO
         private int _readPos;                                        // Read pointer within shared buffer.
         private int _readLen;                                        // Number of bytes read in buffer from _stream.
         private int _writePos;                                       // Write pointer within shared buffer.
-        private CachedCompletedTask<int> _lastSyncCompletedReadTask; // The last successful Task returned from ReadAsync
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask; // The last successful Task returned from ReadAsync
                                                                      // (perf optimization for successive reads of the same size)
 
         public BufferedStream(Stream stream)
