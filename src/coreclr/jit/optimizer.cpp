@@ -7850,24 +7850,16 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     }
                     else
                     {
-                        // We are only interested in IsFieldAddr()'s fldSeq out parameter.
-                        //
-                        GenTree*      obj          = nullptr; // unused
-                        GenTree*      staticOffset = nullptr; // unused
-                        FieldSeqNode* fldSeq       = nullptr;
-
-                        if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq) &&
-                            (fldSeq != FieldSeqStore::NotAField()))
+                        GenTree*      baseAddr = nullptr;
+                        FieldSeqNode* fldSeq   = nullptr;
+                        if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
                         {
-                            // Get the first (object) field from field seq.  GcHeap[field] will yield the "field map".
-                            assert(fldSeq != nullptr);
-                            if (fldSeq->IsFirstElemFieldSeq())
-                            {
-                                fldSeq = fldSeq->m_next;
-                                assert(fldSeq != nullptr);
-                            }
+                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) &&
+                                   !fldSeq->IsPseudoField());
 
-                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->m_fieldHnd);
+                            FieldKindForVN fieldKind =
+                                (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;
+                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->GetFieldHandle(), fieldKind);
                             // Conservatively assume byrefs may alias this object.
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
@@ -7893,7 +7885,8 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 }
                 else if (lhs->OperGet() == GT_CLS_VAR)
                 {
-                    AddModifiedFieldAllContainingLoops(mostNestedLoop, lhs->AsClsVar()->gtClsVarHnd);
+                    AddModifiedFieldAllContainingLoops(mostNestedLoop, lhs->AsClsVar()->gtClsVarHnd,
+                                                       FieldKindForVN::SimpleStatic);
                     // Conservatively assume byrefs may alias this static field
                     memoryHavoc |= memoryKindSet(ByrefExposed);
                 }
@@ -8073,12 +8066,12 @@ void Compiler::AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* 
 }
 
 // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
-void Compiler::AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd)
+void Compiler::AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {
-        optLoopTable[lnum].AddModifiedField(this, fldHnd);
+        optLoopTable[lnum].AddModifiedField(this, fldHnd, fieldKind);
         lnum = optLoopTable[lnum].lpParent;
     }
 }
