@@ -549,7 +549,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
         ///   PINSRQ xmm, reg/m64, imm8
         /// </summary>
-        public static Vector128<nint> Insert(Vector128<nint> value, Vector128<nint> data, byte index) => Insert(value, data, index);
+        public static Vector128<nint> Insert(Vector128<nint> value, nint data, byte index) => Insert(value, data, index);
 
         /// <summary>
         /// 32-bit:
@@ -560,7 +560,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
         ///   PINSRQ xmm, reg/m64, imm8
         /// </summary>
-        public static Vector128<nuint> Insert(Vector128<nuint> value, Vector128<nuint> data, byte index) => Insert(value, data, index);
+        public static Vector128<nuint> Insert(Vector128<nuint> value, nuint data, byte index) => Insert(value, data, index);
 
         /// <summary>
         /// __m128i _mm_max_epi8 (__m128i a, __m128i b)

@@ -4777,11 +4777,11 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector128<float> FloorScalar(System.Runtime.Intrinsics.Vector128<float> upper, System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Insert(System.Runtime.Intrinsics.Vector128<byte> value, byte data, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> Insert(System.Runtime.Intrinsics.Vector128<int> value, int data, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<nint> Insert(System.Runtime.Intrinsics.Vector128<nint> value, System.Runtime.Intrinsics.Vector128<nint> data, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> Insert(System.Runtime.Intrinsics.Vector128<nint> value, nint data, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<sbyte> Insert(System.Runtime.Intrinsics.Vector128<sbyte> value, sbyte data, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<float> Insert(System.Runtime.Intrinsics.Vector128<float> value, System.Runtime.Intrinsics.Vector128<float> data, byte index) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> Insert(System.Runtime.Intrinsics.Vector128<uint> value, uint data, byte index) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<nuint> Insert(System.Runtime.Intrinsics.Vector128<nuint> value, System.Runtime.Intrinsics.Vector128<nuint> data, byte index) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nuint> Insert(System.Runtime.Intrinsics.Vector128<nuint> value, nuint data, byte index) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<byte> LoadAlignedVector128NonTemporal(byte* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<short> LoadAlignedVector128NonTemporal(short* address) { throw null; }
         public unsafe static System.Runtime.Intrinsics.Vector128<int> LoadAlignedVector128NonTemporal(int* address) { throw null; }
