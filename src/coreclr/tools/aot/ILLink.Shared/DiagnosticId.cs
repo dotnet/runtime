@@ -51,11 +51,12 @@ namespace ILLink.Shared
 
         // Dynamic code diagnostic ids.
         RequiresDynamicCode = 3050,
-        RequiresDynamicCodeAttributeMismatch = 3051
+        RequiresDynamicCodeAttributeMismatch = 3051,
         // TODO: these are all unique to NativeAOT - mono/linker repo is not aware these error codes usage.
         // IL3052 - COM
         // IL3053 - AOT analysis warnings
         // IL3054 - Generic cycle
+        CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
     }
 
     public static class DiagnosticIdExtensions

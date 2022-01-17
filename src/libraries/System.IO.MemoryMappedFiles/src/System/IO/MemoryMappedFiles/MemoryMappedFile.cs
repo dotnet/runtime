@@ -148,7 +148,12 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
             }
 
-            bool existed = File.Exists(path);
+            bool existed = mode switch
+            {
+                FileMode.Open => true, // FileStream ctor will throw if the file doesn't exist
+                FileMode.CreateNew => false,
+                _ => File.Exists(path)
+            };
             FileStream fileStream = new FileStream(path, mode, GetFileAccess(access), FileShare.Read, 0x1000, FileOptions.None);
 
             if (capacity == 0 && fileStream.Length == 0)

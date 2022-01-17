@@ -4526,13 +4526,13 @@ create_referenced_assembly_name (MonoImage *image, int i, MonoError *error)
 GPtrArray*
 ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
 {
-	MonoAssembly *ass = MONO_HANDLE_GETVAL (assembly_h, assembly);
-	MonoImage *image = ass->image;
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
+	MonoImage *image = assembly->image;
 	int count;
 
 	/* FIXME: metadata-update */
 
-	if (image_is_dynamic (ass->image)) {
+	if (image_is_dynamic (assembly->image)) {
 		MonoDynamicTable *t = &(((MonoDynamicImage*) image)->tables [MONO_TABLE_ASSEMBLYREF]);
 		count = t->rows;
 	}

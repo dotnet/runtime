@@ -30,8 +30,8 @@
 .corflags 0x00000001    //  ILONLY
 
 
-
-.class public abstract auto ansi beforefieldinit Test_generics.Base
+.namespace Test_generics {
+.class public abstract auto ansi beforefieldinit Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -163,7 +163,7 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test_generics.Child
+.class public auto ansi beforefieldinit Child
        extends Test_generics.Base
 {
   .method public hidebysig virtual final 
@@ -372,7 +372,7 @@
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test_generics.GrandChild
+.class public auto ansi beforefieldinit GrandChild
        extends Test_generics.Child
 {
   .method public hidebysig virtual final 
@@ -571,7 +571,7 @@
 
 } // end of class Test.GrandChild
 
-.class public auto ansi sealed beforefieldinit Test_generics.SealedGrandChild
+.class public auto ansi sealed beforefieldinit SealedGrandChild
        extends Test_generics.GrandChild
 {
   .method public hidebysig specialname rtspecialname 
@@ -585,7 +585,7 @@
 
 } // end of class Test.SealedGrandChild
 
-.class public abstract auto ansi sealed beforefieldinit Test_generics.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallSealedGrandChild() cil managed
@@ -742,7 +742,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_generics.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -802,6 +802,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-
+}

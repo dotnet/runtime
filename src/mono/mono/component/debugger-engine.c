@@ -812,7 +812,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
-	if (method->klass == mdbg_mono_defaults->string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
+	if (method->klass == mono_get_string_class () && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		goto exit;
 
 	/*
@@ -1719,7 +1719,7 @@ get_notify_debugger_of_wait_completion_method (void)
 	if (notify_debugger_of_wait_completion_method_cache != NULL)
 		return notify_debugger_of_wait_completion_method_cache;
 	ERROR_DECL (error);
-	MonoClass* task_class = mono_class_load_from_name (mdbg_mono_defaults->corlib, "System.Threading.Tasks", "Task");
+	MonoClass* task_class = mono_class_load_from_name (mono_get_corlib (), "System.Threading.Tasks", "Task");
 	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, 1, FALSE, error);
 	mono_error_assert_ok (error);
 	g_assert (array->len == 1);

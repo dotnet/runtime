@@ -984,11 +984,28 @@ typedef struct {
 	MonoClass *appcontext_class;
 } MonoDefaults;
 
+/* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
+extern MonoDefaults mono_defaults;
+
+MONO_COMPONENT_API
+MonoDefaults *
+mono_get_defaults (void);
+
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
 
 #define GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_try_get_##shortname##_class (void);
+
+static inline MonoImage *
+mono_class_generate_get_corlib_impl (void)
+{
+#ifdef COMPILING_COMPONENT_DYNAMIC
+  return mono_get_corlib ();
+#else
+  return mono_defaults.corlib;
+#endif
+}
 
 // GENERATE_GET_CLASS_WITH_CACHE attempts mono_class_load_from_name whenever
 // its cache is null. i.e. potentially repeatedly, though it is expected to succeed
@@ -1001,7 +1018,7 @@ mono_class_get_##shortname##_class (void)	\
 	static MonoClass *tmp_class;	\
 	MonoClass *klass = tmp_class;	\
 	if (!klass) {	\
-		klass = mono_class_load_from_name (mono_defaults.corlib, name_space, name);	\
+	  klass = mono_class_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name); \
 		mono_memory_barrier ();	/* FIXME excessive? */ \
 		tmp_class = klass;	\
 	}	\
@@ -1023,7 +1040,7 @@ mono_class_try_get_##shortname##_class (void)	\
 	MonoClass *klass = (MonoClass *)tmp_class;	\
 	mono_memory_barrier ();	\
 	if (!inited) {	\
-		klass = mono_class_try_load_from_name (mono_defaults.corlib, name_space, name);	\
+		klass = mono_class_try_load_from_name (mono_class_generate_get_corlib_impl (), name_space, name);	\
 		tmp_class = klass;	\
 		mono_memory_barrier ();	\
 		inited = TRUE;	\
@@ -1054,9 +1071,6 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context)
 GENERATE_GET_CLASS_WITH_CACHE_DECL (native_library)
-
-/* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
-extern MonoDefaults mono_defaults;
 
 void
 mono_loader_init           (void);
