@@ -34,12 +34,9 @@ namespace System.Net.Security
             Array.Clear(x, 0, 16);
 
             HashCore(source.ToArray(), 0, source.Length, state, count);
-            HashValue = HashFinal(state, count);
-            byte[] result = (byte[]) HashValue.Clone();
-            result.CopyTo(destination);
+            HashFinal(state, count).CopyTo(destination);
         }
 
-        private static byte[]? HashValue;
         private static byte[] buffer = new byte[64];
         private static uint[] x = new uint[16];
 
