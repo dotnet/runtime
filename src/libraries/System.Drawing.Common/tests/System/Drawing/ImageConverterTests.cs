@@ -234,8 +234,9 @@ namespace System.ComponentModel.TypeConverterTests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestGetProperties()
         {
-            const int allPropertiesCount = 15; // Count of all properties in Image class.
-            const int browsablePropertiesCount = 7; // Count of browsable properties in Image class (BrowsableAttribute.Yes).
+            int allPropertiesCount =
+                PlatformDetection.IsNetFramework ? 14 : 15; // Count of all properties in Image class.
+            int browsablePropertiesCount = PlatformDetection.IsNetFramework ? 7 : 8; // Count of browsable properties in Image class (BrowsableAttribute.Yes).
 
             PropertyDescriptorCollection propsColl;
 
