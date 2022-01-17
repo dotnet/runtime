@@ -838,21 +838,53 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
 Function :
     InjectActivationInternal
 
-    Interrupt the specified thread and have it call the activationFunction passed in
+    Interrupt the specified thread with INJECT_ACTIVATION_SIGNAL
 
 Parameters :
     pThread            - target PAL thread
-    activationFunction - function to call
 
-(no return value)
+Return:
+   PAL_ERROR
 --*/
 PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
 {
 #ifdef INJECT_ACTIVATION_SIGNAL
-    int status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
-    // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
-    // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
-    // the process exits.
+    int status = 0;
+
+#ifdef __linux__
+    const int signal_queue_ovf_retry_count = 5;
+    struct timespec signal_queue_ovf_sleep;
+    signal_queue_ovf_sleep.tv_sec = 0;
+    signal_queue_ovf_sleep.tv_nsec = 10 * 1000 * 1000; /* 10 milliseconds */
+    int retry_count = 0;
+
+    while (true)
+#endif // __linux__
+    {
+        status = pthread_kill(pThread->GetPThreadSelf(), INJECT_ACTIVATION_SIGNAL);
+        // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
+        // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
+        // the process exits.
+        //
+        // We can also get EAGAIN if the signal queue overflows on linux.
+
+#ifdef __linux__
+        if (status == EAGAIN && retry_count < signal_queue_ovf_retry_count)
+        {
+            // If the signal queue overflows on linux, try again a couple of times.
+            // See https://lkml.org/lkml/2009/3/18/61 for some related discussion.
+            // Similar change in mono: https://github.com/dotnet/runtime/pull/33966/files.
+
+            fprintf(stderr, "pthread_kill failed with error %d - potential kernel OOM or signal queue overflow, sleeping for %ld nanoseconds", status, signal_queue_ovf_sleep.tv_nsec);
+            nanosleep(&signal_queue_ovf_sleep, NULL);
+            ++retry_count;
+        }
+        else
+        {
+            break;
+        }
+#endif // __linux__
+    }
 
 #ifdef __APPLE__
     // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
@@ -862,7 +894,11 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    if (((status != 0) && (status != EAGAIN))
+#ifdef __linux__
+        || (status == EAGAIN && retry_count == signal_queue_ovf_retry_count)
+#endif // __linux__
+        )
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
