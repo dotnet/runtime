@@ -527,7 +527,7 @@ namespace System.Reflection.Emit
             }
 
             int iLast = fullname.LastIndexOf('.');
-            if (iLast == -1 || iLast == 0)
+            if (iLast <= 0)
             {
                 // no name space
                 m_strNameSpace = string.Empty;

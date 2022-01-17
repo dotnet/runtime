@@ -97,7 +97,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string sender = browser == to ? "Send-browser" : "Send-ide";
 
-            string method = o["method"]?.ToString();
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
             byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
@@ -157,7 +156,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var res = JObject.Parse(msg);
 
-            string method = res["method"]?.ToString();
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"browser: {msg}");
 

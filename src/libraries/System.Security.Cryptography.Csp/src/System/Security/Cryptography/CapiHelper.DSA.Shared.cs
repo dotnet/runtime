@@ -310,7 +310,7 @@ namespace Internal.NativeCrypto
 
         private static void ReadDSSSeed(DSAParameters dsaParameters, BinaryReader br, bool isV3)
         {
-            bool hasSeed = false;
+            bool hasSeed;
             int counter = br.ReadInt32();
 
             if (isV3)

@@ -837,9 +837,7 @@ namespace System.Xml
 
         private void ResolvePrefixes()
         {
-            int nsOffset;
-            int nsLength;
-            ResolvePrefix(_element.prefixOffset, _element.prefixLength, out nsOffset, out nsLength);
+            ResolvePrefix(_element.prefixOffset, _element.prefixLength, out _, out _);
 
             for (int i = 0; i < _attributeCount; i++)
             {

@@ -340,18 +340,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public string GroupNameFromNumber(int i)
         {
-            if (capslist is null)
-            {
-                return (uint)i < (uint)capsize ?
-                    ((uint)i).ToString() :
-                    string.Empty;
-            }
-            else
-            {
-                return caps != null && !caps.TryGetValue(i, out i) ? string.Empty :
-                    (uint)i < (uint)capslist.Length ? capslist[i] :
-                    string.Empty;
-            }
+            return RegexParser.GroupNameFromNumber(caps, capslist, capsize, i);
         }
 
         /// <summary>

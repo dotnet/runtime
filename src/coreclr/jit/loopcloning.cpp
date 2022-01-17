@@ -1631,7 +1631,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (!(loop.lpTestTree->OperKind() & GTK_RELOP) || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
+    if (!loop.lpTestTree->OperIsCompare() || !(loop.lpTestTree->gtFlags & GTF_RELOP_ZTT))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop inversion NOT present, loop test [%06u] may not protect "
                 "entry from head.\n",

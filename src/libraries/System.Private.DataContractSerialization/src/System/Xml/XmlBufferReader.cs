@@ -1151,8 +1151,7 @@ namespace System.Xml
                 if (_session == null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int sessionKey = (key >> 1);
-                XmlDictionaryString? xmlString;
-                if (!_session.TryLookup(sessionKey, out xmlString))
+                if (!_session.TryLookup(sessionKey, out _))
                 {
                     if (sessionKey < XmlDictionaryString.MinKey || sessionKey > XmlDictionaryString.MaxKey)
                         XmlExceptionHelper.ThrowXmlDictionaryStringIDOutOfRange(_reader);
@@ -1164,8 +1163,7 @@ namespace System.Xml
                 if (_dictionary == null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int staticKey = (key >> 1);
-                XmlDictionaryString? xmlString;
-                if (!_dictionary.TryLookup(staticKey, out xmlString))
+                if (!_dictionary.TryLookup(staticKey, out _))
                 {
                     if (staticKey < XmlDictionaryString.MinKey || staticKey > XmlDictionaryString.MaxKey)
                         XmlExceptionHelper.ThrowXmlDictionaryStringIDOutOfRange(_reader);

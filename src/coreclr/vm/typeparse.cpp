@@ -982,58 +982,6 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
 
 
 //-------------------------------------------------------------------------------------------
-// Retrieves a type from an assembly. It requires the caller to know which assembly
-// the type is in.
-//-------------------------------------------------------------------------------------------
-/* public static */ TypeHandle TypeName::GetTypeFromAssembly(LPCWSTR szTypeName, Assembly *pAssembly, BOOL bThrowIfNotFound /*= TRUE*/)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
-    _ASSERTE(szTypeName != NULL);
-    _ASSERTE(pAssembly != NULL);
-
-    if (!*szTypeName)
-      COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
-
-    DWORD error = (DWORD)-1;
-
-#ifdef __GNUC__
-    // When compiling under GCC we have to use the -fstack-check option to ensure we always spot stack
-    // overflow. But this option is intolerant of locals growing too large, so we have to cut back a bit
-    // on what we can allocate inline here. Leave the Windows versions alone to retain the perf benefits
-    // since we don't have the same constraints.
-    NewHolder<TypeName> pTypeName = new TypeName(szTypeName, &error);
-#else // __GNUC__
-    TypeName typeName(szTypeName, &error);
-    TypeName *pTypeName = &typeName;
-#endif // __GNUC__
-
-    if (error != (DWORD)-1)
-    {
-        StackSString buf;
-        StackSString msg(W("typeName@"));
-        COUNT_T size = buf.GetUnicodeAllocation();
-        _itow_s(error,buf.OpenUnicodeBuffer(size),size,10);
-        buf.CloseBuffer();
-        msg.Append(buf);
-        COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
-    }
-
-    // Because the typename can come from untrusted input, we will throw an exception rather than assert.
-    // (This also assures that the shipping build does the right thing.)
-    if (!(pTypeName->GetAssembly()->IsEmpty()))
-    {
-        COMPlusThrow(kArgumentException, IDS_EE_CANNOT_HAVE_ASSEMBLY_SPEC);
-    }
-
-    return pTypeName->GetTypeWorker(bThrowIfNotFound, /*bIgnoreCase = */FALSE, pAssembly, /*fEnableCASearchRules = */FALSE, FALSE, NULL,
-        nullptr, // pPrivHostBinder
-        NULL /* cannot find a collectible type unless it is in assembly */);
-}
-
-//-------------------------------------------------------------------------------------------
 // Retrieves a type. Will assert if the name is not fully qualified.
 //-------------------------------------------------------------------------------------------
 /* public static */ TypeHandle TypeName::GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName)

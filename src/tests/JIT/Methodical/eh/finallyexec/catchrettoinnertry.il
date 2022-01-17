@@ -11,7 +11,7 @@
  .assembly extern mscorlib
  {
  }
- .assembly extern common{}
+ .assembly extern eh_common{}
  .assembly catchrettoinnertry
  {
    .hash algorithm 0x00008004
@@ -44,7 +44,7 @@
    .class private auto ansi beforefieldinit Class1
           extends [mscorlib]System.Object
    {
-	.field private static class [common]TestUtil.TestLog testLog
+	.field private static class [eh_common]TestUtil.TestLog testLog
   	.method private hidebysig specialname rtspecialname static void  .cctor() cil managed
     	{
       		.maxstack  2
@@ -61,8 +61,8 @@
       		ldstr      "In outer finally"
       		callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
       		ldloc.s    expectedOut
-      		newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-      		stsfld     class [common]TestUtil.TestLog strswitch.Class1::testLog
+      		newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+      		stsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
       		ret
     } 
      .method private hidebysig static int32 
@@ -74,8 +74,8 @@
        .entrypoint
        .maxstack  2
        
-		ldsfld     class [common]TestUtil.TestLog strswitch.Class1::testLog
-		callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+		ldsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+		callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 		
        .locals init (int32 V_0,
                 class [mscorlib]System.Exception V_1,
@@ -124,11 +124,11 @@
            endfinally
        }  
        branch_003a:  
-		ldsfld     class [common]TestUtil.TestLog strswitch.Class1::testLog
-      	callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+		ldsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+      	callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      	ldsfld     class [common]TestUtil.TestLog strswitch.Class1::testLog
-      	callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+      	ldsfld     class [eh_common]TestUtil.TestLog strswitch.Class1::testLog
+      	callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
         
          ret
      } 

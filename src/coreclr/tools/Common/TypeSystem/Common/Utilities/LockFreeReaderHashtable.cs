@@ -363,8 +363,7 @@ namespace Internal.TypeSystem
         /// <returns>Newly added value, or a value which was already present in the hashtable which is equal to it.</returns>
         public TValue AddOrGetExisting(TValue value)
         {
-            bool unused;
-            return AddOrGetExistingInner(value, out unused);
+            return AddOrGetExistingInner(value, out _);
         }
 
         private TValue AddOrGetExistingInner(TValue value, out bool addedValue)
@@ -584,8 +583,7 @@ namespace Internal.TypeSystem
         /// </summary>
         public bool Contains(TKey key)
         {
-            TValue dummyExistingValue;
-            return TryGetValue(key, out dummyExistingValue);
+            return TryGetValue(key, out _);
         }
 
         /// <summary>

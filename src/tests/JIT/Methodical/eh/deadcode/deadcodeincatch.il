@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'deadcodeincatch'
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -33,7 +33,7 @@
   .class private auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
-    .field private static class [common]TestUtil.TestLog testLog
+    .field private static class [eh_common]TestUtil.TestLog testLog
     .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
         {
             .maxstack  3
@@ -56,8 +56,8 @@
             ldstr      "Pass"
             callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
             ldloc.s    expectedOut
-            newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-            stsfld     class [common]TestUtil.TestLog hello.Class1::testLog
+            newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+            stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
             ret
     } // end of method Class1::.cctor
     
@@ -137,8 +137,8 @@
              
     starttest:
       // Start recording
-      ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       ldarg.0
       stloc.0
       .try
@@ -189,12 +189,12 @@
         call       void [System.Console]System.Console::WriteLine(string)
         
         // stop recoding
-        ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-        callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+        ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
         // verify output
-        ldsfld     class [common]TestUtil.TestLog hello.Class1::testLog
-        callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+        ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+        callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
         stloc.3
        done:
         ldloc.3

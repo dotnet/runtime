@@ -3300,6 +3300,9 @@ public:
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdSumNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
                                GenTree*    op1,
@@ -3346,7 +3349,7 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
 
-    GenTree* gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTree* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
@@ -8686,7 +8689,7 @@ private:
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        return compOpportunisticallyDependsOn(minimumIsa) && JitConfig.EnableHWIntrinsic();
+        return compOpportunisticallyDependsOn(minimumIsa);
 #else
         return false;
 #endif
@@ -8704,7 +8707,7 @@ private:
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        return compIsaSupportedDebugOnly(minimumIsa) && JitConfig.EnableHWIntrinsic();
+        return compIsaSupportedDebugOnly(minimumIsa);
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9111,7 +9114,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return JitConfig.EnableHWIntrinsic() ? TYP_SIMD32 : TYP_SIMD16;
+            return TYP_SIMD32;
         }
         else
         {
@@ -9152,14 +9155,13 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
+            return YMM_REGSIZE_BYTES;
         }
         else
         {
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-
             // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -9182,10 +9184,12 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
+            return YMM_REGSIZE_BYTES;
         }
         else
         {
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }

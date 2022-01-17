@@ -30,8 +30,7 @@ namespace System.IO.Pipes
             }
 
             // Initialize SafePipeHandle from String and check if it's valid. First see if it's parseable
-            long result = 0;
-            bool parseable = long.TryParse(pipeHandleAsString, out result);
+            bool parseable = long.TryParse(pipeHandleAsString, out long result);
             if (!parseable)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(pipeHandleAsString));

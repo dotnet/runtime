@@ -511,7 +511,7 @@ namespace System.ComponentModel
                                                          oldPropertyDescriptor.Attributes[
                                                          typeof(ExtenderProvidedPropertyAttribute)]!;
 
-                if (attr.ExtenderProperty is ReflectPropertyDescriptor reflectDesc)
+                if (attr.ExtenderProperty is ReflectPropertyDescriptor)
                 {
                     return new ExtendedPropertyDescriptor(oldPropertyDescriptor, attributes);
                 }
@@ -2824,7 +2824,7 @@ namespace System.ComponentModel
                 /// </summary>
                 public override AttributeCollection GetAttributes()
                 {
-                    Attribute[]? finalAttr = null;
+                    Attribute[]? finalAttr;
                     AttributeCollection existing = base.GetAttributes();
                     Attribute[] newAttrs = _attributeArray;
                     Attribute[] newArray = new Attribute[existing.Count + newAttrs.Length];
@@ -3922,7 +3922,7 @@ namespace System.ComponentModel
                     // custom type descriptor
                     TypeDescriptionProvider p = _node.Provider;
                     object? owner;
-                    if (p is ReflectTypeDescriptionProvider rp)
+                    if (p is ReflectTypeDescriptionProvider)
                     {
                         owner = ReflectTypeDescriptionProvider.GetPropertyOwner(_objectType, _instance!, pd);
                     }

@@ -56,6 +56,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SslCopyCertChain)
     DllImportEntry(AppleCryptoNative_SslIsHostnameMatch)
     DllImportEntry(AppleCryptoNative_SslRead)
+    DllImportEntry(AppleCryptoNative_SslSetBreakOnCertRequested)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnClientAuth)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnServerAuth)
     DllImportEntry(AppleCryptoNative_SslSetIoCallbacks)

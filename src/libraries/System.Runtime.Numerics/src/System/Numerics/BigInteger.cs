@@ -72,7 +72,7 @@ namespace System.Numerics
             }
             else
             {
-                ulong x = 0;
+                ulong x;
                 if (value < 0)
                 {
                     x = unchecked((ulong)-value);
@@ -148,8 +148,7 @@ namespace System.Numerics
 
             int sign, exp;
             ulong man;
-            bool fFinite;
-            NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out fFinite);
+            NumericsHelpers.GetDoubleParts(value, out sign, out exp, out man, out _);
             Debug.Assert(sign == +1 || sign == -1);
 
             if (man == 0)
@@ -1542,7 +1541,6 @@ namespace System.Numerics
             else
             {
                 count = msb + 1;
-                buffer = buffer.Slice(0, count);
             }
 
             return count;

@@ -31,9 +31,7 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_wasm_pre_init,
-    mono_wasm_runtime_is_initialized,
-    mono_wasm_on_runtime_initialized
+    configure_emscripten_startup
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -66,7 +64,7 @@ import {
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
-import { mono_on_abort, mono_run_main, mono_run_main_and_exit } from "./run";
+import { mono_run_main, mono_run_main_and_exit } from "./run";
 
 const MONO = {
     // current "public" MONO API
@@ -133,9 +131,9 @@ let exportedAPI: DotnetPublicAPI;
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
-    imports: { isES6: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function },
+    imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { scriptDirectory: any, fetch: any, readAsync: any, require: any },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -163,18 +161,6 @@ function initializeImportsAndExports(
         module.configSrc = "./mono-config.json";
     }
 
-    // these could be overriden on DotnetModuleConfig
-    if (!module.preInit) {
-        module.preInit = [];
-    } else if (typeof module.preInit === "function") {
-        module.preInit = [module.preInit];
-    }
-    if (!module.preRun) {
-        module.preRun = [];
-    } else if (typeof module.preRun === "function") {
-        module.preRun = [module.preRun];
-    }
-
     if (!module.print) {
         module.print = console.log.bind(console);
     }
@@ -183,15 +169,15 @@ function initializeImportsAndExports(
     }
     module.imports = module.imports || <DotnetModuleConfigImports>{};
     if (!module.imports.require) {
-        const originalRequire = replacements.require;
         module.imports.require = (name) => {
-            const resolve = (<any>module.imports)[name];
-            if (!resolve && originalRequire) {
-                return originalRequire(name);
+            const resolved = (<any>module.imports)[name];
+            if (resolved) {
+                return resolved;
             }
-            if (!resolve)
-                throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
-            return resolve;
+            if (replacements.require) {
+                return replacements.require(name);
+            }
+            throw new Error(`Please provide Module.imports.${name} or Module.imports.require`);
         };
     }
 
@@ -201,15 +187,12 @@ function initializeImportsAndExports(
     else {
         runtimeHelpers.fetch = fetch_like;
     }
-    if (module.scriptDirectory) {
-        replacements.scriptDirectory = module.scriptDirectory;
-    }
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
-    replacements.require = module.imports.require;
+    replacements.requireOut = module.imports.require;
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
-        module.disableDotnet6Compatibility = imports.isES6;
+        module.disableDotnet6Compatibility = imports.isESM;
     }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
@@ -254,37 +237,6 @@ function initializeImportsAndExports(
         warnWrap("removeRunDependency", () => module.removeRunDependency);
     }
 
-    // this is registration of the runtime pre_init, when user set configSrc
-    if (module.configSrc) {
-        module.preInit.push(async () => {
-            module.addRunDependency("mono_wasm_pre_init");
-            // execution order == [0] ==
-            await mono_wasm_pre_init();
-            module.removeRunDependency("mono_wasm_pre_init");
-        });
-    }
-
-    // if onRuntimeInitialized is set it's probably Blazor, we let them to do their own init sequence
-    if (!module.onRuntimeInitialized) {
-        // note this would keep running in async-parallel with emscripten's `run()` and `postRun()` 
-        // because it's loading files asynchronously and the emscripten is not awaiting onRuntimeInitialized
-        // execution order == [1] ==
-        module.onRuntimeInitialized = () => mono_wasm_on_runtime_initialized();
-
-        module.ready = module.ready.then(async () => {
-            // mono_wasm_runtime_is_initialized is set when finalize_startup is done
-            await mono_wasm_runtime_is_initialized;
-            // TODO we could take over Module.postRun and call it from here if necessary
-
-            // execution order == [2] ==
-            return exportedAPI;
-        });
-    }
-
-    if (!module.onAbort) {
-        module.onAbort = () => mono_on_abort;
-    }
-
     // this code makes it possible to find dotnet runtime on a page via global namespace, even when there are multiple runtimes at the same time
     let list: RuntimeList;
     if (!globalThisAny.getDotnetRuntime) {
@@ -295,6 +247,8 @@ function initializeImportsAndExports(
         list = globalThisAny.getDotnetRuntime.__list;
     }
     list.registerRuntime(exportedAPI);
+
+    configure_emscripten_startup(module, exportedAPI);
 
     return exportedAPI;
 }
