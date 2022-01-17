@@ -1,10 +1,12 @@
-# Currrent state of marshalling
+# State of method binding and parameter marshalling as of 2022-01-17
+This is not 100% exhaustive. This is not intended as guide to exernal usage, rather as inventory before cleanup.
 
 ## Calling from JS to C
-- exported functions (WASM)
+- imported functions (WASM)
   - is handle of C method, which could be called from JS with numeric parameters
+  - see `EMSCRIPTEN_KEEPALIVE` macro in C code
 - `ccall` (emscripten)
-  - helper to make call to C method pointer
+  - helper to make call to C method pointer (export)
   - we use it for all calls from JS
   - converts JS strings to utf8 (char*)
   - copy byte array to WASM memory
@@ -30,7 +32,7 @@
   - generates parameter converters
     - allocates parameters on WASM heap, C# or primitive types
     - uses type marshallers
-  - generates code of the proxy
+  - generates code of the proxy, calling `ccall` to C `mono_runtime_invoke`
   - used also in `corebindings.ts` for C# 
 - `mono_wasm_get_delegate_invoke` (JS runtime)
   - converts C# delegate to JS function
@@ -56,11 +58,10 @@
 ## Calling from C# to JS
 - `mono_add_internal_call` via `extern` to JS
   - `Interop/Runtime::*` -> see `corebindings.c`
-    - `InvokeJSWithArgs` which is called from C# `JSObject`
+  - `Interop/Runtime::InvokeJSWithArgs` which is called from C# `JSObject` -> `mono_wasm_invoke_js_with_args`
   - `Interop/Runtime::InvokeJS` -> `mono_wasm_invoke_js`
-
   - `WebAssembly.JSInterop.InternalCalls::InvokeJS` (Blazor)
-    - generics `TRes InvokeJS<T0, T1, T2, TRes>(out string exception, ref JSCallInfo callInfo, [AllowNull] T0 arg0, [AllowNull] T1 arg1, [AllowNull] T2 arg2)`
+    - generics `TRes InvokeJS<T0, T1, T2, TRes>(out string exception, ref JSCallInfo callInfo, T0 arg0, T1 arg1, T2 arg2)`
     - maps to `void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2)`
     - -> `invokeJSFromDotNet`
     - `JSCallInfo` [see](https://github.com/dotnet/aspnetcore/blob/main/src/Components/WebAssembly/JSInterop/src/JSCallInfo.cs)
@@ -68,6 +69,36 @@
       - or 3 arguments, they are not marshalled at all
     - `invokeJSFromDotNet` [see](https://github.com/dotnet/aspnetcore/blob/19252d64d9cce0d6a6a424853124ce3dff39675f/src/Components/Web.JS/src/Boot.WebAssembly.ts#L143)
 
-## Marshalled objects types
+## Pass JS object to C#
+- as parameter on `mono_bind_method` or converted delegate call
+- as parameters on `Promise.resolve` `_set_tcs_result` via `mono_bind_method`
 - `js_to_mono_obj`
+  - `number` -> boxed C# int, uint, double
+  - `boolean` -> boxed C# bool
+  - `string` -> `MonoString*`, possibly interned, via copy by character and  `mono_wasm_string_from_utf16`
+  - `Promise` -> `Task<object>`, gc_handle finalization
+  - `Date` -> `DateTime`
+  - any proxied C# object -> C# object unwrapped
+  - JS `object` -> C# `JSObject`
+  - JS `Function`, -> C# `JSObject` derived type `Function`
+  - JS `Array`, `ArrayBuffer`, `DataView`, `Map`, `SharedArrayBuffer` -> C# `JSObject` derived types
+  - JS `Uint8Array` .. `Float64Array` -> C# `TypedArray` derived types
+  - each of above does multiple `ccall`s or even calls to C#. Allocation, buffer copy, handle lookup, boxing.
+- return value from `mono_add_internal_call`, via manual conversion to `MonoObject*` or `MonoString*`
+- return value from `mono_wasm_get_by_index` or `mono_wasm_get_object_property` or `mono_wasm_get_global_object`
+- return value from `mono_wasm_invoke_js_with_args` or `mono_wasm_compile_function`
+- `mono_wasm_invoke_js` and `mono_wasm_invoke_js_blazor` return exceptions or primitive types
+- `_js_to_mono_uri` - create C# `Uri`. Only when `mono_bind_method` is called with `u` in `args_marshal`
+
+## Pass JS object to C#
+- as parameter on `mono_wasm_set_object_property` or `mono_wasm_set_by_index`
+- return value on methods wrapped with `mono_bind_method`
 - `unbox_mono_obj`
+  - `MonoString` -> JS `string`, interning
+  - `Delegate` -> JS `Function`, gc_handle finalization
+  - `Task` -> `Promise`, gc_handle finalization
+  - `DateTime` -> JS `Date`, no timezone
+  - `DateTimeOffset` -> JS `string`
+  - `Uri` -> JS `string`
+  - `SafeHandle` which is meant to be `JSObject` proxy -> unwrapped original JS object, array, function
+  - each of above does multiple `ccall`s. Buffer copy, handle lookup, unboxing, C# `ToString()`.
