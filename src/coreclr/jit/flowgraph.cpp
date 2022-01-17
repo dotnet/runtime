@@ -967,7 +967,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return false;
     }
-    else if (addr->OperIs(GT_CNS_STR))
+    else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
     {
         return false;
     }
