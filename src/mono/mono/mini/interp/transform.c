@@ -2180,9 +2180,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		if (csignature->param_count == 1 && csignature->params [0]->type == param_type) {
 			// unops
 			if (tm [0] == 'A') {
-				if (strcmp (tm, "Abs") == 0) {
-					*op = MINT_ABS;
-				} else if (strcmp (tm, "Asin") == 0){
+				if (strcmp (tm, "Asin") == 0){
 					*op = MINT_ASIN;
 				} else if (strcmp (tm, "Asinh") == 0){
 					*op = MINT_ASINH;
@@ -2245,7 +2243,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 
 		if (*op != -1 && is_float) {
-			*op = *op + (MINT_ABSF - MINT_ABS);
+			*op = *op + (MINT_ASINF - MINT_ASIN);
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "Span`1") || !strcmp (klass_name, "ReadOnlySpan`1"))) {
 		if (!strcmp (tm, "get_Item")) {

@@ -170,18 +170,6 @@ ves_icall_System_Math_Sqrt (gdouble x)
 }
 
 gdouble
-ves_icall_System_Math_Abs_double (gdouble v)
-{
-	return fabs (v);
-}
-
-float
-ves_icall_System_Math_Abs_single (float v)
-{
-	return fabsf (v);
-}
-
-gdouble
 ves_icall_System_Math_Ceiling (gdouble v)
 {
 	return ceil (v);
