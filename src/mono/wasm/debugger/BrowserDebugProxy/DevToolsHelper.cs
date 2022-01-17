@@ -312,6 +312,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
         public bool IsSkippingHiddenMethod { get; set; }
+        public bool IsSteppingThroughMethod { get; set; }
+        public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
         public object AuxData { get; set; }
