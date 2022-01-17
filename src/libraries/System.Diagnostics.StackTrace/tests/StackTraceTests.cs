@@ -312,6 +312,15 @@ namespace System.Diagnostics.Tests
             Assert.Equal(Environment.NewLine, stackTrace.ToString());
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/11354", TestRuntimes.Mono)]
+        public unsafe void ToString_FunctionPointerSignature()
+        {
+            // This is sepate from ToString_Invoke_ReturnsExpected since unsafe cannot be used for iterators
+            var stackTrace = FunctionPointerParameter(null);
+            Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter(IntPtr x)", stackTrace.ToString());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ToString_ShowILOffset()
         {
@@ -383,6 +392,9 @@ namespace System.Diagnostics.Tests
         private static StackTrace OneParameter(int x) => new StackTrace();
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace TwoParameters(int x, string y) => new StackTrace();
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        private unsafe static StackTrace FunctionPointerParameter(delegate*<void> x) => new StackTrace();
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T>() => new StackTrace();
