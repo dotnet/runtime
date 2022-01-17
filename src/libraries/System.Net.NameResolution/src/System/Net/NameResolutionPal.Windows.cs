@@ -362,7 +362,7 @@ namespace System.Net
 
         private sealed unsafe class GetAddrInfoExState : IThreadPoolWorkItem
         {
-            private GetAddrInfoExContext* _cancellationContext;
+            private IntPtr _cancellationContextPtr;
             private CancellationTokenRegistration _cancellationRegistration;
 
             private AsyncTaskMethodBuilder<IPHostEntry> IPHostEntryBuilder;
@@ -371,7 +371,7 @@ namespace System.Net
 
             public GetAddrInfoExState(GetAddrInfoExContext *context, string hostName, bool justAddresses)
             {
-                _cancellationContext = context;
+                _cancellationContextPtr = (IntPtr)context;
                 HostName = hostName;
                 JustAddresses = justAddresses;
                 if (justAddresses)
@@ -392,13 +392,15 @@ namespace System.Net
 
             public Task Task => JustAddresses ? (Task)IPAddressArrayBuilder.Task : IPHostEntryBuilder.Task;
 
+            private GetAddrInfoExContext* CancellationContext => (GetAddrInfoExContext*)_cancellationContextPtr;
+
             public void RegisterForCancellation(CancellationToken cancellationToken)
             {
                 if (!cancellationToken.CanBeCanceled) return;
 
                 lock (this)
                 {
-                    if (_cancellationContext == null)
+                    if (CancellationContext == null)
                     {
                         // The operation completed before registration could be done.
                         return;
@@ -409,17 +411,14 @@ namespace System.Net
                         var @this = (GetAddrInfoExState)o!;
                         int cancelResult = 0;
 
-                        lock (@this)
-                        {
-                            GetAddrInfoExContext* context = @this._cancellationContext;
+                        GetAddrInfoExContext* context = @this.CancellationContext;
 
-                            if (context != null)
-                            {
-                                // An outstanding operation will be completed with WSA_E_CANCELLED, and GetAddrInfoExCancel will return NO_ERROR.
-                                // If this thread has lost the race between cancellation and completion, this will be a NOP
-                                // with GetAddrInfoExCancel returning WSA_INVALID_HANDLE.
-                                cancelResult = Interop.Winsock.GetAddrInfoExCancel(&context->CancelHandle);
-                            }
+                        if (context != null)
+                        {
+                            // An outstanding operation will be completed with WSA_E_CANCELLED, and GetAddrInfoExCancel will return NO_ERROR.
+                            // If this thread has lost the race between cancellation and completion, this will be a NOP
+                            // with GetAddrInfoExCancel returning WSA_INVALID_HANDLE.
+                            cancelResult = Interop.Winsock.GetAddrInfoExCancel(&context->CancelHandle);
                         }
 
                         if (cancelResult != 0 && cancelResult != Interop.Winsock.WSA_INVALID_HANDLE && NetEventSource.Log.IsEnabled())
@@ -432,12 +431,8 @@ namespace System.Net
 
             public CancellationToken UnregisterAndGetCancellationToken()
             {
-                lock (this)
-                {
-                    _cancellationContext = null;
-                    _cancellationRegistration.Unregister();
-                }
-
+                Interlocked.Exchange(ref _cancellationContextPtr, IntPtr.Zero);
+                _cancellationRegistration.Unregister();
                 return _cancellationRegistration.Token;
             }
 
