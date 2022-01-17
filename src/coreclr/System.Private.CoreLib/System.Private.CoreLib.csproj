@@ -68,6 +68,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
@@ -76,6 +77,10 @@
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_LOONGARCH64</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->

@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, IFileProvider provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
             if (builder == null)
             {
@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, Action<IniConfigurationSource> configureSource)
+        public static IConfigurationBuilder AddIniFile(this IConfigurationBuilder builder, Action<IniConfigurationSource>? configureSource)
             => builder.Add(configureSource);
 
         /// <summary>

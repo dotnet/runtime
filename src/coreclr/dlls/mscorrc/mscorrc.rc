@@ -497,18 +497,13 @@ BEGIN
 
     IDS_EE_OUT_OF_SYNCBLOCKS                "Internal limitation: attempt to create more than 2^26 SyncBlocks."
 
-    IDS_EE_THREAD_NOTSTARTED                "Thread has not been started."
     IDS_EE_STRING_TOOLONG                   "Marshaler restriction: Excessively long string."
 
     IDS_EE_VARARG_NOT_SUPPORTED             "Vararg calling convention not supported."
 
     IDS_EE_INVALID_CA                       "Invalid custom attribute provided."
 
-    IDS_EE_THREADSTART_STATE                "Thread is running or terminated; it cannot restart."
     IDS_EE_THREAD_CANNOT_GET                "Unable to retrieve thread information."
-    IDS_EE_THREAD_DEAD_PRIORITY             "Thread is dead; priority cannot be accessed."
-    IDS_EE_THREAD_PRIORITY_FAIL             "Unable to set thread priority."
-    IDS_EE_THREAD_DEAD_STATE                "Thread is dead; state cannot be accessed."
     IDS_EE_THREAD_BAD_STATE                 "Thread in invalid state."
     IDS_EE_THREAD_ABORT_WHILE_SUSPEND       "Thread is suspended; attempting to abort."
     IDS_EE_NOVARIANTRETURN                  "PInvoke restriction: cannot return variants."
@@ -574,8 +569,6 @@ BEGIN
     IDS_E_METHODACCESS                      "Attempt by method '%1' to access method '%2' failed.%3"
     IDS_E_TYPEACCESS                        "Attempt by method '%1' to access type '%2' failed.%3"
 
-    IDS_INVOKE_NULLREF_RETURNED             "The target method returned a null reference."
-
     IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD "Cannot set initonly static field '%1%' after type '%2' is initialized."
 END
 
@@ -587,13 +580,13 @@ BEGIN
     IDS_ER_FRAMEWORK_VERSION                 "CoreCLR Version: "
     IDS_ER_UNHANDLEDEXCEPTION                "Description: The process was terminated due to an unhandled exception."
     IDS_ER_UNHANDLEDEXCEPTIONMSG             "Exception Info: "
-    IDS_ER_MANAGEDFAILFAST                   "Description: The application requested process termination through System.Environment.FailFast(string message)."
+    IDS_ER_MANAGEDFAILFAST                   "Description: The application requested process termination through System.Environment.FailFast."
     IDS_ER_MANAGEDFAILFASTMSG                "Message: "
     IDS_ER_UNMANAGEDFAILFAST                 "Description: The process was terminated due to an internal error in the .NET Runtime "
     IDS_ER_STACK_OVERFLOW                    "Description: The process was terminated due to stack overflow."
     IDS_ER_STACK                             "Stack:"
     IDS_ER_WORDAT                            "at"
-    IDS_ER_UNMANAGEDFAILFASTMSG              "at IP %1 (%2) with exit code %3."
+    IDS_ER_UNMANAGEDFAILFASTMSG              "at IP 0x%x (0x%x) with exit code 0x%x."
     IDS_ER_UNHANDLEDEXCEPTIONINFO            "exception code %1, exception address %2"
     IDS_ER_MESSAGE_TRUNCATE                  "The remainder of the message was truncated."
     IDS_ER_CODECONTRACT_FAILED               "Description: The application encountered a bug.  A managed code contract (precondition, postcondition, object invariant, or assert) failed."

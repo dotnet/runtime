@@ -159,8 +159,7 @@ namespace System.IO
             else
             {
                 // There is no backup file.  Just make sure the destination file exists, throwing if it doesn't.
-                Interop.Sys.FileStatus ignored;
-                if (Interop.Sys.Stat(destFullPath, out ignored) != 0)
+                if (Interop.Sys.Stat(destFullPath, out _) != 0)
                 {
                     Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
                     if (errno.Error == Interop.Error.ENOENT)

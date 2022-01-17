@@ -563,7 +563,7 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
 }
 //#endif
 
-HRESULT Assembler::GetCAName(mdToken tkCA, __out LPWSTR *ppszName)
+HRESULT Assembler::GetCAName(mdToken tkCA, _Out_ LPWSTR *ppszName)
 {
     HRESULT hr = S_OK;
     DWORD cchName;
@@ -1004,7 +1004,7 @@ HRESULT Assembler::AllocateStrongNameSignature()
 #pragma warning(push)
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
-HRESULT Assembler::CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename)
+HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 {
     HRESULT             hr;
     DWORD               mresourceSize = 0;

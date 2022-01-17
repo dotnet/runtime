@@ -105,7 +105,7 @@ namespace System.Net.NetworkInformation
         private unsafe List<SystemTcpConnectionInformation> GetAllTcpConnections()
         {
             uint size = 0;
-            uint result = 0;
+            uint result;
             List<SystemTcpConnectionInformation> tcpConnections = new List<SystemTcpConnectionInformation>();
 
             // Check if it supports IPv4 for IPv6 only modes.
@@ -214,7 +214,7 @@ namespace System.Net.NetworkInformation
         public unsafe override IPEndPoint[] GetActiveUdpListeners()
         {
             uint size = 0;
-            uint result = 0;
+            uint result;
             List<IPEndPoint> udpListeners = new List<IPEndPoint>();
 
             // Check if it support IPv4 for IPv6 only modes.

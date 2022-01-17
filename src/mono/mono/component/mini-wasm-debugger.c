@@ -141,15 +141,13 @@ mono_wasm_enable_debugging_internal (int debug_level)
 }
 
 static void
-mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+mono_wasm_debugger_init (void)
 {
 	int debug_level = mono_wasm_get_debug_level();
 	mono_wasm_enable_debugging_internal (debug_level);
 
 	if (!debugger_enabled)
 		return;
-
-	mdbg_mono_defaults = mono_defaults;
 
 	DebuggerEngineCallbacks cbs = {
 		.tls_get_restore_state = tls_get_restore_state,
@@ -433,7 +431,7 @@ mono_wasm_breakpoint_hit (void)
 }
 
 static void
-mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+mono_wasm_debugger_init (void)
 {
 }
 

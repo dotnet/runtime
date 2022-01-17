@@ -44,10 +44,9 @@ namespace Internal.Runtime.CompilerHelpers
 
         public override bool TryGetStructFieldOffset(RuntimeTypeHandle structureTypeHandle, string fieldName, out bool structExists, out uint offset)
         {
-            ExternalReferencesTable externalReferences;
             NativeParser entryParser;
             structExists = false;
-            if (TryGetStructData(structureTypeHandle, out externalReferences, out entryParser))
+            if (TryGetStructData(structureTypeHandle, out _, out entryParser))
             {
                 structExists = true;
 

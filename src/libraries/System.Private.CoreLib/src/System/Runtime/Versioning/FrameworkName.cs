@@ -104,7 +104,7 @@ namespace System.Runtime.Versioning
             identifier = identifier.Trim();
             if (identifier.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(identifier)), nameof(identifier));
+                throw new ArgumentException(SR.Argument_EmptyString, nameof(identifier));
             }
             if (version == null)
             {
@@ -128,7 +128,7 @@ namespace System.Runtime.Versioning
             }
             if (frameworkName.Length == 0)
             {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(frameworkName)), nameof(frameworkName));
+                throw new ArgumentException(SR.Argument_EmptyString, nameof(frameworkName));
             }
 
             string[] components = frameworkName.Split(ComponentSeparator);
@@ -161,7 +161,7 @@ namespace System.Runtime.Versioning
                 string component = components[i];
                 int separatorIndex = component.IndexOf(KeyValueSeparator);
 
-                if (separatorIndex == -1 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
+                if (separatorIndex < 0 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
                 {
                     throw new ArgumentException(SR.Argument_FrameworkNameInvalid, nameof(frameworkName));
                 }

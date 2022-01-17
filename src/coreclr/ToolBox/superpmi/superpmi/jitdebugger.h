@@ -14,14 +14,14 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           long*   pValue,                  // Put value here, if found.
                           BOOL    fReadNonVirtualizedKey); // Whether to read 64-bit hive on WOW64
 
-HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer);
+HRESULT GetCurrentModuleFileName(_Out_writes_(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer);
 
 #ifndef _WIN64
 BOOL RunningInWow64();
 #endif
 
 BOOL    IsCurrentModuleFileNameInAutoExclusionList();
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString)
+HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString)
                                          LPWSTR wszDebuggerString,
                                      DWORD*     pcchDebuggerString,
                                      BOOL*      pfAuto);

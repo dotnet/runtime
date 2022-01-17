@@ -130,6 +130,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_ParamWithDefaultValue))]
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
+        [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -251,6 +252,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_ParamWithDefaultValue))]
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
+        [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

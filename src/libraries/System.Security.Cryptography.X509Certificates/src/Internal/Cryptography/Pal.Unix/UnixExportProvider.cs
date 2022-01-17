@@ -481,10 +481,9 @@ namespace Internal.Cryptography.Pal
             ReadOnlyMemory<byte> encodedAuthSafe,
             ReadOnlySpan<char> passwordSpan)
         {
-            const int MacSize = 160 / 8; // HMAC-SHA1 is 160 bits.
-            Span<byte> macKey = stackalloc byte[MacSize];
-            Span<byte> macSalt = stackalloc byte[MacSize];
-            Span<byte> macSpan = stackalloc byte[MacSize];
+            Span<byte> macKey = stackalloc byte[HMACSHA1.HashSizeInBytes];
+            Span<byte> macSalt = stackalloc byte[HMACSHA1.HashSizeInBytes];
+            Span<byte> macSpan = stackalloc byte[HMACSHA1.HashSizeInBytes];
             RandomNumberGenerator.Fill(macSalt);
 
             Pkcs12Kdf.DeriveMacKey(
@@ -496,9 +495,9 @@ namespace Internal.Cryptography.Pal
 
             int bytesWritten = HMACSHA1.HashData(macKey, encodedAuthSafe.Span, macSpan);
 
-            if (bytesWritten != MacSize)
+            if (bytesWritten != HMACSHA1.HashSizeInBytes)
             {
-                Debug.Fail($"HMACSHA1.HashData wrote {bytesWritten} of {MacSize} bytes");
+                Debug.Fail($"HMACSHA1.HashData wrote {bytesWritten} of {HMACSHA1.HashSizeInBytes} bytes");
                 throw new CryptographicException();
             }
 

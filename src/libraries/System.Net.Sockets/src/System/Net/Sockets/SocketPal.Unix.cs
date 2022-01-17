@@ -1180,7 +1180,7 @@ namespace System.Net.Sockets
 
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out bytesTransferred);
+                return handle.AsyncContext.SendFile(fileHandle, offset, length, handle.SendTimeout, out _);
             }
 
             SocketError errorCode;
@@ -1224,7 +1224,7 @@ namespace System.Net.Sockets
             else
             {
                 int socketAddressLen = 0;
-                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode))
+                if (!TryCompleteReceiveFrom(handle, buffers, socketFlags, null, ref socketAddressLen, out bytesTransferred, out _, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }

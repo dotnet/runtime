@@ -242,8 +242,6 @@ namespace System.Diagnostics.Eventing.Reader
 
         public void ExportLogAndMessages(string path, PathType pathType, string query, string targetFilePath, bool tolerateQueryErrors, CultureInfo targetCultureInfo)
         {
-            if (targetCultureInfo == null)
-                targetCultureInfo = CultureInfo.CurrentCulture;
             ExportLog(path, pathType, query, targetFilePath, tolerateQueryErrors);
             // Ignore the CultureInfo, pass 0 to use the calling thread's locale
             NativeWrapper.EvtArchiveExportedLog(this.Handle, targetFilePath, 0, 0);
