@@ -48,7 +48,7 @@ internal static partial class Interop
         internal static partial void SslSetAcceptState(SafeSslHandle ssl);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAlpnProtos")]
-        internal static partial int SslSetAlpnProtos(SafeSslHandle ssl, IntPtr protos, int len);
+        internal static unsafe partial int SslSetAlpnProtos(SafeSslHandle ssl, byte* protos, int len);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         internal static partial IntPtr SslGetVersion(SafeSslHandle ssl);
@@ -211,7 +211,7 @@ internal static partial class Interop
         {
             fixed (byte* pBuffer = &MemoryMarshal.GetReference(serializedProtocols))
             {
-                return SslSetAlpnProtos(ssl, (IntPtr)pBuffer, serializedProtocols.Length);
+                return SslSetAlpnProtos(ssl, pBuffer, serializedProtocols.Length);
             }
         }
 
