@@ -18,9 +18,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void BitFieldExtractUIntPtr()
+        private static void BitFieldExtractnuint()
         {
-            var test = new ScalarBinaryOpTest__BitFieldExtractUIntPtr();
+            var test = new ScalarBinaryOpTest__BitFieldExtractnuint();
 
             if (test.IsSupported)
             {
@@ -61,11 +61,11 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarBinaryOpTest__BitFieldExtractUIntPtr
+    public sealed unsafe class ScalarBinaryOpTest__BitFieldExtractnuint
     {
         private struct TestStruct
         {
-            public UIntPtr _fld1;
+            public nuint _fld1;
             public UInt16 _fld2;
 
             public static TestStruct Create()
@@ -78,29 +78,29 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarBinaryOpTest__BitFieldExtractUIntPtr testClass)
+            public void RunStructFldScenario(ScalarBinaryOpTest__BitFieldExtractnuint testClass)
             {
                 var result = Bmi1.BitFieldExtract(_fld1, _fld2);
                 testClass.ValidateResult(_fld1, _fld2, result);
             }
         }
 
-        private static UIntPtr _data1;
+        private static nuint _data1;
         private static UInt16 _data2;
 
-        private static UIntPtr _clsVar1;
+        private static nuint _clsVar1;
         private static UInt16 _clsVar2;
 
-        private UIntPtr _fld1;
+        private nuint _fld1;
         private UInt16 _fld2;
 
-        static ScalarBinaryOpTest__BitFieldExtractUIntPtr()
+        static ScalarBinaryOpTest__BitFieldExtractnuint()
         {
             _clsVar1 = 0x1E000000;
             _clsVar2 = 0x0419;
         }
 
-        public ScalarBinaryOpTest__BitFieldExtractUIntPtr()
+        public ScalarBinaryOpTest__BitFieldExtractnuint()
         {
             Succeeded = true;
 
@@ -120,7 +120,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
             var result = Bmi1.BitFieldExtract(
-                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1)),
+                Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data1)),
                 Unsafe.ReadUnaligned<UInt16>(ref Unsafe.As<UInt16, byte>(ref _data2))
             );
 
@@ -131,13 +131,13 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.BitFieldExtract), new Type[] { typeof(UIntPtr), typeof(UInt16) })
+            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.BitFieldExtract), new Type[] { typeof(nuint), typeof(UInt16) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1)),
+                                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data1)),
                                         Unsafe.ReadUnaligned<UInt16>(ref Unsafe.As<UInt16, byte>(ref _data2))
                                      });
 
-            ValidateResult(_data1, _data2, (UIntPtr)result);
+            ValidateResult(_data1, _data2, (nuint)result);
         }
 
         public void RunClsVarScenario()
@@ -156,7 +156,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data1 = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1));
+            var data1 = Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data1));
             var data2 = Unsafe.ReadUnaligned<UInt16>(ref Unsafe.As<UInt16, byte>(ref _data2));
             var result = Bmi1.BitFieldExtract(data1, data2);
 
@@ -167,7 +167,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarBinaryOpTest__BitFieldExtractUIntPtr();
+            var test = new ScalarBinaryOpTest__BitFieldExtractnuint();
             var result = Bmi1.BitFieldExtract(test._fld1, test._fld2);
 
             ValidateResult(test._fld1, test._fld2, result);
@@ -220,7 +220,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UIntPtr left, UInt16 right, UIntPtr result, [CallerMemberName] string method = "")
+        private void ValidateResult(nuint left, UInt16 right, nuint result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
@@ -228,7 +228,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.BitFieldExtract)}<UIntPtr>(UIntPtr, UInt16): BitFieldExtract failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.BitFieldExtract)}<nuint>(nuint, UInt16): BitFieldExtract failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: {left}");
                 TestLibrary.TestFramework.LogInformation($"   right: {right}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");

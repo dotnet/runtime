@@ -20,8 +20,8 @@
     <Compile Include="GetMaskUpToLowestSetBit.UIntPtr.cs" />
     <Compile Include="ResetLowestSetBit.UIntPtr.cs" />
     <Compile Include="TrailingZeroCount.UIntPtr.cs" />
-    <Compile Include="BitFieldExtract.UIntPtr.3Op.cs" />
-    <Compile Include="BitFieldExtract.UIntPtr.cs" />
+    <Compile Include="BitFieldExtract.nuint.3Op.cs" />
+    <Compile Include="BitFieldExtract.nuint.cs" />
     <Compile Include="Program.Bmi1.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

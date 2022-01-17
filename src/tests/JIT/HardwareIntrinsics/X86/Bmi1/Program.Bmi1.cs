@@ -23,8 +23,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["TrailingZeroCount.UIntPtr"] = TrailingZeroCountUIntPtr,
                 ["BitFieldExtract.UInt32.3Op"] = BitFieldExtractUInt323Op,
                 ["BitFieldExtract.UInt32"] = BitFieldExtractUInt32,
-                ["BitFieldExtract.UIntPtr.3Op"] = BitFieldExtractUIntPtr3Op,
-                ["BitFieldExtract.UIntPtr"] = BitFieldExtractUIntPtr,
+                ["BitFieldExtract.nuint.3Op"] = BitFieldExtractnuint3Op,
+                ["BitFieldExtract.nuint"] = BitFieldExtractnuint,
             };
         }
     }
