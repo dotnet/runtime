@@ -402,6 +402,14 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NullCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = null)] string str);
 
+        public static void Parameter_InvalidTypeICustomMarshaler_TypeLoadException()
+        {
+            Assert.Throws<TypeLoadException>(() => InvalidTypeCustomMarshalerMethod(""));
+        }
+
+        [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int InvalidTypeCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "junk_type")] string str);
+
         public static void Parameter_NotICustomMarshaler_ThrowsApplicationException()
         {
             Assert.Throws<ApplicationException>(() => NonICustomMarshalerMethod(""));
@@ -697,6 +705,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException();
                 Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException();
                 Parameter_NullICustomMarshaler_ThrowsTypeLoadException();
+                Parameter_InvalidTypeICustomMarshaler_TypeLoadException();
                 Parameter_NotICustomMarshaler_ThrowsApplicationException();
                 Parameter_OpenGenericICustomMarshaler_ThrowsTypeLoadException();
                 Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException();
