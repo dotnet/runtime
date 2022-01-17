@@ -3803,12 +3803,13 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     }
     else if (thisExpr->OperIs(GT_LCL_FLD))
     {
-        base = comp->gtNewLclFldNode(thisExpr->AsLclFld()->GetLclNum(), thisExpr->TypeGet(), thisExpr->AsLclFld()->GetLclOffs());
+        base = comp->gtNewLclFldNode(thisExpr->AsLclFld()->GetLclNum(), thisExpr->TypeGet(),
+                                     thisExpr->AsLclFld()->GetLclOffs());
     }
     else
     {
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
-        base = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
+        base                       = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
         LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
