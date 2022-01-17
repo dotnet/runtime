@@ -19,6 +19,7 @@ namespace System.Net.NetworkInformation
         private const int MinIpHeaderLengthInBytes = 20;
         private const int MaxIpHeaderLengthInBytes = 60;
         private const int IpV6HeaderLengthInBytes = 40;
+        private static ushort DontFragment = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)0x4000) : (ushort)0x4000;
 
         private unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
@@ -39,7 +40,7 @@ namespace System.Net.NetworkInformation
                 iph.TotalLength = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)totalLength) : (ushort)totalLength;
                 iph.Protocol = 1; // ICMP
                 iph.Ttl = (byte)options!.Ttl;
-                iph.Flags = (ushort)(options.DontFragment ? 0x4000 : 0);
+                iph.Flags = (ushort)(options.DontFragment ? DontFragment : 0);
 #pragma warning disable 618
                 iph.DestinationAddress = (uint)address.Address;
 #pragma warning restore 618
