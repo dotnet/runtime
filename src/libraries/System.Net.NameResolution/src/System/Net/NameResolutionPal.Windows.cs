@@ -432,6 +432,9 @@ namespace System.Net
             public CancellationToken UnregisterAndGetCancellationToken()
             {
                 Interlocked.Exchange(ref _cancellationContextPtr, IntPtr.Zero);
+
+                // We should not wait for pending cancellation callbacks with CTR.Dispose(),
+                // since we are in a completion routine and GetAddrInfoExCancel may get blocked until it's finished.
                 _cancellationRegistration.Unregister();
                 return _cancellationRegistration.Token;
             }
