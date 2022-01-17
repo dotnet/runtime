@@ -1087,7 +1087,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1102,7 +1102,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), Length - i, ref oldValue._firstChar, oldValue.Length);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1683,12 +1683,13 @@ namespace System
                 {
                     ProbabilisticMap map = default;
                     uint* charMap = (uint*)&map;
-                    InitializeProbabilisticMap(charMap, separators);
+                    ProbabilisticMap.Initialize(charMap, separators);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
+                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
                             separators.Contains(c))
                         {
                             sepListBuilder.Append(i);

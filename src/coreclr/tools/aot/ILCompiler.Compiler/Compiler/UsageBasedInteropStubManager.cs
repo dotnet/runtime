@@ -5,7 +5,9 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Interop;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysis;
+using ILLink.Shared;
 
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
@@ -18,9 +20,12 @@ namespace ILCompiler
     /// </summary>
     public class UsageBasedInteropStubManager : CompilerGeneratedInteropStubManager
     {
-        public UsageBasedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration)
+        private Logger _logger;
+
+        public UsageBasedInteropStubManager(InteropStateManager interopStateManager, PInvokeILEmitterConfiguration pInvokeILEmitterConfiguration, Logger logger)
             : base(interopStateManager, pInvokeILEmitterConfiguration)
         {
+            _logger = logger;
         }
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -30,11 +35,11 @@ namespace ILCompiler
                 dependencies = dependencies ?? new DependencyList();
 
                 MethodSignature methodSig = method.Signature;
-                AddParameterMarshallingDependencies(ref dependencies, factory, methodSig.ReturnType);
+                AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig.ReturnType);
 
                 for (int i = 0; i < methodSig.Length; i++)
                 {
-                    AddParameterMarshallingDependencies(ref dependencies, factory, methodSig[i]);
+                    AddParameterMarshallingDependencies(ref dependencies, factory, method, methodSig[i]);
                 }
             }
 
@@ -45,11 +50,23 @@ namespace ILCompiler
             }
         }
 
-        private static void AddParameterMarshallingDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        private void AddParameterMarshallingDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, TypeDesc type)
         {
             if (type.IsDelegate)
             {
                 dependencies.Add(factory.DelegateMarshallingData((DefType)type), "Delegate marshaling");
+            }
+
+            TypeSystemContext context = type.Context;
+            if ((type.IsWellKnownType(WellKnownType.MulticastDelegate)
+                    || type == context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType))
+            {
+                var message = new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method));
+                _logger.LogWarning(
+                    message,
+                    (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed,
+                    method,
+                    MessageSubCategory.AotAnalysis);
             }
 
             // struct may contain delegate fields, hence we need to add dependencies for it
@@ -63,7 +80,7 @@ namespace ILCompiler
                     if (field.IsStatic)
                         continue;
 
-                    AddParameterMarshallingDependencies(ref dependencies, factory, field.FieldType);
+                    AddParameterMarshallingDependencies(ref dependencies, factory, method, field.FieldType);
                 }
             }
         }

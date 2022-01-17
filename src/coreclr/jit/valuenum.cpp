@@ -4651,7 +4651,7 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
         {
             const genTreeOps op = (genTreeOps)newFunc;
 
-            if (!GenTree::OperIsRelop(op))
+            if (!GenTree::OperIsCompare(op))
             {
                 return NoVN;
             }
@@ -4688,7 +4688,7 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
         {
             const genTreeOps op = (genTreeOps)newFunc;
 
-            if (!GenTree::OperIsRelop(op))
+            if (!GenTree::OperIsCompare(op))
             {
                 return NoVN;
             }
@@ -4755,7 +4755,7 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     else
     {
         const genTreeOps op = (genTreeOps)func;
-        return GenTree::OperIsRelop(op);
+        return GenTree::OperIsCompare(op);
     }
 }
 
