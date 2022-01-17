@@ -33,7 +33,7 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
     - allocates parameters on WASM heap, C# or primitive types
     - uses type marshallers
   - generates code of the proxy, calling `ccall` to C `mono_runtime_invoke`
-  - used also in `corebindings.ts` for C# 
+  - used also in `corebindings.ts` for C#
 - `mono_wasm_get_delegate_invoke` (JS runtime)
   - converts C# delegate to JS function
   - it `mono_method_get_call_signature` once
