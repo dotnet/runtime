@@ -4522,7 +4522,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
 
-	mono_component_debugger ()->init (&mono_defaults);
+	mono_component_debugger ()->init ();
 
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	mono_set_generic_sharing_supported (TRUE);

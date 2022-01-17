@@ -43,7 +43,6 @@
 #include "commtmemberinfomap.h"
 #include "olevariant.h"
 #include "stdinterfaces.h"
-#include "notifyexternals.h"
 #include "typeparse.h"
 #include "interoputil.inl"
 #include "typestring.h"

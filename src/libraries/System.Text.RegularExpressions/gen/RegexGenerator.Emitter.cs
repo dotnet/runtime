@@ -360,6 +360,12 @@ namespace System.Text.RegularExpressions.Generator
                             EmitFixedSet();
                             break;
 
+                        case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                            Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitLiteralAfterAtomicLoop();
+                            break;
+
                         default:
                             Debug.Fail($"Unexpected mode: {code.FindOptimizations.FindMode}");
                             goto case FindNextStartingPositionMode.NoSearch;
@@ -578,6 +584,61 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 loopBlock.Dispose();
+            }
+
+            // Emits a search for a literal following a leading atomic single-character loop.
+            void EmitLiteralAfterAtomicLoop()
+            {
+                Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = code.FindOptimizations.LiteralAfterLoop.Value;
+
+                Debug.Assert(target.LoopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
+                Debug.Assert(target.LoopNode.N == int.MaxValue);
+
+                using (EmitBlock(writer, "while (true)"))
+                {
+                    writer.WriteLine($"global::System.ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);");
+                    writer.WriteLine();
+
+                    // Find the literal.  If we can't find it, we're done searching.
+                    writer.Write("int i = global::System.MemoryExtensions.");
+                    writer.WriteLine(
+                        target.Literal.String is string literalString ? $"IndexOf(slice, {Literal(literalString)});" :
+                        target.Literal.Chars is not char[] literalChars ? $"IndexOf(slice, {Literal(target.Literal.Char)});" :
+                        literalChars.Length switch
+                        {
+                            2 => $"IndexOfAny(slice, {Literal(literalChars[0])}, {Literal(literalChars[1])});",
+                            3 => $"IndexOfAny(slice, {Literal(literalChars[0])}, {Literal(literalChars[1])}, {Literal(literalChars[2])});",
+                            _ => $"IndexOfAny(slice, {Literal(new string(literalChars))});",
+                        });
+                    using (EmitBlock(writer, $"if (i < 0)"))
+                    {
+                        writer.WriteLine("break;");
+                    }
+                    writer.WriteLine();
+
+                    // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
+                    writer.WriteLine("int prev = i;");
+                    writer.WriteLine($"while ((uint)--prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, caseInsensitive: false, negate: false, additionalDeclarations, ref requiredHelpers)});");
+
+                    if (target.LoopNode.M > 0)
+                    {
+                        // If we found fewer than needed, loop around to try again.  The loop doesn't overlap with the literal,
+                        // so we can start from after the last place the literal matched.
+                        writer.WriteLine($"if ((i - prev - 1) < {target.LoopNode.M})");
+                        writer.WriteLine("{");
+                        writer.WriteLine("    pos += i + 1;");
+                        writer.WriteLine("    continue;");
+                        writer.WriteLine("}");
+                    }
+                    writer.WriteLine();
+
+                    // We have a winner.  The starting position is just after the last position that failed to match the loop.
+                    // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
+                    // after the loop, so that it doesn't need to re-match the loop.
+                    writer.WriteLine("base.runtextpos = pos + prev + 1;");
+                    writer.WriteLine("return true;");
+                }
             }
 
             // If a TextInfo is needed to perform ToLower operations, emits a local initialized to the TextInfo to use.
@@ -1737,7 +1798,7 @@ namespace System.Text.RegularExpressions.Generator
                         case RegexNode.Onelazy:
                         case RegexNode.Notonelazy:
                         case RegexNode.Setlazy:
-                            EmitSingleCharLazy(node, emitLengthChecksIfRequired);
+                            EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
                             break;
 
                         case RegexNode.Oneloopatomic:
@@ -1815,7 +1876,10 @@ namespace System.Text.RegularExpressions.Generator
                 Debug.Assert(node.Type is RegexNode.UpdateBumpalong, $"Unexpected type: {node.Type}");
 
                 TransferSliceStaticPosToPos();
-                writer.WriteLine("base.runtextpos = pos;");
+                using (EmitBlock(writer, "if (base.runtextpos < pos)"))
+                {
+                    writer.WriteLine("base.runtextpos = pos;");
+                }
             }
 
             // Emits code for a concatenation
@@ -1897,7 +1961,7 @@ namespace System.Text.RegularExpressions.Generator
 
                             if (i < exclusiveEnd)
                             {
-                                EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: false);
+                                EmitNode(node.Child(i), GetSubsequentOrDefault(i, node, subsequent), emitLengthChecksIfRequired: false);
                                 if (i < childCount - 1)
                                 {
                                     writer.WriteLine();
@@ -1911,11 +1975,27 @@ namespace System.Text.RegularExpressions.Generator
                         continue;
                     }
 
-                    EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: emitLengthChecksIfRequired);
+                    EmitNode(node.Child(i), GetSubsequentOrDefault(i, node, subsequent), emitLengthChecksIfRequired: emitLengthChecksIfRequired);
                     if (i < childCount - 1)
                     {
                         writer.WriteLine();
                     }
+                }
+
+                // Gets the node to treat as the subsequent one to node.Child(index)
+                static RegexNode? GetSubsequentOrDefault(int index, RegexNode node, RegexNode? defaultNode)
+                {
+                    int childCount = node.ChildCount();
+                    for (int i = index + 1; i < childCount; i++)
+                    {
+                        RegexNode next = node.Child(i);
+                        if (next.Type is not RegexNode.UpdateBumpalong) // skip node types that don't have a semantic impact
+                        {
+                            return next;
+                        }
+                    }
+
+                    return defaultNode;
                 }
             }
 
@@ -2207,33 +2287,28 @@ namespace System.Text.RegularExpressions.Generator
                 if (expressionHasCaptures)
                 {
                     EmitUncaptureUntil(StackPop());
-                    EmitStackPop(endingPos, startingPos);
                 }
-                else
-                {
-                    EmitStackPop(endingPos, startingPos);
-                }
+                EmitStackPop(endingPos, startingPos);
+                writer.WriteLine();
 
-                string originalDoneLabel = doneLabel;
-                using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
                 {
-                    writer.WriteLine($"goto {originalDoneLabel};");
-                }
-                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
-
-                if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
-                {
-                    writer.WriteLine();
-                    writer.WriteLine($"{endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(subsequentCharacter)});");
-                    using (EmitBlock(writer, $"if ({endingPos} < 0)"))
+                    writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+                    using (EmitBlock(writer, literal.Item2 is not null ?
+                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}), {Literal(literal.Item2)})) < 0)" :
+                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item1)})) < 0)"))
                     {
-                        writer.WriteLine($"goto {originalDoneLabel};");
+                        writer.WriteLine($"goto {doneLabel};");
                     }
                     writer.WriteLine($"{endingPos} += {startingPos};");
                     writer.WriteLine($"pos = {endingPos};");
                 }
                 else
                 {
+                    using (EmitBlock(writer, $"if ({startingPos} >= {endingPos})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
                     writer.WriteLine($"pos = --{endingPos};");
                 }
 
@@ -2244,9 +2319,11 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPush(expressionHasCaptures ?
                     new[] { startingPos, endingPos, "base.Crawlpos()" } :
                     new[] { startingPos, endingPos });
+
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
 
-            void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
+            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(node.Type is RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy, $"Unexpected type: {node.Type}");
 
@@ -2333,6 +2410,45 @@ namespace System.Text.RegularExpressions.Generator
                 SliceInputSpan(writer);
                 EmitSingleChar(node);
                 TransferSliceStaticPosToPos();
+
+                // Now that we've appropriately advanced by one character and are set for what comes after the loop,
+                // see if we can skip ahead more iterations by doing a search for a following literal.
+                if (iterationCount is null &&
+                    node.Type is RegexNode.Notonelazy &&
+                    !IsCaseInsensitive(node) &&
+                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal &&
+                    (literal.Item2?[0] ?? literal.Item1) != node.Ch)
+                {
+                    // e.g. "<[^>]*?>"
+                    // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
+                    // We can implement it to search for either that char or the literal, whichever comes first.
+                    // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
+                    writer.WriteLine($"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item2?[0] ?? literal.Item1)});");
+                    using (EmitBlock(writer, $"if ((uint){startingPos} >= (uint){sliceSpan}.Length || {sliceSpan}[{startingPos}] == {Literal(node.Ch)})"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine($"pos += {startingPos};");
+                    SliceInputSpan(writer);
+                }
+                else if (iterationCount is null &&
+                    node.Type is RegexNode.Setlazy &&
+                    node.Str == RegexCharClass.AnyClass &&
+                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal2)
+                {
+                    // e.g. ".*?string" with RegexOptions.Singleline
+                    // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
+                    // isn't found, the loop fails. We can implement it to just search for that literal.
+                    writer.WriteLine($"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {(literal2.Item2 is not null ? Literal(literal2.Item2) : Literal(literal2.Item1))});");
+                    using (EmitBlock(writer, $"if ({startingPos} < 0)"))
+                    {
+                        writer.WriteLine($"goto {doneLabel};");
+                    }
+                    writer.WriteLine($"pos += {startingPos};");
+                    SliceInputSpan(writer);
+                }
+
+                // Store the position we've left off at in case we need to iterate again.
                 writer.WriteLine($"{startingPos} = pos;");
 
                 // Update the done label for everything that comes after this node.  This is done after we emit the single char
@@ -3420,8 +3536,8 @@ namespace System.Text.RegularExpressions.Generator
                 RegexNode.Prevent => $"Zero-width negative lookahead assertion.",
                 RegexNode.Ref => $"Match the same text as matched by the {DescribeCapture(node.M, regexCode)}.",
                 RegexNode.Require => $"Zero-width positive lookahead assertion.",
-                RegexNode.Set => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)}.",
-                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match a character in the set {RegexCharClass.SetDescription(node.Str!)} {DescribeLoop(node)}.",
+                RegexNode.Set => $"Match {DescribeSet(node.Str!)}.",
+                RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy => $"Match {DescribeSet(node.Str!)} {DescribeLoop(node)}.",
                 RegexNode.Start => "Match if at the start position.",
                 RegexNode.Testgroup => $"Conditionally match one of two expressions depending on whether an initial expression matches.",
                 RegexNode.Testref => $"Conditionally match one of two expressions depending on whether the {DescribeCapture(node.M, regexCode)} matched.",
@@ -3455,6 +3571,26 @@ namespace System.Text.RegularExpressions.Generator
 
             return $"{name} capture group";
         }
+
+        /// <summary>Gets a textual description of what characters match a set.</summary>
+        private static string DescribeSet(string charClass) =>
+            charClass switch
+            {
+                RegexCharClass.AnyClass => "any character",
+                RegexCharClass.DigitClass => "a Unicode digit",
+                RegexCharClass.ECMADigitClass => "'0' through '9'",
+                RegexCharClass.ECMASpaceClass => "a whitespace character (ECMA)",
+                RegexCharClass.ECMAWordClass => "a word character (ECMA)",
+                RegexCharClass.NotDigitClass => "any character other than a Unicode digit",
+                RegexCharClass.NotECMADigitClass => "any character other than '0' through '9'",
+                RegexCharClass.NotECMASpaceClass => "any character other than a space character (ECMA)",
+                RegexCharClass.NotECMAWordClass => "any character other than a word character (ECMA)",
+                RegexCharClass.NotSpaceClass => "any character other than a space character",
+                RegexCharClass.NotWordClass => "any character other than a word character",
+                RegexCharClass.SpaceClass => "a whitespace character",
+                RegexCharClass.WordClass => "a word character",
+                _ => $"a character in the set {RegexCharClass.SetDescription(charClass)}",
+            };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
         /// <param name="writer">The writer to which the description should be written.</param>

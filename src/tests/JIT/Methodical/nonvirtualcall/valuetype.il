@@ -32,10 +32,10 @@
 .corflags 0x00000001    //  ILONLY
 // Image base: 0x02EC0000
 
-
+.namespace Test_valuetype {
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public sequential ansi sealed beforefieldinit Test_valuetype.Dummy
+.class public sequential ansi sealed beforefieldinit Dummy
        extends [mscorlib]System.ValueType
 {
   .pack 0
@@ -57,7 +57,7 @@
 
 } // end of class Test.Dummy
 
-.class public auto ansi sealed Test_valuetype.TestMethod
+.class public auto ansi sealed TestMethod
        extends [mscorlib]System.MulticastDelegate
 {
   .method public hidebysig specialname rtspecialname 
@@ -85,7 +85,7 @@
 
 } // end of class Test.TestMethod
 
-.class public abstract auto ansi sealed beforefieldinit Test_valuetype.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallDummy() cil managed
@@ -160,7 +160,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_valuetype.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -236,9 +236,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-// =============================================================
-
-// *********** DISASSEMBLY COMPLETE ***********************
-// WARNING: Created Win32 resource file valuetype.res
+}
