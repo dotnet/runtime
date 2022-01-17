@@ -50,7 +50,7 @@ namespace System.Net.Security
             HashCore(source, 0, source.Length, state, count, buffer, x);
             HashFinal(state, count, destination, buffer, x);
         }
-        private static void HashCore(ReadOnlySpan<byte> array, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer, Span<uint> x)
+        private static void HashCore(ReadOnlySpan<byte> input, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer, Span<uint> x)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
@@ -65,19 +65,19 @@ namespace System.Net.Security
             /* Transform as many times as possible. */
             if (cbSize >= partLen)
             {
-                BlockCopy(array, ibStart, buffer, index, partLen);
+                BlockCopy(input, ibStart, buffer, index, partLen);
                 MD4Transform(state, buffer, 0, x);
 
                 for (i = partLen; i + 63 < cbSize; i += 64)
                 {
-                    MD4Transform(state, array, ibStart + i, x);
+                    MD4Transform(state, input, ibStart + i, x);
                 }
 
                 index = 0;
             }
 
             /* Buffer remaining input */
-            BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
+            BlockCopy(input, ibStart + i, buffer, index, (cbSize - i));
         }
 
         private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination, Span<byte> buffer, Span<uint> x)
