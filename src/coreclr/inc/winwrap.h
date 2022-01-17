@@ -254,12 +254,6 @@ inline DWORD GetMaxDBCSCharByteSize()
 #endif // HOST_UNIX
 }
 
-#ifndef HOST_UNIX
-#define RunningInteractive() TRUE
-#else // !HOST_UNIX
-#define RunningInteractive() FALSE
-#endif // !HOST_UNIX
-
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
 #endif
