@@ -360,6 +360,12 @@ namespace System.Text.RegularExpressions.Generator
                             EmitFixedSet();
                             break;
 
+                        case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                            Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                            EmitLiteralAfterAtomicLoop();
+                            break;
+
                         default:
                             Debug.Fail($"Unexpected mode: {code.FindOptimizations.FindMode}");
                             goto case FindNextStartingPositionMode.NoSearch;
@@ -578,6 +584,61 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 loopBlock.Dispose();
+            }
+
+            // Emits a search for a literal following a leading atomic single-character loop.
+            void EmitLiteralAfterAtomicLoop()
+            {
+                Debug.Assert(code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = code.FindOptimizations.LiteralAfterLoop.Value;
+
+                Debug.Assert(target.LoopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
+                Debug.Assert(target.LoopNode.N == int.MaxValue);
+
+                using (EmitBlock(writer, "while (true)"))
+                {
+                    writer.WriteLine($"global::System.ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);");
+                    writer.WriteLine();
+
+                    // Find the literal.  If we can't find it, we're done searching.
+                    writer.Write("int i = global::System.MemoryExtensions.");
+                    writer.WriteLine(
+                        target.Literal.String is string literalString ? $"IndexOf(slice, {Literal(literalString)});" :
+                        target.Literal.Chars is not char[] literalChars ? $"IndexOf(slice, {Literal(target.Literal.Char)});" :
+                        literalChars.Length switch
+                        {
+                            2 => $"IndexOfAny(slice, {Literal(literalChars[0])}, {Literal(literalChars[1])});",
+                            3 => $"IndexOfAny(slice, {Literal(literalChars[0])}, {Literal(literalChars[1])}, {Literal(literalChars[2])});",
+                            _ => $"IndexOfAny(slice, {Literal(new string(literalChars))});",
+                        });
+                    using (EmitBlock(writer, $"if (i < 0)"))
+                    {
+                        writer.WriteLine("break;");
+                    }
+                    writer.WriteLine();
+
+                    // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
+                    writer.WriteLine("int prev = i;");
+                    writer.WriteLine($"while ((uint)--prev < (uint)slice.Length && {MatchCharacterClass(hasTextInfo, options, "slice[prev]", target.LoopNode.Str!, caseInsensitive: false, negate: false, additionalDeclarations, ref requiredHelpers)});");
+
+                    if (target.LoopNode.M > 0)
+                    {
+                        // If we found fewer than needed, loop around to try again.  The loop doesn't overlap with the literal,
+                        // so we can start from after the last place the literal matched.
+                        writer.WriteLine($"if ((i - prev - 1) < {target.LoopNode.M})");
+                        writer.WriteLine("{");
+                        writer.WriteLine("    pos += i + 1;");
+                        writer.WriteLine("    continue;");
+                        writer.WriteLine("}");
+                    }
+                    writer.WriteLine();
+
+                    // We have a winner.  The starting position is just after the last position that failed to match the loop.
+                    // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
+                    // after the loop, so that it doesn't need to re-match the loop.
+                    writer.WriteLine("base.runtextpos = pos + prev + 1;");
+                    writer.WriteLine("return true;");
+                }
             }
 
             // If a TextInfo is needed to perform ToLower operations, emits a local initialized to the TextInfo to use.

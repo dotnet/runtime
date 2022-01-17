@@ -252,5 +252,23 @@ namespace System.Text.Json.Tests
             Test(testString, isFinalBlock: true);
             Test(testString, isFinalBlock: false);
         }
+
+        [Theory]
+        [InlineData(@"""\u001c\u0001""")]
+        [InlineData(@"""\u001c\u0001\u0001""")]
+        public static void TryGetDateTimeAndOffset_InvalidPropertyValue(string testString)
+        {
+            var dataUtf8 = Encoding.UTF8.GetBytes(testString);
+            var json = new Utf8JsonReader(dataUtf8);
+            Assert.True(json.Read());
+
+            Assert.False(json.TryGetDateTime(out var dateTime));
+            Assert.Equal(default, dateTime);
+            JsonTestHelper.AssertThrows<FormatException>(json, (json) => json.GetDateTime());
+
+            Assert.False(json.TryGetDateTimeOffset(out var dateTimeOffset));
+            Assert.Equal(default, dateTimeOffset);
+            JsonTestHelper.AssertThrows<FormatException>(json, (json) => json.GetDateTimeOffset());
+        }
     }
 }

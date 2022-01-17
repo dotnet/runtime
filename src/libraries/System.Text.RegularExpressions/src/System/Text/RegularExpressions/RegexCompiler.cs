@@ -445,6 +445,11 @@ namespace System.Text.RegularExpressions
                     EmitFixedSet_LeftToRight();
                     break;
 
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                    Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                    EmitLiteralAfterAtomicLoop();
+                    break;
+
                 default:
                     Debug.Fail($"Unexpected mode: {_code.FindOptimizations.FindMode}");
                     goto case FindNextStartingPositionMode.NoSearch;
@@ -821,6 +826,151 @@ namespace System.Text.RegularExpressions
                     // return false;
                     BrFar(returnFalse);
                 }
+            }
+
+            // Emits a search for a literal following a leading atomic single-character loop.
+            void EmitLiteralAfterAtomicLoop()
+            {
+                Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _code.FindOptimizations.LiteralAfterLoop.Value;
+
+                Debug.Assert(target.LoopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
+                Debug.Assert(target.LoopNode.N == int.MaxValue);
+
+                // while (true)
+                Label loopBody = DefineLabel();
+                Label loopEnd = DefineLabel();
+                MarkLabel(loopBody);
+
+                // ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);
+                using RentedLocalBuilder slice = RentReadOnlySpanCharLocal();
+                Ldloca(inputSpan);
+                Ldloc(pos);
+                Ldloc(end);
+                Ldloc(pos);
+                Sub();
+                Call(s_spanSliceIntIntMethod);
+                Stloc(slice);
+
+                // Find the literal.  If we can't find it, we're done searching.
+                // int i = slice.IndexOf(literal);
+                // if (i < 0) break;
+                using RentedLocalBuilder i = RentInt32Local();
+                Ldloc(slice);
+                if (target.Literal.String is string literalString)
+                {
+                    Ldstr(literalString);
+                    Call(s_stringAsSpanMethod);
+                    Call(s_spanIndexOfSpan);
+                }
+                else if (target.Literal.Chars is not char[] literalChars)
+                {
+                    Ldc(target.Literal.Char);
+                    Call(s_spanIndexOfChar);
+                }
+                else
+                {
+                    switch (literalChars.Length)
+                    {
+                        case 2:
+                            Ldc(literalChars[0]);
+                            Ldc(literalChars[1]);
+                            Call(s_spanIndexOfAnyCharChar);
+                            break;
+                        case 3:
+                            Ldc(literalChars[0]);
+                            Ldc(literalChars[1]);
+                            Ldc(literalChars[2]);
+                            Call(s_spanIndexOfAnyCharCharChar);
+                            break;
+                        default:
+                            Ldstr(new string(literalChars));
+                            Call(s_stringAsSpanMethod);
+                            Call(s_spanIndexOfAnySpan);
+                            break;
+                    }
+                }
+                Stloc(i);
+                Ldloc(i);
+                Ldc(0);
+                BltFar(loopEnd);
+
+                // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
+
+                // int prev = i;
+                using RentedLocalBuilder prev = RentInt32Local();
+                Ldloc(i);
+                Stloc(prev);
+
+                // while ((uint)--prev < (uint)slice.Length) && MatchCharClass(slice[prev]));
+                Label innerLoopBody = DefineLabel();
+                Label innerLoopEnd = DefineLabel();
+                MarkLabel(innerLoopBody);
+                Ldloc(prev);
+                Ldc(1);
+                Sub();
+                Stloc(prev);
+                Ldloc(prev);
+                Ldloca(slice);
+                Call(s_spanGetLengthMethod);
+                BgeUn(innerLoopEnd);
+                Ldloca(slice);
+                Ldloc(prev);
+                Call(s_spanGetItemMethod);
+                LdindU2();
+                EmitMatchCharacterClass(target.LoopNode.Str!, caseInsensitive: false);
+                BrtrueFar(innerLoopBody);
+                MarkLabel(innerLoopEnd);
+
+                if (target.LoopNode.M > 0)
+                {
+                    // If we found fewer than needed, loop around to try again.  The loop doesn't overlap with the literal,
+                    // so we can start from after the last place the literal matched.
+                    // if ((i - prev - 1) < target.LoopNode.M)
+                    // {
+                    //     pos += i + 1;
+                    //     continue;
+                    // }
+                    Label metMinimum = DefineLabel();
+                    Ldloc(i);
+                    Ldloc(prev);
+                    Sub();
+                    Ldc(1);
+                    Sub();
+                    Ldc(target.LoopNode.M);
+                    Bge(metMinimum);
+                    Ldloc(pos);
+                    Ldloc(i);
+                    Add();
+                    Ldc(1);
+                    Add();
+                    Stloc(pos);
+                    BrFar(loopBody);
+                    MarkLabel(metMinimum);
+                }
+
+                // We have a winner.  The starting position is just after the last position that failed to match the loop.
+                // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
+                // after the loop, so that it doesn't need to re-match the loop.
+
+                // base.runtextpos = pos + prev + 1;
+                // return true;
+                Ldthis();
+                Ldloc(pos);
+                Ldloc(prev);
+                Add();
+                Ldc(1);
+                Add();
+                Stfld(s_runtextposField);
+                Ldc(1);
+                Ret();
+
+                // }
+                MarkLabel(loopEnd);
+
+                // base.runtextpos = end;
+                // return false;
+                BrFar(returnFalse);
             }
         }
 
