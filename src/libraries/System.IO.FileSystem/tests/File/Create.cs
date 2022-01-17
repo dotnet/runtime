@@ -4,7 +4,7 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
-
+using Microsoft.DotNet.XUnitExtensions;
 namespace System.IO.Tests
 {
     public class File_Create_str : FileSystemTest
@@ -218,13 +218,14 @@ namespace System.IO.Tests
             Assert.False(File.Exists(path));
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(CaseSensitivePlatforms)]
         public void CaseSensitive()
         {
-            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator"))
+            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
             {
-                return;
+                throw new SkipTestException("iOS/tvOS simulators run on a macOS host and are subject to the same case sensitivity behavior.");
             }
 
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

@@ -4,6 +4,7 @@
 using System.Runtime.InteropServices;
 using Xunit;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
@@ -697,11 +698,16 @@ namespace System.IO.Tests
             Assert.Empty(GetEntries(TestDirectory, "\t"));
         }
 
-        [Fact]
+        [ConditionalFact]
         [PlatformSpecific(CaseSensitivePlatforms)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SearchPatternCaseSensitive()
         {
+            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
+            {
+                throw new SkipTestException("iOS/tvOS simulators run on a macOS host and are subject to the same case sensitivity behavior.");
+            }
+            
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testBase = GetTestFileName();
             testDir.CreateSubdirectory(testBase + "aBBb");
