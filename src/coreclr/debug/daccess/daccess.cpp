@@ -6542,7 +6542,6 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
     return true;
 }
 
-#if defined(FEATURE_CORESYSTEM)
 /* static */
 // We extract "ni.dll from the NGEN image name to obtain the IL image name.
 // In the end we add given ilExtension.
@@ -6595,7 +6594,6 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
 
     return false;
 }
-#endif // FEATURE_CORESYSTEM
 
 void *
 ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
@@ -6705,7 +6703,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             goto ErrExit;
         }
 
-#if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
         if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
@@ -6721,7 +6718,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
         {
             goto ErrExit;
         }
-#endif//FEATURE_CORESYSTEM
 
         // RVA size in ngen image and IL image is the same. Because the only
         // different is in RVA. That is 4 bytes column fixed.
@@ -6943,10 +6939,8 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     return m_fEnableTargetConsistencyAsserts;
 }
 
-#ifdef FEATURE_CORESYSTEM
 #define ctime_s _ctime32_s
 #define time_t __time32_t
-#endif
 
 //
 // VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
@@ -7503,11 +7497,7 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
     *pPId = (DWORD)(SIZE_T)hProcess;
     *pThreadId = (DWORD)(SIZE_T)hThread;
 #else
-#if !defined(FEATURE_CORESYSTEM)
-    HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
-#else
 	HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
-#endif
     if (hKernel32 == NULL)
     {
         return FALSE;

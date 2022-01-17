@@ -176,7 +176,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgDACSkipVerifyDlls, W("DbgDACSkipVerifyDlls"
 CONFIG_DWORD_INFO(INTERNAL_DbgDelayHelper, W("DbgDelayHelper"), 0, "Varies the wait in the helper thread startup for testing race between threads")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgDisableDynamicSymsCompat, W("DbgDisableDynamicSymsCompat"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_DbgDisableTargetConsistencyAsserts, W("DbgDisableTargetConsistencyAsserts"), 0, "Allows explicitly testing with corrupt targets")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_DbgEnableMixedModeDebugging, W("DbgEnableMixedModeDebuggingInternalOnly"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_DbgExtraThreads, W("DbgExtraThreads"), 0, "Allows extra unmanaged threads to run and throw debug events for stress testing")
 CONFIG_DWORD_INFO(INTERNAL_DbgExtraThreadsCantStop, W("DbgExtraThreadsCantStop"), 0, "Allows extra unmanaged threads in can't stop region to run and throw debug events for stress testing")
 CONFIG_DWORD_INFO(INTERNAL_DbgExtraThreadsIB, W("DbgExtraThreadsIB"), 0, "Allows extra in-band unmanaged threads to run and throw debug events for stress testing")

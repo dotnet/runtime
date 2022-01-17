@@ -5169,7 +5169,7 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 
                 int skipBytes = 0;
 
-#if defined(TARGET_X86) && defined(FEATURE_CORESYSTEM)
+#if defined(TARGET_X86)
                 // Skip nop sleds on x86 coresystem.  The JIT adds these instructions as a security measure,
                 // and incorrectly reports to us the wrong offset of the call instruction.
                 const BYTE nop_opcode = 0x90;
