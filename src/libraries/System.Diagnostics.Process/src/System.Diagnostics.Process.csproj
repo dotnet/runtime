@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
     <Nullable>enable</Nullable>
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
     <NoWarn Condition=" '$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true' ">$(NoWarn);0649</NoWarn>
@@ -309,7 +309,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
              Link="Common\Interop\Linux\Interop.SchedGetSetAffinity.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />
@@ -329,7 +329,7 @@
     <Compile Include="System\Diagnostics\ProcessManager.Win32.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetstvOS)' != 'true'">
     <Compile Include="System\Diagnostics\Process.NonUap.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
@@ -344,6 +344,11 @@
              Link="Common\Interop\FreeBSD\Interop.Process.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+    <Compile Include="System\Diagnostics\Process.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessManager.iOS.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.iOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnknownUnix)' == 'true'">
     <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />

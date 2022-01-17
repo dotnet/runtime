@@ -379,7 +379,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Throws PNSE")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
         public void MonitoringIsEnabled()
         {
             Assert.True(AppDomain.MonitoringIsEnabled);
