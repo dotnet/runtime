@@ -20,7 +20,7 @@ namespace System.Net.Security
             Debug.Assert(destination.Length == 128 >> 3);
             // Span<byte> buffer = stackalloc byte[64];
             Span<uint> state = stackalloc uint[4];
-            Span<uint>  count = stackalloc uint[2];
+            Span<uint> count = stackalloc uint[2];
 
             // the initialize our context
             count[0] = 0;
@@ -33,7 +33,7 @@ namespace System.Net.Security
             Array.Clear(buffer, 0, 64);
             Array.Clear(x, 0, 16);
 
-            HashCore(source.ToArray(), 0, source.Length, state, count);
+            HashCore(source, 0, source.Length, state, count);
             HashFinal(state, count, destination);
         }
 
@@ -53,7 +53,7 @@ namespace System.Net.Security
         private const int S33 = 11;
         private const int S34 = 15;
 
-        private static void HashCore(byte[] array, int ibStart, int cbSize, Span<uint> state, Span<uint> count)
+        private static void HashCore(ReadOnlySpan<byte> array, int ibStart, int cbSize, Span<uint> state, Span<uint> count)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
@@ -68,7 +68,7 @@ namespace System.Net.Security
             /* Transform as many times as possible. */
             if (cbSize >= partLen)
             {
-                Buffer.BlockCopy(array, ibStart, buffer, index, partLen);
+                BlockCopy(array, ibStart, buffer, index, partLen);
                 MD4Transform(state, buffer, 0);
 
                 for (i = partLen; i + 63 < cbSize; i += 64)
@@ -80,19 +80,21 @@ namespace System.Net.Security
             }
 
             /* Buffer remaining input */
-            Buffer.BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
+            BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
         }
 
         private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination)
         {
             /* Save number of bits */
-            byte[] bits = new byte[8];
+            Span<byte> bits = stackalloc byte[8];
             Encode(bits, count);
 
             /* Pad out to 56 mod 64. */
             uint index = ((count[0] >> 3) & 0x3f);
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
-            HashCore(Padding(padLen), 0, padLen, state, count);
+            Span<byte> padding = stackalloc byte[padLen];
+            padding[0] = 0x80;
+            HashCore(padding, 0, padLen, state, count);
 
             /* Append length (before padding) */
             HashCore(bits, 0, 8, state, count);
@@ -103,11 +105,12 @@ namespace System.Net.Security
 
         //--- private methods ---------------------------------------------------
 
-        private static byte[] Padding(int nLength)
+        private static void BlockCopy(ReadOnlySpan<byte> source, int srcOffset, Span<byte> destination, int dstOffset, int count)
         {
-            byte[] padding = new byte[nLength];
-            padding[0] = 0x80;
-            return padding;
+            for (int srcIndex = srcOffset, dstIndex = dstOffset; srcIndex < srcOffset + count; srcIndex++, dstIndex++)
+            {
+                destination[dstIndex] = source[srcIndex];
+            }
         }
 
         /* F, G and H are basic MD4 functions. */
@@ -160,7 +163,7 @@ namespace System.Net.Security
             }
         }
 
-        private static void Decode(uint[] output, byte[] input, int index)
+        private static void Decode(uint[] output, ReadOnlySpan<byte> input, int index)
         {
             for (int i = 0, j = index; i < output.Length; i++, j += 4)
             {
@@ -168,7 +171,7 @@ namespace System.Net.Security
             }
         }
 
-        private static void MD4Transform(Span<uint> state, byte[] block, int index)
+        private static void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block, int index)
         {
             uint a = state[0];
             uint b = state[1];
