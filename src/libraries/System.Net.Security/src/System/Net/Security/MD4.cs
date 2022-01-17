@@ -15,6 +15,19 @@ namespace System.Net.Security
 {
     internal sealed class MD4
     {
+        private const int S11 = 3;
+        private const int S12 = 7;
+        private const int S13 = 11;
+        private const int S14 = 19;
+        private const int S21 = 3;
+        private const int S22 = 5;
+        private const int S23 = 9;
+        private const int S24 = 13;
+        private const int S31 = 3;
+        private const int S32 = 9;
+        private const int S33 = 11;
+        private const int S34 = 15;
+
         internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Debug.Assert(destination.Length == 128 >> 3);
@@ -37,20 +50,6 @@ namespace System.Net.Security
             HashCore(source, 0, source.Length, state, count, buffer, x);
             HashFinal(state, count, destination, buffer, x);
         }
-
-        private const int S11 = 3;
-        private const int S12 = 7;
-        private const int S13 = 11;
-        private const int S14 = 19;
-        private const int S21 = 3;
-        private const int S22 = 5;
-        private const int S23 = 9;
-        private const int S24 = 13;
-        private const int S31 = 3;
-        private const int S32 = 9;
-        private const int S33 = 11;
-        private const int S34 = 15;
-
         private static void HashCore(ReadOnlySpan<byte> array, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer, Span<uint> x)
         {
             /* Compute number of bytes mod 64 */
