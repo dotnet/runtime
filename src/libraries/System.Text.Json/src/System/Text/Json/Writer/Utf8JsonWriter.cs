@@ -238,12 +238,10 @@ namespace System.Text.Json
                 // The conditions are ordered with stream first as that would be the most common mode
                 if (_output == null)
                 {
-                    ThrowObjectDisposedException();
+                    ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
             }
         }
-
-        private void ThrowObjectDisposedException() => throw new ObjectDisposedException(nameof(Utf8JsonWriter));
 
         /// <summary>
         /// Commits the JSON text written so far which makes it visible to the output destination.
