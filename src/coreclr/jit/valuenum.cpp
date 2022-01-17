@@ -10623,8 +10623,20 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
 
     // The normal VN for base address is used to create the NullPtrExc
     ValueNumPair vnpBaseNorm = vnStore->VNPNormalPair(baseVNP);
+    ValueNumPair excChkSet   = vnStore->VNPForEmptyExcSet();
 
-    ValueNumPair excChkSet = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm));
+    VNFuncApp baseAddrFunc;
+    if (!vnStore->GetVNFunc(vnpBaseNorm.GetLiberal(), &baseAddrFunc) || (baseAddrFunc.m_func != VNF_PtrToStatic))
+    {
+        excChkSet.SetLiberal(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetLiberal())));
+    }
+
+    if (!vnStore->GetVNFunc(vnpBaseNorm.GetConservative(), &baseAddrFunc) || (baseAddrFunc.m_func != VNF_PtrToStatic))
+    {
+        excChkSet.SetConservative(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm.GetConservative())));
+    }
 
     // Add the NullPtrExc to "tree"'s value numbers.
     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excChkSet);
