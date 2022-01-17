@@ -1507,7 +1507,7 @@ namespace System.Runtime.Serialization.Json
                     SkipWhitespaceInBufferReader();
                     SkipExpectedByteInBufferReader(JsonGlobals.QuoteByte);
 
-                    buffer = BufferReader.GetBuffer(out offset, out offsetMax);
+                    BufferReader.GetBuffer(out offset, out _);
 
                     do
                     {

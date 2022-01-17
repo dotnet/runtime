@@ -13,21 +13,20 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class SHA512CryptoServiceProvider : SHA512
     {
-        private const int HashSizeBits = 512;
         private readonly IncrementalHash _incrementalHash;
         private bool _running;
 
         public SHA512CryptoServiceProvider()
         {
             _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA512);
-            HashSizeValue = HashSizeBits;
+            HashSizeValue = HashSizeInBits;
         }
 
         public override void Initialize()
         {
             if (_running)
             {
-                Span<byte> destination = stackalloc byte[HashSizeBits / 8];
+                Span<byte> destination = stackalloc byte[HashSizeInBytes];
 
                 if (!_incrementalHash.TryGetHashAndReset(destination, out _))
                 {

@@ -31,8 +31,7 @@ namespace System.Reflection
         //
         internal Token GetNext()
         {
-            string ignore;
-            return GetNext(out ignore);
+            return GetNext(out _);
         }
 
         //

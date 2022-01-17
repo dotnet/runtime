@@ -664,7 +664,7 @@ struct Native
 
     public S ToManaged() => new S { b = i != 0 };
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
 }
 ";
         public static string CustomStructMarshallingStackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S") + @"
@@ -684,7 +684,8 @@ struct Native
 
     public S ToManaged() => new S { b = i != 0 };
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
+    public const bool RequiresStackBuffer = false;
 }
 ";
         public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S") + @"
@@ -708,7 +709,8 @@ struct Native
 
     public S ToManaged() => new S { b = i != 0 };
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
+    public const bool RequiresStackBuffer = true;
 }
 ";
 
@@ -730,7 +732,7 @@ struct Native
 
     public int Value { get; set; }
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
 }
 ";
         public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S") + @"
@@ -828,7 +830,7 @@ unsafe ref struct Native
         }
     }
 
-    public const int StackBufferSize = 1;
+    public const int BufferSize = 1;
 }
 
 partial class Test

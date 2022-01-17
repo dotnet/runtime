@@ -47,7 +47,7 @@ TiggerStorage::~TiggerStorage()
 HRESULT
 TiggerStorage::Init(
     StgIO            *pStgIO,       // The I/O subsystem.
-    __in __in_z LPSTR pVersion)     // 'Compiled for' CLR version
+    _In_ _In_z_ LPSTR pVersion)     // 'Compiled for' CLR version
 {
     PSTORAGESIGNATURE pSig;         // Signature data for file.
     ULONG             cbData;       // Offset of header data.
@@ -508,7 +508,7 @@ TiggerStorage::OpenStorage(
     const OLECHAR * wcsName,
     IStorage *      pStgPriority,
     DWORD           dwMode,
-  __in
+  _In_
     SNB             snbExclude,
     DWORD           reserved,
     IStorage **     ppStg)
@@ -520,7 +520,7 @@ HRESULT STDMETHODCALLTYPE
 TiggerStorage::CopyTo(
     DWORD       cIidExclude,
     const IID * rgIidExclude,
-  __in
+  _In_
     SNB         snbExclude,
     IStorage *  pStgDest)
 {
@@ -706,7 +706,7 @@ TiggerStorage::Write(
 HRESULT
 TiggerStorage::FindStream(
     LPCSTR                szName,
-    __out PSTORAGESTREAM *stream)
+    _Out_ PSTORAGESTREAM *stream)
 {
     *stream = NULL;
     // In read mode, just walk the list and return one.

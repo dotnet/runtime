@@ -1200,10 +1200,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToInt64:
             return true;
 
         default:
@@ -2327,28 +2323,11 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
 
         // Unary operators that take and return a Vector.
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt32:
         {
             op1 = impSIMDPopStack(simdType, instMethod);
 
             simdTree = gtNewSIMDNode(simdType, op1, simdIntrinsicID, simdBaseJitType, size);
             retVal   = simdTree;
-        }
-        break;
-
-        case SIMDIntrinsicConvertToInt64:
-        {
-#ifdef TARGET_64BIT
-            op1 = impSIMDPopStack(simdType, instMethod);
-
-            simdTree = gtNewSIMDNode(simdType, op1, simdIntrinsicID, simdBaseJitType, size);
-            retVal   = simdTree;
-#else
-            JITDUMP("SIMD Conversion to Int64 is not supported on this platform\n");
-            return nullptr;
-#endif
         }
         break;
 

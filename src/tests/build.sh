@@ -184,7 +184,6 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=false
             __SkipGenerateLayout=1
             __SkipTestWrappers=1
-            __SkipCrossgenFramework=1
             ;;
 
         crossgen2|-crossgen2)
@@ -293,8 +292,6 @@ export __ProjectDir
 __SkipTestWrappers=0
 __BuildTestWrappersOnly=0
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __ConfigureOnly=0
 __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
@@ -320,7 +317,6 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
-__SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
 __UseNinja=0
@@ -394,7 +390,7 @@ if [[ "$__RebuildTests" -ne 0 ]]; then
     echo "Removing test build dir: ${__TestBinDir}"
     rm -rf "${__TestBinDir}"
     echo "Removing test intermediate dir: ${__TestIntermediatesDir}"
-    rm -rf "${__TestIntermediatesDir}" 
+    rm -rf "${__TestIntermediatesDir}"
 fi
 
 build_Tests

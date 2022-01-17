@@ -134,7 +134,7 @@ BOOL GetRegistryLongValue(HKEY hKeyParent, LPCWSTR szKey, LPCWSTR szName, long* 
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(__out_ecount(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer)
+HRESULT GetCurrentModuleFileName(_Out_writes_(*pcchBuffer) LPWSTR pBuffer, __inout DWORD* pcchBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -252,7 +252,7 @@ void GetDebuggerSettingInfo(LPWSTR wszDebuggerString, DWORD cchDebuggerString, B
 //     * wszDebuggerString can be NULL.   When wszDebuggerString is NULL, pcchDebuggerString should
 //     * point to a DWORD of zero.   pcchDebuggerString cannot be NULL, and the DWORD pointed by
 //     * pcchDebuggerString will store the used or required string buffer size in characters.
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString)
+HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString)
                                          LPWSTR wszDebuggerString,
                                      DWORD*     pcchDebuggerString,
                                      BOOL*      pfAuto)

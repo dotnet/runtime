@@ -65,7 +65,7 @@ class PermissionDecl;
 class PermissionSetDecl;
 
 unsigned hash(                // defined in assem.cpp
-     __in_ecount(length) const BYTE *k,        /* the key */
+     _In_reads_(length) const BYTE *k,        /* the key */
      unsigned  length,   /* the length of the key */
      unsigned  initval);  /* the previous hash, or an arbitrary value */
 
@@ -269,7 +269,7 @@ public:
 /* represents a switch table before the lables are bound */
 
 struct Labels {
-    Labels(__in __nullterminated char* aLabel, Labels* aNext, bool aIsLabel) : Label(aLabel), Next(aNext), isLabel(aIsLabel) {}
+    Labels(_In_ __nullterminated char* aLabel, Labels* aNext, bool aIsLabel) : Label(aLabel), Next(aNext), isLabel(aIsLabel) {}
     ~Labels() { if(isLabel && Label) delete [] Label; delete Next; }
 
     char*       Label;
@@ -374,7 +374,7 @@ struct ImportDescriptor
 //    char   szDllName[MAX_FILENAME_LENGTH];
     DWORD  dwDllName;
     mdModuleRef mrDll;
-    ImportDescriptor(__in __nullterminated char* sz, DWORD l)
+    ImportDescriptor(_In_ __nullterminated char* sz, DWORD l)
     {
         if((sz != NULL)&&(l > 0))
         {
@@ -607,7 +607,7 @@ struct VTFEntry
     char*   m_szLabel;
     WORD    m_wCount;
     WORD    m_wType;
-    VTFEntry(WORD wCount, WORD wType, __in __nullterminated char* szLabel) { m_wCount = wCount; m_wType = wType; m_szLabel = szLabel; }
+    VTFEntry(WORD wCount, WORD wType, _In_ __nullterminated char* szLabel) { m_wCount = wCount; m_wType = wType; m_szLabel = szLabel; }
     ~VTFEntry() { delete m_szLabel; }
 };
 typedef FIFO<VTFEntry> VTFList;
@@ -676,7 +676,7 @@ struct TypeDefDescr
         CustomDescr* m_pCA;
     };
     mdToken m_tkTypeSpec;
-    TypeDefDescr(__in_opt __nullterminated char *pszName, BinStr* pbsTypeSpec, mdToken tkTypeSpec)
+    TypeDefDescr(_In_opt_z_ char *pszName, BinStr* pbsTypeSpec, mdToken tkTypeSpec)
     {
         m_szName = pszName;
         m_pbsTypeSpec = pbsTypeSpec;
@@ -696,7 +696,7 @@ struct Indx
     {
         for(int i = 1; i < 128; i++) delete ((Indx*)(table[i]));
     };
-    void IndexString(__in_z __in char* psz, void* pkywd)
+    void IndexString(_In_z_ char* psz, void* pkywd)
     {
         int i = (int) *psz;
         if(i == 0)
@@ -714,7 +714,7 @@ struct Indx
             pInd->IndexString(psz+1,pkywd);
         }
     }
-    void*  FindString(__in __nullterminated char* psz)
+    void*  FindString(_In_ __nullterminated char* psz)
     {
         if(*psz > 0)
         {
@@ -822,8 +822,8 @@ public:
         return NULL;
     }
     // Labels, fixups and IL fixups are defined in Method.hpp,.cpp
-    void AddLabel(DWORD CurPC, __in __nullterminated char *pszName);
-    void AddDeferredFixup(__in __nullterminated char *pszLabel, BYTE *pBytes, DWORD RelativeToPC, BYTE FixupSize);
+    void AddLabel(DWORD CurPC, _In_ __nullterminated char *pszName);
+    void AddDeferredFixup(_In_ __nullterminated char *pszLabel, BYTE *pBytes, DWORD RelativeToPC, BYTE FixupSize);
     void AddDeferredILFixup(ILFixupType Kind);
     void AddDeferredILFixup(ILFixupType Kind, GlobalFixup *GFixup);
     void DoDeferredILFixups(Method* pMethod);
@@ -834,10 +834,10 @@ public:
     void    ClearBoundList(void);
     //--------------------------------------------------------------------------------
     BOOL Init(BOOL generatePdb);
-    void ProcessLabel(__in_z __in char *pszName);
+    void ProcessLabel(_In_z_ char *pszName);
     GlobalLabel *FindGlobalLabel(LPCUTF8 pszName);
-    GlobalFixup *AddDeferredGlobalFixup(__in __nullterminated char *pszLabel, BYTE* reference);
-    //void AddDeferredDescrFixup(__in __nullterminated char *pszLabel);
+    GlobalFixup *AddDeferredGlobalFixup(_In_ __nullterminated char *pszLabel, BYTE* reference);
+    //void AddDeferredDescrFixup(_In_ __nullterminated char *pszLabel);
     BOOL DoGlobalFixups();
     BOOL DoDescrFixups();
     OPCODE DecodeOpcode(const BYTE *pCode, DWORD *pdwLen);
@@ -848,26 +848,26 @@ public:
     BOOL EmitMethod(Method *pMethod);
     BOOL EmitMethodBody(Method* pMethod, BinStr* pbsOut);
     BOOL EmitClass(Class *pClass);
-    HRESULT CreatePEFile(__in __nullterminated WCHAR *pwzOutputFilename);
+    HRESULT CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename);
     HRESULT CreateTLSDirectory();
     HRESULT CreateDebugDirectory();
     HRESULT InitMetaData();
-    Class *FindCreateClass(__in __nullterminated const char *pszFQN);
-    BOOL EmitFieldRef(__in_z __in char *pszArg, int opcode);
-    BOOL EmitSwitchData(__in_z __in char *pszArg);
-    mdToken ResolveClassRef(mdToken tkResScope, __in __nullterminated const char *pszClassName, Class** ppClass);
+    Class *FindCreateClass(_In_ __nullterminated const char *pszFQN);
+    BOOL EmitFieldRef(_In_z_ char *pszArg, int opcode);
+    BOOL EmitSwitchData(_In_z_ char *pszArg);
+    mdToken ResolveClassRef(mdToken tkResScope, _In_ __nullterminated const char *pszClassName, Class** ppClass);
     mdToken ResolveTypeSpec(BinStr* typeSpec);
     mdToken GetBaseAsmRef();
-    mdToken GetAsmRef(__in __nullterminated const char* szName);
-    mdToken GetModRef(__in __nullterminated char* szName);
+    mdToken GetAsmRef(_In_ __nullterminated const char* szName);
+    mdToken GetModRef(_In_ __nullterminated char* szName);
     mdToken GetInterfaceImpl(mdToken tsClass, mdToken tsInterface);
     char* ReflectionNotation(mdToken tk);
-    HRESULT ConvLocalSig(__in char* localsSig, CQuickBytes* corSig, DWORD* corSigLen, BYTE*& localTypes);
+    HRESULT ConvLocalSig(_In_ char* localsSig, CQuickBytes* corSig, DWORD* corSigLen, BYTE*& localTypes);
     DWORD GetCurrentILSectionOffset();
-    BOOL EmitCALLISig(__in char *p);
+    BOOL EmitCALLISig(_In_ char *p);
     void AddException(DWORD pcStart, DWORD pcEnd, DWORD pcHandler, DWORD pcHandlerTo, mdTypeRef crException, BOOL isFilter, BOOL isFault, BOOL isFinally);
     state_t CheckLocalTypeConsistancy(int instr, unsigned arg);
-    state_t AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTION section);
+    state_t AddGlobalLabel(_In_ __nullterminated char *pszName, HCEESECTION section);
     void SetDLL(BOOL);
     void ResetForNextMethod();
     void ResetLineNumbers();
@@ -878,16 +878,16 @@ public:
     unsigned ShortOf(unsigned opcode);
     void SetErrorReporter(ErrorReporter* aReport) { report = aReport; if(m_pManifest) m_pManifest->SetErrorReporter(aReport); }
 
-    void StartNameSpace(__in __nullterminated char* name);
+    void StartNameSpace(_In_ __nullterminated char* name);
     void EndNameSpace();
-    void StartClass(__in __nullterminated char* name, DWORD attr, TyParList *typars);
+    void StartClass(_In_ __nullterminated char* name, DWORD attr, TyParList *typars);
     DWORD CheckClassFlagsIfNested(Class* pEncloser, DWORD attr);
     void AddClass();
     void EndClass();
-    void StartMethod(__in __nullterminated char* name, BinStr* sig, CorMethodAttr flags, BinStr* retMarshal, DWORD retAttr, TyParList *typars = NULL);
+    void StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMethodAttr flags, BinStr* retMarshal, DWORD retAttr, TyParList *typars = NULL);
     void EndMethod();
 
-    void AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr flags, __in __nullterminated char* rvaLabel, BinStr* pVal, ULONG ulOffset);
+    void AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr flags, _In_ __nullterminated char* rvaLabel, BinStr* pVal, ULONG ulOffset);
 	BOOL EmitField(FieldDescriptor* pFD);
     void EmitByte(int val);
     //void EmitTry(enum CorExceptionFlag kind, char* beginLabel, char* endLabel, char* handleLabel, char* filterOrClass);
@@ -898,27 +898,27 @@ public:
     void SetImplAttr(unsigned short attrval);
 
     // Emits zeros if the buffer parameter is NULL.
-    void EmitData(__in_opt void *buffer, unsigned len);
+    void EmitData(_In_opt_ void *buffer, unsigned len);
 
-    void EmitDD(__in __nullterminated char *str);
+    void EmitDD(_In_ __nullterminated char *str);
     void EmitDataString(BinStr* str);
 
     void EmitInstrVar(Instr* instr, int var);
-    void EmitInstrVarByName(Instr* instr, __in __nullterminated char* label);
+    void EmitInstrVarByName(Instr* instr, _In_ __nullterminated char* label);
     void EmitInstrI(Instr* instr, int val);
     void EmitInstrI8(Instr* instr, __int64* val);
     void EmitInstrR(Instr* instr, double* val);
     void EmitInstrBrOffset(Instr* instr, int offset);
-    void EmitInstrBrTarget(Instr* instr, __in __nullterminated char* label);
-    mdToken MakeMemberRef(mdToken typeSpec, __in __nullterminated char* name, BinStr* sig);
+    void EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* label);
+    mdToken MakeMemberRef(mdToken typeSpec, _In_ __nullterminated char* name, BinStr* sig);
     mdToken MakeMethodSpec(mdToken tkParent, BinStr* sig);
     void SetMemberRefFixup(mdToken tk, unsigned opcode_len);
     mdToken MakeTypeRef(mdToken tkResScope, LPCUTF8 szFullName);
     void EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL ConvertToUnicode, BOOL Swap = FALSE);
     void EmitInstrSig(Instr* instr, BinStr* sig);
     void EmitInstrSwitch(Instr* instr, Labels* targets);
-    void EmitLabel(__in __nullterminated char* label);
-    void EmitDataLabel(__in __nullterminated char* label);
+    void EmitLabel(_In_ __nullterminated char* label);
+    void EmitDataLabel(_In_ __nullterminated char* label);
 
     unsigned OpcodeLen(Instr* instr); //returns opcode length
     // Emit just the opcode (no parameters to the instruction stream.
@@ -934,7 +934,7 @@ public:
 
     // named args/vars paraphernalia:
 public:
-    void addArgName(__in_opt __nullterminated char *szNewName, BinStr* pbSig, BinStr* pbMarsh, DWORD dwAttr)
+    void addArgName(_In_opt_z_ char *szNewName, BinStr* pbSig, BinStr* pbMarsh, DWORD dwAttr)
     {
         if(pbSig && (*(pbSig->ptr()) == ELEMENT_TYPE_VOID))
             report->error("Illegal use of type 'void'\n");
@@ -977,10 +977,10 @@ public:
 public:
     SEH_Descriptor  *m_SEHD;    // current descriptor ptr
     void NewSEHDescriptor(void); //sets m_SEHD
-    void SetTryLabels(__in __nullterminated char * szFrom, __in __nullterminated char *szTo);
-    void SetFilterLabel(__in __nullterminated char *szFilter);
+    void SetTryLabels(_In_ __nullterminated char * szFrom, _In_ __nullterminated char *szTo);
+    void SetFilterLabel(_In_ __nullterminated char *szFilter);
     void SetCatchClass(mdToken catchClass);
-    void SetHandlerLabels(__in __nullterminated char *szHandlerFrom, __in __nullterminated char *szHandlerTo);
+    void SetHandlerLabels(_In_ __nullterminated char *szHandlerFrom, _In_ __nullterminated char *szHandlerTo);
     void EmitTry(void);         //uses m_SEHD
 
 //private:
@@ -1043,7 +1043,7 @@ public:
     WCHAR               m_wzPdbFileName[MAX_FILENAME_LENGTH];
 
     // Sets the pdb file name of the assembled file.
-    void SetPdbFileName(__in __nullterminated char* szName);
+    void SetPdbFileName(_In_ __nullterminated char* szName);
     // Saves the pdb file.
     HRESULT SavePdbFile();
 
@@ -1120,7 +1120,7 @@ public:
     void EmitSecurityInfo(mdToken           token,
                           PermissionDecl*   pPermissions,
                           PermissionSetDecl*pPermissionSets);
-    BinStr* EncodeSecAttr(__in __nullterminated char* szReflName, BinStr* pbsSecAttrBlob, unsigned nProps);
+    BinStr* EncodeSecAttr(_In_ __nullterminated char* szReflName, BinStr* pbsSecAttrBlob, unsigned nProps);
 
     HRESULT AllocateStrongNameSignature();
 
@@ -1190,12 +1190,12 @@ public:
 private:
     MethodImplDList m_MethodImplDList;
 public:
-    void AddMethodImpl(mdToken tkImplementedTypeSpec, __in __nullterminated char* szImplementedName, BinStr* pImplementedSig,
-                    mdToken tkImplementingTypeSpec, __in_opt __nullterminated char* szImplementingName, BinStr* pImplementingSig);
+    void AddMethodImpl(mdToken tkImplementedTypeSpec, _In_ __nullterminated char* szImplementedName, BinStr* pImplementedSig,
+                    mdToken tkImplementingTypeSpec, _In_opt_z_ char* szImplementingName, BinStr* pImplementingSig);
     BOOL EmitMethodImpls();
     // source file name paraphernalia
     BOOL m_fSourceFileSet;
-    void SetSourceFileName(__in __nullterminated char* szName);
+    void SetSourceFileName(_In_ __nullterminated char* szName);
     void SetSourceFileName(BinStr* pbsName);
     // header flags
     DWORD   m_dwSubsystem;
@@ -1223,21 +1223,21 @@ public:
 private:
     TypeDefDList m_TypeDefDList;
 public:
-    void AddTypeDef(BinStr* pbsTypeSpec, __in_z __in char* szName)
+    void AddTypeDef(BinStr* pbsTypeSpec, _In_z_ char* szName)
     {
         m_TypeDefDList.PUSH(new TypeDefDescr(szName, pbsTypeSpec, ResolveTypeSpec(pbsTypeSpec)));
     };
-    void AddTypeDef(mdToken tkTypeSpec, __in_z __in char* szName)
+    void AddTypeDef(mdToken tkTypeSpec, _In_z_ char* szName)
     {
         m_TypeDefDList.PUSH(new TypeDefDescr(szName, NULL, tkTypeSpec));
     };
-    void AddTypeDef(CustomDescr* pCA, __in_z __in char* szName)
+    void AddTypeDef(CustomDescr* pCA, _In_z_ char* szName)
     {
         TypeDefDescr* pNew = new TypeDefDescr(szName,NULL,mdtCustomAttribute);
         pNew->m_pCA = pCA;
         m_TypeDefDList.PUSH(pNew);
     };
-    TypeDefDescr* FindTypeDef(__in_z __in char* szName)
+    TypeDefDescr* FindTypeDef(_In_z_ char* szName)
     {
         CHECK_LOCAL_STATIC_VAR(static TypeDefDescr X(NULL, NULL, 0));
 
@@ -1249,7 +1249,7 @@ public:
     };
     unsigned NumTypeDefs() {return m_TypeDefDList.COUNT();};
 private:
-    HRESULT GetCAName(mdToken tkCA, __out LPWSTR *ppszName);
+    HRESULT GetCAName(mdToken tkCA, _Out_ LPWSTR *ppszName);
 
 public:
     void RecordTypeConstraints(GenericParamConstraintList* pGPCList, int numTyPars, TyParDescr* tyPars);

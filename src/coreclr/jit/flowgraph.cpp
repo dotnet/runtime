@@ -967,7 +967,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return false;
     }
-    else if (addr->OperIs(GT_CNS_STR))
+    else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
     {
         return false;
     }
@@ -1269,7 +1269,7 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // If tree is a relop and we need an 4-byte integer
     //  then we never need to insert a cast
     //
-    if ((tree->OperKind() & GTK_RELOP) && (genActualType(toType) == TYP_INT))
+    if (tree->OperIsCompare() && (genActualType(toType) == TYP_INT))
     {
         return false;
     }
@@ -3920,7 +3920,7 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     /* Is this a leaf/constant node? */
 
-    if (kind & (GTK_CONST | GTK_LEAF))
+    if (kind & GTK_LEAF)
     {
         fgSetTreeSeqFinish(tree, isLIR);
         return;

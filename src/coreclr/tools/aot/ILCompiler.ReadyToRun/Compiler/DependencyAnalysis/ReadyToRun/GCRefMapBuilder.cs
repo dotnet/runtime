@@ -69,13 +69,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
 
-            bool hasThis = (method.Signature.Flags & MethodSignatureFlags.Static) == 0;
+            MethodSignature signature = method.Signature;
+
+            bool hasThis = (signature.Flags & MethodSignatureFlags.Static) == 0;
+
+            // This pointer is omitted for string constructors
+            bool fCtorOfVariableSizedObject = hasThis && method.OwningType.IsString && method.IsConstructor;
+            if (fCtorOfVariableSizedObject)
+                hasThis = false;
+
             bool isVarArg = false;
-            TypeHandle returnType = new TypeHandle(method.Signature.ReturnType);
-            TypeHandle[] parameterTypes = new TypeHandle[method.Signature.Length];
+            TypeHandle returnType = new TypeHandle(signature.ReturnType);
+            TypeHandle[] parameterTypes = new TypeHandle[signature.Length];
             for (int parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
-                parameterTypes[parameterIndex] = new TypeHandle(method.Signature[parameterIndex]);
+                parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
             bool hasParamType = method.RequiresInstArg() && !isUnboxingStub;

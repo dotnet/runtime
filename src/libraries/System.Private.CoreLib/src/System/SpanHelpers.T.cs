@@ -208,7 +208,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, index), valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
                 index += relativeIndex;
 
@@ -300,8 +300,8 @@ namespace System
             if (Vector.IsHardwareAccelerated && Vector<T>.IsTypeSupported && (Vector<T>.Count * 2) <= length)
             {
                 Vector<T> valueVector = new Vector<T>(value);
-                Vector<T> compareVector = default;
-                Vector<T> matchVector = default;
+                Vector<T> compareVector;
+                Vector<T> matchVector;
                 if ((uint)length % (uint)Vector<T>.Count != 0)
                 {
                     // Number of elements is not a multiple of Vector<T>.Count, so do one
@@ -788,7 +788,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
 
                 // Found the first element of "value". See if the tail matches.

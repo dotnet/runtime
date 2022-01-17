@@ -257,7 +257,7 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     // Is the thread already started?  You can't restart a thread.
     if (!ThreadNotStarted(pNewThread))
     {
-        COMPlusThrow(kThreadStateException, IDS_EE_THREADSTART_STATE);
+        COMPlusThrow(kThreadStateException, W("ThreadState_AlreadyStarted"));
     }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -338,7 +338,7 @@ FCIMPL1(INT32, ThreadNative::GetPriority, ThreadBaseObject* pThisUNSAFE)
 
     // validate the handle
     if (ThreadIsDead(pThisUNSAFE->GetInternal()))
-        FCThrowEx(kThreadStateException, IDS_EE_THREAD_DEAD_PRIORITY, NULL, NULL, NULL);
+        FCThrowRes(kThreadStateException, W("ThreadState_Dead_Priority"));
 
     return pThisUNSAFE->m_Priority;
 }
@@ -367,7 +367,7 @@ FCIMPL2(void, ThreadNative::SetPriority, ThreadBaseObject* pThisUNSAFE, INT32 iP
 
     if (ThreadIsDead(thread))
     {
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_DEAD_PRIORITY, NULL, NULL, NULL);
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_Priority"));
     }
 
     INT32 oldPriority = pThis->m_Priority;
@@ -379,7 +379,7 @@ FCIMPL2(void, ThreadNative::SetPriority, ThreadBaseObject* pThisUNSAFE, INT32 iP
     if (!thread->SetThreadPriority(priority))
     {
         pThis->m_Priority = oldPriority;
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_PRIORITY_FAIL, NULL, NULL, NULL);
+        COMPlusThrow(kThreadStateException, W("ThreadState_SetPriorityFailed"));
     }
 
     HELPER_METHOD_FRAME_END();
@@ -595,7 +595,7 @@ FCIMPL2(void, ThreadNative::SetBackground, ThreadBaseObject* pThisUNSAFE, CLR_BO
     Thread  *thread = pThisUNSAFE->GetInternal();
 
     if (ThreadIsDead(thread))
-        FCThrowExVoid(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+        FCThrowResVoid(kThreadStateException, W("ThreadState_Dead_State"));
 
     HELPER_METHOD_FRAME_BEGIN_0();
 
@@ -617,7 +617,7 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsBackground, ThreadBaseObject* pThisUNSAFE)
     Thread  *thread = pThisUNSAFE->GetInternal();
 
     if (ThreadIsDead(thread))
-        FCThrowEx(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
 
     FC_RETURN_BOOL(thread->IsBackground());
 }
@@ -780,7 +780,7 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
 
     if (ThreadIsDead(thread))
     {
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_DEAD_STATE);
+        COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
     }
 
     Thread::ApartmentState state = thread->GetApartment();
@@ -854,7 +854,7 @@ BOOL ThreadNative::DoJoin(THREADBASEREF DyingThread, INT32 timeout)
     if (DyingInternal == 0 ||
         !(DyingInternal->m_State & Thread::TS_LegalToJoin))
     {
-        COMPlusThrow(kThreadStateException, IDS_EE_THREAD_NOTSTARTED);
+        COMPlusThrow(kThreadStateException, W("ThreadState_NotStarted"));
     }
 
     // Don't grab the handle until we know it has started, to eliminate the race
@@ -1070,7 +1070,7 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
     Thread *pThread = thread->GetInternal();
 
     if (pThread == NULL)
-        FCThrowEx(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+        FCThrowRes(kThreadStateException, W("ThreadState_Dead_State"));
 
     BOOL ret = pThread->IsThreadPoolThread();
 
@@ -1090,7 +1090,7 @@ FCIMPL1(void, ThreadNative::SetIsThreadpoolThread, ThreadBaseObject* thread)
     Thread *pThread = thread->GetInternal();
 
     if (pThread == NULL)
-        FCThrowExVoid(kThreadStateException, IDS_EE_THREAD_DEAD_STATE, NULL, NULL, NULL);
+        FCThrowResVoid(kThreadStateException, W("ThreadState_Dead_State"));
 
     pThread->SetIsThreadPoolThread();
 }
