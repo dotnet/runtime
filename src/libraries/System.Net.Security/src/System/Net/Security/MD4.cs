@@ -18,7 +18,7 @@ namespace System.Net.Security
         internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Debug.Assert(destination.Length == 128 >> 3);
-            // Span<byte> buffer = stackalloc byte[64];
+            Span<byte> buffer = stackalloc byte[64];
             Span<uint> state = stackalloc uint[4];
             Span<uint> count = stackalloc uint[2];
 
@@ -30,14 +30,13 @@ namespace System.Net.Security
             state[2] = 0x98badcfe;
             state[3] = 0x10325476;
             // Zeroize sensitive information
-            Array.Clear(buffer, 0, 64);
+            buffer.Fill(0);
             Array.Clear(x, 0, 16);
 
-            HashCore(source, 0, source.Length, state, count);
-            HashFinal(state, count, destination);
+            HashCore(source, 0, source.Length, state, count, buffer);
+            HashFinal(state, count, destination, buffer);
         }
 
-        private static byte[] buffer = new byte[64];
         private static uint[] x = new uint[16];
 
         private const int S11 = 3;
@@ -53,7 +52,7 @@ namespace System.Net.Security
         private const int S33 = 11;
         private const int S34 = 15;
 
-        private static void HashCore(ReadOnlySpan<byte> array, int ibStart, int cbSize, Span<uint> state, Span<uint> count)
+        private static void HashCore(ReadOnlySpan<byte> array, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
@@ -83,7 +82,7 @@ namespace System.Net.Security
             BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
         }
 
-        private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination)
+        private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination, Span<byte> buffer)
         {
             /* Save number of bits */
             Span<byte> bits = stackalloc byte[8];
@@ -94,10 +93,10 @@ namespace System.Net.Security
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
             Span<byte> padding = stackalloc byte[padLen];
             padding[0] = 0x80;
-            HashCore(padding, 0, padLen, state, count);
+            HashCore(padding, 0, padLen, state, count, buffer);
 
             /* Append length (before padding) */
-            HashCore(bits, 0, 8, state, count);
+            HashCore(bits, 0, 8, state, count, buffer);
 
             /* Store state in digest */
             Encode(destination, state);
