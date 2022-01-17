@@ -34,7 +34,6 @@ namespace System.Net.Security
             Span<byte> buffer = stackalloc byte[64];
             Span<uint> state = stackalloc uint[4];
             Span<uint> count = stackalloc uint[2];
-            Span<uint> x = stackalloc uint[16];
 
             // the initialize our context
             count[0] = 0;
@@ -45,12 +44,11 @@ namespace System.Net.Security
             state[3] = 0x10325476;
             // Zeroize sensitive information
             buffer.Fill(0);
-            x.Fill(0);
 
-            HashCore(source, 0, source.Length, state, count, buffer, x);
-            HashFinal(state, count, destination, buffer, x);
+            HashCore(source, 0, source.Length, state, count, buffer);
+            HashFinal(state, count, destination, buffer);
         }
-        private static void HashCore(ReadOnlySpan<byte> input, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer, Span<uint> x)
+        private static void HashCore(ReadOnlySpan<byte> input, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
@@ -66,11 +64,11 @@ namespace System.Net.Security
             if (cbSize >= partLen)
             {
                 BlockCopy(input, ibStart, buffer, index, partLen);
-                MD4Transform(state, buffer, 0, x);
+                MD4Transform(state, buffer, 0);
 
                 for (i = partLen; i + 63 < cbSize; i += 64)
                 {
-                    MD4Transform(state, input, ibStart + i, x);
+                    MD4Transform(state, input, ibStart + i);
                 }
 
                 index = 0;
@@ -80,7 +78,7 @@ namespace System.Net.Security
             BlockCopy(input, ibStart + i, buffer, index, (cbSize - i));
         }
 
-        private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination, Span<byte> buffer, Span<uint> x)
+        private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination, Span<byte> buffer)
         {
             /* Save number of bits */
             Span<byte> bits = stackalloc byte[8];
@@ -91,10 +89,10 @@ namespace System.Net.Security
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
             Span<byte> padding = stackalloc byte[padLen];
             padding[0] = 0x80;
-            HashCore(padding, 0, padLen, state, count, buffer, x);
+            HashCore(padding, 0, padLen, state, count, buffer);
 
             /* Append length (before padding) */
-            HashCore(bits, 0, 8, state, count, buffer, x);
+            HashCore(bits, 0, 8, state, count, buffer);
 
             /* Store state in digest */
             Encode(destination, state);
@@ -168,12 +166,13 @@ namespace System.Net.Security
             }
         }
 
-        private static void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block, int index, Span<uint> x)
+        private static void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block, int index)
         {
             uint a = state[0];
             uint b = state[1];
             uint c = state[2];
             uint d = state[3];
+            Span<uint> x = stackalloc uint[16];
 
             Decode(x, block, index);
 
