@@ -30,8 +30,9 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
 - `mono_bind_method` (JS runtime)
   - generates JS proxy for C# method
   - generates parameter converters
-    - allocates parameters on WASM heap, C# or primitive types
-    - uses type marshallers
+    - allocates parameters on WASM heap, re-uses buffer when possible
+    - uses built in type marshallers, according to `args_marshal` signature.
+    - boxes primitive types, because `mono_runtime_invoke` accepts array of parameters
   - generates code of the proxy, calling `ccall` to C `mono_runtime_invoke`
   - used also in `corebindings.ts` for C#
 - `mono_wasm_get_delegate_invoke` (JS runtime)
@@ -90,7 +91,7 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
 - `mono_wasm_invoke_js` and `mono_wasm_invoke_js_blazor` return exceptions or primitive types
 - `_js_to_mono_uri` - create C# `Uri`. Only when `mono_bind_method` is called with `u` in `args_marshal`
 
-## Pass JS object to C#
+## Pass C# object to JS
 - as parameter on `mono_wasm_set_object_property` or `mono_wasm_set_by_index`
 - return value on methods wrapped with `mono_bind_method`
 - `unbox_mono_obj`
