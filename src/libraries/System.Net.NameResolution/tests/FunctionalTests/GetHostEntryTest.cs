@@ -311,6 +311,7 @@ namespace System.Net.NameResolution.Tests
         }
     }
 
+    // Cancellation tests are sequential to reduce the chance of timing issues.
     [Collection(nameof(DisableParallelization))]
     public class GetHostEntryTest_Cancellation
     {
