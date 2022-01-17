@@ -2774,7 +2774,7 @@ namespace System.Net.Http.Functional.Tests
                             SslClientAuthenticationOptions options = new SslClientAuthenticationOptions();
                             options.RemoteCertificateValidationCallback = (a, b, c, d) => true;
                             options.TargetHost = parts[0];
-                            if (context.InitialRequestMessage.Version.Major == 2)
+                            if (context.InitialRequestMessage.Version.Major == 2 && PlatformDetection.SupportsAlpn)
                             {
                               options.ApplicationProtocols = new List<SslApplicationProtocol>{ SslApplicationProtocol.Http2};
                             }
@@ -2821,7 +2821,7 @@ namespace System.Net.Http.Functional.Tests
                         SslClientAuthenticationOptions options = new SslClientAuthenticationOptions();
                         options.RemoteCertificateValidationCallback = (a, b, c, d) => true;
                         options.TargetHost = parts[0];
-                        if (context.InitialRequestMessage.Version.Major == 2)
+                        if (context.InitialRequestMessage.Version.Major == 2 && PlatformDetection.SupportsAlpn)
                         {
                             options.ApplicationProtocols = new List<SslApplicationProtocol>{ SslApplicationProtocol.Http2};
                         }
