@@ -237,6 +237,14 @@ namespace Internal.IL.Stubs
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return NamePrefix + "__" + DelegateType.DiagnosticName;
+            }
+        }
+
         public override MethodIL EmitIL()
         {
             return PInvokeILEmitter.EmitIL(this, default(PInvokeILEmitterConfiguration), _interopStateManager);

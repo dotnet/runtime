@@ -303,7 +303,7 @@ namespace System.Security
             if (tag == null)
                 return false;
 
-            return tag.IndexOfAny(s_tagIllegalCharacters) == -1;
+            return tag.IndexOfAny(s_tagIllegalCharacters) < 0;
         }
 
         public static bool IsValidText([NotNullWhen(true)] string? text)
@@ -311,7 +311,7 @@ namespace System.Security
             if (text == null)
                 return false;
 
-            return text.IndexOfAny(s_textIllegalCharacters) == -1;
+            return text.IndexOfAny(s_textIllegalCharacters) < 0;
         }
 
         public static bool IsValidAttributeName([NotNullWhen(true)] string? name)
@@ -324,7 +324,7 @@ namespace System.Security
             if (value == null)
                 return false;
 
-            return value.IndexOfAny(s_valueIllegalCharacters) == -1;
+            return value.IndexOfAny(s_valueIllegalCharacters) < 0;
         }
 
         private static string GetEscapeSequence(char c)
@@ -361,7 +361,7 @@ namespace System.Security
             {
                 index = str.IndexOfAny(s_escapeChars, newIndex);
 
-                if (index == -1)
+                if (index < 0)
                 {
                     if (sb == null)
                         return str;
@@ -425,7 +425,7 @@ namespace System.Security
             {
                 index = str.IndexOf('&', newIndex);
 
-                if (index == -1)
+                if (index < 0)
                 {
                     if (sb == null)
                         return str;

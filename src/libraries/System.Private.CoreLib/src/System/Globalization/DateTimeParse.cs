@@ -5461,7 +5461,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
                 int wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition);
-                if (wsIndex == -1)
+                if (wsIndex < 0)
                 {
                     return false;
                 }

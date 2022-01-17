@@ -238,7 +238,6 @@
 #define IDS_EE_STRUCTARRAYTOOLARGE              0x1a05
 #define IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  0x1a06
 #define IDS_EE_NAME_UNKNOWN                     0x1a07
-#define IDS_EE_THREAD_NOTSTARTED                0x1a0a
 #define IDS_EE_NO_BACKING_CLASS_FACTORY         0x1a0b
 #define IDS_EE_NAME_UNKNOWN_UNQ                 0x1a0c
 #define IDS_EE_STRING_TOOLONG                   0x1a0d
@@ -246,11 +245,7 @@
 
 #define IDS_EE_INVALID_CA                       0x1a10
 
-#define IDS_EE_THREADSTART_STATE                0x1a12
-
 #define IDS_EE_THREAD_CANNOT_GET                0x1a15
-#define IDS_EE_THREAD_DEAD_PRIORITY             0x1a19
-#define IDS_EE_THREAD_DEAD_STATE                0x1a1a
 #define IDS_EE_THREAD_BAD_STATE                 0x1a1b
 #define IDS_EE_THREAD_ABORT_WHILE_SUSPEND       0x1a1c
 
@@ -293,8 +288,6 @@
 
 #define IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS   0x1a4b
 #define IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET   0x1a4d
-
-#define IDS_EE_THREAD_PRIORITY_FAIL             0x1a4e
 
 #define IDS_CLASSLOAD_INVALIDINSTANTIATION      0x1a59
 
@@ -585,8 +578,6 @@
 #define IDS_EE_NDIRECT_LOADLIB_MAC                 0x263f
 #define IDS_EE_NDIRECT_GETPROCADDRESS_UNIX         0x2640
 #define IDS_EE_ERROR_COM                           0x2641
-
-#define IDS_INVOKE_NULLREF_RETURNED             0x2642
 
 #define IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD    0x2643
 

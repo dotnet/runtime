@@ -94,7 +94,7 @@ namespace System.ComponentModel
                     culture = CultureInfo.CurrentCulture;
                 }
 
-                DateTimeFormatInfo? formatInfo = null;
+                DateTimeFormatInfo? formatInfo;
                 formatInfo = (DateTimeFormatInfo?)culture.GetFormat(typeof(DateTimeFormatInfo));
 
                 string format;

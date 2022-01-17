@@ -29,9 +29,8 @@ namespace Internal.Cryptography.Pal
             if (safeCertContextHandle.IsInvalid)
                 throw ErrorCode.HRESULT_INVALID_HANDLE.ToCryptographicException();
 
-            Interop.Crypt32.DATA_BLOB dataBlob;
             int cbData = 0;
-            bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out dataBlob, ref cbData);
+            bool deleteKeyContainer = Interop.Crypt32.CertGetCertificateContextProperty(safeCertContextHandle, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out Interop.Crypt32.DATA_BLOB _, ref cbData);
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
         }
 
@@ -289,19 +288,21 @@ namespace Internal.Cryptography.Pal
             {
                 unsafe
                 {
-                    int cbData = 0;
+                    uint cbData = 0;
                     if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, null, ref cbData))
                         return string.Empty;
 
-                    int spanLength = (cbData + 1) / 2;
-                    Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
+                    uint spanLength = (cbData + 1) / 2;
+                    Span<char> buffer = spanLength <= 256 ?
+                        stackalloc char[(int)spanLength] : // Already checked to be a size that won't overflow.
+                        new char[spanLength];
                     fixed (char* ptr = &MemoryMarshal.GetReference(buffer))
                     {
                         if (!Interop.Crypt32.CertGetCertificateContextPropertyString(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, (byte*)ptr, ref cbData))
                             return string.Empty;
                     }
 
-                    return new string(buffer.Slice(0, (cbData / 2) - 1));
+                    return new string(buffer.Slice(0, ((int)cbData / 2) - 1));
                 }
             }
 

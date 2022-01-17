@@ -400,8 +400,8 @@ namespace System.Runtime.Serialization
             FixupHolderList? fixups = holder._missingElements;
             FixupHolder? currentFixup;
             SerializationInfo? si;
-            object? fixupInfo = null;
-            ObjectHolder? tempObjectHolder = null;
+            object? fixupInfo;
+            ObjectHolder? tempObjectHolder;
             int fixupsPerformed = 0;
 
             Debug.Assert(holder != null, "[ObjectManager.CompleteObject]holder.m_object!=null");

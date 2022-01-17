@@ -787,7 +787,7 @@ ClrDataFrame::GetArgumentByIndex(
     /* [out] */ IXCLRDataValue **arg,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -942,7 +942,7 @@ ClrDataFrame::GetLocalVariableByIndex(
     /* [out] */ IXCLRDataValue **localVariable,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1111,7 +1111,7 @@ ClrDataFrame::GetCodeName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
-    /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ])
+    /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR symbolBuf[  ])
 {
     HRESULT status = E_FAIL;
 

@@ -231,9 +231,6 @@
   <data name="MissingMember" xml:space="preserve">
     <value>Member not found.</value>
   </data>
-  <data name="Arg_AmbiguousMatchException" xml:space="preserve">
-    <value>Ambiguous match found.</value>
-  </data>
   <data name="NoMetadataTokenAvailable" xml:space="preserve">
     <value>There is no metadata token available for the given member.</value>
   </data>

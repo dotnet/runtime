@@ -90,6 +90,14 @@ namespace Internal.IL.Stubs
                 return SystemDelegateType.GetKnownField("m_functionPointer");
             }
         }
+
+        public sealed override string DiagnosticName
+        {
+            get
+            {
+                return Name;
+            }
+        }
     }
 
     /// <summary>
@@ -718,7 +726,8 @@ namespace Internal.IL.Stubs
                     Debug.Assert(_delegateInfo.Thunks[i] == null);
 
                     var sig = new DynamicInvokeMethodSignature(_delegateInfo.Signature);
-                    MethodDesc thunk = Context.GetDynamicInvokeThunk(sig);
+                    // TODO: layering violation. Should move delegate thunk stuff to ILCompiler.Compiler.
+                    MethodDesc thunk = ((ILCompiler.CompilerTypeSystemContext)Context).GetDynamicInvokeThunk(sig);
 
                     if (thunk.HasInstantiation)
                     {
@@ -773,6 +782,14 @@ namespace Internal.IL.Stubs
         }
 
         public override string Name
+        {
+            get
+            {
+                return "GetThunk";
+            }
+        }
+
+        public override string DiagnosticName
         {
             get
             {

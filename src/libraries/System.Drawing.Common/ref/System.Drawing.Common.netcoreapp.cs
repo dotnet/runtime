@@ -8,6 +8,8 @@ namespace System.Drawing
 {
     public sealed partial class Graphics
     {
+        public void DrawRectangle(System.Drawing.Pen pen, System.Drawing.RectangleF rect) { }
+        public void FillPie(System.Drawing.Brush brush, System.Drawing.RectangleF rect, float startAngle, float sweepAngle) { }
         public System.Numerics.Matrix3x2 TransformElements { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]

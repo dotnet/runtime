@@ -35,7 +35,6 @@
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
     <LibrariesTesthostRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'testhost', '$(NetCoreAppCurrent)-$(TargetOS)-$(LibrariesTestConfig)-$(Platform)'))</LibrariesTesthostRoot>
     <LibrariesTesthostRuntimeDir>$([MSBuild]::NormalizeDirectory('$(LibrariesTesthostRoot)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</LibrariesTesthostRuntimeDir>
-    <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsiOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetstvOS)' == 'true'">true</BuildMonoAOTCrossCompiler>
     <BuildMonoAOTCrossCompiler Condition="'$(TargetsMacCatalyst)' == 'true'">true</BuildMonoAOTCrossCompiler>
@@ -49,10 +48,6 @@
     <MonoCCompiler Condition="'$(MonoCCompiler)' == ''">clang</MonoCCompiler>
     <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' == ''">$(Platform)</_CompilerTargetArch>
     <_CompilerTargetArch Condition="'$(RealTargetArchitecture)' != ''">$(RealTargetArchitecture)</_CompilerTargetArch>
-    <!-- when we use runtime/build.sh -gcc, it is passed to eng/build.sh which sets the raw value to $(Compiler); strip the leading hyphens. -->
-    <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
-    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
-    <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
     <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
     <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
   </PropertyGroup>
@@ -117,6 +112,17 @@
     </Exec>
     <Error Condition="'$(TargetArchitecture)' == 'wasm' and '$(HostOS)' == 'windows' and '$(_MonoFindNinjaExitCode)' != '0' and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Text="ninja tool is required to build wasm on windows" />
 
+  </Target>
+
+  <Target Name="GetXcodeDir" Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(XcodeDir)' == ''">
+    <Exec Command="xcode-select -p" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" ConsoleToMsBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_MonoGetXcodeExitCode"/>
+      <Output TaskParameter="ConsoleOutput" PropertyName="_MonoGetXcodeConsoleOutput"/>
+    </Exec>
+    <PropertyGroup>
+      <XcodeDir Condition="'$(_MonoGetXcodeExitCode)' == '0'">$(_MonoGetXcodeConsoleOutput)</XcodeDir>
+      <XcodeDir Condition="'$(XcodeDir)' == ''">/Applications/Xcode.app/Contents/Developer</XcodeDir>
+    </PropertyGroup>
   </Target>
 
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
@@ -732,7 +738,7 @@
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->
   <PropertyGroup>
-    <MonoDependsOnTargets>CheckEnv;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
+    <MonoDependsOnTargets>CheckEnv;GetXcodeDir;GenerateRuntimeVersionFile;BuildMonoRuntime;BuildMonoCross</MonoDependsOnTargets>
     <MonoDependsOnTargets Condition="'$(TargetsBrowser)' == 'true'">GenerateRuntimeVersionFile;ProvisionEmscripten;$(MonoDependsOnTargets)</MonoDependsOnTargets>
   </PropertyGroup>
 

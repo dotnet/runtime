@@ -30,6 +30,7 @@ unsafe class Program
         bool? PopCnt = null;
         bool? Avx12 = false;
         bool? FmaBmi12 = false;
+        bool? Avxvnni = false;
 #elif NON_VEX_INTRINSICS
         bool vectorsAccelerated = true;
         int byteVectorLength = 16;
@@ -40,6 +41,7 @@ unsafe class Program
         bool? PopCnt = null;
         bool? Avx12 = false;
         bool? FmaBmi12 = false;
+        bool? Avxvnni = false;
 #elif VEX_INTRINSICS
         bool vectorsAccelerated = true;
         int byteVectorLength = 32;
@@ -50,6 +52,7 @@ unsafe class Program
         bool? PopCnt = null;
         bool? Avx12 = true;
         bool? FmaBmi12 = null;
+        bool? Avxvnni = null;
 #else
 #error Who dis?
 #endif
@@ -109,6 +112,9 @@ unsafe class Program
         Check("Popcnt", PopCnt, &PopcntIsSupported, Popcnt.IsSupported, () => Popcnt.PopCount(0) == 0);
         Check("Popcnt.X64", PopCnt, &PopcntX64IsSupported, Popcnt.X64.IsSupported, () => Popcnt.X64.PopCount(0) == 0);
 
+        Check("AvxVnni", Avxvnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
+        Check("AvxVnni.X64", Avxvnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
+
         return s_success ? 100 : 1;
     }
 
@@ -145,6 +151,8 @@ unsafe class Program
     static bool PclmulqdqX64IsSupported() => Pclmulqdq.X64.IsSupported;
     static bool PopcntIsSupported() => Popcnt.IsSupported;
     static bool PopcntX64IsSupported() => Popcnt.X64.IsSupported;
+    static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
+    static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
 
     static bool IsConstantTrue(delegate*<bool> code)
     {

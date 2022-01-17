@@ -1,0 +1,29 @@
+<Project>
+<!-- Build infrastructure support to enable running merged test runner assemblies like regular tests on mobile platforms. -->
+  <PropertyGroup>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <WasmMainAssemblyFileName>$(AssemblyName).dll</WasmMainAssemblyFileName>
+    <TestFramework>GeneratedRunner</TestFramework>
+  </PropertyGroup>
+
+  <Target Name="_AddRuntimeLibsToPublishAssets" BeforeTargets="PrepareForPublish" DependsOnTargets="ResolveLibrariesRuntimeFilesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <RuntimePackAsset Include="@(RuntimeFiles);@(LibrariesRuntimeFiles)" AssetType="runtime" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <RuntimePackAsset Include="$(TargetingPackPath)/*.dll" AssetType="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XHarnessRunnerLibrary/XHarnessRunnerLibrary.csproj" />
+  </ItemGroup>
+
+  <!-- Don't use the usual script generation, the scripts it generates are not useful for these tests. -->
+  <Target Name="GenerateExecutionScriptsInternal" />
+  <Target Name="GenerateLocalRunnerScript" DependsOnTargets="GenerateRunScript" AfterTargets="PublishTestAsSelfContained" />
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
+</Project>

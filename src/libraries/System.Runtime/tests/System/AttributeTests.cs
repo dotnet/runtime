@@ -154,6 +154,7 @@ namespace System.Tests
             public int Field = 0;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/803", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
         [StringValue("\uDFFF")]
         public static void StringArgument_InvalidCodeUnits_FallbackUsed()
