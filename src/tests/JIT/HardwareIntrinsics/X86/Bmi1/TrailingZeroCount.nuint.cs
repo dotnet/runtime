@@ -18,9 +18,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void AndNotUIntPtr()
+        private static void TrailingZeroCountnuint()
         {
-            var test = new ScalarBinaryOpTest__AndNotUIntPtr();
+            var test = new ScalarUnaryOpTest__TrailingZeroCountnuint();
 
             if (test.IsSupported)
             {
@@ -61,54 +61,45 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarBinaryOpTest__AndNotUIntPtr
+    public sealed unsafe class ScalarUnaryOpTest__TrailingZeroCountnuint
     {
         private struct TestStruct
         {
-            public UIntPtr _fld1;
-            public UIntPtr _fld2;
+            public nuint _fld;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                testStruct._fld1 = TestLibrary.Generator.GetUIntPtr();
-                testStruct._fld2 = TestLibrary.Generator.GetUIntPtr();
-
+                testStruct._fld = TestLibrary.Generator.GetUIntPtr();
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarBinaryOpTest__AndNotUIntPtr testClass)
+            public void RunStructFldScenario(ScalarUnaryOpTest__TrailingZeroCountnuint testClass)
             {
-                var result = Bmi1.AndNot(_fld1, _fld2);
-                testClass.ValidateResult(_fld1, _fld2, result);
+                var result = Bmi1.TrailingZeroCount(_fld);
+                testClass.ValidateResult(_fld, result);
             }
         }
 
-        private static UIntPtr _data1;
-        private static UIntPtr _data2;
+        private static nuint _data;
 
-        private static UIntPtr _clsVar1;
-        private static UIntPtr _clsVar2;
+        private static nuint _clsVar;
 
-        private UIntPtr _fld1;
-        private UIntPtr _fld2;
+        private nuint _fld;
 
-        static ScalarBinaryOpTest__AndNotUIntPtr()
+        static ScalarUnaryOpTest__TrailingZeroCountnuint()
         {
-            _clsVar1 = TestLibrary.Generator.GetUIntPtr();
-            _clsVar2 = TestLibrary.Generator.GetUIntPtr();
+            _clsVar = TestLibrary.Generator.GetUIntPtr();
         }
 
-        public ScalarBinaryOpTest__AndNotUIntPtr()
+        public ScalarUnaryOpTest__TrailingZeroCountnuint()
         {
             Succeeded = true;
 
-            _fld1 = TestLibrary.Generator.GetUIntPtr();
-            _fld2 = TestLibrary.Generator.GetUIntPtr();
-
-            _data1 = TestLibrary.Generator.GetUIntPtr();
-            _data2 = TestLibrary.Generator.GetUIntPtr();
+            
+            _fld = TestLibrary.Generator.GetUIntPtr();
+            _data = TestLibrary.Generator.GetUIntPtr();
         }
 
         public bool IsSupported => Bmi1.IsSupported;
@@ -119,66 +110,62 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Bmi1.AndNot(
-                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1)),
-                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data2))
+            var result = Bmi1.TrailingZeroCount(
+                Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data))
             );
 
-            ValidateResult(_data1, _data2, result);
+            ValidateResult(_data, result);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.AndNot), new Type[] { typeof(UIntPtr), typeof(UIntPtr) })
+            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.TrailingZeroCount), new Type[] { typeof(nuint) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1)),
-                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data2))
+                                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data))
                                      });
 
-            ValidateResult(_data1, _data2, (UIntPtr)result);
+            ValidateResult(_data, (nuint)result);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Bmi1.AndNot(
-                _clsVar1,
-                _clsVar2
+            var result = Bmi1.TrailingZeroCount(
+                _clsVar
             );
 
-            ValidateResult(_clsVar1, _clsVar2, result);
+            ValidateResult(_clsVar, result);
         }
 
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data1 = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data1));
-            var data2 = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data2));
-            var result = Bmi1.AndNot(data1, data2);
+            var data = Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data));
+            var result = Bmi1.TrailingZeroCount(data);
 
-            ValidateResult(data1, data2, result);
+            ValidateResult(data, result);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarBinaryOpTest__AndNotUIntPtr();
-            var result = Bmi1.AndNot(test._fld1, test._fld2);
+            var test = new ScalarUnaryOpTest__TrailingZeroCountnuint();
+            var result = Bmi1.TrailingZeroCount(test._fld);
 
-            ValidateResult(test._fld1, test._fld2, result);
+            ValidateResult(test._fld, result);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Bmi1.AndNot(_fld1, _fld2);
-            ValidateResult(_fld1, _fld2, result);
+            var result = Bmi1.TrailingZeroCount(_fld);
+            ValidateResult(_fld, result);
         }
 
         public void RunStructLclFldScenario()
@@ -186,9 +173,9 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Bmi1.AndNot(test._fld1, test._fld2);
+            var result = Bmi1.TrailingZeroCount(test._fld);
 
-            ValidateResult(test._fld1, test._fld2, result);
+            ValidateResult(test._fld, result);
         }
 
         public void RunStructFldScenario()
@@ -220,17 +207,16 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UIntPtr left, UIntPtr right, UIntPtr result, [CallerMemberName] string method = "")
+        private void ValidateResult(nuint data, nuint result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
-            isUnexpectedResult = ((~left & right) != result);
+            nuint expectedResult = 0; for (int index = 0; ((data >> index) & 1) == 0; index++) { expectedResult++; } isUnexpectedResult = (expectedResult != result);
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.AndNot)}<UIntPtr>(UIntPtr, UIntPtr): AndNot failed:");
-                TestLibrary.TestFramework.LogInformation($"    left: {left}");
-                TestLibrary.TestFramework.LogInformation($"   right: {right}");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.TrailingZeroCount)}<nuint>(nuint): TrailingZeroCount failed:");
+                TestLibrary.TestFramework.LogInformation($"    data: {data}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 

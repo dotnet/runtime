@@ -15,11 +15,11 @@
     <Compile Include="TrailingZeroCount.UInt32.cs" />
     <Compile Include="BitFieldExtract.UInt32.3Op.cs" />
     <Compile Include="BitFieldExtract.UInt32.cs" />
-    <Compile Include="AndNot.UIntPtr.cs" />
-    <Compile Include="ExtractLowestSetBit.UIntPtr.cs" />
-    <Compile Include="GetMaskUpToLowestSetBit.UIntPtr.cs" />
-    <Compile Include="ResetLowestSetBit.UIntPtr.cs" />
-    <Compile Include="TrailingZeroCount.UIntPtr.cs" />
+    <Compile Include="AndNot.nuint.cs" />
+    <Compile Include="ExtractLowestSetBit.nuint.cs" />
+    <Compile Include="GetMaskUpToLowestSetBit.nuint.cs" />
+    <Compile Include="ResetLowestSetBit.nuint.cs" />
+    <Compile Include="TrailingZeroCount.nuint.cs" />
     <Compile Include="BitFieldExtract.nuint.3Op.cs" />
     <Compile Include="BitFieldExtract.nuint.cs" />
     <Compile Include="Program.Bmi1.cs" />

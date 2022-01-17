@@ -18,9 +18,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ExtractLowestSetBitUIntPtr()
+        private static void GetMaskUpToLowestSetBitnuint()
         {
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUIntPtr();
+            var test = new ScalarUnaryOpTest__GetMaskUpToLowestSetBitnuint();
 
             if (test.IsSupported)
             {
@@ -61,11 +61,11 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarUnaryOpTest__ExtractLowestSetBitUIntPtr
+    public sealed unsafe class ScalarUnaryOpTest__GetMaskUpToLowestSetBitnuint
     {
         private struct TestStruct
         {
-            public UIntPtr _fld;
+            public nuint _fld;
 
             public static TestStruct Create()
             {
@@ -75,25 +75,25 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarUnaryOpTest__ExtractLowestSetBitUIntPtr testClass)
+            public void RunStructFldScenario(ScalarUnaryOpTest__GetMaskUpToLowestSetBitnuint testClass)
             {
-                var result = Bmi1.ExtractLowestSetBit(_fld);
+                var result = Bmi1.GetMaskUpToLowestSetBit(_fld);
                 testClass.ValidateResult(_fld, result);
             }
         }
 
-        private static UIntPtr _data;
+        private static nuint _data;
 
-        private static UIntPtr _clsVar;
+        private static nuint _clsVar;
 
-        private UIntPtr _fld;
+        private nuint _fld;
 
-        static ScalarUnaryOpTest__ExtractLowestSetBitUIntPtr()
+        static ScalarUnaryOpTest__GetMaskUpToLowestSetBitnuint()
         {
             _clsVar = TestLibrary.Generator.GetUIntPtr();
         }
 
-        public ScalarUnaryOpTest__ExtractLowestSetBitUIntPtr()
+        public ScalarUnaryOpTest__GetMaskUpToLowestSetBitnuint()
         {
             Succeeded = true;
 
@@ -110,8 +110,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Bmi1.ExtractLowestSetBit(
-                Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data))
+            var result = Bmi1.GetMaskUpToLowestSetBit(
+                Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data))
             );
 
             ValidateResult(_data, result);
@@ -121,19 +121,19 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.ExtractLowestSetBit), new Type[] { typeof(UIntPtr) })
+            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.GetMaskUpToLowestSetBit), new Type[] { typeof(nuint) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data))
+                                        Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data))
                                      });
 
-            ValidateResult(_data, (UIntPtr)result);
+            ValidateResult(_data, (nuint)result);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Bmi1.ExtractLowestSetBit(
+            var result = Bmi1.GetMaskUpToLowestSetBit(
                 _clsVar
             );
 
@@ -144,8 +144,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data = Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.As<UIntPtr, byte>(ref _data));
-            var result = Bmi1.ExtractLowestSetBit(data);
+            var data = Unsafe.ReadUnaligned<nuint>(ref Unsafe.As<nuint, byte>(ref _data));
+            var result = Bmi1.GetMaskUpToLowestSetBit(data);
 
             ValidateResult(data, result);
         }
@@ -154,8 +154,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUIntPtr();
-            var result = Bmi1.ExtractLowestSetBit(test._fld);
+            var test = new ScalarUnaryOpTest__GetMaskUpToLowestSetBitnuint();
+            var result = Bmi1.GetMaskUpToLowestSetBit(test._fld);
 
             ValidateResult(test._fld, result);
         }
@@ -164,7 +164,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Bmi1.ExtractLowestSetBit(_fld);
+            var result = Bmi1.GetMaskUpToLowestSetBit(_fld);
             ValidateResult(_fld, result);
         }
 
@@ -173,7 +173,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Bmi1.ExtractLowestSetBit(test._fld);
+            var result = Bmi1.GetMaskUpToLowestSetBit(test._fld);
 
             ValidateResult(test._fld, result);
         }
@@ -207,15 +207,15 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UIntPtr data, UIntPtr result, [CallerMemberName] string method = "")
+        private void ValidateResult(nuint data, nuint result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
-            isUnexpectedResult = ((unchecked((uint)(-(int)data)) & data) != result);
+            isUnexpectedResult = (((data - 1) ^ data) != result);
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.ExtractLowestSetBit)}<UIntPtr>(UIntPtr): ExtractLowestSetBit failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.GetMaskUpToLowestSetBit)}<nuint>(nuint): GetMaskUpToLowestSetBit failed:");
                 TestLibrary.TestFramework.LogInformation($"    data: {data}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
