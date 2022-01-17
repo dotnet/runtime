@@ -32,7 +32,7 @@
     <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot; )" />
     <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WASM_XHARNESS_MONO_ARGS=--setenv=NPM_MODULES=ws:WebSocket&quot; )" />
     <!-- Restore NPM packages -->
-    <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( npm ci )" />
+    <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
   </ItemGroup>
 
   <!-- Browser specific files -->
