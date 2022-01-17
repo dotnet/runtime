@@ -10914,11 +10914,14 @@ void gc_heap::clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 
         if (startwrd == endwrd)
         {
-            assert (startbit <= endbit);
-            if (endbit)
+            if (startbit != endbit)
             {
                 unsigned int wrd = firstwrd | lastwrd;
                 mark_array[startwrd] &= wrd;
+            }
+            else
+            {
+                assert (start == end);
             }
             return;
         }
