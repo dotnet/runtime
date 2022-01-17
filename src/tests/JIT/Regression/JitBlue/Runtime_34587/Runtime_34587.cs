@@ -6,11 +6,10 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
-using ArmSha1 = System.Runtime.Intrinsics.Arm.Sha1;
-using X86Sha1 = System.Runtime.Intrinsics.X86.Sha1;
+using X86Sha = System.Runtime.Intrinsics.X86.Sha;
 
+using ArmSha1 = System.Runtime.Intrinsics.Arm.Sha1;
 using ArmSha256 = System.Runtime.Intrinsics.Arm.Sha256;
-using X86Sha256 = System.Runtime.Intrinsics.X86.Sha256;
 
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
@@ -35,8 +34,7 @@ class Runtime_34587
         TestLibrary.TestFramework.LogInformation($"  SSE4.1:        {Sse41.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSE4.2:        {Sse42.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  SSSE3:         {Ssse3.IsSupported}");
-        TestLibrary.TestFramework.LogInformation($"  Sha1:          {X86Sha1.IsSupported}");
-        TestLibrary.TestFramework.LogInformation($"  Sha256:        {X86Sha256.IsSupported}");
+        TestLibrary.TestFramework.LogInformation($"  SHA:           {X86Sha.IsSupported}");
         TestLibrary.TestFramework.LogInformation($"  X86Base:       {X86Base.IsSupported}");
 
         TestLibrary.TestFramework.LogInformation("Supported x64 ISAs:");
@@ -265,8 +263,7 @@ class Runtime_34587
         succeeded &= ValidateLzcnt();
         succeeded &= ValidatePclmulqdq();
         succeeded &= ValidatePopcnt();
-        succeeded &= ValidateSha1();
-        succeeded &= ValidateSha256();
+        succeeded &= ValidateSha();
 
         return succeeded;
 
@@ -558,25 +555,13 @@ class Runtime_34587
             return succeeded;
         }
 
-        static bool ValidateSha1()
+        static bool ValidateSha()
         {
             bool succeeded = true;
 
-            if (X86Sha1.IsSupported)
+            if (X86Sha.IsSupported)
             {
-                succeeded &= X86Sha1.IsSupported;
-            }
-
-            return succeeded;
-        }
-
-        static bool ValidateSha256()
-        {
-            bool succeeded = true;
-
-            if (X86Sha256.IsSupported)
-            {
-                succeeded &= X86Sha256.IsSupported;
+                succeeded &= X86Sha.IsSupported;
             }
 
             return succeeded;

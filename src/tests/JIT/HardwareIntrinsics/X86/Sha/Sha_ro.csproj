@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Sha1MessageSchedule1.Byte.cs" />
+    <Compile Include="Sha1MessageSchedule2.Byte.cs" />
+    <Compile Include="Sha1NextE.Byte.cs" />
+    <Compile Include="Sha1FourRounds.Byte.cs" />
+    <Compile Include="Sha256MessageSchedule1.Byte.cs" />
+    <Compile Include="Sha256MessageSchedule2.Byte.cs" />
+    <Compile Include="Sha256TwoRounds.Byte.cs" />
+    <Compile Include="Program.Sha.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+</Project>

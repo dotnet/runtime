@@ -18,16 +18,16 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void MessageSchedule1Byte()
+        private static void Sha1FourRoundsByte()
         {
-            var test = new SimpleBinaryOpTest__MessageSchedule1Byte();
+            var test = new SimpleBinaryOpTest__Sha1FourRoundsByte();
 
             if (test.IsSupported)
             {
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates basic functionality works, using Load
                     test.RunBasicScenario_Load();
@@ -39,7 +39,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates calling via reflection works, using Load
                     test.RunReflectionScenario_Load();
@@ -51,7 +51,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates passing a static member works, using pinning and Load
                     test.RunClsVarScenario_Load();
@@ -60,7 +60,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates passing a local works, using Load
                     test.RunLclVarScenario_Load();
@@ -72,7 +72,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates passing the field of a local class works, using pinning and Load
                     test.RunClassLclFldScenario_Load();
@@ -81,7 +81,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates passing an instance member of a class works, using pinning and Load
                     test.RunClassFldScenario_Load();
@@ -90,7 +90,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates passing the field of a local struct works, using pinning and Load
                     test.RunStructLclFldScenario_Load();
@@ -99,7 +99,7 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
 
-                if (Sha256.IsSupported)
+                if (Sha.IsSupported)
                 {
                     // Validates passing an instance member of a struct works, using pinning and Load
                     test.RunStructFldScenario_Load();
@@ -118,7 +118,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class SimpleBinaryOpTest__MessageSchedule1Byte
+    public sealed unsafe class SimpleBinaryOpTest__Sha1FourRoundsByte
     {
         private struct DataTable
         {
@@ -190,22 +190,22 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(SimpleBinaryOpTest__MessageSchedule1Byte testClass)
+            public void RunStructFldScenario(SimpleBinaryOpTest__Sha1FourRoundsByte testClass)
             {
-                var result = Sha256.MessageSchedule1(_fld1, _fld2);
+                var result = Sha.Sha1FourRounds(_fld1, _fld2);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(SimpleBinaryOpTest__MessageSchedule1Byte testClass)
+            public void RunStructFldScenario_Load(SimpleBinaryOpTest__Sha1FourRoundsByte testClass)
             {
                 fixed (Vector128<Byte>* pFld1 = &_fld1)
                 fixed (Vector256<Byte>* pFld2 = &_fld2)
                 {
-                    var result = Sha256.MessageSchedule1(
-                        Sha256.LoadVector128((Byte*)(pFld1)),
-                        Sha256.LoadVector256((Byte*)(pFld2))
+                    var result = Sha.Sha1FourRounds(
+                        Sha.LoadVector128((Byte*)(pFld1)),
+                        Sha.LoadVector256((Byte*)(pFld2))
                     );
 
                     Unsafe.Write(testClass._dataTable.outArrayPtr, result);
@@ -231,7 +231,7 @@ namespace JIT.HardwareIntrinsics.X86
 
         private DataTable _dataTable;
 
-        static SimpleBinaryOpTest__MessageSchedule1Byte()
+        static SimpleBinaryOpTest__Sha1FourRoundsByte()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
@@ -239,7 +239,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _clsVar2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
         }
 
-        public SimpleBinaryOpTest__MessageSchedule1Byte()
+        public SimpleBinaryOpTest__Sha1FourRoundsByte()
         {
             Succeeded = true;
 
@@ -253,7 +253,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new DataTable(_data1, _data2, new Byte[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Sha256.IsSupported;
+        public bool IsSupported => Sha.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -261,7 +261,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Sha256.MessageSchedule1(
+            var result = Sha.Sha1FourRounds(
                 Unsafe.Read<Vector128<Byte>>(_dataTable.inArray1Ptr),
                 Unsafe.Read<Vector256<Byte>>(_dataTable.inArray2Ptr)
             );
@@ -274,9 +274,9 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
-            var result = Sha256.MessageSchedule1(
-                Sha256.LoadVector128((Byte*)(_dataTable.inArray1Ptr)),
-                Sha256.LoadVector256((Byte*)(_dataTable.inArray2Ptr))
+            var result = Sha.Sha1FourRounds(
+                Sha.LoadVector128((Byte*)(_dataTable.inArray1Ptr)),
+                Sha.LoadVector256((Byte*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -287,9 +287,9 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
 
-            var result = Sha256.MessageSchedule1(
-                Sha256.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr)),
-                Sha256.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr))
+            var result = Sha.Sha1FourRounds(
+                Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr)),
+                Sha.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -300,7 +300,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Sha256).GetMethod(nameof(Sha256.MessageSchedule1), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
+            var result = typeof(Sha).GetMethod(nameof(Sha.Sha1FourRounds), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Byte>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<Vector256<Byte>>(_dataTable.inArray2Ptr)
@@ -314,10 +314,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(Sha256).GetMethod(nameof(Sha256.MessageSchedule1), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
+            var result = typeof(Sha).GetMethod(nameof(Sha.Sha1FourRounds), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
                                      .Invoke(null, new object[] {
-                                        Sha256.LoadVector128((Byte*)(_dataTable.inArray1Ptr)),
-                                        Sha256.LoadVector256((Byte*)(_dataTable.inArray2Ptr))
+                                        Sha.LoadVector128((Byte*)(_dataTable.inArray1Ptr)),
+                                        Sha.LoadVector256((Byte*)(_dataTable.inArray2Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Byte>)(result));
@@ -328,10 +328,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
 
-            var result = typeof(Sha256).GetMethod(nameof(Sha256.MessageSchedule1), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
+            var result = typeof(Sha).GetMethod(nameof(Sha.Sha1FourRounds), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
                                      .Invoke(null, new object[] {
-                                        Sha256.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr)),
-                                        Sha256.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr))
+                                        Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr)),
+                                        Sha.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Byte>)(result));
@@ -342,7 +342,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Sha256.MessageSchedule1(
+            var result = Sha.Sha1FourRounds(
                 _clsVar1,
                 _clsVar2
             );
@@ -358,9 +358,9 @@ namespace JIT.HardwareIntrinsics.X86
             fixed (Vector128<Byte>* pClsVar1 = &_clsVar1)
             fixed (Vector256<Byte>* pClsVar2 = &_clsVar2)
             {
-                var result = Sha256.MessageSchedule1(
-                    Sha256.LoadVector128((Byte*)(pClsVar1)),
-                    Sha256.LoadVector256((Byte*)(pClsVar2))
+                var result = Sha.Sha1FourRounds(
+                    Sha.LoadVector128((Byte*)(pClsVar1)),
+                    Sha.LoadVector256((Byte*)(pClsVar2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -374,7 +374,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             var op1 = Unsafe.Read<Vector128<Byte>>(_dataTable.inArray1Ptr);
             var op2 = Unsafe.Read<Vector256<Byte>>(_dataTable.inArray2Ptr);
-            var result = Sha256.MessageSchedule1(op1, op2);
+            var result = Sha.Sha1FourRounds(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -384,9 +384,9 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var op1 = Sha256.LoadVector128((Byte*)(_dataTable.inArray1Ptr));
-            var op2 = Sha256.LoadVector256((Byte*)(_dataTable.inArray2Ptr));
-            var result = Sha256.MessageSchedule1(op1, op2);
+            var op1 = Sha.LoadVector128((Byte*)(_dataTable.inArray1Ptr));
+            var op2 = Sha.LoadVector256((Byte*)(_dataTable.inArray2Ptr));
+            var result = Sha.Sha1FourRounds(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -396,9 +396,9 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var op1 = Sha256.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr));
-            var op2 = Sha256.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr));
-            var result = Sha256.MessageSchedule1(op1, op2);
+            var op1 = Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr));
+            var op2 = Sha.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr));
+            var result = Sha.Sha1FourRounds(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(op1, op2, _dataTable.outArrayPtr);
@@ -408,8 +408,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new SimpleBinaryOpTest__MessageSchedule1Byte();
-            var result = Sha256.MessageSchedule1(test._fld1, test._fld2);
+            var test = new SimpleBinaryOpTest__Sha1FourRoundsByte();
+            var result = Sha.Sha1FourRounds(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -419,14 +419,14 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new SimpleBinaryOpTest__MessageSchedule1Byte();
+            var test = new SimpleBinaryOpTest__Sha1FourRoundsByte();
 
             fixed (Vector128<Byte>* pFld1 = &test._fld1)
             fixed (Vector256<Byte>* pFld2 = &test._fld2)
             {
-                var result = Sha256.MessageSchedule1(
-                    Sha256.LoadVector128((Byte*)(pFld1)),
-                    Sha256.LoadVector256((Byte*)(pFld2))
+                var result = Sha.Sha1FourRounds(
+                    Sha.LoadVector128((Byte*)(pFld1)),
+                    Sha.LoadVector256((Byte*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -438,7 +438,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Sha256.MessageSchedule1(_fld1, _fld2);
+            var result = Sha.Sha1FourRounds(_fld1, _fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
@@ -451,9 +451,9 @@ namespace JIT.HardwareIntrinsics.X86
             fixed (Vector128<Byte>* pFld1 = &_fld1)
             fixed (Vector256<Byte>* pFld2 = &_fld2)
             {
-                var result = Sha256.MessageSchedule1(
-                    Sha256.LoadVector128((Byte*)(pFld1)),
-                    Sha256.LoadVector256((Byte*)(pFld2))
+                var result = Sha.Sha1FourRounds(
+                    Sha.LoadVector128((Byte*)(pFld1)),
+                    Sha.LoadVector256((Byte*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -466,7 +466,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Sha256.MessageSchedule1(test._fld1, test._fld2);
+            var result = Sha.Sha1FourRounds(test._fld1, test._fld2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
@@ -477,9 +477,9 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
 
             var test = TestStruct.Create();
-            var result = Sha256.MessageSchedule1(
-                Sha256.LoadVector128((Byte*)(&test._fld1)),
-                Sha256.LoadVector256((Byte*)(&test._fld2))
+            var result = Sha.Sha1FourRounds(
+                Sha.LoadVector128((Byte*)(&test._fld1)),
+                Sha.LoadVector256((Byte*)(&test._fld2))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -571,7 +571,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sha256)}.{nameof(Sha256.MessageSchedule1)}<Byte>(Vector128<Byte>, Vector256<Byte>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sha)}.{nameof(Sha.Sha1FourRounds)}<Byte>(Vector128<Byte>, Vector256<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");

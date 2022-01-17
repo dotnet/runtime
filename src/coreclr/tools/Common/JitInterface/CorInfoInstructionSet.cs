@@ -56,27 +56,25 @@ namespace Internal.JitInterface
         X64_Vector128=17,
         X64_Vector256=18,
         X64_AVXVNNI=19,
-        X64_Sha1=20,
-        X64_Sha256=21,
-        X64_SHA=22,
-        X64_X86Base_X64=23,
-        X64_SSE_X64=24,
-        X64_SSE2_X64=25,
-        X64_SSE3_X64=26,
-        X64_SSSE3_X64=27,
-        X64_SSE41_X64=28,
-        X64_SSE42_X64=29,
-        X64_AVX_X64=30,
-        X64_AVX2_X64=31,
-        X64_AES_X64=32,
-        X64_BMI1_X64=33,
-        X64_BMI2_X64=34,
-        X64_FMA_X64=35,
-        X64_LZCNT_X64=36,
-        X64_PCLMULQDQ_X64=37,
-        X64_POPCNT_X64=38,
-        X64_AVXVNNI_X64=39,
-        X64_SHA_X64=40,
+        X64_SHA=20,
+        X64_X86Base_X64=21,
+        X64_SSE_X64=22,
+        X64_SSE2_X64=23,
+        X64_SSE3_X64=24,
+        X64_SSSE3_X64=25,
+        X64_SSE41_X64=26,
+        X64_SSE42_X64=27,
+        X64_AVX_X64=28,
+        X64_AVX2_X64=29,
+        X64_AES_X64=30,
+        X64_BMI1_X64=31,
+        X64_BMI2_X64=32,
+        X64_FMA_X64=33,
+        X64_LZCNT_X64=34,
+        X64_PCLMULQDQ_X64=35,
+        X64_POPCNT_X64=36,
+        X64_AVXVNNI_X64=37,
+        X64_SHA_X64=38,
         X86_X86Base=1,
         X86_SSE=2,
         X86_SSE2=3,
@@ -96,27 +94,25 @@ namespace Internal.JitInterface
         X86_Vector128=17,
         X86_Vector256=18,
         X86_AVXVNNI=19,
-        X86_Sha1=20,
-        X86_Sha256=21,
-        X86_SHA=22,
-        X86_X86Base_X64=23,
-        X86_SSE_X64=24,
-        X86_SSE2_X64=25,
-        X86_SSE3_X64=26,
-        X86_SSSE3_X64=27,
-        X86_SSE41_X64=28,
-        X86_SSE42_X64=29,
-        X86_AVX_X64=30,
-        X86_AVX2_X64=31,
-        X86_AES_X64=32,
-        X86_BMI1_X64=33,
-        X86_BMI2_X64=34,
-        X86_FMA_X64=35,
-        X86_LZCNT_X64=36,
-        X86_PCLMULQDQ_X64=37,
-        X86_POPCNT_X64=38,
-        X86_AVXVNNI_X64=39,
-        X86_SHA_X64=40,
+        X86_SHA=20,
+        X86_X86Base_X64=21,
+        X86_SSE_X64=22,
+        X86_SSE2_X64=23,
+        X86_SSE3_X64=24,
+        X86_SSSE3_X64=25,
+        X86_SSE41_X64=26,
+        X86_SSE42_X64=27,
+        X86_AVX_X64=28,
+        X86_AVX2_X64=29,
+        X86_AES_X64=30,
+        X86_BMI1_X64=31,
+        X86_BMI2_X64=32,
+        X86_FMA_X64=33,
+        X86_LZCNT_X64=34,
+        X86_PCLMULQDQ_X64=35,
+        X86_POPCNT_X64=36,
+        X86_AVXVNNI_X64=37,
+        X86_SHA_X64=38,
 
     }
 
@@ -348,10 +344,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_Vector256))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_Sha1))
-                        resultflags.AddInstructionSet(InstructionSet.X64_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_Sha256))
-                        resultflags.AddInstructionSet(InstructionSet.X64_SHA);
                     break;
 
                 case TargetArchitecture.X86:
@@ -385,10 +377,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_SSE42);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_Vector256))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_Sha1))
-                        resultflags.AddInstructionSet(InstructionSet.X86_SHA);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_Sha256))
-                        resultflags.AddInstructionSet(InstructionSet.X86_SHA);
                     break;
 
                 }
@@ -511,10 +499,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X64_Vector256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X64_Sha1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X64_Sha256);
                     break;
 
                 case TargetArchitecture.X86:
@@ -548,10 +532,6 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_POPCNT);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX))
                         resultflags.AddInstructionSet(InstructionSet.X86_Vector256);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X86_Sha1);
-                    if (resultflags.HasInstructionSet(InstructionSet.X86_SHA))
-                        resultflags.AddInstructionSet(InstructionSet.X86_Sha256);
                     break;
 
                 }
@@ -615,8 +595,6 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X64_AVXVNNI, true);
-                    yield return new InstructionSetInfo("Sha1", "", InstructionSet.X64_Sha1, false);
-                    yield return new InstructionSetInfo("Sha256", "", InstructionSet.X64_Sha256, false);
                     yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X64_SHA, true);
                     break;
 
@@ -640,8 +618,6 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X86_AVXVNNI, true);
-                    yield return new InstructionSetInfo("Sha1", "", InstructionSet.X86_Sha1, false);
-                    yield return new InstructionSetInfo("Sha256", "", InstructionSet.X86_Sha256, false);
                     yield return new InstructionSetInfo("sha", "Sha", InstructionSet.X86_SHA, true);
                     break;
 

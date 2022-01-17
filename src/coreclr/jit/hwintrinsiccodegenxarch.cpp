@@ -2040,13 +2040,13 @@ void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-        case NI_Sha1_MessageSchedule1:
-        case NI_Sha1_MessageSchedule2:
-        case NI_Sha1_NextE:
-        case NI_Sha1_FourRounds:
-        case NI_Sha256_MessageSchedule1:
-        case NI_Sha256_MessageSchedule2:
-        case NI_Sha256_TwoRounds:
+        case NI_SHA_Sha1MessageSchedule1:
+        case NI_SHA_Sha1MessageSchedule2:
+        case NI_SHA_Sha1NextE:
+        case NI_SHA_Sha1FourRounds:
+        case NI_SHA_Sha256MessageSchedule1:
+        case NI_SHA_Sha256MessageSchedule2:
+        case NI_SHA_Sha256TwoRounds:
         {
             // TODO
             // assert((targetType == TYP_INT) || (targetType == TYP_LONG));
