@@ -1016,9 +1016,6 @@ void ShimProcess::QueueFakeAttachEventsIfNeeded(bool fRealCreateProcessEvent)
 //    same order that V2 used. So without using platform-specific thread-enumeration,
 //    we can't get the V2 ordering.
 //
-//    Compare to code:ShimProcess::QueueFakeThreadAttachEventsNativeOrder,
-//    which sends threads in the OS native thread create order.
-//
 HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
 {
     ICorDebugProcess * pProcess = GetProcess();
@@ -1055,30 +1052,6 @@ HRESULT ShimProcess::QueueFakeThreadAttachEventsNoOrder()
     }
 
     return S_OK;
-}
-
-//---------------------------------------------------------------------------------------
-// Send fake Thread-create events for attach, using the order of the OS native
-// thread list.
-//
-// Returns:
-//    S_OK on success, else error.
-//
-// Notes:
-//    This sends fake thread-create events, ala V2 attach.
-//    See code:ShimProcess::QueueFakeAttachEvents for details
-//    The order of the thread creates matches the OS's native thread list.
-//    This is important because the debugger can use the order of thread-create
-//    callbacks to associate logical thread-ids (0,1,2...) with threads. Users
-//    may rely on thread 0 always being the main thread.
-//    In contrast, the order from ICorDebugProcess::EnumerateThreads is random.
-//
-//    Compare to code:ShimProcess::QueueFakeThreadAttachEventsNoOrder, which
-//    sends the threads in an arbitrary order.
-HRESULT ShimProcess::QueueFakeThreadAttachEventsNativeOrder()
-{
-    _ASSERTE("NYI");
-    return E_FAIL;
 }
 
 //---------------------------------------------------------------------------------------

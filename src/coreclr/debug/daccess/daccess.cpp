@@ -6939,9 +6939,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     return m_fEnableTargetConsistencyAsserts;
 }
 
-#define ctime_s _ctime32_s
-#define time_t __time32_t
-
 //
 // VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
 // Only done on Windows and Mac builds at the moment.
@@ -7497,30 +7494,8 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
     *pPId = (DWORD)(SIZE_T)hProcess;
     *pThreadId = (DWORD)(SIZE_T)hThread;
 #else
-	HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
-    if (hKernel32 == NULL)
-    {
-        return FALSE;
-    }
-
-    typedef WINBASEAPI DWORD (WINAPI GET_PROCESSID_OF_THREAD)(HANDLE);
-    GET_PROCESSID_OF_THREAD * pGetProcessIdOfThread;
-
-    typedef WINBASEAPI DWORD (WINAPI GET_THREADID)(HANDLE);
-    GET_THREADID * pGetThreadId;
-
-    pGetProcessIdOfThread = (GET_PROCESSID_OF_THREAD *)GetProcAddress(hKernel32, "GetProcessIdOfThread");
-    pGetThreadId = (GET_THREADID *)GetProcAddress(hKernel32, "GetThreadId");
-
-    // OOP callbacks are used on Win7 or later.   We should have having below two APIs available.
-    _ASSERTE((pGetProcessIdOfThread != NULL) && (pGetThreadId != NULL));
-    if ((pGetProcessIdOfThread == NULL) || (pGetThreadId == NULL))
-    {
-        return FALSE;
-    }
-
-    *pPId = (*pGetProcessIdOfThread)(hThread);
-    *pThreadId = (*pGetThreadId)(hThread);
+    *pPId = GetProcessIdOfThread(hThread);
+    *pThreadId = GetThreadId(hThread);
 #endif // TARGET_UNIX
     return TRUE;
 }

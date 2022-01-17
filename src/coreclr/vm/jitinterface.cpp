@@ -12822,7 +12822,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         LPCUTF8 pszDebugClassName = ftn->m_pszDebugClassName;
         LPCUTF8 pszDebugMethodName = ftn->m_pszDebugMethodName;
         LPCUTF8 pszDebugMethodSignature = ftn->m_pszDebugMethodSignature;
-#else
+#elif 0
         LPCUTF8 pszNamespace;
         LPCUTF8 pszDebugClassName = ftn->GetMethodTable()->GetFullyQualifiedNameInfo(&pszNamespace);
         LPCUTF8 pszDebugMethodName = ftn->GetName();

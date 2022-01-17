@@ -426,9 +426,6 @@ public:
     // Helper to queue fake assembly and mdule events
     void QueueFakeAssemblyAndModuleEvent(ICorDebugAssembly * pAssembly);
 
-    // Queue fake thread-create events on attach. Order via native threads.
-    HRESULT QueueFakeThreadAttachEventsNativeOrder();
-
     // Queue fake thread-create events on attach. No ordering.
     HRESULT QueueFakeThreadAttachEventsNoOrder();
 
