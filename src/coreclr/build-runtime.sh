@@ -50,6 +50,8 @@ build_cross_architecture_components()
         __SkipCrossArchBuild=0
     elif [[ "$__BuildArch" == "arm64" && "$__CrossArch" == "x64" ]]; then
         __SkipCrossArchBuild=0
+    elif [[ "$__BuildArch" == "loongarch64" && "$__CrossArch" == "x64" ]]; then
+        __SkipCrossArchBuild=0
     else
         # not supported
         return

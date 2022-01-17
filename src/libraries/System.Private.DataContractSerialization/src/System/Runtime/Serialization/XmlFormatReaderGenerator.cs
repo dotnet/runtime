@@ -419,7 +419,7 @@ namespace System.Runtime.Serialization
                         _ilg.Set(requiredIndexLocal!, nextRequiredIndex);
                     }
 
-                    LocalBuilder? value = null;
+                    LocalBuilder? value;
 
                     if (dataMember.IsGetOnlyCollection)
                     {

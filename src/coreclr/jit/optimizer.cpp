@@ -847,7 +847,7 @@ bool Compiler::optCheckIterInLoopTest(
         relop = test->gtGetOp2();
     }
 
-    noway_assert(relop->OperKind() & GTK_RELOP);
+    noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;
     GenTree* opr2 = relop->AsOp()->gtOp2;

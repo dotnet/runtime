@@ -3567,7 +3567,7 @@ int LinearScan::BuildSimple(GenTree* tree)
 {
     unsigned kind     = tree->OperKind();
     int      srcCount = 0;
-    if ((kind & (GTK_CONST | GTK_LEAF)) == 0)
+    if ((kind & GTK_LEAF) == 0)
     {
         assert((kind & GTK_SMPOP) != 0);
         srcCount = BuildBinaryUses(tree->AsOp());

@@ -37,7 +37,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
         {
             return fgMorphTree(tree);
         }
-        else if (tree->OperKind() & GTK_CONST)
+        else if (tree->OperIsConst())
         {
             return fgMorphConst(tree);
         }
@@ -6248,8 +6248,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
-            // Normal static field reference
+            assert(!fieldMayOverlap);
 
+            // Normal static field reference
             //
             // If we can we access the static's address directly
             // then pFldAddr will be NULL and
@@ -6261,6 +6262,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // We should always be able to access this static field address directly
             //
             assert(pFldAddr == nullptr);
+
+            // For boxed statics, this direct address will be for the box. We have already added
+            // the indirection for the field itself and attached the sequence, in importation.
+            bool          isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
+            FieldSeqNode* fldSeq =
+                !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(symHnd) : FieldSeqStore::NotAField();
 
 #ifdef TARGET_64BIT
             bool isStaticReadOnlyInited = false;
@@ -6275,11 +6282,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
             if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
             {
-                // The address is not directly addressible, so force it into a
-                // constant, so we handle it properly
-
-                bool         isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-                GenTreeFlags handleKind    = GTF_EMPTY;
+                // The address is not directly addressible, so force it into a constant, so we handle it properly.
+                GenTreeFlags handleKind = GTF_EMPTY;
                 if (isBoxedStatic)
                 {
                     handleKind = GTF_ICON_STATIC_BOX_PTR;
@@ -6292,8 +6296,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 {
                     handleKind = GTF_ICON_STATIC_HDL;
                 }
-                FieldSeqNode* fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd);
-                GenTree*      addr     = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
 
                 // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
                 if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
@@ -6330,9 +6333,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
                 tree->SetOper(GT_CLS_VAR);
                 tree->AsClsVar()->gtClsVarHnd = symHnd;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                tree->AsClsVar()->gtFieldSeq = fieldSeq;
+                tree->AsClsVar()->gtFieldSeq  = fldSeq;
             }
 
             return tree;
@@ -9413,12 +9414,12 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
 
 /*****************************************************************************
  *
- *  Transform the given GTK_CONST tree for code generation.
+ *  Transform the given constant tree for code generation.
  */
 
 GenTree* Compiler::fgMorphConst(GenTree* tree)
 {
-    assert(tree->OperKind() & GTK_CONST);
+    assert(tree->OperIsConst());
 
     /* Clear any exception flags or other unnecessary flags
      * that may have been set before folding this node to a constant */
@@ -11014,7 +11015,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             noway_assert(op1);
 
-            if (op1->OperKind() & GTK_RELOP)
+            if (op1->OperIsCompare())
             {
                 /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
                    not need to materialize the result as a 0 or 1. */
@@ -11948,7 +11949,7 @@ DONE_MORPHING_CHILDREN:
 
         return tree;
     }
-    else if (tree->OperKind() & GTK_CONST)
+    else if (tree->OperIsConst())
     {
         return tree;
     }
@@ -12086,7 +12087,7 @@ DONE_MORPHING_CHILDREN:
 
         COMPARE:
 
-            noway_assert(tree->OperKind() & GTK_RELOP);
+            noway_assert(tree->OperIsCompare());
             break;
 
         case GT_MUL:
@@ -13200,7 +13201,7 @@ DONE_MORPHING_CHILDREN:
                     return throwNode;
                 }
 
-                noway_assert(op1->OperKind() & GTK_RELOP);
+                noway_assert(op1->OperIsCompare());
                 noway_assert(op1->gtFlags & GTF_EXCEPT);
 
                 // We need to keep op1 for the side-effects. Hang it off
@@ -14148,18 +14149,45 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
     gtUpdateNodeOperSideEffects(multiOp);
+
+    bool dontCseConstArguments = false;
+#if defined(FEATURE_HW_INTRINSICS)
+    // Opportunistically, avoid unexpected CSE for hw intrinsics with IMM arguments
+    if (multiOp->OperIs(GT_HWINTRINSIC))
+    {
+        NamedIntrinsic hwIntrinsic = multiOp->AsHWIntrinsic()->GetHWIntrinsicId();
+#if defined(TARGET_XARCH)
+        if (HWIntrinsicInfo::lookupCategory(hwIntrinsic) == HW_Category_IMM)
+        {
+            dontCseConstArguments = true;
+        }
+#elif defined(TARGET_ARMARCH)
+        if (HWIntrinsicInfo::HasImmediateOperand(hwIntrinsic))
+        {
+            dontCseConstArguments = true;
+        }
+#endif
+    }
+#endif
+
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
         multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
+
+        if (dontCseConstArguments && (*use)->OperIsConst())
+        {
+            (*use)->SetDoNotCSE();
+        }
     }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
         switch (hw->GetHWIntrinsicId())
         {
+#if defined(TARGET_XARCH)
             case NI_SSE_Xor:
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
@@ -14185,6 +14213,36 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 }
                 break;
             }
+#endif
+
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+#endif
+            {
+                bool hwAllArgsAreConst = true;
+                for (GenTree** use : multiOp->UseEdges())
+                {
+                    if (!(*use)->OperIsConst())
+                    {
+                        hwAllArgsAreConst = false;
+                        break;
+                    }
+                }
+
+                // Avoid unexpected CSE for constant arguments for Vector_.Create
+                // but only if all arguments are constants.
+                if (hwAllArgsAreConst)
+                {
+                    for (GenTree** use : multiOp->UseEdges())
+                    {
+                        (*use)->SetDoNotCSE();
+                    }
+                }
+            }
+            break;
 
             default:
                 break;
@@ -14725,7 +14783,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     /* Is this a constant node? */
 
-    if (kind & GTK_CONST)
+    if (tree->OperIsConst())
     {
         tree = fgMorphConst(tree);
         goto DONE;
@@ -15008,7 +15066,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
         assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
     }
 
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
     {
         goto DONE;
     }
@@ -15103,7 +15161,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         GenTree* cond;
         cond = condTree->gtEffectiveVal(true);
 
-        if (cond->OperKind() & GTK_CONST)
+        if (cond->OperIsConst())
         {
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
@@ -15327,7 +15385,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         GenTree* cond;
         cond = condTree->gtEffectiveVal(true);
 
-        if (cond->OperKind() & GTK_CONST)
+        if (cond->OperIsConst())
         {
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
@@ -15722,7 +15780,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             {
                 GenTree* op1 = last->AsOp()->gtOp1;
 
-                if (op1->OperKind() & GTK_RELOP)
+                if (op1->OperIsCompare())
                 {
                     /* Unmark the comparison node with GTF_RELOP_JMP_USED */
                     op1->gtFlags &= ~GTF_RELOP_JMP_USED;

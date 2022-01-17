@@ -383,7 +383,7 @@ namespace System.Data
             }
             else
             {
-                strName = instanceName = string.Empty;
+                instanceName = string.Empty;
             }
 
             // Now get the type
@@ -442,8 +442,6 @@ namespace System.Data
             bool isAttribute = FEqualIdentity(node, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS);
 
             GetMinMax(node, isAttribute, ref minOccurs, ref maxOccurs);
-
-            strDefault = null;
 
             // Does XDR has default?
             strDefault = node.GetAttribute(Keywords.DEFAULT);

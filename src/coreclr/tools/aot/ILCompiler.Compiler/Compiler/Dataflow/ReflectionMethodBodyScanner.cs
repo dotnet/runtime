@@ -2199,7 +2199,9 @@ namespace ILCompiler.Dataflow
                             if (comDangerousMethod)
                             {
                                 reflectionContext.AnalyzingPattern();
-                                reflectionContext.RecordUnrecognizedPattern(2050, $"P/invoke method '{calledMethod.GetDisplayName()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.");
+                                reflectionContext.RecordUnrecognizedPattern(
+                                    (int)DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, 
+                                    new DiagnosticString(DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                             }
                         }
 

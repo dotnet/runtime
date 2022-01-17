@@ -1184,7 +1184,7 @@ namespace System.Net
             // If the line contained three other digits followed by the response, then this is a violation of the
             // FTP protocol for multiline responses.
             // All other cases indicate that the response is not yet complete.
-            int index = 0;
+            int index;
             while ((index = responseString.IndexOf("\r\n", validThrough, StringComparison.Ordinal)) != -1)  // gets the end line.
             {
                 int lineStart = validThrough;
