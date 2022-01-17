@@ -12,7 +12,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000, 0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111)]
     [InlineData(0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000011)]
     [InlineData(0b11111111_11111111_11111111_11111111_11111111_11111111_11111111_10000000, 0b00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111)]
-    public void GetMaskUpToLowestSetBit_nuint_64Bit(ulong value, long expectedResult)
+    public void GetMaskUpToLowestSetBit_nuint_64Bit(ulong value, ulong expectedResult)
     {
         nuint nativeValue = (nuint)value;
         nuint expectedNativeResult = (nuint)expectedResult;
@@ -27,7 +27,7 @@ public sealed partial class Bmi1Tests
     [InlineData(0b11111111_11111111_11111111_11111100, 0b00000000_00000000_00000000_00000111)]
     public void GetMaskUpToLowestSetBit_nuint_32Bit(uint value, int expectedResult)
     {
-        nuint nativeValue = (nuint)value;
+        nuint nativeValue = value;
         nuint expectedNativeResult = (nuint)expectedResult;
         nuint actualResult = Bmi1.GetMaskUpToLowestSetBit(nativeValue);
 
