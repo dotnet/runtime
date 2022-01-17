@@ -34,7 +34,7 @@ namespace System.Net.Security
             Array.Clear(x, 0, 16);
 
             HashCore(source.ToArray(), 0, source.Length, state, count);
-            HashFinal(state, count).CopyTo(destination);
+            HashFinal(state, count, destination);
         }
 
         private static byte[] buffer = new byte[64];
@@ -53,7 +53,6 @@ namespace System.Net.Security
         private const int S33 = 11;
         private const int S34 = 15;
 
-        private static byte[] digest = new byte[16];
         private static void HashCore(byte[] array, int ibStart, int cbSize, Span<uint> state, Span<uint> count)
         {
             /* Compute number of bytes mod 64 */
@@ -84,7 +83,7 @@ namespace System.Net.Security
             Buffer.BlockCopy(array, ibStart + i, buffer, index, (cbSize - i));
         }
 
-        private static byte[] HashFinal(Span<uint> state, Span<uint> count)
+        private static void HashFinal(Span<uint> state, Span<uint> count, Span<byte> destination)
         {
             /* Save number of bits */
             byte[] bits = new byte[8];
@@ -99,9 +98,7 @@ namespace System.Net.Security
             HashCore(bits, 0, 8, state, count);
 
             /* Store state in digest */
-            Encode(digest, state);
-
-            return digest;
+            Encode(destination, state);
         }
 
         //--- private methods ---------------------------------------------------
@@ -155,11 +152,11 @@ namespace System.Net.Security
             a = ROL(a, s);
         }
 
-        private static void Encode(byte[] output, Span<uint> input)
+        private static void Encode(Span<byte> output, Span<uint> input)
         {
             for (int i = 0, j = 0; j < output.Length; i++, j += 4)
             {
-                BinaryPrimitives.WriteUInt32LittleEndian(output.AsSpan(j), input[i]);
+                BinaryPrimitives.WriteUInt32LittleEndian(output.Slice(j), input[i]);
             }
         }
 
