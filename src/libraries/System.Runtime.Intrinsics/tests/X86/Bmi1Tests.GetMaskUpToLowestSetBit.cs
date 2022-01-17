@@ -25,10 +25,10 @@ public sealed partial class Bmi1Tests
     [InlineData(0b00000000_00000000_00000000_00000000, 0b11111111_11111111_11111111_11111111)]
     [InlineData(0b00000000_00000000_00000000_00000010, 0b00000000_00000000_00000000_00000011)]
     [InlineData(0b11111111_11111111_11111111_11111100, 0b00000000_00000000_00000000_00000111)]
-    public void GetMaskUpToLowestSetBit_nuint_32Bit(uint value, int expectedResult)
+    public void GetMaskUpToLowestSetBit_nuint_32Bit(uint value, uint expectedResult)
     {
         nuint nativeValue = value;
-        nuint expectedNativeResult = (nuint)expectedResult;
+        nuint expectedNativeResult = expectedResult;
         nuint actualResult = Bmi1.GetMaskUpToLowestSetBit(nativeValue);
 
         Assert.Equal(expectedNativeResult, actualResult);
