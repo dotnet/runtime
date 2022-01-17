@@ -49,19 +49,29 @@ namespace Internal.TypeSystem
 
     public class MarshalAsDescriptor
     {
-        private TypeDesc _customMarshallerType;
+        private ModuleDesc _marshallerModule;
+        private string _customMarshallerTypeName;
         private string _cookie;
 
         public NativeTypeKind Type { get; }
         public NativeTypeKind ArraySubType { get; }
         public uint? SizeParamIndex { get; }
         public uint? SizeConst { get; }
-        public TypeDesc CustomMarshallerType
+        public ModuleDesc MarshallerModule
+        {
+            get
+            {
+                Debug.Assert(Type == NativeTypeKind.CustomMarshaler, "Marshaller module can be set only when using for CustomMarshaller");
+                return _marshallerModule;
+            }
+        }
+
+        public string CustomMarshallerTypeName
         {
             get
             {
                 Debug.Assert(Type == NativeTypeKind.CustomMarshaler, "Custom marshaller type can be set only when using for CustomMarshaller");
-                return _customMarshallerType;
+                return _customMarshallerTypeName;
             }
         }
 
@@ -74,13 +84,14 @@ namespace Internal.TypeSystem
             }
         }
 
-        public MarshalAsDescriptor(NativeTypeKind type, NativeTypeKind arraySubType, uint? sizeParamIndex, uint? sizeConst, TypeDesc customMarshallerType, string cookie)
+        public MarshalAsDescriptor(NativeTypeKind type, NativeTypeKind arraySubType, uint? sizeParamIndex, uint? sizeConst, ModuleDesc customMarshallerType, string customMarshallerTypeName, string cookie)
         {
             Type = type;
             ArraySubType = arraySubType;
             SizeParamIndex = sizeParamIndex;
             SizeConst = sizeConst;
-            _customMarshallerType = customMarshallerType;
+            _marshallerModule = customMarshallerType;
+            _customMarshallerTypeName = customMarshallerTypeName;
             _cookie = cookie;
         }
     }
