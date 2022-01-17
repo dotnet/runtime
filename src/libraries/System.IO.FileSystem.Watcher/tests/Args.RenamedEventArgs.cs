@@ -23,15 +23,25 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(WatcherChangeTypes.Changed, "D:\\", "foo.txt", "bar.txt", "D:\\bar.txt")]
-        [InlineData(WatcherChangeTypes.Changed, "E:\\bar", "foo.txt", "bar.txt", "E:\\bar\\bar.txt")]
-        [InlineData(WatcherChangeTypes.All, "D:\\", "foo.txt", "bar.txt", "D:\\bar.txt")]
-        [InlineData(WatcherChangeTypes.All, "E:\\bar", "foo.txt", "bar.txt", "E:\\bar\\bar.txt")]
-        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsAnAbsolutePath(WatcherChangeTypes changeType, string directory, string name, string oldName, string expectedOldFullPath)
+        [InlineData("D:\\", "foo.txt", "bar.txt", "D:\\bar.txt")]
+        [InlineData("E:\\bar", "foo.txt", "bar.txt", "E:\\bar\\bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsAnAbsolutePath_Windows(string directory, string name, string oldName, string expectedOldFullPath)
         {
-            RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(changeType, args.ChangeType);
+            Assert.Equal(expectedOldFullPath, args.OldFullPath);
+            Assert.Equal(name, args.Name);
+            Assert.Equal(oldName, args.OldName);
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("/", "foo.txt", "bar.txt", "/bar.txt")]
+        [InlineData("/bar", "foo.txt", "bar.txt", "/bar/bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsAnAbsolutePath_Unix(string directory, string name, string oldName, string expectedOldFullPath)
+        {
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
+
             Assert.Equal(expectedOldFullPath, args.OldFullPath);
             Assert.Equal(name, args.Name);
             Assert.Equal(oldName, args.OldName);
@@ -39,60 +49,62 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [InlineData(WatcherChangeTypes.Changed, "C:", "foo.txt", "bar.txt")]
-        [InlineData(WatcherChangeTypes.All, "C:", "foo.txt", "bar.txt")]
-        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePathFromCurrentDirectoryInGivenDrive(WatcherChangeTypes changeType, string directory, string name, string oldName)
+        [InlineData("bar", "foo.txt", "bar.txt")]
+        [InlineData("bar\\baz", "foo.txt", "bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Windows(string directory, string name, string oldName)
         {
-            RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
-
-            Assert.Equal(changeType, args.ChangeType);
-            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + oldName, args.OldFullPath);
-            Assert.Equal(name, args.Name);
-        }
-
-        [Theory]
-        [InlineData(WatcherChangeTypes.Changed, "bar", "foo.txt", "bar.txt")]
-        [InlineData(WatcherChangeTypes.Changed, "bar\\baz", "foo.txt", "bar.txt")]
-        [InlineData(WatcherChangeTypes.All, "bar", "foo.txt", "bar.txt")]
-        [InlineData(WatcherChangeTypes.All, "bar\\baz", "foo.txt", "bar.txt")]
-        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath(WatcherChangeTypes changeType, string directory, string name, string oldName)
-        {
-            RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
             directory = AppendDirectorySeparator(directory);
 
-            Assert.Equal(changeType, args.ChangeType);
             Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
             Assert.Equal(name, args.Name);
             Assert.Equal(oldName, args.OldName);
         }
 
-        [Fact]
-        public static void RenamedEventArgs_ctor_Invalid_EmptyDirectory()
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("bar", "foo.txt", "bar.txt")]
+        [InlineData("bar/baz", "foo.txt", "bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Unix(string directory, string name, string oldName)
         {
-            Assert.Throws<ArgumentException>(() => new RenamedEventArgs((WatcherChangeTypes)0, "", "foo.txt", "bar.txt"));
-        }
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-        [Fact]
-        public static void RenamedEventArgs_ctor_Invalid_NullDirectory()
-        {
-            Assert.Throws<ArgumentNullException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, "foo.txt", "bar.txt"));
+            directory = AppendDirectorySeparator(directory);
+
+            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory + oldName, args.OldFullPath);
+            Assert.Equal(name, args.Name);
+            Assert.Equal(oldName, args.OldName);
         }
 
         [Theory]
-        [InlineData(WatcherChangeTypes.All, "bar", "", "")]
-        [InlineData(WatcherChangeTypes.All, "bar", null, null)]
-        [InlineData(WatcherChangeTypes.Changed, "bar", "", "")]
-        [InlineData(WatcherChangeTypes.Changed, "bar", null, null)]
-        [InlineData(WatcherChangeTypes.All, "bar", "foo.txt", "")]
-        [InlineData(WatcherChangeTypes.Changed, "bar", "foo.txt", null)]
-        public static void RenamedEventArgs_ctor_When_EmptyOldFileName_Then_OldFullPathReturnsTheDirectoryFullPath(WatcherChangeTypes changeType, string directory, string name, string oldName)
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("C:", "foo.txt", "bar.txt")]
+        public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePathFromCurrentDirectoryInGivenDrive(string directory, string name, string oldName)
         {
-            RenamedEventArgs args = new RenamedEventArgs(changeType, directory, name, oldName);
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(changeType, args.ChangeType);
+            Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + oldName, args.OldFullPath);
+            Assert.Equal(name, args.Name);
+        }
+
+        [Theory]
+        [InlineData( "bar", "", "")]
+        [InlineData( "bar", null, null)]
+        [InlineData( "bar", "foo.txt", null)]
+        public static void RenamedEventArgs_ctor_When_EmptyOldFileName_Then_OldFullPathReturnsTheDirectoryFullPath(string directory, string name, string oldName)
+        {
+            RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
+
             Assert.Equal(AppendDirectorySeparator(Directory.GetCurrentDirectory()) + directory, args.OldFullPath);
             Assert.Equal(name, args.Name);
+        }
+
+        [Fact]
+        public static void RenamedEventArgs_ctor_Invalid()
+        {
+            Assert.Throws<ArgumentException>(() => new RenamedEventArgs((WatcherChangeTypes)0, "", "foo.txt", "bar.txt"));
+            Assert.Throws<ArgumentNullException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, "foo.txt", "bar.txt"));
         }
 
         #region Test Helpers
