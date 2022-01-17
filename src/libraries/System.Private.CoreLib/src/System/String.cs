@@ -529,13 +529,14 @@ namespace System
                 return Empty;
 
             string s = FastAllocateString(stringLength);
+#if DEBUG
             fixed (char* pTempChars = &s._firstChar)
             {
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength);
                 Debug.Assert(stringLength == doubleCheck,
                     "Expected encoding.GetChars to return same length as encoding.GetCharCount");
             }
-
+#endif
             return s;
         }
 
