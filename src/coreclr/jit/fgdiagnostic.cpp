@@ -2503,7 +2503,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc)
 {
     // You can do a BBJ_EHFINALLYRET or BBJ_EHFILTERRET into a handler region
-    if ((blockPred->bbJumpKind == BBJ_EHFINALLYRET) || (blockPred->bbJumpKind == BBJ_EHFILTERRET))
+    if (blockPred->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }

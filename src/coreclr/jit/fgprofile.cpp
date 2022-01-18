@@ -3417,7 +3417,7 @@ weight_t Compiler::fgComputeMissingBlockWeights()
             // Sum up the weights of all of the return blocks and throw blocks
             // This is used when we have a back-edge into block 1
             //
-            if (bDst->hasProfileWeight() && ((bDst->bbJumpKind == BBJ_RETURN) || (bDst->bbJumpKind == BBJ_THROW)))
+            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
             {
                 returnWeight += bDst->bbWeight;
             }
@@ -3988,7 +3988,7 @@ void Compiler::fgDebugCheckProfileData()
 
         // Exit blocks
         //
-        if ((block->bbJumpKind == BBJ_RETURN) || (block->bbJumpKind == BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
         {
             exitWeight += blockWeight;
             exitProfiled   = true;
@@ -4157,7 +4157,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
 
     // We won't check finally or filter returns (for now).
     //
-    if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET))
+    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }

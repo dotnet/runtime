@@ -10766,7 +10766,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                  * scope */
                 exitBlock = fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step);
 
-                assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
+                assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
                 step->bbJumpDest = exitBlock; // the previous step (maybe a call to a nested finally, or a nested catch
                                               // exit) returns to this block
                 step->bbJumpDest->bbRefs++;
@@ -10874,7 +10874,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // never returns to the call-to-finally call, and the finally-protected 'try' region doesn't appear on
                 // stack walks.)
 
-                assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
+                assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 if (step->bbJumpKind == BBJ_EHCATCHRET)
