@@ -92,12 +92,7 @@ public:
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
 
-    // Resume any suspended threads
-    virtual HRESULT EnsureThreadsRunning();
-
 protected:
-    HRESULT IsRemoteDebuggerPresent(DWORD processId, BOOL* pfDebuggerPresent);
-
     // Cached value from DebugSetProcessKillOnExit.
     // This is thread-local, and impacts all debuggees on the thread.
     bool m_fKillOnExit;
@@ -178,37 +173,9 @@ HRESULT WindowsNativePipeline::DebugActiveProcess(MachineInfo machineInfo, const
     else
     {
         hr = HRESULT_FROM_GetLastError();
-
-        // There are at least two scenarios in which DebugActiveProcess() returns E_INVALIDARG:
-        //     1) if the specified process doesn't exist, or
-        //     2) if the specified process already has a debugger atttached
-        // We need to distinguish these two cases in order to return the correct HR.
-        if (hr == E_INVALIDARG)
-        {
-            // Check whether a debugger is known to be already attached.
-            // Note that this API won't work on some OSes, in which case we err on the side of returning E_INVALIDARG
-            // even though a debugger may be attached.  Another approach could be to assume that if
-            // OpenProcess succeeded, then DebugActiveProcess must only have failed because a debugger is
-            // attached.  But I think it's better to only return the specific error code if we know for sure
-            // the case is true.
-            BOOL fIsDebuggerPresent = FALSE;
-            if (SUCCEEDED(IsRemoteDebuggerPresent(processDescriptor.m_Pid, &fIsDebuggerPresent)))
-            {
-                if (fIsDebuggerPresent)
-                {
-                    hr = CORDBG_E_DEBUGGER_ALREADY_ATTACHED;
-                }
-            }
-        }
     }
 
     return hr;
-}
-
-// Determine (if possible) whether a debugger is attached to the target process
-HRESULT WindowsNativePipeline::IsRemoteDebuggerPresent(DWORD processId, BOOL* pfDebuggerPresent)
-{
-	return E_FAIL;
 }
 
 // Detach
@@ -266,11 +233,4 @@ BOOL WindowsNativePipeline::TerminateProcess(UINT32 exitCode)
     }
 
     return ::TerminateProcess(hProc, exitCode);
-}
-
-// Resume any suspended threads (but just once)
-HRESULT WindowsNativePipeline::EnsureThreadsRunning()
-{
-	_ASSERTE("NYI");
-	return E_FAIL;
 }

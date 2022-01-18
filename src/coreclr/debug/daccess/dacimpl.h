@@ -1517,9 +1517,6 @@ public:
                                              DWORD &dwSize,
                                              _Out_writes_(cchPath) LPWSTR wszPath,
                                              const DWORD cchPath);
-    static bool GetILImageNameFromNgenImage(LPCWSTR ilExtension,
-                                            _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                            const DWORD cchFilePath);
 };
 
 extern ClrDataAccess* g_dacImpl;

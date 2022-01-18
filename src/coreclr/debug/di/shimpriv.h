@@ -488,9 +488,6 @@ public:
     // dispatching an event.
     void PreDispatchEvent(bool fRealCreateProcessEvent = false);
 
-    // Look for a CLR in the process and if found, return it's instance ID
-    HRESULT FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId);
-
     // Retrieve the IP address and the port number of the debugger proxy.
     MachineInfo GetMachineInfo();
 
@@ -522,9 +519,6 @@ protected:
     //
     HANDLE  m_markAttachPendingEvent;
     HANDLE  m_terminatingEvent;
-
-    // Finds the base address of [core]clr.dll
-    CORDB_ADDRESS GetCLRInstanceBaseAddress();
 
     //
     // Event Queues

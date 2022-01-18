@@ -867,8 +867,6 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
             if (!fSkipResume)
             {
                 ::Sleep(500);
-                hrIgnore = GetNativePipeline()->EnsureThreadsRunning();
-                SIMPLIFYING_ASSUMPTION_SUCCEEDED(hrIgnore);
             }
         }
     }
@@ -1586,52 +1584,6 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 
 
 }
-
-// ----------------------------------------------------------------------------
-// ShimProcess::GetCLRInstanceBaseAddress
-// Finds the base address of [core]clr.dll
-// Arguments: none
-// Return value: returns the base address of [core]clr.dll if possible or NULL otherwise
-//
-CORDB_ADDRESS ShimProcess::GetCLRInstanceBaseAddress()
-{
-    CORDB_ADDRESS baseAddress = CORDB_ADDRESS(NULL);
-    DWORD dwPid = m_pLiveDataTarget->GetPid();
-
-    // Debugger attaching to CoreCLR via CoreCLRCreateCordbObject should have already specified CLR module address.
-    // Code that help to find it now lives in dbgshim.
-    return baseAddress;
-} // ShimProcess::GetCLRInstanceBaseAddress
-
-// ----------------------------------------------------------------------------
-// ShimProcess::FindLoadedCLR
-//
-// Description:
-//    Look for any CLR loaded into the process.  If found, return the instance ID for it.
-//
-// Arguments:
-//    * pClrInstanceId - out parameter for the instance ID of the CLR
-//
-// Return Value:
-//    Returns S_OK if a CLR was found, and stores its instance ID in pClrInstanceId.
-//    Otherwise returns an error code.
-//
-// Notes:
-//    If there are multiple CLRs loaded in the process, the one chosen for the returned
-//    instance ID is unspecified.
-//
-HRESULT ShimProcess::FindLoadedCLR(CORDB_ADDRESS * pClrInstanceId)
-{
-    *pClrInstanceId = GetCLRInstanceBaseAddress();
-
-    if (*pClrInstanceId == 0)
-    {
-        return E_UNEXPECTED;
-    }
-
-    return S_OK;
-}
-
 
 //---------------------------------------------------------------------------------------
 //

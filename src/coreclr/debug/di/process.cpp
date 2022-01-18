@@ -7651,8 +7651,6 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_excepNotForRuntimeBPAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   0x%p\n",
          m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_raiseException=                 0x%p\n",
-         m_runtimeOffsets.m_raiseExceptionAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -9797,23 +9795,14 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
     // If we didn't expect a specific CLR, then attempt to attach to any.
     if (m_clrInstanceId == 0)
     {
+        // The only case in which we were allowed to request the "default" CLR instance
+        // ID is when we're running in V2 mode.  In V3, the client is required to pass
+        // a non-zero value to OpenVirtualProcess. Since V2 is no longer supported we
+        // no longer attempt to find it.
         if(m_cordb->GetTargetCLR() != 0)
         {
             m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
             return S_OK;
-        }
-
-        // The only case in which we're allowed to request the "default" CLR instance
-        // ID is when we're running in V2 mode.  In V3, the client is required to pass
-        // a non-zero value to OpenVirtualProcess.
-        _ASSERTE(m_pShim != NULL);
-
-        HRESULT hr = m_pShim->FindLoadedCLR(&m_clrInstanceId);
-        if (FAILED(hr))
-        {
-            // Couldn't find a loaded clr - no CLR instance ID yet
-            _ASSERTE(m_clrInstanceId == 0);
-            return hr;
         }
     }
 

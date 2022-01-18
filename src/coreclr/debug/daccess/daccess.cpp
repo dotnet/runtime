@@ -6542,59 +6542,6 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
     return true;
 }
 
-/* static */
-// We extract "ni.dll from the NGEN image name to obtain the IL image name.
-// In the end we add given ilExtension.
-// This dependecy is based on Apollo installer behavior.
-bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
-                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    if (wszFilePath == NULL || cchFilePath == 0)
-    {
-        return false;
-    }
-
-    _wcslwr_s(wszFilePath, cchFilePath);
-    // Find the "ni.dll" extension.
-    // If none exists use NGEN image name.
-    //
-    const WCHAR* ngenExtension = W("ni.dll");
-
-    if (wcslen(ilExtension) <= wcslen(ngenExtension))
-    {
-        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension);
-        if (wszFileExtension != 0)
-        {
-            LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurrence
-            do
-            {
-                wszFileExtension = wszNextFileExtension;
-                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension);
-            } while (wszNextFileExtension != 0);
-
-            // Overwrite ni.dll with ilExtension
-            if (!memcpy_s(wszFileExtension,
-                            wcslen(ngenExtension)*sizeof(WCHAR),
-                            ilExtension,
-                            wcslen(ilExtension)*sizeof(WCHAR)))
-            {
-                wszFileExtension[wcslen(ilExtension)] = '\0';
-                return true;
-            }
-        }
-    }
-
-    //Use ngen filename if there is no ".ni"
-    if (wcsstr(wszFilePath, W(".ni")) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-
 void *
 ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
                                    bool* isAlternate)
@@ -6710,11 +6657,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             goto ErrExit;
         }
         if (wcscpy_s(uniPath, ARRAY_SIZE(uniPath), ngenImageName) != 0)
-        {
-            goto ErrExit;
-        }
-        // Transform NGEN image name into IL Image name
-        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, ARRAY_SIZE(uniPath)))
         {
             goto ErrExit;
         }
