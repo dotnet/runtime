@@ -2855,7 +2855,7 @@ LocalAlloc(
        IN SIZE_T uBytes);
 
 PALIMPORT
-HLOCAL
+VOID
 PALAPI
 LocalFree(
       IN HLOCAL hMem);

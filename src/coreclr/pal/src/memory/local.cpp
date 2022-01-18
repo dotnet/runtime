@@ -75,19 +75,16 @@ Function:
 
 See MSDN doc.
 --*/
-HLOCAL
+VOID
 PALAPI
 LocalFree(
 	  IN HLOCAL hMem)
 {
-    BOOL bRetVal = FALSE;
     PERF_ENTRY(LocalFree);
     ENTRY("LocalFree (hmem=%p)\n", hMem);
 
     free(hMem);
-    bRetVal = TRUE;
 
-    LOGEXIT( "LocalFree returning %p.\n", bRetVal == TRUE ? (HLOCAL)NULL : hMem );
+    LOGEXIT( "LocalFree returning.\n" );
     PERF_EXIT(LocalFree);
-    return bRetVal == TRUE ? (HLOCAL)NULL : hMem;
 }
