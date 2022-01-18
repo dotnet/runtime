@@ -124,7 +124,7 @@ namespace BasicEventSourceTests
 
             e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.EnumKindMismatchEventSource), string.Empty, strictOptions));
             AsserExceptionStringsEqual(() => string.Join(Environment.NewLine,
-                                     GetResourceString("EventSource_EnumKindMismatch", "Op1", "EventKeywords"),
+                                     GetResourceString("EventSource_EnumKindMismatch", "EventKeywords", "Opcodes"),
                                      GetResourceString("EventSource_UndefinedKeyword", "0x1", "WriteInteger")),
                           e);
 
