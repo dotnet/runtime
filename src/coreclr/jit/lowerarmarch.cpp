@@ -1191,13 +1191,16 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         //   var tmp2 = tmp1;
         //   ...
 
-        node->Op(1) = tmp1;
-        LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(tmp1Use);
-        tmp1 = node->Op(1);
+        if ((simdSize != 8) || (simdBaseType == TYP_FLOAT))
+        {
+            node->Op(1) = tmp1;
+            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(tmp1Use);
+            tmp1 = node->Op(1);
 
-        tmp2 = comp->gtClone(tmp1);
-        BlockRange().InsertAfter(tmp1, tmp2);
+            tmp2 = comp->gtClone(tmp1);
+            BlockRange().InsertAfter(tmp1, tmp2);
+        }
 
         if (simdSize == 8)
         {

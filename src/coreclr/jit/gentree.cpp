@@ -19400,7 +19400,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 getAllBitsSet = NI_Vector128_get_AllBitsSet;
             }
 
-            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
@@ -19414,7 +19414,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
 
-            op2 = gtNewSimdHWIntrinsicNode(simdBaseType, getAllBitsSet, simdBaseJitType, simdSize);
+            op2 = gtNewSimdHWIntrinsicNode(simdType, getAllBitsSet, simdBaseJitType, simdSize);
             break;
         }
 #elif defined(TARGET_ARM64)
@@ -19445,7 +19445,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 getAllBitsSet = NI_Vector128_get_AllBitsSet;
             }
 
-            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
@@ -19459,7 +19459,7 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
 
-            op2 = gtNewSimdHWIntrinsicNode(simdBaseType, getAllBitsSet, simdBaseJitType, simdSize);
+            op2 = gtNewSimdHWIntrinsicNode(simdType, getAllBitsSet, simdBaseJitType, simdSize);
             break;
         }
 #else
@@ -19523,7 +19523,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
             intrinsic = (simdSize == 32) ? NI_Vector256_op_Inequality : NI_Vector128_op_Inequality;
 
-            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
@@ -19537,7 +19537,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
 
-            op2 = gtNewSimdZeroNode(simdBaseType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            op2 = gtNewSimdZeroNode(simdType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -19558,7 +19558,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
             intrinsic = (simdSize == 8) ? NI_Vector64_op_Inequality : NI_Vector128_op_Inequality;
 
-            op1 = gtNewSimdCmpOpNode(op, simdBaseType, op1, op2, simdBaseJitType, simdSize,
+            op1 = gtNewSimdCmpOpNode(op, simdType, op1, op2, simdBaseJitType, simdSize,
                                      /* isSimdAsHWIntrinsic */ false);
 
             if (simdBaseType == TYP_FLOAT)
@@ -19572,7 +19572,7 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
                 simdBaseJitType = CORINFO_TYPE_LONG;
             }
 
-            op2 = gtNewSimdZeroNode(simdBaseType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            op2 = gtNewSimdZeroNode(simdType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -19704,7 +19704,7 @@ GenTree* Compiler::gtNewSimdDotProdNode(var_types   type,
     assert(op2->TypeIs(simdType));
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-    assert(genActualType(simdBaseType) == type);
+    assert(JITtype2varType(simdBaseJitType) == type);
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
@@ -20766,27 +20766,39 @@ GenTree* Compiler::gtNewSimdSumNode(
             tmp = gtNewSimdAsHWIntrinsicNode(simdType, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, simdSize);
             return gtNewSimdAsHWIntrinsicNode(type, tmp, NI_Vector64_ToScalar, simdBaseJitType, 8);
         }
+
         case TYP_FLOAT:
         {
-            unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-            int      haddCount    = genLog2(vectorLength);
-
-            for (int i = 0; i < haddCount; i++)
+            if (simdSize == 8)
             {
-                op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for vector sum"));
-                op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise, simdBaseJitType,
+                op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
                                                  simdSize);
             }
+            else
+            {
+                unsigned vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
+                int      haddCount    = genLog2(vectorLength);
 
+                for (int i = 0; i < haddCount; i++)
+                {
+                    op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone op1 for vector sum"));
+                    op1 = gtNewSimdAsHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_Arm64_AddPairwise, simdBaseJitType,
+                                                     simdSize);
+                }
+            }
             return gtNewSimdAsHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize);
         }
+
         case TYP_DOUBLE:
         case TYP_LONG:
         case TYP_ULONG:
         {
-            op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
-                                             simdSize);
+            if (simdSize == 16)
+            {
+                op1 = gtNewSimdAsHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddPairwiseScalar, simdBaseJitType,
+                                                 simdSize);
+            }
             return gtNewSimdAsHWIntrinsicNode(type, op1, NI_Vector64_ToScalar, simdBaseJitType, 8);
         }
         default:
