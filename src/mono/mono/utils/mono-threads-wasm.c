@@ -38,16 +38,18 @@ static int
 wasm_get_stack_base (void)
 {
 	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype.
-	return 1;
+	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
+	// value that aligns to 32 bits.
+	return 4;
 }
 
 static int
 wasm_get_stack_size (void)
 {
 	// TODO: For WASI, we need to ensure the stack location makes sense and won't interfere with the heap.
-	// Currently these hardcoded values are sufficient for a working prototype.
-	return 1;
+	// Currently these hardcoded values are sufficient for a working prototype. It's an arbitrary nonzero
+	// value that aligns to 32 bits.
+	return 4;
 }
 
 #endif
