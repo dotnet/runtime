@@ -64,7 +64,6 @@
   </PropertyGroup>
 
   <Import Project="$(LibrariesProjectRoot)NetCoreAppLibrary.props" />
-  <Import Project="$(LibrariesProjectRoot)shims/netfxreference.props" />
 
   <ItemGroup>
     <!-- Public libraries and shims -->
