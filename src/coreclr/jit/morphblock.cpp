@@ -1173,12 +1173,13 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         GenTreeLclVar* addrSpillNode = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
         addrSpillAsg                 = m_comp->gtNewAssignNode(addrSpillNode, addrSpill);
 
-        // If we are assigning the address of a LclVar here
-        // liveness does not account for this kind of address taken use.
+        // If we are assigning the address of a LclVar here liveness will not
+        // account for this kind of address taken use. Mark the local as
+        // address-exposed so that we don't do illegal optimizations with it.
         //
-        // We have to mark this local as address exposed so
-        // that we don't delete the definition for this LclVar
-        // as a dead store later on.
+        // TODO-CQ: usage of "addrSpill" for local addresses is a workaround
+        // for cases where we fail to use LCL_FLD nodes instead. Fix them and
+        // delete this code.
         //
         if (addrSpillSrcLclNum != BAD_VAR_NUM)
         {
