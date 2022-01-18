@@ -22417,6 +22417,12 @@ void gc_heap::equalize_promoted_bytes()
                     break;
                 }
                 assert (surv_per_heap[i] >= heap_segment_survived (region));
+                dprintf (REGIONS_LOG, ("heap: %d surv: %Id - %Id = %Id",
+                    i,
+                    surv_per_heap[i],
+                    heap_segment_survived (region),
+                    surv_per_heap[i] - heap_segment_survived (region)));
+
                 surv_per_heap[i] -= heap_segment_survived (region);
 
                 heap_segment_next (region) = surplus_regions;
@@ -22502,6 +22508,12 @@ void gc_heap::equalize_promoted_bytes()
             g_heaps[heap_num]->thread_rw_region_front (gen_idx, region);
 
             // adjust survival for this heap
+            dprintf (REGIONS_LOG, ("heap: %d surv: %Id + %Id = %Id",
+                heap_num,
+                surv_per_heap[heap_num],
+                heap_segment_survived (region),
+                surv_per_heap[heap_num] + heap_segment_survived (region)));
+
             surv_per_heap[heap_num] += heap_segment_survived (region);
 
             if (heap_size_class < 0)
