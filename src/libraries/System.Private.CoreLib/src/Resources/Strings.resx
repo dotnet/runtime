@@ -786,6 +786,9 @@
   <data name="Arg_UnknownTypeCode" xml:space="preserve">
     <value>Unknown TypeCode value.</value>
   </data>
+  <data name="Arg_UnreachableException" xml:space="preserve">
+    <value>The program executed an instruction that was thought to be unreachable.</value>
+  </data>
   <data name="Arg_VarMissNull" xml:space="preserve">
     <value>Missing parameter does not have a default value.</value>
   </data>
