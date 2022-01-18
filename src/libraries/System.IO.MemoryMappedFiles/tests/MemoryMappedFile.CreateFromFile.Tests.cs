@@ -5,6 +5,8 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using System.IO.Pipes;
+using System.Threading.Tasks;
 
 namespace System.IO.MemoryMappedFiles.Tests
 {
@@ -967,6 +969,36 @@ namespace System.IO.MemoryMappedFiles.Tests
                     Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
                 }
             }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)] // pipePath is Windows-specific
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
+        {
+            string pipeName = GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            using NamedPipeServerStream server = new (pipeName, PipeDirection.In);
+            using FileStream clienStream = new (pipePath, FileMode.Open, FileAccess.Write, FileShare.None);
+
+            await server.WaitForConnectionAsync();
+
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clienStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)] // pipePath is Windows-specific
+        [Fact]
+        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException()
+        {
+            string pipeName = GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            using NamedPipeServerStream server = new(pipeName, PipeDirection.InOut);
+
+            // This test is using only FileMode.Open and capacity == 0, as FileMode.*Create* for named pipes on Windows fails with " All pipe instances are busy."
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipePath, FileMode.Open, null, 0, MemoryMappedFileAccess.ReadWrite));
         }
     }
 }
