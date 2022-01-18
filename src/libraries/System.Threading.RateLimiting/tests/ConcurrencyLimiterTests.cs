@@ -168,6 +168,28 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public override async Task LargeAcquiresAndQueuesDoNotIntegerOverflow()
+        {
+            var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(int.MaxValue, QueueProcessingOrder.NewestFirst, int.MaxValue));
+            var lease = limiter.Acquire(int.MaxValue);
+            Assert.True(lease.IsAcquired);
+
+            // Fill queue
+            var wait = limiter.WaitAsync(3);
+            Assert.False(wait.IsCompleted);
+
+            var wait2 = limiter.WaitAsync(int.MaxValue);
+            Assert.False(wait2.IsCompleted);
+
+            var lease1 = await wait;
+            Assert.False(lease1.IsAcquired);
+
+            lease.Dispose();
+            var lease2 = await wait2;
+            Assert.True(lease2.IsAcquired);
+        }
+
+        [Fact]
         public override async Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable()
         {
             var limiter = new ConcurrencyLimiter(new ConcurrencyLimiterOptions(1, QueueProcessingOrder.OldestFirst, 1));

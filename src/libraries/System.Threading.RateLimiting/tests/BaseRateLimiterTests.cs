@@ -39,6 +39,9 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task QueueAvailableAfterQueueLimitHitAndResources_BecomeAvailable();
 
         [Fact]
+        public abstract Task LargeAcquiresAndQueuesDoNotIntegerOverflow();
+
+        [Fact]
         public abstract void ThrowsWhenAcquiringMoreThanLimit();
 
         [Fact]

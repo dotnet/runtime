@@ -95,7 +95,9 @@ namespace System.Threading.RateLimiting
                     return new ValueTask<RateLimitLease>(lease);
                 }
 
-                if ((long)_queueCount + permitCount > _options.QueueLimit)
+                // Avoid integer overflow by using subtraction instead of addition
+                Debug.Assert(_options.QueueLimit >= _queueCount);
+                if (_options.QueueLimit - _queueCount < permitCount)
                 {
                     if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst && permitCount <= _options.QueueLimit)
                     {
@@ -107,7 +109,7 @@ namespace System.Threading.RateLimiting
                             Debug.Assert(_queueCount >= 0);
                             oldestRequest.Tcs.TrySetResult(FailedLease);
                         }
-                        while ((long)_queueCount + permitCount > _options.QueueLimit);
+                        while (_options.QueueLimit - _queueCount < permitCount);
                     }
                     else
                     {
