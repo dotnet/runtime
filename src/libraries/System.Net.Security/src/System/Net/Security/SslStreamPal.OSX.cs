@@ -20,7 +20,7 @@ namespace System.Net.Security
             return status.Exception ?? new Win32Exception((int)status.ErrorCode);
         }
 
-        internal const bool StartMutualAuthAsAnonymous = false;
+        internal const bool StartMutualAuthAsAnonymous = true;
 
         // SecureTransport is okay with a 0 byte input, but it produces a 0 byte output.
         // Since ST is not producing the framed empty message just call this false and avoid the
@@ -246,17 +246,15 @@ namespace System.Net.Security
                         Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
                     }
 
-                    if (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null)
-                    {
-                        // certificate was not provided but there is user callback. We can break handshake if server asks for certificate
-                        // and we can try to get it based on remote certificate and trusted issuers.
-                        Interop.AppleCrypto.SslBreakOnCertRequested(sslContext.SslContext, true);
-                    }
-
                     if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                     {
                         Interop.AppleCrypto.SslSetAcceptClientCert(sslContext.SslContext);
                     }
+                }
+                else if (context.Credentials != (credential as SafeFreeSslCredentials))
+                {
+                    // we received new credentials as a result of returning CredentialsNeeded previously
+                    ((SafeDeleteSslContext)context).UpdateCredentials((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
                 if (inputBuffer.Length > 0)
@@ -268,32 +266,9 @@ namespace System.Net.Security
                 SecurityStatusPal status = PerformHandshake(sslHandle);
                 if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
-                    // we should not be here if CertSelectionDelegate is null but better check before dereferencing..
-                    if (sslAuthenticationOptions.CertSelectionDelegate != null)
-                    {
-                        X509Certificate2? remoteCert = null;
-                        try
-                        {
-                            string[] issuers = CertificateValidationPal.GetRequestCertificateAuthorities(context);
-                            remoteCert = CertificateValidationPal.GetRemoteCertificate(context);
-                            if (sslAuthenticationOptions.ClientCertificates == null)
-                            {
-                                sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
-                            }
-                            X509Certificate2 clientCertificate = (X509Certificate2)sslAuthenticationOptions.CertSelectionDelegate(sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, remoteCert, issuers);
-                            if (clientCertificate != null)
-                            {
-                                SafeDeleteSslContext.SetCertificate(sslContext.SslContext,  SslStreamCertificateContext.Create(clientCertificate));
-                            }
-                        }
-                        finally
-                        {
-                            remoteCert?.Dispose();
-                        }
-                    }
-
-                    // We either got certificate or we can proceed without it. It is up to the server to decide if either is OK.
-                    status = PerformHandshake(sslHandle);
+                    // Returning CredentialsNeeded will trigger credential refresh Disable break on cert request.
+                    // We either get the certificate or we will try to proceed without it and fail
+                    Interop.AppleCrypto.SslBreakOnCertRequested(((SafeDeleteSslContext)sslContext).SslContext, false);
                 }
 
                 outputBuffer = sslContext.ReadPendingWrites();
