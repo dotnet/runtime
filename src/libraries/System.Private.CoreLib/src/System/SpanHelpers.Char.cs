@@ -31,14 +31,14 @@ namespace System
             }
 
             char valueHead = value;
-            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-            nuint valueTailByteLength = ((uint)valueTailLength * 2);
 
             if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
 
+            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
+            nuint valueTailByteLength = ((uint)valueTailLength * 2);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
             while (remainingSearchSpaceLength > 0)
@@ -101,10 +101,10 @@ namespace System
                             int bitPos = BitOperations.TrailingZeroCount(mask);
                             // div by 2 (shr) because we work with 2-byte chars
                             int charPos = (int)((uint)bitPos / 2);
-                            if (valueTailByteLength == 1 || // we already matched two chars
+                            if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
-                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                    ref valueTail, valueTailByteLength))
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return index + charPos;
                             }
@@ -136,8 +136,10 @@ namespace System
                         int bitPos = BitOperations.TrailingZeroCount(mask);
                         // div by 2 (shr) because we work with 2-byte chars
                         int charPos = (int)((uint)bitPos / 2);
-                        if (valueTailByteLength == 1 || // we already matched two chars
-                            SequenceEqual(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)), ref valueTail, valueTailByteLength))
+                        if (valueLength == 2 || // we already matched two chars
+                            SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
+                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return index + charPos;
                         }
@@ -183,10 +185,10 @@ namespace System
                             int bitPos = BitOperations.TrailingZeroCount(mask);
                             // div by 2 (shr) because we work with 2-byte chars
                             int charPos = (int)((uint)bitPos / 2);
-                            if (valueTailByteLength == 1 || // we already matched two chars
+                            if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
-                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                    ref valueTail, valueTailByteLength))
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return index + charPos;
                             }
@@ -218,10 +220,10 @@ namespace System
                         int bitPos = BitOperations.TrailingZeroCount(mask);
                         // div by 2 (shr) because we work with 2-byte chars
                         int charPos = (int)((uint)bitPos / 2);
-                        if (valueTailByteLength == 1 || // we already matched two chars
+                        if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
-                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                ref valueTail, valueTailByteLength))
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
+                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return index + charPos;
                         }
@@ -252,13 +254,14 @@ namespace System
 
             int offset = 0;
             char valueHead = value;
-            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-            nuint valueTailByteLength = ((uint)valueTailLength * 2);
 
             if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
                 goto SEARCH_TWO_CHARS;
             }
+
+            ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
+            nuint valueTailByteLength = ((uint)valueTailLength * 2);
 
             while (true)
             {
@@ -319,11 +322,10 @@ namespace System
                             int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                             int charPos = (int)((uint)bitPos / 2);
 
-                            if (valueTailByteLength == 1 || // we already matched two chars
+                            if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
-                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
-                                    ref valueTail,
-                                    valueTailByteLength))
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
                             }
@@ -370,11 +372,10 @@ namespace System
                             int bitPos = 30 - BitOperations.LeadingZeroCount(mask);
                             int charPos = (int)((uint)bitPos / 2);
 
-                            if (valueTailByteLength == 1 || // we already matched two chars
+                            if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
-                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos + 1)),
-                                    ref valueTail,
-                                    valueTailByteLength))
+                                    ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
                             }

@@ -27,15 +27,14 @@ namespace System
                 return IndexOf(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain IndexOf
 
             byte valueHead = value;
-            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int offset = 0;
-            nuint valueTailNLength = (uint)valueTailLength;
 
             if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
 
+            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
             while (remainingSearchSpaceLength > 0)
@@ -52,7 +51,7 @@ namespace System
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Found the first element of "value". See if the tail matches.
-                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, valueTailNLength))
+                if (SequenceEqual(ref Unsafe.Add(ref searchSpace, offset + 1), ref valueTail, (nuint)(uint)valueTailLength))
                     return offset;  // The tail matched. Return a successful find.
 
                 remainingSearchSpaceLength--;
@@ -91,10 +90,10 @@ namespace System
                         do
                         {
                             int bitPos = BitOperations.TrailingZeroCount(mask);
-                            if (valueTailNLength == 1 || // we already matched two bytes
+                            if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
-                                    ref valueTail, valueTailNLength))
+                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref value, (nuint)(uint)valueLength))
                             {
                                 return offset + bitPos;
                             }
@@ -116,8 +115,10 @@ namespace System
                     do
                     {
                         int bitPos = BitOperations.TrailingZeroCount(mask);
-                        if (valueTailNLength == 1 || // we already matched two bytes
-                            SequenceEqual(ref Unsafe.Add(ref searchSpace, lengthToExamine + bitPos + 1), ref valueTail, valueTailNLength))
+                        if (valueLength == 2 || // we already matched two bytes
+                            SequenceEqual(
+                                ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                ref value, (nuint)(uint)valueLength))
                         {
                             return lengthToExamine + bitPos;
                         }
@@ -155,10 +156,10 @@ namespace System
                         do
                         {
                             int bitPos = BitOperations.TrailingZeroCount(mask);
-                            if (valueTailNLength == 1 || // we already matched two bytes
+                            if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
-                                    ref valueTail, valueTailNLength))
+                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref value, (nuint)(uint)valueLength))
                             {
                                 return offset + bitPos;
                             }
@@ -181,8 +182,10 @@ namespace System
                     do
                     {
                         int bitPos = BitOperations.TrailingZeroCount(mask);
-                        if (valueTailNLength == 1 || // we already matched two bytes
-                            SequenceEqual(ref Unsafe.Add(ref searchSpace, lengthToExamine + bitPos + 1), ref valueTail, valueTailNLength))
+                            if (valueLength == 2 || // we already matched two bytes
+                                SequenceEqual(
+                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref value, (nuint)(uint)valueLength))
                         {
                             return lengthToExamine + bitPos;
                         }
@@ -206,14 +209,15 @@ namespace System
                 return LastIndexOf(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain LastIndexOf
 
             byte valueHead = value;
-            ref byte valueTail = ref Unsafe.Add(ref value, 1);
             int offset = 0;
-            nuint valueTailNLength = (uint)valueTailLength;
 
             if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<byte>.Count)
             {
                 goto SEARCH_TWO_BYTES;
             }
+
+            ref byte valueTail = ref Unsafe.Add(ref value, 1);
+            nuint valueTailNLength = (uint)valueTailLength;
 
             while (true)
             {
@@ -265,11 +269,10 @@ namespace System
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                            if (valueTailNLength == 1 || // we already matched two bytes
+                            if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
-                                    ref valueTail,
-                                    valueTailNLength))
+                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref value, (nuint)(uint)valueLength))
                             {
                                 return bitPos + offset;
                             }
@@ -315,11 +318,10 @@ namespace System
                         {
                             // unlike IndexOf, here we use LZCNT to process matches starting from the end
                             int bitPos = 31 - BitOperations.LeadingZeroCount(mask);
-                            if (valueTailNLength == 1 || // we already matched two bytes
+                            if (valueLength == 2 || // we already matched two bytes
                                 SequenceEqual(
-                                    ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
-                                    ref valueTail,
-                                    valueTailNLength))
+                                    ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                                    ref value, (nuint)(uint)valueLength))
                             {
                                 return bitPos + offset;
                             }
