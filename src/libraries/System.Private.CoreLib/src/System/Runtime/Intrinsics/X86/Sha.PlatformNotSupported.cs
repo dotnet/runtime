@@ -5,7 +5,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
-
 namespace System.Runtime.Intrinsics.X86
 {
     [CLSCompliant(false)]
@@ -35,7 +34,7 @@ namespace System.Runtime.Intrinsics.X86
         /// Instruction: sha1msg2 xmm, xmm
         /// CPUID Flags: SHA
         /// </summary>
-        /// <param name="a">Intermediate result from <see cref="MessageSchedule1"/></param>
+        /// <param name="a">Intermediate result from <see cref="Sha1MessageSchedule1"/></param>
         /// <param name="b">The previous message</param>
         /// <returns>The SHA1 result</returns>
         public static Vector128<byte> Sha1MessageSchedule2(Vector128<byte> a, Vector128<byte> b)
@@ -64,7 +63,7 @@ namespace System.Runtime.Intrinsics.X86
         /// CPUID Flags: SHA
         /// </summary>
         /// <param name="a">The initial SHA1 state</param>
-        /// <param name="b">Value from <see cref="NextE"/></param>
+        /// <param name="b">Value from <see cref="Sha1NextE"/></param>
         /// <param name="func"></param>
         /// <returns>The updated SHA1 state</returns>
         public static Vector128<byte> Sha1FourRounds(Vector128<byte> a, Vector128<byte> b, byte func)
@@ -92,7 +91,7 @@ namespace System.Runtime.Intrinsics.X86
         /// Instruction: sha256msg2 xmm, xmm
         /// CPUID Flags: SHA
         /// </summary>
-        /// <param name="a">Intermediate result from <see cref="MessageSchedule1"/></param>
+        /// <param name="a">Intermediate result from <see cref="Sha256MessageSchedule1"/></param>
         /// <param name="b">The previous message</param>
         /// <returns>The SHA256 result</returns>
         public static Vector128<byte> Sha256MessageSchedule2(Vector128<byte> a, Vector128<byte> b)
