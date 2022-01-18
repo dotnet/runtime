@@ -11,7 +11,7 @@ namespace System.Tests
         [Fact]
         public static void DefaultConstructor()
         {
-            var unreachableException = new UnreachableException();
+            UnreachableException unreachableException = new UnreachableException();
 
             Assert.NotNull(unreachableException.Message);
         }
@@ -19,8 +19,8 @@ namespace System.Tests
         [Fact]
         public static void MessageConstructor()
         {
-            var message = "MessageConstructor";
-            var unreachableException = new UnreachableException(message);
+            string message = "MessageConstructor";
+            UnreachableException unreachableException = new UnreachableException(message);
 
             Assert.Equal(message, unreachableException.Message);
         }
@@ -28,9 +28,9 @@ namespace System.Tests
         [Fact]
         public static void MessageInnerExceptionConstructor()
         {
-            var message = "MessageConstructor";
-            var innerException = new Exception();
-            var unreachableException = new UnreachableException();
+            string message = "MessageConstructor";
+            Exception innerException = new Exception();
+            UnreachableException unreachableException = new UnreachableException();
 
             Assert.Equal(message, unreachableException.Message);
             Assert.Same(innerException, unreachableException.InnerException);
