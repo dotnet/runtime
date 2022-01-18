@@ -105,11 +105,11 @@ namespace System.Reflection.Emit.Tests
             void CheckMethod(string name, int minAlignmentRequired, byte[] dataToVerify)
             {
                 var methodToCall = checkType.GetMethod(name);
-                long address = Math.Abs((long)(IntPtr)methodToCall.Invoke(null, null));
+                nint address = (nint)methodToCall.Invoke(null, null);
 
                 for (int i = 0; i < dataToVerify.Length; i++)
                 {
-                    Assert.Equal(dataToVerify[i], Marshal.ReadByte(new IntPtr(address + i)));
+                    Assert.Equal(dataToVerify[i], Marshal.ReadByte(address + (nint)i));
                 }
                 Assert.Equal(name + "_0" + "_" + address.ToString(), name + "_" + (address % minAlignmentRequired).ToString() + "_" + address.ToString());
             }
