@@ -21,7 +21,6 @@ namespace System.Collections.Immutable.Tests
             try
             {
                 action(span);
-                throw new ThrowsException(typeof(NullReferenceException));
             }
             catch (NullReferenceException nullRefEx) when (nullRefEx.GetType() == typeof(NullReferenceException))
             {
@@ -31,6 +30,8 @@ namespace System.Collections.Immutable.Tests
             {
                 throw new ThrowsException(typeof(NullReferenceException), ex);
             }
+
+            throw new ThrowsException(typeof(NullReferenceException));
         }
     }
 }
