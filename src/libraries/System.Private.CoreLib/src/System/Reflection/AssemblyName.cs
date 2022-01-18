@@ -166,15 +166,10 @@ namespace System.Reflection
         private static Func<string, AssemblyName> InitGetAssemblyName()
         {
             Type? readerType = Type.GetType(
-                    "System.Reflection.Metadata.MetadataReader, System.Reflection.Metadata, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
-                    throwOnError: false);
+                    "System.Reflection.Metadata.MetadataReader, System.Reflection.Metadata",
+                    throwOnError: true);
 
-            if (readerType == null)
-            {
-                throw new ArgumentException("can`t get System.Reflection.Metadata.MetadataReader");
-            }
-
-            MethodInfo? getAssemblyNameMethod = readerType.GetMethod(
+            MethodInfo? getAssemblyNameMethod = readerType!.GetMethod(
                 "GetAssemblyName",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
@@ -183,7 +178,7 @@ namespace System.Reflection
 
             if (getAssemblyNameMethod == null)
             {
-                throw new ArgumentException("can`t get GetAssemblyName");
+                throw new MissingMethodException(readerType.FullName, "GetAssemblyName");
             }
 
             return s_getAssemblyName = getAssemblyNameMethod.CreateDelegate<Func<string, AssemblyName>>();
@@ -198,8 +193,6 @@ namespace System.Reflection
         {
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
-
-//            return GetFileInformationCore(assemblyFile);
 
             return (s_getAssemblyName ?? InitGetAssemblyName())(assemblyFile);
         }
