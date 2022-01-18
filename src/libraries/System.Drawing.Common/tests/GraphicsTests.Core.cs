@@ -16,13 +16,16 @@ namespace System.Drawing.Tests
         public void FromHandle()
         {
             var bitmap = new Bitmap(1, 1);
-            using var graphics = Graphics.FromImage(bitmap);
+            var graphics = Graphics.FromImage(bitmap);
 
             var expectedHandle = graphics.Handle;
             var actualGraphics = Graphics.FromHandle(expectedHandle);
 
             IntPtr actualHandle = actualGraphics.Handle;
             Assert.Equal(expectedHandle, actualHandle);
+
+            // Do not dispose `graphics` because it is the same handle
+            actualGraphics.Dispose();
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

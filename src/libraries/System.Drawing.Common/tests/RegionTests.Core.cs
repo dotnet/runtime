@@ -11,13 +11,16 @@ namespace System.Drawing.Tests
         [Fact]
         public void FromHandle()
         {
-            using var region = new Region();
+            var region = new Region();
 
             var expectedHandle = region.Handle;
             var actualRegion = Region.FromHandle(expectedHandle);
 
             IntPtr actualHandle = actualRegion.Handle;
             Assert.Equal(expectedHandle, actualHandle);
+
+            // Do not dispose `region` because it is the same handle
+            actualRegion.Dispose();
         }
     }
 }

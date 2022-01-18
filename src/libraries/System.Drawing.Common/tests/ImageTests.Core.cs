@@ -11,13 +11,16 @@ namespace System.Drawing.Tests
         [Fact]
         public void FromHandle()
         {
-            using var image = new Bitmap(1, 1);
+            var image = new Bitmap(1, 1);
 
             var expectedHandle = image.Handle;
             var actualImage = Image.FromHandle(expectedHandle);
 
             IntPtr actualHandle = actualImage.Handle;
             Assert.Equal(expectedHandle, actualHandle);
+
+            // Do not dispose `image` because it is the same handle
+            actualImage.Dispose();
         }
     }
 }
