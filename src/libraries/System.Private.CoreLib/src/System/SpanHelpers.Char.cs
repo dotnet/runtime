@@ -24,7 +24,6 @@ namespace System
 
             int index = 0;
             int valueTailLength = valueLength - 1;
-
             if (valueTailLength == 0)
             {
                 // for single-char values use plain IndexOf
@@ -33,7 +32,7 @@ namespace System
 
             char valueHead = value;
             ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-            nuint valueTailByteLength = (nuint)(uint)valueTailLength * 2;
+            nuint valueTailByteLength = ((uint)valueTailLength * 2);
 
             if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
@@ -127,8 +126,7 @@ namespace System
 
                 } while (true);
             }
-
-            if (Vector128.IsHardwareAccelerated)
+            else // 128bit vector path (SSE2 or AdvSimd)
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -175,18 +173,15 @@ namespace System
 
                     index += Vector128<ushort>.Count;
 
-                    if (index + valueTailLength == searchSpaceLength)
+                    if (index == searchSpaceLength - valueTailLength)
                         return -1;
 
                     // Overlap with the current chunk if there is not enough room for the next one
-                    if (index + valueTailLength + Vector128<ushort>.Count > searchSpaceLength)
+                    if (index > searchSpaceLength - valueTailLength - Vector128<ushort>.Count)
                         index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
                 }
                 while (true);
             }
-
-            Debug.Fail("Unreachable");
-            return -1;
         }
 
         public static int LastIndexOf(ref char searchSpace, int searchSpaceLength, ref char value, int valueLength)
@@ -198,18 +193,13 @@ namespace System
                 return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
             int valueTailLength = valueLength - 1;
-
             if (valueTailLength == 0)
-            {
-                // for single-char values use plain LastIndexOf
-                return LastIndexOf(ref searchSpace, value, searchSpaceLength);
-            }
+                return LastIndexOf(ref searchSpace, value, searchSpaceLength); // for single-char values use plain LastIndexOf
 
             int offset = 0;
-
             char valueHead = value;
             ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-            nuint valueTailByteLength = (nuint)(uint)valueTailLength * 2;
+            nuint valueTailByteLength = ((uint)valueTailLength * 2);
 
             if (Vector128.IsHardwareAccelerated && searchSpaceLength - valueTailLength >= Vector128<ushort>.Count)
             {
@@ -232,7 +222,7 @@ namespace System
                 if (SequenceEqual(
                         ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, relativeIndex + 1)),
                         ref valueTail,
-                        valueTailByteLength)) // The (nunit)-cast is necessary to pick the correct overload
+                        valueTailByteLength))
                 {
                     return relativeIndex; // The tail matched. Return a successful find.
                 }
@@ -295,8 +285,7 @@ namespace System
                         offset = 0;
                 } while (true);
             }
-
-            if (Vector128.IsHardwareAccelerated)
+            else // 128bit vector path (SSE2 or AdvSimd)
             {
                 offset = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
 
@@ -347,9 +336,6 @@ namespace System
                         offset = 0;
                 } while (true);
             }
-
-            Debug.Fail("Unreachable");
-            return -1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
