@@ -463,7 +463,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
                 var args = new object?[] { key, null };
-                var _ = tryGetValue.Invoke(dictionary, args);
+                _ = tryGetValue.Invoke(dictionary, args);
                 object? item = BindInstance(
                     type: valueType,
                     instance: args[1],
