@@ -978,14 +978,14 @@ namespace System.IO.MemoryMappedFiles.Tests
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
-            using FileStream clienStream = new (pipePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            using FileStream clientStream = new (pipePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
             if (serverStream is not null)
             {
                 await serverStream.WaitForConnectionAsync();
             }
 
-            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clienStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clientStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
 
             serverStream?.Dispose();
         }
