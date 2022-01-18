@@ -1539,6 +1539,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Clear(InstructionSet_BMI2);
     }
 
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
+    {
+        CPUCompileFlags.Clear(InstructionSet_SHA);
+    }
+
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableFMA))
     {
         CPUCompileFlags.Clear(InstructionSet_FMA);

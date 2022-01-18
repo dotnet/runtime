@@ -2252,11 +2252,6 @@ void Compiler::compSetProcessor()
     opts.compSupportsISAReported = 0;
     opts.compSupportsISAExactly  = 0;
 
-    if (!JitConfig.EnableSHA())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SHA);
-    }
-
 #if defined(TARGET_XARCH)
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
