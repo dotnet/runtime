@@ -208,7 +208,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, index), valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
                 index += relativeIndex;
 
@@ -788,7 +788,7 @@ namespace System
 
                 // Do a quick search for the first element of "value".
                 int relativeIndex = LastIndexOf(ref searchSpace, valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
 
                 // Found the first element of "value". See if the tail matches.

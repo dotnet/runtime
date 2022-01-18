@@ -348,7 +348,6 @@ c_runtime/wcsrchr/test1/paltest_wcsrchr_test1
 c_runtime/wcsstr/test1/paltest_wcsstr_test1
 c_runtime/wcstod/test1/paltest_wcstod_test1
 c_runtime/wcstod/test2/paltest_wcstod_test2
-c_runtime/wcstok/test1/paltest_wcstok_test1
 c_runtime/wcstoul/test1/paltest_wcstoul_test1
 c_runtime/wcstoul/test2/paltest_wcstoul_test2
 c_runtime/wcstoul/test3/paltest_wcstoul_test3

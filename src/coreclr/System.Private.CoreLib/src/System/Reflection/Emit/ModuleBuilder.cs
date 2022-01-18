@@ -46,7 +46,7 @@ namespace System.Reflection.Emit
             while (true)
             {
                 i = typeName.LastIndexOf('+', i);
-                if (i == -1)
+                if (i < 0)
                 {
                     break;
                 }
@@ -626,7 +626,7 @@ namespace System.Reflection.Emit
             {
                 // Are there any possible special characters left?
                 int i = className.AsSpan(startIndex).IndexOfAny('[', '*', '&');
-                if (i == -1)
+                if (i < 0)
                 {
                     // No, type name is simple.
                     baseName = className;

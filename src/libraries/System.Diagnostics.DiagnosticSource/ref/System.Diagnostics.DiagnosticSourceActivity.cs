@@ -25,6 +25,7 @@ namespace System.Diagnostics
         }
 
         public bool IsAllDataRequested { get { throw null; } set { throw null; } }
+        public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
         public System.Diagnostics.ActivityKind Kind  { get { throw null; } }
         public string OperationName { get { throw null; } }
