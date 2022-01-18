@@ -200,6 +200,12 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"((\d{2,3}?)){2}", "1234", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
 
+                // Testing selected FindOptimizations finds the right prefix
+                yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
+                yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
+                yield return (@"yz(^|a+)bc", " yzaabc", RegexOptions.None, 0, 7, true, "yzaabc");
+                yield return (@"(^a|a$) bc", "a bc", RegexOptions.None, 0, 4, true, "a bc");
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Back references not support with NonBacktracking
