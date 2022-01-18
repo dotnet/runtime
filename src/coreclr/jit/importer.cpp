@@ -14229,7 +14229,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     assert(op1->gtOper == GT_CNS_INT && op1->AsIntCon()->gtIconVal == 0);
                     if (varTypeIsFloating(lclTyp))
                         op1->gtOper = GT_CNS_DBL;
-                    op1->gtType = genActualType(lclTyp);
+                    op1->gtType     = genActualType(lclTyp);
                     impPushOnStack(op1, tiRetVal);
                     // opcode = CEE_LDC_I4_0;
                     break;
