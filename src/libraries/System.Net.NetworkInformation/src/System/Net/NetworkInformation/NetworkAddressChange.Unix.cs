@@ -16,6 +16,12 @@ namespace System.Net.NetworkInformation
         // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
         private static readonly object s_gate = new object();
 
+        // s_socketCreateContext variable was introduced to prevent event thread leaks on Linux
+        // as described on GitHub: https://github.com/dotnet/runtime/issues/63788
+        // For each CreateSocket() call we increment this variable and pass it to ".NET Network Address Change" thread.
+        // This is then used in method LoopReadSocket as additional condition to exit thread.
+        private static volatile int s_socketCreateContext;
+
         // The "leniency" window for NetworkAvailabilityChanged socket events.
         // All socket events received within this duration will be coalesced into a
         // single event. Generally, many route changed events are fired in succession,
@@ -150,11 +156,13 @@ namespace System.Net.NetworkInformation
             }
 
             s_socket = newSocket;
-            new Thread(s => LoopReadSocket((int)s!))
+            int newSocketCreateContext = Interlocked.Increment(ref s_socketCreateContext);
+
+            new Thread(args => LoopReadSocket((LoopReadSocketArgs)args!))
             {
                 IsBackground = true,
                 Name = ".NET Network Address Change"
-            }.UnsafeStart(newSocket);
+            }.UnsafeStart(new LoopReadSocketArgs(newSocketCreateContext, newSocket));
         }
 
         private static void CloseSocket()
@@ -170,11 +178,11 @@ namespace System.Net.NetworkInformation
             s_socket = 0;
         }
 
-        private static unsafe void LoopReadSocket(int socket)
+        private static unsafe void LoopReadSocket(LoopReadSocketArgs args)
         {
-            while (socket == s_socket)
+            while (args.Socket == s_socket && args.SocketCreateContext == s_socketCreateContext)
             {
-                Interop.Sys.ReadEvents(socket, &ProcessEvent);
+                Interop.Sys.ReadEvents(args.Socket, &ProcessEvent);
             }
         }
 
@@ -289,6 +297,18 @@ namespace System.Net.NetworkInformation
                     }
                 }
             }
+        }
+
+        private class LoopReadSocketArgs
+        {
+            public LoopReadSocketArgs(int socketCreateContext, int socket)
+            {
+                SocketCreateContext = socketCreateContext;
+                Socket = socket;
+            }
+
+            public int SocketCreateContext { get; }
+            public int Socket { get; }
         }
     }
 }
