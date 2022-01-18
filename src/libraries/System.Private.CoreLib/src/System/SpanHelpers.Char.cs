@@ -71,7 +71,7 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_CHARS:
-            if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<ushort>.Count)
+            if (Avx2.IsSupported && searchSpaceLength - valueTailLength - Vector256<ushort>.Count >= 0)
             {
                 // Find the last unique (which is not equal to ch1) character
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -83,6 +83,9 @@ namespace System
                 Vector256<ushort> ch1 = Vector256.Create((ushort)valueHead);
                 Vector256<ushort> ch2 = Vector256.Create(ch2Val);
 
+                // Subtract Vector256<ushort>.Count in order to make a fast loop where we will never
+                // cross boundaries, we'll handle the last chunk separately
+                int lengthToExamine = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
                 do
                 {
                     Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, LoadVector256(ref searchSpace, index));
@@ -101,8 +104,7 @@ namespace System
                             if (valueTailByteLength == 1 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                    ref valueTail,
-                                    valueTailByteLength))
+                                    ref valueTail, valueTailByteLength))
                             {
                                 return index + charPos;
                             }
@@ -114,17 +116,41 @@ namespace System
                                 mask &= ~(uint)(0b11 << bitPos);
                         } while (mask != 0);
                     }
-
                     index += Vector256<ushort>.Count;
+                } while (index < lengthToExamine);
 
-                    if (index + valueTailLength == searchSpaceLength)
+                // Handle the last Vector256<ushort>.Count chunk we previously subtracted
+                // We might overlap with the previously processed data
+                {
+                    Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, LoadVector256(ref searchSpace, index));
+                    Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance));
+                    Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
+
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd == Vector256<byte>.Zero)
                         return -1;
 
-                    // Overlap with the current chunk if there is not enough room for the next one
-                    if (index + valueTailLength + Vector256<ushort>.Count > searchSpaceLength)
-                        index = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
+                    uint mask = cmpAnd.ExtractMostSignificantBits();
+                    do
+                    {
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        // div by 2 (shr) because we work with 2-byte chars
+                        int charPos = (int)((uint)bitPos / 2);
+                        if (valueTailByteLength == 1 || // we already matched two chars
+                            SequenceEqual(ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)), ref valueTail, valueTailByteLength))
+                        {
+                            return index + charPos;
+                        }
 
-                } while (true);
+                        // Clear two the lowest set bits
+                        if (Bmi1.IsSupported)
+                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                        else
+                            mask &= ~(uint)(0b11 << bitPos);
+                    } while (mask != 0);
+
+                    return -1;
+                }
             }
             else // 128bit vector path (SSE2 or AdvSimd)
             {
@@ -138,6 +164,9 @@ namespace System
                 Vector128<ushort> ch1 = Vector128.Create((ushort)valueHead);
                 Vector128<ushort> ch2 = Vector128.Create(ch2Val);
 
+                // Subtract Vector128<ushort>.Count in order to make a fast loop where we will never
+                // cross boundaries, we'll handle the last chunk separately
+                int lengthToExamine = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
                 do
                 {
                     Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, LoadVector128(ref searchSpace, index));
@@ -157,8 +186,7 @@ namespace System
                             if (valueTailByteLength == 1 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
-                                    ref valueTail,
-                                    valueTailByteLength))
+                                    ref valueTail, valueTailByteLength))
                             {
                                 return index + charPos;
                             }
@@ -170,17 +198,43 @@ namespace System
                                 mask &= ~(uint)(0b11 << bitPos);
                         } while (mask != 0);
                     }
-
                     index += Vector128<ushort>.Count;
+                } while (index < lengthToExamine);
 
-                    if (index == searchSpaceLength - valueTailLength)
+                // Handle the last Vector128<ushort>.Count chunk we previously subtracted
+                // We might overlap with the previously processed data
+                {
+                    Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, LoadVector128(ref searchSpace, index));
+                    Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance));
+                    Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
+
+                    // Early out: cmpAnd is all zeros
+                    if (cmpAnd == Vector128<byte>.Zero)
                         return -1;
 
-                    // Overlap with the current chunk if there is not enough room for the next one
-                    if (index > searchSpaceLength - valueTailLength - Vector128<ushort>.Count)
-                        index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
+                    uint mask = cmpAnd.ExtractMostSignificantBits();
+                    do
+                    {
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        // div by 2 (shr) because we work with 2-byte chars
+                        int charPos = (int)((uint)bitPos / 2);
+                        if (valueTailByteLength == 1 || // we already matched two chars
+                            SequenceEqual(
+                                ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos + 1)),
+                                ref valueTail, valueTailByteLength))
+                        {
+                            return index + charPos;
+                        }
+
+                        // Clear two the lowest set bits
+                        if (Bmi1.IsSupported)
+                            mask = Bmi1.ResetLowestSetBit(Bmi1.ResetLowestSetBit(mask));
+                        else
+                            mask &= ~(uint)(0b11 << bitPos);
+                    } while (mask != 0);
+
+                    return -1;
                 }
-                while (true);
             }
         }
 

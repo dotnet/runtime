@@ -63,7 +63,7 @@ namespace System
             // Based on http://0x80.pl/articles/simd-strfind.html#algorithm-1-generic-simd "Algorithm 1: Generic SIMD" by Wojciech Muła
             // Some details about the implementation can also be found in https://github.com/dotnet/runtime/pull/63285
         SEARCH_TWO_BYTES:
-            if (Avx2.IsSupported && searchSpaceLength - valueTailLength >= Vector256<byte>.Count)
+            if (Avx2.IsSupported && searchSpaceLength - valueTailLength - Vector256<byte>.Count >= 0)
             {
                 // Find the last unique (which is not equal to ch1) byte
                 // the algorithm is fine if both are equal, just a little bit less efficient
@@ -75,6 +75,9 @@ namespace System
                 Vector256<byte> ch1 = Vector256.Create(value);
                 Vector256<byte> ch2 = Vector256.Create(ch2Val);
 
+                // Subtract Vector256<byte>.Count in order to make a fast loop where we will never
+                // cross boundaries, we'll handle the last chunk separately
+                int lengthToExamine = searchSpaceLength - valueTailLength - Vector256<byte>.Count;
                 do
                 {
                     Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
@@ -91,26 +94,37 @@ namespace System
                             if (valueTailNLength == 1 || // we already matched two bytes
                                 SequenceEqual(
                                     ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
-                                    ref valueTail,
-                                    valueTailNLength))
+                                    ref valueTail, valueTailNLength))
                             {
                                 return offset + bitPos;
                             }
-                            // Clear the lowest set bit
-                            mask = BitOperations.ResetLowestSetBit(mask);
+                            mask = BitOperations.ResetLowestSetBit(mask); // Clear the lowest set bit
                         } while (mask != 0);
                     }
-
                     offset += Vector256<byte>.Count;
+                } while (offset < lengthToExamine);
 
-                    if (offset == searchSpaceLength - valueTailLength)
+                // Handle the last Vector256<byte>.Count chunk we previously subtracted
+                // We might overlap with the previously processed data
+                {
+                    Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)lengthToExamine));
+                    Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(lengthToExamine + ch1ch2Distance)));
+                    Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
+                    if (cmpAnd == Vector256<byte>.Zero)
                         return -1;
-
-                    // Overlap with the current chunk if there is not enough room for the next one
-                    if (offset > searchSpaceLength - valueTailLength - Vector256<byte>.Count)
-                        offset = searchSpaceLength - valueTailLength - Vector256<byte>.Count;
-
-                } while (true);
+                    uint mask = cmpAnd.ExtractMostSignificantBits();
+                    do
+                    {
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        if (valueTailNLength == 1 || // we already matched two bytes
+                            SequenceEqual(ref Unsafe.Add(ref searchSpace, lengthToExamine + bitPos + 1), ref valueTail, valueTailNLength))
+                        {
+                            return lengthToExamine + bitPos;
+                        }
+                        mask = BitOperations.ResetLowestSetBit(mask); // Clear the lowest set bit
+                    } while (mask != 0);
+                    return -1;
+                }
             }
             else // 128bit vector path (SSE2 or AdvSimd)
             {
@@ -124,6 +138,9 @@ namespace System
                 Vector128<byte> ch1 = Vector128.Create(value);
                 Vector128<byte> ch2 = Vector128.Create(ch2Val);
 
+                // Subtract Vector128<byte>.Count in order to make a fast loop where we will never
+                // cross boundaries, we'll handle the last chunk separately
+                int lengthToExamine = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
                 do
                 {
                     Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
@@ -141,8 +158,7 @@ namespace System
                             if (valueTailNLength == 1 || // we already matched two bytes
                                 SequenceEqual(
                                     ref Unsafe.Add(ref searchSpace, offset + bitPos + 1),
-                                    ref valueTail,
-                                    valueTailNLength))
+                                    ref valueTail, valueTailNLength))
                             {
                                 return offset + bitPos;
                             }
@@ -151,15 +167,29 @@ namespace System
                         } while (mask != 0);
                     }
                     offset += Vector128<byte>.Count;
+                } while (offset < lengthToExamine);
 
-                    if (offset == searchSpaceLength - valueTailLength)
+                // Handle the last Vector128<byte>.Count chunk we previously subtracted
+                // We might overlap with the previously processed data
+                {
+                    Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)lengthToExamine));
+                    Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(lengthToExamine + ch1ch2Distance)));
+                    Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
+                    if (cmpAnd == Vector128<byte>.Zero)
                         return -1;
-
-                    // Overlap with the current chunk if there is not enough room for the next one
-                    if (offset > searchSpaceLength - valueTailLength - Vector128<byte>.Count)
-                        offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
-
-                } while (true);
+                    uint mask = cmpAnd.ExtractMostSignificantBits();
+                    do
+                    {
+                        int bitPos = BitOperations.TrailingZeroCount(mask);
+                        if (valueTailNLength == 1 || // we already matched two bytes
+                            SequenceEqual(ref Unsafe.Add(ref searchSpace, lengthToExamine + bitPos + 1), ref valueTail, valueTailNLength))
+                        {
+                            return lengthToExamine + bitPos;
+                        }
+                        mask = BitOperations.ResetLowestSetBit(mask); // Clear the lowest set bit
+                    } while (mask != 0);
+                    return -1;
+                }
             }
         }
 
@@ -221,7 +251,6 @@ namespace System
 
                 Vector256<byte> ch1 = Vector256.Create(value);
                 Vector256<byte> ch2 = Vector256.Create(ch2Val);
-
                 do
                 {
                     Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
@@ -255,7 +284,6 @@ namespace System
                     // Overlap with the current chunk if there is not enough room for the next one
                     if (offset < 0)
                         offset = 0;
-
                 } while (true);
             }
             else // 128bit vector path (SSE2 or AdvSimd)
@@ -1731,8 +1759,8 @@ namespace System
             else
             {
                 nuint offset = length - sizeof(uint);
-                uint differentBits = LoadUInt(ref first) - LoadUInt(ref second);
-                differentBits |= LoadUInt(ref first, offset) - LoadUInt(ref second, offset);
+                uint differentBits = unchecked(LoadUInt(ref first) - LoadUInt(ref second));
+                differentBits |= unchecked(LoadUInt(ref first, offset) - LoadUInt(ref second, offset));
                 result = (differentBits == 0);
                 goto Result;
             }
@@ -1866,8 +1894,8 @@ namespace System
                 Debug.Assert(length <= (nuint)sizeof(nuint) * 2);
 
                 nuint offset = length - (nuint)sizeof(nuint);
-                nuint differentBits = LoadNUInt(ref first) - LoadNUInt(ref second);
-                differentBits |= LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset);
+                nuint differentBits = unchecked(LoadNUInt(ref first) - LoadNUInt(ref second));
+                differentBits |= unchecked(LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset));
                 result = (differentBits == 0);
                 goto Result;
             }
