@@ -130,7 +130,6 @@ set(SOURCES
   cruntime/stringtls.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp
-  cruntime/wchartls.cpp
   debug/debug.cpp
   exception/seh.cpp
   exception/signal.cpp
