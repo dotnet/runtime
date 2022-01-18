@@ -40,12 +40,12 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-        internal static AssemblyName GetAssemblyName(string path)
+        internal static AssemblyName GetAssemblyName(string assemblyFile)
         {
             AssemblyName assemblyName;
             try
             {
-                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+                using var fs = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read);
                 using var peReader = new PEReader(fs);
                 MetadataReader mdReader = peReader.GetMetadataReader();
                 assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
