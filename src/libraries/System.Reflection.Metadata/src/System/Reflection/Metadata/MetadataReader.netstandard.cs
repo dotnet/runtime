@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System.Reflection.PortableExecutable;
+
 namespace System.Reflection.Metadata
 {
     public sealed partial class MetadataReader
@@ -31,6 +34,30 @@ namespace System.Reflection.Metadata
             else
             {
                 assemblyName.SetPublicKeyToken(publicKeyOrToken);
+            }
+
+            return assemblyName;
+        }
+
+        internal static AssemblyName GetAssemblyName(string path)
+        {
+            AssemblyName assemblyName;
+            try
+            {
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+                using var peReader = new PEReader(fs);
+                MetadataReader mdReader = peReader.GetMetadataReader();
+                assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
+
+                // compat: normalize 'null' culture name to "".
+                if (assemblyName.CultureName == null)
+                {
+                    assemblyName.CultureName = string.Empty;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new BadImageFormatException(ex.Message);
             }
 
             return assemblyName;

@@ -315,14 +315,7 @@ namespace System.Reflection.Tests
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
             using (var fileStream = new FileStream(tempFile.Path, FileMode.Append, FileAccess.Write, FileShare.None))
             {
-                if (PlatformDetection.IsWindows) // File locking is Windows specific.
-                {
-                    Assert.Throws<System.IO.FileLoadException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-                }
-                else
-                {
-                    Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
-                }
+                Assert.Throws<System.IO.IOException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
             }
         }
 
