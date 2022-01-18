@@ -81,9 +81,11 @@ namespace System.IO.Tests
         [Theory]
         [InlineData("bar", "")]
         [InlineData("bar", null)]
-        public static void FileSystemEventArgs_ctor_When_EmptyFileName_Then_FullPathReturnsTheDirectoryFullPath(string directory, string name)
+        public static void FileSystemEventArgs_ctor_When_EmptyFileName_Then_FullPathReturnsTheDirectoryFullPath_WithTrailingSeparator(string directory, string name)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
+
+            directory = PathInternal.EnsureTrailingSeparator(directory);
 
             Assert.Equal(PathInternal.EnsureTrailingSeparator(Directory.GetCurrentDirectory()) + directory, args.FullPath);
         }

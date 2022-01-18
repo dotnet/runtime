@@ -20,6 +20,11 @@ namespace System.IO
             _changeType = changeType;
             _name = name;
             _fullPath = Path.Join(Path.GetFullPath(directory), name);
+
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                _fullPath = PathInternal.EnsureTrailingSeparator(_fullPath);
+            }
         }
 
         /// <devdoc>

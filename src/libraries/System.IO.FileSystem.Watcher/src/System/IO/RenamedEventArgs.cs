@@ -19,6 +19,11 @@ namespace System.IO
         {
             _oldName = oldName;
             _oldFullPath = Path.Join(Path.GetFullPath(directory), oldName);
+
+            if (string.IsNullOrWhiteSpace(oldName))
+            {
+                _oldFullPath = PathInternal.EnsureTrailingSeparator(_oldFullPath);
+            }
         }
 
         /// <devdoc>
