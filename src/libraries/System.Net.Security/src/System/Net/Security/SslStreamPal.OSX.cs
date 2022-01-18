@@ -266,7 +266,7 @@ namespace System.Net.Security
                 SecurityStatusPal status = PerformHandshake(sslHandle);
                 if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
-                    // Returning CredentialsNeeded will trigger credential refresh Disable break on cert request.
+                    // Returning CredentialsNeeded will trigger credential refresh. We can disable break on cert request.
                     // We either get the certificate or we will try to proceed without it and fail
                     Interop.AppleCrypto.SslBreakOnCertRequested(((SafeDeleteSslContext)sslContext).SslContext, false);
                 }
