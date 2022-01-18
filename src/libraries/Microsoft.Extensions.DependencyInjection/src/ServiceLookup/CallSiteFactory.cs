@@ -524,7 +524,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
 
-        public void Add(Type? type, ServiceCallSite serviceCallSite)
+        public void Add(Type type, ServiceCallSite serviceCallSite)
         {
             _callSiteCache[new ServiceCacheKey(type, DefaultSlot)] = serviceCallSite;
         }
