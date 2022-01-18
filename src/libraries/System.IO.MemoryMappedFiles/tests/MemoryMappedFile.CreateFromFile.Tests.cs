@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using System.IO.Pipes;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -989,6 +988,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clienStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
         }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // mkfifo is Unix sys-call
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -1026,8 +1026,5 @@ namespace System.IO.MemoryMappedFiles.Tests
 
             Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(fifoPath, FileMode.Open, null, capacity, MemoryMappedFileAccess.ReadWrite));
         }
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int mkfifo(string path, int mode);
     }
 }
