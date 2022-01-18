@@ -853,6 +853,41 @@ namespace DebuggerTests
             await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, col2, function_name2);
         }
 
+        [Theory]
+        [InlineData("Debugger.stepInto", 1, 2, false)]
+        [InlineData("Debugger.stepInto", 1, 2, true)]
+        [InlineData("Debugger.resume", 1, 2, true)]
+        [InlineData("Debugger.stepInto", 2, 3, false)]
+        [InlineData("Debugger.resume", 2, 3, false)]
+        public async Task StepperBoundary(string debuggingAction, int lineBpInit, int lineBpFinal, bool hasBpInDecoratedFun)
+        {
+            // behavior of StepperBoundary is the same for JMC enabled and disabled
+            // but the effect of NonUserCode escape is better visible for JMC: enabled
+            await SetJustMyCode(true); 
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunNoBoundary", lineBpInit);
+            var init_location = await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method('[debugger-test] DebuggerAttribute:RunNoBoundary'); }}, {lineBpInit});",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunNoBoundary"
+            );
+            var bp_final = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunNoBoundary", lineBpFinal);
+            if (hasBpInDecoratedFun)
+            {
+                var bp_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "BoundaryBp", 2);
+                var line_decorated_fun = bp_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                var col_decorated_fun = bp_decorated_fun.Value["locations"][0]["columnNumber"].Value<int>();
+                await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line_decorated_fun, col_decorated_fun, "BoundaryBp");
+            }
+            if (lineBpInit == 2)
+                await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", 900, 8, "BoundaryUserBp");
+            
+            var line = bp_final.Value["locations"][0]["lineNumber"].Value<int>();
+            var col = bp_final.Value["locations"][0]["columnNumber"].Value<int>();
+            await SendCommandAndCheck(null, debuggingAction, "dotnet://debugger-test.dll/debugger-test.cs", line, col, "RunNoBoundary");
+        }
+
         [Fact]
         public async Task CreateGoodBreakpointAndHitGoToWasmPageWithoutAssetsComeBackAndHitAgain()
         {

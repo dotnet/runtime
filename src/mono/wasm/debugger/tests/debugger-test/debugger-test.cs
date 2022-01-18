@@ -870,7 +870,7 @@ public class DebuggerAttribute
     }
 
     [System.Diagnostics.DebuggerNonUserCode]
-    public static void NonUserCodeBp()
+    public static void NonUserCodeBp(Action boundaryTestFun=null)
     {
         var a = 0;
         currentCount++;
@@ -887,6 +887,30 @@ public class DebuggerAttribute
     {
         NonUserCodeBp();
         NonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryBp()
+    {
+        var a = 5;
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeForBoundaryEscape(Action boundaryTestFun)
+    {
+        boundaryTestFun();
+    }
+
+    public static void RunNoBoundary()
+    {
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
     }
 }
 
