@@ -971,60 +971,52 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // pipePath is Windows-specific
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
-        public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException_Windows(long capacity)
+        public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
-            string pipeName = GetNamedPipeServerStreamName();
-            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+            (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
+            using FileStream clienStream = new (pipePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
 
-            using NamedPipeServerStream server = new (pipeName, PipeDirection.In);
-            using FileStream clienStream = new (pipePath, FileMode.Open, FileAccess.Write, FileShare.None);
-
-            await server.WaitForConnectionAsync();
+            if (serverStream is not null)
+            {
+                await serverStream.WaitForConnectionAsync();
+            }
 
             Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clienStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
+
+            serverStream?.Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // mkfifo is Unix sys-call
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
-        public void OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException_Unix(long capacity)
+        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
-            string fifoPath = GetTestFilePath();
-            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+            (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
 
-            using FileStream pipeStream = new (fifoPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipePath, FileMode.Open, null, capacity, MemoryMappedFileAccess.ReadWrite));
 
-            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipeStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
+            serverStream?.Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // pipePath is Windows-specific
-        [Fact]
-        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException_Windows()
+        private (string pipePath, NamedPipeServerStream? serverStream) CreatePipe()
         {
-            string pipeName = GetNamedPipeServerStreamName();
-            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+            if (OperatingSystem.IsWindows())
+            {
+                string pipeName = GetNamedPipeServerStreamName();
+                string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
 
-            using NamedPipeServerStream server = new(pipeName, PipeDirection.InOut);
+                return (pipePath, new NamedPipeServerStream(pipeName, PipeDirection.InOut));
+            }
+            else
+            {
+                string fifoPath = GetTestFilePath();
+                Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
 
-            // This test is using only FileMode.Open and capacity == 0, as FileMode.*Create* for named pipes on Windows fails with " All pipe instances are busy."
-            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipePath, FileMode.Open, null, 0, MemoryMappedFileAccess.ReadWrite));
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // mkfifo is Unix sys-call
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException_Unix(long capacity)
-        {
-            string fifoPath = GetTestFilePath();
-            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
-
-            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(fifoPath, FileMode.Open, null, capacity, MemoryMappedFileAccess.ReadWrite));
+                return (fifoPath, null);
+            }
         }
     }
 }
