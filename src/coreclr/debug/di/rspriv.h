@@ -2211,7 +2211,7 @@ public:
     COM_METHOD SetManagedHandler(ICorDebugManagedCallback *pCallback);
     COM_METHOD SetUnmanagedHandler(ICorDebugUnmanagedCallback *pCallback);
     COM_METHOD CreateProcess(LPCWSTR lpApplicationName,
-                             __in_z LPWSTR lpCommandLine,
+                             _In_z_ LPWSTR lpCommandLine,
                              LPSECURITY_ATTRIBUTES lpProcessAttributes,
                              LPSECURITY_ATTRIBUTES lpThreadAttributes,
                              BOOL bInheritHandles,
@@ -2243,7 +2243,7 @@ public:
 
     COM_METHOD CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
                                LPCWSTR lpApplicationName,
-                               __in_z LPWSTR lpCommandLine,
+                               _In_z_ LPWSTR lpCommandLine,
                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                BOOL bInheritHandles,
@@ -2267,7 +2267,7 @@ public:
 
     HRESULT CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                 LPCWSTR lpApplicationName,
-                                __in_z LPWSTR lpCommandLine,
+                                _In_z_ LPWSTR lpCommandLine,
                                 LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                 LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                 BOOL bInheritHandles,
@@ -2463,7 +2463,7 @@ public:
     // Returns the friendly name of the AppDomain
     COM_METHOD GetName(ULONG32   cchName,
                        ULONG32 * pcchName,
-                       __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                       _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
     /*
      * GetObject returns the runtime app domain object.
@@ -2646,12 +2646,12 @@ public:
      */
     COM_METHOD GetCodeBase(ULONG32   cchName,
                            ULONG32 * pcchName,
-                           __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                           _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
     // returns the filename of the assembly, or "<unknown>" for in-memory assemblies
     COM_METHOD GetName(ULONG32   cchName,
                        ULONG32 * pcchName,
-                       __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                       _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
 
     //-----------------------------------------------------------
@@ -3079,7 +3079,7 @@ public:
     /*
      * ModifyLogSwitch modifies the specified switch's severity level.
      */
-    COM_METHOD ModifyLogSwitch(__in_z WCHAR *pLogSwitchName, LONG lLevel);
+    COM_METHOD ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLevel);
 
     COM_METHOD EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains);
     COM_METHOD GetObject(ICorDebugValue **ppObject);
@@ -4180,7 +4180,7 @@ public:
     COM_METHOD GetProcess(ICorDebugProcess **ppProcess);
     COM_METHOD GetBaseAddress(CORDB_ADDRESS *pAddress);
     COM_METHOD GetAssembly(ICorDebugAssembly **ppAssembly);
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
     COM_METHOD EnableJITDebugging(BOOL bTrackJITInfo, BOOL bAllowJitOpts);
     COM_METHOD EnableClassLoadCallbacks(BOOL bClassLoadCallbacks);
 
@@ -4252,7 +4252,7 @@ public:
 #endif // _DEBUG
 
     // Internal help to get the "name" (filename or pretty name) of the module.
-    HRESULT GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    HRESULT GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Marks that the module's metadata has become invalid and needs to be refetched.
     void RefreshMetaData();
@@ -4484,15 +4484,15 @@ public:
     // Get the string for the type of the MDA. Never empty.
     // This is a convenient performant alternative to getting the XML stream and extracting
     // the type from that based off the schema.
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Get a string description of the MDA. This may be empty (0-length).
-    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Get the full associated XML for the MDA. This may be empty.
     // This could be a potentially expensive operation if the xml stream is large.
     // See the MDA documentation for the schema for this XML stream.
-    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     COM_METHOD GetFlags(CorDebugMDAFlags * pFlags);
 
@@ -9292,7 +9292,7 @@ public:
     COM_METHOD GetLength(ULONG32 * pcchString);
     COM_METHOD GetString(ULONG32   cchString,
                          ULONG32 * ppcchStrin,
-                         __out_ecount_opt(cchString) WCHAR     szString[]);
+                         _Out_writes_bytes_opt_(cchString) WCHAR     szString[]);
 
     //-----------------------------------------------------------
     // ICorDebugExceptionObjectValue
@@ -10120,7 +10120,7 @@ public:
 
     HRESULT SendCreateProcessEvent(MachineInfo machineInfo,
                                    LPCWSTR programName,
-                                   __in_z LPWSTR  programArgs,
+                                   _In_z_ LPWSTR  programArgs,
                                    LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                    LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                    BOOL bInheritHandles,
@@ -10811,7 +10811,7 @@ public:
      */
     COM_METHOD GetDisplayName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     CorpubProcess   *GetNextProcess () { return m_pNext;}
     void SetNext (CorpubProcess *pNext) { m_pNext = pNext;}
@@ -10838,7 +10838,7 @@ private:
 class CorpubAppDomain  : public CordbCommonBase, public ICorPublishAppDomain
 {
 public:
-    CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id);
+    CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id);
     virtual ~CorpubAppDomain();
 
 #ifdef _DEBUG
@@ -10873,7 +10873,7 @@ public:
      */
     COM_METHOD GetName (ULONG32 cchName,
                         ULONG32 *pcchName,
-                        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+                        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     CorpubAppDomain *GetNextAppDomain () { return m_pNext;}
     void SetNext (CorpubAppDomain *pNext) { m_pNext = pNext;}
@@ -11142,7 +11142,7 @@ private:
 void CheckAgainstDAC(CordbFunction * pFunc, void * pIP, mdMethodDef mdExpected);
 #endif
 
-HRESULT CopyOutString(const WCHAR * pInputString, ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+HRESULT CopyOutString(const WCHAR * pInputString, ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
 
 

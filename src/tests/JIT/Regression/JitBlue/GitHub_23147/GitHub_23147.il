@@ -7,7 +7,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module GitHub_23147.exe
 
 .class private sequential ansi sealed beforefieldinit Test_GitHub_23147.HFA_f2
        extends [System.Runtime]System.ValueType

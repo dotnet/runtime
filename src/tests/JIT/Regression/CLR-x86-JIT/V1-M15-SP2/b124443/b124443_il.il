@@ -12,7 +12,6 @@
 {}
 .assembly extern xunit.core {}
 
-.module b124443_il.exe
 
 .class private auto ansi sealed TestDelegate
        extends [mscorlib]System.MulticastDelegate

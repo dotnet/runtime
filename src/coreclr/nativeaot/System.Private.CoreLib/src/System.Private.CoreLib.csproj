@@ -10,6 +10,14 @@
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.Unix.xml" />
   </ItemGroup>
 
+  <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <PropertyGroup>
     <DefineConstants>SYSTEM_PRIVATE_CORELIB;FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;$(DefineConstants)</DefineConstants>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>

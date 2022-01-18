@@ -79,12 +79,12 @@ Notes:
 DLLEXPORT
 HRESULT
 CreateProcessForLaunch(
-    __in LPWSTR lpCommandLine,
-    __in BOOL bSuspendProcess,
-    __in LPVOID lpEnvironment,
-    __in LPCWSTR lpCurrentDirectory,
-    __out PDWORD pProcessId,
-    __out HANDLE *pResumeHandle)
+    _In_ LPWSTR lpCommandLine,
+    _In_ BOOL bSuspendProcess,
+    _In_ LPVOID lpEnvironment,
+    _In_ LPCWSTR lpCurrentDirectory,
+    _Out_ PDWORD pProcessId,
+    _Out_ HANDLE *pResumeHandle)
 {
     PUBLIC_CONTRACT;
 
@@ -140,7 +140,7 @@ CreateProcessForLaunch(
 DLLEXPORT
 HRESULT
 ResumeProcess(
-    __in HANDLE hResumeHandle)
+    _In_ HANDLE hResumeHandle)
 {
     PUBLIC_CONTRACT;
     if (ResumeThread(hResumeHandle) == (DWORD)-1)
@@ -159,7 +159,7 @@ ResumeProcess(
 DLLEXPORT
 HRESULT
 CloseResumeHandle(
-    __in HANDLE hResumeHandle)
+    _In_ HANDLE hResumeHandle)
 {
     PUBLIC_CONTRACT;
     if (!CloseHandle(hResumeHandle))
@@ -190,7 +190,7 @@ HRESULT
 GetContinueStartupEvent(
     DWORD debuggeePID,
     LPCWSTR szTelestoFullPath,
-    __out HANDLE *phContinueStartupEvent);
+    _Out_ HANDLE *phContinueStartupEvent);
 
 #endif // TARGET_UNIX
 
@@ -697,10 +697,10 @@ StartupHelperThread(LPVOID p)
 DLLEXPORT
 HRESULT
 RegisterForRuntimeStartup(
-    __in DWORD dwProcessId,
-    __in PSTARTUP_CALLBACK pfnCallback,
-    __in PVOID parameter,
-    __out PVOID *ppUnregisterToken)
+    _In_ DWORD dwProcessId,
+    _In_ PSTARTUP_CALLBACK pfnCallback,
+    _In_ PVOID parameter,
+    _Out_ PVOID *ppUnregisterToken)
 {
     return RegisterForRuntimeStartupEx(dwProcessId, NULL, pfnCallback, parameter, ppUnregisterToken);
 }
@@ -738,11 +738,11 @@ RegisterForRuntimeStartup(
 DLLEXPORT
 HRESULT
 RegisterForRuntimeStartupEx(
-    __in DWORD dwProcessId,
-    __in LPCWSTR lpApplicationGroupId,
-    __in PSTARTUP_CALLBACK pfnCallback,
-    __in PVOID parameter,
-    __out PVOID *ppUnregisterToken)
+    _In_ DWORD dwProcessId,
+    _In_ LPCWSTR lpApplicationGroupId,
+    _In_ PSTARTUP_CALLBACK pfnCallback,
+    _In_ PVOID parameter,
+    _Out_ PVOID *ppUnregisterToken)
 {
     PUBLIC_CONTRACT;
 
@@ -787,7 +787,7 @@ RegisterForRuntimeStartupEx(
 DLLEXPORT
 HRESULT
 UnregisterForRuntimeStartup(
-    __in PVOID pUnregisterToken)
+    _In_ PVOID pUnregisterToken)
 {
     PUBLIC_CONTRACT;
 
@@ -824,8 +824,8 @@ const int cchEventNameBufferSize = (sizeof(StartupNotifyEventNamePrefix) + sizeo
 DLLEXPORT
 HRESULT
 GetStartupNotificationEvent(
-    __in DWORD debuggeePID,
-    __out HANDLE* phStartupEvent)
+    _In_ DWORD debuggeePID,
+    _Out_ HANDLE* phStartupEvent)
 {
     PUBLIC_CONTRACT;
 
@@ -1220,9 +1220,9 @@ DLLEXPORT
 HRESULT
 EnumerateCLRs(
     DWORD debuggeePID,
-    __out HANDLE** ppHandleArrayOut,
-    __out LPWSTR** ppStringArrayOut,
-    __out DWORD* pdwArrayLengthOut)
+    _Out_ HANDLE** ppHandleArrayOut,
+    _Out_ LPWSTR** ppStringArrayOut,
+    _Out_ DWORD* pdwArrayLengthOut)
 {
     PUBLIC_CONTRACT;
 
@@ -1357,9 +1357,9 @@ EnumerateCLRs(
 DLLEXPORT
 HRESULT
 CloseCLREnumeration(
-    __in HANDLE* pHandleArray,
-    __in LPWSTR* pStringArray,
-    __in DWORD dwArrayLength)
+    _In_ HANDLE* pHandleArray,
+    _In_ LPWSTR* pStringArray,
+    _In_ DWORD dwArrayLength)
 {
     PUBLIC_CONTRACT;
 
@@ -1484,11 +1484,11 @@ const WCHAR *c_versionStrFormat = W("%08x;%08x;%p");
 DLLEXPORT
 HRESULT
 CreateVersionStringFromModule(
-    __in DWORD pidDebuggee,
-    __in LPCWSTR szModuleName,
-    __out_ecount_part(cchBuffer, *pdwLength) LPWSTR pBuffer,
-    __in DWORD cchBuffer,
-    __out DWORD* pdwLength)
+    _In_ DWORD pidDebuggee,
+    _In_ LPCWSTR szModuleName,
+    _Out_writes_to_opt_(cchBuffer, *pdwLength) LPWSTR pBuffer,
+    _In_ DWORD cchBuffer,
+    _Out_ DWORD* pdwLength)
 {
     PUBLIC_CONTRACT;
 
@@ -1719,9 +1719,9 @@ CheckDbiAndRuntimeVersion(
 DLLEXPORT
 HRESULT
 CreateDebuggingInterfaceFromVersionEx(
-    __in int iDebuggerVersion,
-    __in LPCWSTR szDebuggeeVersion,
-    __out IUnknown ** ppCordb)
+    _In_ int iDebuggerVersion,
+    _In_ LPCWSTR szDebuggeeVersion,
+    _Out_ IUnknown ** ppCordb)
 {
     return CreateDebuggingInterfaceFromVersion2(iDebuggerVersion, szDebuggeeVersion, NULL, ppCordb);
 }
@@ -1748,10 +1748,10 @@ CreateDebuggingInterfaceFromVersionEx(
 DLLEXPORT
 HRESULT
 CreateDebuggingInterfaceFromVersion2(
-    __in int iDebuggerVersion,
-    __in LPCWSTR szDebuggeeVersion,
-    __in LPCWSTR szApplicationGroupId,
-    __out IUnknown ** ppCordb)
+    _In_ int iDebuggerVersion,
+    _In_ LPCWSTR szDebuggeeVersion,
+    _In_ LPCWSTR szApplicationGroupId,
+    _Out_ IUnknown ** ppCordb)
 {
     PUBLIC_CONTRACT;
 
@@ -1880,8 +1880,8 @@ Exit:
 DLLEXPORT
 HRESULT
 CreateDebuggingInterfaceFromVersion(
-    __in LPCWSTR szDebuggeeVersion,
-    __out IUnknown ** ppCordb
+    _In_ LPCWSTR szDebuggeeVersion,
+    _Out_ IUnknown ** ppCordb
 )
 {
     PUBLIC_CONTRACT;
@@ -1907,7 +1907,7 @@ HRESULT
 GetContinueStartupEvent(
     DWORD debuggeePID,
     LPCWSTR szTelestoFullPath,
-    __out HANDLE* phContinueStartupEvent)
+    _Out_ HANDLE* phContinueStartupEvent)
 {
     if ((phContinueStartupEvent == NULL) || (szTelestoFullPath == NULL))
         return E_INVALIDARG;

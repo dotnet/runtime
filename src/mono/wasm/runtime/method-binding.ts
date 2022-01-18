@@ -57,7 +57,7 @@ export function get_method(method_name: string): MonoMethod {
     return res;
 }
 
-export function bind_runtime_method(method_name: string, signature: ArgsMarshalString): Function {
+export function bind_runtime_method(method_name: string, signature: string): Function {
     const method = get_method(method_name);
     return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
 }
@@ -139,7 +139,7 @@ export function _create_primitive_converters(): void {
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
 }
 
-function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+function _create_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     const steps = [];
     let size = 0;
     let is_result_definitely_unmarshaled = false,
@@ -184,7 +184,7 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
     };
 }
 
-function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+function _get_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     let converter = _signature_converters.get(args_marshal);
     if (!converter) {
         converter = _create_converter_for_marshal_string(args_marshal);
@@ -194,7 +194,7 @@ function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Con
     return converter;
 }
 
-export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+export function _compile_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     const converter = _get_converter_for_marshal_string(args_marshal);
     if (typeof (converter.args_marshal) !== "string")
         throw new Error("Corrupt converter for '" + args_marshal + "'");
@@ -372,7 +372,7 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string): Function {
+export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: string/*ArgsMarshalString*/, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
     this_arg = coerceNull(this_arg);
@@ -546,6 +546,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     return result;
 }
 
+/*
+We currently don't use these types because it makes typeScript compiler very slow.
+
 declare const enum ArgsMarshal {
     Int32 = "i", // int32
     Int32Enum = "j", // int32 - Enum with underlying type of int32
@@ -562,15 +565,12 @@ declare const enum ArgsMarshal {
 // to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 type _ExtraArgsMarshalOperators = "!" | "";
 
-// TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
-// blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
-// Take the marshaling enums and convert to all the valid strings for type checking. 
 export type ArgsMarshalString = ""
     | `${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
-
+*/
 
 type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
 
@@ -583,7 +583,7 @@ export type Converter = {
         size?: number;
     }[];
     size: number;
-    args_marshal?: ArgsMarshalString;
+    args_marshal?: string/*ArgsMarshalString*/;
     is_result_definitely_unmarshaled?: boolean;
     is_result_possibly_unmarshaled?: boolean;
     result_unmarshaled_if_argc?: number;

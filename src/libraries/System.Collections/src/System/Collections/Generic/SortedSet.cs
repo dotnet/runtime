@@ -466,7 +466,6 @@ namespace System.Collections.Generic
                             {
                                 parentOfMatch = newGrandParent;
                             }
-                            grandParent = newGrandParent;
                         }
                     }
                 }
@@ -823,7 +822,7 @@ namespace System.Collections.Generic
                 return set1.Count == set2.Count && set1.SetEquals(set2);
             }
 
-            bool found = false;
+            bool found;
             foreach (T item1 in set1)
             {
                 found = false;
@@ -1923,7 +1922,7 @@ namespace System.Collections.Generic
             {
                 _current = null;
                 Node? node = _tree.root;
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);
@@ -1962,7 +1961,7 @@ namespace System.Collections.Generic
 
                 _current = _stack.Pop();
                 Node? node = (_reverse ? _current.Left : _current.Right);
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);

@@ -23,7 +23,8 @@ namespace System.Net.Security
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;
             RemoteCertRequired = true;
-            TargetHost = sslClientAuthenticationOptions.TargetHost!;
+            // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
+            TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
 
             // Client specific options.
             CertSelectionDelegate = localCallback;

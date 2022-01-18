@@ -124,7 +124,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
         disableDotnet6Compatibility: true,
         config: null,
         configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
+        onConfigLoaded: (config) => {
             if (!Module.config) {
                 const err = new Error("Could not find ./mono-config.json. Cancelling run");
                 set_exit_code(1,);
@@ -132,9 +132,11 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
             }
             // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
             for (let variable in processedArguments.setenv) {
-                Module.config.environment_variables[variable] = processedArguments.setenv[variable];
+                config.environment_variables[variable] = processedArguments.setenv[variable];
             }
-
+            config.diagnostic_tracing = !!processedArguments.diagnostic_tracing;
+        },
+        preRun: () => {
             if (!processedArguments.enable_gc) {
                 INTERNAL.mono_wasm_enable_on_demand_gc(0);
             }
@@ -160,8 +162,7 @@ loadDotnet("./dotnet.js").then((createDotnetRuntime) => {
     }))
 }).catch(function (err) {
     console.error(err);
-    set_exit_code(1, "failed to load the dotnet.js file");
-    throw err;
+    set_exit_code(1, "failed to load the dotnet.js file.\n" + err);
 });
 
 const App = {
@@ -282,6 +283,7 @@ function processArguments(incomingArguments) {
     let setenv = {};
     let runtime_args = [];
     let enable_gc = true;
+    let diagnostic_tracing = false;
     let working_dir = '/';
     while (incomingArguments && incomingArguments.length > 0) {
         const currentArg = incomingArguments[0];
@@ -299,6 +301,8 @@ function processArguments(incomingArguments) {
             runtime_args.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             enable_gc = false;
+        } else if (currentArg == "--diagnostic_tracing") {
+            diagnostic_tracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
             working_dir = arg;
@@ -319,6 +323,7 @@ function processArguments(incomingArguments) {
         setenv,
         runtime_args,
         enable_gc,
+        diagnostic_tracing,
         working_dir,
     }
 }
@@ -361,10 +366,20 @@ async function loadDotnet(file) {
             return require(file);
         };
     } else if (is_browser) { // vanila JS in browser
-        loadScript = async function (file) {
-            globalThis.exports = {}; // if we are loading cjs file
-            const createDotnetRuntime = await import(file);
-            return typeof createDotnetRuntime === "function" ? createDotnetRuntime : globalThis.exports.createDotnetRuntime;
+        loadScript = function (file) {
+            var loaded = new Promise((resolve, reject) => {
+                globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
+                    // this is callback we have in CJS version of the runtime
+                    resolve(createDotnetRuntime);
+                };
+                import(file).then(({ default: createDotnetRuntime }) => {
+                    // this would work with ES6 default export
+                    if (createDotnetRuntime) {
+                        resolve(createDotnetRuntime);
+                    }
+                }, reject);
+            });
+            return loaded;
         }
     }
     else if (typeof globalThis.load !== 'undefined') {

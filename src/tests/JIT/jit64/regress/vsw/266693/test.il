@@ -12,7 +12,6 @@
   .ver 4:0:0:0
 }
 .assembly test {}
-.module test.il
 
 .class private auto ansi beforefieldinit Test_test
        extends [mscorlib]System.Object

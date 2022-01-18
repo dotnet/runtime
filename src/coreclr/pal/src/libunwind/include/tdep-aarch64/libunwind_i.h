@@ -102,7 +102,15 @@ struct cursor
     unw_word_t sigcontext_sp;
     unw_word_t sigcontext_pc;
     int validate;
+    ucontext_t *uc;
   };
+
+static inline ucontext_t *
+dwarf_get_uc(const struct dwarf_cursor *cursor)
+{
+  const struct cursor *c = (struct cursor *) cursor->as_arg;
+  return c->uc;
+}
 
 #define DWARF_GET_LOC(l)        ((l).val)
 
@@ -112,10 +120,10 @@ struct cursor
 # define DWARF_LOC(r, t)        ((dwarf_loc_t) { .val = (r) })
 # define DWARF_IS_REG_LOC(l)    0
 # define DWARF_REG_LOC(c,r)     (DWARF_LOC((unw_word_t)                      \
-                                 tdep_uc_addr((c)->as_arg, (r)), 0))
+                                 tdep_uc_addr(dwarf_get_uc(c), (r)), 0))
 # define DWARF_MEM_LOC(c,m)     DWARF_LOC ((m), 0)
 # define DWARF_FPREG_LOC(c,r)   (DWARF_LOC((unw_word_t)                      \
-                                 tdep_uc_addr((c)->as_arg, (r)), 0))
+                                 tdep_uc_addr(dwarf_get_uc(c), (r)), 0))
 
 static inline int
 dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
@@ -265,6 +273,7 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 
 #define tdep_getcontext_trace           UNW_ARCH_OBJ(getcontext_trace)
 #define tdep_init_done                  UNW_OBJ(init_done)
+#define tdep_init_mem_validate          UNW_OBJ(init_mem_validate)
 #define tdep_init                       UNW_OBJ(init)
 /* Platforms that support UNW_INFO_FORMAT_TABLE need to define
    tdep_search_unwind_table.  */
@@ -303,6 +312,7 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 extern atomic_bool tdep_init_done;
 
 extern void tdep_init (void);
+extern void tdep_init_mem_validate (void);
 extern int tdep_search_unwind_table (unw_addr_space_t as, unw_word_t ip,
                                      unw_dyn_info_t *di, unw_proc_info_t *pi,
                                      int need_unwind_info, void *arg);

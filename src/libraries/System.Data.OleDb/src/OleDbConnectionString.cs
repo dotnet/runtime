@@ -243,7 +243,7 @@ namespace System.Data.OleDb
 
         private static string? LoadStringFromStorage(string udlfilename)
         {
-            string? udlConnectionString = null;
+            string? udlConnectionString;
             Dictionary<string, string>? udlcache = UDL._Pool;
 
             if ((null == udlcache) || !udlcache.TryGetValue(udlfilename, out udlConnectionString))

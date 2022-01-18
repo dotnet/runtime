@@ -11,11 +11,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'native'// as "native"
+.assembly 'u_native'// as "native"
 {
 }
 .assembly extern xunit.core {}
-.module native.exe
 // MVID: {C18F1061-8239-420B-AC69-D4CB0BB38F2B}
 .namespace JitTest
 {

@@ -32,7 +32,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module M
 // MVID: {01C3371C-004D-0000-A745-03831C37C341}
 .imagebase 0x034f0000
 .file alignment 0x00000200

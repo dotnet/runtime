@@ -198,13 +198,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
             ContainCheckBoundsChk(node->AsBoundsChk());
             break;
 #endif // TARGET_XARCH
@@ -2540,7 +2534,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_ARM64
                 (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
 #endif
-                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical()
+                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIs(GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
@@ -2561,7 +2555,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
-                if (castOp->OperIsLogical())
+                if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
                     GenTree* op1 = castOp->gtGetOp1();
                     if ((op1 != nullptr) && !op1->IsCnsIntOrI())

@@ -8,7 +8,7 @@
 }
 .assembly extern mscorlib {}
 .assembly extern System {}
-.assembly EHTest {}
+.assembly 'ebdTryEnd' {}
 .assembly extern xunit.core {}
 .class public EHTest
 {

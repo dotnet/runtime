@@ -69,14 +69,14 @@ private:
                        CLR_DEBUGGING_VERSION * pVersion,
                        DWORD * pdwDbiTimeStamp,
                        DWORD * pdwDbiSizeOfImage,
-                       __out_z __inout_ecount(dwDbiNameCharCount) WCHAR * pDbiName,
+                       _Inout_updates_z_(dwDbiNameCharCount) WCHAR * pDbiName,
                        DWORD   dwDbiNameCharCount,
                        DWORD * pdwDacTimeStamp,
                        DWORD * pdwDacSizeOfImage,
-                       __out_z __inout_ecount(dwDacNameCharCount) WCHAR * pDacName,
+                       _Inout_updates_z_(dwDacNameCharCount) WCHAR * pDacName,
                        DWORD   dwDacNameCharCount);
 
-    HRESULT FormatLongDacModuleName(__out_z __inout_ecount(cchBuffer) WCHAR * pBuffer,
+    HRESULT FormatLongDacModuleName(_Inout_updates_z_(cchBuffer) WCHAR * pBuffer,
                                     DWORD cchBuffer,
                                     DWORD targetImageFileMachine,
                                     VS_FIXEDFILEINFO * pVersion);

@@ -196,6 +196,40 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 }
 
 guint64
+mono_llmult_ovf_un_oom (guint64 a, guint64 b)
+{
+	guint32 al = a;
+	guint32 ah = a >> 32;
+	guint32 bl = b;
+	guint32 bh = b >> 32;
+	guint64 res, t1;
+
+	// fixme: this is incredible slow
+
+	if (ah && bh)
+		goto raise_exception;
+
+	res = (guint64)al * (guint64)bl;
+
+	t1 = (guint64)ah * (guint64)bl + (guint64)al * (guint64)bh;
+
+	if (t1 > 0xffffffff)
+		goto raise_exception;
+
+	res += ((guint64)t1) << 32;
+
+	return res;
+
+ raise_exception:
+	{
+		ERROR_DECL (error);
+		mono_error_set_out_of_memory (error, "");
+		mono_error_set_pending_exception (error);
+	}
+	return 0;
+}
+
+guint64
 mono_llmult_ovf (gint64 a, gint64 b)
 {
 	guint32 al = a;
@@ -521,6 +555,21 @@ mono_imul_ovf_un (guint32 a, guint32 b)
 
 	return res;
 }
+
+gint32
+mono_imul_ovf_un_oom (guint32 a, guint32 b)
+{
+	const guint64 res = (guint64)a * (guint64)b;
+
+	if (res >> 32) {
+		ERROR_DECL (error);
+		mono_error_set_out_of_memory (error, "");
+		mono_error_set_pending_exception (error);
+		return 0;
+	}
+
+	return res;
+}
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
@@ -816,9 +865,9 @@ mono_class_static_field_address (MonoClassField *field)
 
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
-	mono_class_init_internal (field->parent);
+	mono_class_init_internal (m_field_get_parent (field));
 
-	vtable = mono_class_vtable_checked (field->parent, error);
+	vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -1620,5 +1669,10 @@ mono_throw_invalid_program (const char *msg)
 
 void
 mono_dummy_jit_icall (void)
+{
+}
+
+void
+mono_dummy_jit_icall_val (gpointer val)
 {
 }

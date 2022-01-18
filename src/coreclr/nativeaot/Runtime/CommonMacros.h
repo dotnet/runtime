@@ -5,6 +5,7 @@
 #define __COMMONMACROS_H__
 
 #include "rhassert.h"
+#include <minipal/utils.h>
 
 #define EXTERN_C extern "C"
 
@@ -33,19 +34,25 @@
 
 #endif // _MSC_VER
 
-#ifndef COUNTOF
-template <typename _CountofType, size_t _SizeOfArray>
-char (*COUNTOF_helper(_CountofType (&_Array)[_SizeOfArray]))[_SizeOfArray];
-#define COUNTOF(_Array) sizeof(*COUNTOF_helper(_Array))
-#endif // COUNTOF
-
 #ifndef offsetof
 #define offsetof(s,m)   (uintptr_t)( (intptr_t)&reinterpret_cast<const volatile char&>((((s *)0)->m)) )
 #endif // offsetof
 
+#ifdef __GNUC__
+#ifdef HOST_64BIT
+#define __int64     long
+#else // HOST_64BIT
+#define __int64     long long
+#endif // HOST_64BIT
+#endif // __GNUC__
+
 #ifndef FORCEINLINE
 #define FORCEINLINE __forceinline
 #endif
+
+#ifdef __GNUC__
+#define __forceinline __attribute__((always_inline)) inline
+#endif // __GNUC__
 
 #ifndef NOINLINE
 #ifdef _MSC_VER
@@ -221,11 +228,11 @@ extern unsigned __int64 g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
 #define C_ASSERT(e) static_assert(e, #e)
 #endif // C_ASSERT
 
-#ifdef __llvm__
-#define DECLSPEC_THREAD __thread
-#else // __llvm__
+#ifdef _MSC_VER
 #define DECLSPEC_THREAD __declspec(thread)
-#endif // !__llvm__
+#else // _MSC_VER
+#define DECLSPEC_THREAD __thread
+#endif // !_MSC_VER
 
 #ifndef __GCENV_BASE_INCLUDED__
 #if !defined(_INC_WINDOWS)

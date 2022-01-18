@@ -17,7 +17,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'superlong.exe'
 // MVID: {571950B7-63D3-4968-948F-25114244E0B8}
 .namespace JitTest
 {

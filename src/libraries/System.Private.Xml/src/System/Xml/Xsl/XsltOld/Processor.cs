@@ -160,7 +160,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal XPathNavigator GetNavigator(Uri ruri)
         {
-            XPathNavigator? result = null;
+            XPathNavigator? result;
             if (_documentCache != null)
             {
                 result = _documentCache[ruri] as XPathNavigator;

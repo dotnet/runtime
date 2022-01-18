@@ -226,8 +226,7 @@ namespace System.Collections.Immutable
 
                 foreach (T item in other)
                 {
-                    bool mutated;
-                    this.Root = this.Root.Remove(item, _comparer, out mutated);
+                    this.Root = this.Root.Remove(item, _comparer, out _);
                 }
             }
 
@@ -331,8 +330,7 @@ namespace System.Collections.Immutable
 
                 foreach (T item in other)
                 {
-                    bool mutated;
-                    this.Root = this.Root.Add(item, _comparer, out mutated);
+                    this.Root = this.Root.Add(item, _comparer, out _);
                 }
             }
 

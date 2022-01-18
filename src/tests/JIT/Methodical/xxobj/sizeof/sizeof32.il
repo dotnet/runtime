@@ -5,7 +5,7 @@
 .assembly extern mscorlib { }
 .assembly sizeof32 { }
 .assembly extern xunit.core {}
-.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
+.custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .namespace JitTest
 {
   .class private sequential ansi sealed beforefieldinit SimpleStruct
@@ -128,7 +128,7 @@
       IL_00b9:  and
       IL_00ba:  stloc.0
       IL_00bb:  ldloc.0
-      IL_00bc:  ldc.i4.s   28
+      IL_00bc:  ldc.i4.s   20
       IL_00be:  add
       IL_00bf:  stloc.1
       IL_00c0:  br.s       IL_00c2

@@ -97,6 +97,16 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "Decimal");
         }
 
+        public static bool IsSystemDelegate(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Delegate");
+        }
+
+        public static bool IsSystemMulticastDelegate(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "MulticastDelegate");
+        }
+
         public static bool IsSystemGuid(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Guid");

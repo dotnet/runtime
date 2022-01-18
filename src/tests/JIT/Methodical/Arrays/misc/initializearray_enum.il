@@ -76,7 +76,6 @@ class My {
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module initializearray_enum.exe
 // MVID: {88A311DA-3D49-42AC-8FA7-6DB1266177BC}
 .imagebase 0x00400000
 .file alignment 0x00000200

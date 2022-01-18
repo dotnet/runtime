@@ -109,7 +109,7 @@ namespace System.Drawing
             // so if our app changes default directory we won't get an error
             filename = Path.GetFullPath(filename);
 
-            IntPtr image = IntPtr.Zero;
+            IntPtr image;
 
             if (useEmbeddedColorManagement)
             {

@@ -204,7 +204,7 @@ mono_class_setup_basic_field_info (MonoClass *klass)
 	int first_field_idx = mono_class_has_static_metadata (klass) ? mono_class_get_first_field_idx (klass) : 0;
 	for (i = 0; i < top; i++) {
 		field = &fields [i];
-		field->parent = klass;
+		m_field_set_parent (field, klass);
 
 		if (gtd) {
 			field->name = mono_field_get_name (&gtd->fields [i]);
@@ -2399,7 +2399,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				guint32 field_idx = first_field_idx + (field - p->fields);
 				if (MONO_TYPE_IS_REFERENCE (field->type) && mono_assembly_is_weak_field (p->image, field_idx + 1)) {
 					has_weak_fields = TRUE;
-					mono_trace_message (MONO_TRACE_TYPE, "Field %s:%s at offset %x is weak.", field->parent->name, field->name, field->offset);
+					mono_trace_message (MONO_TRACE_TYPE, "Field %s:%s at offset %x is weak.", m_field_get_parent (field)->name, field->name, field->offset);
 				}
 			}
 		}
@@ -4079,4 +4079,17 @@ mono_classes_init (void)
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
 	mono_counters_register ("MonoClass size",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &classes_size);
+}
+
+void
+m_field_set_parent (MonoClassField *field, MonoClass *klass)
+{
+	uintptr_t old_flags = m_field_get_meta_flags (field);
+	field->parent_and_flags = ((uintptr_t)klass) | old_flags;
+}
+
+void
+m_field_set_meta_flags (MonoClassField *field, unsigned int flags)
+{
+	field->parent_and_flags |= (field->parent_and_flags & ~MONO_CLASS_FIELD_META_FLAG_MASK) | flags;
 }
