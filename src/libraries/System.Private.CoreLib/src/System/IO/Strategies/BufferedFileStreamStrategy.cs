@@ -21,7 +21,7 @@ namespace System.IO.Strategies
         private int _readPos;
         private int _readLen;
         // The last successful Task returned from ReadAsync (perf optimization for successive reads of the same size)
-        private CachedCompletedTask<int> _lastSyncCompletedReadTask;
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask;
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
