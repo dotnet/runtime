@@ -20,7 +20,7 @@ namespace System.Tests
         public static void MessageConstructor()
         {
             var message = "MessageConstructor";
-            var unreachableException = new UnreachableException();
+            var unreachableException = new UnreachableException(message);
 
             Assert.Equal(message, unreachableException.Message);
         }
