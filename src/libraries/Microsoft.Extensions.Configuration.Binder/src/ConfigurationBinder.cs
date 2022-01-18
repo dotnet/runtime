@@ -461,7 +461,7 @@ namespace Microsoft.Extensions.Configuration
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
-                var key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
+                object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) : child.Key;
                 var args = new object?[] { key, null };
                 var _ = tryGetValue.Invoke(dictionary, args);
                 object? item = BindInstance(
