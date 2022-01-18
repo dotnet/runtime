@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
                         case KeyCollisionBehavior.ThrowAlways:
                             throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         default:
-                            throw new UnreachableException();
+                            throw new InvalidOperationException(); // unreachable
                     }
                 }
 
@@ -197,7 +197,7 @@ namespace System.Collections.Immutable
                         case KeyCollisionBehavior.ThrowAlways:
                             throw new ArgumentException(SR.Format(SR.DuplicateKey, key));
                         default:
-                            throw new UnreachableException();
+                            throw new InvalidOperationException(); // unreachable
                     }
                 }
             }
