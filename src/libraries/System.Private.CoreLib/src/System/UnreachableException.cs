@@ -6,7 +6,7 @@ namespace System
     /// <summary>
     /// Exception thrown when the program executes an instruction that was thought to be unreachable.
     /// </summary>
-    public sealed class UnreachableException : SystemException
+    public sealed class UnreachableException : Exception
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="System.UnreachableException"/> class with the default error message.
