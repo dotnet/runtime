@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -975,7 +976,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
-        public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
+        public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException_Windows(long capacity)
         {
             string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
@@ -988,9 +989,22 @@ namespace System.IO.MemoryMappedFiles.Tests
             Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clienStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException_Unix(long capacity)
+        {
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+
+            using FileStream pipeStream = new (fifoPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipeStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
+        }
+
         [PlatformSpecific(TestPlatforms.Windows)] // pipePath is Windows-specific
         [Fact]
-        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException()
+        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException_Windows()
         {
             string pipeName = GetNamedPipeServerStreamName();
             string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
@@ -1000,5 +1014,20 @@ namespace System.IO.MemoryMappedFiles.Tests
             // This test is using only FileMode.Open and capacity == 0, as FileMode.*Create* for named pipes on Windows fails with " All pipe instances are busy."
             Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipePath, FileMode.Open, null, 0, MemoryMappedFileAccess.ReadWrite));
         }
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // mkfifo is Unix sys-call
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException_Unix(long capacity)
+        {
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(fifoPath, FileMode.Open, null, capacity, MemoryMappedFileAccess.ReadWrite));
+        }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int mkfifo(string path, int mode);
     }
 }
