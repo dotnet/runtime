@@ -155,6 +155,7 @@ namespace System.Net.Security
                 }
                 else if (((SafeDeleteSslContext)context).Credentials != (credential as SafeFreeSslCredentials))
                 {
+                    // we received new credentials as a result of returning CredentialsNeeded previously
                     ((SafeDeleteSslContext)context).UpdateCredentials((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
@@ -169,8 +170,9 @@ namespace System.Net.Security
                     // We either get the certificate or we will try to proceed without it and fail
                     Interop.Ssl.SslSetClientCertCallback(((SafeDeleteSslContext)context).SslContext, 0);
 
-                    // Avoid calling IsSslRenegotiatePending below, as it internally changes the rwstate of the underlying SSL
-                    // instance. We need to preserve the SSL_X509_LOOKUP set due to the cert callback.
+                    // Avoid calling IsSslRenegotiatePending below, as it internally calls SSL_peek which changes the rwstate
+                    // of the underlying SSL instance. We need to preserve the SSL_X509_LOOKUP in order for OpenSSL to actually
+                    // send the certificate once it is set
                     return new SecurityStatusPal(errorCode);
                 }
 

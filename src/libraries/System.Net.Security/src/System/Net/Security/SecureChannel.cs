@@ -731,7 +731,6 @@ namespace System.Net.Security
 
                 SetRefreshCredentialNeeded();
                 status = GenerateToken(ReadOnlySpan<byte>.Empty, ref nextmsg);
-                //status = GenerateToken(incomingBuffer, ref nextmsg);
             }
 
             ProtocolToken token = new ProtocolToken(nextmsg, status);
