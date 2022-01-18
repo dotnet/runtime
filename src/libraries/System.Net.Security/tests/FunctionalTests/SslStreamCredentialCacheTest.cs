@@ -17,8 +17,8 @@ namespace System.Net.Security.Tests
     public class SslStreamCredentialCacheTest
     {
         [Theory]
-        [InlineData(true)]
         [InlineData(false)]
+        [InlineData(true)]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok(bool clientCertificateRequired)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
