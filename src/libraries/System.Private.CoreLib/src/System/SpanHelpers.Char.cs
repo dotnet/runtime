@@ -38,7 +38,6 @@ namespace System
             }
 
             ref byte valueTail = ref Unsafe.As<char, byte>(ref Unsafe.Add(ref value, 1));
-            nuint valueTailByteLength = ((uint)valueTailLength * 2);
             int remainingSearchSpaceLength = searchSpaceLength - valueTailLength;
 
             while (remainingSearchSpaceLength > 0)
@@ -58,7 +57,7 @@ namespace System
                 if (SequenceEqual(
                         ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + 1)),
                         ref valueTail,
-                        valueTailByteLength))
+                        (nuint)(uint)valueTailLength * 2))
                 {
                     return index;  // The tail matched. Return a successful find.
                 }
@@ -104,7 +103,7 @@ namespace System
                             if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
-                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return index + charPos;
                             }
@@ -139,7 +138,7 @@ namespace System
                         if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
-                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return index + charPos;
                         }
@@ -188,7 +187,7 @@ namespace System
                             if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
-                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return index + charPos;
                             }
@@ -223,7 +222,7 @@ namespace System
                         if (valueLength == 2 || // we already matched two chars
                             SequenceEqual(
                                 ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, index + charPos)),
-                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                                ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                         {
                             return index + charPos;
                         }
@@ -277,7 +276,7 @@ namespace System
                 // Found the first element of "value". See if the tail matches.
                 if (SequenceEqual(
                         ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, relativeIndex + 1)),
-                        ref valueTail, (nuint)(uint)valueTailLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                        ref valueTail, (nuint)(uint)valueTailLength * 2))
                 {
                     return relativeIndex; // The tail matched. Return a successful find.
                 }
@@ -323,7 +322,7 @@ namespace System
                             if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
-                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
                             }
@@ -373,7 +372,7 @@ namespace System
                             if (valueLength == 2 || // we already matched two chars
                                 SequenceEqual(
                                     ref Unsafe.As<char, byte>(ref Unsafe.Add(ref searchSpace, offset + charPos)),
-                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2)) // The (nuint)-cast is necessary to pick the correct overload
+                                    ref Unsafe.As<char, byte>(ref value), (nuint)(uint)valueLength * 2))
                             {
                                 return charPos + offset;
                             }

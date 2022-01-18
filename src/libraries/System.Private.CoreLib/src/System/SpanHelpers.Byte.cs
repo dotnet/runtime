@@ -1764,8 +1764,8 @@ namespace System
             else
             {
                 nuint offset = length - sizeof(uint);
-                uint differentBits = unchecked(LoadUInt(ref first) - LoadUInt(ref second));
-                differentBits |= unchecked(LoadUInt(ref first, offset) - LoadUInt(ref second, offset));
+                uint differentBits = LoadUInt(ref first) - LoadUInt(ref second);
+                differentBits |= LoadUInt(ref first, offset) - LoadUInt(ref second, offset);
                 result = (differentBits == 0);
                 goto Result;
             }
@@ -1899,8 +1899,8 @@ namespace System
                 Debug.Assert(length <= (nuint)sizeof(nuint) * 2);
 
                 nuint offset = length - (nuint)sizeof(nuint);
-                nuint differentBits = unchecked(LoadNUInt(ref first) - LoadNUInt(ref second));
-                differentBits |= unchecked(LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset));
+                nuint differentBits = LoadNUInt(ref first) - LoadNUInt(ref second);
+                differentBits |= LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset));
                 result = (differentBits == 0);
                 goto Result;
             }
