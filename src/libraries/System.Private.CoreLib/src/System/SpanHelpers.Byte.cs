@@ -1900,7 +1900,7 @@ namespace System
 
                 nuint offset = length - (nuint)sizeof(nuint);
                 nuint differentBits = LoadNUInt(ref first) - LoadNUInt(ref second);
-                differentBits |= LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset));
+                differentBits |= LoadNUInt(ref first, offset) - LoadNUInt(ref second, offset);
                 result = (differentBits == 0);
                 goto Result;
             }
