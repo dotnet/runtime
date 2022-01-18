@@ -35,13 +35,13 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
             AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(assemblyName);
-            this.Name = parts._name;
-            this.Version = parts._version;
-            this.CultureName = parts._cultureName;
-            this.Flags = parts._flags.ExtractAssemblyNameFlags();
-            this.ContentType = parts._flags.ExtractAssemblyContentType();
+            Name = parts._name;
+            Version = parts._version;
+            CultureName = parts._cultureName;
+            Flags = parts._flags.ExtractAssemblyNameFlags();
+            ContentType = parts._flags.ExtractAssemblyContentType();
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            this.ProcessorArchitecture = parts._flags.ExtractProcessorArchitecture();
+            ProcessorArchitecture = parts._flags.ExtractProcessorArchitecture();
 #pragma warning restore SYSLIB0037
 
             if (parts._publicKeyOrToken != null)
