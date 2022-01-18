@@ -15,6 +15,16 @@ public struct S2
 {
 }
 
+[StructLayout(LayoutKind.Explicit)]
+public class C
+{
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public class C2
+{
+}
+
 public class Test_explicitStruct_empty
 {
     // Mark as no-inlining so any test failures will show the right stack trace even after
@@ -31,5 +41,19 @@ public class Test_explicitStruct_empty
     public static void EmptyExplicitStructCanBeLoadedAndCreatedThroughReflection()
     {
         object s = Activator.CreateInstance(Type.GetType("S2"));
+    }
+
+    [Fact]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void EmptyExplicitClassCanBeLoadedAndCreated()
+    {
+        C c = new C();
+    }
+
+    [Fact]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void EmptyExplicitStructCanBeLoadedAndCreatedThroughReflection()
+    {
+        object c = Activator.CreateInstance(Type.GetType("C2"));
     }
 }
