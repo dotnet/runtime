@@ -66,7 +66,7 @@ namespace System.Formats.Asn1
             if (normalized.Year > 9999)
             {
                 // This is unreachable since DateTimeOffset guards against this internally.
-                throw new UnreachableException(nameof(value));
+                throw new UnreachableException();
             }
 
             // We're only loading in sub-second ticks.
