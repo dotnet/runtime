@@ -283,9 +283,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private ILEmitResolverBuilderRuntimeContext GenerateMethodBody(ServiceCallSite callSite, ILGenerator generator)
         {
-            var context = new ILEmitResolverBuilderContext()
+            var context = new ILEmitResolverBuilderContext(generator)
             {
-                Generator = generator,
                 Constants = null,
                 Factories = null
             };
