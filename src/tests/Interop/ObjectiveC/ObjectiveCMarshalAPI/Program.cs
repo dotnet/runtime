@@ -269,7 +269,7 @@ namespace ObjectiveCMarshalAPI
             }
 
             Assert.True(false, "Unknown exception type");
-            throw new Exception("Unreachable");
+            throw new UnreachableException();
         }
 
         class Scenario

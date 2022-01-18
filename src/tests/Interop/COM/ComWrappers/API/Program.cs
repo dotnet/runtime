@@ -376,7 +376,7 @@ namespace ComWrappersTests
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
                         Assert.True(false, "Invalid failure mode");
-                        throw new Exception("UNREACHABLE");
+                        throw new UnreachableException();
                 }
             }
 
@@ -390,7 +390,7 @@ namespace ComWrappersTests
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
                         Assert.True(false, "Invalid failure mode");
-                        throw new Exception("UNREACHABLE");
+                        throw new UnreachableException();
                 }
             }
 

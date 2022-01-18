@@ -840,7 +840,7 @@ namespace ILCompiler
                             {
                                 ILOpcode.ldloca_s => reader.ReadILByte(),
                                 ILOpcode.ldloca => reader.ReadILUInt16(),
-                                _ => throw new NotImplementedException(), // Unreachable
+                                _ => throw new UnreachableException(),
                             };
 
                             if (index >= locals.Length)
@@ -957,7 +957,7 @@ namespace ILCompiler
                                         ILOpcode.bne_un_s => value1.Value.AsInt32() != value2.Value.AsInt32(),
                                         ILOpcode.ble_s => value1.Value.AsInt32() <= value2.Value.AsInt32(),
                                         ILOpcode.ble_un_s => (uint)value1.Value.AsInt32() <= (uint)value2.Value.AsInt32(),
-                                        _ => throw new NotImplementedException() // unreachable
+                                        _ => throw new UnreachableException()
                                     };
                                 }
                                 else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int64)
@@ -974,7 +974,7 @@ namespace ILCompiler
                                         ILOpcode.bne_un_s => value1.Value.AsInt64() != value2.Value.AsInt64(),
                                         ILOpcode.ble_s => value1.Value.AsInt64() <= value2.Value.AsInt64(),
                                         ILOpcode.ble_un_s => (ulong)value1.Value.AsInt64() <= (ulong)value2.Value.AsInt64(),
-                                        _ => throw new NotImplementedException() // unreachable
+                                        _ => throw new UnreachableException()
                                     };
                                 }
                                 else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
@@ -991,7 +991,7 @@ namespace ILCompiler
                                         ILOpcode.bne_un_s => value1.Value.AsDouble() != value2.Value.AsDouble(),
                                         ILOpcode.ble_s => value1.Value.AsDouble() <= value2.Value.AsDouble(),
                                         ILOpcode.ble_un_s => !(value1.Value.AsDouble() > value2.Value.AsDouble()),
-                                        _ => throw new NotImplementedException() // unreachable
+                                        _ => throw new UnreachableException()
                                     };
                                 }
                                 else
@@ -1166,7 +1166,7 @@ namespace ILCompiler
                                     ILOpcode.div_un => (int)((uint)value1.Value.AsInt32() / (uint)value2.Value.AsInt32()),
                                     ILOpcode.rem => value1.Value.AsInt32() % value2.Value.AsInt32(),
                                     ILOpcode.rem_un => (int)((uint)value1.Value.AsInt32() % (uint)value2.Value.AsInt32()),
-                                    _ => throw new NotImplementedException(), // unreachable
+                                    _ => throw new UnreachableException(),
                                 };
 
                                 stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(result));
@@ -1187,7 +1187,7 @@ namespace ILCompiler
                                     ILOpcode.div_un => (long)((ulong)value1.Value.AsInt64() / (ulong)value2.Value.AsInt64()),
                                     ILOpcode.rem => value1.Value.AsInt64() % value2.Value.AsInt64(),
                                     ILOpcode.rem_un => (long)((ulong)value1.Value.AsInt64() % (ulong)value2.Value.AsInt64()),
-                                    _ => throw new NotImplementedException(), // unreachable
+                                    _ => throw new UnreachableException(),
                                 };
 
                                 stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(result));
@@ -1207,7 +1207,7 @@ namespace ILCompiler
                                     ILOpcode.mul => value1.Value.AsDouble() * value2.Value.AsDouble(),
                                     ILOpcode.div => value1.Value.AsDouble() / value2.Value.AsDouble(),
                                     ILOpcode.rem => value1.Value.AsDouble() % value2.Value.AsDouble(),
-                                    _ => throw new NotImplementedException(), // unreachable
+                                    _ => throw new UnreachableException(),
                                 };
 
                                 stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(result));

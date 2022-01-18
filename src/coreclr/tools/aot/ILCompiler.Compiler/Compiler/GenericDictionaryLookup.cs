@@ -92,8 +92,7 @@ namespace ILCompiler
                         return _offset2;
                 }
 
-                // Should be unreachable.
-                throw new NotSupportedException();
+                throw new UnreachableException();
             }
         }
 

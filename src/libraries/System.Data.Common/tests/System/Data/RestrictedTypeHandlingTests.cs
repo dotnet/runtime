@@ -433,7 +433,7 @@ namespace System.Data.Tests
                 string tempPath = Path.GetTempFileName();
                 File.WriteAllText(tempPath, "This better not be written...");
                 File.Delete(tempPath);
-                throw new XunitException("Unreachable code (SerializationGuard should have kicked in)");
+                throw new UnreachableException("Unreachable code (SerializationGuard should have kicked in)");
             }
 
             public void WriteXml(XmlWriter writer)

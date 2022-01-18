@@ -119,7 +119,7 @@ namespace ILCompiler.Dataflow
         {
             // Not implemented because RepresentsExactlyOneValue returns false and, therefore, this method should be
             // unreachable.
-            throw new NotImplementedException();
+            throw new UnreachableException();
         }
 
         protected abstract int NumChildren { get; }
@@ -354,7 +354,7 @@ namespace ILCompiler.Dataflow
         {
             // Leaf values should not represent more than one value.  This method should be unreachable as long as
             // RepresentsExactlyOneValue returns true.
-            throw new NotImplementedException();
+            throw new UnreachableException();
         }
     }
 

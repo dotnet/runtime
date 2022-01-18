@@ -392,7 +392,7 @@ namespace Internal.JitInterface
 
             // Should be unreachable - couldn't find a TypeSpec.
             // Are we still compiling CoreLib?
-            throw new NotSupportedException();
+            throw new UnreachableException();
         }
 
         public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode)

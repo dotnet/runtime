@@ -9,7 +9,7 @@ public class TestIsInst<T>
 		array = new T[16];
 
 		if (array is other_type[]) // should not crash or throw NullReferenceException
-			throw new System.Exception("Unreachable");
+			throw new System.UnreachableException();
 	}
 }
 
