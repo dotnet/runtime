@@ -974,6 +974,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
+        [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
         public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
@@ -992,6 +993,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
+        [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
         public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
         {
             (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
