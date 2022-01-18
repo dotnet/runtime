@@ -11,7 +11,8 @@ namespace System.Reflection.Metadata
         internal AssemblyName GetAssemblyName(StringHandle nameHandle, Version version, StringHandle cultureHandle, BlobHandle publicKeyOrTokenHandle, AssemblyHashAlgorithm assemblyHashAlgorithm, AssemblyFlags flags)
         {
             string name = GetString(nameHandle);
-            string? cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : null;
+            // compat: normalize 'null' culture name to "" to match AssemblyName.GetAssemblyName()
+            string cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : "";
             var hashAlgorithm = (Configuration.Assemblies.AssemblyHashAlgorithm)assemblyHashAlgorithm;
             byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : null;
 
@@ -48,12 +49,6 @@ namespace System.Reflection.Metadata
                 using var peReader = new PEReader(fs);
                 MetadataReader mdReader = peReader.GetMetadataReader();
                 assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
-
-                // compat: normalize 'null' culture name to "".
-                if (assemblyName.CultureName == null)
-                {
-                    assemblyName.CultureName = string.Empty;
-                }
             }
             catch (InvalidOperationException ex)
             {
