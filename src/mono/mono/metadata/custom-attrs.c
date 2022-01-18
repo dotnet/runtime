@@ -1638,10 +1638,11 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	attr_array = g_array_sized_new (TRUE, TRUE, sizeof (guint32), 128);
 	while (!mono_metadata_table_bounds_check (image, MONO_TABLE_CUSTOMATTRIBUTE, i + 1)) {
 		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx) {
-			/* if there are updates, the new custom attributes are not sorted, so we have to go until the end. */
-			if (G_LIKELY (!image->has_updates))
+			if (G_LIKELY (!image->has_updates)) {
 				break;
-			else {
+			} else {
+				// if there are updates, the new custom attributes are not sorted,
+				// so we have to go until the end.
 				++i;
 				continue;
 			}
