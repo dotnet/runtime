@@ -498,6 +498,28 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void ShouldPreserveExistingKeysInDictionaryWithEnumAsKeyType()
+        {
+            var input = new Dictionary<string, string>
+            {
+                ["abc:def"] = "val_2",
+                ["abc:ghi"] = "val_3"
+            };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var origin = new Dictionary<KeyEnum, IDictionary<KeyUintEnum, string>>
+            {
+                [KeyEnum.abc] = new Dictionary<KeyUintEnum, string> {  [KeyUintEnum.abc] = "val_1" }
+            };
+
+            config.Bind(origin);
+
+            Assert.Equal(3, origin[KeyEnum.abc].Count);
+            Assert.Equal("val_1", origin[KeyEnum.abc][KeyUintEnum.abc]);
+            Assert.Equal("val_2", origin[KeyEnum.abc][KeyUintEnum.def]);
+            Assert.Equal("val_3", origin[KeyEnum.abc][KeyUintEnum.ghi]);
+        }
+
+        [Fact]
         public void ShouldPreserveExistingValuesInArrayWhenItIsDictionaryElement()
         {
             var input = new Dictionary<string, string>
