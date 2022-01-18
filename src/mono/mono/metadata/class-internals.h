@@ -1587,12 +1587,6 @@ m_field_get_meta_flags (MonoClassField *field)
 	return (unsigned int)(field->parent_and_flags & MONO_CLASS_FIELD_META_FLAG_MASK);
 }
 
-MONO_COMPONENT_API void
-m_field_set_parent (MonoClassField *field, MonoClass *klass);
-
-MONO_COMPONENT_API void
-m_field_set_meta_flags (MonoClassField *field, unsigned int flags);
-
 static inline gboolean
 m_field_get_offset (MonoClassField *field)
 {
