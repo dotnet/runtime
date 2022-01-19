@@ -276,6 +276,7 @@ collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossg
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
+collect_parser.add_argument("-pmi_path", metavar="PMIPATH_DIR", nargs='*', help="Specify a \"load path\" where assemblies can be found during pmi.dll run. Optional; the argument values are translated to PMIPATH environment variable.")
 collect_parser.add_argument("-output_mch_path", help="Location to place the final MCH file.")
 collect_parser.add_argument("--merge_mch_files", action="store_true", help="Merge multiple MCH files. Use the -mch_files flag to pass a list of MCH files to merge.")
 collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="Pass a sequence of MCH files which will be merged. Required by --merge_mch_files.")
@@ -596,6 +597,10 @@ class SuperPMICollect:
         if coreclr_args.pmi:
             self.pmi_location = determine_pmi_location(coreclr_args)
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
+            if coreclr_args.pmi_path is None:
+                self.pmi_path_directories = []
+            else:
+                self.pmi_path_directories = coreclr_args.pmi_path
 
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
@@ -718,6 +723,9 @@ class SuperPMICollect:
             root_env = {}
             root_env["SuperPMIShimLogPath"] = self.temp_location
             root_env["SuperPMIShimPath"] = self.jit_path
+
+            if self.coreclr_args.pmi and self.pmi_path_directories:
+                root_env["PMIPATH"] = ";".join(self.pmi_path_directories)
 
             complus_env = {}
             complus_env["EnableExtraSuperPmiQueries"] = "1"
@@ -3104,6 +3112,11 @@ def setup_args(args):
                             "tiered_compilation",
                             lambda unused: True,
                             "Unable to set tiered_compilation")
+
+        coreclr_args.verify(args,
+                            "pmi_path",
+                            lambda unused: True,
+                            "Unable to set pmi_path")
 
         if (args.collection_command is None) and (args.pmi is False) and (args.crossgen2 is False):
             print("Either a collection command or `--pmi` or `--crossgen2` must be specified")
