@@ -15614,6 +15614,11 @@ bool emitter::IsMovInstruction(instruction ins)
 //         mov Rx, Ry  # <-- last instruction
 //         mov Ry, Rx  # <-- current instruction can be omitted.
 //
+//    4. Move that does zero extension while previous instruction already did it
+//
+//         ldr Wx, [Ry] # <-- ldr will clear upper 4 byte of Wx
+//         mov Wx, Wx   # <-- clears upper 4 byte in Wx
+//
 // Arguments:
 //    ins  - The current instruction
 //    size - Operand size of current instruction
@@ -15640,6 +15645,8 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
         return false;
     }
 
+    const bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
+
     if (dst == src)
     {
         // A mov with a EA_4BYTE has the side-effect of clearing the upper bits
@@ -15655,9 +15662,17 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
             JITDUMP("\n -- suppressing mov because src and dst is same 16-byte register.\n");
             return true;
         }
+        else if (isGeneralRegisterOrSP(dst) && (size == EA_4BYTE))
+        {
+            // See if the previous instruction already cleared upper 4 bytes for us unintentionally
+            if (!isFirstInstrInBlock && (emitLastIns != nullptr) && (emitLastIns->idReg1() == dst) &&
+                (emitLastIns->idOpSize() == size) && emitLastIns->idInsIs(INS_ldr, INS_ldrh, INS_ldrb))
+            {
+                JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
+                return true;
+            }
+        }
     }
-
-    bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
 
     if (!isFirstInstrInBlock && // Don't optimize if instruction is not the first instruction in IG.
         (emitLastIns != nullptr) &&
