@@ -474,6 +474,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SHA))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SSE2);
                     break;
 
                 case TargetArchitecture.X86:
@@ -513,6 +515,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVXVNNI))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVX2);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SHA))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SSE2);
                     break;
                 }
             } while (!oldflags.Equals(resultflags));
@@ -645,6 +649,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_Vector256);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X64_SHA);
                     break;
 
                 case TargetArchitecture.X86:
@@ -684,6 +690,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X86_Vector256);
                     if (resultflags.HasInstructionSet(InstructionSet.X86_AVX2))
                         resultflags.AddInstructionSet(InstructionSet.X86_AVXVNNI);
+                    if (resultflags.HasInstructionSet(InstructionSet.X86_SSE2))
+                        resultflags.AddInstructionSet(InstructionSet.X86_SHA);
                     break;
                 }
             } while (!oldflags.Equals(resultflags));
