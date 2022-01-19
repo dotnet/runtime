@@ -432,7 +432,7 @@ namespace System
             // Inline the most common cases
             if (mode == MidpointRounding.ToEven)
             {
-                return Round(value);
+                return Round(x);
             }
             if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
             {
