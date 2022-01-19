@@ -52,7 +52,7 @@ public class Test_explicitStruct_empty
 
     [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void EmptyExplicitStructCanBeLoadedAndCreatedThroughReflection()
+    public static void EmptyExplicitClassCanBeLoadedAndCreatedThroughReflection()
     {
         object c = Activator.CreateInstance(Type.GetType("C2"));
     }
