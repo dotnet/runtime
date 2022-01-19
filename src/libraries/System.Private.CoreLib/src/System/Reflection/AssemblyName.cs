@@ -41,9 +41,6 @@ namespace System.Reflection
             _publicKeyToken = parts._publicKeyOrToken;
             if (parts._cultureName != null)
                 _cultureInfo = new CultureInfo(parts._cultureName);
-#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            ProcessorArchitecture = parts._flags.ExtractProcessorArchitecture();
-#pragma warning restore SYSLIB0037
         }
 
         public AssemblyName()
