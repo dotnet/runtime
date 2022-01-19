@@ -13,15 +13,16 @@ namespace System.Reflection
     //
     // A simple lexer for assembly display names.
     //
-    internal struct AssemblyNameLexer
+    internal ref struct AssemblyNameLexer
     {
+        private ReadOnlySpan<char> _chars;
+        private int _index;
+
         internal AssemblyNameLexer(string s)
         {
-            // Convert string to char[] with NUL terminator. (An actual NUL terminator in the input string will be treated
+            // Get a ReadOnlySpan<char> for the string including NUL terminator.(An actual NUL terminator in the input string will be treated
             // as an actual end of string: this is compatible with desktop behavior.)
-            char[] chars = new char[s.Length + 1];
-            s.CopyTo(0, chars, 0, s.Length);
-            _chars = chars;
+            _chars = new ReadOnlySpan<char>(ref s.GetRawStringData(), s.Length + 1);
             _index = 0;
         }
 
@@ -52,7 +53,7 @@ namespace System.Reflection
             if (c == '=')
                 return Token.Equals;
 
-            StringBuilder sb = new StringBuilder();
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
             char quoteChar = (char)0;
             if (c == '\'' || c == '\"')
@@ -129,8 +130,5 @@ namespace System.Reflection
             String = 3,
             End = 4,
         }
-
-        private readonly char[] _chars;
-        private int _index;
     }
 }
