@@ -2711,27 +2711,6 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
-void MethodContext::recGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls, DWORD value)
-{
-    if (GetFieldSizeClassificationByHnd == nullptr)
-        GetFieldSizeClassificationByHnd = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORDLONG key = (DWORDLONG)cls;
-
-    GetFieldSizeClassificationByHnd->Add((DWORDLONG)cls, value);
-    //DEBUG_REC(dmpGetArgType(key, value));
-}
-
-void MethodContext::dmpGetFieldSizeClassificationByHnd(DWORDLONG key, DWORD value)
-{
-    printf("GetFieldSizeClassificationByHnd key %016llX value-%08X", key, value);
-}
-
-DWORD MethodContext::repGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls)
-{
-    return GetFieldSizeClassificationByHnd->Get((DWORDLONG)cls);
-}
-
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
 {
     if (GetArgNext == nullptr)
@@ -6149,6 +6128,31 @@ bool MethodContext::repGetSystemVAmd64PassStructInRegisterDescriptor(
     }
 
     return value.result ? true : false;
+}
+
+void MethodContext::recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetLoongArch64PassStructInRegisterFlags == nullptr)
+        GetLoongArch64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetLoongArch64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetLoongArch64PassStructInRegisterFlags key %016llX value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = GetLoongArch64PassStructInRegisterFlags->Get(key);
+    DEBUG_REP(dmpGetLoongArch64PassStructInRegisterFlags(key, value));
+    return value;
 }
 
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)

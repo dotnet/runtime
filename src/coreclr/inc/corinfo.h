@@ -316,20 +316,24 @@ private:
     }
 };
 
-// NOTE:
-// while a struct-arg has no more than two fields and total size is no larger than two-pointer-size.
-// These depends on the platform's ABI rules.
+// StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` API
+// to convey struct argument passing information.
 //
-// `STRUCT_NO_FLOAT_FIELD`=0 means not using the float register(s).
+// `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
 //
-// the lowest four bits denoting the floating-point info:
-//   bit_0: `1` means there is only one float or double field within the struct.
-//   bit_1: `1` means only the first field is float-point type.
-//   bit_2: `1` means only the second field is float-point type.
-//   bit_3: `1` means the two fields are both float-point type.
-// the bits[5:4] denoting whether the field size is 8-bytes:
-//   bit_4: `1` means the first field's size is 8.
-//   bit_5: `1` means the second field's size is 8.
+// Otherwise, and only for structs with no more than two fields and a total struct size no larger
+// than two pointers:
+//
+// The lowest four bits denote the floating-point info:
+//   bit 0: `1` means there is only one float or double field within the struct.
+//   bit 1: `1` means only the first field is floating-point type.
+//   bit 2: `1` means only the second field is floating-point type.
+//   bit 3: `1` means the two fields are both floating-point type.
+// The bits[5:4] denoting whether the field size is 8-bytes:
+//   bit 4: `1` means the first field's size is 8.
+//   bit 5: `1` means the second field's size is 8.
+//
+// Note that bit 0 and 3 cannot both be set.
 enum StructFloatFieldInfoFlags : uint8_t
 {
     STRUCT_NO_FLOAT_FIELD         = 0x0,

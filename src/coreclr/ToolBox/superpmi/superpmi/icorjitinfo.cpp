@@ -1060,12 +1060,6 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     return value;
 }
 
-uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
-    return jitInstance->mc->repGetFieldSizeClassificationByHnd(cls);
-}
-
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
 CORINFO_CLASS_HANDLE MyICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
                                          CORINFO_ARG_LIST_HANDLE args /* IN */
@@ -1234,6 +1228,12 @@ bool MyICJI::getSystemVAmd64PassStructInRegisterDescriptor(
 {
     jitInstance->mc->cr->AddCall("getSystemVAmd64PassStructInRegisterDescriptor");
     return jitInstance->mc->repGetSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
+}
+
+uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+    return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
 }
 
 // Stuff on ICorDynamicInfo

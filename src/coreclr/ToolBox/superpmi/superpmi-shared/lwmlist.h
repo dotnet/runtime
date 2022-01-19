@@ -127,6 +127,7 @@ LWM(GetExpectedTargetArchitecture, DWORD, DWORD)
 LWM(GetSharedCCtorHelper, DWORDLONG, DWORD)
 LWM(GetStringConfigValue, DWORD, DWORD)
 LWM(GetSystemVAmd64PassStructInRegisterDescriptor, DWORDLONG, Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor)
+LWM(GetLoongArch64PassStructInRegisterFlags, DWORDLONG, DWORD)
 LWM(GetTailCallHelpers, Agnostic_GetTailCallHelpers, Agnostic_CORINFO_TAILCALL_HELPERS)
 LWM(UpdateEntryPointForTailCall, Agnostic_CORINFO_CONST_LOOKUP, Agnostic_CORINFO_CONST_LOOKUP)
 LWM(GetThreadTLSIndex, DWORD, DLD)
@@ -159,7 +160,6 @@ LWM(SatisfiesMethodConstraints, DLDL, DWORD)
 LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
-LWM(GetFieldSizeClassificationByHnd, DWORDLONG, DWORD)
 
 #undef LWM
 #undef DENSELWM

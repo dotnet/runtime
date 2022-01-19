@@ -1155,6 +1155,15 @@ bool WrapICorJitInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     return temp;
 }
 
+uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getLoongArch64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {
@@ -1687,15 +1696,6 @@ bool WrapICorJitInfo::doesFieldBelongToClass(
     API_ENTER(doesFieldBelongToClass);
     bool temp = wrapHnd->doesFieldBelongToClass(fldHnd, cls);
     API_LEAVE(doesFieldBelongToClass);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(getLoongArch64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(cls);
-    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
     return temp;
 }
 

@@ -1210,24 +1210,6 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(CORINFO_SIG_INFO*       sig,    
     return temp;
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
-{
-
-    uint32_t temp = 0;
-    RunWithErrorExceptionCodeCaptureAndContinue(
-    [&]()
-    {
-        mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
-        temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(cls);
-    },
-    [&](DWORD exceptionCode)
-    {
-        this->mc->recGetFieldSizeClassificationByHnd(cls, temp);
-    });
-
-    return temp;
-}
-
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
 CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, /* IN */
                                                    CORINFO_ARG_LIST_HANDLE args /* IN */
@@ -1405,6 +1387,14 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
         original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
     mc->recGetSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr, result);
     return result;
+}
+
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
+    uint32_t temp = original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
+    mc->recGetLoongArch64PassStructInRegisterFlags(structHnd, temp);
+    return temp;
 }
 
 // Stuff on ICorDynamicInfo

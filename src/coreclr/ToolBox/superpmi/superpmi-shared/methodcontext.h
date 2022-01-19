@@ -369,10 +369,6 @@ public:
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
                                      DWORD*                  exception);
 
-    void recGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls, DWORD value);
-    void dmpGetFieldSizeClassificationByHnd(DWORDLONG key, DWORD value);
-    DWORD repGetFieldSizeClassificationByHnd(CORINFO_CLASS_HANDLE cls);
-
     void recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result);
     void dmpGetArgNext(DWORDLONG key, DWORDLONG value);
     CORINFO_ARG_LIST_HANDLE repGetArgNext(CORINFO_ARG_LIST_HANDLE args);
@@ -757,6 +753,10 @@ public:
     bool repGetSystemVAmd64PassStructInRegisterDescriptor(
         CORINFO_CLASS_HANDLE structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr);
 
+    void recGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
+    void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
+    DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
@@ -1101,7 +1101,7 @@ enum mcPackets
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
-    Packet_GetFieldSizeClassificationByHnd = 194,
+    Packet_GetLoongArch64PassStructInRegisterFlags = 194,
 };
 
 void SetDebugDumpVariables();

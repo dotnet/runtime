@@ -826,6 +826,12 @@ bool interceptor_ICJI::getSystemVAmd64PassStructInRegisterDescriptor(
     return original_ICorJitInfo->getSystemVAmd64PassStructInRegisterDescriptor(structHnd, structPassInRegDescPtr);
 }
 
+uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {
@@ -1215,11 +1221,5 @@ bool interceptor_ICJI::doesFieldBelongToClass(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
-}
-
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(cls);
 }
 
