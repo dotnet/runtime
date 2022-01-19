@@ -75,8 +75,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.LogInformation($"  AVXVNNI:   {AvxVnni.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  BMI1:      {Bmi1.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  BMI2:      {Bmi2.IsSupported}");
-            TestLibrary.TestFramework.LogInformation($"  SHA1:      {Sha1.IsSupported}");
-            TestLibrary.TestFramework.LogInformation($"  SHA256:    {Sha256.IsSupported}");
+            TestLibrary.TestFramework.LogInformation($"  SHA:      {Sha.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  FMA:       {Fma.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  LZCNT:     {Lzcnt.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  PCLMULQDQ: {Pclmulqdq.IsSupported}");
