@@ -51,7 +51,7 @@ if ($Internal) {
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"
-    $ExtraBenchmarkDotNetArguments = ""
+    $ExtraBenchmarkDotNetArguments = "--warmupCount 30"
     $Creator = ""
     $HelixSourcePrefix = "official"
 }

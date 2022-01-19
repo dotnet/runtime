@@ -201,7 +201,7 @@ if [[ "$internal" == true ]]; then
     perflab_arguments="--upload-to-perflab-container"
     helix_source_prefix="official"
     creator=
-    extra_benchmark_dotnet_arguments=
+    extra_benchmark_dotnet_arguments="--warmupCount 30"
 
     if [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
