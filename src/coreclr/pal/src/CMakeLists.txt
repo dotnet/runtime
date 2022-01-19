@@ -123,7 +123,6 @@ set(SOURCES
   cruntime/malloc.cpp
   cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/path.cpp
   cruntime/printf.cpp
   cruntime/printfcpp.cpp
   cruntime/silent_printf.cpp
@@ -131,7 +130,6 @@ set(SOURCES
   cruntime/stringtls.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp
-  cruntime/wchartls.cpp
   debug/debug.cpp
   exception/seh.cpp
   exception/signal.cpp

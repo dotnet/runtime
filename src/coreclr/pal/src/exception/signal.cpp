@@ -240,8 +240,11 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
-    handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
-    g_registered_activation_handler = true;
+    if (flags & PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
+    {
+        handle_signal(INJECT_ACTIVATION_SIGNAL, inject_activation_handler, &g_previous_activation);
+        g_registered_activation_handler = true;
+    }
 #endif
 
     return TRUE;
