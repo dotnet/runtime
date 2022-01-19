@@ -124,19 +124,12 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool IsObjectWithParameterizedCtor => PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized;
 
-        private GenericMethodHolder? _genericMethods;
+        private DefaultValueHolder? _genericMethods;
 
         /// <summary>
         /// Returns a helper class used when generic methods need to be invoked on Type.
         /// </summary>
-        internal GenericMethodHolder GenericMethods
-        {
-            get
-            {
-                _genericMethods ??= GenericMethodHolder.CreateHolder(Type);
-                return _genericMethods;
-            }
-        }
+        internal DefaultValueHolder GenericMethods => _genericMethods ??= DefaultValueHolder.CreateHolder(Type);
 
         internal JsonNumberHandling? NumberHandling { get; set; }
 

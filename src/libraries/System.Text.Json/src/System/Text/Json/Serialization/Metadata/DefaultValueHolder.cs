@@ -1,0 +1,34 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace System.Text.Json.Serialization.Metadata
+{
+    /// <summary>
+    /// Helper class used for calculating the default value for a given System.Type instance.
+    /// </summary>
+    internal sealed class DefaultValueHolder
+    {
+        private DefaultValueHolder(Type type)
+        {
+            if (type.IsValueType && Nullable.GetUnderlyingType(type) == null)
+            {
+                DefaultValue = Activator.CreateInstance(type);
+            }
+        }
+
+        /// <summary>
+        /// Returns the default value for the specified type.
+        /// </summary>
+        public object? DefaultValue { get; }
+
+        /// <summary>
+        /// Returns true if <param name="value"/> contains only default values.
+        /// </summary>
+        public bool IsDefaultValue(object value) => DefaultValue is null ? value is null : DefaultValue.Equals(value);
+
+        /// <summary>
+        /// Creates a holder instance representing a type.
+        /// </summary>
+        public static DefaultValueHolder CreateHolder(Type type) => new DefaultValueHolder(type);
+    }
+}
