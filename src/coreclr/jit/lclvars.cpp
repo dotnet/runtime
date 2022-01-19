@@ -305,7 +305,9 @@ void Compiler::lvaInitTypeRef()
             JITDUMP("-- V%02u is OSR exposed\n", varNum);
             varDsc->lvHasLdAddrOp = 1;
 
-            if (varDsc->lvType != TYP_STRUCT) // Why does it apply only to non-structs?
+            // todo: Why does it apply only to non-structs?
+            //
+            if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
             {
                 lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
             }

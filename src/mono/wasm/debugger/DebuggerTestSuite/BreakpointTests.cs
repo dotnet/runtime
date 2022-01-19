@@ -668,7 +668,7 @@ namespace DebuggerTests
 
 
         [Fact]
-        public async Task DebuggerAttributeNoStopInDebuggerHidden()
+        public async Task DebuggerHiddenNoStopOnBp()
         {
             var bp_hidden = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "HiddenMethod", 1);
             var bp_visible = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "VisibleMethod", 1);
@@ -683,7 +683,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task DebuggerAttributeStopOnDebuggerHiddenCallWithDebuggerBreakCall()
+        public async Task DebuggerHiddenStopOnUserBp()
         {
             var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunDebuggerBreak", 0);
             var init_location = await EvaluateAndCheck(
@@ -706,6 +706,200 @@ namespace DebuggerTests
                 835,
                 8,
                 "VisibleMethodDebuggerBreak");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task StepThroughAttributeStepInNoBp(bool justMyCodeEnabled)
+        {
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
+            if (justMyCodeEnabled)
+                await SetJustMyCode(true);
+
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunStepThrough"
+            );
+            await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", 868, 8, "RunStepThrough");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task StepThroughAttributeStepInWithBp(bool justMyCodeEnabled)
+        {
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
+            var bp1_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "NotStopOnJustMyCode", 1);
+            var bp2_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "NotStopOnJustMyCode", 3);
+            
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunStepThrough"
+            );
+
+            if (justMyCodeEnabled)
+            {
+                await SetJustMyCode(true);
+                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", 868, 8, "RunStepThrough");
+            }
+            else
+            {
+                var line1 = bp1_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                var line2 = bp2_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                var line3 = 867;
+                var step_throgh_fun = "NotStopOnJustMyCode";
+                var outer_fun = "RunStepThrough";
+                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, step_throgh_fun);
+                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, step_throgh_fun);
+                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line3, 8, outer_fun);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task StepThroughAttributeResumeWithBp(bool justMyCodeEnabled)
+        {
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
+            var bp1_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "NotStopOnJustMyCode", 1);
+            var bp_outside_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 2);
+            
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunStepThrough"
+            );
+
+            if (justMyCodeEnabled)
+                await SetJustMyCode(true);
+            else
+            {
+                var line1 = bp1_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                var function_name1 = "NotStopOnJustMyCode";
+                await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, function_name1);
+            }
+
+            var line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+            var function_name2 = "RunStepThrough";
+            await SendCommandAndCheck(null, "Debugger.resume", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, function_name2);
+        }
+
+        [Theory]
+        [InlineData(false, "Debugger.resume")]
+        [InlineData(false, "Debugger.stepInto")]
+        [InlineData(true, "Debugger.stepInto")]
+        [InlineData(true, "Debugger.resume")]
+        public async Task StepThroughAttributeWithUserBp(bool justMyCodeEnabled, string debuggingFunction)
+        {
+            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 2);
+            var bp_outside_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 3);
+            
+            var init_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
+                "RunStepThrough"
+            );
+            
+            int line1, line2; 
+            string function_name1, function_name2;
+
+            if (justMyCodeEnabled)
+            {
+                await SetJustMyCode(true); 
+                line1 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>() - 1;
+                function_name1 = "RunStepThrough";
+                line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                function_name2 = "RunStepThrough";
+            }
+            else
+            {
+                line1 = 862;
+                function_name1 = "NotStopOnJustMyCodeUserBp";
+                line2 = bp_outside_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
+                function_name2 = "RunStepThrough";
+            }
+            await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, function_name1);
+            await SendCommandAndCheck(null, debuggingFunction, "dotnet://debugger-test.dll/debugger-test.cs", line2, 4, function_name2);
+        }
+
+        [Fact]
+        public async Task CreateGoodBreakpointAndHitGoToWasmPageWithoutAssetsComeBackAndHitAgain()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd");
+            Assert.Equal("other", pause_location["reason"]?.Value<string>());
+            Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+            var top_frame = pause_location["callFrames"][0];
+            Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+            Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+            //now check the scope
+            var scope = top_frame["scopeChain"][0];
+            Assert.Equal("local", scope["type"]);
+            Assert.Equal("IntAdd", scope["name"]);
+
+            Assert.Equal("object", scope["object"]["type"]);
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+            CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+
+            await cli.SendCommand("Debugger.resume", null, token);
+
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { load_wasm_page_without_assets(); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            await Task.Delay(1000, token);
+            run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { reload_wasm_page(); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            await Task.Delay(1000, token);
+            await insp.WaitFor(Inspector.READY);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                    var top_frame = pause_location["callFrames"][0];
+                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+                    //now check the scope
+                    var scope = top_frame["scopeChain"][0];
+                    Assert.Equal("local", scope["type"]);
+                    Assert.Equal("IntAdd", scope["name"]);
+
+                    Assert.Equal("object", scope["object"]["type"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+                    await Task.CompletedTask;
+                }
+            );
         }
     }
 }

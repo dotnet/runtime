@@ -82,45 +82,25 @@ enum genTreeOps : BYTE
 #endif
 };
 
-/*****************************************************************************
- *
- *  The following enum defines a set of bit flags that can be used
- *  to classify expression tree nodes. Note that some operators will
- *  have more than one bit set, as follows:
- *
- *          GTK_CONST    implies    GTK_LEAF
- *          GTK_RELOP    implies    GTK_BINOP
- *          GTK_LOGOP    implies    GTK_BINOP
- */
-
+// The following enum defines a set of bit flags that can be used
+// to classify expression tree nodes.
+//
 enum genTreeKinds
 {
-    GTK_SPECIAL = 0x0000, // unclassified operator (special handling reqd)
+    GTK_SPECIAL = 0x00, // special operator
+    GTK_LEAF    = 0x01, // leaf    operator
+    GTK_UNOP    = 0x02, // unary   operator
+    GTK_BINOP   = 0x04, // binary  operator
 
-    GTK_CONST = 0x0001, // constant     operator
-    GTK_LEAF  = 0x0002, // leaf         operator
-    GTK_UNOP  = 0x0004, // unary        operator
-    GTK_BINOP = 0x0008, // binary       operator
-    GTK_RELOP = 0x0010, // comparison   operator
-    GTK_LOGOP = 0x0020, // logical      operator
+    GTK_KINDMASK = (GTK_SPECIAL | GTK_LEAF | GTK_UNOP | GTK_BINOP), // operator kind mask
+    GTK_SMPOP    = (GTK_UNOP | GTK_BINOP),
 
-    GTK_KINDMASK = 0x007F, // operator kind mask
-
-    GTK_COMMUTE = 0x0080, // commutative  operator
-
-    GTK_EXOP = 0x0100, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
-                       // by adding non-node fields to unary or binary operator.
-
-    GTK_LOCAL = 0x0200, // is a local access (load, store, phi)
-
-    GTK_NOVALUE = 0x0400, // node does not produce a value
-    GTK_NOTLIR  = 0x0800, // node is not allowed in LIR
-
-    GTK_NOCONTAIN = 0x1000, // this node is a value, but may not be contained
-
-    /* Define composite value(s) */
-
-    GTK_SMPOP = (GTK_UNOP | GTK_BINOP | GTK_RELOP | GTK_LOGOP)
+    GTK_COMMUTE = 0x08,   // commutative  operator
+    GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
+                          // by adding non-node fields to unary or binary operator.
+    GTK_NOVALUE   = 0x20, // node does not produce a value
+    GTK_NOTLIR    = 0x40, // node is not allowed in LIR
+    GTK_NOCONTAIN = 0x80, // this node is a value, but may not be contained
 };
 
 /*****************************************************************************/
@@ -686,6 +666,17 @@ inline GenTreeDebugFlags& operator &=(GenTreeDebugFlags& a, GenTreeDebugFlags b)
 
 // clang-format on
 
+constexpr bool OpersAreContiguous(genTreeOps firstOper, genTreeOps secondOper)
+{
+    return (firstOper + 1) == secondOper;
+}
+
+template <typename... Opers>
+constexpr bool OpersAreContiguous(genTreeOps firstOper, genTreeOps secondOper, Opers... otherOpers)
+{
+    return OpersAreContiguous(firstOper, secondOper) && OpersAreContiguous(secondOper, otherOpers...);
+}
+
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -1043,7 +1034,7 @@ public:
     int gtUseNum; // use-ordered traversal within the function
 #endif
 
-    static const unsigned short gtOperKindTable[];
+    static const unsigned char gtOperKindTable[];
 
     static unsigned OperKind(unsigned gtOper)
     {
@@ -1160,12 +1151,13 @@ public:
 
     static bool OperIsConst(genTreeOps gtOper)
     {
-        return (OperKind(gtOper) & GTK_CONST) != 0;
+        static_assert_no_msg(OpersAreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR));
+        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_STR);
     }
 
     bool OperIsConst() const
     {
-        return (OperKind(gtOper) & GTK_CONST) != 0;
+        return OperIsConst(gtOper);
     }
 
     static bool OperIsLeaf(genTreeOps gtOper)
@@ -1178,17 +1170,11 @@ public:
         return (OperKind(gtOper) & GTK_LEAF) != 0;
     }
 
-    static bool OperIsCompare(genTreeOps gtOper)
-    {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
-    }
-
     static bool OperIsLocal(genTreeOps gtOper)
     {
-        bool result = (OperKind(gtOper) & GTK_LOCAL) != 0;
-        assert(result == (gtOper == GT_LCL_VAR || gtOper == GT_PHI_ARG || gtOper == GT_LCL_FLD ||
-                          gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD));
-        return result;
+        static_assert_no_msg(
+            OpersAreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
+        return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
     }
 
     static bool OperIsLocalAddr(genTreeOps gtOper)
@@ -1364,19 +1350,15 @@ public:
         return OperIsLocalRead(OperGet());
     }
 
+    static bool OperIsCompare(genTreeOps gtOper)
+    {
+        static_assert_no_msg(OpersAreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT, GT_TEST_EQ, GT_TEST_NE));
+        return (GT_EQ <= gtOper) && (gtOper <= GT_TEST_NE);
+    }
+
     bool OperIsCompare() const
     {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
-    }
-
-    static bool OperIsLogical(genTreeOps gtOper)
-    {
-        return (OperKind(gtOper) & GTK_LOGOP) != 0;
-    }
-
-    bool OperIsLogical() const
-    {
-        return (OperKind(gtOper) & GTK_LOGOP) != 0;
+        return OperIsCompare(OperGet());
     }
 
     static bool OperIsShift(genTreeOps gtOper)
@@ -1496,16 +1478,6 @@ public:
     bool OperIsSimple() const
     {
         return OperIsSimple(gtOper);
-    }
-
-    static bool OperIsRelop(genTreeOps gtOper)
-    {
-        return (OperKind(gtOper) & GTK_RELOP) != 0;
-    }
-
-    bool OperIsRelop() const
-    {
-        return OperIsRelop(gtOper);
     }
 
 #ifdef FEATURE_SIMD
@@ -1945,16 +1917,7 @@ public:
     // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
-    // If returns "true", "this" may represent the address of a static or instance field
-    // (or a field of such a field, in the case of an object field of type struct).
-    // If returns "true", then either "*pObj" is set to the object reference,
-    // or "*pStatic" is set to the baseAddr or offset to be added to the "*pFldSeq"
-    // Only one of "*pObj" or "*pStatic" will be set, the other one will be null.
-    // The boolean return value only indicates that "this" *may* be a field address
-    // -- the field sequence must also be checked.
-    // If it is a field address, the field sequence will be a sequence of length >= 1,
-    // starting with an instance or static field, and optionally continuing with struct fields.
-    bool IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq);
+    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
     // Requires "this" to be the address of an array (the child of a GT_IND labeled with GTF_IND_ARR_INDEX).
     // Sets "pArr" to the node representing the array (either an array object pointer, or perhaps a byref to the some
@@ -3649,11 +3612,6 @@ struct GenTreeField : public GenTreeUnOp
     GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
         : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
-        if (obj != nullptr)
-        {
-            gtFlags |= (obj->gtFlags & GTF_ALL_EFFECT);
-        }
-
 #ifdef FEATURE_READYTORUN
         gtFieldLookup.addr = nullptr;
 #endif
@@ -3665,7 +3623,7 @@ struct GenTreeField : public GenTreeUnOp
     }
 #endif
 
-    // The object this field belongs to. May be "nullptr", e. g. for static fields.
+    // The object this field belongs to. Will be "nullptr" for static fields.
     // Note that this is an address, i. e. for struct fields it will be ADDR(STRUCT).
     GenTree* GetFldObj() const
     {

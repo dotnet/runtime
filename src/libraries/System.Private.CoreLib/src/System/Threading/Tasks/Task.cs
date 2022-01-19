@@ -4552,7 +4552,7 @@ namespace System.Threading.Tasks
                     // Find continuationObject in the continuation list
                     int index = continuationsLocalListRef.IndexOf(continuationObject);
 
-                    if (index != -1)
+                    if (index >= 0)
                     {
                         // null out that TaskContinuation entry, which will be interpreted as "to be cleaned up"
                         continuationsLocalListRef[index] = null;

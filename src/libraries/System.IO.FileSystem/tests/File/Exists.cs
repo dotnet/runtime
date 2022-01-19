@@ -231,6 +231,7 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]

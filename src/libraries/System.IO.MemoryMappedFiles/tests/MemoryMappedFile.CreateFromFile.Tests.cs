@@ -5,6 +5,8 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using System.IO.Pipes;
+using System.Threading.Tasks;
 
 namespace System.IO.MemoryMappedFiles.Tests
 {
@@ -966,6 +968,56 @@ namespace System.IO.MemoryMappedFiles.Tests
                     SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
                     Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        public async Task OpeningMemoryMappedFileFromFileStreamThatWrapsPipeThrowsNotSupportedException(long capacity)
+        {
+            (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
+            using FileStream clientStream = new (pipePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+            if (serverStream is not null)
+            {
+                await serverStream.WaitForConnectionAsync();
+            }
+
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(clientStream, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false));
+
+            serverStream?.Dispose();
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [SkipOnPlatform(TestPlatforms.Browser, "mkfifo is not supported on WASM")]
+        public void OpeningMemoryMappedFileFromPipePathThrowsNotSupportedException(long capacity)
+        {
+            (string pipePath, NamedPipeServerStream? serverStream) = CreatePipe();
+
+            Assert.Throws<NotSupportedException>(() => MemoryMappedFile.CreateFromFile(pipePath, FileMode.Open, null, capacity, MemoryMappedFileAccess.ReadWrite));
+
+            serverStream?.Dispose();
+        }
+
+        private (string pipePath, NamedPipeServerStream? serverStream) CreatePipe()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                string pipeName = GetNamedPipeServerStreamName();
+                string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+                return (pipePath, new NamedPipeServerStream(pipeName, PipeDirection.InOut));
+            }
+            else
+            {
+                string fifoPath = GetTestFilePath();
+                Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+
+                return (fifoPath, null);
             }
         }
     }

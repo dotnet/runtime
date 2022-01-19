@@ -465,7 +465,7 @@ jobs:
         - normal
 
 #
-# Build for Browser/wasm and test it on NodeJS
+# Build for Browser/wasm and test it on v8, browser, and nodejs
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

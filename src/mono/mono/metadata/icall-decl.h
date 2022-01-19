@@ -68,7 +68,6 @@ ICALL_EXPORT void ves_icall_System_ArgIterator_Setup (MonoArgIterator*, char*, c
 ICALL_EXPORT MonoType* ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator*, MonoTypedRef*);
 ICALL_EXPORT void ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator*, MonoTypedRef*, MonoType*);
-ICALL_EXPORT double ves_icall_System_Math_Abs_double (double);
 ICALL_EXPORT double ves_icall_System_Math_Acos (double);
 ICALL_EXPORT double ves_icall_System_Math_Acosh (double);
 ICALL_EXPORT double ves_icall_System_Math_Asin (double);
@@ -116,7 +115,6 @@ ICALL_EXPORT float ves_icall_System_MathF_Sinh (float);
 ICALL_EXPORT float ves_icall_System_MathF_Sqrt (float);
 ICALL_EXPORT float ves_icall_System_MathF_Tan (float);
 ICALL_EXPORT float ves_icall_System_MathF_Tanh (float);
-ICALL_EXPORT float ves_icall_System_Math_Abs_single (float);
 ICALL_EXPORT double ves_icall_System_Math_Log2 (double);
 ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, double);
 ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
