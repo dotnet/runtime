@@ -26,6 +26,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private const string sPauseOnCaught = "pause_on_caught";
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
+        public bool JustMyCode { get; private set; }
 
         public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0) : base(loggerFactory)
         {
@@ -573,9 +574,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
+                case "DotnetDebugger.justMyCode":
+                    {
+                        try
+                        {
+                            SetJustMyCode(id, args, token);
+                        }
+                        catch (Exception)
+                        {
+                            SendResponse(id,
+                                Result.Exception(new ArgumentException(
+                                    $"DotnetDebugger.justMyCode got incorrect argument ({args})")),
+                                token);
+                        }
+                        return true;
+                    }
             }
 
             return false;
+        }
+        private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
+        {
+            var isEnabled = args["enabled"]?.Value<bool>();
+            if (isEnabled == null)
+                throw new ArgumentException();
+            JustMyCode = isEnabled.Value;
+            SendResponse(id, Result.OkFromObject(new { justMyCodeEnabled = JustMyCode }), token);
         }
         private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
         {
@@ -813,24 +837,44 @@ namespace Microsoft.WebAssembly.Diagnostics
                 DebugStore store = await LoadStore(sessionId, token);
                 var method = await context.SdbAgent.GetMethodInfo(methodId, token);
 
-                if (context.IsSkippingHiddenMethod == true)
-                {
-                    context.IsSkippingHiddenMethod = false;
-                    if (event_kind != EventKind.UserBreak)
-                    {
-                        await context.SdbAgent.Step(context.ThreadId, StepKind.Over, token);
-                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                        return true;
-                    }
-                }
-
-                if (j == 0 && method?.Info.IsHiddenFromDebugger == true)
-                {
-                    if (event_kind == EventKind.Step)
-                        context.IsSkippingHiddenMethod = true;
-                    await context.SdbAgent.Step(context.ThreadId, StepKind.Out, token);
-                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                var shouldReturn = await SkipMethod(
+                    isSkippable: context.IsSkippingHiddenMethod,
+                    shouldBeSkipped: event_kind != EventKind.UserBreak,
+                    StepKind.Over);
+                context.IsSkippingHiddenMethod = false;
+                if (shouldReturn)
                     return true;
+
+                shouldReturn = await SkipMethod(
+                    isSkippable: context.IsSteppingThroughMethod,
+                    shouldBeSkipped: event_kind != EventKind.UserBreak && event_kind != EventKind.Breakpoint,
+                    StepKind.Over);
+                context.IsSteppingThroughMethod = false;
+                if (shouldReturn)
+                    return true;
+
+                if (j == 0 && (method?.Info.HasStepThroughAttribute == true || method?.Info.IsHiddenFromDebugger == true))
+                {
+                    if (method.Info.IsHiddenFromDebugger)
+                    {
+                        if (event_kind == EventKind.Step)
+                            context.IsSkippingHiddenMethod = true;
+                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                            return true;
+                    }
+
+                    if (event_kind == EventKind.Step ||
+                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                    {
+                        if (context.IsResumedAfterBp)
+                            context.IsResumedAfterBp = false;
+                        else if (event_kind != EventKind.UserBreak)
+                            context.IsSteppingThroughMethod = true;
+                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                            return true;
+                    }
+                    if (event_kind == EventKind.Breakpoint)
+                        context.IsResumedAfterBp = true;
                 }
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
@@ -910,6 +954,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendEvent(sessionId, "Debugger.paused", o, token);
 
             return true;
+
+            async Task<bool> SkipMethod(bool isSkippable, bool shouldBeSkipped, StepKind stepKind)
+            {
+                if (isSkippable && shouldBeSkipped)
+                {
+                    await context.SdbAgent.Step(context.ThreadId, stepKind, token);
+                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                    return true;
+                }
+                return false;
+            }
         }
         private async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
