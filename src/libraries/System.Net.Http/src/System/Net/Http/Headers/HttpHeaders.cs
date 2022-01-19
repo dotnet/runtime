@@ -268,9 +268,11 @@ namespace System.Net.Http.Headers
                     // just separate the values using a comma (default separator).
                     string? separator = entry.Key.Parser is HttpHeaderParser parser && parser.SupportsMultipleValues ? parser.Separator : HttpHeaderParser.DefaultSeparator;
 
-                    for (int i = 0; i < multiValue!.Length; i++)
+                    Debug.Assert(multiValue is not null && multiValue.Length > 0);
+                    vsb.Append(multiValue[0]);
+                    for (int i = 1; i < multiValue.Length; i++)
                     {
-                        if (i != 0) vsb.Append(separator);
+                        vsb.Append(separator);
                         vsb.Append(multiValue[i]);
                     }
                 }
@@ -1145,7 +1147,8 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                values = multiValue = length != 0 ? new string[length] : Array.Empty<string>();
+                Debug.Assert(length > 1, "The header should have been removed when it became empty");
+                values = multiValue = new string[length];
             }
 
             int currentIndex = 0;
