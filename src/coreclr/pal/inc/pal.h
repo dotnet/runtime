@@ -2848,19 +2848,6 @@ VirtualQuery(
 #define LPTR                (LMEM_FIXED | LMEM_ZEROINIT)
 
 PALIMPORT
-HLOCAL
-PALAPI
-LocalAlloc(
-       IN UINT uFlags,
-       IN SIZE_T uBytes);
-
-PALIMPORT
-VOID
-PALAPI
-LocalFree(
-      IN HLOCAL hMem);
-
-PALIMPORT
 BOOL
 PALAPI
 FlushInstructionCache(
@@ -3261,8 +3248,8 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 Function:
 InterlockedAdd
 
-The InterlockedAdd function adds the value of the specified variable 
-with another specified value. The function prevents more than one thread 
+The InterlockedAdd function adds the value of the specified variable
+with another specified value. The function prevents more than one thread
 from using the same variable simultaneously.
 
 Parameters
