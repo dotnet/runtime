@@ -25,7 +25,8 @@
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
-    <NoWarn>$(NoWarn);IL3050;IL3052;IL1005</NoWarn>
+    <NoWarn>$(NoWarn);IL3050;IL3052;IL3055;IL1005</NoWarn>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
     <SelfContained>true</SelfContained>
