@@ -15614,6 +15614,11 @@ bool emitter::IsMovInstruction(instruction ins)
 //         mov Rx, Ry  # <-- last instruction
 //         mov Ry, Rx  # <-- current instruction can be omitted.
 //
+//    4. Move that does zero extension while previous instruction already did it
+//
+//         ldr Wx, [Ry] # <-- ldr will clear upper 4 byte of Wx
+//         mov Wx, Wx   # <-- clears upper 4 byte in Wx
+//
 // Arguments:
 //    ins  - The current instruction
 //    size - Operand size of current instruction
