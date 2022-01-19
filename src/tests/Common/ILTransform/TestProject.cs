@@ -1299,12 +1299,13 @@ class TestProjectStore
     {
         List<string> lines = new List<string>(File.ReadAllLines(path));
 
-        if (Path.GetFileName(path) == "lcs.cs")
+        if (Path.GetFileName(path).ToLower() == "bouncingball.cs")
         {
             Console.WriteLine("AnalyzeCSSource: {0}", path);
         }
 
         string fileName = Path.GetFileNameWithoutExtension(path);
+        bool isMainFile = false;
 
         for (int mainLine = lines.Count; --mainLine >= 0;)
         {
@@ -1312,12 +1313,14 @@ class TestProjectStore
             if (line.IndexOf("[Fact]") >= 0 || line.IndexOf("[ConditionalFact]") >= 0)
             {
                 hasFactAttribute = true;
+                isMainFile = true;
             }
             int mainPos = line.IndexOf("int Main()");
             if (mainPos >= 0)
             {
                 int mainLineIndent = GetIndent(line);
                 mainMethodLine = mainLine;
+                isMainFile = true;
                 testClassSourceFile = path;
                 while (--mainLine >= 0)
                 {
@@ -1404,35 +1407,38 @@ class TestProjectStore
             }
         }
 
-        lastUsingLine = 0;
-        for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+        if (isMainFile)
         {
-            string line = lines[lineIndex];
-            if (line.StartsWith("using"))
+            lastUsingLine = 0;
+            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
-                lastUsingLine = lineIndex;
-            }
-        }
-
-        for (int lineIndex = lastUsingLine + 1; lineIndex < lines.Count; lineIndex++)
-        {
-            string line = lines[lineIndex].Trim();
-            if (line == "")
-            {
-                continue;
-            }
-            namespaceLine = lineIndex;
-            if (line.StartsWith("namespace "))
-            {
-                int namespaceNameStart = 10;
-                int namespaceNameEnd = namespaceNameStart;
-                while (namespaceNameEnd < line.Length && TestProject.IsIdentifier(line[namespaceNameEnd]))
+                string line = lines[lineIndex];
+                if (line.StartsWith("using"))
                 {
-                    namespaceNameEnd++;
+                    lastUsingLine = lineIndex;
                 }
-                testClassNamespace = line.Substring(namespaceNameStart, namespaceNameEnd - namespaceNameStart);
             }
-            break;
+
+            for (int lineIndex = lastUsingLine + 1; lineIndex < lines.Count; lineIndex++)
+            {
+                string line = lines[lineIndex].Trim();
+                if (line == "")
+                {
+                    continue;
+                }
+                namespaceLine = lineIndex;
+                if (line.StartsWith("namespace "))
+                {
+                    int namespaceNameStart = 10;
+                    int namespaceNameEnd = namespaceNameStart;
+                    while (namespaceNameEnd < line.Length && TestProject.IsIdentifier(line[namespaceNameEnd]))
+                    {
+                        namespaceNameEnd++;
+                    }
+                    testClassNamespace = line.Substring(namespaceNameStart, namespaceNameEnd - namespaceNameStart);
+                }
+                break;
+            }
         }
     }
 
@@ -1540,6 +1546,7 @@ class TestProjectStore
     private void PopulateClassNameMap()
     {
         HashSet<string> ilNamespaceClasses = new HashSet<string>();
+        Dictionary<string, HashSet<string>> compileFileToFolderNameMap = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (TestProject project in _projects.Where(p => p.TestClassName != "" && p.MainMethodLine > 0))
         {
@@ -1569,6 +1576,18 @@ class TestProjectStore
                     debugOptProjectMap!.Add(project.DebugOptimize, projectList);
                 }
                 projectList!.Add(project);
+            }
+
+            foreach (string file in project.CompileFiles)
+            {
+                string fileName = Path.GetFileName(file);
+                string folderName = Path.GetFileName(Path.GetDirectoryName(file)!);
+                if (!compileFileToFolderNameMap.TryGetValue(fileName, out HashSet<string>? folders))
+                {
+                    folders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    compileFileToFolderNameMap.Add(fileName, folders);
+                }
+                folders.Add(folderName);
             }
         }
 
@@ -1603,9 +1622,17 @@ class TestProjectStore
                 debugOptProjectMap.Values.Any(l => l.Any(prj => prj.IsILProject)) &&
                 debugOptProjectMap.Values.Any(l => l.Any(prj => !prj.IsILProject));
 
+            bool existsInMultipleFolders = debugOptProjectMap.Values.Any(pl => pl.Any(
+                p => p.CompileFiles.Any(
+                    cf => compileFileToFolderNameMap.TryGetValue(Path.GetFileName(cf), out HashSet<string>? fl) && fl.Count > 1)));
+
             foreach (TestProject project in debugOptProjectMap.Values.SelectMany(v => v))
             {
                 string deduplicatedName = project.TestClassNamespace + "_" + Path.GetFileNameWithoutExtension(project.TestClassSourceFile);
+                if (existsInMultipleFolders)
+                {
+                    deduplicatedName += "_" + Path.GetFileName(Path.GetDirectoryName(project.TestClassSourceFile)!);
+                }
                 if (haveCsAndIlVersion)
                 {
                     deduplicatedName += (project.IsILProject ? "_il" : "_cs");

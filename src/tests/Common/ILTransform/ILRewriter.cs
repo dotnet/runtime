@@ -62,7 +62,7 @@ public class ILRewriter
         bool isILTest = Path.GetExtension(ilSource).ToLower() == ".il";
         bool rewritten = false;
 
-        if (Path.GetFileName(ilSource).Equals("instance.cs", StringComparison.OrdinalIgnoreCase))
+        if (Path.GetFileName(ilSource).Equals("bouncingball.cs", StringComparison.OrdinalIgnoreCase))
         {
             Console.WriteLine("RewriteFile: {0}", ilSource);
         }
