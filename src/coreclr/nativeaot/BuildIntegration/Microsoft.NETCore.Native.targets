@@ -31,6 +31,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <!-- Workaround for https://github.com/dotnet/runtimelab/issues/771 -->
     <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
+    <RunILLink>false</RunILLink>
   </PropertyGroup>
 
   <!-- Set up the defaults for the compatibility mode -->
@@ -39,7 +40,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
     <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
-    <SuppressTrimAnalysisWarnings Condition="$(SuppressTrimAnalysisWarnings) == ''">true</SuppressTrimAnalysisWarnings>
+    <SuppressTrimAnalysisWarnings Condition="$(SuppressTrimAnalysisWarnings) == '' and $([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">true</SuppressTrimAnalysisWarnings>
     <TrimmerDefaultAction Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">copyused</TrimmerDefaultAction>
   </PropertyGroup>
 
@@ -304,8 +305,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 
     <!-- Trick ILLinker into not actually running -->
-    <MakeDir Directories="$(IntermediateLinkDir)" />
-    <Touch Files="$(_LinkSemaphore)" AlwaysCreate="true" />
+    <MakeDir Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Directories="$(IntermediateLinkDir)" />
+    <Touch Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '7.0.0'))" Files="$(_LinkSemaphore)" AlwaysCreate="true" />
   </Target>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.Native.Windows.props" Condition="'$(TargetOS)' == 'windows'" />

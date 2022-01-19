@@ -11786,28 +11786,30 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    // Are there any places in the method where we might add a patchpoint?
+    // Is OSR enabled?
     //
-    if (compHasBackwardJump)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
     {
-        // Is OSR enabled?
+        // We don't inline at Tier0, if we do, we may need rethink our approach.
+        // Could probably support inlines that don't introduce flow.
         //
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        assert(!compIsForInlining());
+
+        // OSR is not yet supported for methods with explicit tail calls.
+        //
+        // But we also do not have to switch these methods to be optimized as we should be
+        // able to avoid getting trapped in Tier0 code by normal call counting.
+        // So instead, just suppress adding patchpoints.
+        //
+        if (!compTailPrefixSeen)
         {
-            // OSR is not yet supported for methods with explicit tail calls.
+            assert(compCanHavePatchpoints());
+
+            // The normaly policy is only to add patchpoints to the targets of lexically
+            // backwards branches.
             //
-            // But we also may not switch methods to be optimized as we should be
-            // able to avoid getting trapped in Tier0 code by normal call counting.
-            // So instead, just suppress adding patchpoints.
-            //
-            if (!compTailPrefixSeen)
+            if (compHasBackwardJump)
             {
-                assert(compCanHavePatchpoints());
-
-                // We don't inline at Tier0, if we do, we may need rethink our approach.
-                // Could probably support inlines that don't introduce flow.
-                assert(!compIsForInlining());
-
                 // Is the start of this block a suitable patchpoint?
                 //
                 if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
@@ -11820,12 +11822,64 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     setMethodHasPatchpoint();
                 }
             }
+            else
+            {
+                // Should not see backward branch targets w/o backwards branches
+                assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+            }
         }
-    }
-    else
-    {
-        // Should not see backward branch targets w/o backwards branches
-        assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+
+#ifdef DEBUG
+        // As a stress test, we can place patchpoints at the start of any block
+        // that is a stack empty point and is not within a handler.
+        //
+        // Todo: enable for mid-block stack empty points too.
+        //
+        const int  offsetOSR    = JitConfig.JitOffsetOnStackReplacement();
+        const int  randomOSR    = JitConfig.JitRandomOnStackReplacement();
+        const bool tryOffsetOSR = offsetOSR >= 0;
+        const bool tryRandomOSR = randomOSR > 0;
+
+        if ((tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
+            ((block->bbFlags & BBF_PATCHPOINT) == 0))
+        {
+            // Block start can have a patchpoint. See if we should add one.
+            //
+            bool addPatchpoint = false;
+
+            // Specific offset?
+            //
+            if (tryOffsetOSR)
+            {
+                if (impCurOpcOffs == (unsigned)offsetOSR)
+                {
+                    addPatchpoint = true;
+                }
+            }
+            // Random?
+            //
+            else
+            {
+                // Reuse the random inliner's random state.
+                // Note m_inlineStrategy is always created, even if we're not inlining.
+                //
+                CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(randomOSR);
+                const int        randomValue = (int)random->Next(100);
+
+                addPatchpoint = (randomValue < randomOSR);
+            }
+
+            if (addPatchpoint)
+            {
+                block->bbFlags |= BBF_PATCHPOINT;
+                setMethodHasPatchpoint();
+            }
+
+            JITDUMP("\n** %s patchpoint%s added to " FMT_BB " (il offset %u)\n", tryOffsetOSR ? "offset" : "random",
+                    addPatchpoint ? "" : " not", block->bbNum, impCurOpcOffs);
+        }
+
+#endif // DEBUG
     }
 
     // Mark stack-empty rare blocks to be considered for partial compilation.
