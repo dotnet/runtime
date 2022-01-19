@@ -11,7 +11,10 @@ using System.Text;
 
 namespace System.Net.Http.Headers
 {
-    /// <summary>Key/value pairs of headers. The value is either a raw <see cref="string"/> or a <see cref="HttpHeaders.HeaderStoreItemInfo"/>.</summary>
+    /// <summary>
+    /// Key/value pairs of headers. The value is either a raw <see cref="string"/> or a <see cref="HttpHeaders.HeaderStoreItemInfo"/>.
+    /// We're using a custom type instead of <see cref="KeyValuePair{TKey, TValue}"/> because we need ref access to fields.
+    /// </summary>
     internal struct HeaderEntry
     {
         public HeaderDescriptor Key;
