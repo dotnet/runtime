@@ -383,5 +383,57 @@ namespace System.IO.Compression.Tests
                 w.WriteLine(contents);
             }
         }
+
+        protected const string SmileyEmoji = "\ud83d\ude04";
+        protected const string LowerCaseOUmlautChar = "\u00F6";
+        protected const string CopyrightChar = "\u00A9";
+
+        // Returns pairs that are returned the same way by Utf8 and Latin1
+        // Returns: originalComment, expectedComment
+        private static IEnumerable<object[]> SharedComment_Data()
+        {
+            yield return new object[] { null, string.Empty };
+            yield return new object[] { string.Empty, string.Empty };
+            yield return new object[] { "a", "a" };
+            yield return new object[] { LowerCaseOUmlautChar, LowerCaseOUmlautChar };
+        }
+
+        // Returns pairs as expected by Utf8
+        // Returns: originalComment, expectedComment
+        public static IEnumerable<object[]> Utf8Comment_Data()
+        {
+            string asciiExpectedExactMaxLength = new('a', ushort.MaxValue);
+            string asciiOriginalOverMaxLength = asciiExpectedExactMaxLength + "aaa";
+
+            // A smiley emoji code point consists of two characters,
+            // meaning the whole emoji should be fully truncated
+            string utf8ExpectedJustALetters = new('a', ushort.MaxValue - 1);
+            string utf8OriginalALettersAndOneEmoji = utf8ExpectedJustALetters + SmileyEmoji;
+
+            foreach (object[] e in SharedComment_Data())
+            {
+                yield return e;
+            }
+
+            yield return new object[] { asciiOriginalOverMaxLength, asciiExpectedExactMaxLength };
+            yield return new object[] { utf8OriginalALettersAndOneEmoji, utf8ExpectedJustALetters };
+        }
+
+        // Returns pairs as expected by Latin1
+        // Returns: originalComment, expectedComment
+        public static IEnumerable<object[]> Latin1Comment_Data()
+        {
+            // In Latin1, all characters are exactly 1 byte
+
+            string latin1ExpectedALettersAndOneOUmlaut = new string('a', ushort.MaxValue - 1) + LowerCaseOUmlautChar;
+            string latin1OriginalALettersAndTwoOUmlauts = latin1ExpectedALettersAndOneOUmlaut + LowerCaseOUmlautChar;
+
+            foreach (object[] e in SharedComment_Data())
+            {
+                yield return e;
+            }
+
+            yield return new object[] { latin1OriginalALettersAndTwoOUmlauts, latin1ExpectedALettersAndOneOUmlaut };
+        }
     }
 }

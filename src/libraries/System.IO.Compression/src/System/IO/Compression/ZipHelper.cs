@@ -209,24 +209,36 @@ namespace System.IO.Compression
 
             encoding ??= GetEncoding(text);
             isUTF8 = encoding.CodePage == 65001;
-            byte[] bytes = encoding.GetBytes(text);
 
-            return GetEncodedTruncatedBytes(bytes, encoding, maxBytes);
-        }
-
-        internal static byte[] GetEncodedTruncatedBytes(byte[] bytes, Encoding encoding, int maxBytes)
-        {
-            if (maxBytes > 0 && bytes.Length > maxBytes)
+            if (maxBytes == 0) // No truncation
             {
-                int bytesPerChar = encoding.GetMaxByteCount(1);
-
-                int encodedCharsThatFit = maxBytes / bytesPerChar;
-                int totalBytesToTruncate = encodedCharsThatFit * bytesPerChar;
-
-                return bytes[0..totalBytesToTruncate];
+                return encoding.GetBytes(text);
             }
 
-            return bytes;
+            byte[] bytes;
+            if (isUTF8)
+            {
+                int totalCodePoints = 0;
+                foreach (Rune rune in text.EnumerateRunes())
+                {
+                    if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                    {
+                        break;
+                    }
+                    totalCodePoints += rune.Utf8SequenceLength;
+                }
+
+                bytes = encoding.GetBytes(text);
+
+                Debug.Assert(totalCodePoints > 0);
+                Debug.Assert(totalCodePoints <= bytes.Length);
+
+                return bytes[0..totalCodePoints];
+            }
+
+
+            bytes = encoding.GetBytes(text);
+            return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
         }
     }
 }
