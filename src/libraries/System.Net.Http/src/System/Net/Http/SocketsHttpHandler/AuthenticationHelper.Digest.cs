@@ -227,17 +227,25 @@ namespace System.Net.Http
 
         private static string ComputeHash(string data, string algorithm)
         {
-            // Disable MD5 insecure warning.
-#pragma warning disable CA5351
-            using (HashAlgorithm hash = algorithm.StartsWith(Sha256, StringComparison.OrdinalIgnoreCase) ? SHA256.Create() : (HashAlgorithm)MD5.Create())
-#pragma warning restore CA5351
-            {
-                Span<byte> result = stackalloc byte[hash.HashSize / 8]; // HashSize is in bits
-                bool hashComputed = hash.TryComputeHash(Encoding.UTF8.GetBytes(data), result, out int bytesWritten);
-                Debug.Assert(hashComputed && bytesWritten == result.Length);
+            Span<byte> hashBuffer = stackalloc byte[SHA256.HashSizeInBytes]; // SHA256 is the largest hash produced
+            byte[] dataBytes = Encoding.UTF8.GetBytes(data);
+            int written;
 
-                return HexConverter.ToString(result, HexConverter.Casing.Lower);
+            if (algorithm.StartsWith(Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                written = SHA256.HashData(dataBytes, hashBuffer);
+                Debug.Assert(written == SHA256.HashSizeInBytes);
             }
+            else
+            {
+                // Disable MD5 insecure warning.
+#pragma warning disable CA5351
+                written = MD5.HashData(dataBytes, hashBuffer);
+                Debug.Assert(written == MD5.HashSizeInBytes);
+#pragma warning restore CA5351
+            }
+
+            return HexConverter.ToString(hashBuffer.Slice(0, written), HexConverter.Casing.Lower);
         }
 
         internal sealed class DigestResponse
