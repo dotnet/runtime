@@ -216,7 +216,12 @@ namespace System
 
             if (IsOpenSslSupported)
             {
-                return OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
+                if (OpenSslVersion.Major >= 3)
+                {
+                    return true;
+                }
+                
+                return OpenSslVersion.Major == 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2);
             }
 
             if (IsAndroid)
