@@ -9,18 +9,6 @@ EXTERN memcpyGCRefsWithWriteBarrier : PROC
 EXTERN memcpyAnyWithWriteBarrier    : PROC
 EXTERN RhpGetThreadStaticBaseForTypeSlow : PROC
 
-EXTERN __guard_check_icall_fptr : QWORD
-EXTERN __guard_dispatch_icall_fptr : QWORD
-
-LEAF_ENTRY __guard_check_icall_fptrHack, _TEXT
-    jmp qword ptr [__guard_check_icall_fptr]
-LEAF_END __guard_check_icall_fptrHack, _TEXT
-
-LEAF_ENTRY __guard_dispatch_icall_fptrHack, _TEXT
-    jmp qword ptr [__guard_dispatch_icall_fptr]
-LEAF_END __guard_dispatch_icall_fptrHack, _TEXT
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; void* RhpCopyMultibyteNoGCRefs(void*, void*, size_t)
