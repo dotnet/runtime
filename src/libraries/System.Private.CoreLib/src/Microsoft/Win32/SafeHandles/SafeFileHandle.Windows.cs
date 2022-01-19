@@ -29,9 +29,11 @@ namespace Microsoft.Win32.SafeHandles
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
-        internal bool LengthCanBeCached => _lengthCanBeCached;
-
-        internal bool HasCachedFileLength => _lengthCanBeCached && _length >= 0;
+        internal bool TryGetCachedLength(out long cachedLength)
+        {
+            cachedLength = _length;
+            return _lengthCanBeCached && cachedLength >= 0;
+        }
 
         internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
