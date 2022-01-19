@@ -7,11 +7,16 @@ namespace System.Runtime.Intrinsics.X86
 {
     [Intrinsic]
     [CLSCompliant(false)]
-    public abstract class Sha : X86Base
+    public abstract class Sha : Sse2
     {
         internal Sha() { }
 
         public static new bool IsSupported { get => IsSupported; }
+
+        public new abstract class X64 : Sse2.X64
+        {
+            public static new bool IsSupported { get => IsSupported; }
+        }
 
         /// <summary>
         /// This performs an intermediate calculation for the next four SHA1 message values.

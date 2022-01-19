@@ -8,11 +8,16 @@ using System.Runtime.Intrinsics;
 namespace System.Runtime.Intrinsics.X86
 {
     [CLSCompliant(false)]
-    public abstract class Sha : X86Base
+    public abstract class Sha : Sse2
     {
         internal Sha() { }
 
-        public static new bool IsSupported { [Intrinsic] get { return false; } }
+        public static new bool IsSupported { [Intrinsic] get => false; }
+
+        public new abstract class X64 : Sse2.X64
+        {
+            public static new bool IsSupported { [Intrinsic] get => false; }
+        }
 
         /// <summary>
         /// This performs an intermediate calculation for the next four SHA1 message values.
