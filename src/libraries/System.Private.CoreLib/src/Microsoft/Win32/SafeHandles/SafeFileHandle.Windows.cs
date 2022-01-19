@@ -261,7 +261,7 @@ namespace Microsoft.Win32.SafeHandles
             return fileType;
         }
 
-        internal unsafe long GetFileLength()
+        internal long GetFileLength()
         {
             if (!_lengthCanBeCached)
             {
@@ -277,7 +277,7 @@ namespace Microsoft.Win32.SafeHandles
 
             return _length;
 
-            long GetFileLengthCore()
+            unsafe long GetFileLengthCore()
             {
                 Interop.Kernel32.FILE_STANDARD_INFO info;
 
