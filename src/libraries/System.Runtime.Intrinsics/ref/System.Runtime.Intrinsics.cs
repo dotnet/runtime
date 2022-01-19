@@ -4045,7 +4045,7 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
 	[System.CLSCompliantAttribute(false)]
-	public abstract partial class Sha : System.Runtime.Intrinsics.X86.X86Base {
+	public abstract partial class Sha : System.Runtime.Intrinsics.X86.Sse2 {
 		internal Sha() { }
 		public static new bool IsSupported { get { throw null; } }
 		public static System.Runtime.Intrinsics.Vector128<byte> Sha1MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
@@ -4055,6 +4055,12 @@ namespace System.Runtime.Intrinsics.X86
 		public static System.Runtime.Intrinsics.Vector128<byte> Sha256MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
 		public static System.Runtime.Intrinsics.Vector128<byte> Sha256MessageSchedule2(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
 		public static System.Runtime.Intrinsics.Vector128<byte> Sha256TwoRounds(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b, System.Runtime.Intrinsics.Vector128<byte> k) { throw null; }
+		
+		public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Sse2.X64
+        {
+            internal X64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
 	}
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Sse : System.Runtime.Intrinsics.X86.X86Base
