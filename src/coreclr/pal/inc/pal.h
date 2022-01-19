@@ -2842,11 +2842,6 @@ VirtualQuery(
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-#define LMEM_FIXED          0x0000
-#define LMEM_MOVEABLE       0x0002
-#define LMEM_ZEROINIT       0x0040
-#define LPTR                (LMEM_FIXED | LMEM_ZEROINIT)
-
 PALIMPORT
 BOOL
 PALAPI
