@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -68,7 +69,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             Uri devToolsHost = options.DevToolsUrl;
             app.UseRouter(router =>
             {
-                router.MapGet("/", Copy);
+                router.MapGet("/", ReturnPageLinksToDebug);
                 router.MapGet("/favicon.ico", Copy);
                 router.MapGet("json", Copy);
                 router.MapGet("json/list", Copy);
@@ -83,6 +84,25 @@ namespace Microsoft.WebAssembly.Diagnostics
                     PathString requestPath = request.Path;
                     return $"{devToolsHost.Scheme}://{devToolsHost.Authority}{request.Path}{request.QueryString}";
                 }
+
+                async Task ReturnPageLinksToDebug(HttpContext context)
+                {
+                    HttpRequest request = context.Request;
+
+                    {
+                        Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context) + "json/list");
+                        context.Response.ContentType = "text/html";
+                        string urlsToInspect = "<title>Inspectable pages</title><h3>Inspectable pages</h3><hr>";
+                        foreach (var tab in tabs)
+                        {
+                            string aHref = tab["devtoolsFrontendUrl"];
+                            aHref = aHref.Replace($"ws={devToolsHost.Authority}", $"ws={request.Host}");
+                            urlsToInspect += $"<a href=\"http://{devToolsHost.Authority}{aHref}\">{tab["title"]}<br><span>{tab["url"]}</a><br><br>";
+                        }
+                        await context.Response.Body.WriteAsync(Encoding.ASCII.GetBytes(urlsToInspect));
+                    }
+                }
+
                 async Task Copy(HttpContext context)
                 {
                     using (var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) })
