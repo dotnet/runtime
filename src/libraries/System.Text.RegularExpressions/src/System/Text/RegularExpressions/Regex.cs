@@ -42,7 +42,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Creates a regular expression object for the specified regular expression.
         /// </summary>
-        public Regex(string pattern) :
+        public Regex([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) :
             this(pattern, culture: null)
         {
         }
@@ -50,12 +50,12 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Creates a regular expression object for the specified regular expression, with options that modify the pattern.
         /// </summary>
-        public Regex(string pattern, RegexOptions options) :
+        public Regex([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) :
             this(pattern, options, s_defaultMatchTimeout, culture: null)
         {
         }
 
-        public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout) :
+        public Regex([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) :
             this(pattern, options, matchTimeout, culture: null)
         {
         }
