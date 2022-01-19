@@ -597,6 +597,7 @@ namespace System.Text.RegularExpressions
                 Group => ReduceGroup(),
                 Loop or Lazyloop => ReduceLoops(),
                 Prevent => ReducePrevent(),
+                Require => ReduceRequire(),
                 Set or Setloop or Setloopatomic or Setlazy => ReduceSet(),
                 Testgroup => ReduceTestgroup(),
                 Testref => ReduceTestref(),
@@ -607,17 +608,14 @@ namespace System.Text.RegularExpressions
         /// <remarks>
         /// Simple optimization for a concatenation or alternation:
         /// - if the node has only one child, use it instead
-        /// - if the node has zero children, turn it into an empty with the specified empty type
+        /// - if the node has zero children, turn it into an empty with Nothing for an alternation or Empty for a concatenation
         /// </remarks>
-        private RegexNode ReplaceNodeIfUnnecessary(int emptyTypeIfNoChildren)
+        private RegexNode ReplaceNodeIfUnnecessary()
         {
-            Debug.Assert(
-                (Type == Alternate && emptyTypeIfNoChildren == Nothing) ||
-                (Type == Concatenate && emptyTypeIfNoChildren == Empty));
-
+            Debug.Assert(Type is Alternate or Concatenate);
             return ChildCount() switch
             {
-                0 => new RegexNode(emptyTypeIfNoChildren, Options),
+                0 => new RegexNode(Type == Alternate ? Nothing : Empty, Options),
                 1 => Child(0),
                 _ => this,
             };
@@ -672,6 +670,12 @@ namespace System.Text.RegularExpressions
 
             switch (child.Type)
             {
+                // If the child is empty/nothing, there's nothing to be made atomic so the Atomic
+                // node can simply be removed.
+                case Empty:
+                case Nothing:
+                    return child;
+
                 // If the child is already atomic, we can just remove the atomic node.
                 case Oneloopatomic:
                 case Notoneloopatomic:
@@ -971,9 +975,19 @@ namespace System.Text.RegularExpressions
 
                 default:
                     ReduceSingleLetterAndNestedAlternations();
-                    RegexNode node = ReplaceNodeIfUnnecessary(Nothing);
-                    node = ExtractCommonPrefixText(node);
-                    node = ExtractCommonPrefixOneNotoneSet(node);
+                    RegexNode node = ReplaceNodeIfUnnecessary();
+                    if (node.Type == Alternate)
+                    {
+                        node = ExtractCommonPrefixText(node);
+                        if (node.Type == Alternate)
+                        {
+                            node = ExtractCommonPrefixOneNotoneSet(node);
+                            if (node.Type == Alternate)
+                            {
+                                node = RemoveRedundantEmptiesAndNothings(node);
+                            }
+                        }
+                    }
                     return node;
             }
 
@@ -1103,11 +1117,7 @@ namespace System.Text.RegularExpressions
             // e.g. \w12|\d34|\d56|\w78|\w90 => \w12|\d(?:34|56)|\w(?:78|90)
             static RegexNode ExtractCommonPrefixOneNotoneSet(RegexNode alternation)
             {
-                if (alternation.Type != Alternate)
-                {
-                    return alternation;
-                }
-
+                Debug.Assert(alternation.Type == Alternate);
                 Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
                 var children = (List<RegexNode>)alternation.Children;
 
@@ -1193,9 +1203,45 @@ namespace System.Text.RegularExpressions
                     children.RemoveRange(startingIndex + 1, endingIndex - startingIndex - 1);
                 }
 
-                // If we've reduced this alternation to just a single branch, return it.
-                // Otherwise, return the alternation.
-                return alternation.ChildCount() == 1 ? alternation.Child(0) : alternation;
+                return alternation.ReplaceNodeIfUnnecessary();
+            }
+
+            // Removes unnecessary Empty and Nothing nodes from the alternation. A Nothing will never
+            // match, so it can be removed entirely, and an Empty can be removed if there's a previous
+            // Empty in the alternation: it's an extreme case of just having a repeated branch in an
+            // alternation, and while we don't check for all duplicates, checking for empty is easy.
+            static RegexNode RemoveRedundantEmptiesAndNothings(RegexNode node)
+            {
+                Debug.Assert(node.Type == Alternate);
+                Debug.Assert(node.ChildCount() >= 2);
+                var children = (List<RegexNode>)node.Children!;
+
+                int i = 0, j = 0;
+                bool seenEmpty = false;
+                while (i < children.Count)
+                {
+                    RegexNode child = children[i];
+                    switch (child.Type)
+                    {
+                        case Empty when !seenEmpty:
+                            seenEmpty = true;
+                            goto default;
+
+                        case Empty:
+                        case Nothing:
+                            i++;
+                            break;
+
+                        default:
+                            children[j] = children[i];
+                            i++;
+                            j++;
+                            break;
+                    }
+                }
+
+                children.RemoveRange(j, children.Count - j);
+                return node.ReplaceNodeIfUnnecessary();
             }
 
             // Analyzes all the branches of the alternation for text that's identical at the beginning
@@ -1209,11 +1255,7 @@ namespace System.Text.RegularExpressions
             // e.g. abc|ade => a(?bc|de)
             static RegexNode ExtractCommonPrefixText(RegexNode alternation)
             {
-                if (alternation.Type != Alternate)
-                {
-                    return alternation;
-                }
-
+                Debug.Assert(alternation.Type == Alternate);
                 Debug.Assert(alternation.Children is List<RegexNode> { Count: >= 2 });
                 var children = (List<RegexNode>)alternation.Children;
 
@@ -1309,20 +1351,11 @@ namespace System.Text.RegularExpressions
                         new RegexNode(One, startingNodeOptions, startingSpan[0]) :
                         new RegexNode(Multi, startingNodeOptions, startingSpan.ToString());
                     var newAlternate = new RegexNode(Alternate, startingNodeOptions);
-                    bool seenEmpty = false;
                     for (int i = startingIndex; i < endingIndex; i++)
                     {
                         RegexNode branch = children[i];
                         ProcessOneOrMulti(branch.Type == Concatenate ? branch.Child(0) : branch, startingSpan);
                         branch = branch.Reduce();
-                        if (branch.Type == Empty)
-                        {
-                            if (seenEmpty)
-                            {
-                                continue;
-                            }
-                            seenEmpty = true;
-                        }
                         newAlternate.AddChild(branch);
 
                         // Remove the starting text from the one or multi node.  This may end up changing
@@ -1472,7 +1505,7 @@ namespace System.Text.RegularExpressions
 
             // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
             // Otherwise, return this.
-            return ReplaceNodeIfUnnecessary(Empty);
+            return ReplaceNodeIfUnnecessary();
         }
 
         /// <summary>
@@ -1819,13 +1852,31 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
+        /// <summary>Optimizations for positive lookaheads/behinds.</summary>
+        private RegexNode ReduceRequire()
+        {
+            Debug.Assert(Type == Require);
+            Debug.Assert(ChildCount() == 1);
+
+            // A positive lookaround wrapped around an empty is a nop, and can just
+            // be made into an empty.  A developer typically doesn't write this, but
+            // rather it evolves due to optimizations resulting in empty.
+            if (Child(0).Type == Empty)
+            {
+                Type = Empty;
+                Children = null;
+            }
+
+            return this;
+        }
+
         /// <summary>Optimizations for negative lookaheads/behinds.</summary>
         private RegexNode ReducePrevent()
         {
             Debug.Assert(Type == Prevent);
             Debug.Assert(ChildCount() == 1);
 
-            // A negative lookahead/lookbehind wrapped around an empty child, i.e. (?!), is
+            // A negative lookaround wrapped around an empty child, i.e. (?!), is
             // sometimes used as a way to insert a guaranteed no-match into the expression.
             // We can reduce it to simply Nothing.
             if (Child(0).Type == Empty)
