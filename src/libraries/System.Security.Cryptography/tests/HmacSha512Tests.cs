@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Tests
     public class HmacSha512Tests : Rfc4231HmacTests
     {
         protected override int BlockSize => 128;
-        protected override int MacSize => 64;
+        protected override int MacSize => HMACSHA512.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA512();
         protected override HashAlgorithm CreateHashAlgorithm() => SHA512.Create();

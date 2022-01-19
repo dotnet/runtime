@@ -30,8 +30,8 @@
 .corflags 0x00000001    //  ILONLY
 
 
-
-.class public abstract auto ansi beforefieldinit Test_delegate.Base
+.namespace Test_delegate {
+.class public abstract auto ansi beforefieldinit Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -163,7 +163,7 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test_delegate.Child
+.class public auto ansi beforefieldinit Child
        extends Test_delegate.Base
 {
   .method public hidebysig virtual final 
@@ -275,7 +275,7 @@
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test_delegate.GrandChild
+.class public auto ansi beforefieldinit GrandChild
        extends Test_delegate.Child
 {
   .method public hidebysig virtual final 
@@ -373,7 +373,7 @@
 
 } // end of class Test.GrandChild
 
-.class public auto ansi sealed beforefieldinit Test_delegate.SealedGrandChild
+.class public auto ansi sealed beforefieldinit SealedGrandChild
        extends Test_delegate.GrandChild
 {
   .method public hidebysig specialname rtspecialname 
@@ -387,7 +387,7 @@
 
 } // end of class Test.SealedGrandChild
 
-.class public auto ansi sealed Test_delegate.TestMethod
+.class public auto ansi sealed TestMethod
        extends [mscorlib]System.MulticastDelegate
 {
   .method public hidebysig specialname rtspecialname 
@@ -415,7 +415,7 @@
 
 } // end of class Test.TestMethod
 
-.class public abstract auto ansi sealed beforefieldinit Test_delegate.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallDelegateFromSealedGrandChild() cil managed
@@ -613,7 +613,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_delegate.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -687,6 +687,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-
+}

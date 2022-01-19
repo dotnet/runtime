@@ -2644,15 +2644,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
-    // Optionally suppress dumping some OSR jit requests.
+    // Optionally suppress dumping except for a specific OSR jit request.
     //
-    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
-    {
-        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+    const int dumpAtOSROffset = JitConfig.JitDumpAtOSROffset();
 
-        if (desiredOffset != -1)
+    if (verboseDump && (dumpAtOSROffset != -1))
+    {
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+            verboseDump = (((IL_OFFSET)dumpAtOSROffset) == info.compILEntry);
+        }
+        else
+        {
+            verboseDump = false;
         }
     }
 

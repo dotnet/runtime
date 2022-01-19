@@ -458,8 +458,7 @@ namespace System.Collections.Immutable
                                 successor = successor._left;
                             }
 
-                            bool dummyMutated;
-                            var newRight = _right.Remove(successor._key, comparer, out dummyMutated);
+                            var newRight = _right.Remove(successor._key, comparer, out _);
                             result = successor.Mutate(left: _left, right: newRight);
                         }
                     }

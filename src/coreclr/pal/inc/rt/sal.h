@@ -2862,6 +2862,10 @@ of each annotation, see the advanced annotations section.
 #define __useHeader                          _Use_decl_anno_impl_
 #define __on_failure(annotes)                _On_failure_impl_(annotes _SAL_nop_impl_)
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
 #ifndef __fallthrough // [
 #if __has_cpp_attribute(fallthrough)
 #define __fallthrough [[fallthrough]]

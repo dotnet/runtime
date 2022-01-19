@@ -538,7 +538,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
                 // If a parallelism slot was available, try to get an item.
                 // Be careful, because an exception may be thrown from ConsumeMessage
                 // and we have already incremented _numberOfOutstandingOperations.
-                bool gotMessage = false;
+                bool gotMessage;
                 try
                 {
                     gotMessage = TryGetNextAvailableOrPostponedMessage(out messageWithId);

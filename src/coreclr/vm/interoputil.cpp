@@ -43,7 +43,6 @@
 #include "commtmemberinfomap.h"
 #include "olevariant.h"
 #include "stdinterfaces.h"
-#include "notifyexternals.h"
 #include "typeparse.h"
 #include "interoputil.inl"
 #include "typestring.h"
@@ -3316,7 +3315,7 @@ void IUInvokeDispMethod(
                     vDispIDElement.pMT = pInvokedMT;
                     vDispIDElement.strNameLength = strNameLength;
                     vDispIDElement.lcid = lcid;
-                    wcscpy_s(vDispIDElement.strName, COUNTOF(vDispIDElement.strName), aNamesToConvert[0]);
+                    wcscpy_s(vDispIDElement.strName, ARRAY_SIZE(vDispIDElement.strName), aNamesToConvert[0]);
 
                     // Only look up if the cache has already been created.
                     DispIDCache* pDispIDCache = GetAppDomain()->GetRefDispIDCache();

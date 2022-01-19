@@ -210,4 +210,7 @@
   <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
     <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
   </data>
+  <data name="CorrectnessOfAbstractDelegatesCannotBeGuaranteedMessage" xml:space="preserve">
+    <value>P/invoke method '{0}' declares a parameter with an abstract delegate. Correctness of interop for abstract delegates cannot be guaranteed after native compilation: the marshalling code for the delegate might not be available. Use a non-abstract delegate type or ensure any delegate instance passed as parameter is marked with `UnmanagedFunctionPointerAttribute`.</value>
+  </data>
 </root>

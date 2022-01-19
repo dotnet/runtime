@@ -730,7 +730,7 @@ namespace System.Data.Odbc
             {
                 int NativeError;
                 short iRec = 0;
-                short cchActual = 0;
+                short cchActual;
 
                 StringBuilder message = new StringBuilder(1024);
                 string sqlState;
@@ -743,7 +743,7 @@ namespace System.Data.Odbc
                     if ((SQLRETURN.SUCCESS_WITH_INFO == retcode) && (message.Capacity - 1 < cchActual))
                     {
                         message.Capacity = cchActual + 1;
-                        retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out cchActual);
+                        retcode = hrHandle.GetDiagnosticRecord(iRec, out sqlState, message, out NativeError, out _);
                     }
 
                     //Note: SUCCESS_WITH_INFO from SQLGetDiagRec would be because

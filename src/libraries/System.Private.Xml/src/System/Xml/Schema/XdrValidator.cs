@@ -108,7 +108,7 @@ namespace System.Xml.Schema
         {
             if (context!.NeedValidateChildren)
             {
-                int errorCode = 0;
+                int errorCode;
                 context.ElementDecl!.ContentValidator!.ValidateElement(elementName, context, out errorCode);
                 if (errorCode < 0)
                 {

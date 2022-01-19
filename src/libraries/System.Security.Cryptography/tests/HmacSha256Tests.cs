@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Tests
     public class HmacSha256Tests : Rfc4231HmacTests
     {
         protected override int BlockSize => 64;
-        protected override int MacSize => 32;
+        protected override int MacSize => HMACSHA256.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACSHA256();
         protected override HashAlgorithm CreateHashAlgorithm() => SHA256.Create();

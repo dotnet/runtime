@@ -21,7 +21,7 @@ namespace System.Drawing
         {
             get
             {
-                IntPtr lineCap = IntPtr.Zero;
+                IntPtr lineCap;
                 int status = Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
                 Gdip.CheckStatus(status);
                 if (lineCap == IntPtr.Zero)

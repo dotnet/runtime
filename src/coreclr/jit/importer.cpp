@@ -8130,6 +8130,23 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                                               CORINFO_FIELD_INFO*     pFieldInfo,
                                               var_types               lclTyp)
 {
+    // Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
+    // mapped to the same ".data" declaration). That said, such mappings only appear to be
+    // possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
+    // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
+    // be mutable, but the only current producer of such images, the C++/CLI compiler, does
+    // not appear to support mapping different fields to the same address. So we will say
+    // that "mutable overlapping RVA statics" are UB as well. If this ever changes, code in
+    // morph and value numbering will need to be updated to respect "gtFldMayOverlap" and
+    // "NotAField FldSeq".
+
+    // For statics that are not "boxed", the initial address tree will contain the field sequence.
+    // For those that are, we will attach it later, when adding the indirection for the box, since
+    // that tree will represent the true address.
+    bool          isBoxedStatic = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
+    FieldSeqNode* innerFldSeq =
+        !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField) : FieldSeqStore::NotAField();
+
     GenTree* op1;
 
     switch (pFieldInfo->fieldAccessor)
@@ -8161,10 +8178,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             }
 
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, gtNewCallArgs(op1));
-
-            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-            op1              = gtNewOperNode(GT_ADD, type, op1,
-                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
         }
         break;
 
@@ -8191,11 +8205,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper);
             }
 
-            {
-                FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-                op1              = gtNewOperNode(GT_ADD, op1->TypeGet(), op1,
-                                    new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
-            }
+            op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
             break;
         }
 
@@ -8222,9 +8232,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             op1->gtFlags |= callFlags;
 
             op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
-            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-            op1              = gtNewOperNode(GT_ADD, type, op1,
-                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
 #else
             unreached();
 #endif // FEATURE_READYTORUN
@@ -8243,20 +8251,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 // We should always be able to access this static's address directly.
                 assert(pFldAddr == nullptr);
 
-                GenTreeFlags handleKind;
-                if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0)
-                {
-                    handleKind = GTF_ICON_STATIC_BOX_PTR;
-                }
-                else
-                {
-                    handleKind = GTF_ICON_STATIC_HDL;
-                }
-
-                FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-
                 // Create the address node.
-                op1 = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
+                GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
+                op1                     = gtNewIconHandleNode((size_t)fldAddr, handleKind, innerFldSeq);
 #ifdef DEBUG
                 op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
 #endif
@@ -8276,14 +8273,12 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     op1->gtFlags |= GTF_FLD_INITCLASS;
                 }
 
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                if (isBoxedStatic)
                 {
-                    op1->gtType = TYP_REF; // points at boxed object
-                    FieldSeqNode* firstElemFldSeq =
-                        GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        new (this, GT_CNS_INT)
-                                            GenTreeIntCon(TYP_I_IMPL, TARGET_POINTER_SIZE, firstElemFldSeq));
+                    FieldSeqNode* outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
+                    op1->ChangeType(TYP_REF); // points at boxed object
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
 
                     if (varTypeIsStruct(lclTyp))
                     {
@@ -8304,15 +8299,14 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
     }
 
-    if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+    if (isBoxedStatic)
     {
+        FieldSeqNode* outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
         op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 
-        FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
-
-        op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                            new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, TARGET_POINTER_SIZE, fldSeq));
+        op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
     }
 
     if (!(access & CORINFO_ACCESS_ADDRESS))
@@ -10772,7 +10766,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                  * scope */
                 exitBlock = fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step);
 
-                assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
+                assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
                 step->bbJumpDest = exitBlock; // the previous step (maybe a call to a nested finally, or a nested catch
                                               // exit) returns to this block
                 step->bbJumpDest->bbRefs++;
@@ -10880,7 +10874,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // never returns to the call-to-finally call, and the finally-protected 'try' region doesn't appear on
                 // stack walks.)
 
-                assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
+                assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 if (step->bbJumpKind == BBJ_EHCATCHRET)
@@ -11792,28 +11786,30 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    // Are there any places in the method where we might add a patchpoint?
+    // Is OSR enabled?
     //
-    if (compHasBackwardJump)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
     {
-        // Is OSR enabled?
+        // We don't inline at Tier0, if we do, we may need rethink our approach.
+        // Could probably support inlines that don't introduce flow.
         //
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        assert(!compIsForInlining());
+
+        // OSR is not yet supported for methods with explicit tail calls.
+        //
+        // But we also do not have to switch these methods to be optimized as we should be
+        // able to avoid getting trapped in Tier0 code by normal call counting.
+        // So instead, just suppress adding patchpoints.
+        //
+        if (!compTailPrefixSeen)
         {
-            // OSR is not yet supported for methods with explicit tail calls.
+            assert(compCanHavePatchpoints());
+
+            // The normaly policy is only to add patchpoints to the targets of lexically
+            // backwards branches.
             //
-            // But we also may not switch methods to be optimized as we should be
-            // able to avoid getting trapped in Tier0 code by normal call counting.
-            // So instead, just suppress adding patchpoints.
-            //
-            if (!compTailPrefixSeen)
+            if (compHasBackwardJump)
             {
-                assert(compCanHavePatchpoints());
-
-                // We don't inline at Tier0, if we do, we may need rethink our approach.
-                // Could probably support inlines that don't introduce flow.
-                assert(!compIsForInlining());
-
                 // Is the start of this block a suitable patchpoint?
                 //
                 if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
@@ -11826,12 +11822,64 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     setMethodHasPatchpoint();
                 }
             }
+            else
+            {
+                // Should not see backward branch targets w/o backwards branches
+                assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+            }
         }
-    }
-    else
-    {
-        // Should not see backward branch targets w/o backwards branches
-        assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+
+#ifdef DEBUG
+        // As a stress test, we can place patchpoints at the start of any block
+        // that is a stack empty point and is not within a handler.
+        //
+        // Todo: enable for mid-block stack empty points too.
+        //
+        const int  offsetOSR    = JitConfig.JitOffsetOnStackReplacement();
+        const int  randomOSR    = JitConfig.JitRandomOnStackReplacement();
+        const bool tryOffsetOSR = offsetOSR >= 0;
+        const bool tryRandomOSR = randomOSR > 0;
+
+        if ((tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
+            ((block->bbFlags & BBF_PATCHPOINT) == 0))
+        {
+            // Block start can have a patchpoint. See if we should add one.
+            //
+            bool addPatchpoint = false;
+
+            // Specific offset?
+            //
+            if (tryOffsetOSR)
+            {
+                if (impCurOpcOffs == (unsigned)offsetOSR)
+                {
+                    addPatchpoint = true;
+                }
+            }
+            // Random?
+            //
+            else
+            {
+                // Reuse the random inliner's random state.
+                // Note m_inlineStrategy is always created, even if we're not inlining.
+                //
+                CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(randomOSR);
+                const int        randomValue = (int)random->Next(100);
+
+                addPatchpoint = (randomValue < randomOSR);
+            }
+
+            if (addPatchpoint)
+            {
+                block->bbFlags |= BBF_PATCHPOINT;
+                setMethodHasPatchpoint();
+            }
+
+            JITDUMP("\n** %s patchpoint%s added to " FMT_BB " (il offset %u)\n", tryOffsetOSR ? "offset" : "random",
+                    addPatchpoint ? "" : " not", block->bbNum, impCurOpcOffs);
+        }
+
+#endif // DEBUG
     }
 
     // Mark stack-empty rare blocks to be considered for partial compilation.

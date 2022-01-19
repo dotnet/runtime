@@ -672,6 +672,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACMD5 : System.Security.Cryptography.HMAC
     {
+        public const int HashSizeInBits = 128;
+        public const int HashSizeInBytes = 16;
         public HMACMD5() { }
         public HMACMD5(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
@@ -689,6 +691,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA1 : System.Security.Cryptography.HMAC
     {
+        public const int HashSizeInBits = 160;
+        public const int HashSizeInBytes = 20;
         public HMACSHA1() { }
         public HMACSHA1(byte[] key) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -709,6 +713,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA256 : System.Security.Cryptography.HMAC
     {
+        public const int HashSizeInBits = 256;
+        public const int HashSizeInBytes = 32;
         public HMACSHA256() { }
         public HMACSHA256(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
@@ -726,6 +732,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA384 : System.Security.Cryptography.HMAC
     {
+        public const int HashSizeInBits = 384;
+        public const int HashSizeInBytes = 48;
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
@@ -745,6 +753,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class HMACSHA512 : System.Security.Cryptography.HMAC
     {
+        public const int HashSizeInBits = 512;
+        public const int HashSizeInBytes = 64;
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
         public override byte[] Key { get { throw null; } set { } }
@@ -817,6 +827,8 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public abstract partial class MD5 : System.Security.Cryptography.HashAlgorithm
     {
+        public const int HashSizeInBits = 128;
+        public const int HashSizeInBytes = 16;
         protected MD5() { }
         public static new System.Security.Cryptography.MD5 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
@@ -1178,6 +1190,8 @@ namespace System.Security.Cryptography
     }
     public abstract partial class SHA1 : System.Security.Cryptography.HashAlgorithm
     {
+        public const int HashSizeInBits = 160;
+        public const int HashSizeInBytes = 20;
         protected SHA1() { }
         public static new System.Security.Cryptography.SHA1 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
@@ -1201,6 +1215,8 @@ namespace System.Security.Cryptography
     }
     public abstract partial class SHA256 : System.Security.Cryptography.HashAlgorithm
     {
+        public const int HashSizeInBits = 256;
+        public const int HashSizeInBytes = 32;
         protected SHA256() { }
         public static new System.Security.Cryptography.SHA256 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
@@ -1224,6 +1240,8 @@ namespace System.Security.Cryptography
     }
     public abstract partial class SHA384 : System.Security.Cryptography.HashAlgorithm
     {
+        public const int HashSizeInBits = 384;
+        public const int HashSizeInBytes = 48;
         protected SHA384() { }
         public static new System.Security.Cryptography.SHA384 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
@@ -1247,6 +1265,8 @@ namespace System.Security.Cryptography
     }
     public abstract partial class SHA512 : System.Security.Cryptography.HashAlgorithm
     {
+        public const int HashSizeInBits = 512;
+        public const int HashSizeInBytes = 64;
         protected SHA512() { }
         public static new System.Security.Cryptography.SHA512 Create() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]

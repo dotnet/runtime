@@ -238,8 +238,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type accessibilityContext,
             Type[] typeArguments)
         {
-            Type[] delegateSignatureTypes = null;
-            CSharpArgumentInfo[] argInfos = null;
+            Type[] delegateSignatureTypes;
+            CSharpArgumentInfo[] argInfos;
 
             CreateDelegateSignatureAndArgumentInfos(
                 methodArgs,
@@ -315,8 +315,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             CSharpArgumentInfoFlags[] argFlags,
             Type accessibilityContext)
         {
-            Type[] delegateSignatureTypes = null;
-            CSharpArgumentInfo[] argInfos = null;
+            Type[] delegateSignatureTypes;
+            CSharpArgumentInfo[] argInfos;
 
             CreateDelegateSignatureAndArgumentInfos(
                 propArgs,
@@ -381,8 +381,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             CSharpArgumentInfoFlags[] argFlags,
             Type accessibilityContext)
         {
-            Type[] delegateSignatureTypes = null;
-            CSharpArgumentInfo[] argInfos = null;
+            Type[] delegateSignatureTypes;
+            CSharpArgumentInfo[] argInfos;
 
             CreateDelegateSignatureAndArgumentInfos(
                 propArgs,
