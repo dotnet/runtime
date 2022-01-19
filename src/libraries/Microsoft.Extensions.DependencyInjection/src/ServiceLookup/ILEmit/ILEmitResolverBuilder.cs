@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -274,8 +275,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
         {
+            Debug.Assert(key.Type != null);
+
             // new ServiceCacheKey(typeof(key.Type), key.Slot)
-            argument.Generator.Emit(OpCodes.Ldtoken, key.Type!);
+            argument.Generator.Emit(OpCodes.Ldtoken, key.Type);
             argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);
             argument.Generator.Emit(OpCodes.Ldc_I4, key.Slot);
             argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);
