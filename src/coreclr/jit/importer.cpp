@@ -6960,7 +6960,9 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+#ifndef OSX_ARM64_ABI
     if (!opts.IsReadyToRun() || IsTargetAbi(CORINFO_CORERT_ABI))
+#endif // !OSX_ARM64_ABI
     {
 
         // Reuse the temp used to pass the array dimensions to avoid bloating
@@ -7017,6 +7019,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
 
         node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR_NONVARARG, TYP_REF, args);
     }
+#ifndef OSX_ARM64_ABI
     else
     {
         //
@@ -7046,6 +7049,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         }
 #endif
     }
+#endif // !OSX_ARM64_ABI
 
     for (GenTreeCall::Use& use : node->AsCall()->Args())
     {
