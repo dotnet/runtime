@@ -589,21 +589,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         return true;
                     }
-                case "DotnetDebugger.justMyCode":
-                    {
-                        try
-                        {
-                            SetJustMyCode(id, args, token);
-                        }
-                        catch (Exception)
-                        {
-                            SendResponse(id,
-                                Result.Exception(new ArgumentException(
-                                    $"DotnetDebugger.justMyCode got incorrect argument ({args})")),
-                                token);
-                        }
-                        return true;
-                    }
             }
 
             return false;
