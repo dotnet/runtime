@@ -45,7 +45,7 @@ namespace System.Net.Security
             // Zeroize sensitive information
             buffer.Fill(0);
 
-            HashCore(source, 0, source.Length, state, count, buffer);
+            HashCore(source, state, count, buffer);
 
             /* Save number of bits */
             Span<byte> bits = stackalloc byte[8];
@@ -56,43 +56,43 @@ namespace System.Net.Security
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
             Span<byte> padding = stackalloc byte[padLen];
             padding[0] = 0x80;
-            HashCore(padding, 0, padLen, state, count, buffer);
+            HashCore(padding, state, count, buffer);
 
             /* Append length (before padding) */
-            HashCore(bits, 0, 8, state, count, buffer);
+            HashCore(bits, state, count, buffer);
 
             /* Write state to destination */
             Encode(destination, state);
         }
 
-        private static void HashCore(ReadOnlySpan<byte> input, int ibStart, int cbSize, Span<uint> state, Span<uint> count, Span<byte> buffer)
+        private static void HashCore(ReadOnlySpan<byte> input, Span<uint> state, Span<uint> count, Span<byte> buffer)
         {
             /* Compute number of bytes mod 64 */
             int index = (int)((count[0] >> 3) & 0x3F);
             /* Update number of bits */
-            count[0] += (uint)(cbSize << 3);
-            if (count[0] < (cbSize << 3))
+            count[0] += (uint)(input.Length << 3);
+            if (count[0] < (input.Length << 3))
                 count[1]++;
-            count[1] += (uint)(cbSize >> 29);
+            count[1] += (uint)(input.Length >> 29);
 
             int partLen = 64 - index;
             int i = 0;
             /* Transform as many times as possible. */
-            if (cbSize >= partLen)
+            if (input.Length >= partLen)
             {
-                BlockCopy(input, ibStart, buffer, index, partLen);
+                BlockCopy(input, 0, buffer, index, partLen);
                 MD4Transform(state, buffer, 0);
 
-                for (i = partLen; i + 63 < cbSize; i += 64)
+                for (i = partLen; i + 63 < input.Length; i += 64)
                 {
-                    MD4Transform(state, input, ibStart + i);
+                    MD4Transform(state, input, i);
                 }
 
                 index = 0;
             }
 
             /* Buffer remaining input */
-            BlockCopy(input, ibStart + i, buffer, index, (cbSize - i));
+            BlockCopy(input, i, buffer, index, (input.Length - i));
         }
 
         //--- private methods ---------------------------------------------------
