@@ -5,6 +5,7 @@
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize />
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Sha1MessageSchedule1.Byte.cs" />
