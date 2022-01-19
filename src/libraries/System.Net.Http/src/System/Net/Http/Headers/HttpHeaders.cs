@@ -1273,7 +1273,9 @@ namespace System.Net.Http.Headers
 
         #region Low-level implementation details that work with _headerStore directly
 
-        // Used to store the CollectionsMarshal.GetValueRefOrAddDefault out parameter
+        // Used to store the CollectionsMarshal.GetValueRefOrAddDefault out parameter.
+        // This is a workaround for the Roslyn bug where we can't use a discard instead:
+        // https://github.com/dotnet/roslyn/issues/56587#issuecomment-934955526
         private static bool s_dictionaryGetValueRefOrAddDefaultExistsDummy;
 
         private const int InitialCapacity = 4;
