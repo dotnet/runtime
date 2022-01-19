@@ -12,7 +12,11 @@ namespace System.Text.Json.Serialization.Metadata
         {
             if (type.IsValueType && Nullable.GetUnderlyingType(type) == null)
             {
-                DefaultValue = Activator.CreateInstance(type);
+#if NETCOREAPP
+                DefaultValue = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(type);
+#else
+                DefaultValue = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(type);
+#endif
             }
         }
 
