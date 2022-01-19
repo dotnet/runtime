@@ -632,6 +632,12 @@ class Runtime_34587
                 succeeded &= X86Sha.IsSupported;
             }
 
+            if (X86Sha.X64.IsSupported)
+            {
+                succeeded &= X86Sha.IsSupported;
+                succeeded &= Sse2.X64.IsSupported;
+            }
+
             return succeeded;
         }
 
