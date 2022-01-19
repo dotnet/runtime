@@ -333,6 +333,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
         public int IsAsync { get; set; }
         public bool IsHiddenFromDebugger { get; }
+        public bool HasStepThroughAttribute { get; }
         public TypeInfo TypeInfo { get; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
@@ -379,7 +380,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
                         if (name == "DebuggerHiddenAttribute")
                         {
-                            this.IsHiddenFromDebugger = true;
+                            IsHiddenFromDebugger = true;
+                            break;
+                        }
+                        if (name == "DebuggerStepThroughAttribute")
+                        {
+                            HasStepThroughAttribute = true;
                             break;
                         }
 
