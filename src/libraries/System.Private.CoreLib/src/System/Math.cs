@@ -1306,6 +1306,8 @@ namespace System
             }
             if (AdvSimd.Arm64.IsSupported && mode == MidpointRounding.AwayFromZero)
             {
+                // For ARM64 we can lower it down to a single instruction FRINTA
+                // For XARCH we have to use the common path
                 return AdvSimd.Arm64.RoundAwayFromZero(Vector128.CreateScalarUnsafe(value)).ToScalar();
             }
 
