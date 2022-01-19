@@ -55,7 +55,7 @@ namespace BINDER_SPACE
         inline StringLexer();
         inline ~StringLexer();
 
-        inline void Init(SString &inputString, BOOL fSupportEscaping);
+        inline void Init(SString &inputString);
 
         static inline BOOL IsWhitespace(WCHAR wcChar);
         static inline BOOL IsEOS(WCHAR wcChar);
@@ -67,7 +67,7 @@ namespace BINDER_SPACE
     protected:
         static const WCHAR INVALID_CHARACTER = -1;
 
-        LEXEME_TYPE GetNextLexeme(SString &currentString, BOOL fPermitUnescapedQuotes = FALSE);
+        LEXEME_TYPE GetNextLexeme(SString &currentString);
 
         inline WCHAR PopCharacter(BOOL *pfIsEscaped);
         inline void PushCharacter(WCHAR wcCurrentChar,
@@ -79,8 +79,7 @@ namespace BINDER_SPACE
         inline WCHAR GetNextCharacter(BOOL *pfIsEscaped);
 
         inline WCHAR ParseUnicode();
-        LEXEME_TYPE ParseString(SString &currentString,
-                                BOOL     fPermitUnescapeQuotes);
+        LEXEME_TYPE ParseString(SString &currentString);
 
         void TrimTrailingWhiteSpaces(SString &currentString);
 
@@ -89,7 +88,6 @@ namespace BINDER_SPACE
 
         WCHAR m_wcCurrentChar;
         BOOL m_fCurrentCharIsEscaped;
-        BOOL m_fSupportEscaping;
         BOOL m_fReadRawCharacter;
     };
 

@@ -222,8 +222,7 @@ namespace BINDER_SPACE
 
     /* static */
     HRESULT TextualIdentityParser::Parse(SString          &textualIdentity,
-                                         AssemblyIdentity *pAssemblyIdentity,
-                                         BOOL              fPermitUnescapedQuotes)
+                                         AssemblyIdentity *pAssemblyIdentity)
     {
         HRESULT hr = S_OK;
 
@@ -233,7 +232,7 @@ namespace BINDER_SPACE
         {
             TextualIdentityParser identityParser(pAssemblyIdentity);
 
-            if (!identityParser.Parse(textualIdentity, fPermitUnescapedQuotes))
+            if (!identityParser.Parse(textualIdentity))
             {
                 IF_FAIL_GO(FUSION_E_INVALID_NAME);
             }
@@ -486,19 +485,19 @@ namespace BINDER_SPACE
         publicKeyOrToken.CloseBuffer(cbPublicKeyOrTokenBLOB * 2);
     }
 
-    BOOL TextualIdentityParser::Parse(SString &textualIdentity, BOOL fPermitUnescapedQuotes)
+    BOOL TextualIdentityParser::Parse(SString &textualIdentity)
     {
         BOOL fIsValid = TRUE;
         SString unicodeTextualIdentity;
 
         // Lexer modifies input string
         textualIdentity.ConvertToUnicode(unicodeTextualIdentity);
-        Init(unicodeTextualIdentity, TRUE /* fSupportEscaping */);
+        Init(unicodeTextualIdentity);
 
         SmallStackSString currentString;
 
         // Identity format is simple name (, attr = value)*
-        GO_IF_NOT_EXPECTED(GetNextLexeme(currentString, fPermitUnescapedQuotes), LEXEME_TYPE_STRING);
+        GO_IF_NOT_EXPECTED(GetNextLexeme(currentString), LEXEME_TYPE_STRING);
         m_pAssemblyIdentity->m_simpleName.Set(currentString);
         m_pAssemblyIdentity->m_simpleName.Normalize();
         m_pAssemblyIdentity->SetHave(AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME);
@@ -532,7 +531,7 @@ namespace BINDER_SPACE
 
         // Lexer modifies input string
         textualString.ConvertToUnicode(unicodeTextualString);
-        Init(unicodeTextualString, TRUE /* fSupportEscaping */);
+        Init(unicodeTextualString);
 
         SmallStackSString currentString;
         GO_IF_NOT_EXPECTED(GetNextLexeme(currentString), LEXEME_TYPE_STRING);

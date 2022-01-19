@@ -25,11 +25,10 @@ StringLexer::~StringLexer()
     // Nothing to do here
 }
 
-void StringLexer::Init(SString &inputString, BOOL fSupportEscaping)
+void StringLexer::Init(SString &inputString)
 {
     m_cursor = inputString.Begin();
     m_end = inputString.End();
-    m_fSupportEscaping = fSupportEscaping;
     m_fReadRawCharacter = FALSE;
 }
 
@@ -146,52 +145,34 @@ WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
     {
         WCHAR wcTempChar = GetRawCharacter(); // DecodeUTF16Character()
 
-        if (m_fSupportEscaping)
+        // Handle standard escapes
+        switch (wcTempChar)
         {
-            // Handle standard escapes
-            switch (wcTempChar)
-            {
-            case L'"':
-            case L'\'':
-            case L',':
-            case L'\\':
-            case L'/':
-            case L'=':
-                break;
-            case L't':
-                wcTempChar = 9;
-                break;
-            case L'n':
-                wcTempChar = 10;
-                break;
-            case L'r':
-                wcTempChar = 13;
-                break;
-            case L'u':
-                wcTempChar = ParseUnicode();
-                break;
-            default:
-                return INVALID_CHARACTER;
-            }
+        case L'"':
+        case L'\'':
+        case L',':
+        case L'\\':
+        case L'/':
+        case L'=':
+            break;
+        case L't':
+            wcTempChar = 9;
+            break;
+        case L'n':
+            wcTempChar = 10;
+            break;
+        case L'r':
+            wcTempChar = 13;
+            break;
+        case L'u':
+            wcTempChar = ParseUnicode();
+            break;
+        default:
+            return INVALID_CHARACTER;
+        }
 
-            *pfIsEscaped = TRUE;
-            wcCurrentChar = wcTempChar;
-        }
-        else
-        {
-            // Do not handle escapes except for quotes
-            switch (wcTempChar)
-            {
-            case L'"':
-            case L'\'':
-                *pfIsEscaped = TRUE;
-                wcCurrentChar = wcTempChar;
-                break;
-            default:
-                PushRawCharacter();
-                break;
-            }
-        }
+        *pfIsEscaped = TRUE;
+        wcCurrentChar = wcTempChar;
     }
 
     return wcCurrentChar;
