@@ -295,6 +295,7 @@ namespace System.IO
             _byteLen = 0;
             _charLen = 0;
             _charPos = 0;
+            _checkPreamble = _encoding.Preamble.Length > 0;
             // in general we'd like to have an invariant that encoding isn't null. However,
             // for startup improvements for NullStreamReader, we want to delay load encoding.
             if (_encoding != null)
