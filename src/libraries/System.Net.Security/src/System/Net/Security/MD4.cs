@@ -82,11 +82,11 @@ namespace System.Net.Security
             if (input.Length >= partLen)
             {
                 BlockCopy(input, 0, buffer, index, partLen);
-                MD4Transform(state, buffer, 0);
+                MD4Transform(state, buffer);
 
                 for (i = partLen; i + 63 < input.Length; i += 64)
                 {
-                    MD4Transform(state, input, i);
+                    MD4Transform(state, input.Slice(i));
                 }
 
                 index = 0;
@@ -150,15 +150,15 @@ namespace System.Net.Security
             }
         }
 
-        private static void Decode(Span<uint> output, ReadOnlySpan<byte> input, int index)
+        private static void Decode(Span<uint> output, ReadOnlySpan<byte> input)
         {
-            for (int i = 0, j = index; i < output.Length; i++, j += 4)
+            for (int i = 0, j = 0; i < output.Length; i++, j += 4)
             {
                 output[i] = BinaryPrimitives.ReadUInt32LittleEndian(input.Slice(j));
             }
         }
 
-        private static void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block, int index)
+        private static void MD4Transform(Span<uint> state, ReadOnlySpan<byte> block)
         {
             uint a = state[0];
             uint b = state[1];
@@ -166,7 +166,7 @@ namespace System.Net.Security
             uint d = state[3];
             Span<uint> x = stackalloc uint[16];
 
-            Decode(x, block, index);
+            Decode(x, block);
 
             /* Round 1 */
             FF(ref a, b, c, d, x[0], S11); /* 1 */
