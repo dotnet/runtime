@@ -284,7 +284,6 @@ namespace System.IO
                 (rights & FileSystemRights.ReadAttributes) != 0 ||
                 (rights & FileSystemRights.ReadPermissions) != 0 ||
                 (rights & FileSystemRights.TakeOwnership) != 0 ||
-                (rights & FileSystemRights.Synchronize) != 0 ||
                 ((int)rights & Interop.Kernel32.GenericOperations.GENERIC_READ) != 0)
             {
                 access = FileAccess.Read;
@@ -302,7 +301,10 @@ namespace System.IO
                 access |= FileAccess.Write;
             }
 
-            Debug.Assert(access != 0);
+            if (access == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(rights));
+            }
 
             return access;
         }

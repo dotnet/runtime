@@ -343,7 +343,7 @@ namespace System.IO
         public void FileInfo_Create_FileSecurity_OpenOrCreateMode_ReadRights_AllowedCombo(FileSystemRights rights) =>
             FileInfo_Create_FileSecurity_Successful(FileMode.OpenOrCreate, rights);
 
-        // Append, Craete and CreateNew allow using CreateFiles rights
+        // Append, Create and CreateNew allow using CreateFiles rights
         // These combinations were excluded from WriteModes_ReadRights_ForbiddenCombo_Data
         [Theory]
         [InlineData(FileMode.Append)]
@@ -389,15 +389,17 @@ namespace System.IO
         public void FileInfo_Create_FileSecurity_TruncateMode_IncompleteWriteRights(FileSystemRights rights) =>
             FileInfo_Create_FileSecurity_ArgumentException(FileMode.Truncate, rights);
 
-        // Truncate suceeds if all write rights are included
-        
-        // In .NET Framework, throws Could not find file (filename)
-        // In .NET, throws IOException: The parameter is incorrect (filename)
         [Fact]
-        [ActiveIssue("Doesnt work in either .NET Framework or .NET, even though .NET Framework code expects this specific combo to succeed")]
-        public void FileInfo_Create_FileSecurity_TruncateMode_AllWriteRights() =>
-            // Write contains AppendData, WriteAttributes, WriteData and WriteExtendedAttributes
-            FileInfo_Create_FileSecurity_Successful(FileMode.Truncate, FileSystemRights.Write | FileSystemRights.ReadData);
+        public void FileInfo_Create_FileSecurity_TruncateMode_AllWriteRights_Throws()
+        {
+            // Truncate, with all write rights, throws with different messages in each framework:
+            // - In .NET Framework, throws "Could not find file"
+            // - In .NET, throws IOException: "The parameter is incorrect"
+
+            var security = new FileSecurity();
+            var info = new FileInfo(Guid.NewGuid().ToString());
+            Assert.Throws<IOException>(() => info.Create(FileMode.Truncate, FileSystemRights.Write | FileSystemRights.ReadData, FileShare.None, DefaultBufferSize, FileOptions.None, security));
+        }
 
         public static IEnumerable<object[]> WriteRights_AllArguments_Data() =>
             from mode in s_writableModes
@@ -406,7 +408,8 @@ namespace System.IO
             from options in Enum.GetValues<FileOptions>()
             where !(rights == FileSystemRights.CreateFiles &&
                     (mode == FileMode.Append || mode == FileMode.Create || mode == FileMode.CreateNew)) &&
-                  !(mode == FileMode.Truncate && rights != FileSystemRights.Write)
+                  !(mode == FileMode.Truncate && rights != FileSystemRights.Write) &&
+                  options != FileOptions.Encrypted // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
             select new object[] { mode, rights, share, options };
 
         [Theory]
@@ -429,6 +432,7 @@ namespace System.IO
             from rights in s_readableRights
             from share in Enum.GetValues<FileShare>()
             from options in Enum.GetValues<FileOptions>()
+            where options != FileOptions.Encrypted // Using FileOptions.Encrypted throws UnauthorizedAccessException when attempting to read the created file
             select new object[] { mode, rights, share, options };
 
         [Theory]
@@ -487,7 +491,6 @@ namespace System.IO
         #region DirectorySecurity CreateDirectory
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void DirectorySecurity_CreateDirectory_NullSecurity()
         {
             DirectorySecurity security = null;
