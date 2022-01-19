@@ -384,6 +384,18 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?(a)a)", "(?(a)a|)")]
         [InlineData("(?(abc)def)", "(?(abc)def|)")]
         [InlineData("(?(\\w)\\d)", "(?(\\w)\\d|)")]
+        // Loops inside alternation constructs
+        [InlineData("(abc*|def)ghi", "(ab(?>c*)|def)ghi")]
+        [InlineData("(abc|def*)ghi", "(abc|de(?>f*))ghi")]
+        [InlineData("(abc*|def*)ghi", "(ab(?>c*)|de(?>f*))ghi")]
+        [InlineData("(abc*|def*)", "(ab(?>c*)|de(?>f*))")]
+        [InlineData("(?(\\w)abc*|def*)ghi", "(?(\\w)ab(?>c*)|de(?>f*))ghi")]
+        [InlineData("(?(\\w)abc*|def*)", "(?(\\w)ab(?>c*)|de(?>f*))")]
+        [InlineData("(?(xyz*)abc|def)", "(?(xy(?>z*))abc|def)")]
+        [InlineData("(?(xyz*)abc|def)\\w", "(?(xy(?>z*))abc|def)\\w")]
+        // Loops followed by alternation constructs
+        [InlineData("a*(bcd|efg)", "(?>a*)(bcd|efg)")]
+        [InlineData("a*(?(xyz)bcd|efg)", "(?>a*)(?(xyz)bcd|efg)")]
         // Auto-atomicity
         [InlineData("a*b", "(?>a*)b")]
         [InlineData("a*b+", "(?>a*)(?>b+)")]
@@ -499,6 +511,18 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(w+)+", "((?>w+))+")]
         [InlineData("(w{1,2})+", "((?>w{1,2}))+")]
         [InlineData("(?:ab|cd|ae)f", "(?>ab|cd|ae)f")]
+        // Loops inside alternation constructs
+        [InlineData("(abc*|def)chi", "(ab(?>c*)|def)chi")]
+        [InlineData("(abc|def*)fhi", "(abc|de(?>f*))fhi")]
+        [InlineData("(abc*|def*)\\whi", "(ab(?>c*)|de(?>f*))\\whi")]
+        [InlineData("(?(\\w)abc*|def*)\\whi", "(?(\\w)ab(?>c*)|de(?>f*))\\whi")]
+        // Loops followed by alternation constructs
+        [InlineData("a*(bcd|afg)", "(?>a*)(bcd|afg)")]
+        [InlineData("(a*)(?(1)bcd|efg)", "((?>a*))(?(1)bcd|efg)")]
+        [InlineData("a*(?(abc)bcd|efg)", "(?>a*)(?(abc)bcd|efg)")]
+        [InlineData("a*(?(xyz)acd|efg)", "(?>a*)(?(xyz)acd|efg)")]
+        [InlineData("a*(?(xyz)bcd|afg)", "(?>a*)(?(xyz)bcd|afg)")]
+        [InlineData("a*(?(xyz)bcd)", "(?>a*)(?(xyz)bcd)")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
             string result1 = GetRegexCodes(new Regex(pattern1));
@@ -545,6 +569,20 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", 1)]
         [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", 3)]
         [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", 1)]
+        [InlineData(@"(?(\d)\d{3}|\d)", 1)]
+        [InlineData(@"(?(\d{7})\d{3}|\d{2})", 2)]
+        [InlineData(@"(?(\d{7})\d{2}|\d{3})", 2)]
+        [InlineData(@"(?(\d)\d{3}|\d{2})", 2)]
+        [InlineData(@"(?(\d)|\d{2})", 0)]
+        [InlineData(@"(?(\d)\d{3})", 0)]
+        [InlineData(@"(abc)(?(1)\d{3}|\d{2})", 5)]
+        [InlineData(@"(abc)(?(1)\d{2}|\d{3})", 5)]
+        [InlineData(@"(abc)(?(1)|\d{2})", 3)]
+        [InlineData(@"(abc)(?(1)\d{3})", 3)]
+        [InlineData(@"(abc|)", 0)]
+        [InlineData(@"(|abc)", 0)]
+        [InlineData(@"(?(x)abc|)", 0)]
+        [InlineData(@"(?(x)|abc)", 0)]
         public void MinRequiredLengthIsCorrect(string pattern, int expectedLength)
         {
             var r = new Regex(pattern);
