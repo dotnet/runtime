@@ -1386,14 +1386,15 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public RegexNode? FindBranchOneOrMultiStart()
         {
-            RegexNode branch = this;
+            RegexNode branch = Type == Concatenate ? Child(0) : this;
+            return branch.Type is One or Multi ? branch : null;
+        }
 
-            if (branch.Type == Concatenate)
-            {
-                branch = branch.Child(0);
-            }
-
-            return branch.Type == One || branch.Type == Multi ? branch : null;
+        /// <summary>Same as <see cref="FindBranchOneOrMultiStart"/> but also for Sets.</summary>
+        public RegexNode? FindBranchOneMultiOrSetStart()
+        {
+            RegexNode branch = Type == Concatenate ? Child(0) : this;
+            return branch.Type is One or Multi or Set ? branch : null;
         }
 
         /// <summary>Gets the character that begins a One or Multi.</summary>
