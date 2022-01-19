@@ -378,8 +378,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        var stopSearch = true;
-                        //WHAT ABOUT MULTIPLE DECORATORS?
                         switch (name)
                         {
                             case "DebuggerHiddenAttribute":
@@ -394,12 +392,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "DebuggerStepperBoundaryAttribute":
                                 DebuggerAttrInfo.HasStepperBoundary = true;
                                 break;
-                            default:
-                                stopSearch = false;
-                                break;
                         }
-                        if (stopSearch)
-                            break;
 
                     }
                 }
