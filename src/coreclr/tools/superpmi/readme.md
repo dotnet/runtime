@@ -1,6 +1,6 @@
 # Overview
 
-This directory (`src/coreclr/ToolBox/superpmi` in the GitHub
+This directory (`src/coreclr/tools/superpmi` in the GitHub
 https://github.com/dotnet/runtime repository) contains the SuperPMI
 tool used for testing the .NET just-in-time (JIT) compiler.
 

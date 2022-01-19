@@ -83,6 +83,7 @@ namespace System.Text.Unicode
         public static System.Text.Unicode.UnicodeRange AlphabeticPresentationForms { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Arabic { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange ArabicExtendedA { get { throw null; } }
+        public static System.Text.Unicode.UnicodeRange ArabicExtendedB { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange ArabicPresentationFormsA { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange ArabicPresentationFormsB { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange ArabicSupplement { get { throw null; } }

@@ -322,8 +322,6 @@ FCFuncStart(gDelegateFuncs)
 FCFuncEnd()
 
 FCFuncStart(gMathFuncs)
-    FCFuncElementSig("Abs", &gsig_SM_Dbl_RetDbl, COMDouble::Abs)
-    FCFuncElementSig("Abs", &gsig_SM_Flt_RetFlt, COMSingle::Abs)
     FCFuncElement("Acos", COMDouble::Acos)
     FCFuncElement("Acosh", COMDouble::Acosh)
     FCFuncElement("Asin", COMDouble::Asin)

@@ -463,6 +463,12 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+#if defined(DEBUG)
+// Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
+CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
+// Place patchpoint at the specified IL offset, if possible. Overrides random placement.
+CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1)
+#endif // debug
 
 #if defined(DEBUG)
 CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
