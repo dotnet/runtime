@@ -1,0 +1,8 @@
+<Project>
+    <!--Contains the Complete Names for each library test to be skipped.-->
+    <ItemGroup>
+        <!--SkipTests Include="Microsoft.CSharp.RuntimeBinder.Tests.DynamicDebuggerProxyTests.Items_Empty" /-->
+
+    </ItemGroup>
+
+</Project>

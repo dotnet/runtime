@@ -1,4 +1,5 @@
 <Project>
+<Import Project="../../../libraries_skip.props" />
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestResultsName>testResults.xml</TestResultsName>
@@ -13,6 +14,7 @@
     <RunScriptCommand>$(RunScriptCommand) $(TargetFileName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -nologo</RunScriptCommand>
+    <RunScriptCommand>$(RunScriptCommand) -nomethod @(SkipTests, '-nomethod')</RunScriptCommand>
     <RunScriptCommand Condition="'$(ArchiveTests)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(TestDisableAppDomain)' == 'true'">$(RunScriptCommand) -noappdomain</RunScriptCommand>
     <RunScriptCommand Condition="'$(TestDisableParallelization)' == 'true'">$(RunScriptCommand) -maxthreads 1</RunScriptCommand>
