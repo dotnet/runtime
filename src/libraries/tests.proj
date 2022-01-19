@@ -343,11 +343,19 @@ Roslyn4.0.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Drawing.Common\tests\System.Drawing.Common.Tests.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TestSingleFile)' == 'true'">
+  <ItemGroup Condition="'$(TestSingleFile)' == 'true' and '$(TestNativeAot)' != 'true'">
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
+    <!-- Run only a small randomly chosen set of passing test suites -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" Condition="'$(TargetOS)' != 'OSX'" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" Condition="'$(__DistroRid)' != 'linux-musl-x64'"/>
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true'">
