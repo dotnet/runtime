@@ -8,6 +8,8 @@
     <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
+    <!-- CS8981: The type name 'libc' only contains lower-cased ascii characters. Such names may become reserved for the language. -->
+    <NoWarn>$(NoWarn);CS8981</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">
