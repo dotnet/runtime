@@ -415,7 +415,6 @@ add_executable_clr(paltests
   c_runtime/wcsstr/test1/test1.cpp
   c_runtime/wcstod/test1/test1.cpp
   c_runtime/wcstod/test2/test2.cpp
-  c_runtime/wcstok/test1/test1.cpp
   c_runtime/wcstoul/test1/test1.cpp
   c_runtime/wcstoul/test2/test2.cpp
   c_runtime/wcstoul/test3/test3.cpp

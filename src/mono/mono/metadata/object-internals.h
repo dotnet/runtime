@@ -1666,7 +1666,7 @@ mono_class_set_ref_info (MonoClass *klass, MonoObjectHandle obj);
 void
 mono_class_free_ref_info (MonoClass *klass);
 
-MonoObject *
+MONO_COMPONENT_API MonoObject *
 mono_object_new_pinned (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle

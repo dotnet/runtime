@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-const unsigned short GenTree::gtOperKindTable[] = {
+const unsigned char GenTree::gtOperKindTable[] = {
 #define GTNODE(en, st, cm, ok) (ok) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
@@ -1316,7 +1316,7 @@ AGAIN:
 
     /* Is this a constant node? */
 
-    if (kind & GTK_CONST)
+    if (op1->OperIsConst())
     {
         switch (oper)
         {
@@ -1774,9 +1774,9 @@ AGAIN:
 
     hash = genTreeHashAdd(hash, oper);
 
-    /* Is this a constant or leaf node? */
+    /* Is this a leaf node? */
 
-    if (kind & (GTK_CONST | GTK_LEAF))
+    if (kind & GTK_LEAF)
     {
         size_t add;
 
@@ -3219,9 +3219,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     costSz = -1;
 #endif
 
-    /* Is this a constant or a leaf node? */
+    /* Is this a leaf node? */
 
-    if (kind & (GTK_LEAF | GTK_CONST))
+    if (kind & GTK_LEAF)
     {
         switch (oper)
         {
@@ -4191,7 +4191,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
             }
         }
-        else if (kind & GTK_RELOP)
+        else if (GenTree::OperIsCompare(oper))
         {
             /* Float compares remove both operands from the FP stack */
             /* Also FP comparison uses EAX for flags */
@@ -4265,7 +4265,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
            such cases, both sides have a level of 0. So encourage constants
            to be evaluated last in such cases */
 
-        if ((level == 0) && (level == lvl2) && (op1->OperKind() & GTK_CONST) &&
+        if ((level == 0) && (level == lvl2) && op1->OperIsConst() &&
             (tree->OperIsCommutative() || tree->OperIsCompare()))
         {
             lvl2++;
@@ -4325,7 +4325,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             // Try to force extra swapping when in the stress mode:
             if (compStressCompile(STRESS_REVERSE_FLAG, 60) && ((tree->gtFlags & GTF_REVERSE_OPS) == 0) &&
-                ((op2->OperKind() & GTK_CONST) == 0))
+                !op2->OperIsConst())
             {
                 tryToSwap = true;
             }
@@ -7182,9 +7182,9 @@ GenTree* Compiler::gtCloneExpr(
     unsigned   kind = tree->OperKind();
     GenTree*   copy;
 
-    /* Is this a constant or leaf node? */
+    /* Is this a leaf node? */
 
-    if (kind & (GTK_CONST | GTK_LEAF))
+    if (kind & GTK_LEAF)
     {
         switch (oper)
         {
@@ -10063,7 +10063,7 @@ void Compiler::gtDispClassLayout(ClassLayout* layout, var_types type)
 /*****************************************************************************/
 void Compiler::gtDispConst(GenTree* tree)
 {
-    assert(tree->OperKind() & GTK_CONST);
+    assert(tree->OperIsConst());
 
     switch (tree->gtOper)
     {
@@ -10274,7 +10274,7 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 
 void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 {
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
     {
         gtDispConst(tree);
         return;
@@ -11590,7 +11590,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
     if ((kind & GTK_UNOP) && op1)
     {
-        if (op1->OperKind() & GTK_CONST)
+        if (op1->OperIsConst())
         {
             return gtFoldExprConst(tree);
         }
@@ -11603,12 +11603,12 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
 
         // The atomic operations are exempted here because they are never computable statically;
         // one of their arguments is an address.
-        if (((op1->OperKind() & op2->OperKind()) & GTK_CONST) && !tree->OperIsAtomicOp())
+        if (op1->OperIsConst() && op2->OperIsConst() && !tree->OperIsAtomicOp())
         {
             /* both nodes are constants - fold the expression */
             return gtFoldExprConst(tree);
         }
-        else if ((op1->OperKind() | op2->OperKind()) & GTK_CONST)
+        else if (op1->OperIsConst() || op2->OperIsConst())
         {
             /* at least one is a constant - see if we have a
              * special operator that can use only one constant
@@ -12360,14 +12360,14 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
         case GT_DIV:
         case GT_UDIV:
-            if ((op2 == cons) && (val == 1) && !(op1->OperKind() & GTK_CONST))
+            if ((op2 == cons) && (val == 1) && !op1->OperIsConst())
             {
                 goto DONE_FOLD;
             }
             break;
 
         case GT_SUB:
-            if ((op2 == cons) && (val == 0) && !(op1->OperKind() & GTK_CONST))
+            if ((op2 == cons) && (val == 0) && !op1->OperIsConst())
             {
                 goto DONE_FOLD;
             }
@@ -13984,7 +13984,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             {
                 JITDUMP("Double operator(s) is NaN\n");
 
-                if (tree->OperIsRelop())
+                if (tree->OperIsCompare())
                 {
                     if (tree->gtFlags & GTF_RELOP_NAN_UN)
                     {
@@ -15699,7 +15699,7 @@ bool GenTree::isContained() const
     // these actually produce a register (the flags reg, we just don't model it)
     // and are a separate instruction from the branch that consumes the result.
     // They can only produce a result if the child is a SIMD equality comparison.
-    else if (OperKind() & GTK_RELOP)
+    else if (OperIsCompare())
     {
         assert(isMarkedContained == false);
     }
@@ -15930,26 +15930,26 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
 //    this: ADD(CONST FldSeq, baseAddr)
 //
 // Arguments:
-//    comp    - the Compiler object
-//    pObj    - [out] parameter for instance fields, the object reference
-//    pStatic - [out] parameter for static fields, the base address
-//    pFldSeq - [out] parameter for the field sequence
+//    comp      - the Compiler object
+//    pBaseAddr - [out] parameter for "the base address"
+//    pFldSeq   - [out] parameter for the field sequence
 //
 // Return Value:
 //    If "this" matches patterns denoted above, and the FldSeq found is "full",
 //    i. e. starts with a class field or a static field, and includes all the
 //    struct fields that this tree represents the address of, this method will
-//    return "true" and set either "pObj" or "pStatic" to some value, which must
-//    be used by the caller as the key into the "first field map" to obtain the
-//    actual value for the field.
+//    return "true" and set either "pBaseAddr" to some value, which must be used
+//    by the caller as the key into the "first field map" to obtain the actual
+//    value for the field. For instance fields, "base address" will be the object
+//    reference, for statics - the address to which the field offset with the
+//    field sequence is added, see "impImportStaticFieldAccess" and "fgMorphField".
 //
-bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
+bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq)
 {
     assert(TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
 
-    *pObj    = nullptr;
-    *pStatic = nullptr;
-    *pFldSeq = FieldSeqStore::NotAField();
+    *pBaseAddr = nullptr;
+    *pFldSeq   = FieldSeqStore::NotAField();
 
     GenTree*      baseAddr = nullptr;
     FieldSeqNode* fldSeq   = nullptr;
@@ -16006,8 +16006,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
         // TODO-VNTypes: we will always return the "baseAddr" here for now, but strictly speaking,
         // we only need to do that if we have a shared field, to encode the logical "instantiation"
         // argument. In all other cases, this serves no purpose and just leads to redundant maps.
-        *pStatic = baseAddr;
-        *pFldSeq = fldSeq;
+        *pBaseAddr = baseAddr;
+        *pFldSeq   = fldSeq;
         return true;
     }
 
@@ -16015,8 +16015,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, Fie
     {
         assert(!comp->eeIsValueClass(comp->info.compCompHnd->getFieldClass(fldSeq->GetFieldHandle())));
 
-        *pObj    = baseAddr;
-        *pFldSeq = fldSeq;
+        *pBaseAddr = baseAddr;
+        *pFldSeq   = fldSeq;
         return true;
     }
 

@@ -226,7 +226,7 @@ namespace System.IO
         {
             ReadOnlySpan<char> fileName = GetFileName(path);
             int lastPeriod = fileName.LastIndexOf('.');
-            return lastPeriod == -1 ?
+            return lastPeriod < 0 ?
                 fileName : // No extension was found
                 fileName.Slice(0, lastPeriod);
         }

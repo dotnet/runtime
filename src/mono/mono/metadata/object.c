@@ -44,6 +44,7 @@
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -2854,6 +2855,9 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	if (field->offset == -1) {
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			return mono_metadata_update_get_static_field_addr (field);
+		}
 		/* Special static */
 		ERROR_DECL (error);
 		gpointer addr = mono_special_static_field_get_offset (field, error);

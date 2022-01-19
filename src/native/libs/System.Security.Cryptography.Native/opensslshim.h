@@ -270,6 +270,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(ERR_load_crypto_strings) \
     LIGHTUP_FUNCTION(ERR_new) \
     REQUIRED_FUNCTION(ERR_peek_error) \
+    REQUIRED_FUNCTION(ERR_peek_error_line) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
     FALLBACK_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
@@ -728,6 +729,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_load_crypto_strings ERR_load_crypto_strings_ptr
 #define ERR_new ERR_new_ptr
 #define ERR_peek_error ERR_peek_error_ptr
+#define ERR_peek_error_line ERR_peek_error_line_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr

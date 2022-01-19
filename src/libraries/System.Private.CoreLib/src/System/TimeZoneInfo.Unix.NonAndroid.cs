@@ -89,15 +89,15 @@ namespace System
                             // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
 
                             int firstTabIndex = zoneTabFileLine.IndexOf('\t');
-                            if (firstTabIndex != -1)
+                            if (firstTabIndex >= 0)
                             {
                                 int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
-                                if (secondTabIndex != -1)
+                                if (secondTabIndex >= 0)
                                 {
                                     string timeZoneId;
                                     int startIndex = secondTabIndex + 1;
                                     int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
-                                    if (thirdTabIndex != -1)
+                                    if (thirdTabIndex >= 0)
                                     {
                                         int length = thirdTabIndex - startIndex;
                                         timeZoneId = zoneTabFileLine.Substring(startIndex, length);
