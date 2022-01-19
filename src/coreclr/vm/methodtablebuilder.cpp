@@ -8648,6 +8648,14 @@ MethodTableBuilder::HandleExplicitLayout(
                 BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
             }
         }
+
+        if (!numInstanceFieldBytes.IsOverflow() && numInstanceFieldBytes.Value() == 0)
+        {
+            // If we calculate a 0-byte size here, we should have also calculated a 0-byte size
+            // in the initial layout algorithm.
+            _ASSERTE(GetLayoutInfo()->IsZeroSized());
+            numInstanceFieldBytes = S_UINT32(1);
+        }
     }
 
     // The GC requires that all valuetypes containing orefs be sized to a multiple of TARGET_POINTER_SIZE.
