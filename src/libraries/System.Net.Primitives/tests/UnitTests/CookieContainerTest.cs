@@ -866,6 +866,25 @@ namespace System.Net.Primitives.Unit.Tests
             Assert.Throws<CookieException>(() => container.SetCookies(uri, cookie));
         }
 
+        [Fact]
+        public void SetCookies_DomainCheckSuccess_IgnoresLeadingDot()
+        {
+            var domain = "example.com";
+            var domainWithLeadingDot = '.' + domain;
+            var uri = new Uri($"https://{domain}/", UriKind.Absolute);
+            var container = new CookieContainer();
+
+            // First HTTP response...
+            container.SetCookies(uri, $"foo=bar; Path=/; Domain={domain}");
+
+            // Second HTTP response...
+            container.SetCookies(uri, $"foo=baz; Path=/; Domain={domainWithLeadingDot}");
+
+            CookieCollection acceptedCookies = container.GetCookies(uri);
+            Assert.Equal(1, acceptedCookies.Count);
+            Assert.Equal(domainWithLeadingDot, acceptedCookies[0].Domain);
+        }
+
         // Test default-path calculation as defined in
         // https://tools.ietf.org/html/rfc6265#section-5.1.4
         public static readonly TheoryData<string, string> DefaultPathData = new TheoryData<string, string>()

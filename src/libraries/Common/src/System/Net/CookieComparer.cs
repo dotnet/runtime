@@ -14,7 +14,7 @@ namespace System.Net
                 return result;
             }
 
-            if ((result = string.Compare(left.Domain, right.Domain, StringComparison.OrdinalIgnoreCase)) != 0)
+            if ((result = Cookie.CompareDomain(left.Domain, right.Domain)) != 0)
             {
                 return result;
             }
