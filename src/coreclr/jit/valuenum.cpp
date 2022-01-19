@@ -8530,16 +8530,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // The conservative interpretation always gets a new, unique VN.
                     clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
 
-                    // The ValueNum returned must represent the full-sized IL-Stack value
-                    // If we need to widen this value then we need to introduce a VNF_Cast here to represent
-                    // the widened value.    This is necessary since the CSE package can replace all occurrences
-                    // of a given ValueNum with a LclVar that is a full-sized IL-Stack value
-                    //
-                    if (varTypeIsSmall(tree->TypeGet()))
-                    {
-                        var_types castToType = tree->TypeGet();
-                        clsVarVNPair         = vnStore->VNPairForCast(clsVarVNPair, castToType, castToType);
-                    }
                     tree->gtVNPair = clsVarVNPair;
                 }
                 else
