@@ -6791,9 +6791,9 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 #ifdef HOST_WASM
 /**
  * mono_string_instance_is_interned:
- * Searches the interned string table for the provided string instance.
+ * Checks to see if the string instance has its interned flag set.
  * \param str String to probe
- * \returns TRUE if the string is interned, FALSE otherwise.
+ * \returns TRUE if the string instance is interned, FALSE otherwise.
  */
 int
 mono_string_instance_is_interned (MonoString *str)
