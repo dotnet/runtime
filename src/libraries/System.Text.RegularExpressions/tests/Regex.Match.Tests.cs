@@ -1026,6 +1026,18 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData(string.Empty, 1, 0)
                     }
                 };
+                yield return new object[]
+                {
+                    engine,
+                    "(d+?)(e*?)(f+)", "dddeeefff", RegexOptions.None, 0, 9,
+                    new CaptureData[]
+                    {
+                        new CaptureData("dddeeefff", 0, 9),
+                        new CaptureData("ddd", 0, 3),
+                        new CaptureData("eee", 3, 3),
+                        new CaptureData("fff", 6, 3),
+                    }
+                };
 
                 // Noncapturing group : Actual - "(a+)(?:b*)(ccc)"
                 yield return new object[]
