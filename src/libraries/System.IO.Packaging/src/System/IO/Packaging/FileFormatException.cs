@@ -55,7 +55,7 @@ namespace System.IO
             : base(
                 sourceUri == null
                 ? SR.FileFormatException
-                : SR.FileFormatExceptionWithFileName)
+                : SR.Format(SR.FileFormatExceptionWithFileName, sourceUri))
         {
             _sourceUri = sourceUri;
         }
@@ -89,7 +89,7 @@ namespace System.IO
             : base(
                 sourceUri == null
                 ? SR.FileFormatException
-                : SR.FileFormatExceptionWithFileName,
+                : SR.Format(SR.FileFormatExceptionWithFileName, sourceUri),
                 innerException)
         {
             _sourceUri = sourceUri;
