@@ -56,9 +56,9 @@ namespace Microsoft.DiaSymReader
             var inst = ISymNGenWriter2Inst;
             var func = (delegate* unmanaged<IntPtr, IntPtr, ushort, ulong, int>)(*(*(void***)inst + 3 /* ISymNGenWriter2.AddSymbol slot */));
             int hr = func(inst, strLocal, iSection, rva);
+            Marshal.FreeBSTR(strLocal);
             if (hr != 0)
             {
-                Marshal.FreeBSTR(strLocal);
                 Marshal.ThrowExceptionForHR(hr);
             }
         }
@@ -76,14 +76,18 @@ namespace Microsoft.DiaSymReader
 
         public unsafe void OpenModW(string wszModule, string wszObjFile, out UIntPtr ppmod)
         {
-            IntPtr moduleLocal = Marshal.StringToBSTR(wszModule);
-            IntPtr objLocal = Marshal.StringToBSTR(wszObjFile);
             var inst = ISymNGenWriter2Inst;
-            var func = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, out UIntPtr, int>)(*(*(void***)inst + 5));
-            int hr = func(inst, moduleLocal, objLocal, out ppmod);
-            if (hr != 0)
+            fixed (char* wszModulePtr = wszModule)
+            fixed (char* wszObjFilePtr = wszObjFile)
             {
-                Marshal.ThrowExceptionForHR(hr);
+                UIntPtr ppmodPtr;
+                var func = (delegate* unmanaged<IntPtr, char*, char*, UIntPtr*, int>)(*(*(void***)inst + 5));
+                int hr = func(inst, wszModulePtr, wszObjFilePtr, &ppmodPtr);
+                ppmod = ppmodPtr;
+                if (hr != 0)
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
             }
         }
 
@@ -98,7 +102,7 @@ namespace Microsoft.DiaSymReader
             }
         }
 
-        public unsafe void ModAddSymbols(UIntPtr pmod, [MarshalAs(UnmanagedType.LPArray)] byte[] pbSym, int cb)
+        public unsafe void ModAddSymbols(UIntPtr pmod, byte[] pbSym, int cb)
         {
             fixed (byte* pbSymPtr = pbSym)
             {
