@@ -29442,11 +29442,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //!USE_REGIONS
 
         {
-#ifdef FEATURE_PREMORTEM_FINALIZATION
-            finalize_queue->UpdatePromotedGenerations (condemned_gen_number,
-                                                       (!settings.demotion && settings.promotion));
-#endif // FEATURE_PREMORTEM_FINALIZATION
-
 #ifdef MULTIPLE_HEAPS
             dprintf(3, ("Joining after end of compaction"));
             gc_t_join.join(this, gc_join_adjust_handle_age_compact);
@@ -29468,6 +29463,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 gc_t_join.restart();
             }
 #endif //MULTIPLE_HEAPS
+
+#ifdef FEATURE_PREMORTEM_FINALIZATION
+            finalize_queue->UpdatePromotedGenerations (condemned_gen_number,
+                                                       (!settings.demotion && settings.promotion));
+#endif // FEATURE_PREMORTEM_FINALIZATION
 
             ScanContext sc;
             sc.thread_number = heap_number;
@@ -29648,13 +29648,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 generation_free_obj_space (generation_of (max_generation))));
         }
 
-#ifdef FEATURE_PREMORTEM_FINALIZATION
-        if (!special_sweep_p)
-        {
-            finalize_queue->UpdatePromotedGenerations (condemned_gen_number, TRUE);
-        }
-#endif // FEATURE_PREMORTEM_FINALIZATION
-
 #ifdef MULTIPLE_HEAPS
         dprintf(3, ("Joining after end of sweep"));
         gc_t_join.join(this, gc_join_adjust_handle_age_sweep);
@@ -29695,6 +29688,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
             gc_t_join.restart();
 #endif //MULTIPLE_HEAPS
         }
+
+#ifdef FEATURE_PREMORTEM_FINALIZATION
+        if (!special_sweep_p)
+        {
+            finalize_queue->UpdatePromotedGenerations (condemned_gen_number, TRUE);
+        }
+#endif // FEATURE_PREMORTEM_FINALIZATION
 
         if (!special_sweep_p)
         {
