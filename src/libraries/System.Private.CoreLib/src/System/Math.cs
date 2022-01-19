@@ -1299,30 +1299,22 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
-            if (AdvSimd.Arm64.IsSupported)
+            // Inline the most common cases
+            if (mode == MidpointRounding.ToEven)
             {
-                // Inline the most common cases
-                if (mode == MidpointRounding.ToEven)
-                {
-                    return Round(value);
-                }
-                if (mode == MidpointRounding.AwayFromZero)
+                return Round(value);
+            }
+            if (mode == MidpointRounding.AwayFromZero)
+            {
+                if (AdvSimd.Arm64.IsSupported)
                 {
                     return AdvSimd.Arm64.RoundAwayFromZero(Vector128.CreateScalarUnsafe(value)).ToScalar();
                 }
-            }
-            if (Sse41.IsSupported)
-            {
-                // Inline the most common cases
-                if (mode == MidpointRounding.ToEven)
-                {
-                    return Round(value);
-                }
-                if (mode == MidpointRounding.AwayFromZero)
+                if (Sse41.IsSupported)
                 {
                     Vector128<double> valueVec = Vector128.CreateScalarUnsafe(value);
-                    Vector128<double> tmp = Sse2.And(valueVec, Vector128.Create(0x8000000000000000UL).AsDouble());
-                    tmp = Sse2.Or(tmp, Vector128.Create(0x3fdfffffffffffffUL).AsDouble());
+                    Vector128<double> tmp = Sse2.And(valueVec, Vector128.Create(-0.0));
+                    tmp = Sse2.Or(tmp, Vector128.Create(0.49999999999999994));
                     tmp = Sse2.Add(tmp, valueVec);
                     return Sse41.RoundToZeroScalar(tmp).ToScalar();
                 }

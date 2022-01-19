@@ -429,30 +429,22 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Round(float x, MidpointRounding mode)
         {
-            if (AdvSimd.IsSupported)
+            // Inline the most common cases
+            if (mode == MidpointRounding.ToEven)
             {
-                // Inline the most common cases
-                if (mode == MidpointRounding.ToEven)
-                {
-                    return Round(x);
-                }
-                if (mode == MidpointRounding.AwayFromZero)
+                return Round(value);
+            }
+            if (mode == MidpointRounding.AwayFromZero)
+            {
+                if (AdvSimd.IsSupported)
                 {
                     return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(x)).ToScalar();
                 }
-            }
-            if (Sse41.IsSupported)
-            {
-                // Inline the most common cases
-                if (mode == MidpointRounding.ToEven)
-                {
-                    return Round(x);
-                }
-                if (mode == MidpointRounding.AwayFromZero)
+                if (Sse41.IsSupported)
                 {
                     Vector128<float> xVec = Vector128.CreateScalarUnsafe(x);
-                    Vector128<float> tmp = Sse.And(xVec, Vector128.Create(0x8000000000000000UL).AsSingle());
-                    tmp = Sse.Or(tmp, Vector128.Create(0x3fdfffffffffffffUL).AsSingle());
+                    Vector128<float> tmp = Sse.And(xVec, Vector128.Create(-0.0f));
+                    tmp = Sse.Or(tmp, Vector128.Create(0.49999997f));
                     tmp = Sse.Add(tmp, xVec);
                     return Sse41.RoundToZeroScalar(tmp).ToScalar();
                 }
