@@ -195,7 +195,7 @@ namespace System.IO.Strategies
         {
             Debug.Assert(value >= 0, "value >= 0");
 
-            FileStreamHelpers.SetFileLength(_fileHandle, value);
+            RandomAccess.SetFileLength(_fileHandle, value);
             Debug.Assert(!_fileHandle.LengthCanBeCached, "If length can be cached (file opened for reading, not shared for writing), it should be impossible to modify file length");
 
             if (_filePosition > value)
