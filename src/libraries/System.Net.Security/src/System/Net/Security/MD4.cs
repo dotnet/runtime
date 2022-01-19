@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 //
 // This class is a port of the Mono managed implementation of the MD4 algorithm
@@ -121,30 +122,24 @@ namespace System.Net.Security
             return (uint)((x) ^ (y) ^ (z));
         }
 
-        /* ROTATE_LEFT rotates x left n bits. */
-        private static uint ROL(uint x, byte n)
-        {
-            return (uint)(((x) << (n)) | ((x) >> (32 - (n))));
-        }
-
         /* FF, GG and HH are transformations for rounds 1, 2 and 3 */
         /* Rotation is separate from addition to prevent recomputation */
         private static void FF(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += F(b, c, d) + x;
-            a = ROL(a, s);
+            a = BitOperations.RotateLeft(a, s);
         }
 
         private static void GG(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += G(b, c, d) + x + 0x5a827999;
-            a = ROL(a, s);
+            a = BitOperations.RotateLeft(a, s);
         }
 
         private static void HH(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += H(b, c, d) + x + 0x6ed9eba1;
-            a = ROL(a, s);
+            a = BitOperations.RotateLeft(a, s);
         }
 
         private static void Encode(Span<byte> output, Span<uint> input)
