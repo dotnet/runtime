@@ -434,20 +434,9 @@ namespace System
             {
                 return Round(value);
             }
-            if (mode == MidpointRounding.AwayFromZero)
+            if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
             {
-                if (AdvSimd.IsSupported)
-                {
-                    return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(x)).ToScalar();
-                }
-                if (Sse41.IsSupported)
-                {
-                    Vector128<float> xVec = Vector128.CreateScalarUnsafe(x);
-                    Vector128<float> tmp = Sse.And(xVec, Vector128.Create(-0.0f));
-                    tmp = Sse.Or(tmp, Vector128.Create(0.49999997f));
-                    tmp = Sse.Add(tmp, xVec);
-                    return Sse41.RoundToZeroScalar(tmp).ToScalar();
-                }
+                return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(x)).ToScalar();
             }
 
             return Round(x, 0, mode);
