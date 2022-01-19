@@ -197,7 +197,7 @@ namespace System.Security.Cryptography
                 if (Oid == null ||
                     (string.IsNullOrEmpty(Oid.FriendlyName) && string.IsNullOrEmpty(Oid.Value)))
                 {
-                    throw new ArgumentException(SR.Format(SR.Cryptography_InvalidCurveOid, Oid?.Value));
+                    throw new CryptographicException(SR.Format(SR.Cryptography_InvalidCurveOid, Oid?.Value));
                 }
             }
             else if (IsExplicit)
