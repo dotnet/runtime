@@ -2593,6 +2593,9 @@
   <data name="InvalidOperation_TimerAlreadyClosed" xml:space="preserve">
     <value>The Timer was already closed using an incompatible Dispose method.</value>
   </data>
+  <data name="InvalidOperation_TimeZoneLookupParsing" xml:space="preserve">
+    <value>Internal Error in parsing tzlookup file {1}.</value>
+  </data>
   <data name="InvalidOperation_TypeCannotBeBoxed" xml:space="preserve">
     <value>The given type cannot be boxed.</value>
   </data>
@@ -3024,6 +3027,9 @@
   </data>
   <data name="OperationCanceled" xml:space="preserve">
     <value>The operation was canceled.</value>
+  </data>
+  <data name="OutOfMemory_TimeZoneLookupParsing" xml:space="preserve">
+    <value>There is insufficient memory to allocate a buffer to read tzlookup file {1}.</value>
   </data>
   <data name="Overflow_Byte" xml:space="preserve">
     <value>Value was either too large or too small for an unsigned byte.</value>
