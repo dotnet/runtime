@@ -916,16 +916,58 @@ namespace System.Text.RegularExpressions.Generator
                     }
                 }
 
+                // Detect whether every branch begins with one or more unique characters.
+                const int SetCharsSize = 5; // arbitrary limit (for IgnoreCase, we want this to be at least 3 to handle the vast majority of values)
+                Span<char> setChars = stackalloc char[SetCharsSize];
                 if (useSwitchedBranches)
                 {
+                    // Iterate through every branch, seeing if we can easily find a starting One, Multi, or small Set.
+                    // If we can, extract its starting char (or multiple in the case of a set), validate that all such
+                    // starting characters are unique relative to all the branches.
                     var seenChars = new HashSet<char>();
-                    for (int i = 0; i < childCount; i++)
+                    for (int i = 0; i < childCount && useSwitchedBranches; i++)
                     {
-                        if (node.Child(i).FindBranchOneOrMultiStart() is not RegexNode oneOrMulti ||
-                            !seenChars.Add(oneOrMulti.FirstCharOfOneOrMulti()))
+                        // If it's not a One, Multi, or Set, we can't apply this optimization.
+                        // If it's IgnoreCase (and wasn't reduced to a non-IgnoreCase set), also ignore it to keep the logic simple.
+                        if (node.Child(i).FindBranchOneMultiOrSetStart() is not RegexNode oneMultiOrSet ||
+                            (oneMultiOrSet.Options & RegexOptions.IgnoreCase) != 0) // TODO: https://github.com/dotnet/runtime/issues/61048
                         {
                             useSwitchedBranches = false;
                             break;
+                        }
+
+                        // If it's a One or a Multi, get the first character and add it to the set.
+                        // If it was already in the set, we can't apply this optimization.
+                        if (oneMultiOrSet.Type is RegexNode.One or RegexNode.Multi)
+                        {
+                            if (!seenChars.Add(oneMultiOrSet.FirstCharOfOneOrMulti()))
+                            {
+                                useSwitchedBranches = false;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            // The branch begins with a set.  Make sure it's a set of only a few characters
+                            // and get them.  If we can't, we can't apply this optimization.
+                            Debug.Assert(oneMultiOrSet.Type is RegexNode.Set);
+                            int numChars;
+                            if (RegexCharClass.IsNegated(oneMultiOrSet.Str!) ||
+                                (numChars = RegexCharClass.GetSetChars(oneMultiOrSet.Str!, setChars)) == 0)
+                            {
+                                useSwitchedBranches = false;
+                                break;
+                            }
+
+                            // Check to make sure each of the chars is unique relative to all other branches examined.
+                            foreach (char c in setChars.Slice(0, numChars))
+                            {
+                                if (!seenChars.Add(c))
+                                {
+                                    useSwitchedBranches = false;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
@@ -933,7 +975,10 @@ namespace System.Text.RegularExpressions.Generator
                 if (useSwitchedBranches)
                 {
                     // Note: This optimization does not exist with RegexOptions.Compiled.  Here we rely on the
-                    // C# compiler to lower the C# switch statement with appropriate optimizations.
+                    // C# compiler to lower the C# switch statement with appropriate optimizations. In some
+                    // cases there are enough branches that the compiler will emit a jump table.  In others
+                    // it'll optimize the order of checks in order to minimize the total number in the worst
+                    // case.  In any case, we get easier to read and reason about C#.
                     EmitSwitchedBranches();
                 }
                 else
@@ -950,8 +995,9 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine();
 
                     // Emit a switch statement on the first char of each branch.
-                    using (EmitBlock(writer, $"switch ({ToLowerIfNeeded(hasTextInfo, options, $"{sliceSpan}[{sliceStaticPos++}]", IsCaseInsensitive(node))})"))
+                    using (EmitBlock(writer, $"switch ({sliceSpan}[{sliceStaticPos++}])"))
                     {
+                        Span<char> setChars = stackalloc char[SetCharsSize]; // needs to be same size as detection check in caller
                         int startingSliceStaticPos = sliceStaticPos;
 
                         // Emit a case for each branch.
@@ -960,13 +1006,23 @@ namespace System.Text.RegularExpressions.Generator
                             sliceStaticPos = startingSliceStaticPos;
 
                             RegexNode child = node.Child(i);
-                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, DescribeNode(child, rm.Code));
-                            Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
+                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Set or RegexNode.Concatenate, DescribeNode(child, rm.Code));
+                            Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi or RegexNode.Set));
 
-                            RegexNode? childStart = child.FindBranchOneOrMultiStart();
-                            Debug.Assert(childStart is not null, DescribeNode(child, rm.Code));
+                            RegexNode? childStart = child.FindBranchOneMultiOrSetStart();
+                            Debug.Assert(childStart is not null, "Unexpectedly couldn't find the branch starting node.");
+                            Debug.Assert((childStart.Options & RegexOptions.IgnoreCase) == 0, "Expected only to find non-IgnoreCase branch starts");
 
-                            writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
+                            if (childStart.Type is RegexNode.Set)
+                            {
+                                int numChars = RegexCharClass.GetSetChars(childStart.Str!, setChars);
+                                Debug.Assert(numChars != 0);
+                                writer.WriteLine($"case {string.Join(" or ", setChars.Slice(0, numChars).ToArray().Select(c => Literal(c)))}:");
+                            }
+                            else
+                            {
+                                writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
+                            }
                             writer.Indent++;
 
                             // Emit the code for the branch, without the first character that was already matched in the switch.
@@ -974,6 +1030,7 @@ namespace System.Text.RegularExpressions.Generator
                             {
                                 case RegexNode.Multi:
                                     EmitNode(CloneMultiWithoutFirstChar(child));
+                                    writer.WriteLine();
                                     break;
 
                                 case RegexNode.Concatenate:
@@ -988,16 +1045,17 @@ namespace System.Text.RegularExpressions.Generator
                                         newConcat.AddChild(child.Child(j));
                                     }
                                     EmitNode(newConcat.Reduce());
+                                    writer.WriteLine();
                                     break;
 
-                                static RegexNode CloneMultiWithoutFirstChar(RegexNode node)
-                                {
-                                    Debug.Assert(node.Type is RegexNode.Multi);
-                                    Debug.Assert(node.Str!.Length >= 2);
-                                    return node.Str!.Length == 2 ?
-                                        new RegexNode(RegexNode.One, node.Options, node.Str![1]) :
-                                        new RegexNode(RegexNode.Multi, node.Options, node.Str!.Substring(1));
-                                }
+                                    static RegexNode CloneMultiWithoutFirstChar(RegexNode node)
+                                    {
+                                        Debug.Assert(node.Type is RegexNode.Multi);
+                                        Debug.Assert(node.Str!.Length >= 2);
+                                        return node.Str!.Length == 2 ?
+                                            new RegexNode(RegexNode.One, node.Options, node.Str![1]) :
+                                            new RegexNode(RegexNode.Multi, node.Options, node.Str!.Substring(1));
+                                    }
                             }
 
                             // This is only ever used for atomic alternations, so we can simply reset the doneLabel
@@ -1009,7 +1067,6 @@ namespace System.Text.RegularExpressions.Generator
                             // Before jumping to the end, we need to zero out sliceStaticPos, so that no
                             // matter what the value is after the branch, whatever follows the alternate
                             // will see the same sliceStaticPos.
-                            writer.WriteLine();
                             TransferSliceStaticPosToPos();
                             writer.WriteLine($"break;");
                             writer.WriteLine();
