@@ -535,23 +535,46 @@ namespace System.Net.Http.Headers
             Debug.Assert(sourceHeaders != null);
             Debug.Assert(GetType() == sourceHeaders.GetType(), "Can only copy headers from an instance of the same type.");
 
-            foreach (HeaderEntry entry in sourceHeaders.GetEntries())
+            // Only add header values if they're not already set on the message. Note that we don't merge
+            // collections: If both the default headers and the message have set some values for a certain
+            // header, then we don't try to merge the values.
+            if (_count == 0 && sourceHeaders._headerStore is HeaderEntry[] sourceEntries)
             {
-                // Only add header values if they're not already set on the message. Note that we don't merge
-                // collections: If both the default headers and the message have set some values for a certain
-                // header, then we don't try to merge the values.
-                ref object? storeValueRef = ref GetValueRefOrAddDefault(entry.Key);
-                if (storeValueRef is null)
+                // If the target collection is empty, we don't have to search for existing values
+                _count = sourceHeaders._count;
+                if (_headerStore is not HeaderEntry[] entries || entries.Length < _count)
                 {
-                    object sourceValue = entry.Value;
-                    if (sourceValue is HeaderStoreItemInfo info)
+                    entries = new HeaderEntry[sourceEntries.Length];
+                    _headerStore = entries;
+                }
+
+                for (int i = 0; i < _count && i < sourceEntries.Length; i++)
+                {
+                    HeaderEntry entry = sourceEntries[i];
+                    if (entry.Value is HeaderStoreItemInfo info)
                     {
-                        storeValueRef = CloneHeaderInfo(entry.Key, info);
+                        entry.Value = CloneHeaderInfo(entry.Key, info);
                     }
-                    else
+                    entries[i] = entry;
+                }
+            }
+            else
+            {
+                foreach (HeaderEntry entry in sourceHeaders.GetEntries())
+                {
+                    ref object? storeValueRef = ref GetValueRefOrAddDefault(entry.Key);
+                    if (storeValueRef is null)
                     {
-                        Debug.Assert(sourceValue is string);
-                        storeValueRef = sourceValue;
+                        object sourceValue = entry.Value;
+                        if (sourceValue is HeaderStoreItemInfo info)
+                        {
+                            storeValueRef = CloneHeaderInfo(entry.Key, info);
+                        }
+                        else
+                        {
+                            Debug.Assert(sourceValue is string);
+                            storeValueRef = sourceValue;
+                        }
                     }
                 }
             }
