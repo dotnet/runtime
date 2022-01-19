@@ -1299,6 +1299,32 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                if (mode == MidpointRounding.ToEven)
+                {
+                    return AdvSimd.Arm64.RoundToNearest(Vector128.CreateScalarUnsafe(value)).ToScalar();
+                }
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    return AdvSimd.Arm64.RoundAwayFromZero(Vector128.CreateScalarUnsafe(value)).ToScalar();
+                }
+            }
+            if (Sse41.IsSupported)
+            {
+                if (mode == MidpointRounding.ToEven)
+                {
+                    return Sse41.RoundToNearestIntegerScalar(Vector128.CreateScalarUnsafe(value)).ToScalar();
+                }
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    Vector128<double> valueVec = Vector128.CreateScalarUnsafe(value);
+                    Vector128<double> tmp = Sse2.And(valueVec, Vector128.Create(0x8000000000000000UL).AsDouble());
+                    tmp = Sse2.Or(tmp, Vector128.Create(0x3fdfffffffffffffUL).AsDouble());
+                    tmp = Sse2.Add(tmp, valueVec);
+                    return Sse41.RoundToZeroScalar(tmp).ToScalar();
+                }
+            }
             return Round(value, 0, mode);
         }
 
