@@ -3515,8 +3515,10 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #if !CSE_CONSTS
     /* Don't bother with constants */
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
+    {
         return false;
+    }
 #endif
 
     /* Check for some special cases */

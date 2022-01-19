@@ -341,10 +341,13 @@ namespace System.Reflection
             return NotAnnotatedStatus.None;
         }
 
-        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes) =>
-            GetNullabilityInfo(memberInfo, type, customAttributes, 0);
+        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes)
+        {
+            int index = 0;
+            return GetNullabilityInfo(memberInfo, type, customAttributes, ref index);
+        }
 
-        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, int index)
+        private NullabilityInfo GetNullabilityInfo(MemberInfo memberInfo, Type type, IList<CustomAttributeData> customAttributes, ref int index)
         {
             NullabilityState state = NullabilityState.Unknown;
             NullabilityInfo? elementState = null;
@@ -364,17 +367,22 @@ namespace System.Reflection
                     underlyingType = type;
                     state = NullabilityState.NotNull;
                 }
+
+                if (underlyingType.IsGenericType)
+                {
+                    index++;
+                }
             }
             else
             {
-                if (!ParseNullableState(customAttributes, index, ref state))
+                if (!ParseNullableState(customAttributes, index++, ref state))
                 {
                     state = GetNullableContext(memberInfo);
                 }
 
                 if (type.IsArray)
                 {
-                    elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, customAttributes, index + 1);
+                    elementState = GetNullabilityInfo(memberInfo, type.GetElementType()!, customAttributes, ref index);
                 }
             }
 
@@ -383,16 +391,9 @@ namespace System.Reflection
                 Type[] genericArguments = underlyingType.GetGenericArguments();
                 genericArgumentsState = new NullabilityInfo[genericArguments.Length];
 
-                for (int i = 0, offset = 0; i < genericArguments.Length; i++)
+                for (int i = 0; i < genericArguments.Length; i++)
                 {
-                    Type t = Nullable.GetUnderlyingType(genericArguments[i]) ?? genericArguments[i];
-
-                    if (!t.IsValueType || t.IsGenericType)
-                    {
-                        offset++;
-                    }
-
-                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, index + offset);
+                    genericArgumentsState[i] = GetNullabilityInfo(memberInfo, genericArguments[i], customAttributes, ref index);
                 }
             }
 
@@ -500,7 +501,8 @@ namespace System.Reflection
                     {
                         if (genericArguments[i].IsGenericParameter)
                         {
-                            NullabilityInfo n = GetNullabilityInfo(metaMember, genericArguments[i], genericArguments[i].GetCustomAttributesData(), i + 1);
+                            int index = i + 1;
+                            NullabilityInfo n = GetNullabilityInfo(metaMember, genericArguments[i], genericArguments[i].GetCustomAttributesData(), ref index);
                             nullability.GenericTypeArguments[i].ReadState = n.ReadState;
                             nullability.GenericTypeArguments[i].WriteState = n.WriteState;
                         }
@@ -523,7 +525,8 @@ namespace System.Reflection
                 && metaType.GetElementType()!.IsGenericParameter)
             {
                 Type elementType = metaType.GetElementType()!;
-                NullabilityInfo n = GetNullabilityInfo(metaMember, elementType, elementType.GetCustomAttributesData(), 0);
+                int index = 0;
+                NullabilityInfo n = GetNullabilityInfo(metaMember, elementType, elementType.GetCustomAttributesData(), ref index);
                 elementState.ReadState = n.ReadState;
                 elementState.WriteState = n.WriteState;
             }

@@ -75,7 +75,7 @@ namespace Internal.Cryptography.Pal
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng? dsaCng = dsa as DSACng;
-            ICertificatePal? clone = null;
+            ICertificatePal? clone;
 
             if (dsaCng != null)
             {
@@ -163,7 +163,7 @@ namespace Internal.Cryptography.Pal
         public ICertificatePal CopyWithPrivateKey(RSA rsa)
         {
             RSACng? rsaCng = rsa as RSACng;
-            ICertificatePal? clone = null;
+            ICertificatePal? clone;
 
             if (rsaCng != null)
             {

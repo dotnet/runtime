@@ -526,8 +526,6 @@ function_name() to call the system's implementation
 #undef wcsstr
 #undef wcscmp
 #undef wcsncpy
-#undef wcstok
-#undef wcscspn
 #undef iswupper
 #undef iswspace
 #undef towlower

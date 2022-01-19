@@ -270,6 +270,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(ERR_load_crypto_strings) \
     LIGHTUP_FUNCTION(ERR_new) \
     REQUIRED_FUNCTION(ERR_peek_error) \
+    REQUIRED_FUNCTION(ERR_peek_error_line) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
     FALLBACK_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
@@ -503,6 +504,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     FALLBACK_FUNCTION(SSL_session_reused) \
     REQUIRED_FUNCTION(SSL_set_accept_state) \
     REQUIRED_FUNCTION(SSL_set_bio) \
+    REQUIRED_FUNCTION(SSL_set_cert_cb) \
     REQUIRED_FUNCTION(SSL_set_cipher_list) \
     LIGHTUP_FUNCTION(SSL_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_set_connect_state) \
@@ -514,6 +516,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     LEGACY_FUNCTION(SSLeay) \
     RENAMED_FUNCTION(TLS_method, SSLv23_method) \
     REQUIRED_FUNCTION(SSL_write) \
+    REQUIRED_FUNCTION(SSL_use_certificate) \
+    REQUIRED_FUNCTION(SSL_use_PrivateKey) \
     FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_current_time) \
@@ -725,6 +729,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_load_crypto_strings ERR_load_crypto_strings_ptr
 #define ERR_new ERR_new_ptr
 #define ERR_peek_error ERR_peek_error_ptr
+#define ERR_peek_error_line ERR_peek_error_line_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
@@ -961,6 +966,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_session_reused SSL_session_reused_ptr
 #define SSL_set_accept_state SSL_set_accept_state_ptr
 #define SSL_set_bio SSL_set_bio_ptr
+#define SSL_set_cert_cb  SSL_set_cert_cb_ptr
 #define SSL_set_cipher_list SSL_set_cipher_list_ptr
 #define SSL_set_ciphersuites SSL_set_ciphersuites_ptr
 #define SSL_set_connect_state SSL_set_connect_state_ptr
@@ -971,6 +977,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_state SSL_state_ptr
 #define SSLeay SSLeay_ptr
 #define SSL_write SSL_write_ptr
+#define SSL_use_certificate SSL_use_certificate_ptr
+#define SSL_use_PrivateKey SSL_use_PrivateKey_ptr
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
 #define X509_check_purpose X509_check_purpose_ptr

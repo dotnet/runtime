@@ -1433,6 +1433,13 @@ _Done:
             // Save the basic block flags from the retExpr basic block.
             iciCall->gtInlineCandidateInfo->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
         }
+
+        if (bottomBlock != nullptr)
+        {
+            // We've split the iciblock into two and the RET_EXPR was possibly moved to the bottomBlock
+            // so let's update its flags with retBB's ones
+            bottomBlock->bbFlags |= pInlineInfo->retBB->bbFlags & BBF_COMPACT_UPD;
+        }
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }
 

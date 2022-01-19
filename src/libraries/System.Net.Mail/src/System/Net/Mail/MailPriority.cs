@@ -532,7 +532,7 @@ namespace System.Net.Mail
                 }
 
                 string[] values = headers.GetValues(headerName)!;
-                string encodedValue = string.Empty;
+                string encodedValue;
                 for (int j = 0; j < values.Length; j++)
                 {
                     //encode if we need to

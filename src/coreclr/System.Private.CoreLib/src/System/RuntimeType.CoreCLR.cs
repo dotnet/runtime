@@ -1992,8 +1992,8 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
-            if (nsDelimiter != -1)
+            int nsDelimiter = fullname.LastIndexOf('.');
+            if (nsDelimiter >= 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
                 int nameLength = fullname.Length - ns.Length - 1;

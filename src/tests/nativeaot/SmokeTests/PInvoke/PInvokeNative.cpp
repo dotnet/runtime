@@ -341,6 +341,17 @@ DLL_EXPORT bool __stdcall ReversePInvoke_String(StringFuncPtr fnPtr)
     return fnPtr(str);
 }
 
+struct DelegateFieldStruct
+{
+    StringFuncPtr fnPtr;
+};
+
+DLL_EXPORT bool __stdcall ReversePInvoke_DelegateField(DelegateFieldStruct p)
+{
+    char str[] = "Hello World";
+    return p.fnPtr(str);
+}
+
 typedef bool(__stdcall *OutStringFuncPtr) (char **);
 DLL_EXPORT bool __stdcall ReversePInvoke_OutString(OutStringFuncPtr fnPtr)
 {
