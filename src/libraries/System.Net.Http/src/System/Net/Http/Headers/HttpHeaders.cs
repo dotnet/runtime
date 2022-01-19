@@ -1454,19 +1454,15 @@ namespace System.Net.Http.Headers
 
         public void Clear()
         {
-            object? store = _headerStore;
-            if (store is not null)
+            if (_headerStore is HeaderEntry[] entries)
             {
-                if (store is HeaderEntry[] entries)
-                {
-                    Array.Clear(entries, 0, _count);
-                }
-                else
-                {
-                    Unsafe.As<Dictionary<HeaderDescriptor, object>>(store).Clear();
-                }
-                _count = 0;
+                Array.Clear(entries, 0, _count);
             }
+            else
+            {
+                _headerStore = null;
+            }
+            _count = 0;
         }
 
         internal bool Remove(HeaderDescriptor key)
