@@ -213,8 +213,6 @@ namespace System.Runtime.InteropServices
                     {
                         return (IntPtr)(Dispatches + i);
                     }
-
-                    i++;
                 }
 
                 return IntPtr.Zero;

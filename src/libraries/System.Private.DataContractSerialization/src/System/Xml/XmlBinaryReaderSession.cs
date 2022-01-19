@@ -27,7 +27,7 @@ namespace System.Xml
             if (value == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
             XmlDictionaryString? xmlString;
-            if (TryLookup(id, out xmlString))
+            if (TryLookup(id, out _))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIDDefined));
 
             xmlString = new XmlDictionaryString(this, value, id);

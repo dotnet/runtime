@@ -112,7 +112,7 @@ namespace Microsoft.NET.Build.Tasks
             }
 
             if (!ExtractTargetPlatformAndArchitecture(_targetRuntimeIdentifier, out _targetPlatform, out _targetArchitecture) ||
-                !ExtractTargetPlatformAndArchitecture(_hostRuntimeIdentifier, out string hostPlatform, out Architecture hostArchitecture) ||
+                !ExtractTargetPlatformAndArchitecture(_hostRuntimeIdentifier, out string hostPlatform, out _) ||
                 _targetPlatform != hostPlatform ||
                 !GetCrossgenComponentsPaths())
             {

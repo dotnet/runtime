@@ -852,6 +852,8 @@ namespace System
                     return "offset";
                 case ExceptionArgument.stream:
                     return "stream";
+                case ExceptionArgument.anyOf:
+                    return "anyOf";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1119,7 +1121,8 @@ namespace System
         buffer,
         buffers,
         offset,
-        stream
+        stream,
+        anyOf,
     }
 
     //

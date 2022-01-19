@@ -3356,6 +3356,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             else
             {
                 // issue a full memory barrier before a volatile StInd
+                // Note: We cannot issue store barrier ishst because it is a weaker barrier.
+                // The loads can get rearranged around the barrier causing to read wrong
+                // value.
                 instGen_MemoryBarrier();
             }
         }
@@ -6919,8 +6922,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // R_R   fmov/fcmp/fcvt
+    // R_R   cmeq/fmov/fcmp/fcvt
     //
+
+    // cmeq scalar
+    theEmitter->emitIns_R_R(INS_cmeq, EA_8BYTE, REG_V0, REG_V1);
 
     // fmov to vector to vector
     theEmitter->emitIns_Mov(INS_fmov, EA_8BYTE, REG_V0, REG_V2, /* canSkip */ false);

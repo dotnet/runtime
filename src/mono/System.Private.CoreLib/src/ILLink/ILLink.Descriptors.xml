@@ -647,5 +647,8 @@
 			<!-- https://github.com/dotnet/runtime/issues/47909 -->
 			<method signature="System.Void .ctor()" />
 		</type>
+
+		<!-- FIXME: only if  feature="System.Reflection.Metadata.MetadataUpdater.IsSupported" featurevalue="true" -->
+		<type fullname="Mono.HotReload.FieldStore" preserve="fields" />
 	</assembly>
 </linker>

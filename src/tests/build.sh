@@ -184,7 +184,6 @@ handle_arguments_local() {
             __CopyNativeProjectsAfterCombinedTestBuild=false
             __SkipGenerateLayout=1
             __SkipTestWrappers=1
-            __SkipCrossgenFramework=1
             ;;
 
         crossgen2|-crossgen2)
@@ -318,7 +317,6 @@ __SkipManaged=0
 __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
-__SkipCrossgenFramework=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
 __UseNinja=0

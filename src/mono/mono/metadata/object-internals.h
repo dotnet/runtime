@@ -451,6 +451,22 @@ struct _MonoReflectionType {
 /* Safely access System.Type from native code */
 TYPED_HANDLE_DECL (MonoReflectionType);
 
+/* This corresponds to System.Runtime.CompilerServices.QCallTypeHandle */
+struct _MonoQCallTypeHandle {
+	gpointer _ptr;
+	MonoType *type;
+};
+
+typedef struct _MonoQCallTypeHandle MonoQCallTypeHandle;
+
+/* This corresponds to System.Runtime.CompilerServices.QCallAssembly */
+struct _MonoQCallAssemblyHandle {
+	gpointer _ptr;
+	MonoAssembly *assembly;
+};
+
+typedef struct _MonoQCallAssemblyHandle MonoQCallAssemblyHandle;
+
 typedef struct {
 	MonoObject  object;
 	MonoReflectionType *class_to_proxy;	
@@ -1650,7 +1666,7 @@ mono_class_set_ref_info (MonoClass *klass, MonoObjectHandle obj);
 void
 mono_class_free_ref_info (MonoClass *klass);
 
-MonoObject *
+MONO_COMPONENT_API MonoObject *
 mono_object_new_pinned (MonoClass *klass, MonoError *error);
 
 MonoObjectHandle

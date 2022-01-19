@@ -342,7 +342,7 @@ namespace System
         {
             get
             {
-                GetWindowSize(out int width, out int height);
+                GetWindowSize(out int width, out _);
                 return width;
             }
             set { throw new PlatformNotSupportedException(); }
@@ -352,7 +352,7 @@ namespace System
         {
             get
             {
-                GetWindowSize(out int width, out int height);
+                GetWindowSize(out _, out int height);
                 return height;
             }
             set { throw new PlatformNotSupportedException(); }

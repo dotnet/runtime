@@ -47,7 +47,7 @@ namespace System.Net
 
         public override Stream GetResponseStream()
         {
-            Stream? responseStream = null;
+            Stream? responseStream;
 
             if (_responseStream != null)
             {

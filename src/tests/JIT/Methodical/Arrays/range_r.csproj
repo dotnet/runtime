@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <BuildAsStandalone>false</BuildAsStandalone>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="range/*_r.ilproj" />
+  </ItemGroup>
+</Project>

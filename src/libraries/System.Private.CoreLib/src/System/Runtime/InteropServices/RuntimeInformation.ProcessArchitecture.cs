@@ -18,6 +18,8 @@ namespace System.Runtime.InteropServices
             => Architecture.Wasm;
 #elif TARGET_S390X
             => Architecture.S390x;
+#elif TARGET_LOONGARCH64
+            => Architecture.LoongArch64;
 #else
 #error Unknown Architecture
 #endif

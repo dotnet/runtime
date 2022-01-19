@@ -4743,7 +4743,7 @@ void emitter::emitIns_R_R(
             else
             {
                 // Scalar operation
-                assert(isValidScalarDatasize(size));
+                assert(size == EA_8BYTE);
                 assert(insOptsNone(opt));
                 fmt = IF_DV_2L;
             }

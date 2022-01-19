@@ -218,7 +218,7 @@ STDAPI ReOpenMetaDataWithMemoryEx(
 static DWORD g_dwSystemDirectory = 0;
 static WCHAR * g_pSystemDirectory = NULL;
 
-HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength)
+HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength)
 {
     CONTRACTL {
         NOTHROW;

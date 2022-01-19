@@ -2565,6 +2565,19 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         if (reg == REG_NA)
         {
             /* The address is of the form "[disp]" */
+            CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef TARGET_X86
+            // Special case: "mov eax, [disp]" and "mov [disp], eax" can use a smaller 1-byte encoding.
+            if ((ins == INS_mov) && (id->idReg1() == REG_EAX) &&
+                ((id->idInsFmt() == IF_RWR_ARD) || (id->idInsFmt() == IF_AWR_RRD)))
+            {
+                // Amd64: this is one case where addr can be 64-bit in size. This is currently unused.
+                // If this ever changes, this code will need to be updated to add "sizeof(INT64)" to "size".
+                assert((size == 2) || ((size == 3) && (id->idOpSize() == EA_2BYTE)));
+                size--;
+            }
+#endif
 
             size += sizeof(INT32);
 

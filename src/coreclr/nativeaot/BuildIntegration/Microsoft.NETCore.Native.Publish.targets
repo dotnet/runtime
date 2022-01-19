@@ -54,6 +54,8 @@
     <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />
     <Error Condition="'$(OutputType)' != 'Library' and '$(NativeLib)' != ''" Text="NativeLib requires OutputType=Library." />
 
+    <Error Condition="'$(PublishTrimmed)' == 'false'" Text="PublishTrimmed is implied by native compilation and cannot be disabled." />
+
     <!-- Fail with descriptive error message for common unsupported cases. -->
     <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))"
       Text="Cross-OS native compilation is not supported. https://github.com/dotnet/corert/issues/5458" />

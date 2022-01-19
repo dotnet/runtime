@@ -60,6 +60,7 @@ namespace ILCompiler
         private int _parallelism = Environment.ProcessorCount;
         private string _instructionSet;
         private string _guard;
+        private int _maxGenericCycle = CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -216,7 +217,7 @@ namespace ILCompiler
                 syntax.DefineOptionList("nosinglewarnassembly", ref _singleWarnDisabledAssemblies, "Expand AOT/trimming warnings for given assembly");
                 syntax.DefineOptionList("directpinvoke", ref _directPInvokes, "PInvoke to call directly");
                 syntax.DefineOptionList("directpinvokelist", ref _directPInvokeLists, "File with list of PInvokes to call directly");
-
+                syntax.DefineOption("maxgenericcycle", ref _maxGenericCycle, "Max depth of generic cycle");
                 syntax.DefineOptionList("root", ref _rootedAssemblies, "Fully generate given assembly");
                 syntax.DefineOptionList("conditionalroot", ref _conditionallyRootedAssemblies, "Fully generate given assembly if it's used");
                 syntax.DefineOptionList("trim", ref _trimmedAssemblies, "Trim the specified assembly");
@@ -419,13 +420,14 @@ namespace ILCompiler
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
 
-                // If AVX was enabled, we can opportunistically enable FMA/BMI
+                // If AVX was enabled, we can opportunistically enable FMA/BMI/VNNI
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                 }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
@@ -460,7 +462,7 @@ namespace ILCompiler
             var targetAbi = TargetAbi.CoreRT;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext = 
-                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0);
+                new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);
 
             //
             // TODO: To support our pre-compiled test tree, allow input files that aren't managed assemblies since
@@ -703,7 +705,7 @@ namespace ILCompiler
                     _trimmedAssemblies);
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
-            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy);
+            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We also don't do this for multifile because scanner doesn't simulate inlining (this would be

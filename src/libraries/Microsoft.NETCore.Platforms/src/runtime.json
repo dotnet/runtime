@@ -138,6 +138,29 @@
         "alpine.3.13-x64"
       ]
     },
+    "alpine.3.15": {
+      "#import": [
+        "alpine.3.14"
+      ]
+    },
+    "alpine.3.15-arm": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm"
+      ]
+    },
+    "alpine.3.15-arm64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm64"
+      ]
+    },
+    "alpine.3.15-x64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -1475,6 +1498,12 @@
         "unix-armel"
       ]
     },
+    "linux-loongarch64": {
+      "#import": [
+        "linux",
+        "unix-loongarch64"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -1727,6 +1756,17 @@
       "#import": [
         "maccatalyst.15",
         "maccatalyst.14-x64"
+      ]
+    },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
       ]
     },
     "ol": {
@@ -3395,6 +3435,11 @@
       ]
     },
     "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-loongarch64": {
       "#import": [
         "unix"
       ]

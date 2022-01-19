@@ -1011,48 +1011,40 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
     if (intrin.op1 != nullptr)
     {
-        // Do not give a register to the first operand if it is contained.
-        if (intrin.op1->IsVectorZero() && !hasImmediateOperand && intrin.op1->isContained())
+        bool simdRegToSimdRegMove = false;
+
+        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
         {
-            assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+        }
+        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
+        {
+            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+        }
+        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
+        {
+            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+        }
+
+        // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
+        // we want to preference op1Reg to the target if op1 is not contained.
+        if (isRMW || simdRegToSimdRegMove)
+        {
+            tgtPrefOp1 = !intrin.op1->isContained();
+        }
+
+        if (intrinsicTree->OperIsMemoryLoadOrStore())
+        {
+            srcCount += BuildAddrUses(intrin.op1);
+        }
+        else if (tgtPrefOp1)
+        {
+            tgtPrefUse = BuildUse(intrin.op1);
+            srcCount++;
         }
         else
         {
-            bool simdRegToSimdRegMove = false;
-
-            if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
-            {
-                simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
-            }
-            else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
-            {
-                simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
-            }
-            else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
-            {
-                simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
-            }
-
-            // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
-            // we want to preference op1Reg to the target if op1 is not contained.
-            if (isRMW || simdRegToSimdRegMove)
-            {
-                tgtPrefOp1 = !intrin.op1->isContained();
-            }
-
-            if (intrinsicTree->OperIsMemoryLoadOrStore())
-            {
-                srcCount += BuildAddrUses(intrin.op1);
-            }
-            else if (tgtPrefOp1)
-            {
-                tgtPrefUse = BuildUse(intrin.op1);
-                srcCount++;
-            }
-            else
-            {
-                srcCount += BuildOperandUses(intrin.op1);
-            }
+            srcCount += BuildOperandUses(intrin.op1);
         }
     }
 
@@ -1101,58 +1093,50 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     }
     else if (intrin.op2 != nullptr)
     {
-        // Do not give a register to the second operand if it is contained.
-        if (intrin.op2->IsVectorZero() && !hasImmediateOperand && intrin.op2->isContained())
+        // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
+        // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
+
+        assert(intrin.op1 != nullptr);
+
+        bool forceOp2DelayFree = false;
+        if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
         {
-            assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+            if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
+            {
+                // If the index is not a constant and the object is not contained or is a local
+                // we will need a general purpose register to calculate the address
+                // internal register must not clobber input index
+                // TODO-Cleanup: An internal register will never clobber a source; this code actually
+                // ensures that the index (op2) doesn't interfere with the target.
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+                forceOp2DelayFree = true;
+            }
+
+            if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
+            {
+                // If the index is not a constant or op1 is in register,
+                // we will use the SIMD temp location to store the vector.
+                var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
+                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+            }
+        }
+
+        if (forceOp2DelayFree)
+        {
+            srcCount += BuildDelayFreeUses(intrin.op2);
         }
         else
         {
-            // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
-            // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+        }
 
-            assert(intrin.op1 != nullptr);
+        if (intrin.op3 != nullptr)
+        {
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
 
-            bool forceOp2DelayFree = false;
-            if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
+            if (intrin.op4 != nullptr)
             {
-                if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
-                {
-                    // If the index is not a constant and the object is not contained or is a local
-                    // we will need a general purpose register to calculate the address
-                    // internal register must not clobber input index
-                    // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                    // ensures that the index (op2) doesn't interfere with the target.
-                    buildInternalIntRegisterDefForNode(intrinsicTree);
-                    forceOp2DelayFree = true;
-                }
-
-                if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
-                {
-                    // If the index is not a constant or op1 is in register,
-                    // we will use the SIMD temp location to store the vector.
-                    var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
-                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
-                }
-            }
-
-            if (forceOp2DelayFree)
-            {
-                srcCount += BuildDelayFreeUses(intrin.op2);
-            }
-            else
-            {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
-            }
-
-            if (intrin.op3 != nullptr)
-            {
-                srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
-
-                if (intrin.op4 != nullptr)
-                {
-                    srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
-                }
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
     }
