@@ -143,8 +143,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
 
     // Caller should have handled all the non-class cases, already.
     _ASSERTE(GetFieldType() == ELEMENT_TYPE_CLASS ||
-             GetFieldType() == ELEMENT_TYPE_VALUETYPE ||
-             GetFieldType() == ELEMENT_TYPE_TYPEDBYREF);
+             GetFieldType() == ELEMENT_TYPE_VALUETYPE);
 
     MetaSig        sig(this);
     CorElementType type;
