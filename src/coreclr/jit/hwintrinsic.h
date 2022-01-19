@@ -582,9 +582,9 @@ struct HWIntrinsicInfo
         assert(intrinsicNode != nullptr);
 
         NamedIntrinsic intrinsic = intrinsicNode->GetHWIntrinsicId();
-        var_types      type      = var_types::TYP_UNKNOWN;
+        var_types      type      = TYP_UNKNOWN;
 
-        if (lookupCategory(intrinsic) == HWIntrinsicCategory::HW_Category_Scalar)
+        if (lookupCategory(intrinsic) == HW_Category_Scalar)
         {
             type = intrinsicNode->TypeGet();
         }
