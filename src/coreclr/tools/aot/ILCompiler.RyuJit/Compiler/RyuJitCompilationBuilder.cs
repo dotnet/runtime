@@ -108,7 +108,10 @@ namespace ILCompiler
                 options |= RyuJitCompilationOptions.MethodBodyFolding;
 
             if ((_mitigationOptions & SecurityMitigationOptions.ControlFlowGuardAnnotations) != 0)
+            {
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_ENABLE_CFG);
                 options |= RyuJitCompilationOptions.ControlFlowGuardAnnotations;
+            }
 
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, GetPreinitializationManager());
 

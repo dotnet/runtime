@@ -692,6 +692,11 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.GetCurrentManagedThreadId;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_VALIDATE_INDIRECT_CALL:
+                    return _compilation.NodeFactory.ExternSymbol("__guard_check_icall_fptrHack");
+                case CorInfoHelpFunc.CORINFO_HELP_DISPATCH_INDIRECT_CALL:
+                    return _compilation.NodeFactory.ExternSymbol("__guard_dispatch_icall_fptrHack");
+
                 default:
                     throw new NotImplementedException(ftnNum.ToString());
             }
