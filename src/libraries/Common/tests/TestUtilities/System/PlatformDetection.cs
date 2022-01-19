@@ -76,6 +76,8 @@ namespace System
 
         public static bool IsUsingLimitedCultures => !IsNotMobile;
         public static bool IsNotUsingLimitedCultures => IsNotMobile;
+        public static bool IsNotRunningOnMacOS => !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator") && !IsMacCatalyst;
 
         public static bool IsLinqExpressionsBuiltWithIsInterpretingOnly => s_LinqExpressionsBuiltWithIsInterpretingOnly.Value;
         public static bool IsNotLinqExpressionsBuiltWithIsInterpretingOnly => !IsLinqExpressionsBuiltWithIsInterpretingOnly;

@@ -41,8 +41,11 @@ namespace System.IO.Pipes
             // We don't have a good way to enforce maxNumberOfServerInstances across processes; we only factor it in
             // for streams created in this process.  Between processes, we behave similarly to maxNumberOfServerInstances == 1,
             // in that the second process to come along and create a stream will find the pipe already in existence and will fail.
+            var pipePath = !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator") ? GetPipePath(".", pipeName) : $"/tmp/{pipeName}";
+            
             _instance = SharedServer.Get(
-                GetPipePath(".", pipeName),
+                pipePath,
                 (maxNumberOfServerInstances == MaxAllowedServerInstances) ? int.MaxValue : maxNumberOfServerInstances);
 
             _direction = direction;

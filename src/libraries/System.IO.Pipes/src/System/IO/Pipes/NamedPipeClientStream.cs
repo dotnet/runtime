@@ -7,6 +7,7 @@ using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Pipes
 {
@@ -78,7 +79,7 @@ namespace System.IO.Pipes
             }
             if (impersonationLevel < TokenImpersonationLevel.None || impersonationLevel > TokenImpersonationLevel.Delegation)
             {
-                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), SR.ArgumentOutOfRange_ImpersonationInvalid);
+               throw new ArgumentOutOfRangeException(nameof(impersonationLevel), SR.ArgumentOutOfRange_ImpersonationInvalid);
             }
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
@@ -88,8 +89,15 @@ namespace System.IO.Pipes
             {
                 IsCurrentUserOnly = true;
             }
-
-            _normalizedPipePath = GetPipePath(serverName, pipeName);
+            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
+            {
+               _normalizedPipePath = $"/tmp/{pipeName}";
+            }
+            else
+            {
+               _normalizedPipePath = GetPipePath(serverName, pipeName);
+            }
             _direction = direction;
             _inheritability = inheritability;
             _impersonationLevel = impersonationLevel;

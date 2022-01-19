@@ -22,7 +22,7 @@ namespace System.IO
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase(string tempDirectory = null)
         {
-            tempDirectory ??= Path.GetTempPath();
+            tempDirectory ??= PlatformDetection.IsNotRunningOnMacOS ? Path.GetTempPath() : "/tmp/";
 
             // Use a unique test directory per test class.  The test directory lives in the user's temp directory,
             // and includes both the name of the test class and a random string.  The test class name is included
@@ -108,7 +108,7 @@ namespace System.IO
             const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
 
             int excessLength = testFilePath.Length - maxLength;
-
+           
             if (excessLength > 0)
             {
                 // The path will be too long for Windows -- can we

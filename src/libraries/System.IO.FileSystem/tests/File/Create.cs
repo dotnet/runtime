@@ -219,16 +219,10 @@ namespace System.IO.Tests
             Assert.False(File.Exists(path));
         }
 
-        [ConditionalFact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotRunningOnMacOS))]
         [PlatformSpecific(CaseSensitivePlatforms)]
         public void CaseSensitive()
         {
-            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
-            {
-                throw new SkipTestException("iOS/tvOS simulators run on a macOS host and are subject to the same case sensitivity behavior.");
-            }
-
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testFile = Path.Combine(testDir.FullName, GetTestFileName());
             using (File.Create(testFile + "AAAA"))
