@@ -705,7 +705,7 @@ namespace ILCompiler
                     _trimmedAssemblies);
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
-            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy);
+            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We also don't do this for multifile because scanner doesn't simulate inlining (this would be

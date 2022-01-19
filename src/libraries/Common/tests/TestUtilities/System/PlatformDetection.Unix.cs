@@ -57,6 +57,11 @@ namespace System
             GetOpenSslVersion() :
             throw new PlatformNotSupportedException();
 
+        private static readonly Version s_openssl3Version = new Version(3, 0, 0);
+        public static bool IsOpenSsl3 => !IsOSXLike && !IsWindows && !IsAndroid && !IsBrowser ?
+            GetOpenSslVersion() >= s_openssl3Version :
+            false;
+
         /// <summary>
         /// If gnulibc is available, returns the release, such as "stable".
         /// Otherwise returns "glibc_not_found".

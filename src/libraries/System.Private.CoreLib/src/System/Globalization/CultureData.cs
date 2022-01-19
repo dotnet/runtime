@@ -2094,7 +2094,7 @@ namespace System.Globalization
         private static int IndexOfTimePart(string format, int startIndex, string timeParts)
         {
             Debug.Assert(startIndex >= 0, "startIndex cannot be negative");
-            Debug.Assert(timeParts.IndexOfAny(new char[] { '\'', '\\' }) == -1, "timeParts cannot include quote characters");
+            Debug.Assert(timeParts.AsSpan().IndexOfAny('\'', '\\') < 0, "timeParts cannot include quote characters");
             bool inQuote = false;
             for (int i = startIndex; i < format.Length; ++i)
             {

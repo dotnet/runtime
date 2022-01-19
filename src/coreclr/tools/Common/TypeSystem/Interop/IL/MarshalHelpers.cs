@@ -521,7 +521,7 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else if (type.IsDelegate)
+            else if (type.IsDelegate || InteropTypes.IsSystemDelegate(context, type) || InteropTypes.IsSystemMulticastDelegate(context, type))
             {
                 if (type.HasInstantiation)
                 {

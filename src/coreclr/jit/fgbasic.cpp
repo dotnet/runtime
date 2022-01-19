@@ -321,7 +321,7 @@ bool Compiler::fgFirstBBisScratch()
         // Normally, the first scratch block is a fall-through block. However, if the block after it was an empty
         // BBJ_ALWAYS block, it might get removed, and the code that removes it will make the first scratch block
         // a BBJ_ALWAYS block.
-        assert((fgFirstBBScratch->bbJumpKind == BBJ_NONE) || (fgFirstBBScratch->bbJumpKind == BBJ_ALWAYS));
+        assert(fgFirstBBScratch->KindIs(BBJ_NONE, BBJ_ALWAYS));
 
         return true;
     }
@@ -2407,7 +2407,7 @@ void Compiler::fgLinkBasicBlocks()
 
                 /* Is the next block reachable? */
 
-                if (curBBdesc->bbJumpKind == BBJ_ALWAYS || curBBdesc->bbJumpKind == BBJ_LEAVE)
+                if (curBBdesc->KindIs(BBJ_ALWAYS, BBJ_LEAVE))
                 {
                     break;
                 }
@@ -4369,7 +4369,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->bbJumpKind == BBJ_COND || curr->bbJumpKind == BBJ_SWITCH || curr->bbJumpKind == BBJ_ALWAYS);
+    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
 
     if (fgComputePredsDone)
     {
@@ -4670,7 +4670,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 #endif // DEBUG
 
-        noway_assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+        noway_assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
 
         /* Who is the "real" successor of this block? */
 
@@ -5182,7 +5182,7 @@ bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc /* = NULL *
 {
     bool result = false;
 
-    if ((bJump->bbJumpKind == BBJ_COND) || (bJump->bbJumpKind == BBJ_ALWAYS))
+    if (bJump->KindIs(BBJ_COND, BBJ_ALWAYS))
     {
         BasicBlock* bDest = bJump->bbJumpDest;
         BasicBlock* bTemp = (bSrc == nullptr) ? bJump : bSrc;
@@ -5799,7 +5799,7 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     noway_assert(bAlt != nullptr);
 
     // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
-    if ((bAlt->bbJumpKind != BBJ_ALWAYS) && (bAlt->bbJumpKind != BBJ_COND))
+    if (!bAlt->KindIs(BBJ_ALWAYS, BBJ_COND))
     {
         return false;
     }

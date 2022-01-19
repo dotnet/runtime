@@ -345,6 +345,7 @@ typedef __int64 time_t;
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
+#define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -359,7 +360,8 @@ typedef __int64 time_t;
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
-                                        PAL_INITIALIZE_REGISTER_SIGNALS)
+                                        PAL_INITIALIZE_REGISTER_SIGNALS | \
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -3934,8 +3936,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define wcspbrk       PAL_wcspbrk
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy
-#define wcstok        PAL_wcstok
-#define wcscspn       PAL_wcscspn
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4125,8 +4125,6 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcstok(WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT size_t __cdecl PAL_wcscspn(const WCHAR *, const WCHAR *);
 PALIMPORT int __cdecl PAL_swprintf(WCHAR *, const WCHAR *, ...);
 PALIMPORT int __cdecl PAL_vswprintf(WCHAR *, const WCHAR *, va_list);
 PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);

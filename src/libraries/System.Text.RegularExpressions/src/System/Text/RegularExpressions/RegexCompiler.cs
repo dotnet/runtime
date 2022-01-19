@@ -51,6 +51,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_spanStartsWith = typeof(MemoryExtensions).GetMethod("StartsWith", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
@@ -58,6 +59,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
+        private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
 
         /// <summary>The ILGenerator currently in use.</summary>
         protected ILGenerator? _ilg;
@@ -443,6 +445,11 @@ namespace System.Text.RegularExpressions
                     EmitFixedSet_LeftToRight();
                     break;
 
+                case FindNextStartingPositionMode.LiteralAfterLoop_LeftToRight_CaseSensitive:
+                    Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                    EmitLiteralAfterAtomicLoop();
+                    break;
+
                 default:
                     Debug.Fail($"Unexpected mode: {_code.FindOptimizations.FindMode}");
                     goto case FindNextStartingPositionMode.NoSearch;
@@ -819,6 +826,151 @@ namespace System.Text.RegularExpressions
                     // return false;
                     BrFar(returnFalse);
                 }
+            }
+
+            // Emits a search for a literal following a leading atomic single-character loop.
+            void EmitLiteralAfterAtomicLoop()
+            {
+                Debug.Assert(_code.FindOptimizations.LiteralAfterLoop is not null);
+                (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal) target = _code.FindOptimizations.LiteralAfterLoop.Value;
+
+                Debug.Assert(target.LoopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
+                Debug.Assert(target.LoopNode.N == int.MaxValue);
+
+                // while (true)
+                Label loopBody = DefineLabel();
+                Label loopEnd = DefineLabel();
+                MarkLabel(loopBody);
+
+                // ReadOnlySpan<char> slice = inputSpan.Slice(pos, end - pos);
+                using RentedLocalBuilder slice = RentReadOnlySpanCharLocal();
+                Ldloca(inputSpan);
+                Ldloc(pos);
+                Ldloc(end);
+                Ldloc(pos);
+                Sub();
+                Call(s_spanSliceIntIntMethod);
+                Stloc(slice);
+
+                // Find the literal.  If we can't find it, we're done searching.
+                // int i = slice.IndexOf(literal);
+                // if (i < 0) break;
+                using RentedLocalBuilder i = RentInt32Local();
+                Ldloc(slice);
+                if (target.Literal.String is string literalString)
+                {
+                    Ldstr(literalString);
+                    Call(s_stringAsSpanMethod);
+                    Call(s_spanIndexOfSpan);
+                }
+                else if (target.Literal.Chars is not char[] literalChars)
+                {
+                    Ldc(target.Literal.Char);
+                    Call(s_spanIndexOfChar);
+                }
+                else
+                {
+                    switch (literalChars.Length)
+                    {
+                        case 2:
+                            Ldc(literalChars[0]);
+                            Ldc(literalChars[1]);
+                            Call(s_spanIndexOfAnyCharChar);
+                            break;
+                        case 3:
+                            Ldc(literalChars[0]);
+                            Ldc(literalChars[1]);
+                            Ldc(literalChars[2]);
+                            Call(s_spanIndexOfAnyCharCharChar);
+                            break;
+                        default:
+                            Ldstr(new string(literalChars));
+                            Call(s_stringAsSpanMethod);
+                            Call(s_spanIndexOfAnySpan);
+                            break;
+                    }
+                }
+                Stloc(i);
+                Ldloc(i);
+                Ldc(0);
+                BltFar(loopEnd);
+
+                // We found the literal.  Walk backwards from it finding as many matches as we can against the loop.
+
+                // int prev = i;
+                using RentedLocalBuilder prev = RentInt32Local();
+                Ldloc(i);
+                Stloc(prev);
+
+                // while ((uint)--prev < (uint)slice.Length) && MatchCharClass(slice[prev]));
+                Label innerLoopBody = DefineLabel();
+                Label innerLoopEnd = DefineLabel();
+                MarkLabel(innerLoopBody);
+                Ldloc(prev);
+                Ldc(1);
+                Sub();
+                Stloc(prev);
+                Ldloc(prev);
+                Ldloca(slice);
+                Call(s_spanGetLengthMethod);
+                BgeUn(innerLoopEnd);
+                Ldloca(slice);
+                Ldloc(prev);
+                Call(s_spanGetItemMethod);
+                LdindU2();
+                EmitMatchCharacterClass(target.LoopNode.Str!, caseInsensitive: false);
+                BrtrueFar(innerLoopBody);
+                MarkLabel(innerLoopEnd);
+
+                if (target.LoopNode.M > 0)
+                {
+                    // If we found fewer than needed, loop around to try again.  The loop doesn't overlap with the literal,
+                    // so we can start from after the last place the literal matched.
+                    // if ((i - prev - 1) < target.LoopNode.M)
+                    // {
+                    //     pos += i + 1;
+                    //     continue;
+                    // }
+                    Label metMinimum = DefineLabel();
+                    Ldloc(i);
+                    Ldloc(prev);
+                    Sub();
+                    Ldc(1);
+                    Sub();
+                    Ldc(target.LoopNode.M);
+                    Bge(metMinimum);
+                    Ldloc(pos);
+                    Ldloc(i);
+                    Add();
+                    Ldc(1);
+                    Add();
+                    Stloc(pos);
+                    BrFar(loopBody);
+                    MarkLabel(metMinimum);
+                }
+
+                // We have a winner.  The starting position is just after the last position that failed to match the loop.
+                // TODO: It'd be nice to be able to communicate i as a place the matching engine can start matching
+                // after the loop, so that it doesn't need to re-match the loop.
+
+                // base.runtextpos = pos + prev + 1;
+                // return true;
+                Ldthis();
+                Ldloc(pos);
+                Ldloc(prev);
+                Add();
+                Ldc(1);
+                Add();
+                Stfld(s_runtextposField);
+                Ldc(1);
+                Ret();
+
+                // }
+                MarkLabel(loopEnd);
+
+                // base.runtextpos = end;
+                // return false;
+                BrFar(returnFalse);
             }
         }
 
@@ -1905,7 +2057,7 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Onelazy:
                     case RegexNode.Notonelazy:
                     case RegexNode.Setlazy:
-                        EmitSingleCharLazy(node, emitLengthChecksIfRequired);
+                        EmitSingleCharLazy(node, subsequent, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Oneloopatomic:
@@ -1997,11 +2149,19 @@ namespace System.Text.RegularExpressions
             {
                 Debug.Assert(node.Type is RegexNode.UpdateBumpalong, $"Unexpected type: {node.Type}");
 
-                // base.runtextpos = pos;
+                // if (base.runtextpos < pos)
+                // {
+                //     base.runtextpos = pos;
+                // }
                 TransferSliceStaticPosToPos();
+                Ldthisfld(s_runtextposField);
+                Ldloc(pos);
+                Label skipUpdate = DefineLabel();
+                Bge(skipUpdate);
                 Ldthis();
                 Ldloc(pos);
                 Stfld(s_runtextposField);
+                MarkLabel(skipUpdate);
             }
 
             // Emits code for a concatenation
@@ -2021,14 +2181,30 @@ namespace System.Text.RegularExpressions
                         EmitSpanLengthCheck(requiredLength);
                         for (; i < exclusiveEnd; i++)
                         {
-                            EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent, emitLengthChecksIfRequired: false);
+                            EmitNode(node.Child(i), GetSubsequent(i, node, subsequent), emitLengthChecksIfRequired: false);
                         }
 
                         i--;
                         continue;
                     }
 
-                    EmitNode(node.Child(i), i + 1 < childCount ? node.Child(i + 1) : subsequent);
+                    EmitNode(node.Child(i), GetSubsequent(i, node, subsequent));
+                }
+
+                // Gets the node to treat as the subsequent one to node.Child(index)
+                static RegexNode? GetSubsequent(int index, RegexNode node, RegexNode? subsequent)
+                {
+                    int childCount = node.ChildCount();
+                    for (int i = index + 1; i < childCount; i++)
+                    {
+                        RegexNode next = node.Child(i);
+                        if (next.Type is not RegexNode.UpdateBumpalong) // skip node types that don't have a semantic impact
+                        {
+                            return next;
+                        }
+                    }
+
+                    return subsequent;
                 }
             }
 
@@ -2391,32 +2567,48 @@ namespace System.Text.RegularExpressions
                 EmitStackPop();
                 Stloc(startingPos);
 
-                // if (startingPos >= endingPos) goto originalDoneLabel;
-                Label originalDoneLabel = doneLabel;
+                // if (startingPos >= endingPos) goto doneLabel;
                 Ldloc(startingPos);
                 Ldloc(endingPos);
-                BgeFar(originalDoneLabel);
-                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
+                BgeFar(doneLabel);
 
-                if (subsequent?.FindStartingCharacter() is char subsequentCharacter)
+                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
                 {
-                    // endingPos = inputSpan.Slice(startingPos, endingPos - startingPos).LastIndexOf(subsequentCharacter);
+                    // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
                     // {
-                    //     goto originalDoneLabel;
+                    //     goto doneLabel;
                     // }
                     Ldloca(inputSpan);
                     Ldloc(startingPos);
-                    Ldloc(endingPos);
-                    Ldloc(startingPos);
-                    Sub();
-                    Call(s_spanSliceIntIntMethod);
-                    Ldc(subsequentCharacter);
-                    Call(s_spanLastIndexOfChar);
+                    if (literal.Item2 is not null)
+                    {
+                        Ldloca(inputSpan);
+                        Call(s_spanGetLengthMethod);
+                        Ldloc(endingPos);
+                        Ldc(literal.Item2.Length - 1);
+                        Add();
+                        Call(s_mathMinIntInt);
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(s_spanSliceIntIntMethod);
+                        Ldstr(literal.Item2);
+                        Call(s_stringAsSpanMethod);
+                        Call(s_spanLastIndexOfSpan);
+                    }
+                    else
+                    {
+                        Ldloc(endingPos);
+                        Ldloc(startingPos);
+                        Sub();
+                        Call(s_spanSliceIntIntMethod);
+                        Ldc(literal.Item1);
+                        Call(s_spanLastIndexOfChar);
+                    }
                     Stloc(endingPos);
                     Ldloc(endingPos);
                     Ldc(0);
-                    BltFar(originalDoneLabel);
+                    BltFar(doneLabel);
 
                     // endingPos += startingPos;
                     Ldloc(endingPos);
@@ -2448,9 +2640,11 @@ namespace System.Text.RegularExpressions
                 {
                     EmitStackPush(() => Ldloc(capturepos!));
                 }
+
+                doneLabel = backtrackingLabel; // leave set to the backtracking label for all subsequent nodes
             }
 
-            void EmitSingleCharLazy(RegexNode node, bool emitLengthChecksIfRequired = true)
+            void EmitSingleCharLazy(RegexNode node, RegexNode? subsequent = null, bool emitLengthChecksIfRequired = true)
             {
                 Debug.Assert(node.Type is RegexNode.Onelazy or RegexNode.Notonelazy or RegexNode.Setlazy, $"Unexpected type: {node.Type}");
 
@@ -2537,16 +2731,95 @@ namespace System.Text.RegularExpressions
                 // Now match the next item in the lazy loop.  We need to reset the pos to the position
                 // just after the last character in this loop was matched, and we need to store the resulting position
                 // for the next time we backtrack.
-
                 // pos = startingPos;
+                // Match single char;
                 Ldloc(startingPos);
                 Stloc(pos);
                 SliceInputSpan();
-
-                // Match single character
                 EmitSingleChar(node);
                 TransferSliceStaticPosToPos();
 
+                // Now that we've appropriately advanced by one character and are set for what comes after the loop,
+                // see if we can skip ahead more iterations by doing a search for a following literal.
+                if (iterationCount is null &&
+                    node.Type is RegexNode.Notonelazy &&
+                    !IsCaseInsensitive(node) &&
+                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal &&
+                    (literal.Item2?[0] ?? literal.Item1) != node.Ch)
+                {
+                    // e.g. "<[^>]*?>"
+                    // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
+                    // We can implement it to search for either that char or the literal, whichever comes first.
+                    // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
+
+                    // startingPos = slice.IndexOfAny(node.Ch, literal);
+                    Ldloc(slice);
+                    Ldc(node.Ch);
+                    Ldc(literal.Item2?[0] ?? literal.Item1);
+                    Call(s_spanIndexOfAnyCharChar);
+                    Stloc(startingPos);
+
+                    // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
+                    Ldloc(startingPos);
+                    Ldloca(slice);
+                    Call(s_spanGetLengthMethod);
+                    BgeUnFar(doneLabel);
+
+                    // if (slice[startingPos] == node.Ch) goto doneLabel;
+                    Ldloca(slice);
+                    Ldloc(startingPos);
+                    Call(s_spanGetItemMethod);
+                    LdindU2();
+                    Ldc(node.Ch);
+                    BeqFar(doneLabel);
+
+                    // pos += startingPos;
+                    // slice = inputSpace.Slice(pos, end - pos);
+                    Ldloc(pos);
+                    Ldloc(startingPos);
+                    Add();
+                    Stloc(pos);
+                    SliceInputSpan();
+                }
+                else if (iterationCount is null &&
+                    node.Type is RegexNode.Setlazy &&
+                    node.Str == RegexCharClass.AnyClass &&
+                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal2)
+                {
+                    // e.g. ".*?string" with RegexOptions.Singleline
+                    // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
+                    // isn't found, the loop fails. We can implement it to just search for that literal.
+
+                    // startingPos = slice.IndexOf(literal);
+                    Ldloc(slice);
+                    if (literal2.Item2 is not null)
+                    {
+                        Ldstr(literal2.Item2);
+                        Call(s_stringAsSpanMethod);
+                        Call(s_spanIndexOfSpan);
+                    }
+                    else
+                    {
+                        Ldc(literal2.Item1);
+                        Call(s_spanIndexOfChar);
+                    }
+                    Stloc(startingPos);
+
+                    // if (startingPos < 0) goto doneLabel;
+                    Ldloc(startingPos);
+                    Ldc(0);
+                    BltFar(doneLabel);
+
+                    // pos += startingPos;
+                    // slice = inputSpace.Slice(pos, end - pos);
+                    Ldloc(pos);
+                    Ldloc(startingPos);
+                    Add();
+                    Stloc(pos);
+                    SliceInputSpan();
+                }
+
+                // Store the position we've left off at in case we need to iterate again.
                 // startingPos = pos;
                 Ldloc(pos);
                 Stloc(startingPos);
