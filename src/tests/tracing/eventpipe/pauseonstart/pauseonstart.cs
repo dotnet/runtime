@@ -312,6 +312,10 @@ namespace Tracing.Tests.PauseOnStartValidation
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return true;
 
+            // This test only applies to CoreCLR (this checks if we're running on Mono)
+            if (Type.GetType("Mono.RuntimeStructs") != null)
+                return true;
+
             bool fSuccess = true;
             string serverName = ReverseServer.MakeServerAddress();
             Logger.logger.Log($"Server name is '{serverName}'");
