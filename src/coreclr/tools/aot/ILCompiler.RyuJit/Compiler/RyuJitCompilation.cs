@@ -98,6 +98,9 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
+            if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
+                options |= ObjectWritingOptions.UseDwarf5;
+
             ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }
 
@@ -242,5 +245,6 @@ namespace ILCompiler
     {
         MethodBodyFolding = 0x1,
         ControlFlowGuardAnnotations = 0x2,
+        UseDwarf5 = 0x4,
     }
 }
