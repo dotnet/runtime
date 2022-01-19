@@ -111,11 +111,11 @@ Type authors can pass down the `buffer` pointer to native code by defining a `Va
 
 ### Determining if a type is doesn't need marshalling
 
-For this design, we need to decide how to determine a type doesn't need to be marshalled and already has a representation we can pass directly to native code. We have two designs that we have experimented with below, and we have decided to go with design 2.
+For this design, we need to decide how to determine a type doesn't need to be marshalled and already has a representation we can pass directly to native code - that is, we need a definition for "does not require marshalling". We have two designs that we have experimented with below, and we have decided to go with design 2.
 
 #### Design 1: Introducing `BlittableTypeAttribute`
 
-Traditionally, the concept of "doesn't need marshalling" is referred to as "blittable". The built-in runtime marshalling system has an issue as mentioned above that the concept of `unmanaged` is not the same as the concept of `blittable`. Additionally, due to the ref assembly issue above, we cannot rely on ref assemblies to have accurate information in terms of fields of a type. To solve these issues in combination with the desire to enable manual interop, we need to provide a way for users to signal that a given type should be blittable and that the source generator should not generate marshalling code. We'll introduce a new attribute, the `BlittableTypeAttribute`:
+Traditionally, the concept of "does not require marshalling" is referred to as "blittable". The built-in runtime marshalling system has an issue as mentioned above that the concept of `unmanaged` is not the same as the concept of `blittable`. Additionally, due to the ref assembly issue above, we cannot rely on ref assemblies to have accurate information in terms of fields of a type. To solve these issues in combination with the desire to enable manual interop, we need to provide a way for users to signal that a given type should be blittable and that the source generator should not generate marshalling code. We'll introduce a new attribute, the `BlittableTypeAttribute`:
 
 ```csharp
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
@@ -210,13 +210,13 @@ To enable blittable generics support in this struct marshalling model, we extend
 
 Since all fields typed with non-parameterized types are validated to be blittable at type definition time, we know that they are all blittable at type usage time. So, we only need to validate that the generic fields are instantiated with blittable types.
 
-#### Design 2: `DisableRuntimeMarshallingAttribute`
+#### Design 2: [`DisableRuntimeMarshallingAttribute`](https://github.com/dotnet/runtime/issues/60639)
 
-As an alternative design, we can use a different definition of "does not require marshalling". This design proposes changing the definition from "the runtime's definition of blittable" to "types considered `unmanaged` in C#). The `DisableRuntimeMarshallingAttribute` attribute helps us solve this problem. When applied to an assembly, this attribute causes the runtime to not do any marshalling for any types that are `unmanaged` types and do not have any auto-layout fields for all P/Invokes in the assembly even when the types do not fit the runtime's definition of "blittable", among other features. This definition will work for all of our scenarios, with one issue listed below.
+As an alternative design, we can use a different definition of "does not require marshalling". This design proposes changing the definition from "the runtime's definition of blittable" to "types considered `unmanaged` in C#". The `DisableRuntimeMarshallingAttribute` attribute helps us solve this problem. When applied to an assembly, this attribute causes the runtime to not do any marshalling for any types that are `unmanaged` types and do not have any auto-layout fields for all P/Invokes in the assembly; this includes when the types do not fit the runtime's definition of "blittable". This definition of "does not require marshalling" will work for all of our scenarios, with one issue listed below.
 
 For the auto-layout clause, we have one small issue; today, our ref-assemblies do not expose if a value type is marked as `[StructLayout(LayoutKind.Auto)]`, so we'd still have some cases where we might have runtime failures. However, we can update the tooling used in dotnet/runtime, GenAPI, to expose this information if we so desire. Once that case is handled, we have a mechanism that we can safely use to determine, at compile time, which types will not require marshalling. If we decide to not cover this case (as cases where users mark types as `LayoutKind.Auto` manually are exceptionally rare), we still have a solid design as Roslyn will automatically determine for us if a type is `unmanaged`, so we don't need to do any additional work.
 
-As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it does not require marshalling without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the DllImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when custom user-defined types used. As we believe that users should be able to move over their assemblies to the new source-generated interop world as a whole assembly, we do not believe that this will cause any serious issues in adoption. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator.
+As `unmanaged` is a C# language concept, we can use Roslyn's APIs to determine if a type is `unmanaged` to determine if it does not require marshalling without needing to define any new attributes and reshape the ecosystem. However, to enable this work, the DllImportGenerator, as well as any other source generators that generate calls to native code using the interop team's infrastructure, will need to require that the user applies the `DisableRuntimeMarshallingAttribute` to their assembly when custom user-defined types are used. As we believe that users should be able to move over their assemblies to the new source-generated interop world as a whole assembly, we do not believe that this will cause any serious issues in adoption. To help support users in this case, the interop team will provide a code-fix that will generate the `DisableRuntimeMarshallingAttribute` for users when they use the source generator.
 
 ### Usage
 
@@ -232,7 +232,7 @@ The user may want to manually mark their types as marshalable with custom marsha
 
 The P/Invoke source generator (as well as the struct source generator when nested struct types are used) would use the `NativeMarshallingAttribute` to determine how to marshal a parameter or field with an unknown type.
 
-If a structure type does not meet the requirements to not require marshalling or the `NativeMarshallingAttribute` applied at the type definition, the user can supply a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a native type matching the same requirements as `NativeMarshallingAttribute`'s native type.
+If a structure type does not meet the requirements to not require marshalling or does not have the `NativeMarshallingAttribute` applied at the type definition, the user can supply a `MarshalUsingAttribute` at the marshalling location (field, parameter, or return value) with a native type matching the same requirements as `NativeMarshallingAttribute`'s native type.
 
 All generated stubs will be marked with [`SkipLocalsInitAttribute`](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.skiplocalsinitattribute) on supported frameworks. This does require attention when performing custom marshalling as the state of stub allocated memory will be in an undefined state.
 
@@ -265,7 +265,7 @@ struct HRESULT
 
 In this case, the underlying native type would actually be an `int`, but the user could use the strongly-typed `HResult` type as the public surface area.
 
-> :question: Should we support transparent structures on manually annotated types that wouldn't need marshalling otherwise types? If we do, we should do so in an opt-in manner to make it possible to have a `Value` property on the type without assuming that it is for interop in all cases.
+> :question: Should we support transparent structures on manually annotated types that wouldn't need marshalling otherwise? If we do, we should do so in an opt-in manner to make it possible to have a `Value` property on the type without assuming that it is for interop in all cases.
 
 #### Example: ComWrappers marshalling with Transparent Structures
 
