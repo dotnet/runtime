@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using ILLink.Shared.DataFlow;
 using Microsoft.CodeAnalysis;
@@ -23,6 +24,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{
+		public record struct ValueOfOperation (TValue Value, IOperation? Operation);
+
 		protected readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
 
 		protected readonly OperationBlockAnalysisContext Context;
@@ -65,19 +68,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public abstract void HandleAssignment (TValue source, TValue target, IOperation operation);
 
-		// This is called to handle instance method invocations, where "receiver" is the
-		// analyzed value for the object on which the instance method is called, and similarly
-		// for property references.
-		public abstract void HandleReceiverArgument (TValue receiver, IMethodSymbol targetMethod, IOperation operation);
-
-		public abstract void HandleArgument (TValue argument, IArgumentOperation operation);
-
-		// Called for property setters which are essentially like arguments passed to a method.
-		public abstract void HandlePropertySetterArgument (TValue value, IMethodSymbol setMethod, ISimpleAssignmentOperation operation);
-
 		// This takes an IOperation rather than an IReturnOperation because the return value
 		// may (must?) come from BranchValue of an operation whose FallThroughSuccessor is the exit block.
 		public abstract void HandleReturnValue (TValue returnValue, IOperation operation);
+
+		// This is called for any method call, which includes:
+		// - Normal invocation operation
+		// - Accessing property value - which is treated as a call to the getter
+		// - Setting a property value - which is treated as a call to the setter
+		// All inputs are already visited and turned into values.
+		// The return value should be a value representing the return value from the called method.
+		public abstract TValue HandleMethodCall (IMethodSymbol calledMethod, ValueOfOperation instance, ImmutableArray<ValueOfOperation> arguments, IOperation operation);
 
 		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
@@ -100,10 +101,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				break;
 			case IPropertyReferenceOperation propertyRef:
 				// A property assignment is really a call to the property setter.
-				var setMethod = propertyRef.Property.SetMethod;
-				Debug.Assert (setMethod != null);
-				HandlePropertySetterArgument (value, setMethod!, operation);
-				break;
+				var setMethod = propertyRef.Property.SetMethod!;
+				TValue instanceValue = Visit (propertyRef.Instance, state);
+				return HandleMethodCall (setMethod, new (instanceValue, propertyRef), ImmutableArray.Create (new ValueOfOperation (value, operation.Value)), operation);
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
 			case IArrayElementReferenceOperation:
 				// TODO
@@ -141,15 +141,17 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitInvocation (IInvocationOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (operation.Instance != null) {
-				var instanceValue = Visit (operation.Instance, state);
-				HandleReceiverArgument (instanceValue, operation.TargetMethod, operation);
-			}
+			TValue instanceValue = Visit (operation.Instance, state);
 
+			var argumentsBuilder = ImmutableArray.CreateBuilder<ValueOfOperation> ();
 			foreach (var argument in operation.Arguments)
-				VisitArgument (argument, state);
+				argumentsBuilder.Add (new (VisitArgument (argument, state), argument));
 
-			return TopValue;
+			return HandleMethodCall (
+				operation.TargetMethod,
+				new (instanceValue, operation),
+				argumentsBuilder.ToImmutableArray (),
+				operation);
 		}
 
 		public static IMethodSymbol GetPropertyMethod (IPropertyReferenceOperation operation)
@@ -174,9 +176,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitPropertyReference (IPropertyReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			if (operation.Instance != null) {
-				var instanceValue = Visit (operation.Instance, state);
-				HandleReceiverArgument (instanceValue, GetPropertyMethod (operation), operation);
+			if (operation.GetValueUsageInfo (operation.Property).HasFlag (ValueUsageInfo.Read)) {
+				// Accessing property for reading is really a call to the getter
+				// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
+				TValue instanceValue = Visit (operation.Instance, state);
+				return HandleMethodCall (operation.Property.GetMethod!, new ValueOfOperation (instanceValue, operation), ImmutableArray<ValueOfOperation>.Empty, operation);
 			}
 
 			return TopValue;
@@ -184,9 +188,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public override TValue VisitArgument (IArgumentOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
-			var value = Visit (operation.Value, state);
-			HandleArgument (value, operation);
-			return value;
+			return Visit (operation.Value, state);
 		}
 
 		public override TValue VisitReturn (IReturnOperation operation, LocalDataFlowState<TValue, TValueLattice> state)

@@ -82,14 +82,14 @@ namespace Mono.Linker
 			return method.Parameters[parameterIndex].ParameterType;
 		}
 
-		public static bool IsDeclaredOnType (this MethodReference method, string namespaceName, string typeName)
+		public static bool IsDeclaredOnType (this MethodReference method, string fullTypeName)
 		{
-			return method.DeclaringType.IsTypeOf (namespaceName, typeName);
+			return method.DeclaringType.IsTypeOf (fullTypeName);
 		}
 
-		public static bool HasParameterOfType (this MethodReference method, int parameterIndex, string namespaceName, string typeName)
+		public static bool HasParameterOfType (this MethodReference method, int parameterIndex, string fullTypeName)
 		{
-			return method.Parameters.Count > parameterIndex && method.Parameters[parameterIndex].ParameterType.IsTypeOf (namespaceName, typeName);
+			return method.Parameters.Count > parameterIndex && method.Parameters[parameterIndex].ParameterType.IsTypeOf (fullTypeName);
 		}
 	}
 }
