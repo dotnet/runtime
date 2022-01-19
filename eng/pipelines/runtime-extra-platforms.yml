@@ -130,7 +130,8 @@ jobs:
     platforms:
     # BuildWasmApps should only happen on the extra platforms build as we already have coverage for this build on PRs.
     - Browser_wasm
-    - Browser_wasm_win
+    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
+    # - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: wasmbuildtestsContainsChange
@@ -168,7 +169,8 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    - Browser_wasm_win
+    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
+    # - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -255,7 +257,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Browser_wasm
-    - Browser_wasm_win
+    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
+    # - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -556,7 +559,8 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Browser_wasm_win
+    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
+    # - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: wasmdebuggertestsContainsChange
