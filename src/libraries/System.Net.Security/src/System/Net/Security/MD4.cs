@@ -159,7 +159,7 @@ namespace System.Net.Security
         {
             for (int i = 0, j = index; i < output.Length; i++, j += 4)
             {
-                output[i] = (uint)((input[j]) | (input[j + 1] << 8) | (input[j + 2] << 16) | (input[j + 3] << 24));
+                output[i] = BinaryPrimitives.ReadUInt32LittleEndian(input.Slice(j));
             }
         }
 
