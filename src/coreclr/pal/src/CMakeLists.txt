@@ -143,7 +143,6 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  loader/modulename.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
   locale/utf8.cpp
