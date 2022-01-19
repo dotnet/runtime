@@ -124,7 +124,6 @@ namespace System.Reflection.Tests
         [InlineData("na=me", typeof(FileLoadException))]
         [InlineData("na\'me", typeof(FileLoadException))]
         [InlineData("na\"me", typeof(FileLoadException))]
-        [ActiveIssue ("https://github.com/dotnet/runtime/issues/45032", TestRuntimes.Mono)]
         public void Ctor_String_Invalid_Issue(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
