@@ -310,7 +310,8 @@ namespace System.Net.Http.Headers
 
         private IEnumerator<KeyValuePair<string, IEnumerable<string>>> GetEnumeratorCore()
         {
-            HeaderEntry[] entries = GetEntriesArray()!;
+            HeaderEntry[]? entries = GetEntriesArray();
+            Debug.Assert(_count != 0 && entries is not null, "Caller should have validated the collection is not empty");
 
             int count = _count;
             for (int i = 0; i < count; i++)
