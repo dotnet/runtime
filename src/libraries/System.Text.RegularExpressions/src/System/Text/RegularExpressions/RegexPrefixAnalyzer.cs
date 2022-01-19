@@ -79,55 +79,6 @@ namespace System.Text.RegularExpressions
                             return !rtl;
                         }
 
-                    // Alternation: find a string that's a shared prefix of all branches
-                    case RegexNode.Alternate:
-                        {
-                            int childCount = node.ChildCount();
-
-                            // Store the initial branch into the target builder
-                            int initialLength = vsb.Length;
-                            bool keepExploring = Process(node.Child(0), ref vsb);
-                            int addedLength = vsb.Length - initialLength;
-
-                            // Then explore the rest of the branches, finding the length
-                            // a prefix they all share in common with the initial branch.
-                            if (addedLength != 0)
-                            {
-                                var alternateSb = new ValueStringBuilder(64);
-
-                                // Process each branch.  If we reach a point where we've proven there's
-                                // no overlap, we can bail early.
-                                for (int i = 1; i < childCount && addedLength != 0; i++)
-                                {
-                                    alternateSb.Length = 0;
-
-                                    // Process the branch.  We want to keep exploring after this alternation,
-                                    // but we can't if either this branch doesn't allow for it or if the prefix
-                                    // supplied by this branch doesn't entirely match all the previous ones.
-                                    keepExploring &= Process(node.Child(i), ref alternateSb);
-                                    keepExploring &= alternateSb.Length == addedLength;
-
-                                    addedLength = Math.Min(addedLength, alternateSb.Length);
-                                    for (int j = 0; j < addedLength; j++)
-                                    {
-                                        if (vsb[initialLength + j] != alternateSb[j])
-                                        {
-                                            addedLength = j;
-                                            keepExploring = false;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                alternateSb.Dispose();
-
-                                // Then cull back on what was added based on the other branches.
-                                vsb.Length = initialLength + addedLength;
-                            }
-
-                            return !rtl && keepExploring;
-                        }
-
                     // One character
                     case RegexNode.One when (node.Options & RegexOptions.IgnoreCase) == 0:
                         vsb.Append(node.Ch);
