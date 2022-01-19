@@ -153,7 +153,7 @@ Exit:
 HRESULT RegMeta::GetBlob(
                 ULONG        ixBlob,        // [IN] Value from a blob column.
     _Out_       ULONG       *pcbDataSize,   // [OUT] Put size of the blob here.
-    __deref_out const void **ppvData)       // [OUT] Put a pointer to the blob here.
+    _Outptr_ const void **ppvData)       // [OUT] Put a pointer to the blob here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;
@@ -226,7 +226,7 @@ HRESULT
 RegMeta::GetUserString(
                     ULONG        ixUserString,      // [IN] Value from a UserString column.
     _Out_           ULONG       *pcbDataSize,       // [OUT] Put size of the UserString here.
-    __deref_out_opt const void **ppvData)           // [OUT] Put a pointer to the UserString here.
+    _Outptr_opt_ const void **ppvData)           // [OUT] Put a pointer to the UserString here.
 {
     HRESULT hr = S_OK;
     BEGIN_ENTRYPOINT_NOTHROW;

@@ -238,7 +238,7 @@ namespace System.Text.Json
                 // The conditions are ordered with stream first as that would be the most common mode
                 if (_output == null)
                 {
-                    throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+                    ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
             }
         }

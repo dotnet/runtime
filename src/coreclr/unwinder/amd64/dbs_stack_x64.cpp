@@ -1213,7 +1213,7 @@ Return Value:
      (((_DbhFrame)->Reserved[2]) & ~DBHX64_IS_RESTART_FLAG) | \
       ((_IsRestart) ? DBHX64_IS_RESTART_FLAG : 0))
 
-DbsX64StackUnwinder::DbsX64StackUnwinder(__in_opt DbsStackServices* Services)
+DbsX64StackUnwinder::DbsX64StackUnwinder(_In_opt_ DbsStackServices* Services)
     : DbsStackUnwinder(Services, "x64", IMAGE_FILE_MACHINE_AMD64,
                        sizeof(m_Context),
                        sizeof(_IMAGE_RUNTIME_FUNCTION_ENTRY),
@@ -1290,7 +1290,7 @@ GetFullUnwindInfoSize(_In_ PVOID InfoHeader)
 HRESULT
 DbsX64StackUnwinder::DbhStart(__inout LPSTACKFRAME64 StackFrame,
                               _In_ DWORD DbhVersion,
-                              __in_bcount(DbhStorageBytes) PVOID DbhStorage,
+                              _In_reads_bytes_(DbhStorageBytes) PVOID DbhStorage,
                               _In_ DWORD DbhStorageBytes,
                               __inout PVOID Context)
 {
@@ -1344,7 +1344,7 @@ HRESULT
 DbsX64StackUnwinder::
 DbhContinue(__inout LPSTACKFRAME64 StackFrame,
             _In_ DWORD DbhVersion,
-            __in_bcount(DbhStorageBytes) PVOID DbhStorage,
+            _In_reads_bytes_(DbhStorageBytes) PVOID DbhStorage,
             _In_ DWORD DbhStorageBytes,
             __inout PVOID Context)
 {

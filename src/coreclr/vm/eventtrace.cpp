@@ -4961,7 +4961,7 @@ VOID ETW::ExceptionLog::ExceptionFilterEnd()
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/
-VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName)
+VOID ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
 {
     CONTRACTL {
         NOTHROW;

@@ -767,7 +767,7 @@ namespace System.Xml
 
         private async Task<(XmlSchemaType, string, object)> InternalReadElementContentAsObjectTupleAsync(bool unwrapTypedValue)
         {
-            XmlSchemaType? xmlType = null;
+            XmlSchemaType? xmlType;
             string originalString;
 
             Debug.Assert(this.NodeType == XmlNodeType.Element);

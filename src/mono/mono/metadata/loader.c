@@ -107,6 +107,12 @@ mono_loader_init ()
 	}
 }
 
+MonoDefaults *
+mono_get_defaults (void)
+{
+	return &mono_defaults;
+}
+
 void
 mono_global_loader_data_lock (void)
 {
@@ -1666,6 +1672,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
+	case FRAME_TYPE_IL_STATE:
 		g_assert (frame->ji);
 		return d->func (frame->actual_method, frame->native_offset, frame->il_offset, frame->managed, d->user_data);
 		break;

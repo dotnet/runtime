@@ -81,7 +81,7 @@ static void appendStrNum(CQuickBytes *out, int num) {
     CONTRACTL_END;
 
     char buff[16];
-    sprintf_s(buff, COUNTOF(buff), "%d", num);
+    sprintf_s(buff, ARRAY_SIZE(buff), "%d", num);
     appendStr(out, buff);
 }
 
@@ -265,14 +265,14 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 callConvUndefined,
                 callConvUndefined
                 };
-            static_assert_no_msg(COUNTOF(callConvNames) == (IMAGE_CEE_CS_CALLCONV_MASK + 1));
+            static_assert_no_msg(ARRAY_SIZE(callConvNames) == (IMAGE_CEE_CS_CALLCONV_MASK + 1));
 
             char tmp[32];
             unsigned callConvIdx = callConv & IMAGE_CEE_CS_CALLCONV_MASK;
             const char* name_cc = callConvNames[callConvIdx];
             if (name_cc == callConvUndefined)
             {
-                sprintf_s(tmp, COUNTOF(tmp), "callconv(%u) ", callConvIdx);
+                sprintf_s(tmp, ARRAY_SIZE(tmp), "callconv(%u) ", callConvIdx);
                 name_cc = tmp;
             }
 
@@ -290,14 +290,14 @@ PCCOR_SIGNATURE PrettyPrintSignature(
             if(pszArgName)
             {
                 argname[0] = 0;
-                DumpParamAttr(argname,COUNTOF(argname),pszArgName[ixArg+numArgs].attr);
+                DumpParamAttr(argname, ARRAY_SIZE(argname), pszArgName[ixArg+numArgs].attr);
                 appendStr(out,argname);
             }
             typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
             if(pszArgName)
             {
                 argname[0] = ' '; argname[1] = 0;
-                DumpMarshaling(pIMDI,argname,COUNTOF(argname),pszArgName[ixArg+numArgs].tok);
+                DumpMarshaling(pIMDI,argname, ARRAY_SIZE(argname), pszArgName[ixArg+numArgs].tok);
                 appendStr(out,argname);
             }
             if(*name != 0)
@@ -355,7 +355,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 if(pszArgName)
                 {
                     argname[0] = 0;
-                    DumpParamAttr(argname,COUNTOF(argname),pszArgName[ixArg].attr);
+                    DumpParamAttr(argname, ARRAY_SIZE(argname), pszArgName[ixArg].attr);
                     appendStr(out,argname);
                 }
                 typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
@@ -364,10 +364,10 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                     if(pszArgName)
                     {
                         argname[0] = ' '; argname[1] = 0;
-                        DumpMarshaling(pIMDI,argname,COUNTOF(argname),pszArgName[ixArg].tok);
-                        strcat_s(argname, COUNTOF(argname), ProperName(pszArgName[ixArg++].name));
+                        DumpMarshaling(pIMDI,argname, ARRAY_SIZE(argname), pszArgName[ixArg].tok);
+                        strcat_s(argname, ARRAY_SIZE(argname), ProperName(pszArgName[ixArg++].name));
                     }
-                    else sprintf_s(argname,COUNTOF(argname)," %s_%d",label,ixArg++);
+                    else sprintf_s(argname, ARRAY_SIZE(argname), " %s_%d", label,ixArg++);
                     appendStr(out,argname);
                 }
                 --numArgs;
@@ -392,7 +392,7 @@ PCCOR_SIGNATURE PrettyPrintSignature(
                 appendChar(out, ',');
             if(pszArgName)
             {
-                sprintf_s(argname,COUNTOF(argname),"[%d] ",pszArgName[ixArg].attr);
+                sprintf_s(argname,ARRAY_SIZE(argname),"[%d] ",pszArgName[ixArg].attr);
                 appendStr(out,argname);
             }
             typePtr = PrettyPrintTypeOrDef(typePtr, out, pIMDI);
@@ -400,9 +400,9 @@ PCCOR_SIGNATURE PrettyPrintSignature(
             {
                 if(pszArgName)
                 {
-                    sprintf_s(argname,COUNTOF(argname)," %s",ProperLocalName(pszArgName[ixArg++].name));
+                    sprintf_s(argname,ARRAY_SIZE(argname)," %s",ProperLocalName(pszArgName[ixArg++].name));
                 }
-                else sprintf_s(argname,COUNTOF(argname)," %s_%d",label,ixArg++);
+                else sprintf_s(argname,ARRAY_SIZE(argname)," %s_%d",label,ixArg++);
                 appendStr(out,argname);
             }
             --numArgs;
@@ -689,7 +689,7 @@ PCCOR_SIGNATURE PrettyPrintType(
                 }
 
                 char sz[32];
-                sprintf_s(sz, COUNTOF(sz), " /* MT: 0x%p */", pMT);
+                sprintf_s(sz, ARRAY_SIZE(sz), " /* MT: 0x%p */", pMT);
                 appendStr(out, sz);
                 break;
             }
@@ -731,7 +731,7 @@ PCCOR_SIGNATURE PrettyPrintType(
                 if(typ)
                 {
                     char sz[64];
-                    sprintf_s(sz,COUNTOF(sz),"/* UNKNOWN TYPE (0x%X)*/",typ);
+                    sprintf_s(sz,ARRAY_SIZE(sz),"/* UNKNOWN TYPE (0x%X)*/",typ);
                     appendStr(out, ERRORMSG(sz));
                 }
                 break;
@@ -762,7 +762,7 @@ const char* PrettyPrintClass(
     if(!pIMDI->IsValidToken(tk))
     {
         char str[1024];
-        sprintf_s(str,COUNTOF(str)," [ERROR: INVALID TOKEN 0x%8.8X] ",tk);
+        sprintf_s(str,ARRAY_SIZE(str)," [ERROR: INVALID TOKEN 0x%8.8X] ",tk);
         appendStr(out,ERRORMSG(str));
         return(asString(out));
     }
@@ -851,7 +851,7 @@ const char* PrettyPrintClass(
                 if(g_fDumpTokens)
                 {
                     char tmp[16];
-                    sprintf_s(tmp,COUNTOF(tmp),"/*%08X*/",tk);
+                    sprintf_s(tmp,ARRAY_SIZE(tmp),"/*%08X*/",tk);
                     appendStr(out,COMMENT(tmp));
                 }
             }
@@ -880,7 +880,7 @@ const char* PrettyPrintClass(
                     if(g_fDumpTokens)
                     {
                         char tmp[16];
-                        sprintf_s(tmp,COUNTOF(tmp),"/*%08X*/",tk);
+                        sprintf_s(tmp,ARRAY_SIZE(tmp),"/*%08X*/",tk);
                         appendStr(out,COMMENT(tmp));
                     }
                     appendChar(out, ']');
@@ -901,7 +901,7 @@ const char* PrettyPrintClass(
                     if(g_fDumpTokens)
                     {
                         char tmp[16];
-                        sprintf_s(tmp,COUNTOF(tmp),"/* %08X */",tk);
+                        sprintf_s(tmp,ARRAY_SIZE(tmp),"/* %08X */",tk);
                         appendStr(out,COMMENT(tmp));
                     }
                     appendChar(out, ']');
@@ -923,7 +923,7 @@ const char* PrettyPrintClass(
                     if(g_fDumpTokens)
                     {
                         char tmp[16];
-                        sprintf_s(tmp,COUNTOF(tmp),"/*%08X*/",tk);
+                        sprintf_s(tmp,ARRAY_SIZE(tmp),"/*%08X*/",tk);
                         appendStr(out,COMMENT(tmp));
                     }
                     appendChar(out, ']');
@@ -951,7 +951,7 @@ const char* PrettyPrintClass(
                     if (FAILED(pIMDI->GetSigFromToken(tk, &cSig, &sig)))
                     {
                         char tmp[64];
-                        sprintf_s(tmp, COUNTOF(tmp), "/*Invalid %08X record*/", tk);
+                        sprintf_s(tmp, ARRAY_SIZE(tmp), "/*Invalid %08X record*/", tk);
                         appendStr(out, COMMENT(tmp));
                     }
                     else
@@ -962,7 +962,7 @@ const char* PrettyPrintClass(
                 if(g_fDumpTokens)
                 {
                     char tmp[16];
-                    sprintf_s(tmp,COUNTOF(tmp),"/*%08X*/",tk);
+                    sprintf_s(tmp,ARRAY_SIZE(tmp),"/*%08X*/",tk);
                     appendStr(out,COMMENT(tmp));
                 }
             }
@@ -974,7 +974,7 @@ const char* PrettyPrintClass(
         default:
             {
                 char str[128];
-                sprintf_s(str,COUNTOF(str)," [ERROR: INVALID TOKEN TYPE 0x%8.8X] ",tk);
+                sprintf_s(str,ARRAY_SIZE(str)," [ERROR: INVALID TOKEN TYPE 0x%8.8X] ",tk);
                 appendStr(out,ERRORMSG(str));
             }
     }
@@ -1073,7 +1073,7 @@ bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed dat
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 char* DumpMarshaling(IMDInternalImport* pImport,
-                     __inout_ecount(cchszString) char* szString,
+                     _Inout_updates_(cchszString) char* szString,
                      DWORD cchszString,
                      mdToken tok)
 {
@@ -1540,7 +1540,7 @@ error:
 #pragma warning(pop)
 #endif
 
-char* DumpParamAttr(__inout_ecount(cchszString) char* szString, DWORD cchszString, DWORD dwAttr)
+char* DumpParamAttr(_Inout_updates_(cchszString) char* szString, DWORD cchszString, DWORD dwAttr)
 {
     CONTRACTL
     {

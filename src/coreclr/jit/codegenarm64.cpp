@@ -3356,6 +3356,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             else
             {
                 // issue a full memory barrier before a volatile StInd
+                // Note: We cannot issue store barrier ishst because it is a weaker barrier.
+                // The loads can get rearranged around the barrier causing to read wrong
+                // value.
                 instGen_MemoryBarrier();
             }
         }

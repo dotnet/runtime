@@ -279,69 +279,11 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 0) // Controls the Alt
 #else                                                        // !defined(TARGET_ARM64) && !defined(TARGET_X86)
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
 #endif                                                       // defined(TARGET_ARM64) || defined(TARGET_X86)
-///
-/// JIT Hardware Intrinsics
-///
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-CONFIG_INTEGER(EnableSSE3_4, W("EnableSSE3_4"), 1) // Enable SSE3, SSSE3, SSE 4.1 and 4.2 instruction set as default
-#endif
-
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-// Enable AVX instruction set for wide operations as default. When both AVX and SSE3_4 are set, we will use the most
-// capable instruction set available which will prefer AVX over SSE3/4.
-CONFIG_INTEGER(EnableHWIntrinsic, W("EnableHWIntrinsic"), 1) // Enable Base
-CONFIG_INTEGER(EnableSSE, W("EnableSSE"), 1)                 // Enable SSE
-CONFIG_INTEGER(EnableSSE2, W("EnableSSE2"), 1)               // Enable SSE2
-CONFIG_INTEGER(EnableSSE3, W("EnableSSE3"), 1)               // Enable SSE3
-CONFIG_INTEGER(EnableSSSE3, W("EnableSSSE3"), 1)             // Enable SSSE3
-CONFIG_INTEGER(EnableSSE41, W("EnableSSE41"), 1)             // Enable SSE41
-CONFIG_INTEGER(EnableSSE42, W("EnableSSE42"), 1)             // Enable SSE42
-CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1)                 // Enable AVX
-CONFIG_INTEGER(EnableAVX2, W("EnableAVX2"), 1)               // Enable AVX2
-CONFIG_INTEGER(EnableAVXVNNI, W("EnableAVXVNNI"), 1)         // Enable AVXVNNI
-CONFIG_INTEGER(EnableFMA, W("EnableFMA"), 1)                 // Enable FMA
-CONFIG_INTEGER(EnableAES, W("EnableAES"), 1)                 // Enable AES
-CONFIG_INTEGER(EnableBMI1, W("EnableBMI1"), 1)               // Enable BMI1
-CONFIG_INTEGER(EnableBMI2, W("EnableBMI2"), 1)               // Enable BMI2
-CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)             // Enable AES
-CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1)     // Enable PCLMULQDQ
-CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
-#else                                                        // !defined(TARGET_AMD64) && !defined(TARGET_X86)
-// Enable AVX instruction set for wide operations as default
-CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
-#endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
-
-// clang-format off
-
-#if defined(TARGET_ARM64)
-CONFIG_INTEGER(EnableHWIntrinsic,       W("EnableHWIntrinsic"), 1)
-CONFIG_INTEGER(EnableArm64Aes,          W("EnableArm64Aes"), 1)
-CONFIG_INTEGER(EnableArm64Atomics,      W("EnableArm64Atomics"), 1)
-CONFIG_INTEGER(EnableArm64Crc32,        W("EnableArm64Crc32"), 1)
-CONFIG_INTEGER(EnableArm64Dcpop,        W("EnableArm64Dcpop"), 1)
-CONFIG_INTEGER(EnableArm64Dp,           W("EnableArm64Dp"), 1)
-CONFIG_INTEGER(EnableArm64Fcma,         W("EnableArm64Fcma"), 1)
-CONFIG_INTEGER(EnableArm64Fp,           W("EnableArm64Fp"), 1)
-CONFIG_INTEGER(EnableArm64Fp16,         W("EnableArm64Fp16"), 1)
-CONFIG_INTEGER(EnableArm64Jscvt,        W("EnableArm64Jscvt"), 1)
-CONFIG_INTEGER(EnableArm64Lrcpc,        W("EnableArm64Lrcpc"), 1)
-CONFIG_INTEGER(EnableArm64Pmull,        W("EnableArm64Pmull"), 1)
-CONFIG_INTEGER(EnableArm64Sha1,         W("EnableArm64Sha1"), 1)
-CONFIG_INTEGER(EnableArm64Sha256,       W("EnableArm64Sha256"), 1)
-CONFIG_INTEGER(EnableArm64Sha512,       W("EnableArm64Sha512"), 1)
-CONFIG_INTEGER(EnableArm64Sha3,         W("EnableArm64Sha3"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd,      W("EnableArm64AdvSimd"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd_v81,  W("EnableArm64AdvSimd_v81"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd_Fp16, W("EnableArm64AdvSimd_Fp16"), 1)
-CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
-CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
-CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
-#endif // defined(TARGET_ARM64)
 
 // clang-format on
 
@@ -521,6 +463,12 @@ CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
 // Enable partial compilation for Tier0 methods
 CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+#if defined(DEBUG)
+// Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
+CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
+// Place patchpoint at the specified IL offset, if possible. Overrides random placement.
+CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1)
+#endif // debug
 
 #if defined(DEBUG)
 CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods

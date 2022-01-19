@@ -646,6 +646,12 @@ namespace System.Text.Json
         {
             throw GetInvalidOperationException("char", tokenType);
         }
+
+        [DoesNotReturn]
+        public static void ThrowObjectDisposedException_Utf8JsonWriter()
+        {
+            throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+        }
     }
 
     internal enum ExceptionResource

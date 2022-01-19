@@ -69,7 +69,7 @@ struct VarName
 {
     char* name;
     BinStr* pbody;
-    VarName(__in_opt __nullterminated char* sz, BinStr* pbs) { name = sz; pbody = pbs; };
+    VarName(_In_opt_z_ char* sz, BinStr* pbs) { name = sz; pbody = pbs; };
     ~VarName() { delete [] name; delete pbody; };
     int ComparedTo(VarName* pN) { return strcmp(name,pN->name); };
 };
