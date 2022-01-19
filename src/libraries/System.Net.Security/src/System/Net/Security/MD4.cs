@@ -92,7 +92,7 @@ namespace System.Net.Security
             }
 
             /* Buffer remaining input */
-            BlockCopy(input, i, buffer, index, (input.Length - i));
+            input.Slice(i).CopyTo(buffer.Slice(index));
         }
 
         //--- private methods ---------------------------------------------------
