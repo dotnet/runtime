@@ -431,27 +431,29 @@ namespace System
         {
             if (AdvSimd.IsSupported)
             {
+                // Inline the most common cases
                 if (mode == MidpointRounding.ToEven)
                 {
-                    return AdvSimd.RoundToNearest(Vector64.CreateScalarUnsafe(value)).ToScalar();
+                    return Round(x);
                 }
                 if (mode == MidpointRounding.AwayFromZero)
                 {
-                    return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(value)).ToScalar();
+                    return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(x)).ToScalar();
                 }
             }
             if (Sse41.IsSupported)
             {
+                // Inline the most common cases
                 if (mode == MidpointRounding.ToEven)
                 {
-                    return Sse41.RoundToNearestIntegerScalar(Vector128.CreateScalarUnsafe(value)).ToScalar();
+                    return Round(x);
                 }
                 if (mode == MidpointRounding.AwayFromZero)
                 {
-                    Vector128<float> valueVec = Vector128.CreateScalarUnsafe(value);
-                    Vector128<float> tmp = Sse.And(valueVec, Vector128.Create(0x8000000000000000UL).AsSingle());
+                    Vector128<float> xVec = Vector128.CreateScalarUnsafe(x);
+                    Vector128<float> tmp = Sse.And(xVec, Vector128.Create(0x8000000000000000UL).AsSingle());
                     tmp = Sse.Or(tmp, Vector128.Create(0x3fdfffffffffffffUL).AsSingle());
-                    tmp = Sse.Add(tmp, valueVec);
+                    tmp = Sse.Add(tmp, xVec);
                     return Sse41.RoundToZeroScalar(tmp).ToScalar();
                 }
             }

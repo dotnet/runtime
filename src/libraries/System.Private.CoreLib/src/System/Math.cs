@@ -1301,9 +1301,10 @@ namespace System
         {
             if (AdvSimd.Arm64.IsSupported)
             {
+                // Inline the most common cases
                 if (mode == MidpointRounding.ToEven)
                 {
-                    return AdvSimd.Arm64.RoundToNearest(Vector128.CreateScalarUnsafe(value)).ToScalar();
+                    return Round(value);
                 }
                 if (mode == MidpointRounding.AwayFromZero)
                 {
@@ -1312,9 +1313,10 @@ namespace System
             }
             if (Sse41.IsSupported)
             {
+                // Inline the most common cases
                 if (mode == MidpointRounding.ToEven)
                 {
-                    return Sse41.RoundToNearestIntegerScalar(Vector128.CreateScalarUnsafe(value)).ToScalar();
+                    return Round(value);
                 }
                 if (mode == MidpointRounding.AwayFromZero)
                 {
