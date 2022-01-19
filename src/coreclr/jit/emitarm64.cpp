@@ -4735,7 +4735,7 @@ void emitter::emitIns_R_R(
             if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(size == EA_8BYTE);
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 fmt      = IF_DV_2M;
