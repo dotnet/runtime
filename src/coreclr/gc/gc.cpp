@@ -10890,7 +10890,7 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
     }
 }
 
-void gc_heap::clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
+void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 {
     if ((start < background_saved_highest_address) &&
         (end > background_saved_lowest_address))
@@ -10943,18 +10943,6 @@ void gc_heap::clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
         {
             mark_array[endwrd] &= lastwrd;
         }
-    }
-}
-
-void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
-{
-    if ((start < background_saved_highest_address) &&
-        (end > background_saved_lowest_address))
-    {
-        start = max (start, background_saved_lowest_address);
-        end = min (end, background_saved_highest_address);
-
-        clear_batch_mark_array_bits (start, end);
     }
 }
 #endif //BACKGROUND_GC
