@@ -22,19 +22,9 @@ namespace System.Reflection
             return (AssemblyContentType)((((int)flags) >> 9) & 0x7);
         }
 
-        internal static ProcessorArchitecture ExtractProcessorArchitecture(this AssemblyNameFlags flags)
-        {
-            return (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
-        }
-
         internal static AssemblyNameFlags ExtractAssemblyNameFlags(this AssemblyNameFlags combinedFlags)
         {
             return combinedFlags & unchecked((AssemblyNameFlags)0xFFFFF10F);
-        }
-
-        internal static AssemblyNameFlags CombineAssemblyNameFlags(AssemblyNameFlags flags, AssemblyContentType contentType, ProcessorArchitecture processorArchitecture)
-        {
-            return (AssemblyNameFlags)(((int)flags) | (((int)contentType) << 9) | ((int)processorArchitecture << 4));
         }
     }
 }

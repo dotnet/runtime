@@ -145,7 +145,7 @@ namespace System.Reflection
             blank.Flags = this.Flags.ExtractAssemblyNameFlags();
             blank.ContentType = this.Flags.ExtractAssemblyContentType();
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            blank.ProcessorArchitecture = this.Flags.ExtractProcessorArchitecture();
+            blank.ProcessorArchitecture = ExtractProcessorArchitecture(this.Flags);
 #pragma warning restore SYSLIB0037
 
             if (this.PublicKeyOrToken != null)
@@ -171,6 +171,11 @@ namespace System.Reflection
                 byte[]? pkt = (0 != (Flags & AssemblyNameFlags.PublicKey)) ? AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrToken) : PublicKeyOrToken;
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags.ExtractAssemblyNameFlags(), Flags.ExtractAssemblyContentType());
             }
+        }
+
+        internal static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
+        {
+            return (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
         }
     }
 }
