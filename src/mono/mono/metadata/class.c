@@ -4627,7 +4627,9 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 		if (!type)
 			return NULL;
 
-		mono_class_init_internal (mono_class_from_mono_type_internal (type));
+		if (!mono_class_init_internal (mono_class_from_mono_type_internal (type)))
+			return NULL;
+
 		/* We return a MonoType* as handle */
 		return type;
 	}
