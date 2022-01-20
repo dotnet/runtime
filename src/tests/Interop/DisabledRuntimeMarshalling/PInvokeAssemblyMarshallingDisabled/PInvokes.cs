@@ -66,7 +66,7 @@ public class PInvokes
     {
         AssertThrowsMarshalDirectiveOrInvalidProgram(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
         
-        private static void AssertThrowsMarshalDirectiveOrInvalidProgram(Action testCode)
+        static void AssertThrowsMarshalDirectiveOrInvalidProgram(Action testCode)
         {
             try
             {
