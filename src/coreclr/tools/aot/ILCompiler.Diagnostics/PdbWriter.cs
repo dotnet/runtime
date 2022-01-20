@@ -207,7 +207,7 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            var comWrapper = new ILCompilerComWrappers();
+            using var comWrapper = new ILCompilerComWrappers();
             CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
             _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
 
