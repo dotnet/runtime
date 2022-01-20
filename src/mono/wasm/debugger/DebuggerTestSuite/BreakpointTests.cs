@@ -709,60 +709,6 @@ namespace DebuggerTests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task StepThroughAttributeStepInNoBp(bool justMyCodeEnabled)
-        {
-            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
-            if (justMyCodeEnabled)
-                await SetJustMyCode(true);
-
-            var init_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",
-                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
-                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                "RunStepThrough"
-            );
-            await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", 868, 8, "RunStepThrough");
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task StepThroughAttributeStepInWithBp(bool justMyCodeEnabled)
-        {
-            var bp_init = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "RunStepThrough", 1);
-            var bp1_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "NotStopOnJustMyCode", 1);
-            var bp2_decorated_fun = await SetBreakpointInMethod("debugger-test.dll", "DebuggerAttribute", "NotStopOnJustMyCode", 3);
-            
-            var init_location = await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerAttribute:RunStepThrough'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs",
-                bp_init.Value["locations"][0]["lineNumber"].Value<int>(),
-                bp_init.Value["locations"][0]["columnNumber"].Value<int>(),
-                "RunStepThrough"
-            );
-
-            if (justMyCodeEnabled)
-            {
-                await SetJustMyCode(true);
-                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", 868, 8, "RunStepThrough");
-            }
-            else
-            {
-                var line1 = bp1_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
-                var line2 = bp2_decorated_fun.Value["locations"][0]["lineNumber"].Value<int>();
-                var line3 = 867;
-                var step_throgh_fun = "NotStopOnJustMyCode";
-                var outer_fun = "RunStepThrough";
-                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line1, 8, step_throgh_fun);
-                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line2, 8, step_throgh_fun);
-                await SendCommandAndCheck(null, "Debugger.stepInto", "dotnet://debugger-test.dll/debugger-test.cs", line3, 8, outer_fun);
-            }
-        }
-
-        [Theory]
         [InlineData(false, "RunStepThrough")]
         [InlineData(true, "RunStepThrough")]
         [InlineData(true, "RunNonUserCode")]
