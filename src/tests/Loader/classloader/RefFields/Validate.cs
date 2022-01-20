@@ -9,8 +9,8 @@ using Xunit;
 
 class Validate
 {
-    [Fact]
-    [SkipOnMono("Mono doesn't validate ref field state during type load")]
+    // [Fact]
+    // [SkipOnMono("Mono doesn't validate ref field state during type load")]
     public static void Validate_Invalid_RefField_Fails()
     {
         Console.WriteLine($"{nameof(Validate_Invalid_RefField_Fails)}...");
@@ -46,5 +46,15 @@ class Validate
         WithRefField s = new(ref str);
         WithRefStructField t = new(ref s);
         Assert.True(t.ConfirmFieldInstance(ref s));
+    }
+
+    [Fact]
+    public static void Validate_Create_TypedReferenceRefField()
+    {
+        Console.WriteLine($"{nameof(Validate_Create_TypedReferenceRefField)}...");
+
+        Validate v = new();
+        WithTypedReferenceField<Validate> s = new(v);
+        Assert.Equal(typeof(Validate), s.GetFieldType());
     }
 }

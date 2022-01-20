@@ -90,3 +90,34 @@
         ret
     }
 }
+
+.class public auto ansi sealed beforefieldinit InvalidCSharp.WithTypedReferenceField`1<T>
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+    .field public typedref Field
+
+    .method public hidebysig specialname rtspecialname
+        instance void .ctor (
+            !T
+        ) cil managed
+    {
+        ldarg.0
+        ldarga.s 1
+        mkrefany !T
+        stfld typedref InvalidCSharp.WithTypedReferenceField`1::Field
+        ret
+    }
+
+    .method public hidebysig
+        instance class [System.Runtime]System.Type GetFieldType () cil managed
+    {
+        ldarg.0
+        ldfld typedref InvalidCSharp.WithTypedReferenceField`1::Field
+        refanytype
+        call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle )
+        ret
+    }
+}
