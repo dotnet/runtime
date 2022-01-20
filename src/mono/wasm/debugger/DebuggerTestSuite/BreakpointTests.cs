@@ -707,7 +707,6 @@ namespace DebuggerTests
                 8,
                 "VisibleMethodDebuggerBreak");
         }
-<<<<<<< HEAD
     
         [Fact]
         public async Task DebugHotReloadMethodChangedUserBreakUsingSDB()
@@ -890,7 +889,6 @@ namespace DebuggerTests
                 }
             );
             //pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
-=======
 
         [Theory]
         [InlineData(false, "RunStepThrough")]
@@ -1139,7 +1137,6 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
->>>>>>> origin/main
         }
     }
 }
