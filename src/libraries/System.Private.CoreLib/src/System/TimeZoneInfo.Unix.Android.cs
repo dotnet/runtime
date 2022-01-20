@@ -193,9 +193,9 @@ namespace System
             private string[] _ids;
             private int[] _byteOffsets;
             private int[] _lengths;
+            private bool[] _isBackwards;
             private string _tzFileDir;
             private string _tzFilePath;
-            private bool _isFiltered;
 
             private static string GetApexTimeDataRoot()
             {
@@ -231,11 +231,10 @@ namespace System
                 foreach (var tzFileDir in tzFileDirList)
                 {
                     string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
-                    if (LoadData(tzFilePath))
+                    if (LoadData(tzFileDir, tzFilePath))
                     {
                         _tzFileDir = tzFileDir;
                         _tzFilePath = tzFilePath;
-                        _isFiltered = false;
                         return;
                     }
                 }
@@ -264,23 +263,22 @@ namespace System
             //   </countryzones>
             // </timezones>
             //
-            // Once the timezone cache is populated with the IDs, we reference tzlookup id tags and
-            // remove IDs and their associated information (byteoffsets and lengths) from the current
-            // AndroidTzData instance.
-            private void FilterBackwardIDs(string lookupPath)
+            // Once the timezone cache is populated with the IDs, we reference tzlookup id tags
+            // to determine if an id is backwards and label it as such if they are.
+            private void FilterBackwardIDs(string tzFileDir, out HashSet<string> tzLookupIDs)
             {
+                tzLookupIDs = new HashSet<string>();
                 try
                 {
-                    using (StreamReader sr = File.OpenText(lookupPath))
+                    using (StreamReader sr = File.OpenText(Path.Combine(tzFileDir, "tzlookup.xml")))
                     {
-                        var tzLookupIDs = new HashSet<string>();
                         string? tzLookupLine;
                         while (sr.Peek() >= 0)
                         {
-                            if (!(tzLookupLine = sr.ReadLine())!.TrimStart().StartsWith("<id", StringComparison.Ordinal))
+                            if (!(tzLookupLine = sr.ReadLine())!.AsSpan().TrimStart().StartsWith("<id", StringComparison.Ordinal))
                                 continue;
 
-                            int idStart = tzLookupLine.IndexOf('>') + 1;
+                            int idStart = tzLookupLine!.IndexOf('>') + 1;
                             int idLength = tzLookupLine.LastIndexOf("</", StringComparison.Ordinal) - idStart;
                             if (idStart <= 0 || idLength < 0)
                             {
@@ -290,32 +288,16 @@ namespace System
                             string id = tzLookupLine.Substring(idStart, idLength);
                             tzLookupIDs.Add(id);
                         }
-                        var cleanIDs = new List<string>();
-                        var cleanOffsets = new List<int>();
-                        var cleanLengths = new List<int>();
-                        for (int i = 0; i < _ids.GetLength(0); ++i)
-                        {
-                            if (tzLookupIDs.Contains(_ids[i]))
-                            {
-                                cleanIDs.Add(_ids[i]);
-                                cleanOffsets.Add(_byteOffsets[i]);
-                                cleanLengths.Add(_lengths[i]);
-                            }
-                        }
-                        _ids = cleanIDs.ToArray();
-                        _byteOffsets = cleanOffsets.ToArray();
-                        _lengths = cleanLengths.ToArray();
                     }
                 }
                 catch {}
-
-                _isFiltered = true;
             }
 
             [MemberNotNullWhen(true, nameof(_ids))]
             [MemberNotNullWhen(true, nameof(_byteOffsets))]
             [MemberNotNullWhen(true, nameof(_lengths))]
-            private bool LoadData(string path)
+            [MemberNotNullWhen(true, nameof(_isBackwards))]
+            private bool LoadData(string tzFileDir, string path)
             {
                 if (!File.Exists(path))
                 {
@@ -325,7 +307,7 @@ namespace System
                 {
                     using (FileStream fs = File.OpenRead(path))
                     {
-                        LoadTzFile(fs);
+                        LoadTzFile(tzFileDir, fs);
                     }
                     return true;
                 }
@@ -337,7 +319,8 @@ namespace System
             [MemberNotNull(nameof(_ids))]
             [MemberNotNull(nameof(_byteOffsets))]
             [MemberNotNull(nameof(_lengths))]
-            private void LoadTzFile(Stream fs)
+            [MemberNotNull(nameof(_isBackwards))]
+            private void LoadTzFile(string tzFileDir, Stream fs)
             {
                 const int HeaderSize = 24;
                 Span<byte> buffer = stackalloc byte[HeaderSize];
@@ -345,7 +328,7 @@ namespace System
                 ReadTzDataIntoBuffer(fs, 0, buffer);
 
                 LoadHeader(buffer, out int indexOffset, out int dataOffset);
-                ReadIndex(fs, indexOffset, dataOffset);
+                ReadIndex(tzFileDir, fs, indexOffset, dataOffset);
             }
 
             private void LoadHeader(Span<byte> buffer, out int indexOffset, out int dataOffset)
@@ -374,7 +357,8 @@ namespace System
             [MemberNotNull(nameof(_ids))]
             [MemberNotNull(nameof(_byteOffsets))]
             [MemberNotNull(nameof(_lengths))]
-            private void ReadIndex(Stream fs, int indexOffset, int dataOffset)
+            [MemberNotNull(nameof(_isBackwards))]
+            private void ReadIndex(string tzFileDir, Stream fs, int indexOffset, int dataOffset)
             {
                 int indexSize = dataOffset - indexOffset;
                 const int entrySize = 52; // Data entry size
@@ -382,7 +366,8 @@ namespace System
                 _byteOffsets = new int[entryCount];
                 _ids = new string[entryCount];
                 _lengths = new int[entryCount];
-
+                _isBackwards = new bool[entryCount];
+                FilterBackwardIDs(tzFileDir, out HashSet<string> tzLookupIDs);
                 for (int i = 0; i < entryCount; ++i)
                 {
                     LoadEntryAt(fs, indexOffset + (entrySize*i), out string id, out int byteOffset, out int length);
@@ -390,6 +375,7 @@ namespace System
                     _byteOffsets[i] = byteOffset + dataOffset;
                     _ids[i] = id;
                     _lengths[i] = length;
+                    _isBackwards[i] = !tzLookupIDs.Contains(id);
 
                     if (length < 24) // Header Size
                     {
@@ -442,9 +428,15 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
-                if (!_isFiltered)
-                    FilterBackwardIDs(Path.Combine(_tzFileDir, "tzlookup.xml"));
-                return _ids;
+                List<string> nonBackwardsTZIDs = new List<string>();
+                for (int i = 0; i < _ids.Length; i++)
+                {
+                    if (!_isBackwards[i])
+                    {
+                        nonBackwardsTZIDs.Add(_ids[i]);
+                    }
+                }
+                return nonBackwardsTZIDs.ToArray();
             }
 
             public string GetTimeZoneDirectory()
