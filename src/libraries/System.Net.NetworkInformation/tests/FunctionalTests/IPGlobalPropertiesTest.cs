@@ -115,7 +115,6 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [MemberData(nameof(Loopbacks))]
         [SkipOnPlatform(TestPlatforms.Android, "Unsupported on Android")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64416", TestPlatforms.FreeBSD)]
         public void IPGlobalProperties_TcpListeners_Succeed(IPAddress address)
         {
             using (var server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
@@ -141,7 +140,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64416", TestPlatforms.FreeBSD)]
         [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android))]
         [MemberData(nameof(Loopbacks))]
         public async Task IPGlobalProperties_TcpActiveConnections_Succeed(IPAddress address)
