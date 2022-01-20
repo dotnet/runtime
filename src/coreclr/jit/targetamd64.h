@@ -74,7 +74,7 @@
 #else // !UNIX_AMD64_ABI
   #define ETW_EBP_FRAMED           0       // if 1 we cannot use EBP as a scratch register and must create EBP based frames for most methods
 #endif // !UNIX_AMD64_ABI
-  #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define CSE_INTEGRAL_CONSTS      0       // Do we *want* to CSE integral constants?
 
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7 | RBM_XMM8 | RBM_XMM9 | RBM_XMM10 | RBM_XMM11 | RBM_XMM12 | RBM_XMM13 | RBM_XMM14 | RBM_XMM15)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT

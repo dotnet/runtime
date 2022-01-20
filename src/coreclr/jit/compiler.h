@@ -7395,6 +7395,8 @@ protected:
 
     bool optIsCSEcandidate(GenTree* tree);
 
+    bool optIsIntegralConstCSEcandidate(GenTreeIntConCommon* tree);
+
     // lclNumIsTrueCSE returns true if the LclVar was introduced by the CSE phase of the compiler
     //
     bool lclNumIsTrueCSE(unsigned lclNum) const

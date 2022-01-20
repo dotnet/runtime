@@ -734,29 +734,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 //
 bool Compiler::optValnumCSE_Locate()
 {
-    bool enableConstCSE = true;
-
-    int configValue = JitConfig.JitConstCSE();
-
-    // all platforms - disable CSE of constant values when config is 1
-    if (configValue == CONST_CSE_DISABLE_ALL)
-    {
-        enableConstCSE = false;
-    }
-
-#if !defined(TARGET_ARM64)
-    // non-ARM64 platforms - disable by default
-    //
-    enableConstCSE = false;
-
-    // Check for the two enable cases for all platforms
-    //
-    if ((configValue == CONST_CSE_ENABLE_ALL) || (configValue == CONST_CSE_ENABLE_ALL_NO_SHARING))
-    {
-        enableConstCSE = true;
-    }
-#endif
-
     for (BasicBlock* const block : Blocks())
     {
         /* Make the block publicly available */
@@ -782,16 +759,6 @@ bool Compiler::optValnumCSE_Locate()
                     // bound candidate(s); we may want to update its value number.
                     // if the array length gets CSEd
                     optCseUpdateCheckedBoundMap(tree);
-                }
-
-                // Don't allow CSE of constants if it is disabled
-                //
-                if (tree->IsIntegralConst())
-                {
-                    if (!enableConstCSE)
-                    {
-                        continue;
-                    }
                 }
 
                 // Don't allow non-SIMD struct CSEs under a return; we don't fully
@@ -3500,16 +3467,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-#if !CSE_CONSTS
-    /* Don't bother with constants */
-    if (tree->OperIsConst())
-    {
-        return false;
-    }
-#endif
-
     /* Check for some special cases */
-
     switch (oper)
     {
         case GT_CALL:
@@ -3559,13 +3517,12 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             return (tree->AsOp()->gtOp1->gtOper != GT_ARR_ELEM);
 
         case GT_CNS_LNG:
-#ifndef TARGET_64BIT
-            return false; // Don't CSE 64-bit constants on 32-bit platforms
-#endif
         case GT_CNS_INT:
+            return optIsIntegralConstCSEcandidate(tree->AsIntConCommon());
+
         case GT_CNS_DBL:
         case GT_CNS_STR:
-            return true; // We reach here only when CSE_CONSTS is enabled
+            return true;
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
@@ -3690,6 +3647,52 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// optIsIntegralConstCSEcandidate: Is the constant "tree" a CSE candidate?
+//
+// Encapsulates the logic related to configuration switches affecting
+// CSE of integral constants.
+//
+// Arguments:
+//    tree - The integral constant to check
+//
+// Return Value:
+//    Whether "tree" should be considered for CSE.
+//
+bool Compiler::optIsIntegralConstCSEcandidate(GenTreeIntConCommon* tree)
+{
+#ifndef TARGET_64BIT
+    // We won't CSE LONG constants on 32 bit platforms.
+    if (tree->OperIs(GT_CNS_LNG))
+    {
+        return false;
+    }
+#endif // TARGET_64BIT
+
+    // Force disable/enable if we've been requested to.
+    switch (JitConfig.JitConstCSE())
+    {
+        case CONST_CSE_DISABLE_ALL:
+            return false;
+
+        case CONST_CSE_ENABLE_ALL:
+        case CONST_CSE_ENABLE_ALL_NO_SHARING:
+            return true;
+
+        default:
+            break;
+    }
+
+    // Otherwise, follow the defaults. Currently, these are to only CSE on ARM64.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if CSE_INTEGRAL_CONSTS
+    return true;
+#else
+    return false;
+#endif
 }
 
 #ifdef DEBUG

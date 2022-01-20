@@ -61,7 +61,7 @@
                                            // protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use EBP as a scratch register and must create EBP based
                                            // frames for most methods
-  #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define CSE_INTEGRAL_CONSTS      0       // Do we *want* to CSE integral constants?
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX

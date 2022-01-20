@@ -49,7 +49,7 @@
   #define FEATURE_EH               1       // To aid platform bring-up, eliminate exceptional EH clauses (catch, filter, filter-handler, fault) and directly execute 'finally' clauses.
   #define FEATURE_EH_CALLFINALLY_THUNKS 1  // Generate call-to-finally code in "thunks" in the enclosing EH region, protected by "cloned finally" clauses.
   #define ETW_EBP_FRAMED           1       // if 1 we cannot use REG_FP as a scratch register and must setup the frame pointer for most methods
-  #define CSE_CONSTS               1       // Enable if we want to CSE constants
+  #define CSE_INTEGRAL_CONSTS      1       // Do we *want* to CSE integral constants?
 
   #define REG_FP_FIRST             REG_V0
   #define REG_FP_LAST              REG_V31
