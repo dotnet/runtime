@@ -2474,7 +2474,7 @@ bool Lowering::IsInvariant(GenTree* node, GenTree* endExclusive)
 
         for (GenTree* intermediate = node->gtNext; intermediate != endExclusive; intermediate = intermediate->gtNext)
         {
-            if (intermediate->OperIsLocalStore() && intermediate->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum())
+            if (intermediate->OperIsLocalStore() && (intermediate->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum()))
             {
                 return false;
             }
