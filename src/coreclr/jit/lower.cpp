@@ -2441,15 +2441,15 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// IsInvariant: Check if a node is invariant in the specified range. In other
-// words, can 'node' be moved to before 'endExclusive' without its computation
-// changing values?
+// IsInvariantInRange: Check if a node is invariant in the specified range. In
+// other words, can 'node' be moved to before 'endExclusive' without its
+// computation changing values?
 //
 // Arguments:
 //    node         -  The node.
 //    endExclusive -  The exclusive end of the range to check invariance for.
 //
-bool Lowering::IsInvariant(GenTree* node, GenTree* endExclusive)
+bool Lowering::IsInvariantInRange(GenTree* node, GenTree* endExclusive)
 {
     assert(node->Precedes(endExclusive));
 
@@ -2504,7 +2504,7 @@ void Lowering::MoveCFGCallLateArg(GenTreeCall* call, GenTree* node)
         GenTree* operand = node->AsOp()->gtGetOp1();
         JITDUMP("Checking if we can move following operand together with the GT_PUTARG_REG\n");
         DISPTREE(operand);
-        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariant(operand, call))
+        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariantInRange(operand, call))
         {
             JITDUMP("...yes, moving to after validator call\n");
             BlockRange().Remove(operand);
