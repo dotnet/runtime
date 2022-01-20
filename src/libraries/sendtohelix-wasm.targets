@@ -1,0 +1,221 @@
+<Project>
+  <PropertyGroup>
+    <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:10:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(BrowserHost)' == 'windows'">00:45:00</_workItemTimeout>
+
+    <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
+
+    <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
+    <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
+    <EnableDefaultBuildHelixWorkItems Condition="'$(IsRunningLibraryTests)' != 'true'">false</EnableDefaultBuildHelixWorkItems>
+
+    <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
+    <WasmDebuggerTestsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\WasmDebuggerTestsJobsList.txt</WasmDebuggerTestsJobsList>
+
+    <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
+    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
+    <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+
+    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
+    <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or ('$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true')">true</NeedsEMSDK>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
+    <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
+    <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
+
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' != 'true'">
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
+    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="export JS_ENGINE=--engine=NodeJS" />
+
+    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
+
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/node/14.15.5_64bit/bin:$PATH" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(WindowsShell)' == 'true'">
+    <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
+    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
+
+    <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
+
+    <HelixPreCommand Condition="'$(NeedsEMSDKNode)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\node\14.15.5_64bit\bin%3B%PATH%" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!--
+      We are hosting the payloads for the WASM/browser on kestrel in the xharness process.
+      We also run some network tests to this server and so, we are running it on both HTTP and HTTPS.
+      For the HTTPS endpoint we need development SSL certificate.
+    -->
+    <InstallDevCerts>$(IsRunningLibraryTests)</InstallDevCerts>
+
+    <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
+    <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="'$(NeedsEMSDK)' == 'true'">
+      <PropertyGroup>
+        <NeedsDotNetSdk>true</NeedsDotNetSdk>
+        <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+        <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(NeedsEMSDKNode)' == 'true'">
+      <PropertyGroup>
+        <IncludeXHarnessCli>true</IncludeXHarnessCli>
+        <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+      </PropertyGroup>
+    </When>
+  </Choose>
+
+  <Target Name="PrepareForBuildHelixWorkItems_Wasm">
+    <PropertyGroup>
+      <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
+      <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(AspNetCoreAppCurrent)-$(Configuration)'))</TestEchoMiddleware>
+      <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(AspNetCoreAppCurrent)-$(Configuration)'))</RemoteLoopMiddleware>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
+    </PropertyGroup>
+
+    <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
+         https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
+         and https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/
+
+         Eg. latest stable version is 96.0.4664.45 with revision 929512.
+         but the closest one available in the snapshosts is 929513.
+         Please make sure to check both platforms as sometime
+         the same snapshot might not be available in one of them.
+    -->
+    <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+      <ChromiumRevision>929513</ChromiumRevision>
+      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
+      <ChromiumRevision>929513</ChromiumRevision>
+      <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
+      <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
+      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
+      <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
+      <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
+      <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
+      <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.browser-wasm" />
+      <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
+      <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
+      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true'">
+      <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk/node" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser'">
+      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
+      <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
+    </ItemGroup>
+
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps'">
+      <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
+    </ReadLinesFromFile>
+
+    <ReadLinesFromFile File="$(WasmDebuggerTestsJobsList)" Condition="Exists($(WasmDebuggerTestsJobsList)) and '$(Scenario)' == 'WasmDebuggerTests'">
+      <Output TaskParameter="Lines" ItemName="WasmDebuggerTests_PerJobList" />
+    </ReadLinesFromFile>
+
+    <!-- library tests get added as default work items -->
+    <ItemGroup Condition="'$(IsRunningLibraryTests)' != 'true'">
+      <!-- for buildwasmapps, the archive path is set in src/libraries/Directory.Build.props, so use that -->
+      <_WasmWorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" Condition="'$(Scenario)' == 'BuildWasmApps'" />
+
+      <_WasmWorkItem Include="$(TestArchiveTestsRoot)**/Wasm.Debugger.Tests.zip"               Condition="'$(IsWasmDebuggerTests)' == 'true'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"                          Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
+      <_WasmDebuggerTestsPayloadArchive>@(_WasmWorkItem)</_WasmDebuggerTestsPayloadArchive>
+    </PropertyGroup>
+
+    <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
+
+    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')">
+        <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
+      <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList)">
+        <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
+
+        <!-- FIXME: workaround for https://github.com/dotnet/runtime/issues/62660 -->
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set TEST_ARGS=--filter &quot;FullyQualifiedName~%(Identity)&amp;Category^!=windows-failing&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export TEST_ARGS=&quot;--filter FullyQualifiedName~%(Identity)&amp;Category!=linux-failing&quot;</PreCommands>
+
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <!-- Create work items for run-only WASM sample apps  -->
+    <ItemGroup Condition="'$(IsRunningLibraryTests)' == 'true'">
+      <_WasmSampleZipFile Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''" Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
+      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJs'"              Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
+      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnBrowser'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+
+      <HelixWorkItem Include="@(_WasmSampleZipFile -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_workItemTimeout)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <!-- CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. Because helix tasks will
+       attempt to write a .payload file, we cannot use $(EMSDK_PATH) to package emsdk as a helix correlation
+       payload. Instead, we copy over the files to a new directory `src/mono/wasm/emsdk` and use that. -->
+  <Target Name="StageEmSdkForHelix" Condition="('$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true') and !Exists($(EmSdkDirForHelixPayload))">
+    <Error Condition="'$(EMSDK_PATH)' == '' or !Exists($(EMSDK_PATH))"
+           Text="Could not find emscripten sdk in EMSDK_PATH=$(EMSDK_PATH), needed to provision for running tests on helix" />
+
+    <MakeDir Directories="$(EmSdkDirForHelixPayload)" />
+
+    <ItemGroup>
+      <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+  </Target>
+</Project>

@@ -996,7 +996,7 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Replace `needs more info` label with `needs further triage` label when the author comments on an issue",
+      "taskName": "Replace `needs-author-action` label with `needs further triage` label when the author comments on an issue",
       "conditions": {
         "operator": "and",
         "operands": [
@@ -1017,7 +1017,7 @@
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "needs more info"
+              "label": "needs-author-action"
             }
           },
           {
@@ -1036,7 +1036,7 @@
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "needs more info"
+            "label": "needs-author-action"
           }
         }
       ],
@@ -1575,7 +1575,7 @@
         {
           "name": "hasLabel",
           "parameters": {
-            "label": "needs more info"
+            "label": "needs-author-action"
           }
         },
         {
@@ -5416,7 +5416,7 @@
           {
             "name": "labelAdded",
             "parameters": {
-              "label": "needs more info"
+              "label": "needs-author-action"
             }
           }
         ]
@@ -5426,12 +5426,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "Needs more info notification",
+      "taskName": "Needs-author-action notification",
       "actions": [
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This issue has been marked `needs more info` since it may be missing important information. Please refer to our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for tips on how to report issues effectively."
+            "comment": "This issue has been marked `needs-author-action` since it may be missing important information. Please refer to our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for tips on how to report issues effectively."
           }
         }
       ]
@@ -5951,7 +5951,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs more info"
+                  "label": "needs-author-action"
                 }
               },
               {
@@ -6003,25 +6003,7 @@
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "area-System.Collections"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Linq"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Text.Json"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Xml"
+                  "label": "area-Meta"
                 }
               }
             ]
@@ -6032,7 +6014,7 @@
               {
                 "name": "isInProject",
                 "parameters": {
-                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+                  "projectName": "Area Pod: Eric / Jeff - PRs",
                   "isOrgProject": true
                 }
               }
@@ -6046,12 +6028,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi - PRs] Add new PR to Board",
+      "taskName": "[Area Pod: Eric / Jeff - PRs] Add new PR to Board",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+            "projectName": "Area Pod: Eric / Jeff - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -6686,7 +6668,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs more info"
+                  "label": "needs-author-action"
                 }
               },
               {
@@ -6717,6 +6699,119 @@
           "parameters": {
             "projectName": "Area Pod: Buyaa / Jose / Steve - Issue Triage",
             "columnName": "Triaged",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.CodeDom"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Configuration"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Reflection"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Reflection.Emit"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Reflection.Metadata"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Resources"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Runtime.CompilerServices"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Text.RegularExpressions"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Threading.Channels"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Threading.Tasks"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.DirectoryServices"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Buyaa / Jose / Steve - PRs] Add new PR to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Buyaa / Jose / Steve - PRs",
+            "columnName": "Needs Champion",
             "isOrgProject": true
           }
         }
@@ -7257,7 +7352,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs more info"
+                  "label": "needs-author-action"
                 }
               },
               {
@@ -7288,6 +7383,77 @@
           "parameters": {
             "projectName": "Area Pod: Eirik / Krzysztof / Layomi - Issue Triage",
             "columnName": "Triaged",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Collections"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Linq"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Text.Json"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Xml"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi - PRs] Add new PR to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+            "columnName": "Needs Champion",
             "isOrgProject": true
           }
         }
@@ -7374,6 +7540,985 @@
           "name": "removeFromProject",
           "parameters": {
             "projectName": "Area Pod: Eirik / Krzysztof / Layomi - PRs",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-DependencyModel"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-Configuration"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-DependencyInjection"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-Hosting"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-Logging"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-Options"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-Primitives"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ComponentModel"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ComponentModel.Composition"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Composition"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Diagnostics.Activity"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Globalization"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "isAction",
+                        "parameters": {
+                          "action": "reopened"
+                        }
+                      },
+                      {
+                        "operator": "not",
+                        "operands": [
+                          {
+                            "name": "isInMilestone",
+                            "parameters": {}
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-DependencyModel"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-Configuration"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-DependencyInjection"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-Hosting"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-Logging"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-Options"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-Primitives"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ComponentModel"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ComponentModel.Composition"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Composition"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Activity"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Globalization"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+                  "isOrgProject": true,
+                  "columnName": "Triaged"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - Issue Triage] Add new issue to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+            "columnName": "Needs Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssueCommentResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-DependencyModel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Caching"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Configuration"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-DependencyInjection"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Hosting"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Logging"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Options"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Primitives"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ComponentModel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ComponentModel.Composition"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Composition"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.Activity"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Globalization"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isCloseAndComment",
+                "parameters": {}
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "activitySenderHasPermissions",
+                "parameters": {
+                  "permissions": "write"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issue_comment"
+      ],
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - Issue Triage] Needs Further Triage",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+            "columnName": "Needs Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+              "columnName": "Needs Triage",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-DependencyModel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Caching"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Configuration"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-DependencyInjection"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Hosting"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Logging"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Options"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Primitives"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel.Composition"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Composition"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Activity"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Globalization"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - Issue Triage] Remove relabeled issues",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+                  "columnName": "Triaged"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "addedToMilestone",
+                "parameters": {}
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "needs more info"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "api-ready-for-review"
+                }
+              },
+              {
+                "name": "isAction",
+                "parameters": {
+                  "action": "closed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - Issue Triage] Move to Triaged Column",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Maryam / Tarek - Issue Triage",
+            "columnName": "Triaged",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-DependencyModel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Caching"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Configuration"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-DependencyInjection"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Hosting"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Logging"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Options"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-Primitives"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ComponentModel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ComponentModel.Composition"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Composition"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.Activity"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Globalization"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - PRs] Add new PR to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
+            "columnName": "Needs Champion",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
+              "columnName": "Needs Champion",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-DependencyModel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Caching"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Configuration"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-DependencyInjection"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Hosting"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Logging"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Options"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Primitives"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel.Composition"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Composition"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Activity"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Globalization"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Eric / Maryam / Tarek - PRs] Remove relabeled PRs",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eric / Maryam / Tarek - PRs",
             "isOrgProject": true
           }
         }

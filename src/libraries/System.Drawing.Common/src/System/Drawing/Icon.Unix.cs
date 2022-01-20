@@ -545,10 +545,6 @@ namespace System.Drawing
             BitmapInfoHeader bih = ii.iconHeader;
             int biHeight = bih.biHeight / 2;
 
-            int ncolors = (int)bih.biClrUsed;
-            if ((ncolors == 0) && (bih.biBitCount < 24))
-                ncolors = (int)(1 << bih.biBitCount);
-
             switch (bih.biBitCount)
             {
                 case 1:

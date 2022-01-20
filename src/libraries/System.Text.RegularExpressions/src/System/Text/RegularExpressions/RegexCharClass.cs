@@ -716,9 +716,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
-            // If the set is negated, it's likely to contain a large number of characters,
-            // so we don't even try.  We also get the characters by enumerating the set
-            // portion, so we validate that it's set up to enable that, e.g. no categories.
+            // We get the characters by enumerating the set portion, so we validate that it's
+            // set up to enable that, e.g. no categories.
             if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;

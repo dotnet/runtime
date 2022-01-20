@@ -661,7 +661,7 @@ namespace System.Diagnostics
                 if (dllName == null || dllName.Length == 0)
                     continue;
 
-                SafeLibraryHandle hModule = null;
+                SafeLibraryHandle hModule;
 
                 if (IsOpen)
                 {
@@ -740,7 +740,7 @@ namespace System.Diagnostics
                             buf = new byte[minBytesNeeded];
                         }
                         success = Interop.Advapi32.ReadEventLog(readHandle, Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ,
-                                                         oldestEntry + idx, buf, buf.Length, out bytesRead, out minBytesNeeded);
+                                                         oldestEntry + idx, buf, buf.Length, out bytesRead, out _);
                         if (!success)
                             break;
                     }
@@ -873,16 +873,14 @@ namespace System.Diagnostics
 
         private EventLogEntry GetEntryWithOldest(int index)
         {
-            EventLogEntry entry = null;
             int entryPos = GetCachedEntryPos(index);
             if (entryPos >= 0)
             {
-                entry = new EventLogEntry(cache, entryPos, this);
-                return entry;
+                return new EventLogEntry(cache, entryPos, this);
             }
 
             string currentMachineName = this.machineName;
-            int flags = 0;
+            int flags;
             if (GetCachedEntryPos(index + 1) < 0)
             {
                 flags = Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ;
@@ -919,7 +917,7 @@ namespace System.Diagnostics
                         }
                     }
                     success = Interop.Advapi32.ReadEventLog(readHandle, Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ, index,
-                                                     cache, cache.Length, out bytesRead, out minBytesNeeded);
+                                                     cache, cache.Length, out bytesRead, out _);
                 }
 
                 if (!success)

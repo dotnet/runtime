@@ -1130,27 +1130,27 @@ MarshalInfo::MarshalInfo(Module* pModule,
     CHAR achDbgContext[DEBUG_CONTEXT_STR_LEN] = "";
     if (!pDebugName)
     {
-        strncpy_s(achDbgContext, COUNTOF(achDbgContext), "<Unknown>", _TRUNCATE);
+        strncpy_s(achDbgContext, ARRAY_SIZE(achDbgContext), "<Unknown>", _TRUNCATE);
     }
     else
     {
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), pDebugClassName, _TRUNCATE);
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), NAMESPACE_SEPARATOR_STR, _TRUNCATE);
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), pDebugName, _TRUNCATE);
-        strncat_s(achDbgContext, COUNTOF(achDbgContext), " ", _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), pDebugClassName, _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), NAMESPACE_SEPARATOR_STR, _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), pDebugName, _TRUNCATE);
+        strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), " ", _TRUNCATE);
         switch (argidx)
         {
             case (UINT)-1:
-                strncat_s(achDbgContext, COUNTOF(achDbgContext), "field", _TRUNCATE);
+                strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), "field", _TRUNCATE);
                 break;
             case 0:
-                strncat_s(achDbgContext, COUNTOF(achDbgContext), "return value", _TRUNCATE);
+                strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), "return value", _TRUNCATE);
                 break;
             default:
             {
                 char buf[30];
-                sprintf_s(buf, COUNTOF(buf), "param #%lu", (ULONG)argidx);
-                strncat_s(achDbgContext, COUNTOF(achDbgContext), buf, _TRUNCATE);
+                sprintf_s(buf, ARRAY_SIZE(buf), "param #%lu", (ULONG)argidx);
+                strncat_s(achDbgContext, ARRAY_SIZE(achDbgContext), buf, _TRUNCATE);
             }
         }
     }
@@ -2896,7 +2896,7 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype)
         #include "mtypes.h"
     };
 
-    _ASSERTE((SIZE_T)mtype < COUNTOF(nativeSizes));
+    _ASSERTE((SIZE_T)mtype < ARRAY_SIZE(nativeSizes));
     BYTE nativeSize = nativeSizes[mtype];
 
     if (nativeSize == VARIABLESIZE)
@@ -2959,7 +2959,7 @@ OVERRIDEPROC MarshalInfo::GetArgumentOverrideProc(MarshalType mtype)
         #include "mtypes.h"
     };
 
-    _ASSERTE((SIZE_T)mtype < COUNTOF(ILArgumentOverrideProcs));
+    _ASSERTE((SIZE_T)mtype < ARRAY_SIZE(ILArgumentOverrideProcs));
     return ILArgumentOverrideProcs[mtype];
 }
 
@@ -2979,7 +2979,7 @@ RETURNOVERRIDEPROC MarshalInfo::GetReturnOverrideProc(MarshalType mtype)
         #include "mtypes.h"
     };
 
-    _ASSERTE((SIZE_T)mtype < COUNTOF(ILReturnOverrideProcs));
+    _ASSERTE((SIZE_T)mtype < ARRAY_SIZE(ILReturnOverrideProcs));
     return ILReturnOverrideProcs[mtype];
 }
 
@@ -3172,7 +3172,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             while (cbNativeType--)
             {
                 char num[100];
-                sprintf_s(num, COUNTOF(num), "0x%lx ", (ULONG)*pvNativeType);
+                sprintf_s(num, ARRAY_SIZE(num), "0x%lx ", (ULONG)*pvNativeType);
                 logbuf.AppendASCII(num);
                 switch (*(pvNativeType++))
                 {
@@ -3314,7 +3314,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
         logbuf.AppendASCII("MarshalType : ");
         {
             char num[100];
-            sprintf_s(num, COUNTOF(num), "0x%lx ", (ULONG)m_type);
+            sprintf_s(num, ARRAY_SIZE(num), "0x%lx ", (ULONG)m_type);
             logbuf.AppendASCII(num);
         }
         switch (m_type)

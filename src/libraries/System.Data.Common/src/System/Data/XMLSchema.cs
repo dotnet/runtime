@@ -916,7 +916,7 @@ namespace System.Data
                         el.MaxOccurs = pt.MaxOccurs;
 
 
-                    DataTable? child = null;
+                    DataTable? child;
                     // to decide if element is our table, we need to match both name and ns
                     // 286043 - SQL BU Defect Tracking
                     if (((el.Name == null) && (el.RefName.Name == table.EncodedTableName && el.RefName.Namespace == table.Namespace)) ||
@@ -1340,7 +1340,7 @@ namespace System.Data
                     if (fKey[0].Table!.DataSet!.Relations[iExisting].RelationName != relName)
                         iExisting = -1;
                 }
-                DataRelation? relation = null;
+                DataRelation? relation;
                 if (iExisting < 0)
                 {
                     relation = new DataRelation(relName, pKey, fKey);
@@ -1390,7 +1390,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleConstraint(XmlSchemaIdentityConstraint keyNode)
         {
-            string? name = null;
+            string? name;
 
             name = XmlConvert.DecodeName(keyNode.Name);
             if (name == null || name.Length == 0)
@@ -1964,7 +1964,7 @@ namespace System.Data
                 return;
             }
 
-            Type? type = null;
+            Type? type;
             SimpleType? xsdType = null;
 
             //            if (typeNode.QualifiedName.Namespace != Keywords.XSDNS) { // this means UDSimpleType
@@ -2101,7 +2101,7 @@ namespace System.Data
             if (FromInference && table.XmlText != null) // backward compatability for inference
                 return;
 
-            Type? type = null;
+            Type? type;
             if (strType == null)
             {
                 return;
@@ -2196,12 +2196,12 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleAttributeColumn(XmlSchemaAttribute attrib, DataTable table, bool isBase)
         {
-            Type? type = null;
+            Type? type;
             XmlSchemaAttribute? attr = attrib.Name != null ? attrib : (XmlSchemaAttribute)_attributes![attrib.RefName]!;
 
 
             XmlSchemaAnnotated? typeNode = FindTypeNode(attr);
-            string? strType = null;
+            string? strType;
             SimpleType? xsdType = null;
 
             if (typeNode == null)
@@ -2359,7 +2359,7 @@ namespace System.Data
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal void HandleElementColumn(XmlSchemaElement elem, DataTable table, bool isBase)
         {
-            Type? type = null;
+            Type? type;
             XmlSchemaElement? el = elem.Name != null ? elem : (XmlSchemaElement?)_elementsTable![elem.RefName];
 
             if (el == null) // it's possible due to some XSD compiler optimizations
@@ -2773,7 +2773,7 @@ namespace System.Data
         {
             string xpath = key.Selector!.XPath!;
             string[] split = xpath.Split('/');
-            string prefix = string.Empty;
+            string prefix;
 
             string QualifiedTableName = split[split.Length - 1]; //get the last string after '/' and ':'
 

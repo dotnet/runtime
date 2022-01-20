@@ -157,7 +157,7 @@ namespace System.Transactions
 
             // Put the recovery information into a stream.
             MemoryStream stream = new MemoryStream(recoveryInformation);
-            int recoveryInformationVersion = 0;
+            int recoveryInformationVersion;
             string? nodeName = null;
             byte[]? resourceManagerRecoveryInformation = null;
 

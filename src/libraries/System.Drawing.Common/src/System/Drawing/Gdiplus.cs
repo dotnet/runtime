@@ -30,7 +30,7 @@ namespace System.Drawing
 
                 // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
                 // domains are ok, just make sure to pair each w/GdiplusShutdown
-                int status = GdiplusStartup(out s_initToken, ref input, out StartupOutput output);
+                int status = GdiplusStartup(out s_initToken, ref input, out _);
                 CheckStatus(status);
             }
 

@@ -31,11 +31,9 @@
 #pragma push_macro("SetEvent")
 #pragma push_macro("ResetEvent")
 #pragma push_macro("ReleaseSemaphore")
-#pragma push_macro("LocalFree")
 #undef SetEvent
 #undef ResetEvent
 #undef ReleaseSemaphore
-#undef LocalFree
 
 // MAX_COUNT is the maximal number of runtime processes that can run at a given time
 #define MAX_COUNT 20
@@ -299,7 +297,6 @@ cleanup:
             if (pSD) delete [] ((char *) pSD);
             if (pAdminSid) FreeSid(pAdminSid);
             if (hToken) CloseHandle(hToken);
-            if (pACL) LocalFree(pACL);
             if (buffer) delete [] ((char *) buffer);
 #endif
         }
@@ -416,7 +413,6 @@ private:
     HANDLE hBBSweepThread;        // a handle to the CLR sweeper thread (that calls watch for sweep events)
 };
 
-#pragma pop_macro("LocalFree")
 #pragma pop_macro("ReleaseSemaphore")
 #pragma pop_macro("ResetEvent")
 #pragma pop_macro("SetEvent")

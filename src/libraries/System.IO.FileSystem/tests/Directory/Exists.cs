@@ -299,6 +299,7 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
         public void UncPathWithoutShareNameAsPath_ReturnsFalse(string component)

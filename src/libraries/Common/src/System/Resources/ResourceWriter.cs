@@ -595,7 +595,7 @@ namespace System.Resources
                             s.Position = 0;
                             writer.Write((int)s.Length);
                             byte[] buffer = new byte[4096];
-                            int read = 0;
+                            int read;
                             while ((read = s.Read(buffer, 0, buffer.Length)) != 0)
                             {
                                 writer.Write(buffer, 0, read);

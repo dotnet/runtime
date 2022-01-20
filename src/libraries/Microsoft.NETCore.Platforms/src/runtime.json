@@ -1758,6 +1758,17 @@
         "maccatalyst.14-x64"
       ]
     },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
+      ]
+    },
     "ol": {
       "#import": [
         "rhel"

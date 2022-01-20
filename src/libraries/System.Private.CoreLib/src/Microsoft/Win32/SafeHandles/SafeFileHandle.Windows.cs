@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Strategies;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -13,6 +12,8 @@ namespace Microsoft.Win32.SafeHandles
     public sealed partial class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal const FileOptions NoBuffering = (FileOptions)0x20000000;
+        private long _length = -1; // negative means that hasn't been fetched.
+        private bool _lengthCanBeCached; // file has been opened for reading and not shared for writing.
         private volatile FileOptions _fileOptions = (FileOptions)(-1);
         private volatile int _fileType = -1;
 
@@ -22,9 +23,15 @@ namespace Microsoft.Win32.SafeHandles
 
         public bool IsAsync => (GetFileOptions() & FileOptions.Asynchronous) != 0;
 
+        internal bool IsNoBuffering => (GetFileOptions() & NoBuffering) != 0;
+
         internal bool CanSeek => !IsClosed && GetFileType() == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
+
+        internal bool LengthCanBeCached => _lengthCanBeCached;
+
+        internal bool HasCachedFileLength => _lengthCanBeCached && _length >= 0;
 
         internal static unsafe SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
@@ -103,6 +110,7 @@ namespace Microsoft.Win32.SafeHandles
 
             fileHandle._path = fullPath;
             fileHandle._fileOptions = options;
+            fileHandle._lengthCanBeCached = (share & FileShare.Write) == 0 && (access & FileAccess.Write) == 0;
             return fileHandle;
         }
 
@@ -251,6 +259,35 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return fileType;
+        }
+
+        internal unsafe long GetFileLength()
+        {
+            if (!_lengthCanBeCached)
+            {
+                return GetFileLengthCore();
+            }
+
+            // On Windows, when the file is locked for writes we can cache file length
+            // in memory and avoid subsequent native calls which are expensive.
+            if (_length < 0)
+            {
+                _length = GetFileLengthCore();
+            }
+
+            return _length;
+
+            long GetFileLengthCore()
+            {
+                Interop.Kernel32.FILE_STANDARD_INFO info;
+
+                if (!Interop.Kernel32.GetFileInformationByHandleEx(this, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+                {
+                    throw Win32Marshal.GetExceptionForLastWin32Error(Path);
+                }
+
+                return info.EndOfFile;
+            }
         }
     }
 }
