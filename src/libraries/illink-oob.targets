@@ -8,6 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
+      
       <!-- The following is the list of all the OOBs we will ignore for now -->
       <OOBAssemblyToIgnore Include="System.CodeDom" />
       <OOBAssemblyToIgnore Include="System.ComponentModel.Composition" />
@@ -52,14 +55,13 @@
   <Target Name="ILLinkTrimOOBAssemblies"
           AfterTargets="Build"
           DependsOnTargets="GetOOBAssembliesToTrim;PrepareForAssembliesTrim"
-          Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference)"
+          Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
           Outputs="@(OOBLibraryTrimmed)">
 
     <Message Text="Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
 
     <ItemGroup>
-      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
+
     </ItemGroup>
 
    <PropertyGroup>
