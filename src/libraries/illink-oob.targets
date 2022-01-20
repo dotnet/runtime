@@ -23,24 +23,24 @@
       <OOBAssemblyToIgnore Include="System.Configuration.ConfigurationManager" />
       <OOBAssemblyToIgnore Include="System.Speech" />
 
-      <NetCoreAppCurrentAssemblyToTrim Include="$(NetCoreAppCurrentRuntimePath)*.dll"
-                                       Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;
-                                                $(NetCoreAppCurrentRuntimePath)*.Native.dll;
-                                                $(NetCoreAppCurrentRuntimePath)*msquic.dll" />
+      <NetCoreAppCurrentAssembly Include="$(NetCoreAppCurrentRuntimePath)*.dll"
+                                 Exclude="$(NetCoreAppCurrentRuntimePath)*.Generator.dll;
+                                          $(NetCoreAppCurrentRuntimePath)*.Native.dll;
+                                          $(NetCoreAppCurrentRuntimePath)*msquic.dll" />
       <SharedFrameworkAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
 
       <!-- Move items to FileName so that we can subtract them -->
-      <NetCoreAppCurrentAssemblyToTrimWithFilename Include="@(NetCoreAppCurrentAssemblyToTrim -> '%(FileName)')"
-                                                   OriginalIdentity="%(Identity)" />
+      <NetCoreAppCurrentAssemblyWithFilename Include="@(NetCoreAppCurrentAssembly -> '%(FileName)')"
+                                             OriginalIdentity="%(Identity)" />
       <SharedFrameworkAssemblyWithFilename Include="@(SharedFrameworkAssembly -> '%(FileName)')"
                                            OriginalIdentity="%(Identity)" />
 
-      <OOBAssemblyToTrimWithFileName Include="@(NetCoreAppCurrentAssemblyToTrimWithFilename)"
+      <OOBAssemblyToTrimWithFileName Include="@(NetCoreAppCurrentAssemblyWithFilename)"
                                      Exclude="@(SharedFrameworkAssemblyWithFilename);
                                               @(OOBAssemblyToIgnore)" />
       <OOBAssemblyToTrim Include="@(OOBAssemblyToTrimWithFileName -> '%(OriginalIdentity)')" />
       
-      <OOBAssemblyReferenceWithFilename Include="@(NetCoreAppCurrentAssemblyToTrimWithFilename)"
+      <OOBAssemblyReferenceWithFilename Include="@(NetCoreAppCurrentAssemblyWithFilename)"
                                         Exclude="@(OOBAssemblyToTrimWithFileName)" />
       <OOBAssemblyReference Include="@(OOBAssemblyReferenceWithFilename -> '%(OriginalIdentity)')" />
       <OOBAssemblyReference Include="$(SystemPrivateCoreLibPath)" />
