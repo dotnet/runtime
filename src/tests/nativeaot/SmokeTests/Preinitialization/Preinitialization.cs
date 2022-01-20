@@ -40,6 +40,7 @@ internal class Program
         TestDrawCircle.Run();
         TestValueTypeDup.Run();
         TestFunctionPointers.Run();
+        TestGCInteraction.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -831,6 +832,39 @@ unsafe class TestFunctionPointers
     {
         Assert.IsLazyInitialized(typeof(WithFunctionPointer));
         Assert.AreEqual(WithFunctionPointer.s_foo.Ptr, (delegate*<void>)&WithFunctionPointer.X);
+    }
+}
+
+class TestGCInteraction
+{
+    class WithFrozenObjects
+    {
+        internal readonly static string s_someStringLiteral = "Some string literal";
+        internal readonly static object s_someObject = new object();
+    }
+
+    public static void Run()
+    {
+        Assert.IsPreinitialized(typeof(WithFrozenObjects));
+
+        var holder = new object[]
+        {
+            WithFrozenObjects.s_someStringLiteral,
+            WithFrozenObjects.s_someObject,
+        };
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.AreSame(holder[0], WithFrozenObjects.s_someStringLiteral);
+        Assert.AreSame(holder[1], WithFrozenObjects.s_someObject);
+
+        // This will try to make a dependent handle for the frozen object
+        lock (WithFrozenObjects.s_someObject)
+        {
+            Console.WriteLine("Now under lock");
+        }
     }
 }
 
