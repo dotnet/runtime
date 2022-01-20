@@ -6922,8 +6922,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // R_R   fmov/fcmp/fcvt
+    // R_R   cmeq/fmov/fcmp/fcvt
     //
+
+    // cmeq scalar
+    theEmitter->emitIns_R_R(INS_cmeq, EA_8BYTE, REG_V0, REG_V1);
 
     // fmov to vector to vector
     theEmitter->emitIns_Mov(INS_fmov, EA_8BYTE, REG_V0, REG_V2, /* canSkip */ false);

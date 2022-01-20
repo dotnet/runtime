@@ -496,6 +496,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
 
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+                if (intrin.op1->isContained())
+                {
+                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                    assert(intrin.op1->IsVectorZero());
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op2Reg, opt);
+                }
+                else if (intrin.op2->isContained())
+                {
+                    assert(HWIntrinsicInfo::SupportsContainment(intrin.id));
+                    assert(intrin.op2->IsVectorZero());
+
+                    GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else
+                {
+                    GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                }
+                break;
+
             case NI_AdvSimd_AbsoluteCompareLessThan:
             case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_CompareLessThan:

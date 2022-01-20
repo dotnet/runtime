@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern mscorlib{}
-.assembly extern common{}
+.assembly extern localloc_common{}
 .assembly 'call05_large'{}
 
 .class private auto ansi beforefieldinit LocallocTest
@@ -43,13 +43,13 @@
     IL_0012:  ldloc.0
     IL_0013:  ldsfld     int32 LocallocTest::locallocSize
     IL_0018:  ldc.i4     1000
-    IL_001d:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_001d:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_0022:  ldloc.1
     IL_0023:  ldsfld     int32 LocallocTest::locallocSize
     IL_0028:  ldc.i4     2000
-    IL_002d:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_002d:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
                                                                               
@@ -149,20 +149,20 @@
     IL_000c:  ldloc.0
     IL_000d:  ldsfld     int32 LocallocTest::locallocSize
     IL_0012:  ldc.i4     0xbb8
-    IL_0017:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_0017:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_001c:  ldloc.1
     IL_001d:  ldsfld     int32 LocallocTest::locallocSize
     IL_0022:  ldc.i4     0xfa0
-    IL_0027:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_0027:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_002c:  ldstr      "ar1"
     IL_0031:  ldarg.s    ar1
     IL_0033:  ldsfld     int32 LocallocTest::locallocSize
     IL_0038:  ldc.i4     1000
-    IL_003d:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_003d:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -176,7 +176,7 @@
     IL_004d:  ldarg.s    ar2
     IL_004f:  ldsfld     int32 LocallocTest::locallocSize
     IL_0054:  ldc.i4     2000
-    IL_0059:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_0059:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -190,7 +190,7 @@
     IL_0069:  ldloc.0
     IL_006a:  ldsfld     int32 LocallocTest::locallocSize
     IL_006f:  ldc.i4     3000
-    IL_0074:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_0074:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -204,7 +204,7 @@
     IL_0084:  ldloc.1
     IL_0085:  ldsfld     int32 LocallocTest::locallocSize
     IL_008a:  ldc.i4     4000
-    IL_008f:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_008f:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)

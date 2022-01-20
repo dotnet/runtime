@@ -422,7 +422,7 @@ namespace System.Xml
         public override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
             // finish a character from the bytes that were cached last time
-            int i = lastBytesCount;
+            int i;
             if (lastBytesCount > 0)
             {
                 // copy remaining bytes into the cache
@@ -473,7 +473,7 @@ namespace System.Xml
             bytesUsed = 0;
             charsUsed = 0;
             // finish a character from the bytes that were cached last time
-            int i = 0;
+            int i;
             int lbc = lastBytesCount;
             if (lbc > 0)
             {
@@ -499,7 +499,6 @@ namespace System.Xml
 
                 charIndex += i;
                 charCount -= i;
-                charsUsed = i;
 
                 lastBytesCount = 0;
             }

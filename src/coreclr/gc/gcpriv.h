@@ -51,7 +51,7 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now enable regions by default for only StandAlone GC builds
+// For now disable regions outside of StandAlone GC builds
 #if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
@@ -1286,9 +1286,9 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP
-    void verify_regions (bool can_verify_gen_num);
+    void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
     void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED
@@ -2155,8 +2155,6 @@ protected:
         );
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP
-    void clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
     PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -3440,6 +3438,9 @@ protected:
     PER_HEAP
     void decommit_mark_array_by_seg (heap_segment* seg);
 
+    PER_HEAP_ISOLATED
+    bool should_update_end_mark_size();
+
     PER_HEAP
     void background_mark_phase();
 
@@ -4267,6 +4268,9 @@ protected:
     size_t     bgc_loh_size_increased;
     PER_HEAP
     size_t     bgc_poh_size_increased;
+
+    PER_HEAP
+    size_t     background_soh_size_end_mark;
 
     PER_HEAP
     size_t     background_soh_alloc_count;

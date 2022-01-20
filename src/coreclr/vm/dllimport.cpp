@@ -959,7 +959,7 @@ public:
         if (pTargetMD)
         {
             pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-            uModuleId = (UINT64)pTargetMD->GetModule()->GetAddrModuleID();
+            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule_NoLogging();
         }
 
         //
