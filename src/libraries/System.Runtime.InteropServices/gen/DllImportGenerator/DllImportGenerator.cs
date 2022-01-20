@@ -464,7 +464,10 @@ namespace Microsoft.Interop
                 dllImportStub.Environment,
                 dllImportStub.StubContext.ElementTypeInformation,
                 dllImportStub.DllImportData.SetLastError && !options.GenerateForwarders,
-                (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails),
+                (elementInfo, ex) =>
+                {
+                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                },
                 dllImportStub.StubContext.GeneratorFactory);
 
             // Check if the generator should produce a forwarder stub - regular DllImport.

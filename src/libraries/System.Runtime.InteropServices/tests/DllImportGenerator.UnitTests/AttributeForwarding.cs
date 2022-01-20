@@ -20,7 +20,9 @@ namespace DllImportGenerator.UnitTests
         public async Task KnownParameterlessAttribute(string attributeSourceName, string attributeMetadataName)
         {
             string source = @$"
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {{
     [{attributeSourceName}]
@@ -59,7 +61,9 @@ struct Native
         {
             string source = @"
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new Type[0])]
@@ -102,6 +106,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
@@ -148,6 +153,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
@@ -197,7 +203,9 @@ struct Native
         {
             string source = @"
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+[assembly:DisableRuntimeMarshalling]
 
 class OtherAttribute : Attribute {}
 

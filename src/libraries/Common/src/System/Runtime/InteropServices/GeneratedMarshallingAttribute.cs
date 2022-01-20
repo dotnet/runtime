@@ -19,16 +19,6 @@ namespace System.Runtime.InteropServices
     {
     }
 
-    [AttributeUsage(AttributeTargets.Struct)]
-#if DLLIMPORT_GENERATOR_TEST
-    public
-#else
-    internal
-#endif
-    sealed class BlittableTypeAttribute : Attribute
-    {
-    }
-
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
 #if DLLIMPORT_GENERATOR_TEST
     public
