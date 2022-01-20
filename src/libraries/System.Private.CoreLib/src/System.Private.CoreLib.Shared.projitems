@@ -2212,6 +2212,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PersistedFiles.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\RuntimeInformation.Browser.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\JavaScriptMarshal.PlatformNotSupported.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(UseMinimalGlobalizationData)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneInfo.MinimalGlobalizationData.cs" />
   </ItemGroup>

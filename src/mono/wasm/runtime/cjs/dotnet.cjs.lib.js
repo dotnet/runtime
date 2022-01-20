@@ -40,6 +40,7 @@ const linked_functions = [
     "mono_wasm_invoke_js",
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_trace_logger",
+    "mono_wasm_invoke_js_function_impl",
 
     // corebindings.c
     "mono_wasm_invoke_js_with_args",

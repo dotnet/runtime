@@ -65,6 +65,7 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { mono_wasm_invoke_js_function_impl } from "./invoke-js";
 
 const MONO = {
     // current "public" MONO API
@@ -274,6 +275,7 @@ export const __linker_exports: any = {
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
     mono_wasm_trace_logger,
+    mono_wasm_invoke_js_function_impl,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args,

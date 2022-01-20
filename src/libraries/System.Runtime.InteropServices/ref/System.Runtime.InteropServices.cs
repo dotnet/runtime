@@ -1852,6 +1852,31 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
+namespace System.Runtime.InteropServices.JavaScript
+{
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("browser")]
+    public static class JavaScriptMarshal
+    {
+        public static InvokeJSResult InvokeJSFunctionByName (string internedFunctionName) => throw null;
+        public static InvokeJSResult InvokeJSFunctionByName<T1> (string internedFunctionName, T1 arg1) => throw null;
+        public static InvokeJSResult InvokeJSFunctionByName<T1, T2> (string internedFunctionName, T1 arg1, T2 arg2)  => throw null;
+        public static InvokeJSResult InvokeJSFunctionByName<T1, T2, T3> (string internedFunctionName, T1 arg1, T2 arg2, T3 arg3)  => throw null;
+    }
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("browser")]
+    public enum InvokeJSResult : int
+    {
+        Success = 0,
+        InvalidFunctionName,
+        FunctionNotFound,
+        InvalidArgumentCount,
+        InvalidArgumentType,
+        MissingArgumentType,
+        NullArgumentPointer,
+        FunctionHadReturnValue,
+        FunctionThrewException,
+        InternalError,
+    }
+}
 namespace System.Security
 {
     public sealed partial class SecureString : System.IDisposable
