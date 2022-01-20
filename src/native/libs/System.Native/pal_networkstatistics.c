@@ -15,6 +15,11 @@
 // exists, but we may want to make this more granular for different platforms.
 
 #if HAVE_NETINET_TCP_VAR_H
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
+#define _WANT_INPCB
+#define _WANT_TCPCB
+#pragma clang diagnostic pop
 
 #include "pal_utilities.h"
 #include "pal_tcpstate.h"
@@ -50,6 +55,7 @@
 #elif HAVE_IOS_NETINET_IP_VAR_H
 #include "ios/netinet/ip_var.h"
 #endif
+#include <netinet/tcp_var.h>
 #include <netinet/tcp.h>
 #if HAVE_TCP_FSM_H
 #include <netinet/tcp_fsm.h>
@@ -342,13 +348,6 @@ int32_t SystemNative_GetEstimatedTcpConnectionCount()
     return count;
 }
 
-#ifdef __FreeBSD__
-int32_t SystemNative_GetActiveTcpConnectionInfos(__attribute__((unused)) NativeTcpConnectionInformation* infos, int32_t* infoCount)
-{
-    *infoCount = 0;
-    return 0;
-}
-#else
 int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
 {
     assert(infos != NULL);
@@ -391,8 +390,6 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
     *infoCount = count;
 
     //  sizeof(struct xtcpcb) == 524
-    struct tcpcb tcp_pcb;
-    struct inpcb in_pcb;
     struct xinpgen* xHeadPtr;
     int32_t connectionIndex = -1;
     xHeadPtr = (struct xinpgen*)buffer;
@@ -401,13 +398,35 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
          xHeadPtr = (struct xinpgen*)((uint8_t*)xHeadPtr + xHeadPtr->xig_len))
     {
         connectionIndex++;
+        NativeTcpConnectionInformation* ntci = &infos[connectionIndex];
         struct xtcpcb* head_xtcpb = (struct xtcpcb*)xHeadPtr;
+
+#ifdef __FreeBSD__
+        struct xinpcb* in_pcb =  &head_xtcpb->xt_inp;
+        if ((in_pcb->inp_vflag & INP_IPV6) == INP_IPV6)
+        {
+            ntci->LocalEndPoint.NumAddressBytes = 16;
+            ntci->RemoteEndPoint.NumAddressBytes = 16;
+            memcpy_s(&ntci->LocalEndPoint.AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &in_pcb->inp_inc.inc_ie.ie6_laddr.s6_addr, 16);
+            memcpy_s(&ntci->RemoteEndPoint.AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &in_pcb->inp_inc.inc_ie.ie6_faddr.s6_addr, 16);
+        }
+        else
+        {
+            memcpy_s(&ntci->LocalEndPoint.AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &in_pcb->inp_inc.inc_ie.ie_laddr, 4);
+            memcpy_s(&ntci->RemoteEndPoint.AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &in_pcb->inp_inc.inc_ie.ie_faddr, 4);
+            ntci->LocalEndPoint.NumAddressBytes = 4;
+            ntci->RemoteEndPoint.NumAddressBytes = 4;
+        }
+
+        ntci->LocalEndPoint.Port = ntohs(in_pcb->inp_inc.inc_ie.ie_lport);
+        ntci->RemoteEndPoint.Port = ntohs(in_pcb->inp_inc.inc_ie.ie_fport);
+        ntci->State = SystemNative_MapTcpState(head_xtcpb->t_state);
+#else
+        struct inpcb in_pcb;
+        struct tcpcb tcp_pcb;
 
         tcp_pcb = head_xtcpb->xt_tp;
         in_pcb = head_xtcpb->xt_inp;
-
-        NativeTcpConnectionInformation* ntci = &infos[connectionIndex];
-        ntci->State = SystemNative_MapTcpState(tcp_pcb.t_state);
 
         uint8_t vflag = in_pcb.inp_vflag; // INP_IPV4 or INP_IPV6
         if ((vflag & INP_IPV4) == INP_IPV4)
@@ -427,12 +446,13 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
 
         ntci->LocalEndPoint.Port = ntohs(in_pcb.inp_lport);
         ntci->RemoteEndPoint.Port = ntohs(in_pcb.inp_fport);
+        ntci->State = SystemNative_MapTcpState(tcp_pcb.t_state);
+#endif
     }
 
     free(buffer);
     return 0;
 }
-#endif
 
 int32_t SystemNative_GetEstimatedUdpListenerCount()
 {
@@ -442,13 +462,6 @@ int32_t SystemNative_GetEstimatedUdpListenerCount()
     return count;
 }
 
-#ifdef __FreeBSD__
-int32_t SystemNative_GetActiveUdpListeners(__attribute__((unused)) IPEndPointInfo* infos, int32_t* infoCount)
-{
-    *infoCount = 0;
-    return 0;
-}
-#else
 int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
 {
     assert(infos != NULL);
@@ -479,7 +492,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         }
         estimatedSize = tmpEstimatedSize;
     }
-    int32_t count = (int32_t)(estimatedSize / sizeof(struct xtcpcb));
+    int32_t count = (int32_t)(estimatedSize / sizeof(struct xinpcb));
     if (count > *infoCount)
     {
         // Not enough space in caller-supplied buffer.
@@ -489,7 +502,6 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
     }
     *infoCount = count;
 
-    struct inpcb in_pcb;
     struct xinpgen* xHeadPtr;
     int32_t connectionIndex = -1;
     xHeadPtr = (struct xinpgen*)buffer;
@@ -498,9 +510,24 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
          xHeadPtr = (struct xinpgen*)((uint8_t*)xHeadPtr + xHeadPtr->xig_len))
     {
         connectionIndex++;
-        struct xinpcb* head_xinpcb = (struct xinpcb*)xHeadPtr;
-        in_pcb = head_xinpcb->xi_inp;
         IPEndPointInfo* iepi = &infos[connectionIndex];
+
+        struct xinpcb* head_xinpcb = (struct xinpcb*)xHeadPtr;
+#if defined(__FreeBSD__)
+        if ((head_xinpcb->inp_vflag & INP_IPV6) == INP_IPV6)
+        {
+            memcpy_s(iepi->AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &head_xinpcb->inp_inc.inc_ie.ie6_laddr.s6_addr, 16);
+            iepi->NumAddressBytes = 16;
+        }
+        else
+        {
+            memcpy_s(iepi->AddressBytes, sizeof_member(IPEndPointInfo, AddressBytes), &head_xinpcb->inp_inc.inc_ie.ie_laddr, 4);
+            iepi->NumAddressBytes = 4;
+        }
+        iepi->Port = ntohs(head_xinpcb->inp_inc.inc_ie.ie_lport);
+#else
+        struct xinpcb* head_xinpcb = (struct xinpcb*)xHeadPtr;
+        struct inpcb in_pcb head_xinpcb->xi_inp;
 
         uint8_t vflag = in_pcb.inp_vflag; // INP_IPV4 or INP_IPV6
         if ((vflag & INP_IPV4) == INP_IPV4)
@@ -515,12 +542,12 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         }
 
         iepi->Port = ntohs(in_pcb.inp_lport);
+#endif
     }
 
     free(buffer);
     return 0;
 }
-#endif
 
 int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeIPInterfaceStatistics* retStats)
 {
