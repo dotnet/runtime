@@ -366,9 +366,10 @@ namespace System.Collections.Immutable
                 int offset = this.Count;
                 this.Count += items.Length;
 
+                var elements = new Span<T>(_elements, offset, items.Length);
                 for (int i = 0; i < items.Length; i++)
                 {
-                    _elements[offset + i] = items[i];
+                    elements[i] = items[i];
                 }
             }
 
@@ -739,7 +740,7 @@ namespace System.Collections.Immutable
             public void CopyTo(Span<T> destination)
             {
                 Requires.Range(this.Count <= destination.Length, nameof(destination));
-                new ReadOnlySpan<T>(_elements).CopyTo(destination);
+                new ReadOnlySpan<T>(_elements, 0, this.Count).CopyTo(destination);
             }
 
             /// <summary>

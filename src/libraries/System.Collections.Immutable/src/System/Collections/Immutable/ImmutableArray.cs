@@ -89,7 +89,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> Create<T>(ReadOnlySpan<T> items)
         {
-            if (items.Length == 0)
+            if (items.IsEmpty)
             {
                 return ImmutableArray<T>.Empty;
             }
