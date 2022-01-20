@@ -378,7 +378,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         var container = asmMetadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent;
                         var name = asmMetadataReader.GetString(asmMetadataReader.GetTypeReference((TypeReferenceHandle)container).Name);
-                        var stopSearch = true;
                         switch (name)
                         {
                             case "DebuggerHiddenAttribute":
@@ -390,12 +389,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "DebuggerNonUserCodeAttribute":
                                 DebuggerAttrInfo.HasNonUserCode = true;
                                 break;
-                            default:
-                                stopSearch = false;
+                            case "DebuggerStepperBoundaryAttribute":
+                                DebuggerAttrInfo.HasStepperBoundary = true;
                                 break;
                         }
-                        if (stopSearch)
-                            break;
 
                     }
                 }
@@ -492,6 +489,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public bool HasDebuggerHidden { get; internal set; }
             public bool HasStepThrough { get; internal set; }
             public bool HasNonUserCode { get; internal set; }
+            public bool HasStepperBoundary { get; internal set; }
         }
     }
 
