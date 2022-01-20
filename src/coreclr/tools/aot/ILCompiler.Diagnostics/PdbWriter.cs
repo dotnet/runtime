@@ -89,7 +89,7 @@ namespace ILCompiler.Diagnostics
         Dictionary<SymDocument,int> _documentToChecksumOffsetMapping;
 
         UIntPtr _pdbMod;
-        ISymNGenWriter2 _ngenWriter;
+        SymNgenWriterWrapper _ngenWriter;
 
         static PdbWriter()
         {
@@ -136,15 +136,18 @@ namespace ILCompiler.Diagnostics
             bool failed = true;
             try
             {
-                try
+                using (_ngenWriter)
                 {
-                    WritePDBDataHelper(dllPath, methods);
-                }
-                finally
-                {
-                    if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
+                    try
                     {
-                        _ngenWriter.CloseMod(_pdbMod);
+                        WritePDBDataHelper(dllPath, methods);
+                    }
+                    finally
+                    {
+                        if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
+                        {
+                            _ngenWriter.CloseMod(_pdbMod);
+                        }
                     }
                 }
 
@@ -207,9 +210,9 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            using var comWrapper = new ILCompilerComWrappers();
+            var comWrapper = new ILCompilerComWrappers();
             CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
-            _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            _ngenWriter = (SymNgenWriterWrapper)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
