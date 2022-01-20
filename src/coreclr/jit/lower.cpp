@@ -2286,27 +2286,11 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             bool     gotUse = BlockRange().TryGetUse(callTarget, &useOfTar);
             assert(gotUse);
             useOfTar.ReplaceWith(regNode);
-            if (callTarget->OperIs(GT_LCL_VAR) || callTarget->OperIs(GT_LCL_FLD) || callTarget->IsIntegralConst())
-            {
-                callTarget->SetUnusedValue();
-                callTarget = comp->gtClone(callTarget, false);
-            }
-            else
-            {
-                if (m_cfgCallTargetTemp == BAD_VAR_NUM)
-                {
-                    m_cfgCallTargetTemp = comp->lvaGrabTemp(true DEBUGARG("CFG validate call target"));
-                }
 
-                GenTree* assign = comp->gtNewTempAssign(m_cfgCallTargetTemp, callTarget);
-                BlockRange().InsertBefore(call, assign);
-                LowerNode(assign);
-
-                callTarget = comp->gtNewLclvNode(m_cfgCallTargetTemp, callTarget->TypeGet());
-            }
-
-            // Add the call to the validator
-            GenTreeCall::Use* args     = comp->gtNewCallArgs(callTarget);
+            GenTree* targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
+            // Add the call to the validator. Use a placeholder for the target while we
+            // morph, sequence and lower, to avoid redoing that for the actual target.
+            GenTreeCall::Use* args     = comp->gtNewCallArgs(targetPlaceholder);
             GenTreeCall*      validate = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID, args);
 
             comp->fgMorphTree(validate);
@@ -2316,6 +2300,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             GenTree*   validateLast  = validateRange.LastNode();
             // Insert the validator with the call target before the late args.
             BlockRange().InsertBefore(call, std::move(validateRange));
+
+            // Swap out the target
+            gotUse = BlockRange().TryGetUse(targetPlaceholder, &useOfTar);
+            assert(gotUse);
+            useOfTar.ReplaceWith(callTarget);
+            targetPlaceholder->SetUnusedValue();
+
             LowerRange(validateFirst, validateLast);
 
             // Insert the PHYSREG node that we must load right after validation.
