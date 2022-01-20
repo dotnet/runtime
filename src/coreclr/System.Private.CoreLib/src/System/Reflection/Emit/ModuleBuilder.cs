@@ -222,6 +222,8 @@ namespace System.Reflection.Emit
 
         private int GetTypeRefNested(Type type, Module? refedModule, string? strRefedModuleFileName)
         {
+            type = type.IsByRef ? type.GetElementType()! : type;
+
             // This function will generate correct TypeRef token for top level type and nested type.
             Type? enclosingType = type.DeclaringType;
             int tkResolution = 0;
@@ -233,7 +235,6 @@ namespace System.Reflection.Emit
                 typeName = UnmangleTypeName(typeName);
             }
 
-            Debug.Assert(!type.IsByRef, "Must not be ByRef.");
             Debug.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
 
             ModuleBuilder thisModule = this;
@@ -1085,11 +1086,6 @@ namespace System.Reflection.Emit
             // multiple calles to this method with the same class have no additional side affects.
             // This function is optimized to use the TypeDef token if Type is within the same module.
             // We should also be aware of multiple dynamic modules and multiple implementation of Type!!!
-            if (type.IsByRef)
-            {
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
-            }
-
             if ((type.IsGenericType && (!type.IsGenericTypeDefinition || !getGenericDefinition)) ||
                 type.IsGenericParameter ||
                 type.IsArray ||
