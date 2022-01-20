@@ -2488,6 +2488,8 @@ bool Lowering::IsInvariant(GenTree* node, GenTree* endExclusive)
                 return false;
             }
         }
+
+        return true;
     }
 
     return false;
