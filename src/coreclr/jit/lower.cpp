@@ -2343,7 +2343,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     JITDUMP("Arg uses register(s) ");
                     if (comp->verbose)
                     {
-                        dspRegMask(argRegs & trashedByValidator);
+                        INDEBUG(dspRegMask(argRegs & trashedByValidator));
                     }
                     JITDUMP("\n");
 
@@ -2354,7 +2354,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                         JITDUMP("CFG validator will trash register(s) ");
                         if (comp->verbose)
                         {
-                            dspRegMask(argRegs & trashedByValidator);
+                            INDEBUG(dspRegMask(argRegs & trashedByValidator));
                         }
                         JITDUMP("\n");
 
