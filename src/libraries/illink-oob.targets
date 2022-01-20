@@ -60,10 +60,6 @@
 
     <Message Text="Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
 
-    <ItemGroup>
-
-    </ItemGroup>
-
    <PropertyGroup>
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
       <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
