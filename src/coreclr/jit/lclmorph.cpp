@@ -470,10 +470,22 @@ public:
 
             if (varDsc->lvIsStructField)
             {
-                // Promoted field, increase counter for the parent lclVar.
+                // Promoted field, increase count for the parent lclVar.
+                //
                 assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
                 unsigned parentLclNum = varDsc->lvParentLcl;
                 UpdateEarlyRefCount(parentLclNum);
+            }
+
+            if (varDsc->lvPromoted)
+            {
+                // Promoted struct, increase count for each promoted field.
+                //
+                for (unsigned childLclNum = varDsc->lvFieldLclStart;
+                     childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
+                {
+                    UpdateEarlyRefCount(childLclNum);
+                }
             }
         }
 
