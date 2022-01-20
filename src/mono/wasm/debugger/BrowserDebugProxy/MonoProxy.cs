@@ -611,7 +611,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             string dpdb = args["dpdb"]?.Value<string>();
             var moduleId = await context.SdbAgent.GetModuleId(moduleGUID, token);
             var applyUpdates =  await context.SdbAgent.ApplyUpdates(moduleId, dmeta, dil, dpdb, token);
-            return true;
+            return applyUpdates;
         }
 
         private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
