@@ -62,6 +62,12 @@ public class PInvokes
     }
 
     [Fact]
+    public static void Varargs_NotSupported()
+    {
+        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
+    }
+
+    [Fact]
     public static void ByRef_Args_Not_Supported()
     {
         Assert.Throws<MarshalDirectiveException>(() =>

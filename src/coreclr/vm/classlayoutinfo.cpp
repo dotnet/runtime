@@ -287,7 +287,6 @@ namespace
             if (pNestedType.GetMethodTable()->ContainsPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
-                // so do this if it has not been done already
                 placementInfo.m_alignment = TARGET_POINTER_SIZE;
             }
             else

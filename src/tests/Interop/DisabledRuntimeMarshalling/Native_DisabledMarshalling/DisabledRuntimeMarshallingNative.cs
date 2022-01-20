@@ -153,6 +153,9 @@ public unsafe class DisabledRuntimeMarshallingNative
     [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
     public static extern void CallWithByRef(ref int i);
 
+    [DllImport(nameof(DisabledRuntimeMarshallingNative), EntryPoint = "Invalid")]
+    public static extern void CallWithVarargs(__arglist);
+
     [DllImport(nameof(DisabledRuntimeMarshallingNative))]
     public static extern delegate* unmanaged<StructWithShortAndBool, short, bool, bool> GetStructWithShortAndBoolCallback();
 

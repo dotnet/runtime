@@ -1058,7 +1058,7 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 
 namespace
 {
-    MarshalInfo::MarshalType GetDisabledMarshalerType(
+    MarshalInfo::MarshalType GetDisabledMarshallerType(
         Module* pModule,
         SigPointer sig,
         const SigTypeContext * pTypeContext,
@@ -1248,8 +1248,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
     if (!useRuntimeMarshalling)
     {
         m_in = TRUE;
+        m_out = FALSE;
         m_byref = FALSE;
-        m_type = GetDisabledMarshalerType(
+        m_type = GetDisabledMarshallerType(
             pModule,
             sig,
             pTypeContext,
