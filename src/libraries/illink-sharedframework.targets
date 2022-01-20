@@ -8,6 +8,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <SharedFrameworkSuppressionsXml Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
+      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
+      <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+      <SharedFrameworkSuppressionsXml Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
+      
       <SharedFrameworkAssemblyToTrim Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
       <SharedFrameworkAssemblyToTrim Include="$(SystemPrivateCoreLibPath)" />
     </ItemGroup>
@@ -21,7 +27,7 @@
   <Target Name="ILLinkTrimSharedFramework"
           AfterTargets="Build"
           DependsOnTargets="GetSharedFrameworkAssembliesToTrim;PrepareForAssembliesTrim"
-          Inputs="$(ILLinkTasksAssembly);@(SharedFrameworkAssemblyToTrim)"
+          Inputs="$(ILLinkTasksAssembly);@(SharedFrameworkAssemblyToTrim);@(SharedFrameworkSuppressionsXml)"
           Outputs="@(SharedFrameworkAssemblyTrimmed)">
 
     <Message Text="Trimming $(PackageRID) shared framework assemblies with ILLinker..." Importance="high" />
@@ -36,15 +42,6 @@
       <RootAssemblies Include="@(SharedFrameworkAssemblyToTrim)">
         <RootMode>library</RootMode>
       </RootAssemblies>
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <SharedFrameworkSuppressionsXml Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
-
-      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
-      <SharedFrameworkSuppressionsXml Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
     </ItemGroup>
 
     <PropertyGroup>
