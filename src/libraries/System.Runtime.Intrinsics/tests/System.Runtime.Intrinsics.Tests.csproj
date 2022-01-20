@@ -17,6 +17,15 @@
     <Compile Include="Vectors\Vector128Tests.cs" />
     <Compile Include="Vectors\Vector256Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
+    <Compile Include="X86\ShaTests.cs" />
+    <Compile Include="X86\ShaTests.IsSupported.cs" />
+    <Compile Include="X86\ShaTests.Sha1FourRounds.cs" />
+    <Compile Include="X86\ShaTests.Sha1NextE.cs" />
+    <Compile Include="X86\ShaTests.Sha1MessageSchedule1.cs" />
+    <Compile Include="X86\ShaTests.Sha1MessageSchedule2.cs" />
+    <Compile Include="X86\ShaTests.Sha256MessageSchedule1.cs" />
+    <Compile Include="X86\ShaTests.Sha256MessageSchedule2.cs" />
+    <Compile Include="X86\ShaTests.Sha256TwoRounds.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
