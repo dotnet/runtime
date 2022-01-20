@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime;
 using System.Runtime.InteropServices;
 
 using BindingFlags = System.Reflection.BindingFlags;
@@ -853,6 +854,9 @@ class TestGCInteraction
             WithFrozenObjects.s_someObject,
         };
 
+        var h1 = new DependentHandle(WithFrozenObjects.s_someObject, WithFrozenObjects.s_someStringLiteral);
+        var h2 = new DependentHandle(WithFrozenObjects.s_someStringLiteral, WithFrozenObjects.s_someObject);
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
@@ -860,11 +864,8 @@ class TestGCInteraction
         Assert.AreSame(holder[0], WithFrozenObjects.s_someStringLiteral);
         Assert.AreSame(holder[1], WithFrozenObjects.s_someObject);
 
-        // This will try to make a dependent handle for the frozen object
-        lock (WithFrozenObjects.s_someObject)
-        {
-            Console.WriteLine("Now under lock");
-        }
+        h1.Dispose();
+        h2.Dispose();
     }
 }
 
