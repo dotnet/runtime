@@ -597,10 +597,6 @@ class SuperPMICollect:
         if coreclr_args.pmi:
             self.pmi_location = determine_pmi_location(coreclr_args)
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
-            if coreclr_args.pmi_path is None:
-                self.pmi_path_directories = []
-            else:
-                self.pmi_path_directories = coreclr_args.pmi_path
         else:
             if coreclr_args.pmi_path is not None:
                 logging.warning("Warning: -pmi_path is set but --pmi is not.")
@@ -729,9 +725,6 @@ class SuperPMICollect:
             root_env["SuperPMIShimLogPath"] = self.temp_location
             root_env["SuperPMIShimPath"] = self.jit_path
 
-            if self.coreclr_args.pmi and self.pmi_path_directories:
-                root_env["PMIPATH"] = ";".join(self.pmi_path_directories)
-
             complus_env = {}
             complus_env["EnableExtraSuperPmiQueries"] = "1"
 
@@ -844,6 +837,10 @@ class SuperPMICollect:
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
                 pmi_complus_env["JitName"] = self.collection_shim_name
+
+                if self.coreclr_args.pmi_path is not None:
+                    root_env["PMIPATH"] = ";".join(self.coreclr_args.pmi_path)
+
                 set_and_report_env(pmi_command_env, root_env, pmi_complus_env)
 
                 old_env = os.environ.copy()
