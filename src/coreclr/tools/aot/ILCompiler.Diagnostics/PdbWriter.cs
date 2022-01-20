@@ -138,23 +138,13 @@ namespace ILCompiler.Diagnostics
             {
                 try
                 {
-                    try
-                    {
-                        WritePDBDataHelper(dllPath, methods);
-                    }
-                    finally
-                    {
-                        if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
-                        {
-                            _ngenWriter.CloseMod(_pdbMod);
-                        }
-                    }
+                    WritePDBDataHelper(dllPath, methods);
                 }
                 finally
                 {
-                    if (_ngenWriter != null)
+                    if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
                     {
-                        Marshal.FinalReleaseComObject(_ngenWriter);
+                        _ngenWriter.CloseMod(_pdbMod);
                     }
                 }
 
@@ -430,9 +420,9 @@ namespace ILCompiler.Diagnostics
                 byte iLanguage = (byte)CV_CFL_LANG.CV_CFL_MSIL;
                 writer.Write(iLanguage);
                 // Write rest of flags
-                writer.Write((byte)0); 
-                writer.Write((byte)0); 
-                writer.Write((byte)0); 
+                writer.Write((byte)0);
+                writer.Write((byte)0);
+                writer.Write((byte)0);
 
                 switch (_target.Architecture)
                 {
