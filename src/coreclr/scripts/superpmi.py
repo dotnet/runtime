@@ -601,6 +601,11 @@ class SuperPMICollect:
                 self.pmi_path_directories = []
             else:
                 self.pmi_path_directories = coreclr_args.pmi_path
+        else:
+            if coreclr_args.pmi_path is not None:
+                logging.warning("Warning: -pmi_path is set but --pmi is not.")
+            if coreclr_args.pmi_location is not None:
+                logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
