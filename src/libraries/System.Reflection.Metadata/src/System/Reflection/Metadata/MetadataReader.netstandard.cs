@@ -45,9 +45,9 @@ namespace System.Reflection.Metadata
             AssemblyName assemblyName;
             try
             {
-                using var fs = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read);
-                using var peReader = new PEReader(fs);
-                MetadataReader mdReader = peReader.GetMetadataReader();
+                using FileStream fs = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using PEReader peReader = new PEReader(fs, PEStreamOptions.PrefetchMetadata);
+                MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
                 assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
             }
             catch (InvalidOperationException ex)
