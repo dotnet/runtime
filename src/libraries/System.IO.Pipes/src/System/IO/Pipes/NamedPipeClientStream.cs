@@ -89,15 +89,7 @@ namespace System.IO.Pipes
             {
                 IsCurrentUserOnly = true;
             }
-            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
-            {
-               _normalizedPipePath = $"/tmp/{pipeName}";
-            }
-            else
-            {
-               _normalizedPipePath = GetPipePath(serverName, pipeName);
-            }
+            _normalizedPipePath = GetPipePath(serverName, pipeName);
             _direction = direction;
             _inheritability = inheritability;
             _impersonationLevel = impersonationLevel;

@@ -62,7 +62,7 @@ namespace System.IO.Tests
             AssertSettingInvalidAttributes(path, attributes);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotRunningOnMacOS))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         [InlineData(FileAttributes.Hidden)]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.OSX | TestPlatforms.FreeBSD))]
         public void SettingInvalidAttributes_UnixExceptOSXAndFreeBSD(FileAttributes attributes)

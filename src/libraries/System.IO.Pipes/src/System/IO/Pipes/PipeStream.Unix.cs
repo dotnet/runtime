@@ -196,6 +196,12 @@ namespace System.IO.Pipes
                 throw new ArgumentOutOfRangeException(nameof(pipeName), SR.ArgumentOutOfRange_AnonymousReserved);
             }
 
+            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
+            {
+                return $"/tmp/{pipeName}";
+            }
+
             // Since pipes are stored as files in the system we support either an absolute path to a file name
             // or a file name. The support of absolute path was added to allow working around the limited
             // length available for the pipe name when concatenated with the temp path, while being

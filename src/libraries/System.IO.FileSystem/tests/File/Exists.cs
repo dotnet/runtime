@@ -112,7 +112,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
+        public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
             Assert.All((IOInputs.GetPathsLongerThanMaxDirectory(GetTestFilePath())), (path) =>
             {

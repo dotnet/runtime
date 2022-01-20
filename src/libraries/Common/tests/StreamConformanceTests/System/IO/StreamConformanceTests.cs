@@ -1595,7 +1595,7 @@ namespace System.IO.Tests
             streams.Stream1.CanRead && streams.Stream1.CanWrite &&
             streams.Stream2.CanRead && streams.Stream2.CanWrite;
 
-        [Fact]        
+        [Fact]
         public virtual async Task ArgumentValidation_ThrowsExpectedException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
