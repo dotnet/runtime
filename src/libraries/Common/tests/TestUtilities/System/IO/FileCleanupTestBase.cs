@@ -107,8 +107,7 @@ namespace System.IO
 
             const int maxLength = 260 - 5; // Windows MAX_PATH minus a bit
 
-            int excessLength = testFilePath.Length - maxLength;
-           
+            int excessLength = testFilePath.Length - maxLength;          
             if (excessLength > 0)
             {
                 // The path will be too long for Windows -- can we

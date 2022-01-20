@@ -62,7 +62,7 @@ namespace System.IO.Tests
                 return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }
 
-            if (PlatformDetection.IsWindows || !PlatformDetection.IsNotRunningOnMacOS)            
+            if (PlatformDetection.IsWindows || !PlatformDetection.IsNotRunningOnMacOS)      
             {
                 return Guid.NewGuid().ToString("N");
             }
