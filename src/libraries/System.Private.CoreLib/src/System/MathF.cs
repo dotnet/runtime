@@ -441,18 +441,6 @@ namespace System
                     return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(x)).ToScalar();
             }
 
-            // Inline the most common cases
-            if (mode == MidpointRounding.ToEven)
-            {
-                return Round(x);
-            }
-            if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
-            {
-                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For XARCH we have to use the common path
-                return AdvSimd.RoundAwayFromZero(Vector64.CreateScalarUnsafe(x)).ToScalar();
-            }
-
             return Round(x, 0, mode);
         }
 
