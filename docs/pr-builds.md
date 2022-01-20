@@ -1,9 +1,9 @@
 ## PR Builds
 When submitting a PR to the `dotnet/runtime` repository various builds will run validation in many areas to ensure we keep productivity and quality high.
 
-The `dotnet/runtime` validation system can become overwhelming as we need to cover a lot of build scenarios and test in all the platforms that we support. In order to try to make this more reliable and spend the least amount of time testing what the PR change need we have various pipelines, required and optional that are covered in this document.
+The `dotnet/runtime` validation system can become overwhelming as we need to cover a lot of build scenarios and test in all the platforms that we support. In order to try to make this more reliable and spend the least amount of time testing what the PR changes need we have various pipelines, required and optional that are covered in this document.
 
-Most of the repository pipelines use a custom mechanism to evaluate paths based on the changes contained in the PR to try and build/test the least that we can without compromising quality. This is the initial step on every pipeline that depends on this infrastructure, called "Evalute Paths". In this step you can see the result of the evaluation for each subset of the repository. For more details on which subsets we have based on paths see [here](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/common/evaluate-default-paths.yml). Also to understand how this mechanism you can read this [comment](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/evaluate-changed-paths.sh#L3-L12).
+Most of the repository pipelines use a custom mechanism to evaluate paths based on the changes contained in the PR to try and build/test the least that we can without compromising quality. This is the initial step on every pipeline that depends on this infrastructure, called "Evalute Paths". In this step you can see the result of the evaluation for each subset of the repository. For more details on which subsets we have based on paths see [here](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/common/evaluate-default-paths.yml). Also to understand how this mechanism works you can read this [comment](https://github.com/dotnet/runtime/blob/513fe2863ad5ec6dc453d223d4b60f787a0ffa78/eng/pipelines/evaluate-changed-paths.sh#L3-L12).
 
 ### Runtime pipeline
 This is the "main" pipeline for the runtime product. In this pipeline we include the most critical tests and platforms where we have enough test resources in order to deliver test results in a reasonable amount of time. The tests executed in this pipeline for runtime and libraries are considered innerloop, are the tests that are executed locally when one runs tests locally.
@@ -22,7 +22,7 @@ This pipeline runs on every change, however it behaves a little different than t
 The tests will not fail because the intent of this platform is to stage new platforms where the test infrastructure is new and we need to test if we have enough capacity to include that new platform on the "main" runtime pipeline without causing flakiness. Once we analyze data and a platform is stable when running on PRs in this pipeline for at least a weak it can be promoted either to the `runtime-extra-platforms` pipeline or to the `runtime` pipeline.
 
 ### Runtime-extra-platforms
-This pipeline does not run by default as it is not required for a PR, but it runs twice a day, and it can also be invoked in specific PRs by commenting `/azp run runtime-extra-platforms` However, this pipeline is still an important part of our testing.
+This pipeline does not run by default as it is not required for a PR, but it runs twice a day, and it can also be invoked in specific PRs by commenting `/azp run runtime-extra-platforms`. However, this pipeline is still an important part of our testing.
 
 This pipeline runs innerloop tests on platforms where we don't have enough hardware capacity to run tests (mobile, browser) or on platforms where we believe tests should organically pass based on the coverage we have in the "main" runtime pipeline. For example, in the "main" pipeline we run tests on Ubuntu 21.10 but since we also support Ubuntu 18.04 which is an LTS release, we run tests on Ubuntu 18.04 of this pipeline just to make sure we have healthy tests on those platforms which we are releasing a product for.
 
@@ -46,7 +46,7 @@ Validation may fail for several reasons:
 * Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) If the test fails when run again, it is almost surely a failure caused by your PR. However, there are occasions where unrelated failures occur. Here's some ways to know:
   * Perhaps you see the same failure in CI results for unrelated active PR's.
   * It's a known issue listed in our [big tracking issue](https://github.com/dotnet/runtime/issues/702) or tagged `blocking-clean-ci` [(query here)](https://github.com/dotnet/runtime/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-ci+)
-  * Its otherwise beyond any reasonable doubt that your code changes could not have caused this.
+  * It's otherwise beyond any reasonable doubt that your code changes could not have caused this.
   * If the tests pass on rerun, that may suggest it's not related.
 * In this situation, you want to re-run but not necessarily rebase on main.
   * To rerun just the failed leg(s):
@@ -88,7 +88,7 @@ If you have determined the failure is definitely not caused by changes in your P
   * Update the original pull request with a comment linking to the new or existing issue.
 * In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link tracking the disable.
   * Update the tracking issue with the label `disabled-test`.
-  * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/a259ec2e967d502f82163beba6b84da5319c5e08/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L899)
+  * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/cf49643711ad8aa4685a8054286c1348cef6e1d8/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L74)
   * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
