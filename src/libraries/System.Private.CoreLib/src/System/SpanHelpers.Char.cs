@@ -2015,5 +2015,43 @@ namespace System
 
             return BitOperations.TrailingZeroCount(selectedLanes) >> 3;
         }
+
+        public static void ReverseCharRef(ref char buf, nint length)
+        {
+            nint numBytes = length * sizeof(char);
+            ref byte first = ref Unsafe.As<char, byte>(ref buf);
+            ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -sizeof(char));
+            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
+            {
+                Vector256<byte> ReverseMask = Vector256.Create(
+                    (byte)14, (byte)15, (byte)12, (byte)13, (byte)10, (byte)11, (byte)8, (byte)9, (byte)6, (byte)7, (byte)4, (byte)5, (byte)2, (byte)3, (byte)0, (byte)1, // first 128-bit lane
+                    (byte)14, (byte)15, (byte)12, (byte)13, (byte)10, (byte)11, (byte)8, (byte)9, (byte)6, (byte)7, (byte)4, (byte)5, (byte)2, (byte)3, (byte)0, (byte)1); // second 128-bit lane
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector256<byte>.Count);
+                do
+                {
+                    Vector256<byte> tempFirst = Unsafe.As<byte, Vector256<byte>>(ref first);
+                    Vector256<byte> tempLast = Unsafe.As<byte, Vector256<byte>>(ref last);
+                    tempFirst = Avx2.Shuffle(tempFirst, ReverseMask);
+                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
+                    tempLast = Avx2.Shuffle(tempLast, ReverseMask);
+                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
+                    Unsafe.As<byte, Vector256<byte>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector256<byte>>(ref last) = tempFirst;
+                    first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
+                    last = ref Unsafe.Add(ref last, -Vector256<byte>.Count);
+                } while (Unsafe.IsAddressLessThan(ref first, ref last) &&
+                (int)Unsafe.ByteOffset(ref first, ref last) > Vector256<byte>.Count * 2);
+            }
+            ref char firstChar = ref Unsafe.As<byte, char>(ref first);
+            ref char lastChar = ref Unsafe.As<byte, char>(ref last);
+            while (Unsafe.IsAddressLessThan(ref firstChar, ref lastChar))
+            {
+                char temp = firstChar;
+                firstChar = lastChar;
+                lastChar = temp;
+                firstChar = ref Unsafe.Add(ref firstChar, 1);
+                lastChar = ref Unsafe.Add(ref lastChar, -1);
+            }
+        }
     }
 }

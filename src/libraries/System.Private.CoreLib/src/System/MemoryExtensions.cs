@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -1548,6 +1550,14 @@ namespace System
                 return;
             }
 
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    SpanHelpers.ReverseByteRef(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)), span.Length);
+                    return;
+                }
+            }
             ref T first = ref MemoryMarshal.GetReference(span);
             ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, span.Length), -1);
             do
@@ -1559,6 +1569,25 @@ namespace System
                 last = ref Unsafe.Add(ref last, -1);
             } while (Unsafe.IsAddressLessThan(ref first, ref last));
         }
+
+
+        // private static readonly short[] ReverseMaskAvx2Short =
+        // {
+        //     0, 1, 2, 3, 4, 5, 6, 7,  // first 128-bit lane
+        //     0, 1, 2, 3, 4, 5, 6, 7,  // second 128-bit lane
+        // };
+
+        // private static readonly int[] ReverseMaskAvx2Int32 =
+        // {
+        //     0, 1, 2, 3, // first 128-bit lane
+        //     0, 1, 2, 3  // second 128-bit lane
+        // };
+
+        // private static readonly long[] ReverseMaskAvx2Int64 =
+        // {
+        //     0, 1, // first 128-bit lane
+        //     0, 1  // second 128-bit lane
+        // };
 
         /// <summary>
         /// Creates a new span over the target array.
