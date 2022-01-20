@@ -2332,7 +2332,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     GenTree* node = use.GetNode();
                     JITDUMP("Checking whether late arg will be trashed by validator:\n");
                     DISPTREE(node);
-                    assert(node->OperIsPutArg());
+                    assert(node->OperIsPutArg() || node->OperIs(GT_FIELD_LIST));
                     fgArgTabEntry* entry             = comp->gtArgEntryByNode(call, node);
                     regMaskTP argRegs = 0;
                     for (unsigned i = 0; i < entry->numRegs; i++)
