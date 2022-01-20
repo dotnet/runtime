@@ -1,5 +1,24 @@
-# This is a custom file written for .NET Core's build system
-# It overwrites the one found in upstream
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# other source files
+include_directories(../include/tdep)
+include_directories(../include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../include/tdep)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../include)
+
+if(TARGET_ARM)
+    # Ensure that the remote and local unwind code can reside in the same binary without name clashing
+    add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
+    # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
+    add_definitions(-Dasm=__asm__)
+    # The arm sources include ex_tables.h from include/tdep-arm without going through a redirection
+    # in include/tdep like it works for similar files on other architectures. So we need to add
+    # the include/tdep-arm to include directories
+    include_directories(../include/tdep-arm)
+elseif(TARGET_AARCH64)
+    # We compile code with -std=c99 and the asm keyword is not recognized as it is a gnu extension
+    add_definitions(-Dasm=__asm__)
+endif()
 
 SET(libunwind_ptrace_la_SOURCES
     ptrace/_UPT_elf.c
@@ -39,7 +58,6 @@ SET(libunwind_la_SOURCES_generic
     mi/Gget_fpreg.c mi/Gset_fpreg.c
     mi/Gset_caching_policy.c
     mi/Gset_cache_size.c
-    oop/_OOP_find_proc_info.c
 )
 
 SET(libunwind_la_SOURCES_os_linux
@@ -66,7 +84,7 @@ SET(libunwind_la_SOURCES_os_solaris_local
 # Nothing
 )
 
-if(CLR_CMAKE_TARGET_LINUX)
+if(UNW_CMAKE_TARGET_LINUX)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_linux})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_linux_local})
     SET(libunwind_la_SOURCES_x86_os             x86/Gos-linux.c)
@@ -76,8 +94,10 @@ if(CLR_CMAKE_TARGET_LINUX)
     SET(libunwind_la_SOURCES_x86_64_os_local    x86_64/Los-linux.c)
     SET(libunwind_la_SOURCES_arm_os             arm/Gos-linux.c)
     SET(libunwind_la_SOURCES_arm_os_local       arm/Los-linux.c)
-    list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_linux.c)
-elseif(CLR_CMAKE_TARGET_FREEBSD)
+    list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_linux.c
+                                                coredump/_UCD_get_threadinfo_prstatus.c
+                                                coredump/_UCD_get_mapinfo_linux.c)
+elseif(UNW_CMAKE_TARGET_FREEBSD)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_freebsd})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_freebsd_local})
     SET(libunwind_la_SOURCES_x86_os             x86/Gos-freebsd.c)
@@ -87,8 +107,10 @@ elseif(CLR_CMAKE_TARGET_FREEBSD)
     SET(libunwind_la_SOURCES_x86_64_os_local    x86_64/Los-freebsd.c)
     SET(libunwind_la_SOURCES_arm_os             arm/Gos-freebsd.c)
     SET(libunwind_la_SOURCES_arm_os_local       arm/Los-freebsd.c)
-    list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_freebsd.c)
-elseif(CLR_CMAKE_HOST_SUNOS)
+    list(APPEND libunwind_coredump_la_SOURCES   coredump/_UCD_access_reg_freebsd.c
+                                                coredump/_UCD_get_threadinfo_prstatus.c
+                                                coredump/_UCD_get_mapinfo_generic.c)
+elseif(UNW_CMAKE_HOST_SUNOS)
     SET(libunwind_la_SOURCES_os                 ${libunwind_la_SOURCES_os_solaris})
     SET(libunwind_la_SOURCES_os_local           ${libunwind_la_SOURCES_os_solaris_local})
     SET(libunwind_la_SOURCES_x86_64_os          x86_64/Gos-solaris.c)
@@ -215,36 +237,6 @@ SET(libunwind_arm_la_SOURCES_arm
     arm/Gex_tables.c arm/Gstash_frame.c arm/Gtrace.c
 )
 
-# The list of files that go both into libunwind and libunwind-x86:
-SET(libunwind_la_SOURCES_x86_common
-    ${libunwind_la_SOURCES_common}
-    x86/is_fpreg.c x86/regname.c
-)
-
-# The list of files that go into libunwind:
-SET(libunwind_la_SOURCES_x86
-    ${libunwind_la_SOURCES_x86_common}
-    ${libunwind_la_SOURCES_x86_os_local}
-    ${libunwind_la_SOURCES_local}
-    x86/Lapply_reg_state.c x86/Lreg_states_iterate.c
-    x86/Lcreate_addr_space.c x86/Lget_save_loc.c x86/Lglobal.c
-    x86/Linit.c x86/Linit_local.c x86/Linit_remote.c
-    x86/Lget_proc_info.c x86/Lregs.c
-    x86/Lresume.c x86/Lstep.c
-)
-
-# The list of files that go into libunwind-x86:
-SET(libunwind_x86_la_SOURCES_x86
-    ${libunwind_la_SOURCES_x86_common}
-    ${libunwind_la_SOURCES_x86_os}
-    ${libunwind_la_SOURCES_generic}
-    x86/Gapply_reg_state.c x86/Greg_states_iterate.c
-    x86/Gcreate_addr_space.c x86/Gget_save_loc.c x86/Gglobal.c
-    x86/Ginit.c x86/Ginit_local.c x86/Ginit_remote.c
-    x86/Gget_proc_info.c x86/Gregs.c
-    x86/Gresume.c x86/Gstep.c
-)
-
 # The list of files that go both into libunwind and libunwind-x86_64:
 SET(libunwind_la_SOURCES_x86_64_common
     ${libunwind_la_SOURCES_common}
@@ -305,93 +297,36 @@ SET(libunwind_s390x_la_SOURCES_s390x
     s390x/Gis_signal_frame.c s390x/Gstep.c
 )
 
-if(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_HOST_ARCH_ARM64)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
-    elseif(CLR_CMAKE_HOST_ARCH_ARM)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
-    elseif(CLR_CMAKE_HOST_ARCH_I386)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_x86_la_SOURCES_x86})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     x86/longjmp.S x86/siglongjmp.S)
-    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
-    elseif(CLR_CMAKE_HOST_ARCH_S390X)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-    endif()
+if(TARGET_AARCH64)
+    SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
+    SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
+elseif(TARGET_ARM)
+    SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
+    SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
+    list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
+elseif(TARGET_AMD64)
+    SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
+    SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+    list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
+elseif(TARGET_S390X)
+    SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
+    SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
+    SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+endif()
 
-    if(CLR_CMAKE_HOST_OSX)
-        add_library(libunwind_dac
-          OBJECT
-          ../../libunwind_mac/src/missing-functions.c
-          ${libunwind_remote_la_SOURCES}
-          ${libunwind_dwarf_common_la_SOURCES}
-          ${libunwind_dwarf_generic_la_SOURCES}
-        )
-    else()
-        add_library(libunwind
-          OBJECT
-          ${libunwind_la_SOURCES}
-          ${libunwind_remote_la_SOURCES}
-          ${libunwind_dwarf_local_la_SOURCES}
-          ${libunwind_dwarf_common_la_SOURCES}
-          ${libunwind_dwarf_generic_la_SOURCES}
-          ${libunwind_elf_la_SOURCES}
-        )
-    endif(CLR_CMAKE_HOST_OSX)
-
-else(CLR_CMAKE_HOST_UNIX)
-    if(CLR_CMAKE_TARGET_ARCH_ARM64)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_aarch64_la_SOURCES_aarch64})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     aarch64/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_arm})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_arm_la_SOURCES_arm})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     arm/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_I386)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86} ${libunwind_x86_la_SOURCES_os})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_x86_la_SOURCES_x86})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf32_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     x86/longjmp.S x86/siglongjmp.S)
-    elseif(CLR_CMAKE_TARGET_ARCH_AMD64)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_x86_64})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_x86_64_la_SOURCES_x86_64})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-        list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
-    elseif(CLR_CMAKE_TARGET_ARCH_S390X)
-        SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_s390x})
-        SET(libunwind_remote_la_SOURCES             ${libunwind_s390x_la_SOURCES_s390x})
-        SET(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
-    endif()
-
-    set_source_files_properties(${CLR_DIR}/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/inc)
-
-    add_library(libunwind_xdac
-      OBJECT
-      ../../exception/remote-unwind.cpp
-      win/pal-single-threaded.c
-      # ${libunwind_la_SOURCES}  Local...
-      ${libunwind_remote_la_SOURCES}
-      # Commented out above for LOCAL + REMOTE runtime build
-      mi/Gget_accessors.c
-      # ${libunwind_dwarf_local_la_SOURCES}
-      ${libunwind_dwarf_common_la_SOURCES}
-      ${libunwind_dwarf_generic_la_SOURCES}
-      ${libunwind_elf_la_SOURCES}
-    )
-endif(CLR_CMAKE_HOST_UNIX)
+add_library(libunwind
+  OBJECT
+  win/pal-single-threaded.c
+  # ${libunwind_la_SOURCES}  Local...
+  ${libunwind_remote_la_SOURCES}
+    # Commented out above for LOCAL + REMOTE runtime build
+    mi/Gget_accessors.c
+  # ${libunwind_dwarf_local_la_SOURCES}
+  ${libunwind_dwarf_common_la_SOURCES}
+  ${libunwind_dwarf_generic_la_SOURCES}
+  ${libunwind_elf_la_SOURCES}
+)
