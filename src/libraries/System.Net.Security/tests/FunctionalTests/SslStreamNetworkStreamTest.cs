@@ -394,7 +394,7 @@ namespace System.Net.Security.Tests
                 byte[] buffer = new byte[20 * 1024];
 
                 // Send application data instead of Client hello.
-                _ = client.WriteAsync(buffer, cts.Token);
+                await client.WriteAsync(buffer, cts.Token);
                 // Server don't drain all client data (reading 16kB leaves further TLS frames undecrypted)
                 int read = await server.ReadAsync(buffer.AsMemory(0, 16 * 1024), cts.Token);
                 // Fail as it is not allowed to receive non handshake frames during handshake.
