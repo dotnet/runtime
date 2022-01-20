@@ -996,7 +996,7 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Replace `needs-author-action` label with `needs further triage` label when the author comments on an issue",
+      "taskName": "Replace `needs-author-action` label with `needs-further-triage` label when the author comments on an issue",
       "conditions": {
         "operator": "and",
         "operands": [
@@ -1030,7 +1030,7 @@
         {
           "name": "addLabel",
           "parameters": {
-            "label": "needs further triage"
+            "label": "needs-further-triage"
           }
         },
         {
@@ -1052,7 +1052,7 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Remove `no recent activity` label from issues when issue is modified",
+      "taskName": "Remove `no-recent-activity` label from issues when issue is modified",
       "conditions": {
         "operator": "and",
         "operands": [
@@ -1070,7 +1070,7 @@
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "no recent activity"
+              "label": "no-recent-activity"
             }
           },
           {
@@ -1079,7 +1079,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "no recent activity"
+                  "label": "no-recent-activity"
                 }
               }
             ]
@@ -1090,7 +1090,7 @@
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ],
@@ -1107,14 +1107,14 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Remove `no recent activity` label when an issue is commented on",
+      "taskName": "Remove `no-recent-activity` label when an issue is commented on",
       "conditions": {
         "operator": "and",
         "operands": [
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "no recent activity"
+              "label": "no-recent-activity"
             }
           }
         ]
@@ -1123,7 +1123,7 @@
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ],
@@ -1149,7 +1149,7 @@
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "no recent activity"
+              "label": "no-recent-activity"
             }
           },
           {
@@ -1158,7 +1158,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "no recent activity"
+                  "label": "no-recent-activity"
                 }
               }
             ]
@@ -1171,12 +1171,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "Remove `no recent activity` label from PRs when modified",
+      "taskName": "Remove `no-recent-activity` label from PRs when modified",
       "actions": [
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ]
@@ -1194,7 +1194,7 @@
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "no recent activity"
+              "label": "no-recent-activity"
             }
           },
           {
@@ -1207,12 +1207,12 @@
       "eventNames": [
         "issue_comment"
       ],
-      "taskName": "Remove `no recent activity` label from PRs when commented on",
+      "taskName": "Remove `no-recent-activity` label from PRs when commented on",
       "actions": [
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ]
@@ -1230,7 +1230,7 @@
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "no recent activity"
+              "label": "no-recent-activity"
             }
           },
           {
@@ -1243,12 +1243,12 @@
       "eventNames": [
         "pull_request_review"
       ],
-      "taskName": "Remove `no recent activity` label from PRs when new review is added",
+      "taskName": "Remove `no-recent-activity` label from PRs when new review is added",
       "actions": [
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ]
@@ -1345,7 +1345,7 @@
         {
           "name": "hasLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         },
         {
@@ -1359,7 +1359,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This issue will now be closed since it had been marked `no recent activity` but received no further activity in the past 14 days. It is still possible to reopen or comment on the issue, but please note that the issue will be locked if it remains inactive for another 30 days."
+            "comment": "This issue will now be closed since it had been marked `no-recent-activity` but received no further activity in the past 14 days. It is still possible to reopen or comment on the issue, but please note that the issue will be locked if it remains inactive for another 30 days."
           }
         },
         {
@@ -1375,7 +1375,7 @@
     "subCapability": "ScheduledSearch",
     "version": "1.1",
     "config": {
-      "taskName": "Close PRs with no recent activity",
+      "taskName": "Close PRs with no-recent-activity",
       "frequency": [
         {
           "weekDay": 0,
@@ -1460,7 +1460,7 @@
         {
           "name": "hasLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         },
         {
@@ -1474,7 +1474,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This pull request will now be closed since it had been marked `no recent activity` but received no further activity in the past 14 days. It is still possible to reopen or comment on the pull request, but please note that it will be locked if it remains inactive for another 30 days."
+            "comment": "This pull request will now be closed since it had been marked `no-recent-activity` but received no further activity in the past 14 days. It is still possible to reopen or comment on the pull request, but please note that it will be locked if it remains inactive for another 30 days."
           }
         },
         {
@@ -1490,7 +1490,7 @@
     "subCapability": "ScheduledSearch",
     "version": "1.1",
     "config": {
-      "taskName": "Add no recent activity label to issues",
+      "taskName": "Add no-recent-activity label to issues",
       "frequency": [
         {
           "weekDay": 0,
@@ -1587,7 +1587,7 @@
         {
           "name": "noLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ],
@@ -1595,13 +1595,13 @@
         {
           "name": "addLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         },
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This issue has been automatically marked `no recent activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no recent activity`."
+            "comment": "This issue has been automatically marked `no-recent-activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no-recent-activity`."
           }
         }
       ]
@@ -1614,7 +1614,7 @@
     "subCapability": "ScheduledSearch",
     "version": "1.1",
     "config": {
-      "taskName": "Add no recent activity label to PRs",
+      "taskName": "Add no-recent-activity label to PRs",
       "frequency": [
         {
           "weekDay": 0,
@@ -1711,7 +1711,7 @@
         {
           "name": "noLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         }
       ],
@@ -1719,13 +1719,13 @@
         {
           "name": "addLabel",
           "parameters": {
-            "label": "no recent activity"
+            "label": "no-recent-activity"
           }
         },
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This pull request has been automatically marked `no recent activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no recent activity`."
+            "comment": "This pull request has been automatically marked `no-recent-activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no-recent-activity`."
           }
         }
       ]
@@ -1742,7 +1742,7 @@
       "inPrLabelText": "Status: In PR",
       "fixedLabelText": "Status: Fixed",
       "fixedLabelEnabled": false,
-      "label_inPr": "in pr"
+      "label_inPr": "in-pr"
     }
   },
   {
@@ -2239,7 +2239,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -2267,7 +2267,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -2280,7 +2280,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -2502,7 +2502,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -2524,7 +2524,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -2543,7 +2543,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -2625,7 +2625,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs further triage"
+                  "label": "needs-further-triage"
                 }
               },
               {
@@ -2928,7 +2928,7 @@
         {
           "name": "addLabel",
           "parameters": {
-            "label": "needs further triage"
+            "label": "needs-further-triage"
           }
         }
       ]
@@ -3006,7 +3006,7 @@
         {
           "name": "addLabel",
           "parameters": {
-            "label": "needs further triage"
+            "label": "needs-further-triage"
           }
         }
       ]
@@ -3130,7 +3130,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -3152,7 +3152,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -3171,7 +3171,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -3258,7 +3258,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -3280,7 +3280,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -3299,7 +3299,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -3369,7 +3369,7 @@
               {
                 "name": "labelRemoved",
                 "parameters": {
-                  "label": "needs further triage"
+                  "label": "needs-further-triage"
                 }
               },
               {
@@ -3398,7 +3398,7 @@
                   {
                     "name": "hasLabel",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   }
                 ]
@@ -3837,7 +3837,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs further triage"
+                  "label": "needs-further-triage"
                 }
               },
               {
@@ -3989,7 +3989,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -4018,7 +4018,7 @@
                   {
                     "name": "hasLabel",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   }
                 ]
@@ -4029,7 +4029,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -4210,7 +4210,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs further triage"
+                  "label": "needs-further-triage"
                 }
               },
               {
@@ -4317,7 +4317,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -4350,7 +4350,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -4369,7 +4369,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -5159,7 +5159,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -5187,7 +5187,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -5215,7 +5215,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -5287,7 +5287,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -5315,7 +5315,7 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
-                          "label": "needs further triage"
+                          "label": "needs-further-triage"
                         }
                       }
                     ]
@@ -5328,7 +5328,7 @@
                   {
                     "name": "labelRemoved",
                     "parameters": {
-                      "label": "needs further triage"
+                      "label": "needs-further-triage"
                     }
                   },
                   {
@@ -5383,7 +5383,7 @@
           {
             "name": "labelAdded",
             "parameters": {
-              "label": "no recent activity"
+              "label": "no-recent-activity"
             }
           }
         ]
