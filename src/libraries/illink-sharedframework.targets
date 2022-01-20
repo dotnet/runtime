@@ -10,7 +10,7 @@
     <ItemGroup>
       <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
       <SharedFrameworkSuppressionsXml Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
-      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
+      <!-- Collect CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
       <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
       <SharedFrameworkSuppressionsXml Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
       
