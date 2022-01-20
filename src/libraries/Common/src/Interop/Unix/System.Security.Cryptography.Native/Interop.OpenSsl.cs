@@ -221,6 +221,9 @@ internal static partial class Interop
 
         internal static void UpdateClientCertiticate(SafeSslHandle ssl, SslAuthenticationOptions sslAuthenticationOptions)
         {
+            // Disable certificate selection callback. We either got certificate or we will try to proceed without it.
+            Interop.Ssl.SslSetClientCertCallback(ssl, 0);
+
             if (sslAuthenticationOptions.CertificateContext == null)
             {
                 return;
@@ -326,7 +329,7 @@ internal static partial class Interop
 
                     // Set client cert callback, this will interrupt the handshake with SecurityStatusPalErrorCode.CredentialsNeeded
                     // if server actually requests a certificate.
-                    Interop.Ssl.SslSetClientCertCallback(sslHandle, 1);
+                    Ssl.SslSetClientCertCallback(sslHandle, 1);
                 }
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)

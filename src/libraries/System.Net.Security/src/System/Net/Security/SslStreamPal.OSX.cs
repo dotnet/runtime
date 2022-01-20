@@ -32,16 +32,18 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -49,10 +51,15 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        public static SecurityStatusPal Renegotiate(
+            SecureChannel secureChannel,
+            ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            out byte[]? outputBuffer)
         {
             throw new PlatformNotSupportedException();
         }
@@ -224,6 +231,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
+            SecureChannel secureChannel,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
@@ -246,15 +254,17 @@ namespace System.Net.Security
                         Interop.AppleCrypto.SslSetTargetName(sslContext.SslContext, sslAuthenticationOptions.TargetHost);
                     }
 
+                    if (sslAuthenticationOptions.CertificateContext == null && sslAuthenticationOptions.CertSelectionDelegate != null)
+                    {
+                        // certificate was not provided but there is user callback. We can break handshake if server asks for certificate
+                        // and we can try to get it based on remote certificate and trusted issuers.
+                        Interop.AppleCrypto.SslBreakOnCertRequested(sslContext.SslContext, true);
+                    }
+
                     if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)
                     {
                         Interop.AppleCrypto.SslSetAcceptClientCert(sslContext.SslContext);
                     }
-                }
-                else if (context.Credentials != (credential as SafeFreeSslCredentials))
-                {
-                    // we received new credentials as a result of returning CredentialsNeeded previously
-                    ((SafeDeleteSslContext)context).UpdateCredentials((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
 
                 if (inputBuffer.Length > 0)
@@ -266,9 +276,16 @@ namespace System.Net.Security
                 SecurityStatusPal status = PerformHandshake(sslHandle);
                 if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
-                    // Returning CredentialsNeeded will trigger credential refresh. We can disable break on cert request.
-                    // We either get the certificate or we will try to proceed without it and fail
-                    Interop.AppleCrypto.SslBreakOnCertRequested(((SafeDeleteSslContext)sslContext).SslContext, false);
+                    X509Certificate2? clientCertificate = secureChannel.SelectClientCertificate(out _);
+                    if (clientCertificate != null && clientCertificate.HasPrivateKey)
+                    {
+                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+
+                        SafeDeleteSslContext.SetCertificate(sslContext.SslContext, sslAuthenticationOptions.CertificateContext);
+                    }
+
+                    // We either got certificate or we can proceed without it. It is up to the server to decide if either is OK.
+                    status = PerformHandshake(sslHandle);
                 }
 
                 outputBuffer = sslContext.ReadPendingWrites();

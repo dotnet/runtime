@@ -15,8 +15,6 @@ namespace System.Net.Security
 #endif
         private SafeFreeCredentials _credential;
 
-        public SafeFreeCredentials Credentials => _credential;
-
         protected SafeDeleteContext(SafeFreeCredentials credential)
             : base(IntPtr.Zero, true)
         {
@@ -29,16 +27,6 @@ namespace System.Net.Security
             bool ignore = false;
             _credential = credential;
             _credential.DangerousAddRef(ref ignore);
-        }
-
-        protected void SetCredentials(SafeFreeCredentials credential)
-        {
-            Debug.Assert((null != credential), "Invalid credential passed to SafeDeleteContext");
-
-            bool ignore = false;
-            credential.DangerousAddRef(ref ignore);
-            _credential.DangerousRelease();
-            _credential = credential;
         }
 
         public override bool IsInvalid

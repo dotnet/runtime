@@ -25,16 +25,18 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
+            SecureChannel secureChannel,
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             string? targetName,
@@ -42,10 +44,15 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? context, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        public static SecurityStatusPal Renegotiate(
+            SecureChannel secureChannel,
+            ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            out byte[]? outputBuffer)
         {
             throw new PlatformNotSupportedException();
         }
@@ -175,6 +182,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
+            SecureChannel secureChannel,
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,

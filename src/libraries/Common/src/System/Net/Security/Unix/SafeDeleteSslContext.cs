@@ -44,12 +44,6 @@ namespace System.Net.Security
             }
         }
 
-        public void UpdateCredentials(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-        {
-            SetCredentials(credential);
-            Interop.OpenSsl.UpdateClientCertiticate(_sslContext, sslAuthenticationOptions);
-        }
-
         public override bool IsInvalid
         {
             get

@@ -94,15 +94,6 @@ namespace System.Net
             }
         }
 
-        public void UpdateCredentials(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-        {
-            SetCredentials(credential);
-            if (sslAuthenticationOptions.CertificateContext != null)
-            {
-                SetCertificate(_sslContext, sslAuthenticationOptions.CertificateContext);
-            }
-        }
-
         private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
         {
             switch (credential.Policy)

@@ -24,16 +24,27 @@ namespace System.Net.Security
         {
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context,
-            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal AcceptSecurityContext(
+            SecureChannel secureChannel,
+            ref SafeFreeCredentials? credential,
+            ref SafeDeleteSslContext? context,
+            ReadOnlySpan<byte> inputBuffer,
+            ref byte[]? outputBuffer,
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials? credential, ref SafeDeleteSslContext? context, string? targetName,
-            ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal InitializeSecurityContext(
+            SecureChannel secureChannel,
+            ref SafeFreeCredentials? credential,
+            ref SafeDeleteSslContext? context,
+            string? targetName,
+            ReadOnlySpan<byte> inputBuffer,
+            ref byte[]? outputBuffer,
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credential!, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
@@ -116,7 +127,12 @@ namespace System.Net.Security
             return bindingHandle;
         }
 
-        public static SecurityStatusPal Renegotiate(ref SafeFreeCredentials? credentialsHandle, ref SafeDeleteSslContext? securityContext, SslAuthenticationOptions sslAuthenticationOptions, out byte[]? outputBuffer)
+        public static SecurityStatusPal Renegotiate(
+            SecureChannel secureChannel,
+            ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteSslContext? securityContext,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            out byte[]? outputBuffer)
         {
             var sslContext = ((SafeDeleteSslContext)securityContext!).SslContext;
             SecurityStatusPal status = Interop.OpenSsl.SslRenegotiate(sslContext, out _);
@@ -126,7 +142,7 @@ namespace System.Net.Security
             {
                 return status;
             }
-            return HandshakeInternal(credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(secureChannel, credentialsHandle!, ref securityContext, null, ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext? securityContext, out StreamSizes streamSizes)
@@ -139,7 +155,7 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(securityContext.SslContext);
         }
 
-        private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext? context,
+        private static SecurityStatusPal HandshakeInternal(SecureChannel secureChannel, SafeFreeCredentials credential, ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
@@ -153,27 +169,19 @@ namespace System.Net.Security
                 {
                     context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
                 }
-                else if (((SafeDeleteSslContext)context).Credentials != (credential as SafeFreeSslCredentials))
-                {
-                    // we received new credentials as a result of returning CredentialsNeeded previously
-                    ((SafeDeleteSslContext)context).UpdateCredentials((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
-                }
 
                 SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, inputBuffer, out output, out outputSize);
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
-                    // We don't expect any output
-                    Debug.Assert(output == null && outputSize == 0);
+                    X509Certificate2? clientCertificate = secureChannel.SelectClientCertificate(out _);
+                    if (clientCertificate != null && clientCertificate.HasPrivateKey)
+                    {
+                        sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
+                    }
 
-                    // Returning CredentialsNeeded will trigger credential refresh Disable certificate selection callback.
-                    // We either get the certificate or we will try to proceed without it and fail
-                    Interop.Ssl.SslSetClientCertCallback(((SafeDeleteSslContext)context).SslContext, 0);
-
-                    // Avoid calling IsSslRenegotiatePending below, as it internally calls SSL_peek which changes the rwstate
-                    // of the underlying SSL instance. We need to preserve the SSL_X509_LOOKUP in order for OpenSSL to actually
-                    // send the certificate once it is set
-                    return new SecurityStatusPal(errorCode);
+                    Interop.OpenSsl.UpdateClientCertiticate(((SafeDeleteSslContext)context).SslContext, sslAuthenticationOptions);
+                    errorCode = Interop.OpenSsl.DoSslHandshake(((SafeDeleteSslContext)context).SslContext, null, out output, out outputSize);
                 }
 
                 // sometimes during renegotiation processing message does not yield new output.
