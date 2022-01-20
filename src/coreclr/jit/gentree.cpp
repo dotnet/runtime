@@ -10824,6 +10824,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Object_GetType:
                     printf(" objGetType");
                     break;
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                    printf(" isKnownConst");
+                    break;
 
                 default:
                     unreached();
@@ -17728,6 +17731,20 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX_LoadVector256:
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+#elif TARGET_ARM64
+    switch (AsHWIntrinsic()->GetHWIntrinsicId())
+    {
+        case NI_Vector64_get_Zero:
+        case NI_Vector128_get_Zero:
         {
             return true;
         }

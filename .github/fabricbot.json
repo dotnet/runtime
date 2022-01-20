@@ -996,7 +996,7 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "Replace `needs more info` label with `needs further triage` label when the author comments on an issue",
+      "taskName": "Replace `needs-author-action` label with `needs further triage` label when the author comments on an issue",
       "conditions": {
         "operator": "and",
         "operands": [
@@ -1017,7 +1017,7 @@
           {
             "name": "hasLabel",
             "parameters": {
-              "label": "needs more info"
+              "label": "needs-author-action"
             }
           },
           {
@@ -1036,7 +1036,7 @@
         {
           "name": "removeLabel",
           "parameters": {
-            "label": "needs more info"
+            "label": "needs-author-action"
           }
         }
       ],
@@ -1575,7 +1575,7 @@
         {
           "name": "hasLabel",
           "parameters": {
-            "label": "needs more info"
+            "label": "needs-author-action"
           }
         },
         {
@@ -5416,7 +5416,7 @@
           {
             "name": "labelAdded",
             "parameters": {
-              "label": "needs more info"
+              "label": "needs-author-action"
             }
           }
         ]
@@ -5426,12 +5426,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "Needs more info notification",
+      "taskName": "Needs-author-action notification",
       "actions": [
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This issue has been marked `needs more info` since it may be missing important information. Please refer to our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for tips on how to report issues effectively."
+            "comment": "This issue has been marked `needs-author-action` since it may be missing important information. Please refer to our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for tips on how to report issues effectively."
           }
         }
       ]
@@ -5951,7 +5951,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs more info"
+                  "label": "needs-author-action"
                 }
               },
               {
@@ -6668,7 +6668,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs more info"
+                  "label": "needs-author-action"
                 }
               },
               {
@@ -7352,7 +7352,7 @@
               {
                 "name": "labelAdded",
                 "parameters": {
-                  "label": "needs more info"
+                  "label": "needs-author-action"
                 }
               },
               {

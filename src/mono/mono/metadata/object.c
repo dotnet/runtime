@@ -44,6 +44,7 @@
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -2855,6 +2856,9 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	if (field->offset == -1) {
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			return mono_metadata_update_get_static_field_addr (field);
+		}
 		/* Special static */
 		ERROR_DECL (error);
 		gpointer addr = mono_special_static_field_get_offset (field, error);
@@ -6792,9 +6796,9 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 #ifdef HOST_WASM
 /**
  * mono_string_instance_is_interned:
- * Searches the interned string table for the provided string instance.
+ * Checks to see if the string instance has its interned flag set.
  * \param str String to probe
- * \returns TRUE if the string is interned, FALSE otherwise.
+ * \returns TRUE if the string instance is interned, FALSE otherwise.
  */
 int
 mono_string_instance_is_interned (MonoString *str)

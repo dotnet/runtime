@@ -1286,9 +1286,9 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
     PER_HEAP
-    void verify_regions (bool can_verify_gen_num);
+    void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
     void enter_gc_lock_for_verify_heap();
     PER_HEAP_ISOLATED
@@ -2155,8 +2155,6 @@ protected:
         );
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP
-    void clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
     PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP

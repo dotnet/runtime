@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO.Strategies;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -25,7 +24,7 @@ namespace System.IO
         {
             ValidateInput(handle, fileOffset: 0);
 
-            return GetFileLength(handle);
+            return handle.GetFileLength();
         }
 
         /// <summary>

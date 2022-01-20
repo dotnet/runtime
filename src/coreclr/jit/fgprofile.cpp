@@ -1721,12 +1721,23 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // jitting on PGO. If we ever implement a broader pattern of deferral -- say deferring
     // based on static PGO -- we will need to reconsider.
     //
+    // Under OSR stress we may add patchpoints even without backedges. So we also
+    // need to change the PGO instrumetation approach if OSR stress is enabled.
+    //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+#if defined(DEBUG)
+    const bool mayHaveStressPatchpoints =
+        (JitConfig.JitOffsetOnStackReplacement() >= 0) || (JitConfig.JitRandomOnStackReplacement() > 0);
+#else
+    const bool mayHaveStressPatchpoints = false;
+#endif
+
+    const bool mayHavePatchpoints =
+        (JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                      (JitConfig.TC_OnStackReplacement() > 0) && compHasBackwardJump;
-    const bool osrMethod       = opts.IsOSR();
+    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
+    const bool osrMethod            = opts.IsOSR();
     const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
 
     if (useEdgeProfiles)
