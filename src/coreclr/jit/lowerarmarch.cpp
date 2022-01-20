@@ -1842,6 +1842,21 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 MakeSrcContained(node, intrin.op4);
                 break;
 
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            {
+                if (intrin.op1->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                else if (intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
+
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:
             case NI_AdvSimd_DuplicateToVector64:

@@ -4732,19 +4732,19 @@ void emitter::emitIns_R_R(
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 fmt      = IF_DV_2M;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert(size == EA_8BYTE); // Only Double supported
+                assert(size == EA_8BYTE);
+                assert(insOptsNone(opt));
                 fmt = IF_DV_2L;
             }
             break;
@@ -12971,6 +12971,11 @@ void emitter::emitDispIns(
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
             }
+            if (ins == INS_fcmeq)
+            {
+                printf(", ");
+                emitDispImm(0, false);
+            }
             break;
 
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
@@ -12989,6 +12994,11 @@ void emitter::emitDispIns(
                 assert(!emitInsIsVectorLong(ins) && !emitInsIsVectorWide(ins));
                 emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
                 emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            }
+            if (ins == INS_cmeq)
+            {
+                printf(", ");
+                emitDispImm(0, false);
             }
             break;
 
@@ -13125,6 +13135,11 @@ void emitter::emitDispIns(
             {
                 emitDispReg(id->idReg1(), size, true);
                 emitDispReg(id->idReg2(), size, false);
+            }
+            if (fmt == IF_DV_2L && ins == INS_cmeq)
+            {
+                printf(", ");
+                emitDispImm(0, false);
             }
             break;
 
