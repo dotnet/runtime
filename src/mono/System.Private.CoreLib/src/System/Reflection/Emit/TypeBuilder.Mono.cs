@@ -274,7 +274,7 @@ namespace System.Reflection.Emit
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
             if (interfaceType.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+                throw new ArgumentException(SR.Argument_CannotUseByRefType);
             check_not_created();
 
             if (interfaces != null)
@@ -1572,7 +1572,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(eventtype));
             check_not_created();
             if (eventtype.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+                throw new ArgumentException(SR.Argument_CannotUseByRefType);
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
             if (events != null)
             {
