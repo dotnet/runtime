@@ -2332,7 +2332,7 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     GenTree* node = use.GetNode();
                     JITDUMP("Checking whether late arg will be trashed by validator:\n");
                     DISPTREE(node);
-                    assert(node->OperIsPutArg() || node->OperIs(GT_FIELD_LIST));
+                    assert(node->OperIsPutArg() || node->OperIsFieldList());
                     fgArgTabEntry* entry             = comp->gtArgEntryByNode(call, node);
                     regMaskTP argRegs = 0;
                     for (unsigned i = 0; i < entry->numRegs; i++)
@@ -2356,10 +2356,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                         {
                             dspRegMask(argRegs & trashedByValidator);
                         }
-                        JITDUMP("; moving the placement to after the validator call\n");
+                        JITDUMP("\n");
 
-                        BlockRange().Remove(node);
-                        BlockRange().InsertBefore(call, node);
+                        MoveCFGCallLateArg(call, node);
                     }
 
                     JITDUMP("\n");
@@ -2448,6 +2447,39 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
         default:
             unreached();
     }
+}
+
+void Lowering::MoveCFGCallLateArg(GenTreeCall* call, GenTree* node)
+{
+    assert(node->OperIsPutArg() || node->OperIsFieldList());
+
+    if (node->OperIsFieldList())
+    {
+        JITDUMP("Node is a GT_FIELD_LIST; moving all operands\n");
+        for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
+        {
+            assert(operand.GetNode()->OperIsPutArg());
+            MoveCFGCallLateArg(call, operand.GetNode());
+        }
+    }
+    else
+    {
+        GenTree* operand = node->AsOp()->gtGetOp1();
+        // TODO-CQ: Check for interference and move GT_LCL_VAR and GT_LCL_FLD nodes
+        if (operand->IsInvariant())
+        {
+            JITDUMP("Moving following operand of late arg to after validator call\n");
+            DISPTREE(operand);
+            BlockRange().Remove(operand);
+            BlockRange().InsertBefore(call, operand);
+        }
+    }
+
+    JITDUMP("Moving\n");
+    DISPTREE(node);
+    JITDUMP("\n");
+    BlockRange().Remove(node);
+    BlockRange().InsertBefore(call, node);
 }
 
 #ifndef TARGET_64BIT

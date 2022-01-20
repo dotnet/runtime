@@ -1298,6 +1298,11 @@ public:
         return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
     }
 
+    bool OperIsFieldList() const
+    {
+        return OperIs(GT_FIELD_LIST);
+    }
+
     bool OperIsMultiRegOp() const
     {
 #if !defined(TARGET_64BIT)

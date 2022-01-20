@@ -124,6 +124,7 @@ private:
     // ------------------------------
     void LowerCall(GenTree* call);
     void LowerCFGCall(GenTreeCall* call);
+    void MoveCFGCallLateArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
