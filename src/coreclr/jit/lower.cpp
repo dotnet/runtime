@@ -2333,8 +2333,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     JITDUMP("Checking whether late arg will be trashed by validator:\n");
                     DISPTREE(node);
                     assert(node->OperIsPutArg() || node->OperIsFieldList());
-                    fgArgTabEntry* entry             = comp->gtArgEntryByNode(call, node);
-                    regMaskTP argRegs = 0;
+                    fgArgTabEntry* entry   = comp->gtArgEntryByNode(call, node);
+                    regMaskTP      argRegs = 0;
                     for (unsigned i = 0; i < entry->numRegs; i++)
                     {
                         argRegs |= genRegMask(entry->GetRegNum(i));
@@ -2449,6 +2449,50 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
     }
 }
 
+//------------------------------------------------------------------------
+// IsInvariant: Check if a node is invariant in the specified range. In other
+// words, can 'node' be moved to before 'endExclusive' without its computation
+// changing values?
+//
+// Arguments:
+//    node         -  The node.
+//    endExclusive -  The exclusive end of the range to check invariance for.
+//
+bool Lowering::IsInvariant(GenTree* node, GenTree* endExclusive)
+{
+    assert(node->Precedes(endExclusive));
+
+    if (node->IsInvariant())
+    {
+        return true;
+    }
+
+    if (!node->IsValue())
+    {
+        return false;
+    }
+
+    if (node->OperIsLocal())
+    {
+        GenTreeLclVarCommon* lcl  = node->AsLclVarCommon();
+        LclVarDsc*           desc = comp->lvaGetDesc(lcl);
+        if (desc->IsAddressExposed())
+        {
+            return false;
+        }
+
+        for (GenTree* intermediate = node->gtNext; intermediate != endExclusive; intermediate = intermediate->gtNext)
+        {
+            if (intermediate->OperIsLocalStore() && intermediate->AsLclVarCommon()->GetLclNum() == lcl->GetLclNum())
+            {
+                return false;
+            }
+        }
+    }
+
+    return false;
+}
+
 void Lowering::MoveCFGCallLateArg(GenTreeCall* call, GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
@@ -2465,13 +2509,17 @@ void Lowering::MoveCFGCallLateArg(GenTreeCall* call, GenTree* node)
     else
     {
         GenTree* operand = node->AsOp()->gtGetOp1();
-        // TODO-CQ: Check for interference and move GT_LCL_VAR and GT_LCL_FLD nodes
-        if (operand->IsInvariant())
+        JITDUMP("Checking if we can move following operand together with the GT_PUTARG_REG\n");
+        DISPTREE(operand);
+        if (((operand->gtFlags & GTF_ALL_EFFECT) == 0) && IsInvariant(operand, call))
         {
-            JITDUMP("Moving following operand of late arg to after validator call\n");
-            DISPTREE(operand);
+            JITDUMP("...yes, moving to after validator call\n");
             BlockRange().Remove(operand);
             BlockRange().InsertBefore(call, operand);
+        }
+        else
+        {
+            JITDUMP("...no, operand has side effects or is not invariant\n");
         }
     }
 
