@@ -125,6 +125,11 @@ namespace System.Net
                     SetProtocols(sslContext, credential.Protocols);
                 }
 
+                if (credential.CertificateContext != null)
+                {
+                    SetCertificate(sslContext, credential.CertificateContext);
+                }
+
                 Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
                 Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
                 Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
