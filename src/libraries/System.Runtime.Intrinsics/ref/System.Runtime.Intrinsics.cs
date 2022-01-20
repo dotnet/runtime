@@ -69,6 +69,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.Int64> Create(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int64> Create(long e0, long e1) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> Create(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Byte> Create(System.Runtime.Intrinsics.Vector64<byte> lower, System.Runtime.Intrinsics.Vector64<byte> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Double> Create(System.Runtime.Intrinsics.Vector64<double> lower, System.Runtime.Intrinsics.Vector64<double> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int16> Create(System.Runtime.Intrinsics.Vector64<short> lower, System.Runtime.Intrinsics.Vector64<short> upper) { throw null; }
@@ -101,14 +103,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> Create(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> Create(ulong e0, ulong e1) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Byte> CreateScalar(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int16> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int32> CreateScalar(int value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int64> CreateScalar(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> CreateScalar(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<nuint> CreateScalar(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.SByte> CreateScalar(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> CreateScalar(float value) { throw null; }
@@ -118,14 +120,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> CreateScalar(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> CreateScalar(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<nuint> CreateScalar(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Byte> CreateScalarUnsafe(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Double> CreateScalarUnsafe(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int16> CreateScalarUnsafe(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int32> CreateScalarUnsafe(int value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int64> CreateScalarUnsafe(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> CreateScalarUnsafe(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.SByte> CreateScalarUnsafe(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Single> CreateScalarUnsafe(float value) { throw null; }
@@ -135,8 +137,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> CreateScalarUnsafe(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(System.ReadOnlySpan<T> values) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(T value) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Create<T>(T[] values) where T : struct { throw null; }
@@ -166,14 +166,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> LessThan<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector128<T> LoadAlignedNonTemporal<T>(T* source) where T : struct { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<T> Load<T>(T* source) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector128<T> LoadAligned<T>(T* source) where T : struct { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector128<T> Load<T>(T* source) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Max<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Min<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Multiply<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
@@ -198,6 +198,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.Int64> ShiftLeft(System.Runtime.Intrinsics.Vector128<System.Int64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> ShiftLeft(System.Runtime.Intrinsics.Vector128<nint> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector128<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.SByte> ShiftLeft(System.Runtime.Intrinsics.Vector128<System.SByte> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt16> ShiftLeft(System.Runtime.Intrinsics.Vector128<System.UInt16> vector, int shiftCount) { throw null; }
@@ -205,8 +207,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> ShiftLeft(System.Runtime.Intrinsics.Vector128<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ShiftLeft(System.Runtime.Intrinsics.Vector128<System.UInt64> vector, int shiftCount) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector128<nuint> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int16> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<System.Int16> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int32> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<System.Int32> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<System.Int64> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector128<System.Int64> vector, int shiftCount) { throw null; }
@@ -219,6 +219,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.Int64> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.Int64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<nint> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<nint> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.SByte> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.SByte> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt16> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.UInt16> vector, int shiftCount) { throw null; }
@@ -226,18 +228,16 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.UInt64> vector, int shiftCount) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector128<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<nuint> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Sqrt<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : struct { }
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void StoreAligned<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : struct { }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination) where T : struct { }
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination, nuint elementOffset) where T : struct { }
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Store<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : struct { }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Subtract<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
@@ -265,11 +265,11 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector128<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
-        public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector128<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector128<T> operator +(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> operator &(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> operator |(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
@@ -343,6 +343,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.Int64> Create(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int64> Create(long e0, long e1, long e2, long e3) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> Create(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Byte> Create(System.Runtime.Intrinsics.Vector128<byte> lower, System.Runtime.Intrinsics.Vector128<byte> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Double> Create(System.Runtime.Intrinsics.Vector128<double> lower, System.Runtime.Intrinsics.Vector128<double> upper) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int16> Create(System.Runtime.Intrinsics.Vector128<short> lower, System.Runtime.Intrinsics.Vector128<short> upper) { throw null; }
@@ -375,14 +377,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> Create(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> Create(ulong e0, ulong e1, ulong e2, ulong e3) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Byte> CreateScalar(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int16> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int32> CreateScalar(int value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int64> CreateScalar(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> CreateScalar(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<nuint> CreateScalar(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.SByte> CreateScalar(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Single> CreateScalar(float value) { throw null; }
@@ -392,14 +394,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt32> CreateScalar(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> CreateScalar(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<nuint> CreateScalar(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Byte> CreateScalarUnsafe(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Double> CreateScalarUnsafe(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int16> CreateScalarUnsafe(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int32> CreateScalarUnsafe(int value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int64> CreateScalarUnsafe(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> CreateScalarUnsafe(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.SByte> CreateScalarUnsafe(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Single> CreateScalarUnsafe(float value) { throw null; }
@@ -409,8 +411,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt32> CreateScalarUnsafe(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> CreateScalarUnsafe(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(System.ReadOnlySpan<T> values) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(T value) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Create<T>(T[] values) where T : struct { throw null; }
@@ -440,14 +440,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> LessThan<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector256<T> LoadAlignedNonTemporal<T>(T* source) where T : struct { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<T> Load<T>(T* source) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector256<T> LoadAligned<T>(T* source) where T : struct { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector256<T> Load<T>(T* source) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Max<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Min<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Multiply<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
@@ -472,6 +472,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.Int64> ShiftLeft(System.Runtime.Intrinsics.Vector256<System.Int64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> ShiftLeft(System.Runtime.Intrinsics.Vector256<nint> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector256<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.SByte> ShiftLeft(System.Runtime.Intrinsics.Vector256<System.SByte> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt16> ShiftLeft(System.Runtime.Intrinsics.Vector256<System.UInt16> vector, int shiftCount) { throw null; }
@@ -479,8 +481,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt32> ShiftLeft(System.Runtime.Intrinsics.Vector256<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ShiftLeft(System.Runtime.Intrinsics.Vector256<System.UInt64> vector, int shiftCount) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector256<nuint> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int16> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<System.Int16> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int32> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<System.Int32> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<System.Int64> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector256<System.Int64> vector, int shiftCount) { throw null; }
@@ -493,6 +493,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.Int64> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.Int64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<nint> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.SByte> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.SByte> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt16> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.UInt16> vector, int shiftCount) { throw null; }
@@ -500,18 +502,16 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.UInt64> vector, int shiftCount) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector256<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<nuint> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Sqrt<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : struct { }
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void StoreAligned<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : struct { }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination) where T : struct { }
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination, nuint elementOffset) where T : struct { }
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Store<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : struct { }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Subtract<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
@@ -537,11 +537,11 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector256<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
-        public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector256<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector256<T> operator +(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> operator &(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> operator |(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
@@ -612,6 +612,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.Int64> Create(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> Create(nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<nuint> Create(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> Create(sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7) { throw null; }
@@ -627,14 +629,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> Create(uint e0, uint e1) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> Create(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<nuint> Create(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Byte> CreateScalar(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Double> CreateScalar(double value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int16> CreateScalar(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int32> CreateScalar(int value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int64> CreateScalar(long value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> CreateScalar(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<nuint> CreateScalar(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> CreateScalar(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Single> CreateScalar(float value) { throw null; }
@@ -644,12 +646,12 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> CreateScalar(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> CreateScalar(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<nuint> CreateScalar(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Byte> CreateScalarUnsafe(byte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int16> CreateScalarUnsafe(short value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int32> CreateScalarUnsafe(int value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> CreateScalarUnsafe(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> CreateScalarUnsafe(sbyte value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Single> CreateScalarUnsafe(float value) { throw null; }
@@ -657,8 +659,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt16> CreateScalarUnsafe(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> CreateScalarUnsafe(uint value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<nuint> CreateScalarUnsafe(nuint value) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(System.ReadOnlySpan<T> values) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(T value) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Create<T>(T[] values) where T : struct { throw null; }
@@ -686,14 +686,14 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> LessThan<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector64<T> LoadAlignedNonTemporal<T>(T* source) where T : struct { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector64<T> Load<T>(T* source) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector64<T> LoadAligned<T>(T* source) where T : struct { throw null; }
+        public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAligned<T>(T* source) where T : unmanaged { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAlignedNonTemporal<T>(T* source) where T : unmanaged { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref T source) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe static System.Runtime.Intrinsics.Vector64<T> Load<T>(T* source) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Max<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Min<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Multiply<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
@@ -718,6 +718,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.Int64> ShiftLeft(System.Runtime.Intrinsics.Vector64<System.Int64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> ShiftLeft(System.Runtime.Intrinsics.Vector64<nint> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector64<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> ShiftLeft(System.Runtime.Intrinsics.Vector64<System.SByte> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt16> ShiftLeft(System.Runtime.Intrinsics.Vector64<System.UInt16> vector, int shiftCount) { throw null; }
@@ -725,8 +727,6 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> ShiftLeft(System.Runtime.Intrinsics.Vector64<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ShiftLeft(System.Runtime.Intrinsics.Vector64<System.UInt64> vector, int shiftCount) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<nuint> ShiftLeft(System.Runtime.Intrinsics.Vector64<nuint> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int16> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector64<System.Int16> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int32> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector64<System.Int32> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<System.Int64> ShiftRightArithmetic(System.Runtime.Intrinsics.Vector64<System.Int64> vector, int shiftCount) { throw null; }
@@ -739,6 +739,8 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.Int64> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.Int64> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<nint> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<nint> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<nuint> vector, int shiftCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.SByte> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.SByte> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt16> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.UInt16> vector, int shiftCount) { throw null; }
@@ -746,18 +748,16 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.UInt64> vector, int shiftCount) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Runtime.Intrinsics.Vector64<nuint> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<nuint> vector, int shiftCount) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Sqrt<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : struct { }
+        public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void StoreAligned<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : struct { }
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination) where T : struct { }
+        public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination, nuint elementOffset) where T : struct { }
+        public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void Store<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : struct { }
+        public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination, nuint elementOffset) where T : struct { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Subtract<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) where T : struct { throw null; }
         public static T Sum<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         public static T ToScalar<T>(this System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
@@ -783,11 +783,11 @@ namespace System.Runtime.Intrinsics
         private readonly int _dummyPrimitive;
         public static System.Runtime.Intrinsics.Vector64<T> AllBitsSet { get { throw null; } }
         public static int Count { get { throw null; } }
-        public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> Zero { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.Intrinsics.Vector64<T> other) { throw null; }
         public override int GetHashCode() { throw null; }
+		public T this[int index] { get { throw null; } }
         public static System.Runtime.Intrinsics.Vector64<T> operator +(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> operator &(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> operator |(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
@@ -3047,7 +3047,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int ReverseElementBits(int value) { throw null; }
         public static uint ReverseElementBits(uint value) { throw null; }
-        public static void Yield() { }
+        public static void Yield() { throw null; }
         public abstract partial class Arm64
         {
             internal Arm64() { }
@@ -3863,7 +3863,7 @@ namespace System.Runtime.Intrinsics.X86
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
-    public abstract partial class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
+    public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
     {
         internal AvxVnni() { }
         public static new bool IsSupported { get { throw null; } }
@@ -4044,24 +4044,24 @@ namespace System.Runtime.Intrinsics.X86
             public static ulong PopCount(ulong value) { throw null; }
         }
     }
-    [System.CLSCompliantAttribute(false)]
-    public abstract partial class Sha : System.Runtime.Intrinsics.X86.Sse2
-    {
-        internal Sha() { }
-        public static new bool IsSupported { get { throw null; } }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha1FourRounds(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b, byte func) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha1MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha1MessageSchedule2(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha1NextE(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha256MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha256MessageSchedule2(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> Sha256TwoRounds(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b, System.Runtime.Intrinsics.Vector128<byte> k) { throw null; }
-        public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Sse2.X64
+	[System.CLSCompliantAttribute(false)]
+	public abstract partial class Sha : System.Runtime.Intrinsics.X86.Sse2 {
+		internal Sha() { }
+		public static new bool IsSupported { get { throw null; } }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha1MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha1MessageSchedule2(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha1NextE(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha1FourRounds(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b, byte func) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha256MessageSchedule1(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha256MessageSchedule2(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b) { throw null; }
+		public static System.Runtime.Intrinsics.Vector128<byte> Sha256TwoRounds(System.Runtime.Intrinsics.Vector128<byte> a, System.Runtime.Intrinsics.Vector128<byte> b, System.Runtime.Intrinsics.Vector128<byte> k) { throw null; }
+		
+		public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Sse2.X64
         {
-            protected X64() { }
+            internal X64() { }
             public static new bool IsSupported { get { throw null; } }
         }
-    }
+	}
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Sse : System.Runtime.Intrinsics.X86.X86Base
     {
@@ -4721,7 +4721,7 @@ namespace System.Runtime.Intrinsics.X86
         internal X86Base() { }
         public static bool IsSupported { get { throw null; } }
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw null; }
-        public static void Pause() { }
+        public static void Pause() { throw null; }
         public abstract partial class X64
         {
             internal X64() { }
