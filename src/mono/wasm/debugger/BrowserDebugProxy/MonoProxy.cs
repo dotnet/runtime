@@ -853,9 +853,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (shouldReturn)
                     return true;
 
-                if (j == 0 && (method?.Info.HasStepThroughAttribute == true || method?.Info.IsHiddenFromDebugger == true))
+                if (j == 0 &&
+                    (method?.Info.DebuggerAttrInfo.HasStepThrough == true ||
+                    method?.Info.DebuggerAttrInfo.HasDebuggerHidden == true ||
+                    (method?.Info.DebuggerAttrInfo.HasNonUserCode == true && JustMyCode)))
                 {
-                    if (method.Info.IsHiddenFromDebugger)
+                    if (method.Info.DebuggerAttrInfo.HasDebuggerHidden)
                     {
                         if (event_kind == EventKind.Step)
                             context.IsSkippingHiddenMethod = true;
@@ -1443,7 +1446,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SourceLocation loc = sourceId.First();
                 req.Method = loc.IlLocation.Method;
-                if (req.Method.IsHiddenFromDebugger)
+                if (req.Method.DebuggerAttrInfo.HasDebuggerHidden)
                     continue;
 
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
