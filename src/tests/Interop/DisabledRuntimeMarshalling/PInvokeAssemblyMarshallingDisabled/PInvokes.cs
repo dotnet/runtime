@@ -64,7 +64,25 @@ public class PInvokes
     [Fact]
     public static void Varargs_NotSupported()
     {
-        Assert.Throws<MarshalDirectiveException>(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
+        AssertThrowsMarshalDirectiveOrInvalidProgram(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
+        
+        private static void AssertThrowsMarshalDirectiveOrInvalidProgram(Action testCode)
+        {
+            try
+            {
+                testCode();
+                return;
+            }
+            catch (Exception ex) when(ex is MarshalDirectiveException or InvalidProgramException)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                Assert.False(true, $"Expected either a MarshalDirectiveException or a InvalidProgramException, but received a '{ex.GetType().FullName}' exception: '{ex.ToString()}'");
+            }
+            Assert.False(true, $"Expected either a MarshalDirectiveException or a InvalidProgramException, but received no exception.");
+        }
     }
 
     [Fact]
