@@ -2322,33 +2322,47 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             BlockRange().InsertAfter(validate, regNode);
             LowerNode(regNode);
 
-            // Finally move all GT_PUTARG_REG nodes that the validate call may clobber to after validation.
-            const regMaskTP clobberedArgRegs =
+            // Finally move all GT_PUTARG_REG nodes that the validate call may trash to after validation.
+            const regMaskTP trashedByValidator =
                 RBM_VALIDATE_INDIRECT_CALL_TRASH | genRegMask(REG_VALIDATE_INDIRECT_CALL_ADDR);
-            if ((clobberedArgRegs & RBM_ARG_REGS) != 0)
+            if ((trashedByValidator & RBM_ARG_REGS) != 0)
             {
                 for (GenTreeCall::Use& use : call->LateArgs())
                 {
                     GenTree* node = use.GetNode();
+                    JITDUMP("Checking whether late arg will be trashed by validator:\n");
+                    DISPTREE(node);
                     assert(node->OperIsPutArg());
                     fgArgTabEntry* entry             = comp->gtArgEntryByNode(call, node);
-                    bool           isAnyRegClobbered = false;
+                    regMaskTP argRegs = 0;
                     for (unsigned i = 0; i < entry->numRegs; i++)
                     {
-                        if ((genRegMask(entry->GetRegNum(i)) & clobberedArgRegs) != 0)
-                        {
-                            isAnyRegClobbered = true;
-                            break;
-                        }
+                        argRegs |= genRegMask(entry->GetRegNum(i));
                     }
 
-                    // If validate call will clobber any register used by this
-                    // arg then place the arg after the call instead.
-                    if (isAnyRegClobbered)
+                    JITDUMP("Arg uses register(s) ");
+                    if (comp->verbose)
                     {
+                        dspRegMask(argRegs & trashedByValidator);
+                    }
+                    JITDUMP("\n");
+
+                    // If validate call will clobber any register used by this
+                    // arg then place the GT_PUTARG_REG after the call instead.
+                    if ((argRegs & trashedByValidator) != 0)
+                    {
+                        JITDUMP("CFG validator will trash register(s) ");
+                        if (comp->verbose)
+                        {
+                            dspRegMask(argRegs & trashedByValidator);
+                        }
+                        JITDUMP("; moving the placement to after the validator call\n");
+
                         BlockRange().Remove(node);
                         BlockRange().InsertBefore(call, node);
                     }
+
+                    JITDUMP("\n");
                 }
             }
             break;
