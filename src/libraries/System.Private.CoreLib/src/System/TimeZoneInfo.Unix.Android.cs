@@ -267,7 +267,7 @@ namespace System
             // Once the timezone cache is populated with the IDs, we reference tzlookup id tags and
             // remove IDs and their associated information (byteoffsets and lengths) from the current
             // AndroidTzData instance.
-            private void filterBackwardIDs(string lookupPath)
+            private void FilterBackwardIDs(string lookupPath)
             {
                 try
                 {
@@ -280,8 +280,8 @@ namespace System
                             if (!(tzLookupLine = sr.ReadLine())!.TrimStart().StartsWith("<id"))
                                 continue;
 
-                            int idStart = tzLookupLine.IndexOf('>')+1;
-                            int idLength = tzLookupLine.IndexOf("</")-idStart;
+                            int idStart = tzLookupLine.IndexOf('>') + 1;
+                            int idLength = tzLookupLine.LastIndexOf("</") - idStart;
                             if (idStart == 0 || idLength < 0)
                             {
                                 // Either the start tag <id ... > or the end tag </id> are not found
@@ -454,7 +454,7 @@ namespace System
             public string[] GetTimeZoneIds()
             {
                 if (!_isFiltered)
-                    filterBackwardIDs(Path.Combine(_tzFileDir, "tzlookup.xml"));
+                    FilterBackwardIDs(Path.Combine(_tzFileDir, "tzlookup.xml"));
                 return _ids;
             }
 
