@@ -30136,6 +30136,8 @@ inline
 void gc_heap::check_demotion_helper_sip (uint8_t** pval, int parent_gen_num, uint8_t* parent_loc)
 {
     uint8_t* child_object = *pval;
+    if (!is_in_heap_range (child_object))
+        return;
     if (!child_object) return;
     int child_object_plan_gen = get_region_plan_gen_num (child_object);
 
