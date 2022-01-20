@@ -51,7 +51,7 @@ namespace System.Transactions
 
                 try
                 {
-                    // syncronize to avoid potential race between accessing the DistributerIdentifier
+                    // synchronize to avoid potential race between accessing the DistributerIdentifier
                     // and getting the transaction information entry populated...
 
                     lock (_internalTransaction)

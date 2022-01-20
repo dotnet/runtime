@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe bool CryptImportKey(
+        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static unsafe partial bool CryptImportKey(
             SafeProvHandle hProv,
             byte* pbData,
             int dwDataLen,

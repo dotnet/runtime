@@ -43,7 +43,6 @@ EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
 EXTERN __alloca_probe:PROC
 EXTERN _NDirectImportWorker@4:PROC
-EXTERN _UMThunkStubRareDisableWorker@8:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
@@ -53,6 +52,7 @@ EXTERN _CopyCtorCallStubWorker@4:PROC
 endif
 
 EXTERN _PreStubWorker@8:PROC
+EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
@@ -254,9 +254,6 @@ COMPlusNestedExceptionHandler proto c
 
 FastNExportExceptHandler proto c
 .safeseh FastNExportExceptHandler
-
-UMThunkPrestubHandler proto c
-.safeseh UMThunkPrestubHandler
 
 ifdef FEATURE_COMINTEROP
 COMPlusFrameHandlerRevCom proto c
@@ -872,23 +869,6 @@ getFPReturn4:
    retn    8
 _getFPReturn@8 endp
 
-; VOID __cdecl UMThunkStubRareDisable()
-;<TODO>
-; @todo: this is very similar to StubRareDisable
-;</TODO>
-_UMThunkStubRareDisable proc public
-    push    eax
-    push    ecx
-
-    push    eax          ; Push the UMEntryThunk
-    push    ecx          ; Push thread
-    call    _UMThunkStubRareDisableWorker@8
-
-    pop     ecx
-    pop     eax
-    retn
-_UMThunkStubRareDisable endp
-
 
 ; void __stdcall JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
 _JIT_ProfilerEnterLeaveTailcallStub@4 proc public
@@ -1142,69 +1122,20 @@ _VarargPInvokeStub@0 endp
 ; Invoked for marshaling-required unmanaged CALLI calls as a stub.
 ; EAX       - the unmanaged target
 ; ECX, EDX  - arguments
-; [ESP + 4] - the VASigCookie
+; EBX       - the VASigCookie
 ;
 _GenericPInvokeCalliHelper@0 proc public
-    ; save the target
-    push    eax
 
-    ; EAX <- VASigCookie
-    mov     eax, [esp + 8]           ; skip target and retaddr
-
-    mov     eax, [eax + VASigCookie__StubOffset]
-    test    eax, eax
-
+    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
     jz      GoCallCalliWorker
-    ; ---------------------------------------
 
-    push    eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 16
-    ; +----------------------+
-    ; |     VASigCookie*     | ESP + 12
-    ; +----------------------+
-    ; |    return address    | ESP + 8
-    ; +----------------------+
-    ; | CALLI target address | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; remove VASigCookie from the stack
-    mov     eax, [esp + 8]
-    mov     [esp + 12], eax
-
-    ; move stub entry point below the RA
-    mov     eax, [esp]
-    mov     [esp + 8], eax
-
-    ; load EAX with the target address
-    pop     eax
-    pop     eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 8
-    ; +----------------------+
-    ; |    return address    | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; CALLI target address is in EAX
-    ret
+    ; Stub is already prepared, just jump to it
+    jmp     dword ptr [ebx + VASigCookie__StubOffset]
 
 GoCallCalliWorker:
-    ; the target is on the stack and will become m_Datum of PInvokeCalliFrame
-    ; call the stub generating worker
-    pop     eax
-
     ;
-    ; target ptr in EAX, VASigCookie ptr in EDX
+    ; call the stub generating worker
+    ; target ptr in EAX, VASigCookie ptr in EBX
     ;
 
     STUB_PROLOG
@@ -1215,7 +1146,7 @@ GoCallCalliWorker:
     push        eax
 
     push        eax                         ; unmanaged target
-    push        dword ptr [esi + 4*7]       ; pVaSigCookie (first stack argument)
+    push        ebx                         ; pVaSigCookie (first stack argument)
     push        esi                         ; pTransitionBlock
 
     call        _GenericPInvokeCalliStubWorker@12
@@ -1480,6 +1411,22 @@ _ThePreStubPatchLabel@0:
 public _ThePreStubPatchLabel@0
     ret
 _ThePreStubPatch@0 endp
+
+_TheUMEntryPrestub@0 proc public
+    ; push argument registers
+    push        ecx
+    push        edx
+
+    push    eax     ; UMEntryThunk*
+    call    _TheUMEntryPrestubWorker@4
+
+    ; pop argument registers
+    pop         edx
+    pop         ecx
+
+    ; eax = PCODE
+    jmp     eax     ; Tail Jmp
+_TheUMEntryPrestub@0 endp
 
 ifdef FEATURE_COMINTEROP
 ;==========================================================================

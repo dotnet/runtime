@@ -980,7 +980,7 @@ namespace System
                             #endregion
 
                             RuntimeFieldInfo runtimeFieldInfo =
-                            new MdFieldInfo(tkField, fieldAttributes, declaringType.GetTypeHandleInternal(), m_runtimeTypeCache, bindingFlags);
+                            new MdFieldInfo(tkField, fieldAttributes, declaringType.TypeHandle, m_runtimeTypeCache, bindingFlags);
 
                             list.Add(runtimeFieldInfo);
                         }
@@ -1287,8 +1287,6 @@ namespace System
                     MetadataImport scope = RuntimeTypeHandle.GetMetadataImport(declaringType);
 
                     scope.EnumProperties(tkDeclaringType, out MetadataEnumResult tkProperties);
-
-                    RuntimeModule declaringModuleHandle = RuntimeTypeHandle.GetModule(declaringType);
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
@@ -1967,7 +1965,7 @@ namespace System
                 RuntimeType? declaringType = (RuntimeType?)genericMethodDefinition.DeclaringType;
                 if (declaringType != null)
                 {
-                    typeContext = declaringType.GetTypeHandleInternal().GetInstantiationInternal();
+                    typeContext = declaringType.TypeHandle.GetInstantiationInternal();
                 }
             }
 
@@ -1976,8 +1974,8 @@ namespace System
                 Type genericArgument = genericArguments[i];
                 Type genericParameter = genericParameters[i];
 
-                if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.GetTypeHandleInternal().GetTypeChecked(),
-                    typeContext, methodContext, genericArgument.GetTypeHandleInternal().GetTypeChecked()))
+                if (!RuntimeTypeHandle.SatisfiesConstraints(genericParameter.TypeHandle.GetTypeChecked(),
+                    typeContext, methodContext, genericArgument.TypeHandle.GetTypeChecked()))
                 {
                     throw new ArgumentException(
                         SR.Format(SR.Argument_GenConstraintViolation, i.ToString(), genericArgument, definition, genericParameter), e);
@@ -1994,8 +1992,8 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
-            if (nsDelimiter != -1)
+            int nsDelimiter = fullname.LastIndexOf('.');
+            if (nsDelimiter >= 0)
             {
                 ns = fullname.Substring(0, nsDelimiter);
                 int nameLength = fullname.Length - ns.Length - 1;
@@ -2679,9 +2677,9 @@ namespace System
             if (ifaceRtType == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
-            RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.GetTypeHandleInternal();
+            RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
 
-            GetTypeHandleInternal().VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
+            TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
             Debug.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
             Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
@@ -2708,7 +2706,7 @@ namespace System
                 im.InterfaceMethods[i] = (MethodInfo)ifaceMethodBase;
 
                 // If the impl is null, then virtual stub dispatch is active.
-                RuntimeMethodHandleInternal classRtMethodHandle = GetTypeHandleInternal().GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
+                RuntimeMethodHandleInternal classRtMethodHandle = TypeHandle.GetInterfaceMethodImplementation(ifaceRtTypeHandle, ifaceRtMethodHandle);
 
                 if (classRtMethodHandle.IsNullHandle())
                     continue;
@@ -2771,7 +2769,7 @@ namespace System
                         MethodInfo methodInfo = candidates[j];
                         if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
                         {
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
                         }
                     }
 
@@ -2839,7 +2837,7 @@ namespace System
                 {
                     if (returnType is null)
                         // if we are here we have no args or property type to select over and we have more than one property with that name
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
                 }
             }
 
@@ -2868,7 +2866,7 @@ namespace System
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
 
                     match = eventInfo;
                 }
@@ -2898,7 +2896,7 @@ namespace System
                     if (match != null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
-                            throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                            throw new AmbiguousMatchException();
 
                         if ((match.DeclaringType!.IsInterface) && (fieldInfo.DeclaringType!.IsInterface))
                             multipleStaticFieldMatches = true;
@@ -2910,7 +2908,7 @@ namespace System
             }
 
             if (multipleStaticFieldMatches && match!.DeclaringType!.IsInterface)
-                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                throw new AmbiguousMatchException();
 
             return match;
         }
@@ -2942,7 +2940,7 @@ namespace System
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
 
                     match = iface;
                 }
@@ -2971,7 +2969,7 @@ namespace System
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
                     if (match != null)
-                        throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
+                        throw new AmbiguousMatchException();
 
                     match = nestedType;
                 }
@@ -3344,12 +3342,12 @@ namespace System
         #region Generics
         internal RuntimeType[] GetGenericArgumentsInternal()
         {
-            return GetRootElementType().GetTypeHandleInternal().GetInstantiationInternal();
+            return GetRootElementType().TypeHandle.GetInstantiationInternal();
         }
 
         public override Type[] GetGenericArguments()
         {
-            Type[] types = GetRootElementType().GetTypeHandleInternal().GetInstantiationPublic();
+            Type[] types = GetRootElementType().TypeHandle.GetInstantiationPublic();
             return types ?? Type.EmptyTypes;
         }
 
@@ -3440,7 +3438,7 @@ namespace System
         }
 
         public override bool ContainsGenericParameters =>
-            GetRootElementType().GetTypeHandleInternal().ContainsGenericVariables();
+            GetRootElementType().TypeHandle.ContainsGenericVariables();
 
         public override Type[] GetGenericParameterConstraints()
         {
@@ -3532,7 +3530,7 @@ namespace System
                 RuntimeType valueType;
                 Pointer? pointer = value as Pointer;
                 if (pointer != null)
-                    valueType = (RuntimeType)pointer.GetPointerType();
+                    valueType = pointer.GetPointerType();
                 else
                     valueType = (RuntimeType)value.GetType();
 
@@ -3573,7 +3571,7 @@ namespace System
                     RuntimeType valueType;
                     Pointer? pointer = value as Pointer;
                     if (pointer != null)
-                        valueType = (RuntimeType)pointer.GetPointerType();
+                        valueType = pointer.GetPointerType();
                     else
                         valueType = (RuntimeType)value.GetType();
 
@@ -4001,13 +3999,13 @@ namespace System
     }
 
     #region Library
-    internal readonly unsafe struct MdUtf8String
+    internal readonly unsafe partial struct MdUtf8String
     {
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
+        private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern uint HashCaseInsensitive(void* sz, int cSz);
+        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
+        private static partial uint HashCaseInsensitive(void* sz, int cSz);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;

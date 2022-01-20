@@ -45,11 +45,11 @@ public class Gen<T> : IGen
     }
 }
 
-public class Test
+public class Test_throwincatch
 {
     private static TestUtil.TestLog testLog;
 
-    static Test()
+    static Test_throwincatch()
     {
         // Create test writer object to hold expected output
         StringWriter expectedOut = new StringWriter();

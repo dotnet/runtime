@@ -91,7 +91,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr doesn't support Save or ReflectionOnly AssemblyBuilders.")]
         [InlineData((AssemblyBuilderAccess)2)] // Save (not supported)
         [InlineData((AssemblyBuilderAccess)2 | AssemblyBuilderAccess.Run)] // RunAndSave (not supported)
         [InlineData((AssemblyBuilderAccess)6)] // ReflectionOnly (not supported)
@@ -174,18 +173,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The coreclr only supports AssemblyBuilders with one module.")]
-        public void DefineDynamicModule_NetFxModuleAlreadyDefined_ThrowsInvalidOperationException()
-        {
-            AssemblyBuilder assembly = Helpers.DynamicAssembly();
-            assembly.DefineDynamicModule("module1");
-            assembly.DefineDynamicModule("module2");
-            AssertExtensions.Throws<ArgumentException>(null, () => assembly.DefineDynamicModule("module1"));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The coreclr only supports AssemblyBuilders with one module.")]
-        public void DefineDynamicModule_CoreFxModuleAlreadyDefined_ThrowsInvalidOperationException()
+        public void DefineDynamicModule_ModuleAlreadyDefined_ThrowsInvalidOperationException()
         {
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             assembly.DefineDynamicModule("module1");
@@ -367,7 +355,7 @@ namespace System.Reflection.Emit.Tests
 	{
 	}
 
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Private_CrossAssembly_ThrowsMethodAccessException()
 	{
 	    TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -389,7 +377,7 @@ namespace System.Reflection.Emit.Tests
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
 
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Internal_CrossAssembly_ThrowsMethodAccessException()
 	{
 	    TypeBuilder tb = Helpers.DynamicType(TypeAttributes.Public);
@@ -411,7 +399,7 @@ namespace System.Reflection.Emit.Tests
 	    Assert.Throws<MethodAccessException>(() => d ());
 	}
 	
-	[Fact]
+	[ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 	void Invoke_Private_SameAssembly_ThrowsMethodAccessException()
 	{
 	    ModuleBuilder modb = Helpers.DynamicModule();

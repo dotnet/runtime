@@ -7,10 +7,10 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace Generators
 {
@@ -31,14 +31,14 @@ namespace Generators
 
             public EventSourceClass[] GetEventSourceClasses(List<ClassDeclarationSyntax> classDeclarations)
             {
-                INamedTypeSymbol? autogenerateAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
+                INamedTypeSymbol? autogenerateAttribute = _compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAutoGenerateAttribute");
                 if (autogenerateAttribute is null)
                 {
                     // No EventSourceAutoGenerateAttribute
                     return Array.Empty<EventSourceClass>();
                 }
 
-                INamedTypeSymbol? eventSourceAttribute = _compilation.GetTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAttribute");
+                INamedTypeSymbol? eventSourceAttribute = _compilation.GetBestTypeByMetadataName("System.Diagnostics.Tracing.EventSourceAttribute");
                 if (eventSourceAttribute is null)
                 {
                     // No EventSourceAttribute

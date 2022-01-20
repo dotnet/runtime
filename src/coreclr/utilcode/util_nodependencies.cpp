@@ -341,7 +341,7 @@ void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
 //     * wszDebuggerString can be NULL.   When wszDebuggerString is NULL, pcchDebuggerString should
 //     * point to a DWORD of zero.   pcchDebuggerString cannot be NULL, and the DWORD pointed by
 //     * pcchDebuggerString will store the used or required string buffer size in characters.
-HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto)
+HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto)
 {
     CONTRACTL
     {
@@ -437,7 +437,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
                 if ((ret == ERROR_SUCCESS) && (valueType == REG_SZ) && (valueSize / sizeof(WCHAR) < MAX_LONGPATH))
                 {
                     WCHAR wzAutoKey[MAX_LONGPATH];
-                    valueSize = NumItems(wzAutoKey) * sizeof(WCHAR);
+                    valueSize = ARRAY_SIZE(wzAutoKey) * sizeof(WCHAR);
                     WszRegQueryValueEx(hKeyHolder, kUnmanagedDebuggerAutoValue, NULL, NULL, reinterpret_cast< LPBYTE >(wzAutoKey), &valueSize);
 
                     // The OS's behavior is to consider Auto to be FALSE unless the first character is set
@@ -478,7 +478,7 @@ HRESULT GetDebuggerSettingInfoWorker(__out_ecount_part_opt(*pcchDebuggerString, 
 //*****************************************************************************
 HRESULT GetStr(
                                  DWORD  hHexNum,
-    __out_ecount((cbHexNum * 2)) LPWSTR szHexNum,
+    _Out_writes_((cbHexNum * 2)) LPWSTR szHexNum,
                                  DWORD  cbHexNum)
 {
     CONTRACTL
@@ -512,7 +512,7 @@ HRESULT GetStr(
 int
 GuidToLPWSTR(
                           GUID   Guid,      // The GUID to convert.
-    __out_ecount(cchGuid) LPWSTR szGuid,    // String into which the GUID is stored
+    _Out_writes_(cchGuid) LPWSTR szGuid,    // String into which the GUID is stored
                           DWORD  cchGuid)   // Count in wchars
 {
     CONTRACTL
@@ -579,7 +579,7 @@ GuidToLPWSTR(
 //*****************************************************************************
 HRESULT GetHex(
                                 DWORD * phHexNum,
-    __in_ecount((cbHexNum * 2)) LPCWSTR szHexNum,
+    _In_reads_((cbHexNum * 2)) LPCWSTR szHexNum,
                                 DWORD   cbHexNum)
 {
     CONTRACTL
@@ -624,7 +624,7 @@ HRESULT GetHex(
 BOOL
 LPWSTRToGuid(
                          GUID  * Guid,      // [OUT] The GUID to fill in
-    __in_ecount(cchGuid) LPCWSTR szGuid,    // [IN] String to parse
+    _In_reads_(cchGuid) LPCWSTR szGuid,    // [IN] String to parse
                          DWORD   cchGuid)   // [IN] Count in wchars in string
 {
     CONTRACTL
@@ -708,7 +708,7 @@ void _cdecl DbgWriteEx(LPCTSTR szFmt, ...)
     va_list marker;
 
     va_start(marker, szFmt);
-    _vsnwprintf_s(rcBuff, _countof(rcBuff), _TRUNCATE, szFmt, marker);
+    _vsnwprintf_s(rcBuff, ARRAY_SIZE(rcBuff), _TRUNCATE, szFmt, marker);
     va_end(marker);
     WszOutputDebugString(rcBuff);
 }
@@ -742,7 +742,7 @@ void ConfigDWORD::init(const CLRConfig::ConfigDWORDInfo & info)
 //          terminator); [out] Points to length in chars of trimmed substring (not
 //          counting null terminator)
 //
-void TrimWhiteSpace(__deref_inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch)
+void TrimWhiteSpace(_Outptr_result_buffer_(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 

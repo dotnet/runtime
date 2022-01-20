@@ -6,13 +6,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-internal class Test
+internal class Test_DDB188478
 {
     private static int Main()
     {
-        Test[] test = new Test[0];
-        IList<Test> ls = (IList<Test>)test;
-        ReadOnlyCollection<Test> roc = new ReadOnlyCollection<Test>(ls);
+        Test_DDB188478[] test = new Test_DDB188478[0];
+        IList<Test_DDB188478> ls = (IList<Test_DDB188478>)test;
+        ReadOnlyCollection<Test_DDB188478> roc = new ReadOnlyCollection<Test_DDB188478>(ls);
         Console.WriteLine(roc.Count);
         return 100;
     }

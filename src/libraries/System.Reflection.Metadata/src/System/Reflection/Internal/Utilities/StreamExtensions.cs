@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
 {
-    internal static class StreamExtensions
+    internal static partial class StreamExtensions
     {
         // From System.IO.Stream.CopyTo:
         // We pick a value that is the largest multiple of 4096 that is still smaller than the large object heap threshold (85K).
@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
             return totalBytesRead;
         }
 
-#if NETCOREAPP3_0_OR_GREATER
+#if NETCOREAPP
         internal static int TryReadAll(this Stream stream, Span<byte> buffer)
         {
             int totalBytesRead = 0;

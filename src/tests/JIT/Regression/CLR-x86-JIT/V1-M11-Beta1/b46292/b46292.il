@@ -14,16 +14,19 @@
 .assembly extern Microsoft.VisualBasic
 {
 }
-.assembly 'test'
+.assembly 'b46292'
 {
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 // MVID: {74C704CE-5E25-4072-A5C7-A9DD14614D82}
 .class private auto ansi Mod1
        extends [mscorlib]System.Object
 {
   .method public static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     // Code size       26 (0x1a)
     .maxstack  1
     .locals init (class c1 V_0)

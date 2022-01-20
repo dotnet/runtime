@@ -48,16 +48,14 @@ namespace System.IO
         private const int MaxShadowBufferSize = 81920;  // Make sure not to get to the Large Object Heap.
         private const int DefaultBufferSize = 4096;
 
-        private Stream? _stream;                            // Underlying stream.  Close sets _stream to null.
-        private byte[]? _buffer;                            // Shared read/write buffer.  Alloc on first use.
-        private readonly int _bufferSize;                   // Length of internal buffer (not counting the shadow buffer).
-        private int _readPos;                               // Read pointer within shared buffer.
-        private int _readLen;                               // Number of bytes read in buffer from _stream.
-        private int _writePos;                              // Write pointer within shared buffer.
-        private Task<int>? _lastSyncCompletedReadTask;      // The last successful Task returned from ReadAsync
-                                                            // (perf optimization for successive reads of the same size)
-                                                            // Removing a private default constructor is a breaking change for the DataDebugSerializer.
-                                                            // Because this ctor was here previously we need to keep it around.
+        private Stream? _stream;                                     // Underlying stream.  Close sets _stream to null.
+        private byte[]? _buffer;                                     // Shared read/write buffer.  Alloc on first use.
+        private readonly int _bufferSize;                            // Length of internal buffer (not counting the shadow buffer).
+        private int _readPos;                                        // Read pointer within shared buffer.
+        private int _readLen;                                        // Number of bytes read in buffer from _stream.
+        private int _writePos;                                       // Write pointer within shared buffer.
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask; // The last successful Task returned from ReadAsync
+                                                                     // (perf optimization for successive reads of the same size)
 
         public BufferedStream(Stream stream)
             : this(stream, DefaultBufferSize)
@@ -571,19 +569,6 @@ namespace System.IO
             }
         }
 
-        private Task<int> LastSyncCompletedReadTask(int val)
-        {
-            Task<int>? t = _lastSyncCompletedReadTask;
-            Debug.Assert(t == null || t.IsCompletedSuccessfully);
-
-            if (t != null && t.Result == val)
-                return t;
-
-            t = Task.FromResult<int>(val);
-            _lastSyncCompletedReadTask = t;
-            return t;
-        }
-
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -622,7 +607,7 @@ namespace System.IO
                     {
 
                         return (error == null)
-                                    ? LastSyncCompletedReadTask(bytesFromBuffer)
+                                    ? _lastSyncCompletedReadTask.GetTask(bytesFromBuffer)
                                     : Task.FromException<int>(error);
                     }
                 }
@@ -1222,11 +1207,12 @@ namespace System.IO
             // Otherwise we will throw away the buffer. This can only happen on read, as we flushed write data above.
 
             // The offset of the new/updated seek pointer within _buffer:
-            _readPos = (int)(newPos - (oldPos - _readPos));
+            long readPos = (newPos - (oldPos - _readPos));
 
             // If the offset of the updated seek pointer in the buffer is still legal, then we can keep using the buffer:
-            if (0 <= _readPos && _readPos < _readLen)
+            if (0 <= readPos && readPos < _readLen)
             {
+                _readPos = (int)readPos;
                 // Adjust the seek pointer of the underlying stream to reflect the amount of useful bytes in the read buffer:
                 _stream.Seek(_readLen - _readPos, SeekOrigin.Current);
             }

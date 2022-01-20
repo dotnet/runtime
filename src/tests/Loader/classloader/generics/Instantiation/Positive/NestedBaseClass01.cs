@@ -149,7 +149,7 @@ public class GenIntJaggedArray : Outer.GenBase<int[][]>
 }
 
 
-public class Test
+public class Test_NestedBaseClass01
 {
 	public static int counter = 0;
 	public static bool result = true;

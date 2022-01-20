@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
@@ -31,6 +32,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             // Bypass System.Runtime error.
             Assembly systemRuntimeAssembly = Assembly.Load("System.Runtime, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
             Assembly systemCollectionsAssembly = Assembly.Load("System.Collections, Version=5.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a");
+            // Needed on netfx
             string systemRuntimeAssemblyPath = systemRuntimeAssembly.Location;
             string systemCollectionsAssemblyPath = systemCollectionsAssembly.Location;
 
@@ -38,9 +40,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Attribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(Type).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(KeyValuePair).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(KeyValuePair<,>).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(ContractNamespaceAttribute).Assembly.Location),
                 MetadataReference.CreateFromFile(typeof(JavaScriptEncoder).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(GeneratedCodeAttribute).Assembly.Location),
+                MetadataReference.CreateFromFile(typeof(ReadOnlySpan<>).Assembly.Location),
                 MetadataReference.CreateFromFile(systemRuntimeAssemblyPath),
                 MetadataReference.CreateFromFile(systemCollectionsAssemblyPath),
             };
@@ -67,14 +71,24 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             );
         }
 
-        private static GeneratorDriver CreateDriver(Compilation compilation, IIncrementalGenerator[] generators)
-            => CSharpGeneratorDriver.Create(
+        public static Compilation RunGenerators(
+            Compilation compilation,
+            out ImmutableArray<Diagnostic> diagnostics,
+#if ROSLYN4_0_OR_GREATER
+            params IIncrementalGenerator[] generators)
+        {
+            CSharpGeneratorDriver driver = CSharpGeneratorDriver.Create(
                 generators: generators.Select(g => g.AsSourceGenerator()),
                 parseOptions: s_parseOptions);
-
-        public static Compilation RunGenerators(Compilation compilation, out ImmutableArray<Diagnostic> diagnostics, params IIncrementalGenerator[] generators)
+#else
+            params ISourceGenerator[] generators)
         {
-            CreateDriver(compilation, generators).RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out diagnostics);
+            CSharpGeneratorDriver driver = CSharpGeneratorDriver.Create(
+                generators: generators,
+                parseOptions: s_parseOptions);
+#endif
+
+            driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation outCompilation, out diagnostics);
             return outCompilation;
         }
 
@@ -265,22 +279,146 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
-        internal static void CheckDiagnosticMessages(ImmutableArray<Diagnostic> diagnostics, DiagnosticSeverity level, string[] expectedMessages)
+        public static Compilation CreateCompilationWithInitOnlyProperties()
         {
-            string[] actualMessages = diagnostics.Where(diagnostic => diagnostic.Severity == level).Select(diagnostic => diagnostic.GetMessage()).ToArray();
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
 
-            // Can't depending on reflection order when generating type metadata.
-            Array.Sort(actualMessages);
-            Array.Sort(expectedMessages);
+            namespace HelloWorld
+            {                
+                public class Location
+                {
+                    public int Id { get; init; }
+                    public string Address1 { get; init; }
+                    public string Address2 { get; init; }
+                    public string City { get; init; }
+                    public string State { get; init; }
+                    public string PostalCode { get; init; }
+                    public string Name { get; init; }
+                    public string PhoneNumber { get; init; }
+                    public string Country { get; init; }
+                }
+
+                [JsonSerializable(typeof(Location))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithInaccessibleJsonIncludeProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {                
+                public class Location
+                {
+                    [JsonInclude]
+                    public int Id { get; private set; }
+                    [JsonInclude]
+                    public string Address1 { get; internal set; }
+                    [JsonInclude]
+                    private string Address2 { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber { internal get; set; }
+                    [JsonInclude]
+                    public string Country { private get; set; }
+                }
+
+                [JsonSerializable(typeof(Location))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateReferencedLibRecordCompilation()
+        {
+            string source = @"
+            using System.Text.Json.Serialization;
+
+            namespace ReferencedAssembly
+            {
+                public record LibRecord(int Id)
+                {
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }
+";
+
+            return CreateCompilation(source);
+        }
+
+            public static Compilation CreateReferencedSimpleLibRecordCompilation()
+            {
+                string source = @"
+            using System.Text.Json.Serialization;
+
+            namespace ReferencedAssembly
+            {
+                public record LibRecord
+                {
+                    public int Id { get; set; }
+                    public string Address1 { get; set; }
+                    public string Address2 { get; set; }
+                    public string City { get; set; }
+                    public string State { get; set; }
+                    public string PostalCode { get; set; }
+                    public string Name { get; set; }
+                    [JsonInclude]
+                    public string PhoneNumber;
+                    [JsonInclude]
+                    public string Country;
+                }
+            }
+";
+
+                return CreateCompilation(source);
+        }
+
+        internal static void CheckDiagnosticMessages(
+            DiagnosticSeverity level,
+            ImmutableArray<Diagnostic> diagnostics,
+            (Location Location, string Message)[] expectedDiags,
+            bool sort = true)
+        {
+            (Location Location, string Message)[] actualDiags = diagnostics
+                .Where(diagnostic => diagnostic.Severity == level)
+                .Select(diagnostic => (diagnostic.Location, diagnostic.GetMessage()))
+                .ToArray();
+
+            if (sort)
+            {
+                // Can't depend on reflection order when generating type metadata.
+                Array.Sort(actualDiags);
+                Array.Sort(expectedDiags);
+            }
 
             if (CultureInfo.CurrentUICulture.Name.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             {
-                Assert.Equal(expectedMessages, actualMessages);
+                Assert.Equal(expectedDiags, actualDiags);
             }
             else
             {
                 // for non-English runs, just compare the number of messages are the same
-                Assert.Equal(expectedMessages.Length, actualMessages.Length);
+                Assert.Equal(expectedDiags.Length, actualDiags.Length);
             }
         }
     }

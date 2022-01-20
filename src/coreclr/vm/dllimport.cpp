@@ -33,6 +33,7 @@
 #include "sigbuilder.h"
 #include "sigformat.h"
 #include "ecall.h"
+#include "qcall.h"
 #include "fieldmarshaler.h"
 #include "pinvokeoverride.h"
 #include "nativelibrary.h"
@@ -783,14 +784,11 @@ public:
         {
             // Struct marshal stubs don't actually call anything so they do not need the secrect parameter.
         }
-#ifndef HOST_64BIT
         else if (SF_IsForwardDelegateStub(m_dwStubFlags))
         {
             // Forward delegate stubs get all the context they need in 'this' so they
-            // don't use the secret parameter. Except for AMD64 where we use the secret
-            // argument to pass the real target to the stub-for-host.
+            // don't use the secret parameter.
         }
-#endif // !HOST_64BIT
         else
         {
             // All other IL stubs will need to use the secret parameter.
@@ -961,7 +959,7 @@ public:
         if (pTargetMD)
         {
             pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
-            uModuleId = (UINT64)pTargetMD->GetModule()->GetAddrModuleID();
+            uModuleId = (UINT64)(TADDR)pTargetMD->GetModule_NoLogging();
         }
 
         //
@@ -2075,22 +2073,12 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 
     if (SF_IsForwardStub(dwStubFlags)) // managed-to-native
     {
-
         if (SF_IsDelegateStub(dwStubFlags)) // delegate invocation
         {
             // get the delegate unmanaged target - we call a helper instead of just grabbing
             // the _methodPtrAux field because we may need to intercept the call for host, etc.
             pcsEmit->EmitLoadThis();
-#ifdef TARGET_64BIT
-            // on AMD64 GetDelegateTarget will return address of the generic stub for host when we are hosted
-            // and update the secret argument with real target - the secret arg will be embedded in the
-            // InlinedCallFrame by the JIT and fetched via TLS->Thread->Frame->Datum by the stub for host
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_STUB_CONTEXT_ADDR, 0, 1);
-#else // !TARGET_64BIT
-            // we don't need to do this on x86 because stub for host is generated dynamically per target
-            pcsEmit->EmitLDNULL();
-#endif // !TARGET_64BIT
-            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 2, 1);
+            pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_DELEGATE_TARGET, 1, 1);
         }
         else // direct invocation
         {
@@ -2685,7 +2673,7 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(_In_ MethodDesc* pMD)
         namedArgs[MDA_ThrowOnUnmappableChar].InitBoolField("ThrowOnUnmappableChar", (ULONG)GetThrowOnUnmappableChar());
         namedArgs[MDA_SetLastError].InitBoolField("SetLastError", 0);
 
-        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
+        IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, ARRAY_SIZE(namedArgs)));
 
         CorNativeLinkType nlt;
         IfFailGo(RemapLinkType((CorNativeLinkType)namedArgs[MDA_CharSet].val.u4, &nlt));
@@ -4358,8 +4346,9 @@ namespace
         else
         {
             pNMD->ndirect.m_pszLibName = libName;
-            pNMD->ndirect.m_pszEntrypointName = entryPointName;
         }
+
+        pNMD->ndirect.m_pszEntrypointName = entryPointName;
 
         // Do not publish incomplete prestub flags or you will introduce a race condition.
         pNMD->InterlockedSetNDirectFlags(ndirectflags | NDirectMethodDesc::kNDirectPopulated);
@@ -5440,18 +5429,12 @@ namespace
 
         if (pMD->IsQCall())
         {
-            LPVOID pvTarget = pMD->ndirect.m_pNativeNDirectTarget;
-
-            // Do not repeat the lookup if the QCall was hardbound during ngen
-            if (pvTarget == NULL)
-            {
-                pvTarget = ECall::GetQCallImpl(pMD);
-            }
-            else
-            {
-                _ASSERTE(pvTarget == ECall::GetQCallImpl(pMD));
-            }
-
+            void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
+#ifdef _DEBUG
+            CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
+                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+#endif
             pMD->SetNDirectTarget(pvTarget);
             return;
         }

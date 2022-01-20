@@ -212,8 +212,8 @@ public:
     // Called after wrapper has been created.
     static HRESULT AfterWrapperCreated(_In_ IReferenceTracker* obj);
 
-    // Called before wrapper is about to be destroyed (the same lifetime as short weak handle).
-    static HRESULT BeforeWrapperDestroyed(_In_ IReferenceTracker* obj);
+    // Called before wrapper is about to be finalized (the same lifetime as short weak handle).
+    static HRESULT BeforeWrapperFinalized(_In_ IReferenceTracker* obj);
 
 public:
     // Begin the reference tracking process for external objects.

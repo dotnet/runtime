@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.cjs</WasmMainJSPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <WasmDebugLevel>1</WasmDebugLevel>
+    <WasmEnableES6>false</WasmEnableES6>
+    <RunAOTCompilation>false</RunAOTCompilation>
+
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <ExpectedExitCode>42</ExpectedExitCode>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test --app=. --engine=NodeJS --engine-arg=--stack-trace-limit=1000 --js-file=main.cjs --output-directory=$(XHarnessOutput) --expected-exit-code $(ExpectedExitCode) -- --run $(MSBuildProjectName).dll</RunScriptCommand>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Console.Node.CJS.Sample.csproj</_SampleProject>
+    <_SampleAssembly>Wasm.Console.Node.CJS.Sample.dll</_SampleAssembly>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
+</Project>

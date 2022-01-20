@@ -7,7 +7,8 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly bug {}
+.assembly 'b59546' {}
+.assembly extern xunit.core {}
 .class public bug
 {
 	.method public static void f1() cil managed
@@ -58,6 +59,9 @@
 
 	.method public static int32 Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.try
 		{

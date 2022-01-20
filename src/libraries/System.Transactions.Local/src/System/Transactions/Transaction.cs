@@ -81,7 +81,6 @@ namespace System.Transactions
         internal static Transaction? FastGetTransaction(TransactionScope? currentScope, ContextData contextData, out Transaction? contextTransaction)
         {
             Transaction? current = null;
-            contextTransaction = null;
 
             contextTransaction = contextData.CurrentTransaction;
 
@@ -159,7 +158,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
-                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out Transaction? contextValue);
+                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out _);
 
                 if (currentScope != null)
                 {
@@ -1150,7 +1149,7 @@ namespace System.Transactions
     //  The TxLookup enum is used internally to detect where the ambient context needs to be stored or looked up.
     //  Default                  - Used internally when looking up Transaction.Current.
     //  DefaultCallContext - Used when TransactionScope with async flow option is enabled. Internally we will use CallContext to store the ambient transaction.
-    //  Default TLS            - Used for legacy/syncronous TransactionScope. Internally we will use TLS to store the ambient transaction.
+    //  Default TLS            - Used for legacy/synchronous TransactionScope. Internally we will use TLS to store the ambient transaction.
     //
     internal enum TxLookup
     {
@@ -1277,7 +1276,7 @@ namespace System.Transactions
 
         internal static ContextData LookupContextData(TxLookup defaultLookup)
         {
-            ContextData? currentData = null;
+            ContextData? currentData;
             if (CallContextCurrentData.TryGetCurrentData(out currentData))
             {
                 if (currentData.CurrentScope == null && currentData.CurrentTransaction == null && defaultLookup != TxLookup.DefaultCallContext)

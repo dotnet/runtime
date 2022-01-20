@@ -16,7 +16,7 @@ class Gen<T> : IGen<T>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread12.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -26,12 +26,12 @@ class Gen<T> : IGen<T>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread12.Eval(Test_thread12.Xcounter==1);
+		Test_thread12.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread12
 {
 	public static int nThreads =50;
 	public static int counter = 0;

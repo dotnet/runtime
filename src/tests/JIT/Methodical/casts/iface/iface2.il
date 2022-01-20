@@ -9,6 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly iface2 { }
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class interface private abstract auto ansi Iface1
@@ -208,6 +209,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals ([0] class JitTest.CoClass co,

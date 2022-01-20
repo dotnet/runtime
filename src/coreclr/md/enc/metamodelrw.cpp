@@ -3998,7 +3998,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::Impl_GetStringW(
                              ULONG  ix,
-    __out_ecount (cchBuffer) LPWSTR szOut,
+    _Out_writes_ (cchBuffer) LPWSTR szOut,
                              ULONG  cchBuffer,
                              ULONG *pcchBuffer)
 {
@@ -4116,7 +4116,7 @@ mdToken CMiniMdRW::GetToken(
     if (pColDef->m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = pColDef->m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             tkn = decodeToken(GetCol(ixTbl, ixCol, pvRecord), pCdTkn->m_pTokens, pCdTkn->m_cTokens);
@@ -4399,7 +4399,7 @@ CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
     if (ColDef.m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = ColDef.m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             cdTkn = encodeToken(RidFromToken(tk), TypeFromToken(tk), pCdTkn->m_pTokens, pCdTkn->m_cTokens);
@@ -5219,7 +5219,7 @@ CMiniMdRW::FindGenericParamHelper(
     if (IsSorted(TBL_GenericParam))
     {
         mdToken tk;
-        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef));
+        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef));
         IfFailGo(SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
                             tk,

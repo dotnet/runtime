@@ -7,6 +7,7 @@
     <TestDependsOn>$(TestDependsOn);GenerateRunScript;RunTests</TestDependsOn>
     <VSTestNoLogo>true</VSTestNoLogo>
     <ILLinkDescriptorsPath>$(MSBuildThisFileDirectory)ILLinkDescriptors\</ILLinkDescriptorsPath>
+    <TestSingleFile Condition="'$(TestNativeAot)' == 'true'">true</TestSingleFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -36,6 +37,10 @@
   <ItemGroup Condition="'$(MonoEnvOptions)' != '' and '$(TargetsMobile)' != 'true'">
     <RunScriptCommands Condition="'$(TargetsWindows)' == 'true'" Include="set MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
     <RunScriptCommands Condition="'$(TargetsWindows)' != 'true'" Include="export MONO_ENV_OPTIONS='$(MonoEnvOptions)'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TestRunRequiresLiveRefPack)' == 'true'">
+    <None Include="$(MicrosoftNetCoreAppRefPackRefDir)**/*.dll" CopyToOutputDirectory="PreserveNewest" LinkBase="live-ref-pack/" Visible="false" />
   </ItemGroup>
 
   <!--

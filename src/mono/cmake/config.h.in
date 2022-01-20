@@ -53,24 +53,6 @@
 #endif
 #endif
 
-/* Define to the full name of this package. */
-#cmakedefine PACKAGE_NAME 1
-
-/* Define to the one symbol short name of this package. */
-#cmakedefine PACKAGE_TARNAME 1
-
-/* Define to the version of this package. */
-#cmakedefine PACKAGE_VERSION 1
-
-/* Define to the full name and version of this package. */
-#cmakedefine PACKAGE_STRING 1
-
-/* Define to the address where bug reports for this package should be sent. */
-#cmakedefine PACKAGE_BUGREPORT 1
-
-/* Define to the home page for this package. */
-#cmakedefine PACKAGE_URL 1
-
 /* This platform does not support symlinks */
 #cmakedefine HOST_NO_SYMLINKS 1
 
@@ -116,9 +98,6 @@
 /* Don't use UWP Windows API support */
 #cmakedefine HAVE_UWP_WINAPI_SUPPORT 1
 
-/* Define to 1 if you have the ANSI C header files. */
-#cmakedefine STDC_HEADERS 1
-
 /* Define to 1 if you have the <sys/types.h> header file. */
 #cmakedefine HAVE_SYS_TYPES_H 1
 
@@ -133,6 +112,15 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
+
+/* Define to 1 if you have the <signal.h> header file. */
+#cmakedefine HAVE_SIGNAL_H 1
+
+/* Define to 1 if you have the <setjmp.h> header file. */
+#cmakedefine HAVE_SETJMP_H 1
+
+/* Define to 1 if you have the <syslog.h> header file. */
+#cmakedefine HAVE_SYSLOG_H 1
 
 /* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
    */
@@ -223,8 +211,8 @@
 /* Use static ICU */
 #cmakedefine STATIC_ICU 1
 
-/* Use OS-provided zlib */
-#cmakedefine HAVE_SYS_ZLIB 1
+/* Use in-tree zlib */
+#cmakedefine INTERNAL_ZLIB 1
 
 /* Define to 1 if you have the <poll.h> header file. */
 #cmakedefine HAVE_POLL_H 1
@@ -501,14 +489,11 @@
 /* Define to 1 if you have the `strerror_r' function. */
 #cmakedefine HAVE_STRERROR_R 1
 
-/* Define to 1 if strerror_r returns char *. */
-#cmakedefine STRERROR_R_CHAR_P 1
-
 /* Have GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY */
 #cmakedefine GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY 1
 
 /* GLIBC has CPU_COUNT macro in sched.h */
-#cmakedefine GLIBC_HAS_CPU_COUNT 1
+#cmakedefine HAVE_GNU_CPU_COUNT
 
 /* Have large file support */
 #cmakedefine HAVE_LARGE_FILE_SUPPORT 1
@@ -571,20 +556,13 @@
 /* Define to 1 if you have the `pthread_attr_setstacksize' function. */
 #cmakedefine HAVE_PTHREAD_ATTR_SETSTACKSIZE 1
 
-/* Define to 1 if you have the `pthread_attr_getstack' function. */
-#cmakedefine HAVE_PTHREAD_ATTR_GETSTACK 1
-
-/* Define to 1 if you have the `pthread_attr_getstacksize' function. */
-#cmakedefine HAVE_PTHREAD_ATTR_GETSTACKSIZE 1
-
-/* Define to 1 if you have the `pthread_get_stacksize_np' function. */
-#cmakedefine HAVE_PTHREAD_GET_STACKSIZE_NP 1
-
 /* Define to 1 if you have the `pthread_get_stackaddr_np' function. */
 #cmakedefine HAVE_PTHREAD_GET_STACKADDR_NP 1
 
 /* Define to 1 if you have the `pthread_jit_write_protect_np' function. */
 #cmakedefine HAVE_PTHREAD_JIT_WRITE_PROTECT_NP 1
+
+#cmakedefine01 HAVE_GETAUXVAL
 
 /* Define to 1 if you have the declaration of `pthread_mutexattr_setprotocol',
    and to 0 if you don't. */
@@ -620,8 +598,17 @@
 /* Have getifaddrs */
 #cmakedefine HAVE_GETIFADDRS 1
 
+/* Have struct ifaddrs */
+#cmakedefine HAVE_IFADDRS 1
+
 /* Have access */
 #cmakedefine HAVE_ACCESS 1
+
+/* Have getpid */
+#cmakedefine HAVE_GETPID 1
+
+/* Have mktemp */
+#cmakedefine HAVE_MKTEMP 1
 
 /* Define to 1 if you have the <sys/errno.h> header file. */
 #cmakedefine HAVE_SYS_ERRNO_H 1
@@ -694,6 +681,8 @@
 
 /* The size of `size_t', as computed by sizeof. */
 #define SIZEOF_SIZE_T @SIZEOF_SIZE_T@
+
+#cmakedefine01 HAVE_GNU_STRERROR_R
 
 /* Define to 1 if the system has the type `struct sockaddr'. */
 #cmakedefine HAVE_STRUCT_SOCKADDR 1
@@ -840,6 +829,12 @@
 #cmakedefine HOST_WASM 1
 
 /* ... */
+#cmakedefine HOST_BROWSER 1
+
+/* ... */
+#cmakedefine HOST_WASI 1
+
+/* ... */
 #cmakedefine HOST_X86 1
 
 /* ... */
@@ -958,6 +953,12 @@
 
 /* QCalls disabled */
 #cmakedefine DISABLE_QCALLS 1
+
+/* Embedded PDB support disabled */
+#cmakedefine DISABLE_EMBEDDED_PDB
+
+/* log profiler compressed output disabled */
+#cmakedefine DISABLE_LOG_PROFILER_GZ
 
 /* Have __thread keyword */
 #cmakedefine MONO_KEYWORD_THREAD @MONO_KEYWORD_THREAD@

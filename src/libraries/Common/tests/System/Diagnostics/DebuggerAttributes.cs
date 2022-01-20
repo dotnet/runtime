@@ -88,7 +88,7 @@ namespace System.Diagnostics
 
         private static Type GetProxyType(Type type, Type[] genericTypeArguments)
         {
-            // Get the DebuggerTypeProxyAttibute for obj
+            // Get the DebuggerTypeProxyAttribute for obj
             var attrs =
                 type.GetTypeInfo().CustomAttributes
                 .Where(a => a.AttributeType == typeof(DebuggerTypeProxyAttribute))

@@ -107,7 +107,7 @@ namespace Mono
             for (int i = 0; i < n; i++)
             {
                 RuntimeClassHandle c = new RuntimeClassHandle(value->constraints[i]);
-                a[i] = Type.GetTypeFromHandle(c.GetTypeHandle());
+                a[i] = Type.GetTypeFromHandle(c.GetTypeHandle())!;
             }
 
             return a;

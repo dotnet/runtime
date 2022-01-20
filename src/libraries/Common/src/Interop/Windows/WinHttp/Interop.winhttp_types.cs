@@ -109,6 +109,7 @@ internal static partial class Interop
         public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1 = 0x00000080;
         public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_1 = 0x00000200;
         public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2 = 0x00000800;
+        public const uint WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_3 = 0x00002000;
 
         public const uint SECURITY_FLAG_IGNORE_UNKNOWN_CA = 0x00000100;
         public const uint SECURITY_FLAG_IGNORE_CERT_DATE_INVALID = 0x00002000;
@@ -167,6 +168,7 @@ internal static partial class Interop
 
         public const uint WINHTTP_OPTION_TCP_KEEPALIVE = 152;
         public const uint WINHTTP_OPTION_STREAM_ERROR_CODE = 159;
+        public const uint WINHTTP_OPTION_REQUIRE_STREAM_END = 160;
 
         public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
         {
@@ -258,8 +260,7 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct WINHTTP_CURRENT_USER_IE_PROXY_CONFIG
         {
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool AutoDetect;
+            public int AutoDetect;
             public IntPtr AutoConfigUrl;
             public IntPtr Proxy;
             public IntPtr ProxyBypass;

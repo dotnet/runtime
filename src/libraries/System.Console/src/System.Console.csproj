@@ -13,6 +13,7 @@
     <Compile Include="System\ConsoleKeyInfo.cs" />
     <Compile Include="System\ConsoleModifiers.cs" />
     <Compile Include="System\IO\ConsoleStream.cs" />
+    <Compile Include="System\IO\CachedConsoleStream.cs" />
     <Compile Include="System\IO\SyncTextReader.cs" />
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs"
@@ -152,8 +153,6 @@
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
@@ -219,6 +218,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />

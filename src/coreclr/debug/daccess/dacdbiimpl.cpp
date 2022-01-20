@@ -78,7 +78,7 @@ IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 //            return; // DBI will then free this memory.
 //        }
 //        ...
-//        DeleteDbiMemory(p);
+//        DeleteDbiMemory(p); // DeleteDbiMemory(p, len); if it was an array allocation.
 //     }
 //
 //     Be very careful when using this on classes since Dbi and DAC may be in
@@ -155,6 +155,25 @@ template<class T> void DeleteDbiMemory(T *p)
     g_pAllocator->Free((BYTE*) p);
 }
 
+// Delete memory and invoke dtor for memory allocated with 'operator (forDbi) new[]'
+// There's an inherent risk here - where each element's destructor will get called within
+// the context of the DAC. If the destructor tries to use the CRT allocator logic expecting
+// to hit the DBI's, we could be in trouble. Those objects need to use an export allocator like this.
+template<class T> void DeleteDbiArrayMemory(T *p, int count)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+
+    for (T *cur = p; cur < p + count; cur++)
+    {
+        cur->~T();
+    }
+
+    _ASSERTE(g_pAllocator != NULL);
+    g_pAllocator->Free((BYTE*) p);
+}
 
 //---------------------------------------------------------------------------------------
 // Creates the DacDbiInterface object, used by Dbi.
@@ -253,7 +272,7 @@ DacDbiInterfaceImpl::DacDbiInterfaceImpl(
 ) : ClrDataAccess(pTarget),
     m_pAllocator(pAllocator),
     m_pMetaDataLookup(pMetaDataLookup),
-    m_pCachedPEFile(VMPTR_PEFile::NullPtr()),
+    m_pCachedPEAssembly(VMPTR_PEAssembly::NullPtr()),
     m_pCachedImporter(NULL),
     m_isCachedHijackFunctionValid(FALSE)
 {
@@ -288,7 +307,7 @@ DacDbiInterfaceImpl::~DacDbiInterfaceImpl()
 // Called from DAC-ized code to get a IMDInternalImport
 //
 // Arguments:
-//    pPEFile - PE file for which to get importer for
+//    pPEAssembly - PE file for which to get importer for
 //    fThrowEx - if true, throw instead of returning NULL.
 //
 // Returns:
@@ -305,7 +324,7 @@ DacDbiInterfaceImpl::~DacDbiInterfaceImpl()
 //    This is an Internal importer, not a public Metadata importer.
 //
 interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
-    const PEFile* pPEFile,
+    const PEAssembly* pPEAssembly,
     const ReflectionModule * pReflectionModule,
     bool fThrowEx)
 {
@@ -316,23 +335,23 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
     IDacDbiInterface::IMetaDataLookup * pLookup = m_pMetaDataLookup;
     _ASSERTE(pLookup != NULL);
 
-    VMPTR_PEFile vmPEFile = VMPTR_PEFile::NullPtr();
+    VMPTR_PEAssembly vmPEAssembly = VMPTR_PEAssembly::NullPtr();
 
-    if (pPEFile != NULL)
+    if (pPEAssembly != NULL)
     {
-        vmPEFile.SetHostPtr(pPEFile);
+        vmPEAssembly.SetHostPtr(pPEAssembly);
     }
     else if (pReflectionModule != NULL)
     {
         // SOS and ClrDataAccess rely on special logic to find the metadata for methods in dynamic modules.
         // We don't need to.  The RS has already taken care of the special logic for us.
-        // So here we just grab the PEFile off of the ReflectionModule and continue down the normal
+        // So here we just grab the PEAssembly off of the ReflectionModule and continue down the normal
         // code path.  See code:ClrDataAccess::GetMDImport for comparison.
-        vmPEFile.SetHostPtr(pReflectionModule->GetFile());
+        vmPEAssembly.SetHostPtr(pReflectionModule->GetPEAssembly());
     }
 
     // Optimize for the case where the VM queries the same Importer many times in a row.
-    if (m_pCachedPEFile == vmPEFile)
+    if (m_pCachedPEAssembly == vmPEAssembly)
     {
         return m_pCachedImporter;
     }
@@ -351,7 +370,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
         // To get the old codepath that uses the v2 metadata lookup methods,
         // you'd have to load DAC only and then you'll get ClrDataAccess's implementation
         // of this function.
-        pInternal = pLookup->LookupMetaData(vmPEFile, isILMetaDataForNI);
+        pInternal = pLookup->LookupMetaData(vmPEAssembly, isILMetaDataForNI);
     }
     EX_CATCH
     {
@@ -378,7 +397,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
     else
     {
         // Cache it such that it we look for the exact same Importer again, we'll return it.
-        m_pCachedPEFile   = vmPEFile;
+        m_pCachedPEAssembly   = vmPEAssembly;
         m_pCachedImporter = pInternal;
     }
 
@@ -426,7 +445,7 @@ HRESULT DacDbiInterfaceImpl::FlushCache()
     // That would remove host DAC instances while they're being used.
     DD_NON_REENTRANT_MAY_THROW;
 
-    m_pCachedPEFile = VMPTR_PEFile::NullPtr();
+    m_pCachedPEAssembly = VMPTR_PEAssembly::NullPtr();
     m_pCachedImporter = NULL;
     m_isCachedHijackFunctionValid = FALSE;
 
@@ -818,12 +837,6 @@ SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
     return NumArguments;
 } //GetArgCount
 
-// Allocator to pass to DebugInfoStores, allocating forDBI
-BYTE* InfoStoreForDbiNew(void * pData, size_t cBytes)
-{
-    return new(forDbi) BYTE[cBytes];
-}
-
 // Allocator to pass to the debug-info-stores...
 BYTE* InfoStoreNew(void * pData, size_t cBytes)
 {
@@ -1214,7 +1227,7 @@ mdSignature DacDbiInterfaceImpl::GetILCodeAndSigHelper(Module *       pModule,
 }
 
 
-bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
+bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                                         DWORD &dwTimeStamp,
                                                         DWORD &dwSize,
                                                         bool  &isNGEN,
@@ -1224,14 +1237,14 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
 
     DWORD dwDataSize;
     DWORD dwRvaHint;
-    PEFile * pPEFile = vmPEFile.GetDacPtr();
-    _ASSERTE(pPEFile != NULL);
-    if (pPEFile == NULL)
+    PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
+    _ASSERTE(pPEAssembly != NULL);
+    if (pPEAssembly == NULL)
         return false;
 
     WCHAR wszFilePath[MAX_LONGPATH] = {0};
     DWORD cchFilePath = MAX_LONGPATH;
-    bool ret = ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEFile,
+    bool ret = ClrDataAccess::GetMetaDataFileInfoFromPEFile(pPEAssembly,
                                                             dwTimeStamp,
                                                             dwSize,
                                                             dwDataSize,
@@ -1245,7 +1258,7 @@ bool DacDbiInterfaceImpl::GetMetaDataFileInfoFromPEFile(VMPTR_PEFile vmPEFile,
 }
 
 
-bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
+bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
                                                        DWORD &dwTimeStamp,
                                                        DWORD &dwSize,
                                                        IStringHolder* pStrFilename)
@@ -4124,16 +4137,16 @@ BOOL DacDbiInterfaceImpl::GetModulePath(VMPTR_Module vmModule,
     DD_ENTER_MAY_THROW;
 
     Module * pModule = vmModule.GetDacPtr();
-    PEFile * pFile = pModule->GetFile();
-    if (pFile != NULL)
+    PEAssembly * pPEAssembly = pModule->GetPEAssembly();
+    if (pPEAssembly != NULL)
     {
-        if( !pFile->GetPath().IsEmpty() )
+        if( !pPEAssembly->GetPath().IsEmpty() )
         {
             // Module has an on-disk path
-            const WCHAR * szPath = pFile->GetPath().DacGetRawUnicode();
+            const WCHAR * szPath = pPEAssembly->GetPath().DacGetRawUnicode();
             if (szPath == NULL)
             {
-                szPath = pFile->GetModuleFileNameHint().DacGetRawUnicode();
+                szPath = pPEAssembly->GetModuleFileNameHint().DacGetRawUnicode();
                 if (szPath == NULL)
                 {
                     goto NoFileName;
@@ -4185,12 +4198,12 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
 
     EX_TRY
     {
-        PTR_PEFile pPEFile = pTargetModule->GetFile();
-        _ASSERTE(pPEFile != NULL);
+        PTR_PEAssembly pPEAssembly = pTargetModule->GetPEAssembly();
+        _ASSERTE(pPEAssembly != NULL);
 
-        if (pPEFile->HasLoadedIL())
+        if (pPEAssembly->HasLoadedPEImage())
         {
-            *isModuleMapped = pPEFile->GetLoadedIL()->IsMapped();
+            *isModuleMapped = pPEAssembly->GetLoadedLayout()->IsMapped();
             hr = S_OK;
         }
     }
@@ -4283,11 +4296,11 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
     }
     else
     {
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pPEAssembly = pModule->GetPEAssembly();
 
         // For non-dynamic modules, metadata is in the pe-image.
         COUNT_T size;
-        CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pFile->GetLoadedMetadata(&size)));
+        CORDB_ADDRESS address = PTR_TO_CORDB_ADDRESS(dac_cast<TADDR>(pPEAssembly->GetLoadedMetadata(&size)));
 
         pTargetBuffer->Init(address, (ULONG) size);
     }
@@ -4373,9 +4386,9 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     ZeroMemory(pData, sizeof(*pData));
 
     Module     * pModule      = vmModule.GetDacPtr();
-    PEFile     * pFile        = pModule->GetFile();
+    PEAssembly * pPEAssembly        = pModule->GetPEAssembly();
 
-    pData->vmPEFile.SetHostPtr(pFile);
+    pData->vmPEAssembly.SetHostPtr(pPEAssembly);
     pData->vmAssembly.SetHostPtr(pModule->GetAssembly());
 
     // Is it dynamic?
@@ -4390,15 +4403,15 @@ void DacDbiInterfaceImpl::GetModuleData(VMPTR_Module vmModule, ModuleInfo * pDat
     if (!fIsDynamic)
     {
         COUNT_T size = 0;
-        pData->pPEBaseAddress = PTR_TO_TADDR(pFile->GetDebuggerContents(&size));
+        pData->pPEBaseAddress = PTR_TO_TADDR(pPEAssembly->GetDebuggerContents(&size));
         pData->nPESize = (ULONG) size;
     }
 
     // In-memory is determined by whether the module has a filename.
     pData->fInMemory = FALSE;
-    if (pFile != NULL)
+    if (pPEAssembly != NULL)
     {
-        pData->fInMemory = pFile->GetPath().IsEmpty();
+        pData->fInMemory = pPEAssembly->GetPath().IsEmpty();
     }
 }
 
@@ -4885,11 +4898,18 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetObjectForCCW(CORDB_ADDRESS ccwPtr)
 
     OBJECTHANDLE ohCCW = NULL;
 
+#ifdef FEATURE_COMWRAPPERS
+    if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &ohCCW) != S_OK)
+    {
+#endif
 #ifdef FEATURE_COMINTEROP
     ComCallWrapper *pCCW = DACGetCCWFromAddress(ccwPtr);
     if (pCCW)
     {
         ohCCW = pCCW->GetObjectHandle();
+    }
+#endif
+#ifdef FEATURE_COMWRAPPERS
     }
 #endif
 
@@ -6370,7 +6390,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
         mCurrObj += mCurrSize;
 
         // Check to see if we are in the correct bounds.
-        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6462,7 +6482,7 @@ HRESULT DacHeapWalker::NextSegment()
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
-        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6647,7 +6667,7 @@ HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, 
 
 HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
 {
-    bool regions = IsRegion();
+    bool regions = IsRegionGCEnabled();
 
     // Scrape basic heap details
     pCount = 1;
@@ -6772,6 +6792,8 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         seg = seg->next;
     }
 
+    _ASSERTE(count == i);
+
     return S_OK;
 }
 
@@ -6857,7 +6879,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
     size_t heapCount = 0;
     HeapData *heaps = 0;
 
-    bool region = IsRegion();
+    bool region = IsRegionGCEnabled();
 
 #ifdef FEATURE_SVR_GC
     HRESULT hr = GCHeapUtilities::IsServerHeap() ? DacHeapWalker::InitHeapDataSvr(heaps, heapCount) : DacHeapWalker::InitHeapDataWks(heaps, heapCount);
@@ -7303,13 +7325,13 @@ void DacDbiInterfaceImpl::GetGCHeapInformation(COR_HEAPINFO * pHeapInfo)
 }
 
 
-HRESULT DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEFile vmPEFile, OUT TADDR* pAddrMDInternalRW)
+HRESULT DacDbiInterfaceImpl::GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW)
 {
     DD_ENTER_MAY_THROW;
     if (pAddrMDInternalRW == NULL)
         return E_INVALIDARG;
-    PEFile * pPEFile = vmPEFile.GetDacPtr();
-    *pAddrMDInternalRW = pPEFile->GetMDInternalRWAddress();
+    PEAssembly * pPEAssembly = vmPEAssembly.GetDacPtr();
+    *pAddrMDInternalRW = pPEAssembly->GetMDInternalRWAddress();
     return S_OK;
 }
 

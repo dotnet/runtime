@@ -1726,10 +1726,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("NEW_MULTI_DIM_ARR");
                     break;
 
-                case ReadyToRunHelper.NewMultiDimArr_NonVarArg:
-                    builder.Append("NEW_MULTI_DIM_ARR__NON_VAR_ARG");
-                    break;
-
                 case ReadyToRunHelper.MonitorEnter:
                     builder.Append("MONITOR_ENTER");
                     break;

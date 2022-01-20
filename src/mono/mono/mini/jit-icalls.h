@@ -21,6 +21,8 @@ ICALL_EXPORT gint64 mono_llmult (gint64 a, gint64 b);
 
 ICALL_EXPORT guint64 mono_llmult_ovf_un (guint64 a, guint64 b);
 
+ICALL_EXPORT guint64 mono_llmult_ovf_un_oom (guint64 a, guint64 b);
+
 ICALL_EXPORT guint64 mono_llmult_ovf (gint64 a, gint64 b);
 
 ICALL_EXPORT gint32 mono_idiv (gint32 a, gint32 b);
@@ -36,6 +38,8 @@ ICALL_EXPORT gint32 mono_imul (gint32 a, gint32 b);
 ICALL_EXPORT gint32 mono_imul_ovf (gint32 a, gint32 b);
 
 ICALL_EXPORT gint32 mono_imul_ovf_un (guint32 a, guint32 b);
+
+ICALL_EXPORT gint32 mono_imul_ovf_un_oom (guint32 a, guint32 b);
 
 ICALL_EXPORT double mono_fdiv (double a, double b);
 
@@ -203,7 +207,7 @@ ICALL_EXPORT
 void
 ves_icall_mono_delegate_ctor_interp (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
-ICALL_EXPORT MonoObject* mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args);
+ICALL_EXPORT MonoObject* mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args);
 
 ICALL_EXPORT void mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass);
 
@@ -228,5 +232,7 @@ ICALL_EXPORT void mono_throw_platform_not_supported (void);
 ICALL_EXPORT void mono_throw_invalid_program (const char *msg);
 
 ICALL_EXPORT void mono_dummy_jit_icall (void);
+
+ICALL_EXPORT void mono_dummy_jit_icall_val (gpointer ptr);
 
 #endif /* __MONO_JIT_ICALLS_H__ */

@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     {
         private readonly IConfigurationRoot _root;
         private readonly string _path;
-        private string _key;
+        private string? _key;
 
         /// <summary>
         /// Initializes a new instance.
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets or sets the section value.
         /// </summary>
-        public string Value
+        public string? Value
         {
             get
             {
@@ -78,13 +78,12 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <returns>The configuration value.</returns>
-        public string this[string key]
+        public string? this[string key]
         {
             get
             {
                 return _root[ConfigurationPath.Combine(Path, key)];
             }
-
             set
             {
                 _root[ConfigurationPath.Combine(Path, key)] = value;

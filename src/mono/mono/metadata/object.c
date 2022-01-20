@@ -44,6 +44,7 @@
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/metadata-update.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -179,21 +180,21 @@ mono_runtime_object_init_checked (MonoObject *this_obj_raw, MonoError *error)
 Note it doesn't say anything about domains - only threads.
 
 2. If the type is initialized you are done.
-2.1. If the type is not yet initialized, try to take an 
-     initialization lock.  
-2.2. If successful, record this thread as responsible for 
+2.1. If the type is not yet initialized, try to take an
+     initialization lock.
+2.2. If successful, record this thread as responsible for
      initializing the type and proceed to step 2.3.
-2.2.1. If not, see whether this thread or any thread 
+2.2.1. If not, see whether this thread or any thread
      waiting for this thread to complete already holds the lock.
-2.2.2. If so, return since blocking would create a deadlock.  This thread 
-     will now see an incompletely initialized state for the type, 
+2.2.2. If so, return since blocking would create a deadlock.  This thread
+     will now see an incompletely initialized state for the type,
      but no deadlock will arise.
 2.2.3  If not, block until the type is initialized then return.
-2.3 Initialize the parent type and then all interfaces implemented 
+2.3 Initialize the parent type and then all interfaces implemented
     by this type.
 2.4 Execute the type initialization code for this type.
-2.5 Mark the type as initialized, release the initialization lock, 
-    awaken any threads waiting for this type to be initialized, 
+2.5 Mark the type as initialized, release the initialization lock,
+    awaken any threads waiting for this type to be initialized,
     and return.
 
 */
@@ -266,7 +267,7 @@ mono_thread_set_main (MonoThread *thread)
 	static gboolean registered = FALSE;
 
 	if (!registered) {
-		void *key = thread->internal_thread ? (void *) MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
+		void *key = thread->internal_thread ? (gpointer)(gsize) MONO_UINT_TO_NATIVE_THREAD_ID (thread->internal_thread->tid) : NULL;
 		MONO_GC_REGISTER_ROOT_SINGLE (main_thread, MONO_ROOT_SOURCE_THREADING, key, "Thread Main Object");
 		registered = TRUE;
 	}
@@ -321,8 +322,8 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 
 	if (!vtable->init_failed)
 		g_error ("Trying to get the init exception for a non-failed vtable of class %s", mono_type_get_full_name (klass));
-	
-	/* 
+
+	/*
 	 * If the initializing thread was rudely aborted, the exception is not stored
 	 * in the hash.
 	 */
@@ -396,6 +397,7 @@ mono_runtime_run_module_cctor (MonoImage *image, MonoError *error)
 			MonoClass *module_klass;
 			MonoVTable *module_vtable;
 
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running module .cctor for '%s'", image->name);
 			module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
 			if (!module_klass) {
 				return FALSE;
@@ -521,6 +523,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	if (do_initialization) {
 		MonoException *exc = NULL;
 
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
+			char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
+			g_free (type_name);
+		}
 		/* We are holding the per-vtable lock, do the actual initialization */
 
 		mono_threads_begin_abort_protected_block ();
@@ -657,8 +664,8 @@ gboolean release_type_locks (gpointer key, gpointer value, gpointer user)
 	TypeInitializationLock *lock = (TypeInitializationLock*) value;
 	if (mono_native_thread_id_equals (lock->initializing_tid, MONO_UINT_TO_NATIVE_THREAD_ID (GPOINTER_TO_UINT (user))) && !lock->done) {
 		lock->done = TRUE;
-		/* 
-		 * Have to set this since it cannot be set by the normal code in 
+		/*
+		 * Have to set this since it cannot be set by the normal code in
 		 * mono_runtime_class_init (). In this case, the exception object is not stored,
 		 * and get_type_init_exception_for_class () needs to be aware of this.
 		 */
@@ -720,7 +727,7 @@ mono_set_always_build_imt_trampolines (gboolean value)
  * This JIT-compiles the method, and returns the pointer to the native code
  * produced.
  */
-gpointer 
+gpointer
 mono_compile_method (MonoMethod *method)
 {
 	gpointer result;
@@ -787,7 +794,7 @@ mono_runtime_free_method (MonoMethod *method)
 }
 
 /*
- * The vtables in the root appdomain are assumed to be reachable by other 
+ * The vtables in the root appdomain are assumed to be reachable by other
  * roots, and we don't use typed allocation in the other domains.
  */
 
@@ -842,7 +849,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					continue;
 			}
 			/* FIXME: should not happen, flag as type load error */
-			if (field->type->byref)
+			if (m_type_is_byref (field->type))
 				break;
 
 			if (static_fields && field->offset == -1)
@@ -902,7 +909,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			case MONO_TYPE_CHAR:
 				break;
 			default:
-				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (field->parent), field->name);
+				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
 				break;
 			}
 		}
@@ -926,7 +933,7 @@ mono_class_compute_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset
 }
 
 #if 0
-/* 
+/*
  * similar to the above, but sets the bits in the bitmap for any non-ref field
  * and ignores static fields
  */
@@ -952,7 +959,7 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 				continue;
 			/* FIXME: should not happen, flag as type load error */
-			if (field->type->byref)
+			if (m_type_is_byref (field->type))
 				break;
 
 			pos = field->offset / wordsize;
@@ -1268,7 +1275,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 		g_error ("mono_method_get_imt_slot: %s.%s.%s is not an interface MonoMethod",
 				m_class_get_name_space (method->klass), m_class_get_name (method->klass), method->name);
 	}
-	
+
 	/* Initialize hashes */
 	hashes [0] = mono_metadata_str_hash (m_class_get_name (method->klass));
 	hashes [1] = mono_metadata_str_hash (m_class_get_name_space (method->klass));
@@ -1292,7 +1299,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 	}
 
 	/* Handle the last 3 hashes (all the case statements fall through) */
-	switch (hashes_count) { 
+	switch (hashes_count) {
 	case 3 : c += hashes [2];
 	case 2 : b += hashes [1];
 	case 1 : a += hashes [0];
@@ -1300,7 +1307,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 	case 0: /* nothing left to add */
 		break;
 	}
-	
+
 	g_free (hashes_start);
 	/* Report the result */
 	return c % MONO_IMT_SIZE;
@@ -1370,7 +1377,7 @@ static int
 compare_imt_builder_entries (const void *p1, const void *p2) {
 	MonoImtBuilderEntry *e1 = *(MonoImtBuilderEntry**) p1;
 	MonoImtBuilderEntry *e2 = *(MonoImtBuilderEntry**) p2;
-	
+
 	return (e1->key < e2->key) ? -1 : ((e1->key > e2->key) ? 1 : 0);
 }
 
@@ -1417,7 +1424,7 @@ imt_sort_slot_entries (MonoImtBuilderEntry *entries) {
 	GPtrArray *result = g_ptr_array_new ();
 	MonoImtBuilderEntry *current_entry;
 	int i;
-	
+
 	for (current_entry = entries, i = 0; current_entry != NULL; current_entry = current_entry->next, i++) {
 		sorted_array [i] = current_entry;
 	}
@@ -1508,10 +1515,12 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				/*
 				 * The imt slot of the method is the same as for its declaring method,
 				 * see the comment in mono_method_get_imt_slot (), so we can
-				 * avoid inflating methods which will be discarded by 
+				 * avoid inflating methods which will be discarded by
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
+				if (m_method_is_static (method))
+					continue;
 				if (mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
@@ -1551,7 +1560,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 		}
 	}
 	for (i = 0; i < MONO_IMT_SIZE; ++i) {
-		/* overwrite the imt slot only if we're building all the entries or if 
+		/* overwrite the imt slot only if we're building all the entries or if
 		 * we're building this specific one
 		 */
 		if (slot_num < 0 || i == slot_num) {
@@ -1582,8 +1591,8 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				 */
 				imt_collisions_bitmap |= (1 << i);
 
-				/* 
-				 * The IMT trampoline might be called with an instance of one of the 
+				/*
+				 * The IMT trampoline might be called with an instance of one of the
 				 * generic virtual methods, so has to fallback to the IMT trampoline.
 				 */
 				imt [i] = initialize_imt_slot (vt, imt_builder [i], callbacks.get_imt_trampoline (vt, i));
@@ -1604,12 +1613,12 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 			method_count += methods_in_slot;
 		}
 	}
-	
+
 	UnlockedAdd (&mono_stats.imt_number_of_methods, method_count);
 	if (record_method_count_for_max_collisions) {
 		UnlockedWrite (&mono_stats.imt_method_count_when_max_collisions, method_count);
 	}
-	
+
 	for (i = 0; i < MONO_IMT_SIZE; i++) {
 		MonoImtBuilderEntry* entry = imt_builder [i];
 		while (entry != NULL) {
@@ -1668,7 +1677,7 @@ typedef struct _GenericVirtualCase {
  *   Return IMT entries for the generic virtual method instances and
  *   variant interface methods for vtable slot
  * VTABLE_SLOT.
- */ 
+ */
 static MonoImtBuilderEntry*
 get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_slot)
 {
@@ -1680,16 +1689,16 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
 	mono_mem_manager_lock (mem_manager);
  	if (!mem_manager->generic_virtual_cases)
  		mem_manager->generic_virtual_cases = g_hash_table_new (mono_aligned_addr_hash, NULL);
- 
+
 	list = (GenericVirtualCase *)g_hash_table_lookup (mem_manager->generic_virtual_cases, vtable_slot);
- 
+
  	entries = NULL;
  	for (; list; list = list->next) {
  		MonoImtBuilderEntry *entry;
- 
+
  		if (list->count < THUNK_THRESHOLD)
  			continue;
- 
+
  		entry = g_new0 (MonoImtBuilderEntry, 1);
  		entry->key = list->method;
  		entry->value.target_code = mono_get_addr_from_ftnptr (list->code);
@@ -1699,9 +1708,9 @@ get_generic_virtual_entries (MonoMemoryManager *mem_manager, gpointer *vtable_sl
  		entry->next = entries;
  		entries = entry;
  	}
- 
+
 	mono_mem_manager_unlock (mem_manager);
- 
+
  	/* FIXME: Leaking memory ? */
  	return entries;
 }
@@ -1815,7 +1824,7 @@ static MonoVTable *mono_class_create_runtime_vtable (MonoClass *klass, MonoError
  * mono_class_vtable:
  * \param domain the application domain
  * \param class the class to initialize
- * VTables are domain specific because we create domain specific code, and 
+ * VTables are domain specific because we create domain specific code, and
  * they contain the domain specific static class data.
  * On failure, NULL is returned, and \c class->exception_type is set.
  */
@@ -1835,7 +1844,7 @@ mono_class_vtable (MonoDomain *domain, MonoClass *klass)
  * mono_class_vtable_checked:
  * \param class the class to initialize
  * \param error set on failure.
- * VTables are domain specific because we create domain specific code, and 
+ * VTables are domain specific because we create domain specific code, and
  * they contain the domain specific static class data.
  */
 MonoVTable *
@@ -1950,7 +1959,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		/*mono_class_init_internal can leave the vtable layout to be lazily done and we can't afford this here*/
 		if (!mono_class_has_failure (element_class) && !m_class_get_vtable_size (element_class))
 			mono_class_setup_vtable (element_class);
-		
+
 		if (mono_class_has_failure (element_class)) {
 			/*Can happen if element_class only got bad after mono_class_setup_vtable*/
 			if (!mono_class_has_failure (klass))
@@ -1961,8 +1970,8 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	/* 
-	 * For some classes, mono_class_init_internal () already computed klass->vtable_size, and 
+	/*
+	 * For some classes, mono_class_init_internal () already computed klass->vtable_size, and
 	 * that is all that is needed because of the vtable trampolines.
 	 */
 	if (!m_class_get_vtable_size (klass))
@@ -2014,7 +2023,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	vt->domain = domain;
 	if ((vt->rank > 0) || klass == mono_get_string_class ())
 		vt->flags |= MONO_VT_FLAG_ARRAY_OR_STRING;
-	
+
 	if (m_class_has_references (klass))
 		vt->flags |= MONO_VT_FLAG_HAS_REFERENCES;
 
@@ -2094,7 +2103,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 				mono_mem_manager_unlock (mem_manager);
 				if (bitmap != default_bitmap)
 					g_free (bitmap);
-				/* 
+				/*
 				 * This marks the field as special static to speed up the
 				 * checks in mono_field_static_get/set_value ().
 				 */
@@ -2119,12 +2128,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 				*t = *(char *)data;
 			}
 			continue;
-		}		
+		}
 	}
 
 	vt->max_interface_id = m_class_get_max_interface_id (klass);
 	vt->interface_bitmap = m_class_get_interface_bitmap (klass);
-	
+
 	//printf ("Initializing VT for class %s (interface_offsets_count = %d)\n",
 	//		class->name, klass->interface_offsets_count);
 
@@ -2163,7 +2172,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	 * re-acquire them and check if another thread has created the vtable in the meantime.
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
-	if (klass != mono_defaults.runtimetype_class) {
+	if (!mono_runtime_get_no_exec () && klass != mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
@@ -2191,7 +2200,7 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 	mono_memory_barrier ();
 	mono_class_set_runtime_vtable (klass, vt);
 
-	if (klass == mono_defaults.runtimetype_class) {
+	if (!mono_runtime_get_no_exec () && klass == mono_defaults.runtimetype_class) {
 		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (m_class_get_byval_arg (klass), error);
 		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
@@ -2237,7 +2246,7 @@ mono_class_field_is_special_static (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return FALSE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
-		if (field_is_special_static (field->parent, field) != SPECIAL_STATIC_NONE)
+		if (field_is_special_static (m_field_get_parent (field), field) != SPECIAL_STATIC_NONE)
 			return TRUE;
 	}
 	return FALSE;
@@ -2259,7 +2268,7 @@ mono_class_field_get_special_static_type (MonoClassField *field)
 	if (mono_field_is_deleted (field))
 		return SPECIAL_STATIC_NONE;
 	if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
-		return field_is_special_static (field->parent, field);
+		return field_is_special_static (m_field_get_parent (field), field);
 	return SPECIAL_STATIC_NONE;
 }
 
@@ -2277,7 +2286,7 @@ mono_class_has_special_static_fields (MonoClass *klass)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-		g_assert (field->parent == klass);
+		g_assert (m_field_get_parent (field) == klass);
 		if (mono_class_field_is_special_static (field))
 			return TRUE;
 	}
@@ -2342,7 +2351,7 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *
 		/* method->slot might not be set for instances of generic methods */
 		if (method->is_inflated) {
 			g_assert (((MonoMethodInflated*)method)->declaring->slot != -1);
-			method->slot = ((MonoMethodInflated*)method)->declaring->slot; 
+			method->slot = ((MonoMethodInflated*)method)->declaring->slot;
 		} else {
 			g_assert_not_reached ();
 		}
@@ -2381,7 +2390,7 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 	g_assert (callbacks.runtime_invoke);
 
 	error_init (error);
-	
+
 	MONO_PROFILER_RAISE (method_begin_invoke, (method));
 
 	result = callbacks.runtime_invoke (method, obj, params, exc, error);
@@ -2408,7 +2417,7 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
  * The params array contains the arguments to the method with the
  * same convention: \c MonoObject* pointers for object instances and
  * pointers to the value type otherwise.
- * 
+ *
  * From unmanaged code you'll usually use the
  * \c mono_runtime_invoke variant.
  *
@@ -2417,12 +2426,12 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
  * expose a function to lookup the derived class implementation
  * of a virtual method (there are examples of this in the code,
  * though).
- * 
+ *
  * You can pass NULL as the \p exc argument if you don't want to
  * catch exceptions, otherwise, \c *exc will be set to the exception
  * thrown, if any.  if an exception is thrown, you can't use the
  * \c MonoObject* result from the function.
- * 
+ *
  * If the method returns a value type, it is boxed in an object
  * reference.
  */
@@ -2471,12 +2480,12 @@ mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
  * expose a function to lookup the derived class implementation
  * of a virtual method (there are examples of this in the code,
  * though).
- * 
+ *
  * For this function, you must not pass NULL as the \p exc argument if
  * you don't want to catch exceptions, use
  * mono_runtime_invoke_checked().  If an exception is thrown, you
  * can't use the \c MonoObject* result from the function.
- * 
+ *
  * If this method cannot be invoked, \p error will be set and \p exc and
  * the return value must not be used.
  *
@@ -2523,8 +2532,8 @@ mono_runtime_try_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void *
  *
  * The \p params array contains the arguments to the method with the
  * same convention: \c MonoObject* pointers for object instances and
- * pointers to the value type otherwise. 
- * 
+ * pointers to the value type otherwise.
+ *
  * From unmanaged code you'll usually use the
  * mono_runtime_invoke() variant.
  *
@@ -2533,10 +2542,10 @@ mono_runtime_try_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void *
  * expose a function to lookup the derived class implementation
  * of a virtual method (there are examples of this in the code,
  * though).
- * 
+ *
  * If an exception is thrown, you can't use the \c MonoObject* result
  * from the function.
- * 
+ *
  * If this method cannot be invoked, \p error will be set.  If the
  * method throws an exception (and we're in coop mode) the exception
  * will be set in \p error.
@@ -2648,7 +2657,7 @@ mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	int t;
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		/* object fields cannot be byref, so we don't need a
 		   wbarrier here */
 		gpointer *p = (gpointer*)dest;
@@ -2759,7 +2768,7 @@ mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *val
  * to the value passed in \p value.   This method should only be used for instance
  * fields.   For static fields, use \c mono_field_static_set_value.
  *
- * The value must be in the native format of the field type. 
+ * The value must be in the native format of the field type.
  */
 void
 mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value)
@@ -2785,7 +2794,7 @@ mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, voi
 gpointer
 mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
 {
-	MonoMemoryManager *mem_manager = m_class_get_mem_manager (field->parent);
+	MonoMemoryManager *mem_manager = m_class_get_mem_manager (m_field_get_parent (field));
 	gpointer addr = NULL;
 
 	mono_mem_manager_lock (mem_manager);
@@ -2801,7 +2810,7 @@ mono_special_static_field_get_offset (MonoClassField *field, MonoError *error)
  * \param value The value to be set
  * Sets the value of the static field described by \p field
  * to the value passed in \p value.
- * The value must be in the native format of the field type. 
+ * The value must be in the native format of the field type.
  */
 void
 mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value)
@@ -2846,6 +2855,9 @@ mono_static_field_get_addr (MonoVTable *vt, MonoClassField *field)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 	if (field->offset == -1) {
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			return mono_metadata_update_get_static_field_addr (field);
+		}
 		/* Special static */
 		ERROR_DECL (error);
 		gpointer addr = mono_special_static_field_get_offset (field, error);
@@ -2991,7 +3003,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
-		is_ref = type->byref;
+		is_ref = m_type_is_byref (type);
 		break;
 	case MONO_TYPE_GENERICINST:
 		is_ref = !mono_type_generic_inst_is_valuetype (type);
@@ -3012,7 +3024,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 		is_static = TRUE;
 
 		if (!is_literal) {
-			vtable = mono_class_vtable_checked (field->parent, error);
+			vtable = mono_class_vtable_checked (m_field_get_parent (field), error);
 			goto_if_nok (error, return_null);
 
 			if (!vtable->initialized) {
@@ -3023,7 +3035,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	} else {
 		g_assert (obj);
 	}
-	
+
 	if (is_ref) {
 		if (is_literal) {
 			get_default_field_value (field, &o, string_handle, error);
@@ -3180,7 +3192,7 @@ get_default_field_value (MonoClassField *field, void *value, MonoStringHandleOut
 	const char* data;
 
 	error_init (error);
-	
+
 	data = mono_class_get_field_default_value (field, &def_type);
 	(void)mono_get_constant_value_from_blob (def_type, data, value, string_handle, error);
 }
@@ -3195,7 +3207,7 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
 	error_init (error);
 
 	g_return_if_fail (field->type->attrs & FIELD_ATTRIBUTE_STATIC);
-	
+
 	if (field->type->attrs & FIELD_ATTRIBUTE_LITERAL) {
 		get_default_field_value (field, value, string_handle, error);
 		return;
@@ -3323,7 +3335,7 @@ mono_property_set_value_handle (MonoProperty *prop, MonoObjectHandle obj, void *
  * \param exc optional exception
  * Invokes the property's \c get method with the given arguments on the
  * object instance \p obj (or NULL for static properties).
- * 
+ *
  * You can pass NULL as the \p exc argument if you don't want to
  * catch exceptions, otherwise, \c *exc will be set to the exception
  * thrown, if any.  if an exception is thrown, you can't use the
@@ -3356,7 +3368,7 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * \param error set on error
  * Invokes the property's \c get method with the given arguments on the
  * object instance obj (or NULL for static properties).
- * 
+ *
  * If an exception is thrown, you can't use the
  * \c MonoObject* result from the function.  The exception will be propagated via \p error.
  *
@@ -3492,7 +3504,7 @@ mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *
  * Since Nullables have variable structure, we can not define a C
  * structure for them.
  *
- * This function expects all objects to be pinned or for 
+ * This function expects all objects to be pinned or for
  * MONO_ENTER_NO_SAFEPOINTS to be used in a caller.
  */
 void
@@ -3708,24 +3720,25 @@ mono_get_delegate_end_invoke_checked (MonoClass *klass, MonoError *error)
 MonoObject*
 mono_runtime_delegate_invoke (MonoObject *delegate, void **params, MonoObject **exc)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
 	ERROR_DECL (error);
+	MonoObject* result = NULL;
+	MONO_ENTER_GC_UNSAFE;
 	if (exc) {
-		MonoObject *result = mono_runtime_delegate_try_invoke (delegate, params, exc, error);
+		result = mono_runtime_delegate_try_invoke (delegate, params, exc, error);
 		if (*exc) {
 			mono_error_cleanup (error);
-			return NULL;
+			result = NULL;
 		} else {
 			if (!is_ok (error))
 				*exc = (MonoObject*)mono_error_convert_to_exception (error);
-			return result;
 		}
 	} else {
-		MonoObject *result = mono_runtime_delegate_invoke_checked (delegate, params, error);
+		result = mono_runtime_delegate_invoke_checked (delegate, params, error);
 		mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
-		return result;
+
 	}
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 /**
@@ -3908,7 +3921,7 @@ mono_runtime_set_main_args (int argc, char* argv[])
  * Prepare an array of arguments in order to execute a standard Main()
  * method (argc/argv contains the executable name). This method also
  * sets the command line argument value needed by System.Environment.
- * 
+ *
  */
 static MonoArray*
 prepare_run_main (MonoMethod *method, int argc, char *argv[])
@@ -3922,7 +3935,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	MonoMethodSignature *sig;
 
 	g_assert (method != NULL);
-	
+
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);
@@ -3999,7 +4012,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 		args = (MonoArray*)mono_array_new_checked (mono_defaults.string_class, 0, error);
 		mono_error_assert_ok (error);
 	}
-	
+
 	mono_assembly_set_main (m_class_get_image (method->klass)->assembly);
 
 	return args;
@@ -4265,7 +4278,7 @@ mono_unhandled_exception_checked (MonoObjectHandle exc, MonoError *error)
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoClass *klass = mono_handle_class (exc);
 	/*
-	 * AppDomainUnloadedException don't behave like unhandled exceptions unless thrown from 
+	 * AppDomainUnloadedException don't behave like unhandled exceptions unless thrown from
 	 * a thread started in unmanaged world.
 	 * https://msdn.microsoft.com/en-us/library/system.appdomainunloadedexception(v=vs.110).aspx#Anchor_6
 	 */
@@ -4510,8 +4523,8 @@ mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **ex
 	return do_try_exec_main (method, args, exc);
 }
 
-/** invoke_array_extract_argument:
- * @params: array of arguments to the method.
+/** invoke_span_extract_argument:
+ * @params: span of object arguments to the method.
  * @i: the index of the argument to extract.
  * @t: ith type from the method signature.
  * @has_byref_nullables: outarg - TRUE if method expects a byref nullable argument
@@ -4523,7 +4536,7 @@ mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **ex
  * On failure sets @error and returns NULL.
  */
 static gpointer
-invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject **pa_obj, gboolean* has_byref_nullables, MonoError *error)
+invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t, MonoObject **pa_obj, gboolean* has_byref_nullables, MonoError *error)
 {
 	MonoType *t_orig = t;
 	gpointer result = NULL;
@@ -4548,21 +4561,21 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 			case MONO_TYPE_VALUETYPE:
 				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type_internal (t_orig))) {
 					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
-					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
-					if (t->byref)
+					if (m_type_is_byref (t))
 						*has_byref_nullables = TRUE;
 				} else {
 					/* MS seems to create the objects if a null is passed in */
 					gboolean was_null = FALSE;
-					if (!mono_array_get_internal (params, MonoObject*, i)) {
+					if (!mono_span_get (params_span, MonoObject*, i)) {
 						MonoObject *o = mono_object_new_checked (mono_class_from_mono_type_internal (t_orig), error);
 						return_val_if_nok (error, NULL);
-						mono_array_setref_internal (params, i, o); 
+						mono_span_setref (params_span, i, o);
 						was_null = TRUE;
 					}
 
-					if (t->byref) {
+					if (m_type_is_byref (t)) {
 						/*
 						 * We can't pass the unboxed vtype byref to the callee, since
 						 * that would mean the callee would be able to modify boxed
@@ -4570,15 +4583,15 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 						 * object, pass that to the callee, and replace the original
 						 * boxed object in the arg array with the copy.
 						 */
-						MonoObject *orig = mono_array_get_internal (params, MonoObject*, i);
+						MonoObject *orig = mono_span_get (params_span, MonoObject*, i);
 						MonoObject *copy = mono_value_box_checked (orig->vtable->klass, mono_object_unbox_internal (orig), error);
 						return_val_if_nok (error, NULL);
-						mono_array_setref_internal (params, i, copy);
+						mono_span_setref (params_span, i, copy);
 					}
-					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = mono_object_unbox_internal (*pa_obj);
-					if (!t->byref && was_null)
-						mono_array_setref_internal (params, i, NULL);
+					if (!m_type_is_byref (t) && was_null)
+						mono_span_setref (params_span, i, NULL);
 				}
 				break;
 			case MONO_TYPE_STRING:
@@ -4586,16 +4599,16 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				if (t->byref) {
-					result = mono_array_addr_internal (params, MonoObject*, i);
+				if (m_type_is_byref (t)) {
+					result = mono_span_addr (params_span, MonoObject*, i);
 					// FIXME: I need to check this code path
 				} else {
-					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
 				}
 				break;
 			case MONO_TYPE_GENERICINST:
-				if (t->byref)
+				if (m_type_is_byref (t))
 					t = m_class_get_this_arg (t->data.generic_class->container_class);
 				else
 					t = m_class_get_byval_arg (t->data.generic_class->container_class);
@@ -4604,7 +4617,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 				MonoObject *arg;
 
 				/* The argument should be an IntPtr */
-				arg = mono_array_get_internal (params, MonoObject*, i);
+				arg = mono_span_get (params_span, MonoObject*, i);
 				if (arg == NULL) {
 					result = NULL;
 				} else {
@@ -4636,7 +4649,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
  * variant takes a C# \c object[] as the params argument (\c MonoArray*):
  * in this case the value types are boxed inside the
  * respective reference representation.
- * 
+ *
  * From unmanaged code you'll usually use the
  * mono_runtime_invoke_checked() variant.
  *
@@ -4645,12 +4658,12 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
  * expose a function to lookup the derived class implementation
  * of a virtual method (there are examples of this in the code,
  * though).
- * 
+ *
  * You can pass NULL as the \p exc argument if you don't want to
  * catch exceptions, otherwise, \c *exc will be set to the exception
  * thrown, if any.  if an exception is thrown, you can't use the
  * \c MonoObject* result from the function.
- * 
+ *
  * If the method returns a value type, it is boxed in an object
  * reference.
  */
@@ -4677,93 +4690,10 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	return res;
 }
 
-/**
- * mono_runtime_invoke_array_checked:
- * \param method method to invoke
- * \param obj object instance
- * \param params arguments to the method
- * \param error set on failure.
- * Invokes the method represented by \p method on the object \p obj.
- *
- * \p obj is the \c this pointer, it should be NULL for static
- * methods, a \c MonoObject* for object instances and a pointer to
- * the value type for value types.
- *
- * The \p params array contains the arguments to the method with the
- * same convention: \c MonoObject* pointers for object instances and
- * pointers to the value type otherwise. The \c _invoke_array
- * variant takes a C# \c object[] as the \p params argument (\c MonoArray*):
- * in this case the value types are boxed inside the
- * respective reference representation.
- *
- * From unmanaged code you'll usually use the
- * mono_runtime_invoke_checked() variant.
- *
- * Note that this function doesn't handle virtual methods for
- * you, it will exec the exact method you pass: we still need to
- * expose a function to lookup the derived class implementation
- * of a virtual method (there are examples of this in the code,
- * though).
- *
- * On failure or exception, \p error will be set. In that case, you
- * can't use the \c MonoObject* result from the function.
- *
- * If the method returns a value type, it is boxed in an object
- * reference.
- */
-MonoObject*
-mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
-				   MonoError *error)
-{
-	error_init (error);
-	return mono_runtime_try_invoke_array (method, obj, params, NULL, error);
-}
-
-/**
- * mono_runtime_try_invoke_array:
- * \param method method to invoke
- * \param obj object instance
- * \param params arguments to the method
- * \param exc exception information.
- * \param error set on failure.
- * Invokes the method represented by \p method on the object \p obj.
- *
- * \p obj is the \c this pointer, it should be NULL for static
- * methods, a \c MonoObject* for object instances and a pointer to
- * the value type for value types.
- *
- * The \p params array contains the arguments to the method with the
- * same convention: \c MonoObject* pointers for object instances and
- * pointers to the value type otherwise. The \c _invoke_array
- * variant takes a C# \c object[] as the params argument (\c MonoArray*):
- * in this case the value types are boxed inside the
- * respective reference representation.
- *
- * From unmanaged code you'll usually use the
- * mono_runtime_invoke_checked() variant.
- *
- * Note that this function doesn't handle virtual methods for
- * you, it will exec the exact method you pass: we still need to
- * expose a function to lookup the derived class implementation
- * of a virtual method (there are examples of this in the code,
- * though).
- *
- * You can pass NULL as the \p exc argument if you don't want to catch
- * exceptions, otherwise, \c *exc will be set to the exception thrown, if
- * any.  On other failures, \p error will be set. If an exception is
- * thrown or there's an error, you can't use the \c MonoObject* result
- * from the function.
- *
- * If the method returns a value type, it is boxed in an object
- * reference.
- */
-MonoObject*
-mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+static MonoObject*
+mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *params_span,
 			       MonoObject **exc, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-	HANDLE_FUNCTION_ENTER ();
-
 	error_init (error);
 
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
@@ -4771,13 +4701,14 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	MonoObject *res = NULL;
 	int i;
 	gboolean has_byref_nullables = FALSE;
+	int params_length = mono_span_length (params_span);
 
-	if (NULL != params) {
-		pa = g_newa (gpointer, mono_array_length_internal (params));
-		for (i = 0; i < mono_array_length_internal (params); i++) {
+	if (params_length > 0) {
+		pa = g_newa (gpointer, params_length);
+		for (i = 0; i < params_length; i++) {
 			MonoType *t = sig->params [i];
 			MonoObject *pa_obj;
-			pa [i] = invoke_array_extract_argument (params, i, t, &pa_obj, &has_byref_nullables, error);
+			pa [i] = invoke_span_extract_argument (params_span, i, t, &pa_obj, &has_byref_nullables, error);
 			if (pa_obj)
 				MONO_HANDLE_PIN (pa_obj);
 			goto_if_nok (error, exit_null);
@@ -4791,7 +4722,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			/* Need to create a boxed vtype instead */
 			g_assert (!obj);
 
-			if (!params) {
+			if (params_length == 0) {
 				goto_if_nok (error, exit_null);
 			} else {
 				res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
@@ -4852,8 +4783,8 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			void *box_args [2];
 			MonoObject *box_exc;
 
-			/* 
-			 * The runtime-invoke wrapper returns a boxed IntPtr, need to 
+			/*
+			 * The runtime-invoke wrapper returns a boxed IntPtr, need to
 			 * convert it to a Pointer object.
 			 */
 			pointer_class = mono_class_get_pointer_class ();
@@ -4869,10 +4800,10 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			} else {
 				box_args [0] = NULL;
 			}
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				// byref is already unboxed by the invoke code
 				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
-				tmpret->byref = FALSE;
+				tmpret->byref__ = FALSE;
 				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 				mono_metadata_free_type (tmpret);
@@ -4886,25 +4817,104 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			g_assert (box_exc == NULL);
 			mono_error_assert_ok (error);
 		}
-
-		if (has_byref_nullables) {
-			/* 
-			 * The runtime invoke wrapper already converted byref nullables back,
-			 * and stored them in pa, we just need to copy them back to the
-			 * managed array.
-			 */
-			for (i = 0; i < mono_array_length_internal (params); i++) {
-				MonoType *t = sig->params [i];
-
-				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
-					mono_array_setref_internal (params, i, pa [i]);
-			}
-		}
 	}
 	goto exit;
 exit_null:
 	res = NULL;
 exit:
+	return res;
+}
+
+/**
+ * mono_runtime_invoke_array_checked:
+ * \param method method to invoke
+ * \param obj object instance
+ * \param params arguments to the method
+ * \param error set on failure.
+ * Invokes the method represented by \p method on the object \p obj.
+ *
+ * \p obj is the \c this pointer, it should be NULL for static
+ * methods, a \c MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The \p params span contains the arguments to the method with the
+ * same convention: \c MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The \c _invoke_array
+ * variant takes a C# \c object[] as the \p params argument (\c MonoArray*):
+ * in this case the value types are boxed inside the
+ * respective reference representation.
+ *
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke_checked() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ *
+ * On failure or exception, \p error will be set. In that case, you
+ * can't use the \c MonoObject* result from the function.
+ *
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
+MonoObject*
+mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
+				   MonoError *error)
+{
+	error_init (error);
+	return mono_runtime_try_invoke_span (method, obj, params, NULL, error);
+}
+
+/**
+ * mono_runtime_try_invoke_array:
+ * \param method method to invoke
+ * \param obj object instance
+ * \param params arguments to the method
+ * \param exc exception information.
+ * \param error set on failure.
+ * Invokes the method represented by \p method on the object \p obj.
+ *
+ * \p obj is the \c this pointer, it should be NULL for static
+ * methods, a \c MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The \p params array contains the arguments to the method with the
+ * same convention: \c MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The \c _invoke_array
+ * variant takes a C# \c object[] as the params argument (\c MonoArray*):
+ * in this case the value types are boxed inside the
+ * respective reference representation.
+ *
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke_checked() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ *
+ * You can pass NULL as the \p exc argument if you don't want to catch
+ * exceptions, otherwise, \c *exc will be set to the exception thrown, if
+ * any.  On other failures, \p error will be set. If an exception is
+ * thrown or there's an error, you can't use the \c MonoObject* result
+ * from the function.
+ *
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
+MonoObject*
+mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+			       MonoObject **exc, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoSpanOfObjects params_span = mono_span_create_from_object_array (params);
+	MonoObject *res = mono_runtime_try_invoke_span (method, obj, &params_span, exc, error);
+
 	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
@@ -4967,10 +4977,10 @@ object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *
  * mono_object_new:
  * \param klass the class of the object that we want to create
  * \returns a newly created object whose definition is
- * looked up using \p klass.   This will not invoke any constructors, 
+ * looked up using \p klass.   This will not invoke any constructors,
  * so the consumer of this routine has to invoke any constructors on
  * its own to initialize the object.
- * 
+ *
  * It returns NULL on failure.
  */
 MonoObject *
@@ -5128,7 +5138,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 			}
 			create_proxy_for_type_method = im;
 		}
-	
+
 		pa [0] = mono_type_get_object_checked (m_class_get_byval_arg (vtable->klass), error);
 		if (!is_ok (error))
 			return NULL;
@@ -5204,14 +5214,14 @@ ves_icall_object_new_specific (MonoVTable *vtable)
  * mono_object_new_alloc_specific:
  * \param vtable virtual table for the object.
  * This function allocates a new \c MonoObject with the type derived
- * from the \p vtable information.   If the class of this object has a 
+ * from the \p vtable information.   If the class of this object has a
  * finalizer, then the object will be tracked for finalization.
  *
  * This method might raise an exception on errors.  Use the
  * \c mono_object_new_fast_checked method if you want to manually raise
  * the exception.
  *
- * \returns the allocated object.   
+ * \returns the allocated object.
  */
 MonoObject *
 mono_object_new_alloc_specific (MonoVTable *vtable)
@@ -5229,7 +5239,7 @@ mono_object_new_alloc_specific (MonoVTable *vtable)
  * \param error holds the error return value.
  *
  * This function allocates a new \c MonoObject with the type derived
- * from the \p vtable information. If the class of this object has a 
+ * from the \p vtable information. If the class of this object has a
  * finalizer, then the object will be tracked for finalization.
  *
  * If there is not enough memory, the \p error parameter will be set
@@ -5274,7 +5284,7 @@ mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
  * \c mono_object_new_fast_checked method if you want to manually raise
  * the exception.
  *
- * \returns the allocated object.   
+ * \returns the allocated object.
  */
 MonoObject*
 mono_object_new_fast (MonoVTable *vtable)
@@ -5345,7 +5355,7 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 
 	klass = mono_class_get_checked (image, token, error);
 	mono_error_assert_ok (error);
-	
+
 	MonoObjectHandle result = mono_object_new_handle (klass, error);
 
 	mono_error_cleanup (error);
@@ -5462,7 +5472,7 @@ mono_array_clone_in_domain (MonoArrayHandle array_handle, MonoError *error)
 
 	/* Pin source array here - if bounds is non-NULL, it's a pointer into the object data */
 	MonoGCHandle src_handle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, array_handle), TRUE);
-	
+
 	MonoArrayBounds *array_bounds = MONO_HANDLE_GETVAL (array_handle, bounds);
 	MonoArrayHandle o;
 	if (array_bounds == NULL) {
@@ -5651,7 +5661,7 @@ mono_array_new_full_checked (MonoClass *array_class, uintptr_t *lengths, intptr_
 		}
 		byte_len += bounds_size;
 	}
-	/* 
+	/*
 	 * Following three lines almost taken from mono_object_new ():
 	 * they need to be kept in sync.
 	 */
@@ -5950,9 +5960,9 @@ mono_string_new_utf16_checked (const gunichar2 *text, gint32 len, MonoError *err
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoString *s;
-	
+
 	error_init (error);
-	
+
 	s = mono_string_new_size_checked (len, error);
 	if (s != NULL)
 		memcpy (mono_string_chars_internal (s), text, len * 2);
@@ -5988,12 +5998,12 @@ mono_string_new_utf32_checked (const mono_unichar4 *text, gint32 len, MonoError 
 
 	MonoString *s;
 	mono_unichar2 *utf16_output = NULL;
-	
+
 	error_init (error);
 	utf16_output = g_ucs4_to_utf16 (text, len, NULL, NULL, NULL);
-	
+
 	gint32 utf16_len = g_utf16_len (utf16_output);
-	
+
 	s = mono_string_new_size_checked (utf16_len, error);
 	goto_if_nok (error, exit);
 
@@ -6001,7 +6011,7 @@ mono_string_new_utf32_checked (const mono_unichar4 *text, gint32 len, MonoError 
 
 exit:
 	g_free (utf16_output);
-	
+
 	return s;
 }
 
@@ -6194,18 +6204,18 @@ mono_string_new_checked (const char *text, MonoError *error)
 	int len;
 
 	error_init (error);
-	
+
 	len = strlen (text);
-	
+
 	ut = g_utf8_to_utf16 (text, len, NULL, &items_written, &eg_error);
-	
+
 	if (!eg_error)
 		o = mono_string_new_utf16_checked (ut, items_written, error);
 	else {
 		mono_error_set_execution_engine (error, "String conversion error: %s", eg_error->message);
 		g_error_free (eg_error);
 	}
-	
+
 	g_free (ut);
 
 /*FIXME g_utf8_get_char, g_utf8_next_char and g_utf8_validate are not part of eglib.*/
@@ -6438,7 +6448,7 @@ mono_value_copy_array_handle (MonoArrayHandle dest, int dest_idx, gconstpointer 
  * \param dest_idx index in the \p dest array
  * \param src source pointer
  * \param count number of items
- * Copy \p count valuetype items from \p src to the array \p dest at index \p dest_idx. 
+ * Copy \p count valuetype items from \p src to the array \p dest at index \p dest_idx.
  * This function must be used when \p klass contains references fields.
  * Overlap is handled.
  */
@@ -6567,7 +6577,7 @@ mono_object_isinst (MonoObject *obj_raw, MonoClass *klass)
 /**
  * mono_object_isinst_checked:
  * \param obj an object
- * \param klass a pointer to a class 
+ * \param klass a pointer to a class
  * \param error set on error
  * \returns \p obj if \p obj is derived from \p klass or NULL if it isn't.
  * On failure returns NULL and sets \p error.
@@ -6587,7 +6597,7 @@ mono_object_isinst_checked (MonoObject *obj_raw, MonoClass *klass, MonoError *er
 /**
  * mono_object_handle_isinst:
  * \param obj an object
- * \param klass a pointer to a class 
+ * \param klass a pointer to a class
  * \param error set on error
  * \returns \p obj if \p obj is derived from \p klass or NULL if it isn't.
  * On failure returns NULL and sets \p error.
@@ -6596,7 +6606,7 @@ MonoObjectHandle
 mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
 {
 	error_init (error);
-	
+
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);
 
@@ -6657,7 +6667,7 @@ mono_object_handle_isinst_mbyref_raw (MonoObjectHandle obj, MonoClass *klass, Mo
 
 	MonoVTable *vt;
 	vt = MONO_HANDLE_GETVAL (obj, vtable);
-	
+
 	if (mono_class_is_interface (klass)) {
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (klass))) {
 			result = TRUE;
@@ -6785,9 +6795,9 @@ mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError
 #ifdef HOST_WASM
 /**
  * mono_string_instance_is_interned:
- * Searches the interned string table for the provided string instance.
+ * Checks to see if the string instance has its interned flag set.
  * \param str String to probe
- * \returns TRUE if the string is interned, FALSE otherwise.
+ * \returns TRUE if the string instance is interned, FALSE otherwise.
  */
 int
 mono_string_instance_is_interned (MonoString *str)
@@ -6994,7 +7004,7 @@ mono_string_to_utf8 (MonoString *s)
 	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 	result = mono_string_to_utf8_checked_internal (s, error);
-	
+
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		result = NULL;
@@ -7185,11 +7195,11 @@ mono_unichar4*
 mono_string_to_utf32_internal_impl (MonoStringHandle s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-	
+
 	// FIXME This optimization ok to miss before wrapper? Or null is rare?
 	if (MONO_HANDLE_RAW (s) == NULL)
 		return NULL;
-		
+
 	return g_utf16_to_ucs4 (MONO_HANDLE_RAW (s)->chars, mono_string_handle_length (s), NULL, NULL, NULL);
 }
 
@@ -7381,7 +7391,7 @@ mono_raise_exception (MonoException *ex)
  * DEPRECATED. DO NOT ADD NEW CALLERS FOR THIS FUNCTION.
  */
 void
-mono_raise_exception_deprecated (MonoException *ex) 
+mono_raise_exception_deprecated (MonoException *ex)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7559,7 +7569,7 @@ mono_print_unhandled_exception_internal (MonoObject *exc)
 		message = g_strdup ("StackOverflowException"); //if we OVF, we can't expect to have stack space to JIT Exception::ToString.
 		free_message = TRUE;
 	} else {
-		
+
 		if (((MonoException*)exc)->native_trace_ips) {
 			message = get_native_backtrace ((MonoException*)exc);
 			free_message = TRUE;
@@ -7573,7 +7583,7 @@ mono_print_unhandled_exception_internal (MonoObject *exc)
 			if (other_exc) {
 				char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
 				char *nested_backtrace = mono_exception_get_managed_backtrace ((MonoException*)other_exc);
-				
+
 				message = g_strdup_printf ("Nested exception detected.\nOriginal Exception: %s\nNested exception:%s\n",
 					original_backtrace, nested_backtrace);
 
@@ -7593,11 +7603,11 @@ mono_print_unhandled_exception_internal (MonoObject *exc)
 	}
 
 	/*
-	 * g_printerr ("\nUnhandled Exception: %s.%s: %s\n", exc->vtable->klass->name_space, 
+	 * g_printerr ("\nUnhandled Exception: %s.%s: %s\n", exc->vtable->klass->name_space,
 	 *	   exc->vtable->klass->name, message);
 	 */
 	g_printerr ("\nUnhandled Exception:\n%s\n", message);
-	
+
 	if (free_message)
 		g_free (message);
 }
@@ -7659,7 +7669,7 @@ gpointer
 mono_get_addr_from_ftnptr (gpointer descr)
 {
 	return callbacks.get_addr_from_ftnptr (descr);
-}	
+}
 
 /**
  * mono_string_chars:
@@ -7845,7 +7855,7 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 	GString *cmd_line = NULL;
 
 	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
 		host_path = mono_w32process_get_path (getpid ());
 #elif defined(HOST_WIN32)
 		gunichar2 *host_path_ucs2 = NULL;

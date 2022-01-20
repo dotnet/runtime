@@ -24,6 +24,11 @@ namespace System
         // Main function that is called during construction to populate the three display names
         private static void TryPopulateTimeZoneDisplayNamesFromGlobalizationData(string timeZoneId, TimeSpan baseUtcOffset, ref string? standardDisplayName, ref string? daylightDisplayName, ref string? displayName)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return;
+            }
+
             // Determine the culture to use
             CultureInfo uiCulture = CultureInfo.CurrentUICulture;
             if (uiCulture.Name.Length == 0)

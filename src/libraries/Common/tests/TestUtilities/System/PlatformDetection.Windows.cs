@@ -36,6 +36,7 @@ namespace System
         public static bool IsNotWindowsHomeEdition => !IsWindowsHomeEdition;
         public static bool IsNotInAppContainer => !IsInAppContainer;
         public static bool IsSoundPlaySupported => IsWindows && IsNotWindowsNanoServer;
+        public static bool IsBrowserOnWindows => IsBrowser && Path.DirectorySeparatorChar == '\\';
 
         // >= Windows 10 Anniversary Update
         public static bool IsWindows10Version1607OrGreater => IsWindowsVersionOrLater(10, 0, 14393);
@@ -56,6 +57,9 @@ namespace System
         public static bool IsWindows10Version2004OrGreater => IsWindowsVersionOrLater(10, 0, 19041);
 
         public static bool IsWindows10Version2004Build19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
+
+        // Windows 11 aka 21H2
+        public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);
 
         public static bool IsWindowsIoTCore
         {
@@ -136,8 +140,8 @@ namespace System
         private const int PRODUCT_HOME_PREMIUM = 0x00000003;
         private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
-        [DllImport("kernel32.dll", SetLastError = false)]
-        private static extern bool GetProductInfo(
+        [GeneratedDllImport("kernel32.dll", SetLastError = false)]
+        private static partial bool GetProductInfo(
             int dwOSMajorVersion,
             int dwOSMinorVersion,
             int dwSpMajorVersion,
@@ -145,8 +149,8 @@ namespace System
             out int pdwReturnedProductType
         );
 
-        [DllImport("kernel32.dll", ExactSpelling = true)]
-        private static extern int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
+        [GeneratedDllImport("kernel32.dll", ExactSpelling = true)]
+        private static partial int GetCurrentApplicationUserModelId(ref uint applicationUserModelIdLength, byte[] applicationUserModelId);
 
         private static volatile Version s_windowsVersionObject;
         internal static Version GetWindowsVersionObject()
@@ -230,6 +234,8 @@ namespace System
                 return s_isInAppContainer == 1;
             }
         }
+
+        public static bool CanRunImpersonatedTests => PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsWindowsAndElevated;
 
         private static int s_isWindowsElevated = -1;
         public static bool IsWindowsAndElevated

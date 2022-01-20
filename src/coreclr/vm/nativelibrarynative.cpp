@@ -9,7 +9,7 @@
 #include "nativelibrarynative.h"
 
 // static
-INT_PTR QCALLTYPE NativeLibraryNative::LoadFromPath(LPCWSTR path, BOOL throwOnError)
+extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadFromPath(LPCWSTR path, BOOL throwOnError)
 {
     QCALL_CONTRACT;
 
@@ -25,7 +25,7 @@ INT_PTR QCALLTYPE NativeLibraryNative::LoadFromPath(LPCWSTR path, BOOL throwOnEr
 }
 
 // static
-INT_PTR QCALLTYPE NativeLibraryNative::LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
+extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
                                                          BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
                                                          BOOL throwOnError)
 {
@@ -44,7 +44,7 @@ INT_PTR QCALLTYPE NativeLibraryNative::LoadByName(LPCWSTR name, QCall::AssemblyH
 }
 
 // static
-void QCALLTYPE NativeLibraryNative::FreeLib(INT_PTR handle)
+extern "C" void QCALLTYPE NativeLibrary_FreeLib(INT_PTR handle)
 {
     QCALL_CONTRACT;
 
@@ -56,7 +56,7 @@ void QCALLTYPE NativeLibraryNative::FreeLib(INT_PTR handle)
 }
 
 //static
-INT_PTR QCALLTYPE NativeLibraryNative::GetSymbol(INT_PTR handle, LPCWSTR symbolName, BOOL throwOnError)
+extern "C" INT_PTR QCALLTYPE NativeLibrary_GetSymbol(INT_PTR handle, LPCWSTR symbolName, BOOL throwOnError)
 {
     QCALL_CONTRACT;
 

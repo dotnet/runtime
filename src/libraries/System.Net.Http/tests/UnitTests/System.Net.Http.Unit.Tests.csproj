@@ -351,8 +351,8 @@
              Link="ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\WinInetProxyHelper.cs"
              Link="Common\System\Net\Http\WinInetProxyHelper.cs" />
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs"
-             Link="Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs"
+             Link="Common\System\Net\Http\aspnetcore\IHttpStreamHeadersHandler.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs"

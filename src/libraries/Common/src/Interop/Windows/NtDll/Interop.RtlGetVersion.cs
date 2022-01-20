@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class NtDll
     {
-        [DllImport(Libraries.NtDll, ExactSpelling = true)]
-        private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOEX lpVersionInformation);
+        [GeneratedDllImport(Libraries.NtDll, ExactSpelling = true)]
+        private static partial int RtlGetVersion(ref RTL_OSVERSIONINFOEX lpVersionInformation);
 
         internal static unsafe int RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi)
         {

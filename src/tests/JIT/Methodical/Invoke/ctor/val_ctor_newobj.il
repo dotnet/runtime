@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'ctor'// as "ctor"
+.assembly 'val_ctor_newobj'// as "ctor"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -19,7 +19,7 @@
   
   
 }
-.module 'ctor.exe'
+.assembly extern xunit.core {}
 // MVID: {B57C6031-B1F4-4BAC-A5DE-7943EA8B199E}
 .namespace JitTest
 {
@@ -59,6 +59,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       66 (0x42)
       .maxstack  3

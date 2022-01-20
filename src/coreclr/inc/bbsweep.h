@@ -22,10 +22,6 @@
 #include <aclapi.h>
 #endif // !TARGET_UNIX
 
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(x)    (sizeof(x)/sizeof(x[0]))
-#endif // !ARRAYSIZE
-
 // The CLR headers don't allow us to use methods like SetEvent directly (instead
 // we need to use the host APIs).  However, this file is included both in the CLR
 // and in the BBSweep tool, and the host API is not available in the tool.  Moreover,
@@ -35,11 +31,9 @@
 #pragma push_macro("SetEvent")
 #pragma push_macro("ResetEvent")
 #pragma push_macro("ReleaseSemaphore")
-#pragma push_macro("LocalFree")
 #undef SetEvent
 #undef ResetEvent
 #undef ReleaseSemaphore
-#undef LocalFree
 
 // MAX_COUNT is the maximal number of runtime processes that can run at a given time
 #define MAX_COUNT 20
@@ -284,7 +278,7 @@ private:
             GetObjectNamePrefix(processID, fromRuntime, objectNamePrefix);
             // if there is a non-empty name prefix, append a '\'
             if (objectNamePrefix[0] != '\0')
-                wcscat_s(objectNamePrefix, ARRAYSIZE(objectNamePrefix), W("\\"));
+                wcscat_s(objectNamePrefix, ARRAY_SIZE(objectNamePrefix), W("\\"));
             swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hSweepMutex"), objectNamePrefix);
             hSweepMutex          = ::WszCreateMutex(pSecurityAttributes, false,       objectName);
             swprintf_s(objectName, MAX_LONGPATH, W("%sBBSweep_hProfDataWriterMutex"), objectNamePrefix);
@@ -303,7 +297,6 @@ cleanup:
             if (pSD) delete [] ((char *) pSD);
             if (pAdminSid) FreeSid(pAdminSid);
             if (hToken) CloseHandle(hToken);
-            if (pACL) LocalFree(pACL);
             if (buffer) delete [] ((char *) buffer);
 #endif
         }
@@ -420,7 +413,6 @@ private:
     HANDLE hBBSweepThread;        // a handle to the CLR sweeper thread (that calls watch for sweep events)
 };
 
-#pragma pop_macro("LocalFree")
 #pragma pop_macro("ReleaseSemaphore")
 #pragma pop_macro("ResetEvent")
 #pragma pop_macro("SetEvent")

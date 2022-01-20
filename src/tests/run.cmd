@@ -15,11 +15,11 @@ set "__RepoRootDir=%~dp0..\.."
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
-set "__RootBinDir=%~dp0..\..\..\artifacts"
+set "__RootBinDir=%__RepoRootDir%\artifacts"
 set "__LogsDir=%__RootBinDir%\log"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"
 set __ToolsDir=%__ProjectDir%\..\Tools
-set "DotNetCli=%__ProjectDir%\..\..\..\dotnet.cmd"
+set "DotNetCli=%__RepoRootDir%\dotnet.cmd"
 
 set __Sequential=
 set __msbuildExtraArgs=
@@ -61,6 +61,8 @@ if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
+if /i "%1" == "runnativeaottests"                       (set RunNativeAot=true&shift&goto Arg_Loop)
+if /i "%1" == "nativeaotmultimodule"                    (set NativeAotMultimodule=true&shift&goto Arg_Loop)
 REM This test feature is currently intentionally undocumented
 if /i "%1" == "runlargeversionbubblecrossgen2tests"     (set RunCrossGen2=true&set CrossgenLargeVersionBubble=true&shift&goto Arg_Loop)
 if /i "%1" == "link"                                    (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
@@ -99,7 +101,7 @@ set "__TestWorkingDir=%__RootBinDir%\tests\coreclr\%__TargetOS%.%__BuildArch%.%_
 
 :: Default global test environment variables
 :: REVIEW: are these ever expected to be defined on entry to this script? Why? By whom?
-:: REVIEW: XunitTestReportDirBase is not used in this script. Who needs to have it set?
+:: REVIEW: XunitTestReportDirBase is not used in this script. Who needs to have it set? Used in run.proj _XunitProlog.
 if not defined XunitTestBinBase       set  XunitTestBinBase=%__TestWorkingDir%\
 if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinBase%\Reports\
 
@@ -137,6 +139,14 @@ if defined RunCrossGen2 (
 
 if defined CrossgenLargeVersionBubble (
     set __RuntestPyArgs=%__RuntestPyArgs% --large_version_bubble
+)
+
+if defined RunNativeAot (
+    set __RuntestPyArgs=%__RuntestPyArgs% --run_nativeaot_tests
+)
+
+if defined NativeAotMultimodule (
+    set __RuntestPyArgs=%__RuntestPyArgs% --nativeaot_multimodule
 )
 
 if defined __PrintLastResultsOnly (

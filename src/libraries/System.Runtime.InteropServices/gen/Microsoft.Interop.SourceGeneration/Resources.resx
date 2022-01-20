@@ -1,0 +1,222 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArraySizeMustBeSpecified" xml:space="preserve">
+    <value>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</value>
+  </data>
+  <data name="ArraySizeParamIndexOutOfRange" xml:space="preserve">
+    <value>The 'SizeParamIndex' value in the 'MarshalAsAttribute' is out of range.</value>
+  </data>
+  <data name="CannotHaveMultipleMarshallingAttributesDescription" xml:space="preserve">
+    <value>The 'BlittableTypeAttribute' and 'NativeMarshallingAttribute' attributes are mutually exclusive.</value>
+  </data>
+  <data name="CannotHaveMultipleMarshallingAttributesMessage" xml:space="preserve">
+    <value>Type '{0}' is marked with 'BlittableTypeAttribute' and 'NativeMarshallingAttribute'. A type can only have one of these two attributes.</value>
+  </data>
+  <data name="CollectionSizeParamTypeMustBeIntegral" xml:space="preserve">
+    <value>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</value>
+  </data>
+  <data name="CustomTypeMarshallingManagedToNativeUnsupported" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</value>
+  </data>
+  <data name="CustomTypeMarshallingNativeToManagedUnsupported" xml:space="preserve">
+    <value>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</value>
+  </data>
+  <data name="GraphHasCycles" xml:space="preserve">
+    <value>The provided graph has cycles and cannot be topologically sorted.</value>
+  </data>
+  <data name="InAttributeNotSupportedWithoutOut" xml:space="preserve">
+    <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</value>
+  </data>
+  <data name="InOutAttributeByRefNotSupported" xml:space="preserve">
+    <value>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</value>
+  </data>
+  <data name="InOutAttributeMarshalerNotSupported" xml:space="preserve">
+    <value>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</value>
+  </data>
+  <data name="MarshallingCharAsSpecifiedCharSetNotSupported" xml:space="preserve">
+    <value>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</value>
+  </data>
+  <data name="MarshallingStringOrCharAsUndefinedNotSupported" xml:space="preserve">
+    <value>Marshalling string or char without explicit marshalling information is not supported. Specify either 'GeneratedDllImportAttribute.CharSet' or 'MarshalAsAttribute'.</value>
+  </data>
+  <data name="OutByValueNotSupportedDescription" xml:space="preserve">
+    <value>The '[Out]' attribute is only supported on array parameters.</value>
+  </data>
+  <data name="OutByValueNotSupportedMessage" xml:space="preserve">
+    <value>The '[Out]' attribute is not supported on the '{0}' parameter.</value>
+  </data>
+  <data name="RefValuePropertyUnsupportedDescription" xml:space="preserve">
+    <value>The 'Value' property must not be a 'ref' or 'readonly ref' property.</value>
+  </data>
+  <data name="RefValuePropertyUnsupportedMessage" xml:space="preserve">
+    <value>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</value>
+  </data>
+  <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
+    <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
+  </data>
+  <data name="TypeNotSupportedTitle" xml:space="preserve">
+    <value>Specified type is not supported by source-generated P/Invokes</value>
+  </data>
+  <data name="ValuePropertyMarshallingRequiresAdditionalState" xml:space="preserve">
+    <value>Marshalling a value between managed and native with a native type with a 'Value' property requires extra state, which is not supported in this context.</value>
+  </data>
+  <data name="ValuePropertyMustHaveGetterDescription" xml:space="preserve">
+    <value>The native type's 'Value' property must have a getter to support marshalling from managed to native.</value>
+  </data>
+  <data name="ValuePropertyMustHaveGetterMessage" xml:space="preserve">
+    <value>The 'Value' property on the native type '{0}' must have a getter</value>
+  </data>
+  <data name="ValuePropertyMustHaveSetterDescription" xml:space="preserve">
+    <value>The native type's 'Value' property must have a setter to support marshalling from native to managed.</value>
+  </data>
+  <data name="ValuePropertyMustHaveSetterMessage" xml:space="preserve">
+    <value>The 'Value' property on the native type '{0}' must have a setter</value>
+  </data>
+  <data name="CyclicalCountInfo" xml:space="preserve">
+    <value>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</value>
+  </data>
+  <data name="DuplicateCountInfo" xml:space="preserve">
+    <value>Count information for a given element at a given indirection level can only be specified once</value>
+  </data>
+  <data name="DuplicateMarshallingInfo" xml:space="preserve">
+    <value>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</value>
+  </data>
+  <data name="ExtraneousMarshallingInfo" xml:space="preserve">
+    <value>Marshalling info was specified for 'ElementIndirectionLevel' {0}, but marshalling info was only needed for {1} level(s) of indirection</value>
+  </data>
+  <data name="NativeGenericTypeMustBeClosedOrMatchArityMessage" xml:space="preserve">
+    <value>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</value>
+  </data>
+  <data name="NativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
+    <value>The native type must have at least one of the two marshalling methods to enable marshalling the managed type.</value>
+  </data>
+  <data name="NativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
+    <value>The native type '{0}' must be a value type and have a constructor that takes one parameter of type '{1}' or a parameterless instance method named 'ToManaged' that returns '{1}'</value>
+  </data>
+  <data name="CollectionNativeTypeMustHaveRequiredShapeDescription" xml:space="preserve">
+    <value>A native type with the 'GenericContiguousCollectionMarshallerAttribute' must have at least one of the two marshalling methods as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;' to enable marshalling the managed type.</value>
+  </data>
+  <data name="CollectionNativeTypeMustHaveRequiredShapeMessage" xml:space="preserve">
+    <value>The native type '{0}' must be a value type and have a constructor that takes two parameters, one of type '{1}' and an 'int', or have a parameterless instance method named 'ToManaged' that returns '{1}' as well as a 'ManagedValues' property of type 'Span&lt;T&gt;' for some 'T' and a 'NativeValueStorage' property of type 'Span&lt;byte&gt;'</value>
+  </data>
+  <data name="ConstantAndElementCountInfoDisallowed" xml:space="preserve">
+    <value>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionLevel'</value>
+  </data>
+</root>

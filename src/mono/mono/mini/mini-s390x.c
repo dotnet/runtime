@@ -1219,7 +1219,7 @@ enum_retvalue:
 			add_general (&gr, sz, &cinfo->sigCookie);
 		}
 
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			add_general (&gr, sz, cinfo->args+nParm);
 			cinfo->args[nParm].size = sizeof(gpointer);
 			nParm++;
@@ -1869,11 +1869,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 		case RegTypeBase :
-			if (!t->byref && t->type == MONO_TYPE_R4) {
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, 
 							     STK_BASE, ainfo->offset + 4,
 						  	     in->dreg);
-			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
+			} else if (!m_type_is_byref (t) && (t->type == MONO_TYPE_R8)) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, 
 						  	     STK_BASE, ainfo->offset,
 							     in->dreg);
@@ -2000,7 +2000,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_S390_SETF4RET, s390_f0, val->dreg);
 			return;
@@ -3467,8 +3467,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ldgr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			s390_ledbr (code, s390_f0, ins->sreg1);
-			s390_lgdr (code, ins->dreg, s390_f0);
+			if (!cfg->r4fp) {
+				s390_ledbr (code, s390_f0, ins->sreg1);
+				s390_lgdr (code, ins->dreg, s390_f0);
+			} else {
+				s390_lgdr (code, ins->dreg, ins->sreg1);
+			}
 			s390_srag (code, ins->dreg, ins->dreg, 0, 32);
 			break;
 		case OP_MOVE_I4_TO_F: 

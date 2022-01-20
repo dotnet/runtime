@@ -43,8 +43,8 @@ namespace System.Text.Json
                 jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
                 typedInfo.Options._context?.CanUseSerializationLogic == true)
             {
-                Debug.Assert(typedInfo.Serialize != null);
-                typedInfo.Serialize(writer, value);
+                Debug.Assert(typedInfo.SerializeHandler != null);
+                typedInfo.SerializeHandler(writer, value);
                 writer.Flush();
             }
             else

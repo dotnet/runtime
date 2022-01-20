@@ -18,7 +18,7 @@ struct Foo : IFoo
 		
 }
 
-public class Test
+public class Test_method009
 {
 	public static int counter = 0;
 	public static bool result = true;

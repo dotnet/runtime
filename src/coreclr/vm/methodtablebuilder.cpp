@@ -1206,7 +1206,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         MethodDesc *pDeclMD = it.GetDeclMethodDesc();
         if (!pDeclMD->IsVirtual())
         {
-            break;
+            continue;
         }
 
         bmtRTMethod * pCurMethod = new (pStackingAllocator)
@@ -1440,7 +1440,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (bmtGenerics->GetNumGenericArgs() != 0)
         {
             // Nested enums can have generic type parameters from their enclosing class.
-            // CLS rules require type parameters to be propogated to nested types.
+            // CLS rules require type parameters to be propagated to nested types.
             // Note that class G<T> { enum E { } } will produce "G`1+E<T>".
             // We want to disallow class G<T> { enum E<T, U> { } }
             // Perhaps the IL equivalent of class G<T> { enum E { } } should be legal.
@@ -4337,9 +4337,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 DWORD rva;
                 IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
 
-                // Ensure that the IL image is loaded. Note that this assembly may
-                // have an ngen image, but this type may have failed to load during ngen.
-                GetModule()->GetFile()->LoadLibrary(FALSE);
+                // The PE should be loaded by now.
+                _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
                 DWORD fldSize;
                 if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)
@@ -4429,7 +4428,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     // For types with layout we drop any 64-bit alignment requirement if the packing size was less than 8
     // bytes (this mimics what the native compiler does and ensures we match up calling conventions during
     // interop).
-    if (HasLayout() && GetLayoutInfo()->GetPackingSize() < 8)
+    // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
+    // as auto-layout ignores any Pack directives.
+    if (HasLayout() && (HasExplicitFieldOffsetLayout() || IsManagedSequential()) && GetLayoutInfo()->GetPackingSize() < 8)
     {
         fFieldRequiresAlign8 = false;
     }
@@ -5155,7 +5156,7 @@ MethodTableBuilder::InitNewMethodDesc(
                                                     NULL,
                                                     NULL)))
         {
-            pNewMD->SetIsJitIntrinsic();
+            pNewMD->SetIsIntrinsic();
         }
 
     }
@@ -8112,10 +8113,10 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 continue;
 
             // Align instance fields if we aren't already
-#ifdef FEATURE_64BIT_ALIGNMENT
-            DWORD dwDataAlignment = 1 << i;
-#else
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             DWORD dwDataAlignment = min(1 << i, DATA_ALIGNMENT);
+#else
+            DWORD dwDataAlignment = 1 << i;
 #endif
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 
@@ -8170,35 +8171,62 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         else
             dwNumGCPointerSeries = bmtParent->NumParentPointerSeries;
 
+        bool containsGCPointers = bmtFP->NumInstanceGCPointerFields > 0;
         // Place by value class fields last
         // Update the number of GC pointer series
+        // Calculate largest alignment requirement
+        int largestAlignmentRequirement = 1;
         for (i = 0; i < bmtEnumFields->dwNumInstanceFields; i++)
         {
             if (pFieldDescList[i].IsByValue())
             {
                 MethodTable * pByValueMT = pByValueClassCache[i];
 
-                    // value classes could have GC pointers in them, which need to be pointer-size aligned
-                    // so do this if it has not been done already
-
 #if !defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4)
-                dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos,
-                    (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT) ? DATA_ALIGNMENT : TARGET_POINTER_SIZE);
-#else // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
-#ifdef FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->GetNumInstanceFieldBytes() >= DATA_ALIGNMENT)
+                {
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, DATA_ALIGNMENT);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, DATA_ALIGNMENT);
+                }
+                else
+#elif defined(FEATURE_64BIT_ALIGNMENT)
                 if (pByValueMT->RequiresAlign8())
+                {
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, 8);
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, 8);
+                }
                 else
 #endif // FEATURE_64BIT_ALIGNMENT
+                if (pByValueMT->ContainsPointers())
+                {
+                    // this field type has GC pointers in it, which need to be pointer-size aligned
+                    // so do this if it has not been done already
                     dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, TARGET_POINTER_SIZE);
-#endif // !(!defined(TARGET_64BIT) && (DATA_ALIGNMENT > 4))
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+                    containsGCPointers = true;
+                }
+                else
+                {
+                    int fieldAlignmentRequirement = pByValueMT->GetFieldAlignmentRequirement();
+                    largestAlignmentRequirement = max(largestAlignmentRequirement, fieldAlignmentRequirement);
+                    dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, fieldAlignmentRequirement);
+                }
 
                 pFieldDescList[i].SetOffset(dwCumulativeInstanceFieldPos - dwOffsetBias);
-                dwCumulativeInstanceFieldPos += pByValueMT->GetAlignedNumInstanceFieldBytes();
+                dwCumulativeInstanceFieldPos += pByValueMT->GetNumInstanceFieldBytes();
 
-                // Add pointer series for by-value classes
-                dwNumGCPointerSeries += pByValueMT->ContainsPointers() ?
-                    (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries() : 0;
+                if (pByValueMT->ContainsPointers())
+                {
+                    // Add pointer series for by-value classes
+                    dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
+                }
+            }
+            else
+            {
+                // non-value-type fields always require pointer alignment
+                // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
+                // but that is explicitly handled when we calculate the final alignment for the type.
+                largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
             }
         }
 
@@ -8224,12 +8252,19 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             if (dwNumInstanceFieldBytes > TARGET_POINTER_SIZE) {
-                minAlign = TARGET_POINTER_SIZE;
+                minAlign = containsGCPointers ? TARGET_POINTER_SIZE : (unsigned)largestAlignmentRequirement;
             }
             else {
                 minAlign = 1;
                 while (minAlign < dwNumInstanceFieldBytes)
                     minAlign *= 2;
+            }
+
+            if (minAlign != min(dwNumInstanceFieldBytes, TARGET_POINTER_SIZE))
+            {
+                EnsureOptionalFieldsAreAllocated(GetHalfBakedClass(), m_pAllocMemTracker, GetLoaderAllocator()->GetLowFrequencyHeap());
+                GetHalfBakedClass()->GetOptionalFields()->m_requiredFieldAlignment = (BYTE)minAlign;
+                GetHalfBakedClass()->SetHasCustomFieldAlignment();
             }
 
             dwNumInstanceFieldBytes = (dwNumInstanceFieldBytes + minAlign-1) & ~(minAlign-1);
@@ -8336,7 +8371,6 @@ MethodTableBuilder::HandleExplicitLayout(
     // the field whose offset and size add to the greatest number.
     UINT instanceSliceSize = 0;
     DWORD firstObjectOverlapOffset = ((DWORD)(-1));
-
 
     UINT i;
     for (i = 0; i < bmtMetaData->cFields; i++)
@@ -8568,15 +8602,6 @@ MethodTableBuilder::HandleExplicitLayout(
         SetHasOverLayedFields();
     }
 
-    if (IsBlittable() || IsManagedSequential())
-    {
-        // Bug 849333: We shouldn't update "bmtFP->NumInstanceFieldBytes"
-        // for Blittable/ManagedSequential types.  As this will break backward compatiblity
-        // for the size of types that return true for HasExplicitFieldOffsetLayout()
-        //
-        return;
-    }
-
     FindPointerSeriesExplicit(instanceSliceSize, pFieldLayout);
 
     // Fixup the offset to include parent as current offsets are relative to instance slice
@@ -8612,6 +8637,24 @@ MethodTableBuilder::HandleExplicitLayout(
             {
                 numInstanceFieldBytes = S_UINT32(clstotalsize);
             }
+        }
+        else
+        {
+            // align up to the alignment requirements of the members of this value type.
+            numInstanceFieldBytes.AlignUp(GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers);
+            if (numInstanceFieldBytes.IsOverflow())
+            {
+                // addition overflow or cast truncation
+                BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
+            }
+        }
+
+        if (!numInstanceFieldBytes.IsOverflow() && numInstanceFieldBytes.Value() == 0)
+        {
+            // If we calculate a 0-byte size here, we should have also calculated a 0-byte size
+            // in the initial layout algorithm.
+            _ASSERTE(GetLayoutInfo()->IsZeroSized());
+            numInstanceFieldBytes = S_UINT32(1);
         }
     }
 
@@ -11216,7 +11259,7 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
     // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching
     // ReadyToRun images with and without input bubble enabled.
-    if (!GetModule()->GetFile()->IsReadyToRun())
+    if (!GetModule()->GetPEAssembly()->IsReadyToRun())
     {
         // Always use ReadyToRun field layout algorithm to produce ReadyToRun images
         return FALSE;
@@ -11772,9 +11815,6 @@ MethodTableBuilder::GatherGenericsInfo(
         {
             // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
             // to break type recursion dead-locks
-
-            // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
-            GCX_COOP();
             CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
 
             for (unsigned int i = 0; i < numGenericArgs; i++)

@@ -6,7 +6,7 @@
 ##  interface from a manifest file
 ##
 ##  The intended use if for platforms which support event pipe
-##  but do not have a an eventing platform to recieve report events
+##  but do not have a an eventing platform to receive report events
 
 import os
 from genEventing import *

@@ -44,6 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
                 // Verify received server-initiated close message.
                 Assert.Equal(WebSocketCloseStatus.NormalClosure, recvResult.CloseStatus);
                 Assert.Equal(closeWebSocketMetaCommand, recvResult.CloseStatusDescription);
+                Assert.Equal(WebSocketMessageType.Close, recvResult.MessageType);
 
                 // Verify current websocket state as CloseReceived which indicates only partial close.
                 Assert.Equal(WebSocketState.CloseReceived, cws.State);

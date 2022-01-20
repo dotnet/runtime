@@ -75,7 +75,7 @@ namespace System.Xml.Xsl.XsltOld
                 case XmlNodeType.EndEntity:
                     break;
                 default:
-                    Debug.Fail("Invalid NodeType on output: " + mainNode.NodeType);
+                    Debug.Fail($"Invalid NodeType on output: {mainNode.NodeType}");
                     break;
             }
 

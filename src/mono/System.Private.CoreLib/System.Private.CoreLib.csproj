@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -32,6 +32,7 @@
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <!-- Override InformationalVersion during servicing as it's returned via public api. -->
     <InformationalVersion Condition="'$(PreReleaseVersionLabel)' == 'servicing'">$(ProductVersion)</InformationalVersion>
+    <InformationalVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</InformationalVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn),0419,0649</NoWarn>
     <Nullable>enable</Nullable>
@@ -53,6 +54,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
@@ -68,6 +70,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_WASM</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
@@ -174,7 +177,7 @@
       <Compile Include="$(BclSourcesRoot)\System\String.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Type.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\TypedReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
@@ -189,7 +192,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.Mono.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
-      <Compile Include="$(BclSourcesRoot)\System\IO\Stream.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />
@@ -203,7 +205,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeLocalVariableInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodBody.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
@@ -272,9 +274,6 @@
         <Link>Common\Interop\Unix\System.Native\Interop.GetEnviron.cs</Link>
       </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
-      <Compile Include="$(BclSourcesRoot)\System\Environment.Android.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Environment.iOS.cs" />
       <Compile Include="$(CommonPath)Interop\OSX\System.Native\Interop.SearchPath.cs">
@@ -291,6 +290,7 @@
       <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
+      <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />

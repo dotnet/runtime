@@ -871,4 +871,4 @@ FAIL:
 }
 // ----------------------------------
 
-.assembly rem_r4.exe{}
+.assembly rem_r4{}

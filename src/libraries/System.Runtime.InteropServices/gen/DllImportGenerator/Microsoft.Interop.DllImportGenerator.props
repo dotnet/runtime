@@ -1,0 +1,24 @@
+﻿<Project>
+  <!--
+    Define all of the configuration options supported for the DllImportGenerator.
+    To use, set an MSBuild property with the name of the option to `true`.
+    See OptionsHelper.cs for more information on usage.
+  -->
+  <ItemGroup>
+      <!--
+        Use the System.Runtime.InteropServices.Marshal type instead of
+        the System.Runtime.InteropServices.MarshalEx type when emitting code.
+      -->
+      <CompilerVisibleProperty Include="DllImportGenerator_UseMarshalType" />
+      <!--
+        Generate a stub that forwards to a runtime implemented P/Invoke stub instead
+        of generating a stub that handles all of the marshalling.
+      -->
+      <CompilerVisibleProperty Include="DllImportGenerator_GenerateForwarders" />
+      <!--
+        Use the Internal.Runtime.ComplierServices.Unsafe type instead of
+        the System.Runtime.CompilerServices.Unsafe type when emitting code.
+      -->
+    <CompilerVisibleProperty Include="DllImportGenerator_UseInternalUnsafeType" />
+  </ItemGroup>
+</Project>

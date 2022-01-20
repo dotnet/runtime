@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        [DllImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static extern uint if_nametoindex(string name);
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi, CharSet = CharSet.Ansi, SetLastError = true)]
+        internal static partial uint if_nametoindex(string name);
     }
 }

@@ -715,7 +715,7 @@ ss_req_acquire (MonoInternalThread *thread)
 	for (i = 0; i < the_ss_reqs->len; ++i) {
 		SingleStepReq *current_req = (SingleStepReq *)g_ptr_array_index (the_ss_reqs, i);
 		if (current_req->thread == thread) {
-			current_req->refcount ++;	
+			current_req->refcount ++;
 			req = current_req;
 		}
 	}
@@ -723,8 +723,8 @@ ss_req_acquire (MonoInternalThread *thread)
 	return req;
 }
 
-static int 
-ss_req_count ()
+static int
+ss_req_count (void)
 {
 	return the_ss_reqs->len;
 }
@@ -812,7 +812,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
 	 */
-	if (method->klass == mdbg_mono_defaults->string_class && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
+	if (method->klass == mono_get_string_class () && (!strcmp (method->name, "memset") || strstr (method->name, "memcpy")))
 		goto exit;
 
 	/*
@@ -1719,7 +1719,7 @@ get_notify_debugger_of_wait_completion_method (void)
 	if (notify_debugger_of_wait_completion_method_cache != NULL)
 		return notify_debugger_of_wait_completion_method_cache;
 	ERROR_DECL (error);
-	MonoClass* task_class = mono_class_load_from_name (mdbg_mono_defaults->corlib, "System.Threading.Tasks", "Task");
+	MonoClass* task_class = mono_class_load_from_name (mono_get_corlib (), "System.Threading.Tasks", "Task");
 	GPtrArray* array = mono_class_get_methods_by_name (task_class, "NotifyDebuggerOfWaitCompletion", 0x24, 1, FALSE, error);
 	mono_error_assert_ok (error);
 	g_assert (array->len == 1);
@@ -1733,7 +1733,7 @@ mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
 {
 	int size;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		addr = *(gpointer*)addr;
 		if (!addr)
 			return ERR_INVALID_OBJECT;

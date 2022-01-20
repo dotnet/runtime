@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
                 var res = funcDelegate (10, 20);
-                for (x = 0; x < 1000; x++)
+                for (let x = 0; x < 1000; x++)
                 {
                     res = funcDelegate (10, 20);
                 }
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Runtime.InvokeJS(@"
                 var funcDelegate = App.call_test_method (""CreateFunctionDelegate"", [  ]);
                 var res = funcDelegate (10, 20);
-                for (x = 0; x < 1000; x++)
+                for (let x = 0; x < 1000; x++)
                 {
                     res = funcDelegate (x, x);
                 }

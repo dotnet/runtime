@@ -257,9 +257,7 @@ namespace System.Diagnostics
                     {
                         if (s_symbolFilePath == null)
                         {
-                            string tempPath;
-
-                            tempPath = Path.GetTempPath();
+                            Path.GetTempPath();
 
                             try
                             {
@@ -369,8 +367,12 @@ namespace System.Diagnostics
 
             if (!categoryExists)
             {
-                // Consider adding diagnostic logic here, may be we can dump the nameTable...
-                throw new InvalidOperationException(SR.MissingCategory);
+#if DEBUG
+                string categories = "Categories: " + string.Join(';', library.GetCategories());
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category) + "\r\n" + categories);
+#else
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
+#endif
             }
 
             return counterExists;
@@ -792,7 +794,7 @@ namespace System.Diagnostics
             help = library.GetCategoryHelp(category);
 
             if (help == null)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return help;
         }
@@ -823,7 +825,7 @@ namespace System.Diagnostics
                 }
             }
             if (sample == null)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return sample;
         }
@@ -834,13 +836,11 @@ namespace System.Diagnostics
             if (entry == null)
                 return null;
 
-            CategorySample sample = null;
             byte[] dataRef = GetPerformanceData(entry.NameIndex.ToString(CultureInfo.InvariantCulture), usePool: true);
             if (dataRef == null)
                 throw new InvalidOperationException(SR.Format(SR.CantReadCategory, category));
 
-            sample = new CategorySample(dataRef, entry, this);
-            return sample;
+            return new CategorySample(dataRef, entry, this);
         }
 
         internal static string[] GetCounters(string machine, string category)
@@ -864,7 +864,7 @@ namespace System.Diagnostics
             }
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.MissingCategory);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return counters;
         }
@@ -929,7 +929,7 @@ namespace System.Diagnostics
             help = library.GetCounterHelp(category, counter, ref categoryExists);
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.Format(SR.MissingCategoryDetail, category));
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 
             return help;
         }
@@ -1165,17 +1165,13 @@ namespace System.Diagnostics
 
         private bool IsCustomCategory(string category)
         {
-            PerformanceCounterCategoryType categoryType;
-
-            return FindCustomCategory(category, out categoryType);
+            return FindCustomCategory(category, out _);
         }
 
         internal static PerformanceCounterCategoryType GetCategoryType(string machine, string category)
         {
-            PerformanceCounterCategoryType categoryType = PerformanceCounterCategoryType.Unknown;
-
             PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
-            if (!library.FindCustomCategory(category, out categoryType))
+            if (!library.FindCustomCategory(category, out PerformanceCounterCategoryType categoryType))
             {
                 if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
                 {
@@ -1229,7 +1225,7 @@ namespace System.Diagnostics
             else
                 processStartInfo.FileName = Environment.SystemDirectory + "\\lodctr.exe";
 
-            int res = 0;
+            int res;
             try
             {
                 processStartInfo.Arguments = "\"" + arg0 + "\"";
@@ -1320,7 +1316,6 @@ namespace System.Diagnostics
         {
             int waitRetries = 17;   //2^16*10ms == approximately 10mins
             int waitSleep = 0;
-            byte[] data = null;
             int error = 0;
 
             // no need to revert here since we'll fall off the end of the method
@@ -1328,8 +1323,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    data = perfDataKey.GetValue(item, usePool);
-                    return data;
+                    return perfDataKey.GetValue(item, usePool);
                 }
                 catch (IOException e)
                 {

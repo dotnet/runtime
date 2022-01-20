@@ -11,8 +11,6 @@
     <TestArchitectures>$(TargetArchitecture)</TestArchitectures>
     <TestInfraTargetFramework>$(NetCoreAppToolCurrent)</TestInfraTargetFramework>
     <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
-    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' != 'true'">$(TestRunnerAdditionalArguments) -notrait category=FlakyAppHostTests</TestRunnerAdditionalArguments>
-    <TestRunnerAdditionalArguments Condition="'$(RunOnStaging)' == 'true'">$(TestRunnerAdditionalArguments) -trait category=FlakyAppHostTests</TestRunnerAdditionalArguments>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 

@@ -11,8 +11,10 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     64      // Upper bound to let the code generator to loop unroll InitBlk.
+  #define CPBLK_UNROLL_LIMIT       64     // Upper bound to let the code generator to loop unroll CpBlk
+  #define CPBLK_LCL_UNROLL_LIMIT   128    // Upper bound to let the code generator to loop unroll CpBlk (when both srcAddr and dstAddr point to the stack)
+  #define INITBLK_UNROLL_LIMIT     64     // Upper bound to let the code generator to loop unroll InitBlk
+  #define INITBLK_LCL_UNROLL_LIMIT 128    // Upper bound to let the code generator to loop unroll InitBlk (when dstAddr points to the stack)
 
 #ifdef FEATURE_SIMD
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
@@ -73,9 +75,6 @@
 
   #define REG_DEFAULT_HELPER_CALL_TARGET REG_R12
   #define RBM_DEFAULT_HELPER_CALL_TARGET RBM_R12
-
-  #define REG_FASTTAILCALL_TARGET REG_IP0   // Target register for fast tail call
-  #define RBM_FASTTAILCALL_TARGET RBM_IP0
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
   #define RBM_ALLFLOAT            (RBM_FLT_CALLEE_SAVED | RBM_FLT_CALLEE_TRASH)

@@ -67,10 +67,9 @@ namespace System
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
-            ResolveTokenError error;
             if (value == IntPtr.Zero)
                 throw new ArgumentNullException(string.Empty, "Invalid handle");
-            IntPtr res = RuntimeModule.ResolveTypeToken(value, typeToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out error);
+            IntPtr res = RuntimeModule.ResolveTypeToken(value, typeToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out _);
             if (res == IntPtr.Zero)
                 throw new TypeLoadException(string.Format("Could not load type '0x{0:x}' from assembly '0x{1:x}'", typeToken, value.ToInt64()));
             else
@@ -80,10 +79,9 @@ namespace System
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
-            ResolveTokenError error;
             if (value == IntPtr.Zero)
                 throw new ArgumentNullException(string.Empty, "Invalid handle");
-            IntPtr res = RuntimeModule.ResolveMethodToken(value, methodToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out error);
+            IntPtr res = RuntimeModule.ResolveMethodToken(value, methodToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out _);
             if (res == IntPtr.Zero)
                 throw new Exception(string.Format("Could not load method '0x{0:x}' from assembly '0x{1:x}'", methodToken, value.ToInt64()));
             else
@@ -93,11 +91,10 @@ namespace System
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
-            ResolveTokenError error;
             if (value == IntPtr.Zero)
                 throw new ArgumentNullException(string.Empty, "Invalid handle");
 
-            IntPtr res = RuntimeModule.ResolveFieldToken(value, fieldToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out error);
+            IntPtr res = RuntimeModule.ResolveFieldToken(value, fieldToken, ptrs_from_handles(typeInstantiationContext), ptrs_from_handles(methodInstantiationContext), out _);
             if (res == IntPtr.Zero)
                 throw new Exception(string.Format("Could not load field '0x{0:x}' from assembly '0x{1:x}'", fieldToken, value.ToInt64()));
             else

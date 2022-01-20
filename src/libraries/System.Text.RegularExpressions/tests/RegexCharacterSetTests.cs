@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
 
@@ -12,277 +13,325 @@ namespace System.Text.RegularExpressions.Tests
     [OuterLoop]
     public class RegexCharacterSetTests
     {
+        public static IEnumerable<object[]> SetInclusionsExpected_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"a", RegexOptions.IgnoreCase, new[] { 'a', 'A' } };
+                yield return new object[] { engine, @"ac", RegexOptions.None, new[] { 'a', 'c' } };
+                yield return new object[] { engine, @"ace", RegexOptions.None, new[] { 'a', 'c', 'e' } };
+                yield return new object[] { engine, @"aceg", RegexOptions.None, new[] { 'a', 'c', 'e', 'g' } };
+                yield return new object[] { engine, @"aceg", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'c', 'C', 'e', 'E', 'g', 'G' } };
+                yield return new object[] { engine, @"\u00A9", RegexOptions.None, new[] { '\u00A9' } };
+                yield return new object[] { engine, @"\u00A9", RegexOptions.IgnoreCase, new[] { '\u00A9' } };
+                yield return new object[] { engine, @"\u00FD\u00FF", RegexOptions.None, new[] { '\u00FD', '\u00FF' } };
+                yield return new object[] { engine, @"\u00FE\u0080", RegexOptions.None, new[] { '\u00FE', '\u0080' } };
+                yield return new object[] { engine, @"\u0080\u0082", RegexOptions.None, new[] { '\u0080', '\u0082' } };
+                yield return new object[] { engine, @"az", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z' } };
+                yield return new object[] { engine, @"azY", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y' } };
+                yield return new object[] { engine, @"azY", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y' } };
+                yield return new object[] { engine, @"azY\u00A9", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9' } };
+                yield return new object[] { engine, @"azY\u00A9", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9' } };
+                yield return new object[] { engine, @"azY\u00A9\u05D0", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9', '\u05D0' } };
+                yield return new object[] { engine, @"azY\u00A9\u05D0", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9', '\u05D0' } };
+                yield return new object[] { engine, @"a ", RegexOptions.None, new[] { 'a', ' ' } };
+                yield return new object[] { engine, @"a \t\r", RegexOptions.None, new[] { 'a', ' ', '\t', '\r' } };
+                yield return new object[] { engine, @"aeiou", RegexOptions.None, new[] { 'a', 'e', 'i', 'o', 'u' } };
+                yield return new object[] { engine, @"a-a", RegexOptions.None, new[] { 'a' } };
+                yield return new object[] { engine, @"ab", RegexOptions.None, new[] { 'a', 'b' } };
+                yield return new object[] { engine, @"a-b", RegexOptions.None, new[] { 'a', 'b' } };
+                yield return new object[] { engine, @"abc", RegexOptions.None, new[] { 'a', 'b', 'c' } };
+                yield return new object[] { engine, @"1369", RegexOptions.None, new[] { '1', '3', '6', '9' } };
+                yield return new object[] { engine, @"ACEGIKMOQSUWY", RegexOptions.None, new[] { 'A', 'C', 'E', 'G', 'I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y' } };
+                yield return new object[] { engine, @"abcAB", RegexOptions.None, new[] { 'A', 'B', 'a', 'b', 'c' } };
+                yield return new object[] { engine, @"a-c", RegexOptions.None, new[] { 'a', 'b', 'c' } };
+                yield return new object[] { engine, @"a-fA-F0-9", RegexOptions.None, new[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' } };
+                yield return new object[] { engine, @"X-b", RegexOptions.None, new[] { 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b' } };
+                yield return new object[] { engine, @"\u0083\u00DE-\u00E1", RegexOptions.None, new[] { '\u0083', '\u00DE', '\u00DF', '\u00E0', '\u00E1' } };
+                yield return new object[] { engine, @"\u007A-\u0083\u00DE-\u00E1", RegexOptions.None, new[] { '\u007A', '\u007B', '\u007C', '\u007D', '\u007E', '\u007F', '\u0080', '\u0081', '\u0082', '\u0083', '\u00DE', '\u00DF', '\u00E0', '\u00E1' } };
+                yield return new object[] { engine, @"\u05D0", RegexOptions.None, new[] { '\u05D0' } };
+                yield return new object[] { engine, @"a\u05D0", RegexOptions.None, new[] { 'a', '\u05D0' } };
+                yield return new object[] { engine, @"\uFFFC-\uFFFF", RegexOptions.None, new[] { '\uFFFC', '\uFFFD', '\uFFFE', '\uFFFF' } };
+                yield return new object[] { engine, @"[a-z-[d-w-[m-o]]]", RegexOptions.None, new[] { 'a', 'b', 'c', 'm', 'n', 'n', 'o', 'x', 'y', 'z' } };
+                yield return new object[] { engine, @"\p{IsBasicLatin}-[\x00-\x7F]", RegexOptions.None, new char[0] };
+                yield return new object[] { engine, @"[0-9-[2468]]", RegexOptions.None, new[] { '0', '1', '3', '5', '7', '9' } };
+            }
+        }
+
         [Theory]
-        [InlineData(@"a", RegexOptions.IgnoreCase, new[] { 'a', 'A' })]
-        [InlineData(@"ac", RegexOptions.None, new[] { 'a', 'c' })]
-        [InlineData(@"ace", RegexOptions.None, new[] { 'a', 'c', 'e' })]
-        [InlineData(@"aceg", RegexOptions.None, new[] { 'a', 'c', 'e', 'g' })]
-        [InlineData(@"aceg", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'c', 'C', 'e', 'E', 'g', 'G' })]
-        [InlineData(@"\u00A9", RegexOptions.None, new[] { '\u00A9' })]
-        [InlineData(@"\u00A9", RegexOptions.IgnoreCase, new[] { '\u00A9' })]
-        [InlineData(@"\u00FD\u00FF", RegexOptions.None, new[] { '\u00FD', '\u00FF' })]
-        [InlineData(@"\u00FE\u0080", RegexOptions.None, new[] { '\u00FE', '\u0080' })]
-        [InlineData(@"\u0080\u0082", RegexOptions.None, new[] { '\u0080', '\u0082' })]
-        [InlineData(@"az", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z' })]
-        [InlineData(@"azY", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y' })]
-        [InlineData(@"azY", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y' })]
-        [InlineData(@"azY\u00A9", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9' })]
-        [InlineData(@"azY\u00A9", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9' })]
-        [InlineData(@"azY\u00A9\u05D0", RegexOptions.IgnoreCase, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9', '\u05D0' })]
-        [InlineData(@"azY\u00A9\u05D0", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, new[] { 'a', 'A', 'z', 'Z', 'y', 'Y', '\u00A9', '\u05D0' })]
-        [InlineData(@"a ", RegexOptions.None, new[] { 'a', ' ' })]
-        [InlineData(@"a \t\r", RegexOptions.None, new[] { 'a', ' ', '\t', '\r' })]
-        [InlineData(@"aeiou", RegexOptions.None, new[] { 'a', 'e', 'i', 'o', 'u' })]
-        [InlineData(@"a-a", RegexOptions.None, new[] { 'a' })]
-        [InlineData(@"ab", RegexOptions.None, new[] { 'a', 'b' })]
-        [InlineData(@"a-b", RegexOptions.None, new[] { 'a', 'b' })]
-        [InlineData(@"abc", RegexOptions.None, new[] { 'a', 'b', 'c' })]
-        [InlineData(@"1369", RegexOptions.None, new[] { '1', '3', '6', '9' })]
-        [InlineData(@"ACEGIKMOQSUWY", RegexOptions.None, new[] { 'A', 'C', 'E', 'G', 'I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y' })]
-        [InlineData(@"abcAB", RegexOptions.None, new[] { 'A', 'B', 'a', 'b', 'c' })]
-        [InlineData(@"a-c", RegexOptions.None, new[] { 'a', 'b', 'c' })]
-        [InlineData(@"a-fA-F0-9", RegexOptions.None, new[] { 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' })]
-        [InlineData(@"X-b", RegexOptions.None, new[] { 'X', 'Y', 'Z', '[', '\\', ']', '^', '_', '`', 'a', 'b' })]
-        [InlineData(@"\u0083\u00DE-\u00E1", RegexOptions.None, new[] { '\u0083', '\u00DE', '\u00DF', '\u00E0', '\u00E1' })]
-        [InlineData(@"\u007A-\u0083\u00DE-\u00E1", RegexOptions.None, new[] { '\u007A', '\u007B', '\u007C', '\u007D', '\u007E', '\u007F', '\u0080', '\u0081', '\u0082', '\u0083', '\u00DE', '\u00DF', '\u00E0', '\u00E1' })]
-        [InlineData(@"\u05D0", RegexOptions.None, new[] { '\u05D0' })]
-        [InlineData(@"a\u05D0", RegexOptions.None, new[] { 'a', '\u05D0' })]
-        [InlineData(@"\uFFFC-\uFFFF", RegexOptions.None, new[] { '\uFFFC', '\uFFFD', '\uFFFE', '\uFFFF' })]
-        [InlineData(@"[a-z-[d-w-[m-o]]]", RegexOptions.None, new[] { 'a', 'b', 'c', 'm', 'n', 'n', 'o', 'x', 'y', 'z' })]
-        [InlineData(@"\p{IsBasicLatin}-[\x00-\x7F]", RegexOptions.None, new char[0])]
-        [InlineData(@"[0-9-[2468]]", RegexOptions.None, new[] { '0', '1', '3', '5', '7', '9' })]
-        public void SetInclusionsExpected(string set, RegexOptions options, char[] expectedIncluded)
+        [MemberData(nameof(SetInclusionsExpected_MemberData))]
+        public async Task SetInclusionsExpected(RegexEngine engine, string set, RegexOptions options, char[] expectedIncluded)
         {
             bool hasBracket = set.Contains("[");
             if (hasBracket)
             {
-                ValidateSet(set, options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
+                await ValidateSetAsync(engine, set, options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
             }
             else
             {
-                ValidateSet($"[{set}]", options, new HashSet<char>(expectedIncluded), null);
-                ValidateSet($"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
+                await ValidateSetAsync(engine, $"[{set}]", options, new HashSet<char>(expectedIncluded), null);
+                await ValidateSetAsync(engine, $"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
+            }
+        }
+
+        public static IEnumerable<object[]> SetExclusionsExpected_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"[^1234-[3456]]", RegexOptions.None, new[] { '1', '2', '3', '4', '5', '6' } };
             }
         }
 
         [Theory]
-        [InlineData(@"[^1234-[3456]]", RegexOptions.None, new[] { '1', '2', '3', '4', '5', '6' })]
-        public void SetExclusionsExpected(string set, RegexOptions options, char[] expectedExcluded)
+        [MemberData(nameof(SetExclusionsExpected_MemberData))]
+        public async Task SetExclusionsExpected(RegexEngine engine, string set, RegexOptions options, char[] expectedExcluded)
         {
-            ValidateSet(set, options, null, new HashSet<char>(expectedExcluded), validateEveryChar: true);
+            await ValidateSetAsync(engine, set, options, null, new HashSet<char>(expectedExcluded), validateEveryChar: true);
+        }
+
+        public static IEnumerable<object[]> SingleExpected_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, '\0' };
+                yield return new object[] { engine, '\uFFFF' };
+                yield return new object[] { engine, 'a' };
+                yield return new object[] { engine, '5' };
+                yield return new object[] { engine, '\u00FF' };
+                yield return new object[] { engine, '\u0080' };
+                yield return new object[] { engine, '\u0100' };
+            }
         }
 
         [Theory]
-        [InlineData('\0')]
-        [InlineData('\uFFFF')]
-        [InlineData('a')]
-        [InlineData('5')]
-        [InlineData('\u00FF')]
-        [InlineData('\u0080')]
-        [InlineData('\u0100')]
-        public void SingleExpected(char c)
+        [MemberData(nameof(SingleExpected_MemberData))]
+        public async Task SingleExpected(RegexEngine engine, char c)
         {
             string s = $@"\u{(int)c:X4}";
             var set = new HashSet<char>() { c };
 
             // One
-            ValidateSet($"{s}", RegexOptions.None, set, null);
-            ValidateSet($"[{s}]", RegexOptions.None, set, null);
-            ValidateSet($"[^{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync(engine, $"{s}", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, $"[{s}]", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, $"[^{s}]", RegexOptions.None, null, set);
 
-            // Positive lookahead
-            ValidateSet($"(?={s}){s}", RegexOptions.None, set, null);
-            ValidateSet($"(?=[^{s}])[^{s}]", RegexOptions.None, null, set);
+            if (!RegexHelpers.IsNonBacktracking(engine))
+            {
+                // Positive lookahead
+                await ValidateSetAsync(engine, $"(?={s}){s}", RegexOptions.None, set, null);
+                await ValidateSetAsync(engine, $"(?=[^{s}])[^{s}]", RegexOptions.None, null, set);
 
-            // Negative lookahead
-            ValidateSet($"(?![^{s}]){s}", RegexOptions.None, set, null);
-            ValidateSet($"(?![{s}])[^{s}]", RegexOptions.None, null, set);
+                // Negative lookahead
+                await ValidateSetAsync(engine, $"(?![^{s}]){s}", RegexOptions.None, set, null);
+                await ValidateSetAsync(engine, $"(?![{s}])[^{s}]", RegexOptions.None, null, set);
+            }
 
             // Concatenation
-            ValidateSet($"[{s}{s}]", RegexOptions.None, set, null);
-            ValidateSet($"[^{s}{s}{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync(engine, $"[{s}{s}]", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, $"[^{s}{s}{s}]", RegexOptions.None, null, set);
 
             // Alternation
-            ValidateSet($"{s}|{s}", RegexOptions.None, set, null);
-            ValidateSet($"[^{s}]|[^{s}]|[^{s}]", RegexOptions.None, null, set);
-            ValidateSet($"{s}|[^{s}]", RegexOptions.None, null, new HashSet<char>());
+            await ValidateSetAsync(engine, $"{s}|{s}", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, $"[^{s}]|[^{s}]|[^{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync(engine, $"{s}|[^{s}]", RegexOptions.None, null, new HashSet<char>());
         }
 
-        [Fact]
-        public void AllEmptySets()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task AllEmptySets(RegexEngine engine)
         {
             var set = new HashSet<char>();
 
-            ValidateSet(@"[\u0000-\uFFFF]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
+            await ValidateSetAsync(engine, @"[\u0000-\uFFFF]", RegexOptions.None, null, set);
+            await ValidateSetAsync(engine, @"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
+            await ValidateSetAsync(engine, @"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
+            await ValidateSetAsync(engine, @"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
 
-            ValidateSet(@"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
-        }
-
-        [Fact]
-        public void AllButOneSets()
-        {
-            ValidateSet(@"[\u0000-\uFFFE]", RegexOptions.None, null, new HashSet<char>() { '\uFFFF' });
-            ValidateSet(@"[\u0001-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { '\u0000' });
-            ValidateSet(@"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true);
-        }
-
-        [Fact]
-        public void DotInclusionsExpected()
-        {
-            ValidateSet(".", RegexOptions.None, null, new HashSet<char>() { '\n' });
-            ValidateSet(".", RegexOptions.IgnoreCase, null, new HashSet<char>() { '\n' });
-            ValidateSet(".", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>() { '\n' }, validateEveryChar: true);
-
-            ValidateSet(".", RegexOptions.Singleline, null, new HashSet<char>());
-            ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase, null, new HashSet<char>());
-            ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>(), validateEveryChar: true);
-        }
-
-        [Fact]
-        public void WhitespaceInclusionsExpected()
-        {
-            var whitespaceInclusions = ComputeIncludedSet(char.IsWhiteSpace);
-            ValidateSet(@"[\s]", RegexOptions.None, whitespaceInclusions, null);
-            ValidateSet(@"[^\s]", RegexOptions.None, null, whitespaceInclusions);
-            ValidateSet(@"[\S]", RegexOptions.None, null, whitespaceInclusions);
-        }
-
-        [Fact]
-        public void DigitInclusionsExpected()
-        {
-            var digitInclusions = ComputeIncludedSet(char.IsDigit);
-            ValidateSet(@"[\d]", RegexOptions.None, digitInclusions, null);
-            ValidateSet(@"[^\d]", RegexOptions.None, null, digitInclusions);
-            ValidateSet(@"[\D]", RegexOptions.None, null, digitInclusions);
+            await ValidateSetAsync(engine, @"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, @"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, @"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
+            await ValidateSetAsync(engine, @"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
         }
 
         [Theory]
-        [InlineData(@"\p{Lu}", new[] { UnicodeCategory.UppercaseLetter })]
-        [InlineData(@"\p{S}", new[] { UnicodeCategory.CurrencySymbol, UnicodeCategory.MathSymbol, UnicodeCategory.ModifierSymbol, UnicodeCategory.OtherSymbol })]
-        [InlineData(@"\p{Lu}\p{Zl}", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LineSeparator })]
-        [InlineData(@"\w", new[] { UnicodeCategory.LowercaseLetter, UnicodeCategory.UppercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.OtherLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.NonSpacingMark, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.ConnectorPunctuation })]
-        public void UnicodeCategoryInclusionsExpected(string set, UnicodeCategory[] categories)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task AllButOneSets(RegexEngine engine)
         {
-            var categoryInclusions = ComputeIncludedSet(c => Array.IndexOf(categories, char.GetUnicodeCategory(c)) >= 0);
-            ValidateSet($"[{set}]", RegexOptions.None, categoryInclusions, null);
-            ValidateSet($"[^{set}]", RegexOptions.None, null, categoryInclusions);
+            await ValidateSetAsync(engine, @"[\u0000-\uFFFE]", RegexOptions.None, null, new HashSet<char>() { '\uFFFF' });
+            await ValidateSetAsync(engine, @"[\u0001-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { '\u0000' });
+            await ValidateSetAsync(engine, @"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true);
         }
 
         [Theory]
-        [InlineData(@"\p{IsBasicLatin}", new[] { 0x0000, 0x007F })]
-        [InlineData(@"\p{IsLatin-1Supplement}", new[] { 0x0080, 0x00FF })]
-        [InlineData(@"\p{IsLatinExtended-A}", new[] { 0x0100, 0x017F })]
-        [InlineData(@"\p{IsLatinExtended-B}", new[] { 0x0180, 0x024F })]
-        [InlineData(@"\p{IsIPAExtensions}", new[] { 0x0250, 0x02AF })]
-        [InlineData(@"\p{IsSpacingModifierLetters}", new[] { 0x02B0, 0x02FF })]
-        [InlineData(@"\p{IsCombiningDiacriticalMarks}", new[] { 0x0300, 0x036F })]
-        [InlineData(@"\p{IsGreek}", new[] { 0x0370, 0x03FF })]
-        [InlineData(@"\p{IsCyrillic}", new[] { 0x0400, 0x04FF })]
-        [InlineData(@"\p{IsCyrillicSupplement}", new[] { 0x0500, 0x052F })]
-        [InlineData(@"\p{IsArmenian}", new[] { 0x0530, 0x058F })]
-        [InlineData(@"\p{IsHebrew}", new[] { 0x0590, 0x05FF })]
-        [InlineData(@"\p{IsArabic}", new[] { 0x0600, 0x06FF })]
-        [InlineData(@"\p{IsSyriac}", new[] { 0x0700, 0x074F })]
-        [InlineData(@"\p{IsThaana}", new[] { 0x0780, 0x07BF })]
-        [InlineData(@"\p{IsDevanagari}", new[] { 0x0900, 0x097F })]
-        [InlineData(@"\p{IsBengali}", new[] { 0x0980, 0x09FF })]
-        [InlineData(@"\p{IsGurmukhi}", new[] { 0x0A00, 0x0A7F })]
-        [InlineData(@"\p{IsGujarati}", new[] { 0x0A80, 0x0AFF })]
-        [InlineData(@"\p{IsOriya}", new[] { 0x0B00, 0x0B7F })]
-        [InlineData(@"\p{IsTamil}", new[] { 0x0B80, 0x0BFF })]
-        [InlineData(@"\p{IsTelugu}", new[] { 0x0C00, 0x0C7F })]
-        [InlineData(@"\p{IsKannada}", new[] { 0x0C80, 0x0CFF })]
-        [InlineData(@"\p{IsMalayalam}", new[] { 0x0D00, 0x0D7F })]
-        [InlineData(@"\p{IsSinhala}", new[] { 0x0D80, 0x0DFF })]
-        [InlineData(@"\p{IsThai}", new[] { 0x0E00, 0x0E7F })]
-        [InlineData(@"\p{IsLao}", new[] { 0x0E80, 0x0EFF })]
-        [InlineData(@"\p{IsTibetan}", new[] { 0x0F00, 0x0FFF })]
-        [InlineData(@"\p{IsMyanmar}", new[] { 0x1000, 0x109F })]
-        [InlineData(@"\p{IsGeorgian}", new[] { 0x10A0, 0x10FF })]
-        [InlineData(@"\p{IsHangulJamo}", new[] { 0x1100, 0x11FF })]
-        [InlineData(@"\p{IsEthiopic}", new[] { 0x1200, 0x137F })]
-        [InlineData(@"\p{IsCherokee}", new[] { 0x13A0, 0x13FF })]
-        [InlineData(@"\p{IsUnifiedCanadianAboriginalSyllabics}", new[] { 0x1400, 0x167F })]
-        [InlineData(@"\p{IsOgham}", new[] { 0x1680, 0x169F })]
-        [InlineData(@"\p{IsRunic}", new[] { 0x16A0, 0x16FF })]
-        [InlineData(@"\p{IsTagalog}", new[] { 0x1700, 0x171F })]
-        [InlineData(@"\p{IsHanunoo}", new[] { 0x1720, 0x173F })]
-        [InlineData(@"\p{IsBuhid}", new[] { 0x1740, 0x175F })]
-        [InlineData(@"\p{IsTagbanwa}", new[] { 0x1760, 0x177F })]
-        [InlineData(@"\p{IsKhmer}", new[] { 0x1780, 0x17FF })]
-        [InlineData(@"\p{IsMongolian}", new[] { 0x1800, 0x18AF })]
-        [InlineData(@"\p{IsLimbu}", new[] { 0x1900, 0x194F })]
-        [InlineData(@"\p{IsTaiLe}", new[] { 0x1950, 0x197F })]
-        [InlineData(@"\p{IsKhmerSymbols}", new[] { 0x19E0, 0x19FF })]
-        [InlineData(@"\p{IsPhoneticExtensions}", new[] { 0x1D00, 0x1D7F })]
-        [InlineData(@"\p{IsLatinExtendedAdditional}", new[] { 0x1E00, 0x1EFF })]
-        [InlineData(@"\p{IsGreekExtended}", new[] { 0x1F00, 0x1FFF })]
-        [InlineData(@"\p{IsGeneralPunctuation}", new[] { 0x2000, 0x206F })]
-        [InlineData(@"\p{IsSuperscriptsandSubscripts}", new[] { 0x2070, 0x209F })]
-        [InlineData(@"\p{IsCurrencySymbols}", new[] { 0x20A0, 0x20CF })]
-        [InlineData(@"\p{IsCombiningDiacriticalMarksforSymbols}", new[] { 0x20D0, 0x20FF })]
-        [InlineData(@"\p{IsLetterlikeSymbols}", new[] { 0x2100, 0x214F })]
-        [InlineData(@"\p{IsNumberForms}", new[] { 0x2150, 0x218F })]
-        [InlineData(@"\p{IsArrows}", new[] { 0x2190, 0x21FF })]
-        [InlineData(@"\p{IsMathematicalOperators}", new[] { 0x2200, 0x22FF })]
-        [InlineData(@"\p{IsMiscellaneousTechnical}", new[] { 0x2300, 0x23FF })]
-        [InlineData(@"\p{IsControlPictures}", new[] { 0x2400, 0x243F })]
-        [InlineData(@"\p{IsOpticalCharacterRecognition}", new[] { 0x2440, 0x245F })]
-        [InlineData(@"\p{IsEnclosedAlphanumerics}", new[] { 0x2460, 0x24FF })]
-        [InlineData(@"\p{IsBoxDrawing}", new[] { 0x2500, 0x257F })]
-        [InlineData(@"\p{IsBlockElements}", new[] { 0x2580, 0x259F })]
-        [InlineData(@"\p{IsGeometricShapes}", new[] { 0x25A0, 0x25FF })]
-        [InlineData(@"\p{IsMiscellaneousSymbols}", new[] { 0x2600, 0x26FF })]
-        [InlineData(@"\p{IsDingbats}", new[] { 0x2700, 0x27BF })]
-        [InlineData(@"\p{IsMiscellaneousMathematicalSymbols-A}", new[] { 0x27C0, 0x27EF })]
-        [InlineData(@"\p{IsSupplementalArrows-A}", new[] { 0x27F0, 0x27FF })]
-        [InlineData(@"\p{IsBraillePatterns}", new[] { 0x2800, 0x28FF })]
-        [InlineData(@"\p{IsSupplementalArrows-B}", new[] { 0x2900, 0x297F })]
-        [InlineData(@"\p{IsMiscellaneousMathematicalSymbols-B}", new[] { 0x2980, 0x29FF })]
-        [InlineData(@"\p{IsSupplementalMathematicalOperators}", new[] { 0x2A00, 0x2AFF })]
-        [InlineData(@"\p{IsMiscellaneousSymbolsandArrows}", new[] { 0x2B00, 0x2BFF })]
-        [InlineData(@"\p{IsCJKRadicalsSupplement}", new[] { 0x2E80, 0x2EFF })]
-        [InlineData(@"\p{IsKangxiRadicals}", new[] { 0x2F00, 0x2FDF })]
-        [InlineData(@"\p{IsIdeographicDescriptionCharacters}", new[] { 0x2FF0, 0x2FFF })]
-        [InlineData(@"\p{IsCJKSymbolsandPunctuation}", new[] { 0x3000, 0x303F })]
-        [InlineData(@"\p{IsHiragana}", new[] { 0x3040, 0x309F })]
-        [InlineData(@"\p{IsKatakana}", new[] { 0x30A0, 0x30FF })]
-        [InlineData(@"\p{IsBopomofo}", new[] { 0x3100, 0x312F })]
-        [InlineData(@"\p{IsHangulCompatibilityJamo}", new[] { 0x3130, 0x318F })]
-        [InlineData(@"\p{IsKanbun}", new[] { 0x3190, 0x319F })]
-        [InlineData(@"\p{IsBopomofoExtended}", new[] { 0x31A0, 0x31BF })]
-        [InlineData(@"\p{IsKatakanaPhoneticExtensions}", new[] { 0x31F0, 0x31FF })]
-        [InlineData(@"\p{IsEnclosedCJKLettersandMonths}", new[] { 0x3200, 0x32FF })]
-        [InlineData(@"\p{IsCJKCompatibility}", new[] { 0x3300, 0x33FF })]
-        [InlineData(@"\p{IsCJKUnifiedIdeographsExtensionA}", new[] { 0x3400, 0x4DBF })]
-        [InlineData(@"\p{IsYijingHexagramSymbols}", new[] { 0x4DC0, 0x4DFF })]
-        [InlineData(@"\p{IsCJKUnifiedIdeographs}", new[] { 0x4E00, 0x9FFF })]
-        [InlineData(@"\p{IsYiSyllables}", new[] { 0xA000, 0xA48F })]
-        [InlineData(@"\p{IsYiRadicals}", new[] { 0xA490, 0xA4CF })]
-        [InlineData(@"\p{IsHangulSyllables}", new[] { 0xAC00, 0xD7AF })]
-        [InlineData(@"\p{IsHighSurrogates}", new[] { 0xD800, 0xDB7F })]
-        [InlineData(@"\p{IsHighPrivateUseSurrogates}", new[] { 0xDB80, 0xDBFF })]
-        [InlineData(@"\p{IsLowSurrogates}", new[] { 0xDC00, 0xDFFF })]
-        [InlineData(@"\p{IsPrivateUse}", new[] { 0xE000, 0xF8FF })]
-        [InlineData(@"\p{IsCJKCompatibilityIdeographs}", new[] { 0xF900, 0xFAFF })]
-        [InlineData(@"\p{IsAlphabeticPresentationForms}", new[] { 0xFB00, 0xFB4F })]
-        [InlineData(@"\p{IsArabicPresentationForms-A}", new[] { 0xFB50, 0xFDFF })]
-        [InlineData(@"\p{IsVariationSelectors}", new[] { 0xFE00, 0xFE0F })]
-        [InlineData(@"\p{IsCombiningHalfMarks}", new[] { 0xFE20, 0xFE2F })]
-        [InlineData(@"\p{IsCJKCompatibilityForms}", new[] { 0xFE30, 0xFE4F })]
-        [InlineData(@"\p{IsSmallFormVariants}", new[] { 0xFE50, 0xFE6F })]
-        [InlineData(@"\p{IsArabicPresentationForms-B}", new[] { 0xFE70, 0xFEFF })]
-        [InlineData(@"\p{IsHalfwidthandFullwidthForms}", new[] { 0xFF00, 0xFFEF })]
-        [InlineData(@"\p{IsSpecials}", new[] { 0xFFF0, 0xFFFF })]
-        [InlineData(@"\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF })]
-        [InlineData(@"abx-z\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF, 'a', 'a', 'b', 'b', 'x', 'x', 'y', 'z' })]
-        public void NamedBlocksInclusionsExpected(string set, int[] ranges)
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task DotInclusionsExpected(RegexEngine engine)
+        {
+            await ValidateSetAsync(engine, ".", RegexOptions.None, null, new HashSet<char>() { '\n' });
+            await ValidateSetAsync(engine, ".", RegexOptions.IgnoreCase, null, new HashSet<char>() { '\n' });
+            await ValidateSetAsync(engine, ".", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>() { '\n' }, validateEveryChar: true);
+
+            await ValidateSetAsync(engine, ".", RegexOptions.Singleline, null, new HashSet<char>());
+            await ValidateSetAsync(engine, ".", RegexOptions.Singleline | RegexOptions.IgnoreCase, null, new HashSet<char>());
+            await ValidateSetAsync(engine, ".", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>(), validateEveryChar: true);
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task WhitespaceInclusionsExpected(RegexEngine engine)
+        {
+            HashSet<char> whitespaceInclusions = ComputeIncludedSet(char.IsWhiteSpace);
+            await ValidateSetAsync(engine, @"[\s]", RegexOptions.None, whitespaceInclusions, null);
+            await ValidateSetAsync(engine, @"[^\s]", RegexOptions.None, null, whitespaceInclusions);
+            await ValidateSetAsync(engine, @"[\S]", RegexOptions.None, null, whitespaceInclusions);
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task DigitInclusionsExpected(RegexEngine engine)
+        {
+            HashSet<char> digitInclusions = ComputeIncludedSet(char.IsDigit);
+            await ValidateSetAsync(engine, @"[\d]", RegexOptions.None, digitInclusions, null);
+            await ValidateSetAsync(engine, @"[^\d]", RegexOptions.None, null, digitInclusions);
+            await ValidateSetAsync(engine, @"[\D]", RegexOptions.None, null, digitInclusions);
+        }
+
+        public static IEnumerable<object[]> UnicodeCategoryInclusionsExpected_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"\p{Lu}", new[] { UnicodeCategory.UppercaseLetter } };
+                yield return new object[] { engine, @"\p{S}", new[] { UnicodeCategory.CurrencySymbol, UnicodeCategory.MathSymbol, UnicodeCategory.ModifierSymbol, UnicodeCategory.OtherSymbol } };
+                yield return new object[] { engine, @"\p{Lu}\p{Zl}", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LineSeparator } };
+                yield return new object[] { engine, @"\w", new[] { UnicodeCategory.LowercaseLetter, UnicodeCategory.UppercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.OtherLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.NonSpacingMark, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.ConnectorPunctuation } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(UnicodeCategoryInclusionsExpected_MemberData))]
+        public async Task UnicodeCategoryInclusionsExpected(RegexEngine engine, string set, UnicodeCategory[] categories)
+        {
+            HashSet<char> categoryInclusions = ComputeIncludedSet(c => Array.IndexOf(categories, char.GetUnicodeCategory(c)) >= 0);
+            await ValidateSetAsync(engine, $"[{set}]", RegexOptions.None, categoryInclusions, null);
+            await ValidateSetAsync(engine, $"[^{set}]", RegexOptions.None, null, categoryInclusions);
+        }
+
+        public static IEnumerable<object[]> NamedBlocksInclusionsExpected_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, @"\p{IsBasicLatin}", new[] { 0x0000, 0x007F } };
+                yield return new object[] { engine, @"\p{IsLatin-1Supplement}", new[] { 0x0080, 0x00FF } };
+                yield return new object[] { engine, @"\p{IsLatinExtended-A}", new[] { 0x0100, 0x017F } };
+                yield return new object[] { engine, @"\p{IsLatinExtended-B}", new[] { 0x0180, 0x024F } };
+                yield return new object[] { engine, @"\p{IsIPAExtensions}", new[] { 0x0250, 0x02AF } };
+                yield return new object[] { engine, @"\p{IsSpacingModifierLetters}", new[] { 0x02B0, 0x02FF } };
+                yield return new object[] { engine, @"\p{IsCombiningDiacriticalMarks}", new[] { 0x0300, 0x036F } };
+                yield return new object[] { engine, @"\p{IsGreek}", new[] { 0x0370, 0x03FF } };
+                yield return new object[] { engine, @"\p{IsCyrillic}", new[] { 0x0400, 0x04FF } };
+                yield return new object[] { engine, @"\p{IsCyrillicSupplement}", new[] { 0x0500, 0x052F } };
+                yield return new object[] { engine, @"\p{IsArmenian}", new[] { 0x0530, 0x058F } };
+                yield return new object[] { engine, @"\p{IsHebrew}", new[] { 0x0590, 0x05FF } };
+                yield return new object[] { engine, @"\p{IsArabic}", new[] { 0x0600, 0x06FF } };
+                yield return new object[] { engine, @"\p{IsSyriac}", new[] { 0x0700, 0x074F } };
+                yield return new object[] { engine, @"\p{IsThaana}", new[] { 0x0780, 0x07BF } };
+                yield return new object[] { engine, @"\p{IsDevanagari}", new[] { 0x0900, 0x097F } };
+                yield return new object[] { engine, @"\p{IsBengali}", new[] { 0x0980, 0x09FF } };
+                yield return new object[] { engine, @"\p{IsGurmukhi}", new[] { 0x0A00, 0x0A7F } };
+                yield return new object[] { engine, @"\p{IsGujarati}", new[] { 0x0A80, 0x0AFF } };
+                yield return new object[] { engine, @"\p{IsOriya}", new[] { 0x0B00, 0x0B7F } };
+                yield return new object[] { engine, @"\p{IsTamil}", new[] { 0x0B80, 0x0BFF } };
+                yield return new object[] { engine, @"\p{IsTelugu}", new[] { 0x0C00, 0x0C7F } };
+                yield return new object[] { engine, @"\p{IsKannada}", new[] { 0x0C80, 0x0CFF } };
+                yield return new object[] { engine, @"\p{IsMalayalam}", new[] { 0x0D00, 0x0D7F } };
+                yield return new object[] { engine, @"\p{IsSinhala}", new[] { 0x0D80, 0x0DFF } };
+                yield return new object[] { engine, @"\p{IsThai}", new[] { 0x0E00, 0x0E7F } };
+                yield return new object[] { engine, @"\p{IsLao}", new[] { 0x0E80, 0x0EFF } };
+                yield return new object[] { engine, @"\p{IsTibetan}", new[] { 0x0F00, 0x0FFF } };
+                yield return new object[] { engine, @"\p{IsMyanmar}", new[] { 0x1000, 0x109F } };
+                yield return new object[] { engine, @"\p{IsGeorgian}", new[] { 0x10A0, 0x10FF } };
+                yield return new object[] { engine, @"\p{IsHangulJamo}", new[] { 0x1100, 0x11FF } };
+                yield return new object[] { engine, @"\p{IsEthiopic}", new[] { 0x1200, 0x137F } };
+                yield return new object[] { engine, @"\p{IsCherokee}", new[] { 0x13A0, 0x13FF } };
+                yield return new object[] { engine, @"\p{IsUnifiedCanadianAboriginalSyllabics}", new[] { 0x1400, 0x167F } };
+                yield return new object[] { engine, @"\p{IsOgham}", new[] { 0x1680, 0x169F } };
+                yield return new object[] { engine, @"\p{IsRunic}", new[] { 0x16A0, 0x16FF } };
+                yield return new object[] { engine, @"\p{IsTagalog}", new[] { 0x1700, 0x171F } };
+                yield return new object[] { engine, @"\p{IsHanunoo}", new[] { 0x1720, 0x173F } };
+                yield return new object[] { engine, @"\p{IsBuhid}", new[] { 0x1740, 0x175F } };
+                yield return new object[] { engine, @"\p{IsTagbanwa}", new[] { 0x1760, 0x177F } };
+                yield return new object[] { engine, @"\p{IsKhmer}", new[] { 0x1780, 0x17FF } };
+                yield return new object[] { engine, @"\p{IsMongolian}", new[] { 0x1800, 0x18AF } };
+                yield return new object[] { engine, @"\p{IsLimbu}", new[] { 0x1900, 0x194F } };
+                yield return new object[] { engine, @"\p{IsTaiLe}", new[] { 0x1950, 0x197F } };
+                yield return new object[] { engine, @"\p{IsKhmerSymbols}", new[] { 0x19E0, 0x19FF } };
+                yield return new object[] { engine, @"\p{IsPhoneticExtensions}", new[] { 0x1D00, 0x1D7F } };
+                yield return new object[] { engine, @"\p{IsLatinExtendedAdditional}", new[] { 0x1E00, 0x1EFF } };
+                yield return new object[] { engine, @"\p{IsGreekExtended}", new[] { 0x1F00, 0x1FFF } };
+                yield return new object[] { engine, @"\p{IsGeneralPunctuation}", new[] { 0x2000, 0x206F } };
+                yield return new object[] { engine, @"\p{IsSuperscriptsandSubscripts}", new[] { 0x2070, 0x209F } };
+                yield return new object[] { engine, @"\p{IsCurrencySymbols}", new[] { 0x20A0, 0x20CF } };
+                yield return new object[] { engine, @"\p{IsCombiningDiacriticalMarksforSymbols}", new[] { 0x20D0, 0x20FF } };
+                yield return new object[] { engine, @"\p{IsLetterlikeSymbols}", new[] { 0x2100, 0x214F } };
+                yield return new object[] { engine, @"\p{IsNumberForms}", new[] { 0x2150, 0x218F } };
+                yield return new object[] { engine, @"\p{IsArrows}", new[] { 0x2190, 0x21FF } };
+                yield return new object[] { engine, @"\p{IsMathematicalOperators}", new[] { 0x2200, 0x22FF } };
+                yield return new object[] { engine, @"\p{IsMiscellaneousTechnical}", new[] { 0x2300, 0x23FF } };
+                yield return new object[] { engine, @"\p{IsControlPictures}", new[] { 0x2400, 0x243F } };
+                yield return new object[] { engine, @"\p{IsOpticalCharacterRecognition}", new[] { 0x2440, 0x245F } };
+                yield return new object[] { engine, @"\p{IsEnclosedAlphanumerics}", new[] { 0x2460, 0x24FF } };
+                yield return new object[] { engine, @"\p{IsBoxDrawing}", new[] { 0x2500, 0x257F } };
+                yield return new object[] { engine, @"\p{IsBlockElements}", new[] { 0x2580, 0x259F } };
+                yield return new object[] { engine, @"\p{IsGeometricShapes}", new[] { 0x25A0, 0x25FF } };
+                yield return new object[] { engine, @"\p{IsMiscellaneousSymbols}", new[] { 0x2600, 0x26FF } };
+                yield return new object[] { engine, @"\p{IsDingbats}", new[] { 0x2700, 0x27BF } };
+                yield return new object[] { engine, @"\p{IsMiscellaneousMathematicalSymbols-A}", new[] { 0x27C0, 0x27EF } };
+                yield return new object[] { engine, @"\p{IsSupplementalArrows-A}", new[] { 0x27F0, 0x27FF } };
+                yield return new object[] { engine, @"\p{IsBraillePatterns}", new[] { 0x2800, 0x28FF } };
+                yield return new object[] { engine, @"\p{IsSupplementalArrows-B}", new[] { 0x2900, 0x297F } };
+                yield return new object[] { engine, @"\p{IsMiscellaneousMathematicalSymbols-B}", new[] { 0x2980, 0x29FF } };
+                yield return new object[] { engine, @"\p{IsSupplementalMathematicalOperators}", new[] { 0x2A00, 0x2AFF } };
+                yield return new object[] { engine, @"\p{IsMiscellaneousSymbolsandArrows}", new[] { 0x2B00, 0x2BFF } };
+                yield return new object[] { engine, @"\p{IsCJKRadicalsSupplement}", new[] { 0x2E80, 0x2EFF } };
+                yield return new object[] { engine, @"\p{IsKangxiRadicals}", new[] { 0x2F00, 0x2FDF } };
+                yield return new object[] { engine, @"\p{IsIdeographicDescriptionCharacters}", new[] { 0x2FF0, 0x2FFF } };
+                yield return new object[] { engine, @"\p{IsCJKSymbolsandPunctuation}", new[] { 0x3000, 0x303F } };
+                yield return new object[] { engine, @"\p{IsHiragana}", new[] { 0x3040, 0x309F } };
+                yield return new object[] { engine, @"\p{IsKatakana}", new[] { 0x30A0, 0x30FF } };
+                yield return new object[] { engine, @"\p{IsBopomofo}", new[] { 0x3100, 0x312F } };
+                yield return new object[] { engine, @"\p{IsHangulCompatibilityJamo}", new[] { 0x3130, 0x318F } };
+                yield return new object[] { engine, @"\p{IsKanbun}", new[] { 0x3190, 0x319F } };
+                yield return new object[] { engine, @"\p{IsBopomofoExtended}", new[] { 0x31A0, 0x31BF } };
+                yield return new object[] { engine, @"\p{IsKatakanaPhoneticExtensions}", new[] { 0x31F0, 0x31FF } };
+                yield return new object[] { engine, @"\p{IsEnclosedCJKLettersandMonths}", new[] { 0x3200, 0x32FF } };
+                yield return new object[] { engine, @"\p{IsCJKCompatibility}", new[] { 0x3300, 0x33FF } };
+                yield return new object[] { engine, @"\p{IsCJKUnifiedIdeographsExtensionA}", new[] { 0x3400, 0x4DBF } };
+                yield return new object[] { engine, @"\p{IsYijingHexagramSymbols}", new[] { 0x4DC0, 0x4DFF } };
+                yield return new object[] { engine, @"\p{IsCJKUnifiedIdeographs}", new[] { 0x4E00, 0x9FFF } };
+                yield return new object[] { engine, @"\p{IsYiSyllables}", new[] { 0xA000, 0xA48F } };
+                yield return new object[] { engine, @"\p{IsYiRadicals}", new[] { 0xA490, 0xA4CF } };
+                yield return new object[] { engine, @"\p{IsHangulSyllables}", new[] { 0xAC00, 0xD7AF } };
+                yield return new object[] { engine, @"\p{IsHighSurrogates}", new[] { 0xD800, 0xDB7F } };
+                yield return new object[] { engine, @"\p{IsHighPrivateUseSurrogates}", new[] { 0xDB80, 0xDBFF } };
+                yield return new object[] { engine, @"\p{IsLowSurrogates}", new[] { 0xDC00, 0xDFFF } };
+                yield return new object[] { engine, @"\p{IsPrivateUse}", new[] { 0xE000, 0xF8FF } };
+                yield return new object[] { engine, @"\p{IsCJKCompatibilityIdeographs}", new[] { 0xF900, 0xFAFF } };
+                yield return new object[] { engine, @"\p{IsAlphabeticPresentationForms}", new[] { 0xFB00, 0xFB4F } };
+                yield return new object[] { engine, @"\p{IsArabicPresentationForms-A}", new[] { 0xFB50, 0xFDFF } };
+                yield return new object[] { engine, @"\p{IsVariationSelectors}", new[] { 0xFE00, 0xFE0F } };
+                yield return new object[] { engine, @"\p{IsCombiningHalfMarks}", new[] { 0xFE20, 0xFE2F } };
+                yield return new object[] { engine, @"\p{IsCJKCompatibilityForms}", new[] { 0xFE30, 0xFE4F } };
+                yield return new object[] { engine, @"\p{IsSmallFormVariants}", new[] { 0xFE50, 0xFE6F } };
+                yield return new object[] { engine, @"\p{IsArabicPresentationForms-B}", new[] { 0xFE70, 0xFEFF } };
+                yield return new object[] { engine, @"\p{IsHalfwidthandFullwidthForms}", new[] { 0xFF00, 0xFFEF } };
+                yield return new object[] { engine, @"\p{IsSpecials}", new[] { 0xFFF0, 0xFFFF } };
+                yield return new object[] { engine, @"\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF } };
+                yield return new object[] { engine, @"abx-z\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF, 'a', 'a', 'b', 'b', 'x', 'x', 'y', 'z' } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NamedBlocksInclusionsExpected_MemberData))]
+        public async Task NamedBlocksInclusionsExpected(RegexEngine engine, string set, int[] ranges)
         {
             var included = new HashSet<char>();
             for (int i = 0; i < ranges.Length - 1; i += 2)
@@ -290,56 +339,62 @@ namespace System.Text.RegularExpressions.Tests
                 ComputeIncludedSet(c => c >= ranges[i] && c <= ranges[i + 1], included);
             }
 
-            ValidateSet($"[{set}]", RegexOptions.None, included, null);
-            ValidateSet($"[^{set}]", RegexOptions.None, null, included);
+            await ValidateSetAsync(engine, $"[{set}]", RegexOptions.None, included, null);
+            await ValidateSetAsync(engine, $"[^{set}]", RegexOptions.None, null, included);
+        }
+
+        public static IEnumerable<object[]> UnicodeCategoriesInclusionsExpected_MemberData()
+        {
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                yield return new object[] { engine, "Cc", UnicodeCategory.Control };
+                yield return new object[] { engine, "Cf", UnicodeCategory.Format };
+                yield return new object[] { engine, "Cn", UnicodeCategory.OtherNotAssigned };
+                yield return new object[] { engine, "Co", UnicodeCategory.PrivateUse };
+                yield return new object[] { engine, "Cs", UnicodeCategory.Surrogate };
+                yield return new object[] { engine, "Ll", UnicodeCategory.LowercaseLetter };
+                yield return new object[] { engine, "Lm", UnicodeCategory.ModifierLetter };
+                yield return new object[] { engine, "Lo", UnicodeCategory.OtherLetter };
+                yield return new object[] { engine, "Lt", UnicodeCategory.TitlecaseLetter };
+                yield return new object[] { engine, "Lu", UnicodeCategory.UppercaseLetter };
+                yield return new object[] { engine, "Mc", UnicodeCategory.SpacingCombiningMark };
+                yield return new object[] { engine, "Me", UnicodeCategory.EnclosingMark };
+                yield return new object[] { engine, "Mn", UnicodeCategory.NonSpacingMark };
+                yield return new object[] { engine, "Nd", UnicodeCategory.DecimalDigitNumber };
+                yield return new object[] { engine, "Nl", UnicodeCategory.LetterNumber };
+                yield return new object[] { engine, "No", UnicodeCategory.OtherNumber };
+                yield return new object[] { engine, "Pc", UnicodeCategory.ConnectorPunctuation };
+                yield return new object[] { engine, "Pd", UnicodeCategory.DashPunctuation };
+                yield return new object[] { engine, "Pe", UnicodeCategory.ClosePunctuation };
+                yield return new object[] { engine, "Po", UnicodeCategory.OtherPunctuation };
+                yield return new object[] { engine, "Ps", UnicodeCategory.OpenPunctuation };
+                yield return new object[] { engine, "Pf", UnicodeCategory.FinalQuotePunctuation };
+                yield return new object[] { engine, "Pi", UnicodeCategory.InitialQuotePunctuation };
+                yield return new object[] { engine, "Sc", UnicodeCategory.CurrencySymbol };
+                yield return new object[] { engine, "Sk", UnicodeCategory.ModifierSymbol };
+                yield return new object[] { engine, "Sm", UnicodeCategory.MathSymbol };
+                yield return new object[] { engine, "So", UnicodeCategory.OtherSymbol };
+                yield return new object[] { engine, "Zl", UnicodeCategory.LineSeparator };
+                yield return new object[] { engine, "Zp", UnicodeCategory.ParagraphSeparator };
+                yield return new object[] { engine, "Zs", UnicodeCategory.SpaceSeparator };
+            }
         }
 
         [Theory]
-        [InlineData("Cc", UnicodeCategory.Control)]
-        [InlineData("Cf", UnicodeCategory.Format)]
-        [InlineData("Cn", UnicodeCategory.OtherNotAssigned)]
-        [InlineData("Co", UnicodeCategory.PrivateUse)]
-        [InlineData("Cs", UnicodeCategory.Surrogate)]
-        [InlineData("Ll", UnicodeCategory.LowercaseLetter)]
-        [InlineData("Lm", UnicodeCategory.ModifierLetter)]
-        [InlineData("Lo", UnicodeCategory.OtherLetter)]
-        [InlineData("Lt", UnicodeCategory.TitlecaseLetter)]
-        [InlineData("Lu", UnicodeCategory.UppercaseLetter)]
-        [InlineData("Mc", UnicodeCategory.SpacingCombiningMark)]
-        [InlineData("Me", UnicodeCategory.EnclosingMark)]
-        [InlineData("Mn", UnicodeCategory.NonSpacingMark)]
-        [InlineData("Nd", UnicodeCategory.DecimalDigitNumber)]
-        [InlineData("Nl", UnicodeCategory.LetterNumber)]
-        [InlineData("No", UnicodeCategory.OtherNumber)]
-        [InlineData("Pc", UnicodeCategory.ConnectorPunctuation)]
-        [InlineData("Pd", UnicodeCategory.DashPunctuation)]
-        [InlineData("Pe", UnicodeCategory.ClosePunctuation)]
-        [InlineData("Po", UnicodeCategory.OtherPunctuation)]
-        [InlineData("Ps", UnicodeCategory.OpenPunctuation)]
-        [InlineData("Pf", UnicodeCategory.FinalQuotePunctuation)]
-        [InlineData("Pi", UnicodeCategory.InitialQuotePunctuation)]
-        [InlineData("Sc", UnicodeCategory.CurrencySymbol)]
-        [InlineData("Sk", UnicodeCategory.ModifierSymbol)]
-        [InlineData("Sm", UnicodeCategory.MathSymbol)]
-        [InlineData("So", UnicodeCategory.OtherSymbol)]
-        [InlineData("Zl", UnicodeCategory.LineSeparator)]
-        [InlineData("Zp", UnicodeCategory.ParagraphSeparator)]
-        [InlineData("Zs", UnicodeCategory.SpaceSeparator)]
-        public void UnicodeCategoriesInclusionsExpected(string generalCategory, UnicodeCategory unicodeCategory)
+        [MemberData(nameof(UnicodeCategoriesInclusionsExpected_MemberData))]
+        public async Task UnicodeCategoriesInclusionsExpected(RegexEngine engine, string generalCategory, UnicodeCategory unicodeCategory)
         {
-            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
-            {
-                Regex r;
-                char[] allChars = Enumerable.Range(0, char.MaxValue + 1).Select(i => (char)i).ToArray();
-                int expectedInCategory = allChars.Count(c => char.GetUnicodeCategory(c) == unicodeCategory);
-                int expectedNotInCategory = allChars.Length - expectedInCategory;
+            Regex r;
 
-                r = new Regex(@$"\p{{{generalCategory}}}");
-                Assert.Equal(expectedInCategory, r.Matches(string.Concat(allChars)).Count);
+            char[] allChars = Enumerable.Range(0, char.MaxValue + 1).Select(i => (char)i).ToArray();
+            int expectedInCategory = allChars.Count(c => char.GetUnicodeCategory(c) == unicodeCategory);
+            int expectedNotInCategory = allChars.Length - expectedInCategory;
 
-                r = new Regex(@$"\P{{{generalCategory}}}");
-                Assert.Equal(expectedNotInCategory, r.Matches(string.Concat(allChars)).Count);
-            }
+            r = await RegexHelpers.GetRegexAsync(engine, @$"\p{{{generalCategory}}}");
+            Assert.Equal(expectedInCategory, r.Matches(string.Concat(allChars)).Count);
+
+            r = await RegexHelpers.GetRegexAsync(engine, (@$"\P{{{generalCategory}}}"));
+            Assert.Equal(expectedNotInCategory, r.Matches(string.Concat(allChars)).Count);
         }
 
         [Theory]
@@ -374,14 +429,15 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [Fact]
-        public void ValidateValidateSet()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task ValidateValidateSet(RegexEngine engine)
         {
-            Assert.Throws<XunitException>(() => ValidateSet("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null));
-            Assert.Throws<XunitException>(() => ValidateSet("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null, validateEveryChar: true));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync(engine, "[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync(engine, "[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null, validateEveryChar: true));
 
-            Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }));
-            Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync(engine, "[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync(engine, "[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true));
         }
 
         [Fact]
@@ -423,44 +479,41 @@ namespace System.Text.RegularExpressions.Tests
             protected override void InitTrackCount() => throw new NotImplementedException();
         }
 
-        private static void ValidateSet(string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded, bool validateEveryChar = false)
+        private static async Task ValidateSetAsync(RegexEngine engine, string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded, bool validateEveryChar = false)
         {
             Assert.True((included != null) ^ (excluded != null));
 
-            foreach (RegexOptions compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
-            {
-                var r = new Regex(regex, options | compiled);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, regex, options);
 
-                if (validateEveryChar)
+            if (validateEveryChar)
+            {
+                for (int i = 0; i <= char.MaxValue; i++)
                 {
-                    for (int i = 0; i <= char.MaxValue; i++)
+                    bool actual = r.IsMatch(((char)i).ToString());
+                    bool expected = included != null ? included.Contains((char)i) : !excluded.Contains((char)i);
+                    if (actual != expected)
                     {
-                        bool actual = r.IsMatch(((char)i).ToString());
-                        bool expected = included != null ? included.Contains((char)i) : !excluded.Contains((char)i);
-                        if (actual != expected)
-                        {
-                            Fail(i);
-                        }
+                        Fail(i);
                     }
                 }
-                else if (included != null)
+            }
+            else if (included != null)
+            {
+                foreach (char c in included)
                 {
-                    foreach (char c in included)
+                    if (!r.IsMatch(c.ToString()))
                     {
-                        if (!r.IsMatch(c.ToString()))
-                        {
-                            Fail(c);
-                        }
+                        Fail(c);
                     }
                 }
-                else
+            }
+            else
+            {
+                foreach (char c in excluded)
                 {
-                    foreach (char c in excluded)
+                    if (r.IsMatch(c.ToString()))
                     {
-                        if (r.IsMatch(c.ToString()))
-                        {
-                            Fail(c);
-                        }
+                        Fail(c);
                     }
                 }
             }

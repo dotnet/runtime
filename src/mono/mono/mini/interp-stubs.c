@@ -114,6 +114,12 @@ stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpo
 	return FALSE;
 }
 
+static gboolean
+stub_run_finally_with_il_state (gpointer il_state, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+{
+	g_assert_not_reached ();
+}
+
 static void
 stub_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_data)
 {
@@ -155,7 +161,7 @@ stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 }
 
 static void
-stub_init_delegate (MonoDelegate *del, MonoError *error)
+stub_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **info, MonoError *error)
 {
 	g_assert_not_reached ();
 }
@@ -218,6 +224,32 @@ stub_mark_stack (gpointer thread_data, GcScanFunc func, gpointer gc_data, gboole
 static void
 stub_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 {
+}
+
+static gboolean
+stub_sufficient_stack (gsize size)
+{
+	g_assert_not_reached ();
+}
+
+static void
+stub_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod)
+{
+	g_assert_not_reached ();
+}
+
+static gpointer
+stub_get_interp_method (MonoMethod *method, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+static MonoJitInfo*
+stub_compile_interp_method (MonoMethod *method, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
 }
 
 #undef MONO_EE_CALLBACK

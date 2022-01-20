@@ -472,13 +472,13 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void ReceiveAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().ReceiveAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]
         public void SendAsync_NullAsyncEventArgs_Throws_ArgumentNull()
         {
-            Assert.Throws<ArgumentNullException>(() => GetSocket().SendAsync(null));
+            Assert.Throws<ArgumentNullException>(() => GetSocket().SendAsync((SocketAsyncEventArgs)null));
         }
 
         [Fact]

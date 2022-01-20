@@ -83,9 +83,6 @@ ADVANCE_MODULE:
     if  (!m_moduleIterator.Next())
         goto ADVANCE_ASSEMBLY;
 
-    if (GetCurrentModule()->IsResource())
-        goto ADVANCE_MODULE;
-
     if (m_mainMD->HasClassInstantiation())
     {
         m_typeIterator.Reset();

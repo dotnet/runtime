@@ -189,7 +189,7 @@ GenTree* MorphInitBlockHelper::Morph()
 //    with information about it.
 //
 // Notes:
-//    When assertion propogation is enabled this method kills assertions about the dst local,
+//    When assertion propagation is enabled this method kills assertions about the dst local,
 //    so the correctness depends on `IsLocalAddrExpr` recognizing all patterns.
 //
 void MorphInitBlockHelper::PrepareDst()
@@ -281,15 +281,11 @@ void MorphInitBlockHelper::PrepareDst()
         m_dstLclNum    = m_dstLclNode->GetLclNum();
         m_dstLclOffset = m_dstLclNode->GetLclOffs();
 
-#if LOCAL_ASSERTION_PROP
-
         // Kill everything about m_dstLclNum (and its field locals)
         if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
         {
             m_comp->fgKillDependentAssertions(m_dstLclNum DEBUGARG(m_asg));
         }
-
-#endif // LOCAL_ASSERTION_PROP
     }
 
 #if defined(DEBUG)
@@ -400,11 +396,11 @@ void MorphInitBlockHelper::MorphStructCases()
                 // then set doNotEnreg.
                 // TODO-1stClassStructs: remove it when we can represent narowing struct cast
                 // without taking address of the lcl.
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
             }
             else if (m_dstVarDsc->lvPromoted)
             {
-                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+                m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
             }
         }
     }
@@ -1014,12 +1010,12 @@ void MorphCopyBlockHelper::MorphStructCases()
         if (m_dst != m_dstLclNode)
         {
             // Mark it as DoNotEnregister.
-            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
         }
         else if (m_dstVarDsc->lvPromoted)
         {
             // Mark it as DoNotEnregister.
-            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
         else if (m_dst->IsMultiRegLclVar())
         {
@@ -1033,11 +1029,11 @@ void MorphCopyBlockHelper::MorphStructCases()
     {
         if (m_src != m_srcLclNode)
         {
-            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::CastTakesAddr));
         }
         else if (m_srcVarDsc->lvPromoted)
         {
-            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
     }
 }
@@ -1202,9 +1198,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             GenTree* addrOp = addrSpill->AsOp()->gtOp1;
             if (addrOp->IsLocal())
             {
-                unsigned lclVarNum                           = addrOp->AsLclVarCommon()->GetLclNum();
-                m_comp->lvaGetDesc(lclVarNum)->lvAddrExposed = true;
-                m_comp->lvaSetVarDoNotEnregister(lclVarNum DEBUGARG(Compiler::DNER_AddrExposed));
+                unsigned lclVarNum = addrOp->AsLclVarCommon()->GetLclNum();
+                m_comp->lvaGetDesc(lclVarNum)->SetAddressExposed(true DEBUGARG(AddressExposedReason::COPY_FLD_BY_FLD));
+                m_comp->lvaSetVarDoNotEnregister(lclVarNum DEBUGARG(DoNotEnregisterReason::AddrExposed));
             }
         }
     }
@@ -1259,9 +1255,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (i == 0)
+                        if (i == (fieldCnt - 1))
                         {
-                            // Use the orginal m_dstAddr tree when i == 0
+                            // Reuse the orginal m_dstAddr tree for the last field.
                             dstAddrClone = m_dstAddr;
                         }
                         else
@@ -1335,7 +1331,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     dstFld->AsLclFld()->SetFieldSeq(dstFldFldSeq);
 
                     // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
-                    m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(Compiler::DNER_LocalField));
+                    m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
 
                 // !!! The destination could be on stack. !!!
@@ -1381,9 +1377,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                     else
                     {
-                        if (i == 0)
+                        if (i == (fieldCnt - 1))
                         {
-                            // Use the orginal m_srcAddr tree when i == 0
+                            // Reuse the orginal m_srcAddr tree for the last field.
                             srcAddrClone = m_srcAddr;
                         }
                         else
@@ -1430,7 +1426,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);
                             m_srcLclNode->gtType = destType;
                             m_srcLclNode->AsLclFld()->SetFieldSeq(curFieldSeq);
-                            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_LocalField));
+                            m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                             srcFld = m_srcLclNode;
                             done   = true;
                         }
@@ -1465,7 +1461,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         srcFld->AsLclFld()->SetFieldSeq(srcFldFldSeq);
                         // TODO-1stClassStructs: remove this and implement reading a field from a struct in a
                         // reg.
-                        m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(Compiler::DNER_LocalField));
+                        m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                     }
                 }
             }
@@ -1480,15 +1476,13 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         // exposed. Neither liveness nor SSA are able to track this kind of indirect assignments.
         if (addrSpill && !m_dstDoFldAsg && m_dstLclNum != BAD_VAR_NUM)
         {
-            noway_assert(m_comp->lvaGetDesc(m_dstLclNum)->lvAddrExposed);
+            noway_assert(m_comp->lvaGetDesc(m_dstLclNum)->IsAddressExposed());
         }
 
-#if LOCAL_ASSERTION_PROP
         if (m_comp->optLocalAssertionProp)
         {
             m_comp->optAssertionGen(asgOneFld);
         }
-#endif // LOCAL_ASSERTION_PROP
 
         if (addrSpillAsg != nullptr)
         {

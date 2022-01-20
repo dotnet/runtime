@@ -164,6 +164,7 @@ namespace System.Drawing.PrimitivesTest
         [InlineData(float.MaxValue, float.MinValue, float.MaxValue, float.MinValue)]
         [InlineData(float.MinValue, float.MaxValue, float.MinValue, float.MaxValue)]
         [InlineData(0, 0, 0, 0)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60585", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void RectangleFConversionTest(float x, float y, float width, float height)
         {
             RectangleF rect = new RectangleF(x, y, width, height);

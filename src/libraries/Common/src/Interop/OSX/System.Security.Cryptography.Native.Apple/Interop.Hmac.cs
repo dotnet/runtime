@@ -9,35 +9,35 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFree")]
-        internal static extern void HmacFree(IntPtr handle);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFree")]
+        internal static partial void HmacFree(IntPtr handle);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCreate")]
-        internal static extern SafeHmacHandle HmacCreate(PAL_HashAlgorithm algorithm, ref int cbDigest);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCreate")]
+        internal static partial SafeHmacHandle HmacCreate(PAL_HashAlgorithm algorithm, ref int cbDigest);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacInit")]
-        internal static extern int HmacInit(SafeHmacHandle ctx, [In] byte[] pbKey, int cbKey);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacInit")]
+        internal static partial int HmacInit(SafeHmacHandle ctx, byte[] pbKey, int cbKey);
 
         internal static int HmacUpdate(SafeHmacHandle ctx, ReadOnlySpan<byte> data) =>
             HmacUpdate(ctx, ref MemoryMarshal.GetReference(data), data.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacUpdate")]
-        private static extern int HmacUpdate(SafeHmacHandle ctx, ref byte pbData, int cbData);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacUpdate")]
+        private static partial int HmacUpdate(SafeHmacHandle ctx, ref byte pbData, int cbData);
 
         internal static int HmacFinal(SafeHmacHandle ctx, ReadOnlySpan<byte> output) =>
             HmacFinal(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFinal")]
-        private static extern int HmacFinal(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFinal")]
+        private static partial int HmacFinal(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
 
         internal static int HmacCurrent(SafeHmacHandle ctx, ReadOnlySpan<byte> output) =>
             HmacCurrent(ctx, ref MemoryMarshal.GetReference(output), output.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCurrent")]
-        private static extern int HmacCurrent(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacCurrent")]
+        private static partial int HmacCurrent(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacOneShot")]
-        internal static unsafe extern int HmacOneShot(
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacOneShot")]
+        internal static unsafe partial int HmacOneShot(
             PAL_HashAlgorithm algorithm,
             byte* pKey,
             int cbKey,
@@ -45,7 +45,7 @@ internal static partial class Interop
             int cbData,
             byte* pOutput,
             int cbOutput,
-            out int cbDigest);
+            int* cbDigest);
     }
 }
 

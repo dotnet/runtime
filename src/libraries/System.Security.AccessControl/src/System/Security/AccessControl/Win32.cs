@@ -66,7 +66,7 @@ namespace System.Security.AccessControl
         // Wrapper around advapi32.GetSecurityInfo
         //
 
-        internal static int GetSecurityInfo(
+        internal static unsafe int GetSecurityInfo(
             ResourceType resourceType,
             string? name,
             SafeHandle? handle,
@@ -130,7 +130,7 @@ namespace System.Security.AccessControl
                     }
                     else
                     {
-                        errorCode = (int)Interop.Advapi32.GetSecurityInfoByHandle(handle, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
+                        errorCode = (int)Interop.Advapi32.GetSecurityInfoByHandle(handle, (uint)resourceType, (uint)SecurityInfos, &SidOwner, &SidGroup, &Dacl, &Sacl, &ByteArray);
                     }
                 }
                 else

@@ -16,7 +16,7 @@
 #include "mini-runtime.h"
 #include "llvm-jit.h"
 
-#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 600
+#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE)
 
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/Support/raw_ostream.h>
@@ -35,11 +35,7 @@
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Transforms/Scalar.h"
 
-#if LLVM_API_VERSION >= 800
 #include "llvm/CodeGen/BuiltinGCs.h"
-#else
-#include "llvm/CodeGen/GCs.h"
-#endif
 
 #if LLVM_API_VERSION >= 1100
 #include "llvm/InitializePasses.h"
@@ -64,11 +60,7 @@ mono_llvm_set_unhandled_exception_handler (void)
 // from the resulting binary.
 static void
 link_gc () {
-#if LLVM_API_VERSION >= 800
 	llvm::linkAllBuiltinGCs();
-#else
-	llvm::linkCoreCLRGC(); // Mono uses built-in "coreclr" GCStrategy
-#endif
 }
 
 template <typename T>
@@ -156,11 +148,7 @@ bool
 MonoLLVMMemoryManager::finalizeMemory(std::string *ErrMsg)
 {
 	for (sys::MemoryBlock &Block : PendingCodeMem) {
-#if LLVM_API_VERSION >= 900
 		sys::Memory::InvalidateInstructionCache (Block.base (), Block.allocatedSize ());
-#else
-		sys::Memory::InvalidateInstructionCache (Block.base (), Block.size ());
-#endif
 	}
 	PendingCodeMem.clear ();
 	return false;
@@ -197,8 +185,6 @@ init_function_pass_manager (legacy::FunctionPassManager &fpm)
 
 	fpm.doInitialization();
 }
-
-#if LLVM_API_VERSION >= 900
 
 #if LLVM_API_VERSION >= 1100
 using symbol_t = const llvm::StringRef;
@@ -350,133 +336,6 @@ make_mono_llvm_jit (TargetMachine *target_machine, llvm::Module *pgo_module)
 	return new MonoLLVMJIT{target_machine, pgo_module};
 }
 
-#elif LLVM_API_VERSION > 600
-
-class MonoLLVMJIT {
-public:
-	/* We use our own trampoline infrastructure instead of the Orc one */
-	typedef RTDyldObjectLinkingLayer ObjLayerT;
-	typedef IRCompileLayer<ObjLayerT, SimpleCompiler> CompileLayerT;
-	typedef CompileLayerT::ModuleHandleT ModuleHandleT;
-
-	MonoLLVMJIT (TargetMachine *TM, MonoLLVMMemoryManager *mm)
-		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
-		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
-		  modules(),
-		  fpm (nullptr)
-	{
-		init_function_pass_manager (fpm);
-	}
-
-	ModuleHandleT addModule(Function *F, std::shared_ptr<Module> M) {
-		auto Resolver = createLambdaResolver(
-                      [&](const std::string &Name) {
-						  const char *name = Name.c_str ();
-						  JITSymbolFlags flags = JITSymbolFlags ();
-						  if (!strcmp (name, "___bzero"))
-							  return JITSymbol((uint64_t)(gssize)(void*)bzero, flags);
-
-						  MonoDl *current;
-						  char *err;
-						  void *symbol;
-						  current = mono_dl_open (NULL, 0, NULL);
-						  g_assert (current);
-						  if (name [0] == '_')
-							  err = mono_dl_symbol (current, name + 1, &symbol);
-						  else
-							  err = mono_dl_symbol (current, name, &symbol);
-						  mono_dl_close (current);
-						  if (!symbol)
-							  outs () << "R: " << Name << "\n";
-						  assert (symbol);
-						  return JITSymbol((uint64_t)(gssize)symbol, flags);
-                      },
-                      [](const std::string &S) {
-						  outs () << "R2: " << S << "\n";
-						  assert (0);
-						  return nullptr;
-					  } );
-
-		auto m = CompileLayer.addModule(M, std::move(Resolver));
-		g_assert (!!m);
-		return m.get ();
-	}
-
-	std::string mangle(const std::string &Name) {
-		std::string MangledName;
-		{
-			raw_string_ostream MangledNameStream(MangledName);
-			Mangler::getNameWithPrefix(MangledNameStream, Name,
-									   TM->createDataLayout());
-		}
-		return MangledName;
-	}
-
-	std::string mangle(const GlobalValue *GV) {
-		std::string MangledName;
-		{
-			Mangler Mang;
-
-			raw_string_ostream MangledNameStream(MangledName);
-			Mang.getNameWithPrefix(MangledNameStream, GV, false);
-		}
-		return MangledName;
-	}
-
-	void
-	optimize (Function *func)
-	{
-		F->getParent ()->setDataLayout (TM->createDataLayout ());
-		fpm.run(*F);
-	}
-
-	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
-		F->getParent ()->setDataLayout (TM->createDataLayout ());
-		// TODO: run module wide optimizations, e.g. remove dead globals/functions
-		// Orc uses a shared_ptr to refer to modules so we have to save them ourselves to keep a ref
-		std::shared_ptr<Module> m (F->getParent ());
-		modules.push_back (m);
-		auto ModuleHandle = addModule (F, m);
-		auto BodySym = CompileLayer.findSymbolIn(ModuleHandle, mangle (F), false);
-		auto BodyAddr = BodySym.getAddress();
-		if (!BodyAddr)
-			g_assert_not_reached ();
-
-		for (int i = 0; i < nvars; ++i) {
-			GlobalVariable *var = unwrap<GlobalVariable>(callee_vars [i]);
-
-			auto sym = CompileLayer.findSymbolIn (ModuleHandle, mangle (var->getName ()), true);
-			auto addr = sym.getAddress ();
-			g_assert ((bool)addr);
-			callee_addrs [i] = (gpointer)addr.get ();
-		}
-
-		auto ehsym = CompileLayer.findSymbolIn(ModuleHandle, "mono_eh_frame", false);
-		auto ehaddr = ehsym.getAddress ();
-		g_assert ((bool)ehaddr);
-		*eh_frame = (gpointer)ehaddr.get ();
-		return (gpointer)BodyAddr.get ();
-	}
-
-private:
-	TargetMachine *TM;
-	ObjLayerT ObjectLayer;
-	CompileLayerT CompileLayer;
-	std::vector<std::shared_ptr<Module>> modules;
-	legacy::FunctionPassManager fpm;
-};
-
-static MonoLLVMMemoryManager *mono_mm;
-
-static MonoLLVMJIT *
-make_mono_llvm_jit (TargetMachine *target_machine, llvm::Module *)
-{
-	mono_mm = new MonoLLVMMemoryManager ();
-	return new MonoLLVMJIT(target_machine, mono_mm);
-}
-
-#endif
-
 static llvm::Module *dummy_pgo_module = nullptr;
 static MonoLLVMJIT *jit;
 
@@ -604,7 +463,7 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 {
 }
 
-#else /* MONO_CROSS_COMPILE or LLVM_API_VERSION < 600 */
+#else /* MONO_CROSS_COMPILE */
 
 void
 mono_llvm_set_unhandled_exception_handler (void)

@@ -273,7 +273,7 @@ namespace StaticTestGenerator
             // Invalid command line arguments.
             Console.WriteLine("Usage: <output_directory> <helper_assemblies_directory> <test_assembly_path> <xunit_console_options>");
             Console.WriteLine("    Example:");
-            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net6.0-windows-Debug-x64\shared\Microsoft.NETCore.App\6.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net6.0-windows-Debug\System.Runtime.Tests.dll");
+            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net7.0-windows-Debug-x64\shared\Microsoft.NETCore.App\7.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net7.0-windows-Debug\System.Runtime.Tests.dll");
             testAssemblyPath = string.Empty;
             runtimeAssembliesPath = string.Empty;
             outputPath = string.Empty;

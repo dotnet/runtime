@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(TARGET_ARM64)
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -223,7 +223,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 void Compiler::unwindPush(regNumber reg)
 {
@@ -232,7 +232,7 @@ void Compiler::unwindPush(regNumber reg)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -242,7 +242,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -276,7 +276,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -286,7 +286,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -348,7 +348,7 @@ void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
     assert(0 <= offset && offset <= 504);
     assert((offset % 8) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -362,7 +362,7 @@ void Compiler::unwindSaveRegPair(regNumber reg1, regNumber reg2, int offset)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -430,7 +430,7 @@ void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int o
     assert(offset < 0);
     assert((offset % 8) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -445,7 +445,7 @@ void Compiler::unwindSaveRegPairPreindexed(regNumber reg1, regNumber reg2, int o
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -519,7 +519,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
     assert(0 <= offset && offset <= 504);
     assert((offset % 8) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -532,7 +532,7 @@ void Compiler::unwindSaveReg(regNumber reg, int offset)
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     int z = offset / 8;
     assert(0 <= z && z <= 0x3F);
@@ -573,7 +573,7 @@ void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
     assert(-256 <= offset && offset < 0);
     assert((offset % 8) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -587,7 +587,7 @@ void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
 
         return;
     }
-#endif // _TARGET_UNIX_
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -622,10 +622,10 @@ void Compiler::unwindSaveRegPreindexed(regNumber reg, int offset)
 
 void Compiler::unwindSaveNext()
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     // do not use unwindSaveNext when generating CFI codes as there is no code for this
     assert(!generateCFIUnwindCodes());
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -982,7 +982,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x3F);
 
             printf("    %02X %02X       save_fregp X#%u Z#%u (0x%02X); stp %s, %s, [sp, #%u]\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), getRegName(REG_V8 + x + 1, true), z * 8);
+                   getRegName(REG_V8 + x), getRegName(REG_V8 + x + 1), z * 8);
         }
         else if ((b1 & 0xFE) == 0xDA)
         {
@@ -996,7 +996,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x3F);
 
             printf("    %02X %02X       save_fregp_x X#%u Z#%u (0x%02X); stp %s, %s, [sp, #-%u]!\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), getRegName(REG_V8 + x + 1, true), (z + 1) * 8);
+                   getRegName(REG_V8 + x), getRegName(REG_V8 + x + 1), (z + 1) * 8);
         }
         else if ((b1 & 0xFE) == 0xDC)
         {
@@ -1009,7 +1009,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x3F);
 
             printf("    %02X %02X       save_freg X#%u Z#%u (0x%02X); str %s, [sp, #%u]\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), z * 8);
+                   getRegName(REG_V8 + x), z * 8);
         }
         else if (b1 == 0xDE)
         {
@@ -1023,7 +1023,7 @@ void DumpUnwindInfo(Compiler*         comp,
             z = (DWORD)(b2 & 0x1F);
 
             printf("    %02X %02X       save_freg_x X#%u Z#%u (0x%02X); str %s, [sp, #-%u]!\n", b1, b2, x, z, z,
-                   getRegName(REG_V8 + x, true), (z + 1) * 8);
+                   getRegName(REG_V8 + x), (z + 1) * 8);
         }
         else if (b1 == 0xE0)
         {

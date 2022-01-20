@@ -48,28 +48,39 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             byte[] buff = new byte[4000];
             var mem = new MemoryStream();
-            while (true)
+            try
             {
-
-                if (socket.State != WebSocketState.Open)
+                while (true)
                 {
-                    Log("error", $"DevToolsProxy: Socket is no longer open.");
-                    client_initiated_close.TrySetResult();
-                    return null;
+                    if (socket.State != WebSocketState.Open)
+                    {
+                        Log("error", $"DevToolsProxy: Socket is no longer open.");
+                        client_initiated_close.TrySetResult();
+                        return null;
+                    }
+
+                    WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        client_initiated_close.TrySetResult();
+                        return null;
+                    }
+
+                    mem.Write(buff, 0, result.Count);
+
+                    if (result.EndOfMessage)
+                        return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
                 }
-
-                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
-
-                mem.Write(buff, 0, result.Count);
-
-                if (result.EndOfMessage)
-                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
             }
+            catch (WebSocketException e)
+            {
+                if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+                {
+                    client_initiated_close.TrySetResult();
+                    return null;
+                }
+            }
+            return null;
         }
 
         private DevToolsQueue GetQueueForSocket(WebSocket ws)
@@ -86,7 +97,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string sender = browser == to ? "Send-browser" : "Send-ide";
 
-            string method = o["method"]?.ToString();
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
             byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
@@ -146,7 +156,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var res = JObject.Parse(msg);
 
-            string method = res["method"]?.ToString();
             //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
             Log("protocol", $"browser: {msg}");
 
@@ -257,7 +266,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         while (!x.IsCancellationRequested)
                         {
-                            Task task = await Task.WhenAny(pending_ops.ToArray());
+                            Task completedTask = await Task.WhenAny(pending_ops.ToArray());
 
                             if (client_initiated_close.Task.IsCompleted)
                             {
@@ -269,34 +278,34 @@ namespace Microsoft.WebAssembly.Diagnostics
                             }
 
                             //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
-                            if (task == pending_ops[0])
+                            if (completedTask == pending_ops[0])
                             {
-                                string msg = ((Task<string>)task).Result;
+                                string msg = ((Task<string>)completedTask).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[0] = ReadOne(browser, x.Token); //queue next read
                                     ProcessBrowserMessage(msg, x.Token);
                                 }
                             }
-                            else if (task == pending_ops[1])
+                            else if (completedTask == pending_ops[1])
                             {
-                                string msg = ((Task<string>)task).Result;
+                                string msg = ((Task<string>)completedTask).Result;
                                 if (msg != null)
                                 {
                                     pending_ops[1] = ReadOne(ide, x.Token); //queue next read
                                     ProcessIdeMessage(msg, x.Token);
                                 }
                             }
-                            else if (task == pending_ops[2])
+                            else if (completedTask == pending_ops[2])
                             {
-                                bool res = ((Task<bool>)task).Result;
+                                bool res = ((Task<bool>)completedTask).Result;
                                 throw new Exception("side task must always complete with an exception, what's going on???");
                             }
                             else
                             {
                                 //must be a background task
-                                pending_ops.Remove(task);
-                                DevToolsQueue queue = GetQueueForTask(task);
+                                pending_ops.Remove(completedTask);
+                                DevToolsQueue queue = GetQueueForTask(completedTask);
                                 if (queue != null)
                                 {
                                     if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))

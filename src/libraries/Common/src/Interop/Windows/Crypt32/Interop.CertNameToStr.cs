@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertNameToStrW")]
-        internal static extern unsafe int CertNameToStr(
+        [GeneratedDllImport(Libraries.Crypt32, EntryPoint = "CertNameToStrW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static unsafe partial int CertNameToStr(
             int dwCertEncodingType,
             void* pName,
             int dwStrType,

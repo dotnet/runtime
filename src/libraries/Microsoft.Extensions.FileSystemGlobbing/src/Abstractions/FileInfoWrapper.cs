@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 
 namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
@@ -18,7 +19,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <param name="fileInfo">The <see cref="System.IO.FileInfo" /></param>
         public FileInfoWrapper(FileInfo fileInfo)
         {
-            _fileInfo = fileInfo;
+            _fileInfo = fileInfo ?? throw new ArgumentNullException(nameof(fileInfo));
         }
 
         /// <summary>
@@ -43,6 +44,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <remarks>
         /// Equals the value of <see cref="System.IO.FileInfo.Directory" />.
         /// </remarks>
-        public override DirectoryInfoBase ParentDirectory => new DirectoryInfoWrapper(_fileInfo.Directory);
+        public override DirectoryInfoBase? ParentDirectory
+            => new DirectoryInfoWrapper(_fileInfo.Directory!);
     }
 }

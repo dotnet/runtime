@@ -553,7 +553,7 @@ namespace System.Reflection.Emit
 
             AddElementType(CorElementType.ELEMENT_TYPE_INTERNAL);
 
-            IntPtr handle = type.GetTypeHandleInternal().Value;
+            IntPtr handle = type.TypeHandle.Value;
 
             // Internal types must have their pointer written into the signature directly (we don't
             // want to convert to little-endian format on big-endian machines because the value is

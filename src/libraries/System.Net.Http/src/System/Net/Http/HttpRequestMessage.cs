@@ -115,6 +115,9 @@ namespace System.Net.Http
         [Obsolete("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public IDictionary<string, object?> Properties => Options;
 
+        /// <summary>
+        /// Gets the collection of options to configure the HTTP request.
+        /// </summary>
         public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
 
         public HttpRequestMessage()

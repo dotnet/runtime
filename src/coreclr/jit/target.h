@@ -5,12 +5,41 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-// Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-#define FEATURE_VARARG 1
-#else
-#define FEATURE_VARARG 0
+#ifdef TARGET_UNIX_POSSIBLY_SUPPORTED
+#define FEATURE_CFI_SUPPORT
 #endif
+
+// Undefine all of the target OS macros
+// Within the JIT codebase we use the TargetOS features
+#ifdef TARGET_UNIX
+#undef TARGET_UNIX
+#endif
+
+#ifdef TARGET_OSX
+#undef TARGET_OSX
+#endif
+
+#ifdef TARGET_WINDOWS
+#undef TARGET_WINDOWS
+#endif
+
+// Native Varargs are not supported on Unix (all architectures) and Windows ARM
+inline bool compFeatureVarArg()
+{
+    return TargetOS::IsWindows && !TargetArchitecture::IsArm32;
+}
+inline bool compMacOsArm64Abi()
+{
+    return TargetArchitecture::IsArm64 && TargetOS::IsMacOS;
+}
+inline bool compFeatureArgSplit()
+{
+    return TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64);
+}
+inline bool compUnixX86Abi()
+{
+    return TargetArchitecture::IsX86 && TargetOS::IsUnix;
+}
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
@@ -185,11 +214,6 @@ typedef unsigned char   regNumberSmall;
 
 /*****************************************************************************/
 
-#define LEA_AVAILABLE 1
-#define SCALED_ADDR_MODES 1
-
-/*****************************************************************************/
-
 #ifdef DEBUG
 #define DSP_SRC_OPER_LEFT 0
 #define DSP_SRC_OPER_RIGHT 1
@@ -268,7 +292,10 @@ class Target
 {
 public:
     static const char* g_tgtCPUName;
-    static const char* g_tgtPlatformName;
+    static const char* g_tgtPlatformName()
+    {
+        return TargetOS::IsWindows ? "Windows" : "Unix";
+    };
 
     enum ArgOrder
     {
@@ -280,9 +307,8 @@ public:
 };
 
 #if defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
-const char* getRegName(unsigned reg, bool isFloat = false); // this is for gcencode.cpp and disasm.cpp that don't use
-                                                            // the regNumber type
-const char* getRegName(regNumber reg, bool isFloat = false);
+const char* getRegName(unsigned reg); // this is for gcencode.cpp and disasm.cpp that don't use the regNumber type
+const char* getRegName(regNumber reg);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
 #ifdef DEBUG

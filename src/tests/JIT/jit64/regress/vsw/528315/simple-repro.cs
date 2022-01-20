@@ -30,7 +30,7 @@ internal class NodeFactory
         return falseBranch;  //<- should return the original trueBranch
     }
 
-    private class Test
+    private class Test_simple_repro
     {
         public static int Main()
         {

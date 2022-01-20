@@ -9,7 +9,7 @@ TARGET_OS=$3
 TEST_NAME=$4
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 
-if [ -n "$5" ]; then
+if [[ -n "$5" ]]; then
     ADDITIONAL_ARGS=${@:5}
 fi
 
@@ -27,7 +27,7 @@ while true; do
     fi
 done
 
-if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+if [[ -n "$XHARNESS_CLI_PATH" ]]; then
     # Allow overriding the path to the XHarness CLI DLL,
     # we need to call it directly via dotnet exec
     HARNESS_RUNNER="dotnet exec $XHARNESS_CLI_PATH"

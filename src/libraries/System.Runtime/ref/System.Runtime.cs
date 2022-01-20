@@ -80,7 +80,7 @@ namespace System
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, params object?[]? args) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, object?[]? args, object?[]? activationAttributes) { throw null; }
         public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture) { throw null; }
-        public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
+        public static object? CreateInstance([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
         public static System.Runtime.Remoting.ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Type and its constructor could be removed")]
@@ -112,6 +112,7 @@ namespace System
         public static string BaseDirectory { get { throw null; } }
         public static string? TargetFrameworkName { get { throw null; } }
         public static object? GetData(string name) { throw null; }
+        public static void SetData(string name, object? data) { }
         public static void SetSwitch(string switchName, bool isEnabled) { }
         public static bool TryGetSwitch(string switchName, out bool isEnabled) { throw null; }
     }
@@ -285,6 +286,8 @@ namespace System
         public ArgumentNullException(string? message, System.Exception? innerException) { }
         public ArgumentNullException(string? paramName, string? message) { }
         public static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] object? argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void ThrowIfNull([System.Diagnostics.CodeAnalysis.NotNullAttribute] void* argument, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentOutOfRangeException : System.ArgumentException
     {
@@ -583,6 +586,8 @@ namespace System
     {
         public static readonly bool IsLittleEndian;
         public static long DoubleToInt64Bits(double value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong DoubleToUInt64Bits(double value) { throw null; }
         public static byte[] GetBytes(bool value) { throw null; }
         public static byte[] GetBytes(char value) { throw null; }
         public static byte[] GetBytes(double value) { throw null; }
@@ -598,22 +603,14 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public static byte[] GetBytes(ulong value) { throw null; }
         public static short HalfToInt16Bits(System.Half value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
         public static System.Half Int16BitsToHalf(short value) { throw null; }
         public static float Int32BitsToSingle(int value) { throw null; }
         public static double Int64BitsToDouble(long value) { throw null; }
         public static int SingleToInt32Bits(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public static ulong DoubleToUInt64Bits(double value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static double UInt64BitsToDouble(ulong value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
         public static uint SingleToUInt32Bits(float value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static float UInt32BitsToSingle(uint value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static ushort HalfToUInt16Bits(System.Half value) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        public static System.Half UInt16BitsToHalf(ushort value) { throw null; }
         public static bool ToBoolean(byte[] value, int startIndex) { throw null; }
         public static bool ToBoolean(System.ReadOnlySpan<byte> value) { throw null; }
         public static char ToChar(byte[] value, int startIndex) { throw null; }
@@ -659,6 +656,12 @@ namespace System
         public static bool TryWriteBytes(System.Span<byte> destination, uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteBytes(System.Span<byte> destination, ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Half UInt16BitsToHalf(ushort value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static float UInt32BitsToSingle(uint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static double UInt64BitsToDouble(ulong value) { throw null; }
     }
     public readonly partial struct Boolean : System.IComparable, System.IComparable<bool>, System.IConvertible, System.IEquatable<bool>
     {
@@ -754,130 +757,130 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Byte result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IAdditiveIdentity<byte, byte>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IMinMaxValue<byte>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IMinMaxValue<byte>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IMultiplicativeIdentity<byte, byte>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IAdditionOperators<byte, byte, byte>.operator +(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBinaryInteger<byte>.LeadingZeroCount(byte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBinaryInteger<byte>.PopCount(byte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBinaryInteger<byte>.RotateLeft(byte value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBinaryInteger<byte>.RotateRight(byte value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBinaryInteger<byte>.TrailingZeroCount(byte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<byte>.IsPow2(byte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBinaryNumber<byte>.Log2(byte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBitwiseOperators<byte, byte, byte>.operator &(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBitwiseOperators<byte, byte, byte>.operator |(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBitwiseOperators<byte, byte, byte>.operator ^(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IBitwiseOperators<byte, byte, byte>.operator ~(byte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<byte, byte>.operator <(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<byte, byte>.operator <=(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<byte, byte>.operator >(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<byte, byte>.operator >=(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IDecrementOperators<byte>.operator --(byte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IDivisionOperators<byte, byte, byte>.operator /(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<byte, byte>.operator ==(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<byte, byte>.operator !=(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IIncrementOperators<byte>.operator ++(byte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IModulusOperators<byte, byte, byte>.operator %(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IMultiplyOperators<byte, byte, byte>.operator *(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Abs(byte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Clamp(byte value, byte min, byte max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (byte Quotient, byte Remainder) INumber<byte>.DivRem(byte left, byte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Max(byte x, byte y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Min(byte x, byte y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte INumber<byte>.Sign(byte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<byte>.TryCreate<TOther>(TOther value, out byte result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<byte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out byte result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<byte>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out byte result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IParseable<byte>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<byte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out byte result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IShiftOperators<byte, byte>.operator <<(byte value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IShiftOperators<byte, byte>.operator >>(byte value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte ISpanParseable<byte>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<byte>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out byte result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte ISubtractionOperators<byte, byte, byte>.operator -(byte left, byte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IUnaryNegationOperators<byte, byte>.operator -(byte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static byte IUnaryPlusOperators<byte, byte>.operator +(byte value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -900,7 +903,6 @@ namespace System
         private readonly char _dummyPrimitive;
         public const char MaxValue = '\uFFFF';
         public const char MinValue = '\0';
-        public static bool IsAscii(System.Char c) { throw null; }
         public int CompareTo(System.Char value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static string ConvertFromUtf32(int utf32) { throw null; }
@@ -914,6 +916,7 @@ namespace System
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Globalization.UnicodeCategory GetUnicodeCategory(System.Char c) { throw null; }
         public static System.Globalization.UnicodeCategory GetUnicodeCategory(string s, int index) { throw null; }
+        public static bool IsAscii(System.Char c) { throw null; }
         public static bool IsControl(System.Char c) { throw null; }
         public static bool IsControl(string s, int index) { throw null; }
         public static bool IsDigit(System.Char c) { throw null; }
@@ -974,130 +977,130 @@ namespace System
         string System.IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IAdditiveIdentity<char, char>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IMinMaxValue<char>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IMinMaxValue<char>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IMultiplicativeIdentity<char, char>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBinaryInteger<char>.LeadingZeroCount(char value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBinaryInteger<char>.PopCount(char value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBinaryInteger<char>.TrailingZeroCount(char value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<char>.IsPow2(char value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBinaryNumber<char>.Log2(char value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBitwiseOperators<char, char, char>.operator &(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBitwiseOperators<char, char, char>.operator |(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBitwiseOperators<char, char, char>.operator ^(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IBitwiseOperators<char, char, char>.operator ~(char value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<char, char>.operator <(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<char, char>.operator <=(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<char, char>.operator >(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<char, char>.operator >=(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IDecrementOperators<char>.operator --(char value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IDivisionOperators<char, char, char>.operator /(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<char, char>.operator ==(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<char, char>.operator !=(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IIncrementOperators<char>.operator ++(char value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IModulusOperators<char, char, char>.operator %(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IMultiplyOperators<char, char, char>.operator *(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Abs(char value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Clamp(char value, char min, char max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (char Quotient, char Remainder) INumber<char>.DivRem(char left, char right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Max(char x, char y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Min(char x, char y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char INumber<char>.Sign(char value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<char>.TryCreate<TOther>(TOther value, out char result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<char>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IParseable<char>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out char result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IShiftOperators<char, char>.operator <<(char value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures, System.Runtime.CompilerServices.SpecialNameAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeatures("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview"), System.Runtime.CompilerServices.SpecialNameAttribute]
         static char IShiftOperators<char, char>.operator >>(char value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char ISpanParseable<char>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out char result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char ISubtractionOperators<char, char, char>.operator -(char left, char right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IUnaryNegationOperators<char, char>.operator -(char value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static char IUnaryPlusOperators<char, char>.operator +(char value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -1147,6 +1150,8 @@ namespace System
         public static object? ChangeType(object? value, System.TypeCode typeCode, System.IFormatProvider? provider) { throw null; }
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
+        public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
+        public static byte[] FromHexString(string s) { throw null; }
         public static System.TypeCode GetTypeCode(object? value) { throw null; }
         public static bool IsDBNull([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut) { throw null; }
@@ -1289,8 +1294,6 @@ namespace System
         public static double ToDouble(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static double ToDouble(ulong value) { throw null; }
-        public static byte[] FromHexString(string s) { throw null; }
-        public static byte[] FromHexString(System.ReadOnlySpan<char> chars) { throw null; }
         public static string ToHexString(byte[] inArray) { throw null; }
         public static string ToHexString(byte[] inArray, int offset, int length) { throw null; }
         public static string ToHexString(System.ReadOnlySpan<byte> bytes) { throw null; }
@@ -1656,33 +1659,33 @@ namespace System
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateOnly IMinMaxValue<System.DateOnly>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateOnly IMinMaxValue<System.DateOnly>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator <(System.DateOnly left, System.DateOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator <=(System.DateOnly left, System.DateOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator >(System.DateOnly left, System.DateOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateOnly, System.DateOnly>.operator >=(System.DateOnly left, System.DateOnly right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.DateOnly, System.DateOnly>.operator ==(System.DateOnly left, System.DateOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.DateOnly, System.DateOnly>.operator !=(System.DateOnly left, System.DateOnly right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateOnly IParseable<System.DateOnly>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.DateOnly>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.DateOnly result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateOnly ISpanParseable<System.DateOnly>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.DateOnly>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.DateOnly result) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -1771,11 +1774,11 @@ namespace System
         public static System.DateTime Parse(string s) { throw null; }
         public static System.DateTime Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.DateTime Parse(string s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles styles) { throw null; }
-        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.DateTime ParseExact(string s, string format, System.IFormatProvider? provider) { throw null; }
-        public static System.DateTime ParseExact(string s, string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style) { throw null; }
-        public static System.DateTime ParseExact(string s, string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style) { throw null; }
+        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateTime ParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateTime ParseExact(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format, System.IFormatProvider? provider) { throw null; }
+        public static System.DateTime ParseExact(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style) { throw null; }
+        public static System.DateTime ParseExact(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style) { throw null; }
         public static System.DateTime SpecifyKind(System.DateTime value, System.DateTimeKind kind) { throw null; }
         public System.TimeSpan Subtract(System.DateTime value) { throw null; }
         public System.DateTime Subtract(System.TimeSpan value) { throw null; }
@@ -1806,58 +1809,58 @@ namespace System
         public string ToShortTimeString() { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string? format, System.IFormatProvider? provider) { throw null; }
         public System.DateTime ToUniversalTime() { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateTime result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles styles, out System.DateTime result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.DateTime result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles styles, out System.DateTime result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
-        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
-        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] System.ReadOnlySpan<char> format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string? format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateTime result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IAdditiveIdentity<System.DateTime, System.TimeSpan>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTime IMinMaxValue<System.DateTime>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTime IMinMaxValue<System.DateTime>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTime IAdditionOperators<System.DateTime, System.TimeSpan, System.DateTime>.operator +(System.DateTime left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTime, System.DateTime>.operator <(System.DateTime left, System.DateTime right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTime, System.DateTime>.operator <=(System.DateTime left, System.DateTime right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTime, System.DateTime>.operator >(System.DateTime left, System.DateTime right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTime, System.DateTime>.operator >=(System.DateTime left, System.DateTime right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.DateTime, System.DateTime>.operator ==(System.DateTime left, System.DateTime right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.DateTime, System.DateTime>.operator !=(System.DateTime left, System.DateTime right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTime IParseable<System.DateTime>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.DateTime>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.DateTime result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTime ISpanParseable<System.DateTime>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.DateTime>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.DateTime result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTime ISubtractionOperators<System.DateTime, System.TimeSpan, System.DateTime>.operator -(System.DateTime left, System.TimeSpan right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan ISubtractionOperators<System.DateTime, System.DateTime, System.TimeSpan>.operator -(System.DateTime left, System.DateTime right) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -1941,11 +1944,11 @@ namespace System
         public static System.DateTimeOffset Parse(string input) { throw null; }
         public static System.DateTimeOffset Parse(string input, System.IFormatProvider? formatProvider) { throw null; }
         public static System.DateTimeOffset Parse(string input, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
-        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, string[] formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
-        public static System.DateTimeOffset ParseExact(string input, string format, System.IFormatProvider? formatProvider) { throw null; }
-        public static System.DateTimeOffset ParseExact(string input, string format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
-        public static System.DateTimeOffset ParseExact(string input, string[] formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
+        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] System.ReadOnlySpan<char> format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateTimeOffset ParseExact(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string[] formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles = System.Globalization.DateTimeStyles.None) { throw null; }
+        public static System.DateTimeOffset ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format, System.IFormatProvider? formatProvider) { throw null; }
+        public static System.DateTimeOffset ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
+        public static System.DateTimeOffset ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string[] formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles) { throw null; }
         public System.TimeSpan Subtract(System.DateTimeOffset value) { throw null; }
         public System.DateTimeOffset Subtract(System.TimeSpan value) { throw null; }
         int System.IComparable.CompareTo(object? obj) { throw null; }
@@ -1956,60 +1959,60 @@ namespace System
         public System.DateTimeOffset ToOffset(System.TimeSpan offset) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? formatProvider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public System.DateTimeOffset ToUniversalTime() { throw null; }
         public long ToUnixTimeMilliseconds() { throw null; }
         public long ToUnixTimeSeconds() { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? formatProvider = null) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? formatProvider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> input, System.ReadOnlySpan<char> format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
-        public static bool TryParseExact(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
-        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
-        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] System.ReadOnlySpan<char> format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParseExact(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string? format, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
+        public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute(System.Diagnostics.CodeAnalysis.StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IAdditiveIdentity<System.DateTimeOffset, System.TimeSpan>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTimeOffset IMinMaxValue<System.DateTimeOffset>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTimeOffset IMinMaxValue<System.DateTimeOffset>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTimeOffset IAdditionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>.operator +(System.DateTimeOffset left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator <(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator <=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator >(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>.operator >=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.DateTimeOffset, System.DateTimeOffset>.operator ==(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.DateTimeOffset, System.DateTimeOffset>.operator !=(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTimeOffset IParseable<System.DateTimeOffset>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.DateTimeOffset>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.DateTimeOffset result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTimeOffset ISpanParseable<System.DateTimeOffset>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.DateTimeOffset>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.DateTimeOffset result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.DateTimeOffset ISubtractionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>.operator -(System.DateTimeOffset left, System.TimeSpan right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan ISubtractionOperators<System.DateTimeOffset, System.DateTimeOffset, System.TimeSpan>.operator -(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -2195,103 +2198,103 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Decimal result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IAdditiveIdentity<decimal, decimal>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IMinMaxValue<decimal>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IMinMaxValue<decimal>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IMultiplicativeIdentity<decimal, decimal>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IAdditionOperators<decimal, decimal, decimal>.operator +(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<decimal, decimal>.operator <(decimal left, decimal right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<decimal, decimal>.operator <=(decimal left, decimal right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<decimal, decimal>.operator >(decimal left, decimal right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<decimal, decimal>.operator >=(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IDecrementOperators<decimal>.operator --(decimal value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IDivisionOperators<decimal, decimal, decimal>.operator /(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<decimal, decimal>.operator ==(decimal left, decimal right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<decimal, decimal>.operator !=(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IIncrementOperators<decimal>.operator ++(decimal value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IModulusOperators<decimal, decimal, decimal>.operator %(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IMultiplyOperators<decimal, decimal, decimal>.operator *(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Abs(decimal value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Clamp(decimal value, decimal min, decimal max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (decimal Quotient, decimal Remainder) INumber<decimal>.DivRem(decimal left, decimal right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Max(decimal x, decimal y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Min(decimal x, decimal y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal INumber<decimal>.Sign(decimal value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<decimal>.TryCreate<TOther>(TOther value, out decimal result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<decimal>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out decimal result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<decimal>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out decimal result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IParseable<decimal>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<decimal>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out decimal result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal ISignedNumber<decimal>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal ISpanParseable<decimal>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<decimal>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out decimal result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal ISubtractionOperators<decimal, decimal, decimal>.operator -(decimal left, decimal right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IUnaryNegationOperators<decimal, decimal>.operator -(decimal value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static decimal IUnaryPlusOperators<decimal, decimal>.operator +(decimal value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -2407,209 +2410,226 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Double result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IAdditiveIdentity<double, double>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.E { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Epsilon { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.NaN { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.NegativeInfinity { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.NegativeZero { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Pi { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.PositiveInfinity { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Tau { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IMinMaxValue<double>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IMinMaxValue<double>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IMultiplicativeIdentity<double, double>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IAdditionOperators<double, double, double>.operator +(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<double>.IsPow2(double value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IBinaryNumber<double>.Log2(double value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IBitwiseOperators<double, double, double>.operator &(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IBitwiseOperators<double, double, double>.operator |(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IBitwiseOperators<double, double, double>.operator ^(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IBitwiseOperators<double, double, double>.operator ~(double value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<double, double>.operator <(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<double, double>.operator <=(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<double, double>.operator >(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<double, double>.operator >=(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IDecrementOperators<double>.operator --(double value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IDivisionOperators<double, double, double>.operator /(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<double, double>.operator ==(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<double, double>.operator !=(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Acos(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Acosh(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Asin(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Asinh(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Atan(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Atan2(double y, double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Atanh(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.BitIncrement(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.BitDecrement(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Cbrt(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Ceiling(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.CopySign(double x, double y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Cos(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Cosh(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Exp(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Floor(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.FusedMultiplyAdd(double left, double right, double addend) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.IEEERemainder(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static TInteger IFloatingPoint<double>.ILogB<TInteger>(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Log(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Log(double x, double newBase) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Log2(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Log10(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.MaxMagnitude(double x, double y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.MinMagnitude(double x, double y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Pow(double x, double y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Round(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Round(double x, System.MidpointRounding mode) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Round<TInteger>(double x, TInteger digits, System.MidpointRounding mode) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.ScaleB<TInteger>(double x, TInteger n) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Sin(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Sinh(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Sqrt(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Tan(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Tanh(double x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IFloatingPoint<double>.Truncate(double x) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsFinite(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsNaN(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsNegative(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsNegativeInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsNormal(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsPositiveInfinity(double d) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<double>.IsSubnormal(double d) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IIncrementOperators<double>.operator ++(double value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IModulusOperators<double, double, double>.operator %(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IMultiplyOperators<double, double, double>.operator *(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Abs(double value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Clamp(double value, double min, double max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (double Quotient, double Remainder) INumber<double>.DivRem(double left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Max(double x, double y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Min(double x, double y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double INumber<double>.Sign(double value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<double>.TryCreate<TOther>(TOther value, out double result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<double>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out double result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<double>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out double result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IParseable<double>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<double>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out double result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double ISignedNumber<double>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double ISpanParseable<double>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<double>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out double result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double ISubtractionOperators<double, double, double>.operator -(double left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IUnaryNegationOperators<double, double>.operator -(double value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IUnaryPlusOperators<double, double>.operator +(double value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -2693,8 +2713,8 @@ namespace System
         public static bool TryParse(System.Type enumType, string? value, bool ignoreCase, out object? result) { throw null; }
         public static bool TryParse(System.Type enumType, string? value, out object? result) { throw null; }
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
-        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>(System.ReadOnlySpan<char> value, out TEnum result) where TEnum : struct { throw null; }
+        public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, bool ignoreCase, out TEnum result) where TEnum : struct { throw null; }
         public static bool TryParse<TEnum>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out TEnum result) where TEnum : struct { throw null; }
     }
     public static partial class Environment
@@ -2709,9 +2729,9 @@ namespace System
         public static string MachineName { get { throw null; } }
         public static string NewLine { get { throw null; } }
         public static System.OperatingSystem OSVersion { get { throw null; } }
-        public static string? ProcessPath { get { throw null; } }
         public static int ProcessId { get { throw null; } }
         public static int ProcessorCount { get { throw null; } }
+        public static string? ProcessPath { get { throw null; } }
         public static string StackTrace { get { throw null; } }
         public static string SystemDirectory { get { throw null; } }
         public static int SystemPageSize { get { throw null; } }
@@ -2822,7 +2842,7 @@ namespace System
         public virtual string Message { get { throw null; } }
         public virtual string? Source { get { throw null; } set { } }
         public virtual string? StackTrace { get { throw null; } }
-        public System.Reflection.MethodBase? TargetSite { get { throw null; } }
+        public System.Reflection.MethodBase? TargetSite { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")] get { throw null; } }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>? SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
@@ -2953,6 +2973,7 @@ namespace System
     }
     public readonly partial struct GCMemoryInfo
     {
+        private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public bool Compacted { get { throw null; } }
         public bool Concurrent { get { throw null; } }
@@ -3045,28 +3066,28 @@ namespace System
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Guid, System.Guid>.operator <(System.Guid left, System.Guid right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Guid, System.Guid>.operator <=(System.Guid left, System.Guid right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Guid, System.Guid>.operator >(System.Guid left, System.Guid right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Guid, System.Guid>.operator >=(System.Guid left, System.Guid right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.Guid, System.Guid>.operator ==(System.Guid left, System.Guid right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.Guid, System.Guid>.operator !=(System.Guid left, System.Guid right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Guid IParseable<System.Guid>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.Guid>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Guid result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Guid ISpanParseable<System.Guid>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.Guid>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Guid result) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -3124,218 +3145,235 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Half result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IAdditiveIdentity<System.Half, System.Half>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.E { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Epsilon { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.NaN { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.NegativeInfinity { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.NegativeZero { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Pi { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.PositiveInfinity { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Tau { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IMinMaxValue<System.Half>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IMinMaxValue<System.Half>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IMultiplicativeIdentity<System.Half, System.Half>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IAdditionOperators<System.Half, System.Half, System.Half>.operator +(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<System.Half>.IsPow2(System.Half value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IBinaryNumber<System.Half>.Log2(System.Half value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IBitwiseOperators<System.Half, System.Half, System.Half>.operator &(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IBitwiseOperators<System.Half, System.Half, System.Half>.operator |(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IBitwiseOperators<System.Half, System.Half, System.Half>.operator ^(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IBitwiseOperators<System.Half, System.Half, System.Half>.operator ~(System.Half value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Half, System.Half>.operator <(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Half, System.Half>.operator <=(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Half, System.Half>.operator >(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.Half, System.Half>.operator >=(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IDecrementOperators<System.Half>.operator --(System.Half value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IDivisionOperators<System.Half, System.Half, System.Half>.operator /(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.Half, System.Half>.operator ==(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.Half, System.Half>.operator !=(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Acos(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Acosh(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Asin(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Asinh(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Atan(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Atan2(System.Half y, System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Atanh(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.BitIncrement(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.BitDecrement(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Cbrt(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Ceiling(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.CopySign(System.Half x, System.Half y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Cos(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Cosh(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Exp(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Floor(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.FusedMultiplyAdd(System.Half left, System.Half right, System.Half addend) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.IEEERemainder(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static TInteger IFloatingPoint<System.Half>.ILogB<TInteger>(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Log(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Log(System.Half x, System.Half newBase) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Log2(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Log10(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.MaxMagnitude(System.Half x, System.Half y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.MinMagnitude(System.Half x, System.Half y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Pow(System.Half x, System.Half y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Round(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Round<TInteger>(System.Half x, TInteger digits) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Round(System.Half x, System.MidpointRounding mode) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Round<TInteger>(System.Half x, TInteger digits, System.MidpointRounding mode) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.ScaleB<TInteger>(System.Half x, TInteger n) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Sin(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Sinh(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Sqrt(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Tan(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Tanh(System.Half x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IFloatingPoint<System.Half>.Truncate(System.Half x) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsFinite(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsNaN(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsNegative(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsNegativeInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsNormal(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsPositiveInfinity(System.Half x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<System.Half>.IsSubnormal(System.Half x) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IIncrementOperators<System.Half>.operator ++(System.Half value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IModulusOperators<System.Half, System.Half, System.Half>.operator %(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IMultiplyOperators<System.Half, System.Half, System.Half>.operator *(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Abs(System.Half value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Clamp(System.Half value, System.Half min, System.Half max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (System.Half Quotient, System.Half Remainder) INumber<System.Half>.DivRem(System.Half left, System.Half right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Max(System.Half x, System.Half y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Min(System.Half x, System.Half y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half INumber<System.Half>.Sign(System.Half value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<System.Half>.TryCreate<TOther>(TOther value, out System.Half result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<System.Half>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<System.Half>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Half result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IParseable<System.Half>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.Half>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Half result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half ISignedNumber<System.Half>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half ISpanParseable<System.Half>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.Half>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Half result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half ISubtractionOperators<System.Half, System.Half, System.Half>.operator -(System.Half left, System.Half right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IUnaryNegationOperators<System.Half, System.Half>.operator -(System.Half value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.Half IUnaryPlusOperators<System.Half, System.Half>.operator +(System.Half value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
     public partial struct HashCode
     {
         private int _dummyPrimitive;
+        public void AddBytes(System.ReadOnlySpan<byte> value) { }
         public void Add<T>(T value) { }
         public void Add<T>(T value, System.Collections.Generic.IEqualityComparer<T>? comparer) { }
-        public void AddBytes(System.ReadOnlySpan<byte> value) { }
         public static int Combine<T1>(T1 value1) { throw null; }
         public static int Combine<T1, T2>(T1 value1, T2 value2) { throw null; }
         public static int Combine<T1, T2, T3>(T1 value1, T2 value2, T3 value3) { throw null; }
@@ -3357,24 +3395,24 @@ namespace System
         public HttpStyleUriParser() { }
     }
 #if FEATURE_GENERIC_MATH
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IAdditionOperators<TSelf, TOther, TResult>
         where TSelf : System.IAdditionOperators<TSelf, TOther, TResult>
     {
         static abstract TResult operator +(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IAdditiveIdentity<TSelf, TResult>
         where TSelf : System.IAdditiveIdentity<TSelf, TResult>
     {
         static abstract TResult AdditiveIdentity { get; }
     }
-[System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+[System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IBinaryFloatingPoint<TSelf> : System.IBinaryNumber<TSelf>, System.IFloatingPoint<TSelf>
         where TSelf : IBinaryFloatingPoint<TSelf>
     {
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IBinaryInteger<TSelf> : System.IBinaryNumber<TSelf>, System.IShiftOperators<TSelf, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
@@ -3384,14 +3422,14 @@ namespace System
         static abstract TSelf RotateRight(TSelf value, int rotateAmount);
         static abstract TSelf TrailingZeroCount(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IBinaryNumber<TSelf> : System.IBitwiseOperators<TSelf, TSelf, TSelf>, System.INumber<TSelf>
         where TSelf : IBinaryNumber<TSelf>
     {
         static abstract bool IsPow2(TSelf value);
         static abstract TSelf Log2(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IBitwiseOperators<TSelf, TOther, TResult>
         where TSelf : System.IBitwiseOperators<TSelf, TOther, TResult>
     {
@@ -3400,7 +3438,7 @@ namespace System
         static abstract TResult operator ^(TSelf left, TOther right);
         static abstract TResult operator ~(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IComparisonOperators<TSelf, TOther> : System.IComparable, System.IComparable<TOther>, System.IEqualityOperators<TSelf, TOther>
         where TSelf : IComparisonOperators<TSelf, TOther>
     {
@@ -3409,26 +3447,26 @@ namespace System
         static abstract bool operator >(TSelf left, TOther right);
         static abstract bool operator >=(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IDecrementOperators<TSelf>
         where TSelf : System.IDecrementOperators<TSelf>
     {
         static abstract TSelf operator --(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IDivisionOperators<TSelf, TOther, TResult>
         where TSelf : System.IDivisionOperators<TSelf, TOther, TResult>
     {
         static abstract TResult operator /(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IEqualityOperators<TSelf, TOther> : IEquatable<TOther>
         where TSelf : System.IEqualityOperators<TSelf, TOther>
     {
         static abstract bool operator ==(TSelf left, TOther right);
         static abstract bool operator !=(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IFloatingPoint<TSelf> : System.ISignedNumber<TSelf>
         where TSelf : System.IFloatingPoint<TSelf>
     {
@@ -3486,38 +3524,38 @@ namespace System
         static abstract TSelf Tanh(TSelf x);
         static abstract TSelf Truncate(TSelf x);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IIncrementOperators<TSelf>
         where TSelf : System.IIncrementOperators<TSelf>
     {
         static abstract TSelf operator ++(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IMinMaxValue<TSelf>
         where TSelf : System.IMinMaxValue<TSelf>
     {
         static abstract TSelf MinValue { get; }
         static abstract TSelf MaxValue { get; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IModulusOperators<TSelf, TOther, TResult>
         where TSelf : System.IModulusOperators<TSelf, TOther, TResult>
     {
         static abstract TResult operator %(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IMultiplicativeIdentity<TSelf, TResult>
         where TSelf : System.IMultiplicativeIdentity<TSelf, TResult>
     {
         static abstract TResult MultiplicativeIdentity { get; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IMultiplyOperators<TSelf, TOther, TResult>
         where TSelf : System.IMultiplyOperators<TSelf, TOther, TResult>
     {
         static abstract TResult operator *(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface INumber<TSelf> : System.IAdditionOperators<TSelf, TSelf, TSelf>, System.IAdditiveIdentity<TSelf, TSelf>, System.IComparable, System.IComparable<TSelf>, System.IComparisonOperators<TSelf, TSelf>, System.IDecrementOperators<TSelf>, System.IDivisionOperators<TSelf, TSelf, TSelf>, System.IEquatable<TSelf>, System.IEqualityOperators<TSelf, TSelf>, System.IFormattable, System.IIncrementOperators<TSelf>, System.IModulusOperators<TSelf, TSelf, TSelf>, System.IMultiplicativeIdentity<TSelf, TSelf>, System.IMultiplyOperators<TSelf, TSelf, TSelf>, System.IParseable<TSelf>, System.ISpanFormattable, System.ISpanParseable<TSelf>, System.ISubtractionOperators<TSelf, TSelf, TSelf>, System.IUnaryNegationOperators<TSelf, TSelf>, System.IUnaryPlusOperators<TSelf, TSelf>
         where TSelf : System.INumber<TSelf>
     {
@@ -3538,52 +3576,52 @@ namespace System
         static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out TSelf result);
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, IFormatProvider? provider, out TSelf result);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IParseable<TSelf>
         where TSelf : System.IParseable<TSelf>
     {
         static abstract TSelf Parse(string s, System.IFormatProvider? provider);
         static abstract bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out TSelf result);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IShiftOperators<TSelf, TResult>
         where TSelf : System.IShiftOperators<TSelf, TResult>
     {
         static abstract TResult operator <<(TSelf value, int shiftAmount);
         static abstract TResult operator >>(TSelf value, int shiftAmount);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface ISignedNumber<TSelf> : System.INumber<TSelf>, System.IUnaryNegationOperators<TSelf, TSelf>
         where TSelf : System.ISignedNumber<TSelf>
     {
         static abstract TSelf NegativeOne { get; }
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface ISpanParseable<TSelf> : System.IParseable<TSelf>
         where TSelf : System.ISpanParseable<TSelf>
     {
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider);
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out TSelf result);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface ISubtractionOperators<TSelf, TOther, TResult>
         where TSelf : System.ISubtractionOperators<TSelf, TOther, TResult>
     {
         static abstract TResult operator -(TSelf left, TOther right);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IUnaryNegationOperators<TSelf, TResult>
         where TSelf : System.IUnaryNegationOperators<TSelf, TResult>
     {
         static abstract TResult operator -(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IUnaryPlusOperators<TSelf, TResult>
         where TSelf : System.IUnaryPlusOperators<TSelf, TResult>
     {
         static abstract TResult operator +(TSelf value);
     }
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IUnsignedNumber<TSelf> : System.INumber<TSelf>
         where TSelf : IUnsignedNumber<TSelf>
     {
@@ -3737,133 +3775,133 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int16 result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IAdditiveIdentity<short, short>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IMinMaxValue<short>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IMinMaxValue<short>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IMultiplicativeIdentity<short, short>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IAdditionOperators<short, short, short>.operator +(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBinaryInteger<short>.LeadingZeroCount(short value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBinaryInteger<short>.PopCount(short value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBinaryInteger<short>.RotateLeft(short value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBinaryInteger<short>.RotateRight(short value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBinaryInteger<short>.TrailingZeroCount(short value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<short>.IsPow2(short value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBinaryNumber<short>.Log2(short value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBitwiseOperators<short, short, short>.operator &(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBitwiseOperators<short, short, short>.operator |(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBitwiseOperators<short, short, short>.operator ^(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IBitwiseOperators<short, short, short>.operator ~(short value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<short, short>.operator <(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<short, short>.operator <=(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<short, short>.operator >(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<short, short>.operator >=(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IDecrementOperators<short>.operator --(short value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IDivisionOperators<short, short, short>.operator /(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<short, short>.operator ==(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<short, short>.operator !=(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IIncrementOperators<short>.operator ++(short value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IModulusOperators<short, short, short>.operator %(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IMultiplyOperators<short, short, short>.operator *(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Abs(short value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Clamp(short value, short min, short max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (short Quotient, short Remainder) INumber<short>.DivRem(short left, short right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Max(short x, short y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Min(short x, short y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short INumber<short>.Sign(short value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<short>.TryCreate<TOther>(TOther value, out short result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<short>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out short result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<short>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out short result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IParseable<short>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<short>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out short result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IShiftOperators<short, short>.operator <<(short value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IShiftOperators<short, short>.operator >>(short value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short ISignedNumber<short>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short ISpanParseable<short>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<short>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out short result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short ISubtractionOperators<short, short, short>.operator -(short left, short right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IUnaryNegationOperators<short, short>.operator -(short value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static short IUnaryPlusOperators<short, short>.operator +(short value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -3916,133 +3954,133 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int32 result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IAdditiveIdentity<int, int>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IMinMaxValue<int>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IMinMaxValue<int>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IMultiplicativeIdentity<int, int>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IAdditionOperators<int, int, int>.operator +(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBinaryInteger<int>.LeadingZeroCount(int value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBinaryInteger<int>.PopCount(int value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBinaryInteger<int>.RotateLeft(int value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBinaryInteger<int>.RotateRight(int value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBinaryInteger<int>.TrailingZeroCount(int value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<int>.IsPow2(int value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBinaryNumber<int>.Log2(int value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBitwiseOperators<int, int, int>.operator &(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBitwiseOperators<int, int, int>.operator |(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBitwiseOperators<int, int, int>.operator ^(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IBitwiseOperators<int, int, int>.operator ~(int value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<int, int>.operator <(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<int, int>.operator <=(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<int, int>.operator >(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<int, int>.operator >=(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IDecrementOperators<int>.operator --(int value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IDivisionOperators<int, int, int>.operator /(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<int, int>.operator ==(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<int, int>.operator !=(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IIncrementOperators<int>.operator ++(int value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IModulusOperators<int, int, int>.operator %(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IMultiplyOperators<int, int, int>.operator *(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Abs(int value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Clamp(int value, int min, int max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (int Quotient, int Remainder) INumber<int>.DivRem(int left, int right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Max(int x, int y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Min(int x, int y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int INumber<int>.Sign(int value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<int>.TryCreate<TOther>(TOther value, out int result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<int>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out int result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<int>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out int result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IParseable<int>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<int>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out int result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IShiftOperators<int, int>.operator <<(int value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IShiftOperators<int, int>.operator >>(int value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int ISignedNumber<int>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int ISpanParseable<int>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<int>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out int result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int ISubtractionOperators<int, int, int>.operator -(int left, int right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IUnaryNegationOperators<int, int>.operator -(int value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static int IUnaryPlusOperators<int, int>.operator +(int value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -4095,133 +4133,133 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Int64 result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IAdditiveIdentity<long, long>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IMinMaxValue<long>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IMinMaxValue<long>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IMultiplicativeIdentity<long, long>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IAdditionOperators<long, long, long>.operator +(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBinaryInteger<long>.LeadingZeroCount(long value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBinaryInteger<long>.PopCount(long value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBinaryInteger<long>.RotateLeft(long value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBinaryInteger<long>.RotateRight(long value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBinaryInteger<long>.TrailingZeroCount(long value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<long>.IsPow2(long value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBinaryNumber<long>.Log2(long value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBitwiseOperators<long, long, long>.operator &(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBitwiseOperators<long, long, long>.operator |(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBitwiseOperators<long, long, long>.operator ^(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IBitwiseOperators<long, long, long>.operator ~(long value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<long, long>.operator <(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<long, long>.operator <=(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<long, long>.operator >(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<long, long>.operator >=(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IDecrementOperators<long>.operator --(long value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IDivisionOperators<long, long, long>.operator /(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<long, long>.operator ==(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<long, long>.operator !=(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IIncrementOperators<long>.operator ++(long value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IModulusOperators<long, long, long>.operator %(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IMultiplyOperators<long, long, long>.operator *(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Abs(long value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Clamp(long value, long min, long max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (long Quotient, long Remainder) INumber<long>.DivRem(long left, long right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Max(long x, long y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Min(long x, long y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long INumber<long>.Sign(long value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<long>.TryCreate<TOther>(TOther value, out long result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<long>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out long result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<long>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out long result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IParseable<long>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<long>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out long result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IShiftOperators<long, long>.operator <<(long value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IShiftOperators<long, long>.operator >>(long value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long ISignedNumber<long>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long ISpanParseable<long>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<long>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out long result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long ISubtractionOperators<long, long, long>.operator -(long left, long right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IUnaryNegationOperators<long, long>.operator -(long value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static long IUnaryPlusOperators<long, long>.operator +(long value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -4283,133 +4321,133 @@ namespace System
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IAdditiveIdentity<nint, nint>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IMinMaxValue<nint>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IMinMaxValue<nint>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IMultiplicativeIdentity<nint, nint>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBinaryInteger<nint>.LeadingZeroCount(nint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBinaryInteger<nint>.PopCount(nint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBinaryInteger<nint>.TrailingZeroCount(nint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<nint>.IsPow2(nint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBinaryNumber<nint>.Log2(nint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IBitwiseOperators<nint, nint, nint>.operator ~(nint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nint, nint>.operator <(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nint, nint>.operator <=(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nint, nint>.operator >(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nint, nint>.operator >=(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IDecrementOperators<nint>.operator --(nint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<nint, nint>.operator ==(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<nint, nint>.operator !=(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IIncrementOperators<nint>.operator ++(nint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Abs(nint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Clamp(nint value, nint min, nint max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Max(nint x, nint y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Min(nint x, nint y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint INumber<nint>.Sign(nint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<nint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nint result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<nint>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IParseable<nint>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<nint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out nint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint ISignedNumber<nint>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint ISpanParseable<nint>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<nint>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out nint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IUnaryNegationOperators<nint, nint>.operator -(nint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -4936,6 +4974,8 @@ namespace System
         public override string Message { get { throw null; } }
         public string ObjectName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) => throw null;
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) => throw null;
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ObsoleteAttribute : System.Attribute
@@ -4957,29 +4997,29 @@ namespace System
         public string VersionString { get { throw null; } }
         public object Clone() { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public override string ToString() { throw null; }
-        public static bool IsOSPlatform(string platform) { throw null; }
-        public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
-        public static bool IsBrowser() { throw null; }
-        public static bool IsLinux() { throw null; }
-        public static bool IsFreeBSD() { throw null; }
-        public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsAndroid() { throw null; }
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public static bool IsBrowser() { throw null; }
+        public static bool IsFreeBSD() { throw null; }
+        public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
         public static bool IsIOS() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformGuardAttribute("maccatalyst")]
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
-        public static bool IsMacOS() { throw null; }
-        public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsLinux() { throw null; }
         public static bool IsMacCatalyst() { throw null; }
         public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsMacOS() { throw null; }
+        public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsOSPlatform(string platform) { throw null; }
+        public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsTvOS() { throw null; }
         public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsWatchOS() { throw null; }
         public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsWindows() { throw null; }
         public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
+        public override string ToString() { throw null; }
     }
     public partial class OperationCanceledException : System.SystemException
     {
@@ -5047,18 +5087,18 @@ namespace System
     {
         public Random() { }
         public Random(int Seed) { }
+        public static System.Random Shared { get { throw null; } }
         public virtual int Next() { throw null; }
         public virtual int Next(int maxValue) { throw null; }
         public virtual int Next(int minValue, int maxValue) { throw null; }
+        public virtual void NextBytes(byte[] buffer) { }
+        public virtual void NextBytes(System.Span<byte> buffer) { }
+        public virtual double NextDouble() { throw null; }
         public virtual long NextInt64() { throw null; }
         public virtual long NextInt64(long maxValue) { throw null; }
         public virtual long NextInt64(long minValue, long maxValue) { throw null; }
-        public virtual void NextBytes(byte[] buffer) { }
-        public virtual void NextBytes(System.Span<byte> buffer) { }
         public virtual float NextSingle() { throw null; }
-        public virtual double NextDouble() { throw null; }
         protected virtual double Sample() { throw null; }
-        public static System.Random Shared { get { throw null; } }
     }
     public readonly partial struct Range : System.IEquatable<System.Range>
     {
@@ -5158,7 +5198,7 @@ namespace System
     {
         private int _dummyPrimitive;
     }
-    public partial struct RuntimeFieldHandle : System.Runtime.Serialization.ISerializable
+    public partial struct RuntimeFieldHandle : System.IEquatable<System.RuntimeFieldHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -5170,7 +5210,7 @@ namespace System
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
     }
-    public partial struct RuntimeMethodHandle : System.Runtime.Serialization.ISerializable
+    public partial struct RuntimeMethodHandle : System.IEquatable<System.RuntimeMethodHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -5183,7 +5223,7 @@ namespace System
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
     }
-    public partial struct RuntimeTypeHandle : System.Runtime.Serialization.ISerializable
+    public partial struct RuntimeTypeHandle : System.IEquatable<System.RuntimeTypeHandle>, System.Runtime.Serialization.ISerializable
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -5248,133 +5288,133 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.SByte result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IAdditiveIdentity<sbyte, sbyte>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IMinMaxValue<sbyte>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IMinMaxValue<sbyte>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IMultiplicativeIdentity<sbyte, sbyte>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IAdditionOperators<sbyte, sbyte, sbyte>.operator +(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBinaryInteger<sbyte>.LeadingZeroCount(sbyte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBinaryInteger<sbyte>.PopCount(sbyte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBinaryInteger<sbyte>.RotateLeft(sbyte value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBinaryInteger<sbyte>.RotateRight(sbyte value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBinaryInteger<sbyte>.TrailingZeroCount(sbyte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<sbyte>.IsPow2(sbyte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBinaryNumber<sbyte>.Log2(sbyte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator |(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator ^(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IBitwiseOperators<sbyte, sbyte, sbyte>.operator ~(sbyte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<sbyte, sbyte>.operator <(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<sbyte, sbyte>.operator <=(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<sbyte, sbyte>.operator >(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<sbyte, sbyte>.operator >=(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IDecrementOperators<sbyte>.operator --(sbyte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IDivisionOperators<sbyte, sbyte, sbyte>.operator /(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<sbyte, sbyte>.operator ==(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<sbyte, sbyte>.operator !=(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IIncrementOperators<sbyte>.operator ++(sbyte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IModulusOperators<sbyte, sbyte, sbyte>.operator %(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IMultiplyOperators<sbyte, sbyte, sbyte>.operator *(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Abs(sbyte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Clamp(sbyte value, sbyte min, sbyte max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (sbyte Quotient, sbyte Remainder) INumber<sbyte>.DivRem(sbyte left, sbyte right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Max(sbyte x, sbyte y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Min(sbyte x, sbyte y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte INumber<sbyte>.Sign(sbyte value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<sbyte>.TryCreate<TOther>(TOther value, out sbyte result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<sbyte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out sbyte result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<sbyte>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out sbyte result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IParseable<sbyte>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<sbyte>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out sbyte result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IShiftOperators<sbyte, sbyte>.operator <<(sbyte value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IShiftOperators<sbyte, sbyte>.operator >>(sbyte value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte ISignedNumber<sbyte>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte ISpanParseable<sbyte>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<sbyte>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out sbyte result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte ISubtractionOperators<sbyte, sbyte, sbyte>.operator -(sbyte left, sbyte right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IUnaryNegationOperators<sbyte, sbyte>.operator -(sbyte value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static sbyte IUnaryPlusOperators<sbyte, sbyte>.operator +(sbyte value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -5449,209 +5489,226 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Single result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IAdditiveIdentity<float, float>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.E { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Epsilon { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.NaN { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.NegativeInfinity { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.NegativeZero { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Pi { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.PositiveInfinity { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Tau { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IMinMaxValue<float>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IMinMaxValue<float>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IMultiplicativeIdentity<float, float>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IAdditionOperators<float, float, float>.operator +(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<float>.IsPow2(float value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IBinaryNumber<float>.Log2(float value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IBitwiseOperators<float, float, float>.operator &(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IBitwiseOperators<float, float, float>.operator |(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IBitwiseOperators<float, float, float>.operator ^(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IBitwiseOperators<float, float, float>.operator ~(float value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<float, float>.operator <(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<float, float>.operator <=(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<float, float>.operator >(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<float, float>.operator >=(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IDecrementOperators<float>.operator --(float value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IDivisionOperators<float, float, float>.operator /(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<float, float>.operator ==(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<float, float>.operator !=(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Acos(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Acosh(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Asin(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Asinh(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Atan(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Atan2(float y, float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Atanh(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.BitIncrement(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.BitDecrement(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Cbrt(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Ceiling(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.CopySign(float x, float y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Cos(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Cosh(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Exp(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Floor(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.FusedMultiplyAdd(float left, float right, float addend) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.IEEERemainder(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static TInteger IFloatingPoint<float>.ILogB<TInteger>(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Log(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Log(float x, float newBase) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Log2(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Log10(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.MaxMagnitude(float x, float y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.MinMagnitude(float x, float y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Pow(float x, float y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Round(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Round<TInteger>(float x, TInteger digits) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Round(float x, System.MidpointRounding mode) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Round<TInteger>(float x, TInteger digits, System.MidpointRounding mode) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.ScaleB<TInteger>(float x, TInteger n) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Sin(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Sinh(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Sqrt(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Tan(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Tanh(float x) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IFloatingPoint<float>.Truncate(float x) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsFinite(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsNaN(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsNegative(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsNegativeInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsNormal(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsPositiveInfinity(float x) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static bool IFloatingPoint<float>.IsSubnormal(float x) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IIncrementOperators<float>.operator ++(float value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IModulusOperators<float, float, float>.operator %(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IMultiplyOperators<float, float, float>.operator *(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Abs(float value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Clamp(float value, float min, float max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (float Quotient, float Remainder) INumber<float>.DivRem(float left, float right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Max(float x, float y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Min(float x, float y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float INumber<float>.Sign(float value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<float>.TryCreate<TOther>(TOther value, out float result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<float>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out float result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<float>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out float result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IParseable<float>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<float>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out float result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float ISignedNumber<float>.NegativeOne { get; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float ISpanParseable<float>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<float>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out float result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float ISubtractionOperators<float, float, float>.operator -(float left, float right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IUnaryNegationOperators<float, float>.operator -(float value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static float IUnaryPlusOperators<float, float>.operator +(float value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -5765,9 +5822,9 @@ namespace System
         public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(System.Span<char> destination) { }
+        public static System.String Create(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("provider")] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
+        public static System.String Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "provider", "initialBuffer"})] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
         public static System.String Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }
-        public static string Create(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("provider")] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
-        public static string Create(System.IFormatProvider? provider, System.Span<char> initialBuffer, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("provider", "initialBuffer")] ref System.Runtime.CompilerServices.DefaultInterpolatedStringHandler handler) { throw null; }
         public bool EndsWith(char value) { throw null; }
         public bool EndsWith(System.String value) { throw null; }
         public bool EndsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo? culture) { throw null; }
@@ -6036,32 +6093,37 @@ namespace System
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator <(System.TimeOnly left, System.TimeOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator <=(System.TimeOnly left, System.TimeOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator >(System.TimeOnly left, System.TimeOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeOnly, System.TimeOnly>.operator >=(System.TimeOnly left, System.TimeOnly right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.TimeOnly, System.TimeOnly>.operator ==(System.TimeOnly left, System.TimeOnly right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.TimeOnly, System.TimeOnly>.operator !=(System.TimeOnly left, System.TimeOnly right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeOnly IParseable<System.TimeOnly>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.TimeOnly>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.TimeOnly result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeOnly ISpanParseable<System.TimeOnly>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.TimeOnly>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.TimeOnly result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan ISubtractionOperators<System.TimeOnly, System.TimeOnly, System.TimeSpan>.operator -(System.TimeOnly left, System.TimeOnly right) { throw null; }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MinValue { get { throw null; } }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static System.TimeOnly IMinMaxValue<System.TimeOnly>.MaxValue { get { throw null; } }
 #endif // FEATURE_GENERIC_MATH
     }
     public partial class TimeoutException : System.SystemException
@@ -6174,59 +6236,59 @@ namespace System
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string?[]? formats, System.IFormatProvider? formatProvider, out System.TimeSpan result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IAdditiveIdentity<System.TimeSpan, System.TimeSpan>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IMinMaxValue<System.TimeSpan>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IMinMaxValue<System.TimeSpan>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IMultiplicativeIdentity<System.TimeSpan, double>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IAdditionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>.operator +(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator <(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator <=(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator >(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<System.TimeSpan, System.TimeSpan>.operator >=(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IDivisionOperators<System.TimeSpan, double, System.TimeSpan>.operator /(System.TimeSpan left, double right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static double IDivisionOperators<System.TimeSpan, System.TimeSpan, double>.operator /(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.TimeSpan, System.TimeSpan>.operator ==(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<System.TimeSpan, System.TimeSpan>.operator !=(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IMultiplyOperators<System.TimeSpan, double, System.TimeSpan>.operator *(System.TimeSpan left, double right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IParseable<System.TimeSpan>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<System.TimeSpan>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.TimeSpan result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan ISpanParseable<System.TimeSpan>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<System.TimeSpan>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.TimeSpan result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan ISubtractionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>.operator -(System.TimeSpan left, System.TimeSpan right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IUnaryNegationOperators<System.TimeSpan, System.TimeSpan>.operator -(System.TimeSpan value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static System.TimeSpan IUnaryPlusOperators<System.TimeSpan, System.TimeSpan>.operator +(System.TimeSpan value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -6250,7 +6312,7 @@ namespace System
         public System.TimeSpan BaseUtcOffset { get { throw null; } }
         public string DaylightName { get { throw null; } }
         public string DisplayName { get { throw null; } }
-        public bool HasIanaId { get; }
+        public bool HasIanaId { get { throw null; } }
         public string Id { get { throw null; } }
         public static System.TimeZoneInfo Local { get { throw null; } }
         public string StandardName { get { throw null; } }
@@ -6291,15 +6353,15 @@ namespace System
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryConvertIanaIdToWindowsId(string ianaId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? windowsId) { throw null; }
-        public static bool TryConvertWindowsIdToIanaId(string windowsId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
         public static bool TryConvertWindowsIdToIanaId(string windowsId, string? region, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
+        public static bool TryConvertWindowsIdToIanaId(string windowsId, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out string? ianaId) { throw null; }
         public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             internal AdjustmentRule() { }
+            public System.TimeSpan BaseUtcOffsetDelta { get { throw null; } }
             public System.DateTime DateEnd { get { throw null; } }
             public System.DateTime DateStart { get { throw null; } }
             public System.TimeSpan DaylightDelta { get { throw null; } }
-            public System.TimeSpan BaseUtcOffsetDelta { get { throw null; } }
             public System.TimeZoneInfo.TransitionTime DaylightTransitionEnd { get { throw null; } }
             public System.TimeZoneInfo.TransitionTime DaylightTransitionStart { get { throw null; } }
             public static System.TimeZoneInfo.AdjustmentRule CreateAdjustmentRule(System.DateTime dateStart, System.DateTime dateEnd, System.TimeSpan daylightDelta, System.TimeZoneInfo.TransitionTime daylightTransitionStart, System.TimeZoneInfo.TransitionTime daylightTransitionEnd) { throw null; }
@@ -6653,18 +6715,18 @@ namespace System
         public abstract System.Type UnderlyingSystemType { get; }
         public override bool Equals(object? o) { throw null; }
         public virtual bool Equals(System.Type? o) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public virtual System.Type[] FindInterfaces(System.Reflection.TypeFilter filter, object? filterCriteria) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public virtual System.Reflection.MemberInfo[] FindMembers(System.Reflection.MemberTypes memberType, System.Reflection.BindingFlags bindingAttr, System.Reflection.MemberFilter? filter, object? filterCriteria) { throw null; }
         public virtual int GetArrayRank() { throw null; }
         protected abstract System.Reflection.TypeAttributes GetAttributeFlagsImpl();
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
-        public System.Reflection.ConstructorInfo? GetConstructor(System.Reflection.BindingFlags bindingAttr, System.Type[] types) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Reflection.ConstructorInfo? GetConstructor(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Reflection.ConstructorInfo? GetConstructor(System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
+        public System.Reflection.ConstructorInfo? GetConstructor(System.Reflection.BindingFlags bindingAttr, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Reflection.ConstructorInfo? GetConstructor(System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -6701,12 +6763,12 @@ namespace System
         public virtual System.Type GetGenericTypeDefinition() { throw null; }
         public override int GetHashCode() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
-        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public System.Type? GetInterface(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
-        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public abstract System.Type? GetInterface(string name, bool ignoreCase);
-        public virtual System.Reflection.InterfaceMapping GetInterfaceMap([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type interfaceType) { throw null; }
+        public virtual System.Reflection.InterfaceMapping GetInterfaceMap([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type interfaceType) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public abstract System.Type[] GetInterfaces();
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
@@ -6715,11 +6777,11 @@ namespace System
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public virtual System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.MemberTypes type, System.Reflection.BindingFlags bindingAttr) { throw null; }
-        public virtual System.Reflection.MemberInfo GetMemberWithSameMetadataDefinitionAs(System.Reflection.MemberInfo member) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public System.Reflection.MemberInfo[] GetMembers() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public abstract System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr);
+        public virtual System.Reflection.MemberInfo GetMemberWithSameMetadataDefinitionAs(System.Reflection.MemberInfo member) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -6733,11 +6795,11 @@ namespace System
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
-        public System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr, System.Type[] types) { throw null; }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Type[] types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
+        public System.Reflection.MethodInfo? GetMethod(string name, System.Reflection.BindingFlags bindingAttr, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         public System.Reflection.MethodInfo? GetMethod(string name, System.Type[] types) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -6802,7 +6864,7 @@ namespace System
         public static System.Type? GetTypeFromCLSID(System.Guid clsid, string? server) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Type? GetTypeFromCLSID(System.Guid clsid, string? server, bool throwOnError) { throw null; }
-        public static System.Type GetTypeFromHandle(System.RuntimeTypeHandle handle) { throw null; }
+        public static System.Type? GetTypeFromHandle(System.RuntimeTypeHandle handle) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Type? GetTypeFromProgID(string progID) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
@@ -6821,7 +6883,7 @@ namespace System
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
         public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
-        public bool IsAssignableTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? targetType) { throw null; }
+        public bool IsAssignableTo([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? targetType) { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
@@ -6961,130 +7023,130 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt16 result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IAdditiveIdentity<ushort, ushort>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IMinMaxValue<ushort>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IMinMaxValue<ushort>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IMultiplicativeIdentity<ushort, ushort>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBinaryInteger<ushort>.LeadingZeroCount(ushort value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBinaryInteger<ushort>.PopCount(ushort value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBinaryInteger<ushort>.RotateLeft(ushort value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBinaryInteger<ushort>.RotateRight(ushort value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBinaryInteger<ushort>.TrailingZeroCount(ushort value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<ushort>.IsPow2(ushort value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBinaryNumber<ushort>.Log2(ushort value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBitwiseOperators<ushort, ushort, ushort>.operator |(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBitwiseOperators<ushort, ushort, ushort>.operator ^(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IBitwiseOperators<ushort, ushort, ushort>.operator ~(ushort value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ushort, ushort>.operator <(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ushort, ushort>.operator <=(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ushort, ushort>.operator >(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ushort, ushort>.operator >=(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IDecrementOperators<ushort>.operator --(ushort value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<ushort, ushort>.operator ==(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<ushort, ushort>.operator !=(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IIncrementOperators<ushort>.operator ++(ushort value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IModulusOperators<ushort, ushort, ushort>.operator %(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IMultiplyOperators<ushort, ushort, ushort>.operator *(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Abs(ushort value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Clamp(ushort value, ushort min, ushort max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (ushort Quotient, ushort Remainder) INumber<ushort>.DivRem(ushort left, ushort right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Max(ushort x, ushort y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Min(ushort x, ushort y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort INumber<ushort>.Sign(ushort value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<ushort>.TryCreate<TOther>(TOther value, out ushort result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<ushort>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ushort result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<ushort>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ushort result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IParseable<ushort>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<ushort>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out ushort result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IShiftOperators<ushort, ushort>.operator <<(ushort value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IShiftOperators<ushort, ushort>.operator >>(ushort value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort ISpanParseable<ushort>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<ushort>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out ushort result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort ISubtractionOperators<ushort, ushort, ushort>.operator -(ushort left, ushort right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IUnaryNegationOperators<ushort, ushort>.operator -(ushort value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ushort IUnaryPlusOperators<ushort, ushort>.operator +(ushort value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -7138,130 +7200,130 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt32 result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IAdditiveIdentity<uint, uint>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IMinMaxValue<uint>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IMinMaxValue<uint>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IMultiplicativeIdentity<uint, uint>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IAdditionOperators<uint, uint, uint>.operator +(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBinaryInteger<uint>.LeadingZeroCount(uint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBinaryInteger<uint>.PopCount(uint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBinaryInteger<uint>.RotateLeft(uint value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBinaryInteger<uint>.RotateRight(uint value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBinaryInteger<uint>.TrailingZeroCount(uint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<uint>.IsPow2(uint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBinaryNumber<uint>.Log2(uint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBitwiseOperators<uint, uint, uint>.operator &(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBitwiseOperators<uint, uint, uint>.operator |(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBitwiseOperators<uint, uint, uint>.operator ^(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IBitwiseOperators<uint, uint, uint>.operator ~(uint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<uint, uint>.operator <(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<uint, uint>.operator <=(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<uint, uint>.operator >(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<uint, uint>.operator >=(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IDecrementOperators<uint>.operator --(uint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IDivisionOperators<uint, uint, uint>.operator /(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<uint, uint>.operator ==(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<uint, uint>.operator !=(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IIncrementOperators<uint>.operator ++(uint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IModulusOperators<uint, uint, uint>.operator %(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IMultiplyOperators<uint, uint, uint>.operator *(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Abs(uint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Clamp(uint value, uint min, uint max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (uint Quotient, uint Remainder) INumber<uint>.DivRem(uint left, uint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Max(uint x, uint y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Min(uint x, uint y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint INumber<uint>.Sign(uint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<uint>.TryCreate<TOther>(TOther value, out uint result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<uint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out uint result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<uint>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out uint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IParseable<uint>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<uint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out uint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IShiftOperators<uint, uint>.operator <<(uint value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IShiftOperators<uint, uint>.operator >>(uint value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint ISpanParseable<uint>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<uint>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out uint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint ISubtractionOperators<uint, uint, uint>.operator -(uint left, uint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IUnaryNegationOperators<uint, uint>.operator -(uint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static uint IUnaryPlusOperators<uint, uint>.operator +(uint value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -7315,130 +7377,130 @@ namespace System
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UInt64 result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IAdditiveIdentity<ulong, ulong>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IMinMaxValue<ulong>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IMinMaxValue<ulong>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IMultiplicativeIdentity<ulong, ulong>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBinaryInteger<ulong>.LeadingZeroCount(ulong value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBinaryInteger<ulong>.PopCount(ulong value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBinaryInteger<ulong>.RotateLeft(ulong value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBinaryInteger<ulong>.RotateRight(ulong value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBinaryInteger<ulong>.TrailingZeroCount(ulong value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<ulong>.IsPow2(ulong value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBinaryNumber<ulong>.Log2(ulong value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBitwiseOperators<ulong, ulong, ulong>.operator |(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBitwiseOperators<ulong, ulong, ulong>.operator ^(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IBitwiseOperators<ulong, ulong, ulong>.operator ~(ulong value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ulong, ulong>.operator <(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ulong, ulong>.operator <=(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ulong, ulong>.operator >(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<ulong, ulong>.operator >=(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IDecrementOperators<ulong>.operator --(ulong value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IDivisionOperators<ulong, ulong, ulong>.operator /(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<ulong, ulong>.operator ==(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<ulong, ulong>.operator !=(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IIncrementOperators<ulong>.operator ++(ulong value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IModulusOperators<ulong, ulong, ulong>.operator %(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IMultiplyOperators<ulong, ulong, ulong>.operator *(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Abs(ulong value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Clamp(ulong value, ulong min, ulong max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (ulong Quotient, ulong Remainder) INumber<ulong>.DivRem(ulong left, ulong right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Max(ulong x, ulong y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Min(ulong x, ulong y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong INumber<ulong>.Sign(ulong value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<ulong>.TryCreate<TOther>(TOther value, out ulong result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<ulong>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ulong result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<ulong>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out ulong result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IParseable<ulong>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<ulong>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out ulong result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IShiftOperators<ulong, ulong>.operator <<(ulong value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IShiftOperators<ulong, ulong>.operator >>(ulong value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong ISpanParseable<ulong>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<ulong>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out ulong result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong ISubtractionOperators<ulong, ulong, ulong>.operator -(ulong left, ulong right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IUnaryNegationOperators<ulong, ulong>.operator -(ulong value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -7497,129 +7559,129 @@ namespace System
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
 
 #if FEATURE_GENERIC_MATH
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IAdditiveIdentity<nuint, nuint>.AdditiveIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IMinMaxValue<nuint>.MinValue { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IMinMaxValue<nuint>.MaxValue { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IMultiplicativeIdentity<nuint, nuint>.MultiplicativeIdentity { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.One { get { throw null; } }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Zero { get { throw null; } }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBinaryInteger<nuint>.LeadingZeroCount(nuint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBinaryInteger<nuint>.PopCount(nuint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBinaryInteger<nuint>.RotateRight(nuint value, int rotateAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBinaryInteger<nuint>.TrailingZeroCount(nuint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IBinaryNumber<nuint>.IsPow2(nuint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBinaryNumber<nuint>.Log2(nuint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator |(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator ^(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IBitwiseOperators<nuint, nuint, nuint>.operator ~(nuint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nuint, nuint>.operator <(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nuint, nuint>.operator <=(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nuint, nuint>.operator >(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IComparisonOperators<nuint, nuint>.operator >=(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IDecrementOperators<nuint>.operator --(nuint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IDivisionOperators<nuint, nuint, nuint>.operator /(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<nuint, nuint>.operator ==(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IEqualityOperators<nuint, nuint>.operator !=(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IIncrementOperators<nuint>.operator ++(nuint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IModulusOperators<nuint, nuint, nuint>.operator %(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IMultiplyOperators<nuint, nuint, nuint>.operator *(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Abs(nuint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Clamp(nuint value, nuint min, nuint max) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Create<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.CreateSaturating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.CreateTruncating<TOther>(TOther value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static (nuint Quotient, nuint Remainder) INumber<nuint>.DivRem(nuint left, nuint right) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Max(nuint x, nuint y) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
-        static nuint INumber<nuint>.Min(nuint x, nuint y) { throw null; }[System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+        static nuint INumber<nuint>.Min(nuint x, nuint y) { throw null; }[System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint INumber<nuint>.Sign(nuint value) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<nuint>.TryCreate<TOther>(TOther value, out nuint result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<nuint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nuint result) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool INumber<nuint>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nuint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IParseable<nuint>.Parse(string s, System.IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool IParseable<nuint>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out nuint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IShiftOperators<nuint, nuint>.operator <<(nuint value, int shiftAmount) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeatures]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IShiftOperators<nuint, nuint>.operator >>(nuint value, int shiftAmount) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint ISpanParseable<nuint>.Parse(System.ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static bool ISpanParseable<nuint>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out nuint result) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint ISubtractionOperators<nuint, nuint, nuint>.operator -(nuint left, nuint right) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IUnaryNegationOperators<nuint, nuint>.operator -(nuint value) { throw null; }
 
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         static nuint IUnaryPlusOperators<nuint, nuint>.operator +(nuint value) { throw null; }
 #endif // FEATURE_GENERIC_MATH
     }
@@ -7660,6 +7722,7 @@ namespace System
         public Uri(string uriString) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
         public Uri(string uriString, bool dontEscape) { }
+        public Uri(string uriString, in System.UriCreationOptions creationOptions) { }
         public Uri(string uriString, System.UriKind uriKind) { }
         public Uri(System.Uri baseUri, string? relativeUri) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
@@ -7729,6 +7792,7 @@ namespace System
         protected virtual void Parse() { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
+        public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, in System.UriCreationOptions creationOptions, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, System.UriKind uriKind, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, string? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, System.Uri? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
@@ -7785,6 +7849,11 @@ namespace System
         StrongAuthority = 134,
         NormalizedHost = 256,
         KeepDelimiter = 1073741824,
+    }
+    public partial struct UriCreationOptions
+    {
+        private int _dummyPrimitive;
+        public bool DangerousDisablePathAndQueryCanonicalization { readonly get { throw null; } set { } }
     }
     public enum UriFormat
     {
@@ -8020,7 +8089,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.ISpanFormattable
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -8047,14 +8116,14 @@ namespace System
         public static bool operator <=(System.Version? v1, System.Version? v2) { throw null; }
         public static System.Version Parse(System.ReadOnlySpan<char> input) { throw null; }
         public static System.Version Parse(string input) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
-        string System.IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
     }
     public partial struct Void
     {
@@ -8173,9 +8242,9 @@ namespace System.CodeDom.Compiler
         public override void Write(string format, params object?[] arg) { }
         public override System.Threading.Tasks.Task WriteAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.Task WriteAsync(string? value) { throw null; }
-        public override System.Threading.Tasks.Task WriteAsync(ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public override System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override System.Threading.Tasks.Task WriteAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteLine() { }
         public override void WriteLine(bool value) { }
         public override void WriteLine(char value) { }
@@ -8192,14 +8261,14 @@ namespace System.CodeDom.Compiler
         public override void WriteLine(string format, params object?[] arg) { }
         [System.CLSCompliantAttribute(false)]
         public override void WriteLine(uint value) { }
-        public void WriteLineNoTabs(string? s) { }
-        public System.Threading.Tasks.Task WriteLineNoTabsAsync(string? s) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync() { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char value) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(char[] buffer, int index, int count) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(System.ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override System.Threading.Tasks.Task WriteLineAsync(string? value) { throw null; }
-        public override System.Threading.Tasks.Task WriteLineAsync(ReadOnlyMemory<char> buffer, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public override System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public override System.Threading.Tasks.Task WriteLineAsync(System.Text.StringBuilder? value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public void WriteLineNoTabs(string? s) { }
+        public System.Threading.Tasks.Task WriteLineNoTabsAsync(string? s) { throw null; }
     }
 }
 namespace System.Collections
@@ -8591,6 +8660,77 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
     }
+    public partial class ReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
+    {
+        public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
+        public int Count { get { throw null; } }
+        protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
+        public TValue this[TKey key] { get { throw null; } }
+        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.IsReadOnly { get { throw null; } }
+        TValue System.Collections.Generic.IDictionary<TKey, TValue>.this[TKey key] { get { throw null; } set { } }
+        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey, TValue>.Values { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values { get { throw null; } }
+        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+        object System.Collections.ICollection.SyncRoot { get { throw null; } }
+        bool System.Collections.IDictionary.IsFixedSize { get { throw null; } }
+        bool System.Collections.IDictionary.IsReadOnly { get { throw null; } }
+        object? System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
+        System.Collections.ICollection System.Collections.IDictionary.Keys { get { throw null; } }
+        System.Collections.ICollection System.Collections.IDictionary.Values { get { throw null; } }
+        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.ValueCollection Values { get { throw null; } }
+        public bool ContainsKey(TKey key) { throw null; }
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Clear() { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
+        void System.Collections.Generic.IDictionary<TKey, TValue>.Add(TKey key, TValue value) { }
+        bool System.Collections.Generic.IDictionary<TKey, TValue>.Remove(TKey key) { throw null; }
+        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
+        void System.Collections.IDictionary.Clear() { }
+        bool System.Collections.IDictionary.Contains(object key) { throw null; }
+        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
+        void System.Collections.IDictionary.Remove(object key) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public sealed partial class KeyCollection : System.Collections.Generic.ICollection<TKey>, System.Collections.Generic.IEnumerable<TKey>, System.Collections.Generic.IReadOnlyCollection<TKey>, System.Collections.ICollection, System.Collections.IEnumerable
+        {
+            internal KeyCollection() { }
+            public int Count { get { throw null; } }
+            bool System.Collections.Generic.ICollection<TKey>.IsReadOnly { get { throw null; } }
+            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+            object System.Collections.ICollection.SyncRoot { get { throw null; } }
+            public void CopyTo(TKey[] array, int arrayIndex) { }
+            public System.Collections.Generic.IEnumerator<TKey> GetEnumerator() { throw null; }
+            void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
+            void System.Collections.Generic.ICollection<TKey>.Clear() { }
+            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
+            bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
+            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        }
+        public sealed partial class ValueCollection : System.Collections.Generic.ICollection<TValue>, System.Collections.Generic.IEnumerable<TValue>, System.Collections.Generic.IReadOnlyCollection<TValue>, System.Collections.ICollection, System.Collections.IEnumerable
+        {
+            internal ValueCollection() { }
+            public int Count { get { throw null; } }
+            bool System.Collections.Generic.ICollection<TValue>.IsReadOnly { get { throw null; } }
+            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
+            object System.Collections.ICollection.SyncRoot { get { throw null; } }
+            public void CopyTo(TValue[] array, int arrayIndex) { }
+            public System.Collections.Generic.IEnumerator<TValue> GetEnumerator() { throw null; }
+            void System.Collections.Generic.ICollection<TValue>.Add(TValue item) { }
+            void System.Collections.Generic.ICollection<TValue>.Clear() { }
+            bool System.Collections.Generic.ICollection<TValue>.Contains(TValue item) { throw null; }
+            bool System.Collections.Generic.ICollection<TValue>.Remove(TValue item) { throw null; }
+            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        }
+    }
 }
 namespace System.ComponentModel
 {
@@ -8609,8 +8749,8 @@ namespace System.ComponentModel
         public DefaultValueAttribute(sbyte value) { }
         public DefaultValueAttribute(float value) { }
         public DefaultValueAttribute(string? value) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        public DefaultValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string? value) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
+        public DefaultValueAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string? value) { }
         [System.CLSCompliantAttribute(false)]
         public DefaultValueAttribute(ushort value) { }
         [System.CLSCompliantAttribute(false)]
@@ -8672,13 +8812,13 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
-        [System.Diagnostics.Conditional("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
-        [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler message, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler detailMessage) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -8708,17 +8848,17 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Write(string? message, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteIf(bool condition, object? value) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteIf(bool condition, object? value, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteIf(bool condition, string? message) { }
-        [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteIf(bool condition, string? message, string? category) { }
-        [System.Diagnostics.Conditional("DEBUG")]
-        public static void WriteIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLine(object? value) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -8730,52 +8870,52 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLine(string? message, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, object? value) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, object? value, string? category) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, string? message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message) { }
-        [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, string? message, string? category) { }
-        [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void WriteLineIf(bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.WriteIfInterpolatedStringHandler message, string? category) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
-        public struct AssertInterpolatedStringHandler
+        public partial struct AssertInterpolatedStringHandler
         {
             private object _dummy;
             private int _dummyPrimitive;
             public AssertInterpolatedStringHandler(int literalLength, int formattedCount, bool condition, out bool shouldAppend) { throw null; }
-            public void AppendLiteral(string value) { }
-            public void AppendFormatted<T>(T value) { }
-            public void AppendFormatted<T>(T value, string? format) { }
-            public void AppendFormatted<T>(T value, int alignment) { }
-            public void AppendFormatted<T>(T value, int alignment, string? format) { }
-            public void AppendFormatted(ReadOnlySpan<char> value) { }
-            public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+            public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(string? value) { }
             public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
-            public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted<T>(T value) { }
+            public void AppendFormatted<T>(T value, int alignment) { }
+            public void AppendFormatted<T>(T value, int alignment, string? format) { }
+            public void AppendFormatted<T>(T value, string? format) { }
+            public void AppendLiteral(string value) { }
         }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
-        public struct WriteIfInterpolatedStringHandler
+        public partial struct WriteIfInterpolatedStringHandler
         {
             private object _dummy;
             private int _dummyPrimitive;
             public WriteIfInterpolatedStringHandler(int literalLength, int formattedCount, bool condition, out bool shouldAppend) { throw null; }
-            public void AppendLiteral(string value) { }
-            public void AppendFormatted<T>(T value) { }
-            public void AppendFormatted<T>(T value, string? format) { }
-            public void AppendFormatted<T>(T value, int alignment) { }
-            public void AppendFormatted<T>(T value, int alignment, string? format) { }
-            public void AppendFormatted(ReadOnlySpan<char> value) { }
-            public void AppendFormatted(ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+            public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(string? value) { }
             public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
-            public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted<T>(T value) { }
+            public void AppendFormatted<T>(T value, int alignment) { }
+            public void AppendFormatted<T>(T value, int alignment, string? format) { }
+            public void AppendFormatted<T>(T value, string? format) { }
+            public void AppendLiteral(string value) { }
         }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple=false)]
@@ -8875,8 +9015,8 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public string VisualizerTypeName { get { throw null; } }
     }
-    [System.AttributeUsage(AttributeTargets.Class | System.AttributeTargets.Method | System.AttributeTargets.Constructor | System.AttributeTargets.Struct, Inherited = false)]
-    public sealed partial class StackTraceHiddenAttribute : Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class StackTraceHiddenAttribute : System.Attribute
     {
         public StackTraceHiddenAttribute() { }
     }
@@ -8904,6 +9044,13 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public AllowNullAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
+    public sealed partial class ConstantExpectedAttribute : System.Attribute
+    {
+        public ConstantExpectedAttribute() { }
+        public object? Max { get { throw null; } set { } }
+        public object? Min { get { throw null; } set { } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class DisallowNullAttribute : System.Attribute
     {
@@ -8920,7 +9067,7 @@ namespace System.Diagnostics.CodeAnalysis
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct, Inherited=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.GenericParameter | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class DynamicallyAccessedMembersAttribute : System.Attribute
     {
         public DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes memberTypes) { }
@@ -8965,7 +9112,7 @@ namespace System.Diagnostics.CodeAnalysis
     public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute
     {
         public ExcludeFromCodeCoverageAttribute() { }
-        public string? Justification { get; set; }
+        public string? Justification { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
@@ -9010,12 +9157,19 @@ namespace System.Diagnostics.CodeAnalysis
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false, AllowMultiple=false)]
     public sealed partial class RequiresAssemblyFilesAttribute : System.Attribute
     {
         public RequiresAssemblyFilesAttribute() { }
         public RequiresAssemblyFilesAttribute(string message) { }
         public string? Message { get { throw null; } }
+        public string? Url { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class RequiresDynamicCodeAttribute : System.Attribute
+    {
+        public RequiresDynamicCodeAttribute(string message) { }
+        public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
@@ -9024,6 +9178,16 @@ namespace System.Diagnostics.CodeAnalysis
         public RequiresUnreferencedCodeAttribute(string message) { }
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    public sealed partial class StringSyntaxAttribute : System.Attribute
+    {
+        public StringSyntaxAttribute(string syntax) { }
+        public StringSyntaxAttribute(string syntax, params object?[] arguments) { }
+        public string Syntax { get { throw null; } }
+        public object?[] Arguments { get { throw null; } }
+        public const string DateTimeFormat = "DateTimeFormat";
+        public const string Regex = "Regex";
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
     [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
@@ -9759,9 +9923,9 @@ namespace System.Globalization
         public override int GetHashCode() { throw null; }
         public static string GetNextTextElement(string str) { throw null; }
         public static string GetNextTextElement(string str, int index) { throw null; }
+        public static int GetNextTextElementLength(System.ReadOnlySpan<char> str) { throw null; }
         public static int GetNextTextElementLength(string str) { throw null; }
         public static int GetNextTextElementLength(string str, int index) { throw null; }
-        public static int GetNextTextElementLength(System.ReadOnlySpan<char> str) { throw null; }
         public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str) { throw null; }
         public static System.Globalization.TextElementEnumerator GetTextElementEnumerator(string str, int index) { throw null; }
         public static int[] ParseCombiningCharacters(string str) { throw null; }
@@ -10052,6 +10216,95 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
+    public static partial class Directory
+    {
+        public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
+        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
+        public static void Delete(string path) { }
+        public static void Delete(string path, bool recursive) { }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static System.DateTime GetCreationTime(string path) { throw null; }
+        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
+        public static string GetCurrentDirectory() { throw null; }
+        public static string[] GetDirectories(string path) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static string[] GetDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string GetDirectoryRoot(string path) { throw null; }
+        public static string[] GetFiles(string path) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static string[] GetFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static string[] GetFileSystemEntries(string path) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public static System.DateTime GetLastAccessTime(string path) { throw null; }
+        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
+        public static System.DateTime GetLastWriteTime(string path) { throw null; }
+        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        public static string[] GetLogicalDrives() { throw null; }
+        public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
+        public static void Move(string sourceDirName, string destDirName) { }
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
+        public static void SetCreationTime(string path, System.DateTime creationTime) { }
+        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
+        public static void SetCurrentDirectory(string path) { }
+        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
+        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
+        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
+        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+    }
+    public sealed partial class DirectoryInfo : System.IO.FileSystemInfo
+    {
+        public DirectoryInfo(string path) { }
+        public override bool Exists { get { throw null; } }
+        public override string Name { get { throw null; } }
+        public System.IO.DirectoryInfo? Parent { get { throw null; } }
+        public System.IO.DirectoryInfo Root { get { throw null; } }
+        public void Create() { }
+        public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
+        public override void Delete() { }
+        public void Delete(bool recursive) { }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories() { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.FileInfo[] GetFiles() { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern) { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos() { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
+        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
+        public void MoveTo(string destDirName) { }
+        public override string ToString() { throw null; }
+    }
     public partial class DirectoryNotFoundException : System.IO.IOException
     {
         public DirectoryNotFoundException() { }
@@ -10065,6 +10318,94 @@ namespace System.IO
         protected EndOfStreamException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public EndOfStreamException(string? message) { }
         public EndOfStreamException(string? message, System.Exception? innerException) { }
+    }
+    public partial class EnumerationOptions
+    {
+        public EnumerationOptions() { }
+        public System.IO.FileAttributes AttributesToSkip { get { throw null; } set { } }
+        public int BufferSize { get { throw null; } set { } }
+        public bool IgnoreInaccessible { get { throw null; } set { } }
+        public System.IO.MatchCasing MatchCasing { get { throw null; } set { } }
+        public System.IO.MatchType MatchType { get { throw null; } set { } }
+        public int MaxRecursionDepth { get { throw null; } set { } }
+        public bool RecurseSubdirectories { get { throw null; } set { } }
+        public bool ReturnSpecialDirectories { get { throw null; } set { } }
+    }
+    public static partial class File
+    {
+        public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
+        public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void AppendAllText(string path, string? contents) { }
+        public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.IO.StreamWriter AppendText(string path) { throw null; }
+        public static void Copy(string sourceFileName, string destFileName) { }
+        public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
+        public static System.IO.FileStream Create(string path) { throw null; }
+        public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
+        public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
+        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
+        public static System.IO.StreamWriter CreateText(string path) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static void Decrypt(string path) { }
+        public static void Delete(string path) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static void Encrypt(string path) { }
+        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
+        public static System.IO.FileAttributes GetAttributes(string path) { throw null; }
+        public static System.DateTime GetCreationTime(string path) { throw null; }
+        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
+        public static System.DateTime GetLastAccessTime(string path) { throw null; }
+        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
+        public static System.DateTime GetLastWriteTime(string path) { throw null; }
+        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
+        public static void Move(string sourceFileName, string destFileName) { }
+        public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
+        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenHandle(string path, System.IO.FileMode mode = System.IO.FileMode.Open, System.IO.FileAccess access = System.IO.FileAccess.Read, System.IO.FileShare share = System.IO.FileShare.Read, System.IO.FileOptions options = System.IO.FileOptions.None, long preallocationSize = (long)0) { throw null; }
+        public static System.IO.FileStream OpenRead(string path) { throw null; }
+        public static System.IO.StreamReader OpenText(string path) { throw null; }
+        public static System.IO.FileStream OpenWrite(string path) { throw null; }
+        public static byte[] ReadAllBytes(string path) { throw null; }
+        public static System.Threading.Tasks.Task<byte[]> ReadAllBytesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static string[] ReadAllLines(string path) { throw null; }
+        public static string[] ReadAllLines(string path, System.Text.Encoding encoding) { throw null; }
+        public static System.Threading.Tasks.Task<string[]> ReadAllLinesAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<string[]> ReadAllLinesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static string ReadAllText(string path) { throw null; }
+        public static string ReadAllText(string path, System.Text.Encoding encoding) { throw null; }
+        public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> ReadLines(string path) { throw null; }
+        public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
+        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
+        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
+        public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
+        public static void SetCreationTime(string path, System.DateTime creationTime) { }
+        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
+        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
+        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
+        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
+        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+        public static void WriteAllBytes(string path, byte[] bytes) { }
+        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
+        public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
+        public static void WriteAllLines(string path, string[] contents) { }
+        public static void WriteAllLines(string path, string[] contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void WriteAllText(string path, string? contents) { }
+        public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     [System.FlagsAttribute]
     public enum FileAccess
@@ -10092,6 +10433,37 @@ namespace System.IO
         Encrypted = 16384,
         IntegrityStream = 32768,
         NoScrubData = 131072,
+    }
+    public sealed partial class FileInfo : System.IO.FileSystemInfo
+    {
+        public FileInfo(string fileName) { }
+        public System.IO.DirectoryInfo? Directory { get { throw null; } }
+        public string? DirectoryName { get { throw null; } }
+        public override bool Exists { get { throw null; } }
+        public bool IsReadOnly { get { throw null; } set { } }
+        public long Length { get { throw null; } }
+        public override string Name { get { throw null; } }
+        public System.IO.StreamWriter AppendText() { throw null; }
+        public System.IO.FileInfo CopyTo(string destFileName) { throw null; }
+        public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
+        public System.IO.FileStream Create() { throw null; }
+        public System.IO.StreamWriter CreateText() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void Decrypt() { }
+        public override void Delete() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public void Encrypt() { }
+        public void MoveTo(string destFileName) { }
+        public void MoveTo(string destFileName, bool overwrite) { }
+        public System.IO.FileStream Open(System.IO.FileMode mode) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
+        public System.IO.FileStream Open(System.IO.FileStreamOptions options) { throw null; }
+        public System.IO.FileStream OpenRead() { throw null; }
+        public System.IO.StreamReader OpenText() { throw null; }
+        public System.IO.FileStream OpenWrite() { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
+        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
     }
     public partial class FileLoadException : System.IO.IOException
     {
@@ -10150,16 +10522,6 @@ namespace System.IO
         ReadWrite = 3,
         Delete = 4,
         Inheritable = 16,
-    }
-    public sealed class FileStreamOptions
-    {
-        public FileStreamOptions() { }
-        public System.IO.FileMode Mode { get; set; }
-        public System.IO.FileAccess Access { get; set; }
-        public System.IO.FileShare Share { get; set; }
-        public System.IO.FileOptions Options { get; set; }
-        public long PreallocationSize { get; set; }
-        public int BufferSize { get; set; }
     }
     public partial class FileStream : System.IO.Stream
     {
@@ -10227,56 +10589,15 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
-    public static partial class Directory
+    public sealed partial class FileStreamOptions
     {
-        public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
-        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
-        public static void Delete(string path) { }
-        public static void Delete(string path, bool recursive) { }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
-        public static System.DateTime GetCreationTime(string path) { throw null; }
-        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
-        public static string GetCurrentDirectory() { throw null; }
-        public static string[] GetDirectories(string path) { throw null; }
-        public static string[] GetDirectories(string path, string searchPattern) { throw null; }
-        public static string[] GetDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static string[] GetDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static string GetDirectoryRoot(string path) { throw null; }
-        public static string[] GetFiles(string path) { throw null; }
-        public static string[] GetFiles(string path, string searchPattern) { throw null; }
-        public static string[] GetFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static string[] GetFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static string[] GetFileSystemEntries(string path) { throw null; }
-        public static string[] GetFileSystemEntries(string path, string searchPattern) { throw null; }
-        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static System.DateTime GetLastAccessTime(string path) { throw null; }
-        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
-        public static System.DateTime GetLastWriteTime(string path) { throw null; }
-        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
-        public static string[] GetLogicalDrives() { throw null; }
-        public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
-        public static void Move(string sourceDirName, string destDirName) { }
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
-        public static void SetCreationTime(string path, System.DateTime creationTime) { }
-        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
-        public static void SetCurrentDirectory(string path) { }
-        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
-        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
-        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
-        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
+        public FileStreamOptions() { }
+        public System.IO.FileAccess Access { get { throw null; } set { } }
+        public int BufferSize { get { throw null; } set { } }
+        public System.IO.FileMode Mode { get { throw null; } set { } }
+        public System.IO.FileOptions Options { get { throw null; } set { } }
+        public long PreallocationSize { get { throw null; } set { } }
+        public System.IO.FileShare Share { get { throw null; } set { } }
     }
     public abstract partial class FileSystemInfo : System.MarshalByRefObject, System.Runtime.Serialization.ISerializable
     {
@@ -10303,180 +10624,6 @@ namespace System.IO
         public System.IO.FileSystemInfo? ResolveLinkTarget(bool returnFinalTarget) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed partial class DirectoryInfo : System.IO.FileSystemInfo
-    {
-        public DirectoryInfo(string path) { }
-        public override bool Exists { get { throw null; } }
-        public override string Name { get { throw null; } }
-        public System.IO.DirectoryInfo? Parent { get { throw null; } }
-        public System.IO.DirectoryInfo Root { get { throw null; } }
-        public void Create() { }
-        public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
-        public override void Delete() { }
-        public void Delete(bool recursive) { }
-        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories() { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.DirectoryInfo> EnumerateDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles() { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileInfo> EnumerateFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos() { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.IO.FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public System.IO.DirectoryInfo[] GetDirectories() { throw null; }
-        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern) { throw null; }
-        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public System.IO.DirectoryInfo[] GetDirectories(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public System.IO.FileInfo[] GetFiles() { throw null; }
-        public System.IO.FileInfo[] GetFiles(string searchPattern) { throw null; }
-        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public System.IO.FileInfo[] GetFiles(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public System.IO.FileSystemInfo[] GetFileSystemInfos() { throw null; }
-        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern) { throw null; }
-        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public System.IO.FileSystemInfo[] GetFileSystemInfos(string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public void MoveTo(string destDirName) { }
-        public override string ToString() { throw null; }
-    }
-    public enum MatchCasing
-    {
-        PlatformDefault = 0,
-        CaseSensitive = 1,
-        CaseInsensitive = 2,
-    }
-    public enum MatchType
-    {
-        Simple = 0,
-        Win32 = 1,
-    }
-    public enum SearchOption
-    {
-        TopDirectoryOnly = 0,
-        AllDirectories = 1,
-    }
-    public partial class EnumerationOptions
-    {
-        public EnumerationOptions() { }
-        public System.IO.FileAttributes AttributesToSkip { get { throw null; } set { } }
-        public int BufferSize { get { throw null; } set { } }
-        public bool IgnoreInaccessible { get { throw null; } set { } }
-        public System.IO.MatchCasing MatchCasing { get { throw null; } set { } }
-        public System.IO.MatchType MatchType { get { throw null; } set { } }
-        public int MaxRecursionDepth { get { throw null; } set { } }
-        public bool RecurseSubdirectories { get { throw null; } set { } }
-        public bool ReturnSpecialDirectories { get { throw null; } set { } }
-    }
-    public static partial class File
-    {
-        public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
-        public static void AppendAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
-        public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task AppendAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void AppendAllText(string path, string? contents) { }
-        public static void AppendAllText(string path, string? contents, System.Text.Encoding encoding) { }
-        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task AppendAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.IO.StreamWriter AppendText(string path) { throw null; }
-        public static void Copy(string sourceFileName, string destFileName) { }
-        public static void Copy(string sourceFileName, string destFileName, bool overwrite) { }
-        public static System.IO.FileStream Create(string path) { throw null; }
-        public static System.IO.FileStream Create(string path, int bufferSize) { throw null; }
-        public static System.IO.FileStream Create(string path, int bufferSize, System.IO.FileOptions options) { throw null; }
-        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
-        public static System.IO.StreamWriter CreateText(string path) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static void Decrypt(string path) { }
-        public static void Delete(string path) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static void Encrypt(string path) { }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
-        public static System.IO.FileAttributes GetAttributes(string path) { throw null; }
-        public static System.DateTime GetCreationTime(string path) { throw null; }
-        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
-        public static System.DateTime GetLastAccessTime(string path) { throw null; }
-        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
-        public static System.DateTime GetLastWriteTime(string path) { throw null; }
-        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
-        public static void Move(string sourceFileName, string destFileName) { }
-        public static void Move(string sourceFileName, string destFileName, bool overwrite) { }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
-        public static System.IO.FileStream Open(string path, System.IO.FileStreamOptions options) { throw null; }
-        public static Microsoft.Win32.SafeHandles.SafeFileHandle OpenHandle(string path, System.IO.FileMode mode = System.IO.FileMode.Open, System.IO.FileAccess access = System.IO.FileAccess.Read, System.IO.FileShare share = System.IO.FileShare.Read, System.IO.FileOptions options = System.IO.FileOptions.None, long preallocationSize = 0) { throw null; }
-        public static System.IO.FileStream OpenRead(string path) { throw null; }
-        public static System.IO.StreamReader OpenText(string path) { throw null; }
-        public static System.IO.FileStream OpenWrite(string path) { throw null; }
-        public static byte[] ReadAllBytes(string path) { throw null; }
-        public static System.Threading.Tasks.Task<byte[]> ReadAllBytesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static string[] ReadAllLines(string path) { throw null; }
-        public static string[] ReadAllLines(string path, System.Text.Encoding encoding) { throw null; }
-        public static System.Threading.Tasks.Task<string[]> ReadAllLinesAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task<string[]> ReadAllLinesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static string ReadAllText(string path) { throw null; }
-        public static string ReadAllText(string path, System.Text.Encoding encoding) { throw null; }
-        public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> ReadLines(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
-        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
-        public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
-        public static void SetAttributes(string path, System.IO.FileAttributes fileAttributes) { }
-        public static void SetCreationTime(string path, System.DateTime creationTime) { }
-        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
-        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
-        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
-        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
-        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
-        public static void WriteAllBytes(string path, byte[] bytes) { }
-        public static System.Threading.Tasks.Task WriteAllBytesAsync(string path, byte[] bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents) { }
-        public static void WriteAllLines(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding) { }
-        public static void WriteAllLines(string path, string[] contents) { }
-        public static void WriteAllLines(string path, string[] contents, System.Text.Encoding encoding) { }
-        public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllLinesAsync(string path, System.Collections.Generic.IEnumerable<string> contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void WriteAllText(string path, string? contents) { }
-        public static void WriteAllText(string path, string? contents, System.Text.Encoding encoding) { }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAllTextAsync(string path, string? contents, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-    }
-    public sealed partial class FileInfo : System.IO.FileSystemInfo
-    {
-        public FileInfo(string fileName) { }
-        public System.IO.DirectoryInfo? Directory { get { throw null; } }
-        public string? DirectoryName { get { throw null; } }
-        public override bool Exists { get { throw null; } }
-        public bool IsReadOnly { get { throw null; } set { } }
-        public long Length { get { throw null; } }
-        public override string Name { get { throw null; } }
-        public System.IO.StreamWriter AppendText() { throw null; }
-        public System.IO.FileInfo CopyTo(string destFileName) { throw null; }
-        public System.IO.FileInfo CopyTo(string destFileName, bool overwrite) { throw null; }
-        public System.IO.FileStream Create() { throw null; }
-        public System.IO.StreamWriter CreateText() { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public void Decrypt() { }
-        public override void Delete() { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public void Encrypt() { }
-        public void MoveTo(string destFileName) { }
-        public void MoveTo(string destFileName, bool overwrite) { }
-        public System.IO.FileStream Open(System.IO.FileMode mode) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileMode mode, System.IO.FileAccess access, System.IO.FileShare share) { throw null; }
-        public System.IO.FileStream Open(System.IO.FileStreamOptions options) { throw null; }
-        public System.IO.FileStream OpenRead() { throw null; }
-        public System.IO.StreamReader OpenText() { throw null; }
-        public System.IO.FileStream OpenWrite() { throw null; }
-        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName) { throw null; }
-        public System.IO.FileInfo Replace(string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { throw null; }
-        public override string ToString() { throw null; }
-    }
     public enum HandleInheritability
     {
         None = 0,
@@ -10495,6 +10642,17 @@ namespace System.IO
         public IOException(string? message) { }
         public IOException(string? message, System.Exception? innerException) { }
         public IOException(string? message, int hresult) { }
+    }
+    public enum MatchCasing
+    {
+        PlatformDefault = 0,
+        CaseSensitive = 1,
+        CaseInsensitive = 2,
+    }
+    public enum MatchType
+    {
+        Simple = 0,
+        Win32 = 1,
     }
     public partial class MemoryStream : System.IO.Stream
     {
@@ -10599,6 +10757,23 @@ namespace System.IO
         public PathTooLongException(string? message) { }
         public PathTooLongException(string? message, System.Exception? innerException) { }
     }
+    public static partial class RandomAccess
+    {
+        public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
+        public static long Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset) { throw null; }
+        public static int Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Span<byte> buffer, long fileOffset) { throw null; }
+        public static System.Threading.Tasks.ValueTask<long> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask<int> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Memory<byte> buffer, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static void Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> buffers, long fileOffset) { }
+        public static void Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlySpan<byte> buffer, long fileOffset) { }
+        public static System.Threading.Tasks.ValueTask WriteAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.ValueTask WriteAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlyMemory<byte> buffer, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public enum SearchOption
+    {
+        TopDirectoryOnly = 0,
+        AllDirectories = 1,
+    }
     public enum SeekOrigin
     {
         Begin = 0,
@@ -10666,8 +10841,8 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
-        public StreamReader(string path, System.IO.FileStreamOptions options) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
+        public StreamReader(string path, System.IO.FileStreamOptions options) { }
         public StreamReader(string path, System.Text.Encoding encoding) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
@@ -10701,10 +10876,10 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
-        public StreamWriter(string path, System.IO.FileStreamOptions options) { }
         public StreamWriter(string path, bool append) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding, int bufferSize) { }
+        public StreamWriter(string path, System.IO.FileStreamOptions options) { }
         public StreamWriter(string path, System.Text.Encoding encoding, System.IO.FileStreamOptions options) { }
         public virtual bool AutoFlush { get { throw null; } set { } }
         public virtual System.IO.Stream BaseStream { get { throw null; } }
@@ -10921,18 +11096,6 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override void WriteByte(byte value) { }
     }
-    public static partial class RandomAccess
-    {
-        public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
-        public static int Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Span<byte> buffer, long fileOffset) { throw null; }
-        public static long Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset) { throw null; }
-        public static System.Threading.Tasks.ValueTask<int> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Memory<byte> buffer, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.ValueTask<long> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static void Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlySpan<byte> buffer, long fileOffset) { throw null; }
-        public static void Write(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> buffers, long fileOffset) { throw null; }
-        public static System.Threading.Tasks.ValueTask WriteAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.ReadOnlyMemory<byte> buffer, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.ValueTask WriteAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-    }
 }
 namespace System.IO.Enumeration
 {
@@ -11017,36 +11180,54 @@ namespace System.Numerics
         public static bool IsPow2(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool IsPow2(ulong value) { throw null; }
+        public static bool IsPow2(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static int LeadingZeroCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static int Log2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Log2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Log2(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int PopCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int PopCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static int PopCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint RotateLeft(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateLeft(ulong value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RotateLeft(nuint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint RotateRight(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateRight(ulong value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static nuint RotateRight(nuint value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint RoundUpToPowerOf2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RoundUpToPowerOf2(nuint value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(ulong value) { throw null; }
+        public static int TrailingZeroCount(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int TrailingZeroCount(nuint value) { throw null; }
     }
 }
 namespace System.Reflection
@@ -11281,12 +11462,15 @@ namespace System.Reflection
         public string? EscapedCodeBase { get { throw null; } }
         public System.Reflection.AssemblyNameFlags Flags { get { throw null; } set { } }
         public string FullName { get { throw null; } }
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Configuration.Assemblies.AssemblyHashAlgorithm HashAlgorithm { get { throw null; } set { } }
         [System.ObsoleteAttribute("Strong name signing is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0017", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.StrongNameKeyPair? KeyPair { get { throw null; } set { } }
         public string? Name { get { throw null; } set { } }
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Reflection.ProcessorArchitecture ProcessorArchitecture { get { throw null; } set { } }
         public System.Version? Version { get { throw null; } set { } }
+        [System.ObsoleteAttribute("AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete and not supported.", DiagnosticId = "SYSLIB0037", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Configuration.Assemblies.AssemblyVersionCompatibility VersionCompatibility { get { throw null; } set { } }
         public object Clone() { throw null; }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyFile) { throw null; }
@@ -11793,6 +11977,7 @@ namespace System.Reflection
         public abstract System.RuntimeMethodHandle MethodHandle { get; }
         public virtual System.Reflection.MethodImplAttributes MethodImplementationFlags { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
         public static System.Reflection.MethodBase? GetCurrentMethod() { throw null; }
         public virtual System.Type[] GetGenericArguments() { throw null; }
         public override int GetHashCode() { throw null; }
@@ -11943,29 +12128,30 @@ namespace System.Reflection
         public virtual System.Type ResolveType(int metadataToken, System.Type[]? genericTypeArguments, System.Type[]? genericMethodArguments) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class NullabilityInfoContext
+    public delegate System.Reflection.Module ModuleResolveEventHandler(object sender, System.ResolveEventArgs e);
+    public sealed partial class NullabilityInfo
     {
+        internal NullabilityInfo() { }
+        public System.Reflection.NullabilityInfo? ElementType { get { throw null; } }
+        public System.Reflection.NullabilityInfo[] GenericTypeArguments { get { throw null; } }
+        public System.Reflection.NullabilityState ReadState { get { throw null; } }
+        public System.Type Type { get { throw null; } }
+        public System.Reflection.NullabilityState WriteState { get { throw null; } }
+    }
+    public sealed partial class NullabilityInfoContext
+    {
+        public NullabilityInfoContext() { }
         public System.Reflection.NullabilityInfo Create(System.Reflection.EventInfo eventInfo) { throw null; }
         public System.Reflection.NullabilityInfo Create(System.Reflection.FieldInfo fieldInfo) { throw null; }
         public System.Reflection.NullabilityInfo Create(System.Reflection.ParameterInfo parameterInfo) { throw null; }
         public System.Reflection.NullabilityInfo Create(System.Reflection.PropertyInfo propertyInfo) { throw null; }
     }
-    public sealed class NullabilityInfo
-    {
-        internal NullabilityInfo(System.Type type, System.Reflection.NullabilityState readState, System.Reflection.NullabilityState writeState, System.Reflection.NullabilityInfo? elementType, System.Reflection.NullabilityInfo[] genericTypeArguments) { }
-        public System.Type Type { get; }
-        public System.Reflection.NullabilityState ReadState { get; }
-        public System.Reflection.NullabilityState WriteState { get; }
-        public System.Reflection.NullabilityInfo? ElementType { get; }
-        public System.Reflection.NullabilityInfo[] GenericTypeArguments { get; }
-    }
     public enum NullabilityState
     {
-        Unknown,
-        NotNull,
-        Nullable
+        Unknown = 0,
+        NotNull = 1,
+        Nullable = 2,
     }
-    public delegate System.Reflection.Module ModuleResolveEventHandler(object sender, System.ResolveEventArgs e);
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
     public sealed partial class ObfuscateAssemblyAttribute : System.Attribute
     {
@@ -12042,10 +12228,10 @@ namespace System.Reflection
     {
         internal Pointer() { }
         public unsafe static object Box(void* ptr, System.Type type) { throw null; }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public unsafe static void* Unbox(object ptr) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public unsafe static void* Unbox(object ptr) { throw null; }
     }
     [System.FlagsAttribute]
     public enum PortableExecutableKinds
@@ -12264,15 +12450,16 @@ namespace System.Reflection
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Reflection.FieldInfo[] GetFields(System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
-        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public override System.Type? GetInterface(string name, bool ignoreCase) { throw null; }
-        public override System.Reflection.InterfaceMapping GetInterfaceMap([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type interfaceType) { throw null; }
+        public override System.Reflection.InterfaceMapping GetInterfaceMap([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)] System.Type interfaceType) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public override System.Type[] GetInterfaces() { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.MemberInfo[] GetMember(string name, System.Reflection.MemberTypes type, System.Reflection.BindingFlags bindingAttr) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)]
         public override System.Reflection.MemberInfo[] GetMembers(System.Reflection.BindingFlags bindingAttr) { throw null; }
+        public override System.Reflection.MemberInfo GetMemberWithSameMetadataDefinitionAs(System.Reflection.MemberInfo member) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
         protected override System.Reflection.MethodInfo? GetMethodImpl(string name, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, System.Reflection.CallingConventions callConvention, System.Type[]? types, System.Reflection.ParameterModifier[]? modifiers) { throw null; }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -12368,14 +12555,14 @@ namespace System.Resources
         protected System.Reflection.Assembly? MainAssembly;
         protected ResourceManager() { }
         public ResourceManager(string baseName, System.Reflection.Assembly assembly) { }
-        public ResourceManager(string baseName, System.Reflection.Assembly assembly, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)] System.Type? usingResourceSet) { }
+        public ResourceManager(string baseName, System.Reflection.Assembly assembly, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type? usingResourceSet) { }
         public ResourceManager(System.Type resourceSource) { }
         public virtual string BaseName { get { throw null; } }
         protected System.Resources.UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
         public virtual bool IgnoreCase { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public virtual System.Type ResourceSetType { get { throw null; } }
-        public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)] System.Type? usingResourceSet) { throw null; }
+        public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type? usingResourceSet) { throw null; }
         protected static System.Globalization.CultureInfo GetNeutralResourcesLanguage(System.Reflection.Assembly a) { throw null; }
         public virtual object? GetObject(string name) { throw null; }
         public virtual object? GetObject(string name, System.Globalization.CultureInfo? culture) { throw null; }
@@ -12477,9 +12664,9 @@ namespace System.Runtime
     }
     public static partial class JitInfo
     {
-        public static long GetCompiledILBytes(bool currentThread=false) { throw null; }
-        public static long GetCompiledMethodCount(bool currentThread=false) { throw null; }
-        public static TimeSpan GetCompilationTime(bool currentThread=false) { throw null; }
+        public static System.TimeSpan GetCompilationTime(bool currentThread = false) { throw null; }
+        public static long GetCompiledILBytes(bool currentThread = false) { throw null; }
+        public static long GetCompiledMethodCount(bool currentThread = false) { throw null; }
     }
     public sealed partial class MemoryFailPoint : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
@@ -12614,7 +12801,7 @@ namespace System.Runtime.CompilerServices
     {
         public CallConvStdcall() { }
     }
-    public class CallConvSuppressGCTransition
+    public partial class CallConvSuppressGCTransition
     {
         public CallConvSuppressGCTransition() { }
     }
@@ -12787,6 +12974,27 @@ namespace System.Runtime.CompilerServices
         public DefaultDependencyAttribute(System.Runtime.CompilerServices.LoadHint loadHintArgument) { }
         public System.Runtime.CompilerServices.LoadHint LoadHint { get { throw null; } }
     }
+    [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
+    public ref partial struct DefaultInterpolatedStringHandler
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount) { throw null; }
+        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
+        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> initialBuffer) { throw null; }
+        public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
+        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted(string? value) { }
+        public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
+        public void AppendFormatted<T>(T value) { }
+        public void AppendFormatted<T>(T value, int alignment) { }
+        public void AppendFormatted<T>(T value, int alignment, string? format) { }
+        public void AppendFormatted<T>(T value, string? format) { }
+        public void AppendLiteral(string value) { }
+        public override string ToString() { throw null; }
+        public string ToStringAndClear() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=true)]
     public sealed partial class DependencyAttribute : System.Attribute
     {
@@ -12856,38 +13064,17 @@ namespace System.Runtime.CompilerServices
         public bool AllInternalsVisible { get { throw null; } set { } }
         public string AssemblyName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
-    public sealed class InterpolatedStringHandlerAttribute : System.Attribute
-    {
-        public InterpolatedStringHandlerAttribute() { }
-    }
-    [System.AttributeUsage(System.AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
-    public sealed class InterpolatedStringHandlerArgumentAttribute : System.Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
+    public sealed partial class InterpolatedStringHandlerArgumentAttribute : System.Attribute
     {
         public InterpolatedStringHandlerArgumentAttribute(string argument) { }
         public InterpolatedStringHandlerArgumentAttribute(params string[] arguments) { }
         public string[] Arguments { get { throw null; } }
     }
-    [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
-    public ref struct DefaultInterpolatedStringHandler
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
+    public sealed partial class InterpolatedStringHandlerAttribute : System.Attribute
     {
-        private readonly object _dummy;
-        private readonly int _dummyPrimitive;
-        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount) { throw null; }
-        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider) { throw null; }
-        public DefaultInterpolatedStringHandler(int literalLength, int formattedCount, System.IFormatProvider? provider, System.Span<char> initialBuffer) { throw null; }
-        public void AppendLiteral(string value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value) { }
-        public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
-        public void AppendFormatted<T>(T value) { }
-        public void AppendFormatted<T>(T value, string? format) { }
-        public void AppendFormatted<T>(T value, int alignment) { }
-        public void AppendFormatted<T>(T value, int alignment, string? format) { }
-        public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
-        public void AppendFormatted(string? value) { throw null; }
-        public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
-        public override string ToString() { throw null; }
-        public string ToStringAndClear() { throw null; }
+        public InterpolatedStringHandlerAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -13014,9 +13201,9 @@ namespace System.Runtime.CompilerServices
     {
         public const string CovariantReturnsOfClasses = "CovariantReturnsOfClasses";
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
-        public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
         public const string PortablePdb = "PortablePdb";
-        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public const string UnmanagedSignatureCallingConvention = "UnmanagedSignatureCallingConvention";
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
         public const string VirtualStaticsInInterfaces = "VirtualStaticsInInterfaces";
         public static bool IsDynamicCodeCompiled { get { throw null; } }
         public static bool IsDynamicCodeSupported { get { throw null; } }
@@ -13027,6 +13214,7 @@ namespace System.Runtime.CompilerServices
         [System.ObsoleteAttribute("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
+        public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
         [System.ObsoleteAttribute("The Constrained Execution Region (CER) feature is not supported.", DiagnosticId = "SYSLIB0004", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -13245,6 +13433,16 @@ namespace System.Runtime.ExceptionServices
 }
 namespace System.Runtime.InteropServices
 {
+    public enum Architecture
+    {
+        X86 = 0,
+        X64 = 1,
+        Arm = 2,
+        Arm64 = 3,
+        Wasm = 4,
+        S390x = 5,
+        LoongArch64 = 6,
+    }
     public enum CharSet
     {
         None = 1,
@@ -13324,10 +13522,35 @@ namespace System.Runtime.InteropServices
         Explicit = 2,
         Auto = 3,
     }
+    public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public static System.Runtime.InteropServices.OSPlatform FreeBSD { get { throw null; } }
+        public static System.Runtime.InteropServices.OSPlatform Linux { get { throw null; } }
+        public static System.Runtime.InteropServices.OSPlatform OSX { get { throw null; } }
+        public static System.Runtime.InteropServices.OSPlatform Windows { get { throw null; } }
+        public static System.Runtime.InteropServices.OSPlatform Create(string osPlatform) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Runtime.InteropServices.OSPlatform other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Runtime.InteropServices.OSPlatform left, System.Runtime.InteropServices.OSPlatform right) { throw null; }
+        public static bool operator !=(System.Runtime.InteropServices.OSPlatform left, System.Runtime.InteropServices.OSPlatform right) { throw null; }
+        public override string ToString() { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }
+    }
+    public static partial class RuntimeInformation
+    {
+        public static string FrameworkDescription { get { throw null; } }
+        public static System.Runtime.InteropServices.Architecture OSArchitecture { get { throw null; } }
+        public static string OSDescription { get { throw null; } }
+        public static System.Runtime.InteropServices.Architecture ProcessArchitecture { get { throw null; } }
+        public static string RuntimeIdentifier { get { throw null; } }
+        public static bool IsOSPlatform(System.Runtime.InteropServices.OSPlatform osPlatform) { throw null; }
     }
     public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
@@ -13387,6 +13610,61 @@ namespace System.Runtime.InteropServices
     public sealed partial class SuppressGCTransitionAttribute : System.Attribute
     {
         public SuppressGCTransitionAttribute() { }
+    }
+    public enum UnmanagedType
+    {
+        Bool = 2,
+        I1 = 3,
+        U1 = 4,
+        I2 = 5,
+        U2 = 6,
+        I4 = 7,
+        U4 = 8,
+        I8 = 9,
+        U8 = 10,
+        R4 = 11,
+        R8 = 12,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Marshalling as Currency may be unavailable in future releases.")]
+        Currency = 15,
+        BStr = 19,
+        LPStr = 20,
+        LPWStr = 21,
+        LPTStr = 22,
+        ByValTStr = 23,
+        IUnknown = 25,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        IDispatch = 26,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        Struct = 27,
+        Interface = 28,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        SafeArray = 29,
+        ByValArray = 30,
+        SysInt = 31,
+        SysUInt = 32,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Marshalling as VBByRefString may be unavailable in future releases.")]
+        VBByRefStr = 34,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Marshalling as AnsiBStr may be unavailable in future releases.")]
+        AnsiBStr = 35,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Marshalling as TBstr may be unavailable in future releases.")]
+        TBStr = 36,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        VariantBool = 37,
+        FunctionPtr = 38,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Marshalling arbitrary types may be unavailable in future releases. Specify the type you wish to marshal as.")]
+        AsAny = 40,
+        LPArray = 42,
+        LPStruct = 43,
+        CustomMarshaler = 44,
+        Error = 45,
+        IInspectable = 46,
+        HString = 47,
+        LPUTF8Str = 48,
     }
 }
 namespace System.Runtime.Remoting
@@ -13606,10 +13884,10 @@ namespace System.Runtime.Versioning
         public static bool operator !=(System.Runtime.Versioning.FrameworkName? left, System.Runtime.Versioning.FrameworkName? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public abstract class OSPlatformAttribute : System.Attribute
+    public abstract partial class OSPlatformAttribute : System.Attribute
     {
         private protected OSPlatformAttribute(string platformName) { }
-        public string PlatformName { get; }
+        public string PlatformName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class RequiresPreviewFeaturesAttribute : System.Attribute
@@ -13646,13 +13924,13 @@ namespace System.Runtime.Versioning
         Private = 16,
         Assembly = 32,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    public sealed partial class SupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public SupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
-    public sealed class SupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=true, Inherited=false)]
+    public sealed partial class SupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public SupportedOSPlatformGuardAttribute(string platformName) : base(platformName) { }
     }
@@ -13663,18 +13941,18 @@ namespace System.Runtime.Versioning
         public string? FrameworkDisplayName { get { throw null; } set { } }
         public string FrameworkName { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
-    public sealed class TargetPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false, Inherited=false)]
+    public sealed partial class TargetPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public TargetPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
-    public sealed class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
+    public sealed partial class UnsupportedOSPlatformAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public UnsupportedOSPlatformAttribute(string platformName) : base(platformName) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field |System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple = true, Inherited = false)]
-    public sealed class UnsupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=true, Inherited=false)]
+    public sealed partial class UnsupportedOSPlatformGuardAttribute : System.Runtime.Versioning.OSPlatformAttribute
     {
         public UnsupportedOSPlatformGuardAttribute(string platformName) : base(platformName) { }
     }
@@ -14260,12 +14538,12 @@ namespace System.Text
     {
         FormC = 1,
         FormD = 2,
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         FormKC = 5,
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         FormKD = 6,
     }
-    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.ISpanFormattable
+    public readonly partial struct Rune : System.IComparable, System.IComparable<System.Text.Rune>, System.IEquatable<System.Text.Rune>, System.IFormattable, System.ISpanFormattable
     {
         private readonly int _dummyPrimitive;
         public Rune(char ch) { throw null; }
@@ -14317,6 +14595,9 @@ namespace System.Text
         public static bool operator !=(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator <(System.Text.Rune left, System.Text.Rune right) { throw null; }
         public static bool operator <=(System.Text.Rune left, System.Text.Rune right) { throw null; }
+        int System.IComparable.CompareTo(object? obj) { throw null; }
+        string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static System.Text.Rune ToLower(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToLowerInvariant(System.Text.Rune value) { throw null; }
         public override string ToString() { throw null; }
@@ -14330,9 +14611,6 @@ namespace System.Text
         public bool TryEncodeToUtf16(System.Span<char> destination, out int charsWritten) { throw null; }
         public bool TryEncodeToUtf8(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryGetRuneAt(string input, int index, out System.Text.Rune value) { throw null; }
-        int System.IComparable.CompareTo(object? obj) { throw null; }
-        bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
-        string System.IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
     }
     public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {
@@ -14357,6 +14635,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(char[]? value, int startIndex, int charCount) { throw null; }
         public System.Text.StringBuilder Append(decimal value) { throw null; }
         public System.Text.StringBuilder Append(double value) { throw null; }
+        public System.Text.StringBuilder Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "", "provider"})] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder Append(short value) { throw null; }
         public System.Text.StringBuilder Append(int value) { throw null; }
         public System.Text.StringBuilder Append(long value) { throw null; }
@@ -14370,14 +14649,13 @@ namespace System.Text
         public System.Text.StringBuilder Append(string? value, int startIndex, int count) { throw null; }
         public System.Text.StringBuilder Append(System.Text.StringBuilder? value) { throw null; }
         public System.Text.StringBuilder Append(System.Text.StringBuilder? value, int startIndex, int count) { throw null; }
+        public System.Text.StringBuilder Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(ulong value) { throw null; }
-        public System.Text.StringBuilder Append([System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
-        public System.Text.StringBuilder Append(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("", "provider")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, object? arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, object? arg0, object? arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) { throw null; }
@@ -14393,9 +14671,9 @@ namespace System.Text
         public System.Text.StringBuilder AppendJoin<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendJoin<T>(string? separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public System.Text.StringBuilder AppendLine() { throw null; }
+        public System.Text.StringBuilder AppendLine(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute(new string[]{ "", "provider"})] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder AppendLine(string? value) { throw null; }
         public System.Text.StringBuilder AppendLine([System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
-        public System.Text.StringBuilder AppendLine(System.IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("", "provider")] ref System.Text.StringBuilder.AppendInterpolatedStringHandler handler) { throw null; }
         public System.Text.StringBuilder Clear() { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
@@ -14434,33 +14712,31 @@ namespace System.Text
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public string ToString(int startIndex, int length) { throw null; }
-        public partial struct ChunkEnumerator
-        {
-            private object _dummy;
-            private int _dummyPrimitive;
-            public System.ReadOnlyMemory<char> Current { get { throw null; } }
-            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-            public System.Text.StringBuilder.ChunkEnumerator GetEnumerator() { throw null; }
-            public bool MoveNext() { throw null; }
-        }
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
-        public struct AppendInterpolatedStringHandler
+        public partial struct AppendInterpolatedStringHandler
         {
             private object _dummy;
             private int _dummyPrimitive;
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, System.Text.StringBuilder stringBuilder) { throw null; }
             public AppendInterpolatedStringHandler(int literalLength, int formattedCount, System.Text.StringBuilder stringBuilder, System.IFormatProvider? provider) { throw null; }
-            public void AppendLiteral(string value) { }
-            public void AppendFormatted<T>(T value) { }
-            public void AppendFormatted<T>(T value, string? format) { }
-            public void AppendFormatted<T>(T value, int alignment) { }
-            public void AppendFormatted<T>(T value, int alignment, string? format) { }
+            public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(System.ReadOnlySpan<char> value) { }
             public void AppendFormatted(System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { }
             public void AppendFormatted(string? value) { }
             public void AppendFormatted(string? value, int alignment = 0, string? format = null) { }
-            public void AppendFormatted(object? value, int alignment = 0, string? format = null) { }
+            public void AppendFormatted<T>(T value) { }
+            public void AppendFormatted<T>(T value, int alignment) { }
+            public void AppendFormatted<T>(T value, int alignment, string? format) { }
+            public void AppendFormatted<T>(T value, string? format) { }
+            public void AppendLiteral(string value) { }
+        }
+        public partial struct ChunkEnumerator
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public System.ReadOnlyMemory<char> Current { get { throw null; } }
+            public System.Text.StringBuilder.ChunkEnumerator GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
         }
     }
     public partial struct StringRuneEnumerator : System.Collections.Generic.IEnumerable<System.Text.Rune>, System.Collections.Generic.IEnumerator<System.Text.Rune>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
@@ -14503,12 +14779,12 @@ namespace System.Threading
         public static bool operator !=(System.Threading.CancellationToken left, System.Threading.CancellationToken right) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action callback) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action callback, bool useSynchronizationContext) { throw null; }
-        public System.Threading.CancellationTokenRegistration Register(System.Action<object?> callback, object? state) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action<object?, System.Threading.CancellationToken> callback, object? state) { throw null; }
+        public System.Threading.CancellationTokenRegistration Register(System.Action<object?> callback, object? state) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action<object?> callback, object? state, bool useSynchronizationContext) { throw null; }
         public void ThrowIfCancellationRequested() { }
-        public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object?> callback, object? state) { throw null; }
         public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object?, System.Threading.CancellationToken> callback, object? state) { throw null; }
+        public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object?> callback, object? state) { throw null; }
     }
     public readonly partial struct CancellationTokenRegistration : System.IAsyncDisposable, System.IDisposable, System.IEquatable<System.Threading.CancellationTokenRegistration>
     {
@@ -14548,11 +14824,12 @@ namespace System.Threading
         PublicationOnly = 1,
         ExecutionAndPublication = 2,
     }
-    public sealed class PeriodicTimer : System.IDisposable
+    public sealed partial class PeriodicTimer : System.IDisposable
     {
         public PeriodicTimer(System.TimeSpan period) { }
-        public System.Threading.Tasks.ValueTask<bool> WaitForNextTickAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public void Dispose() { }
+        ~PeriodicTimer() { }
+        public System.Threading.Tasks.ValueTask<bool> WaitForNextTickAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public static partial class Timeout
     {
@@ -14702,24 +14979,24 @@ namespace System.Threading.Tasks
         public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Wait(System.Threading.CancellationToken cancellationToken) { }
         public bool Wait(System.TimeSpan timeout) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(params System.Threading.Tasks.Task[] tasks) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static void WaitAll(System.Threading.Tasks.Task[] tasks, System.Threading.CancellationToken cancellationToken) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static bool WaitAll(System.Threading.Tasks.Task[] tasks, System.TimeSpan timeout) { throw null; }
         public static int WaitAny(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static int WaitAny(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout) { throw null; }
         public static int WaitAny(System.Threading.Tasks.Task[] tasks, int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static int WaitAny(System.Threading.Tasks.Task[] tasks, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static int WaitAny(System.Threading.Tasks.Task[] tasks, System.TimeSpan timeout) { throw null; }
-        public Task WaitAsync(System.TimeSpan timeout) { throw null; }
-        public Task WaitAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
-        public Task WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WaitAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout) { throw null; }
+        public System.Threading.Tasks.Task WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task> tasks) { throw null; }
         public static System.Threading.Tasks.Task WhenAll(params System.Threading.Tasks.Task[] tasks) { throw null; }
         public static System.Threading.Tasks.Task<TResult[]> WhenAll<TResult>(System.Collections.Generic.IEnumerable<System.Threading.Tasks.Task<TResult>> tasks) { throw null; }
@@ -14736,6 +15013,8 @@ namespace System.Threading.Tasks
     {
         public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
         public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public static System.Collections.Generic.IEnumerable<T> ToBlockingEnumerable<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class TaskCanceledException : System.OperationCanceledException
@@ -15016,8 +15295,8 @@ namespace System.Threading.Tasks
         public System.Threading.Tasks.Task<TNewResult> ContinueWith<TNewResult>(System.Func<System.Threading.Tasks.Task<TResult>, TNewResult> continuationFunction, System.Threading.Tasks.TaskContinuationOptions continuationOptions) { throw null; }
         public System.Threading.Tasks.Task<TNewResult> ContinueWith<TNewResult>(System.Func<System.Threading.Tasks.Task<TResult>, TNewResult> continuationFunction, System.Threading.Tasks.TaskScheduler scheduler) { throw null; }
         public new System.Runtime.CompilerServices.TaskAwaiter<TResult> GetAwaiter() { throw null; }
-        public new System.Threading.Tasks.Task<TResult> WaitAsync(System.TimeSpan timeout) { throw null; }
         public new System.Threading.Tasks.Task<TResult> WaitAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public new System.Threading.Tasks.Task<TResult> WaitAsync(System.TimeSpan timeout) { throw null; }
         public new System.Threading.Tasks.Task<TResult> WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class UnobservedTaskExceptionEventArgs : System.EventArgs

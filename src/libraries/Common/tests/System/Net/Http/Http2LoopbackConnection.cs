@@ -558,7 +558,10 @@ namespace System.Net.Test.Common
             do
             {
                 frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
-                if (frame == null && expectEndOfStream)
+
+                // Check if it was a zero-byte read or we got a RST_STREAM with the CANCEL code.
+                if (expectEndOfStream
+                    && (frame == null || (frame.Type == FrameType.RstStream && ((RstStreamFrame)frame).ErrorCode == 0x8)))
                 {
                     break;
                 }
@@ -861,7 +864,7 @@ namespace System.Net.Test.Common
             return ReadBodyAsync();
         }
 
-        public override async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
+        public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true, int requestId = 0)
         {
             if (headers != null)
             {
@@ -907,25 +910,30 @@ namespace System.Net.Test.Common
             else
             {
                 await SendResponseHeadersAsync(streamId, endStream: false, (HttpStatusCode)statusCode, endHeaders: true, headers: headers);
-                await SendResponseBodyAsync(content, isFinal: isFinal, requestId: streamId);
+                await SendResponseBodyAsync(content, isFinal: isFinal);
             }
         }
 
-        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "", bool isFinal = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            return SendResponseAsync(statusCode, headers, content, isFinal, requestId: 0);
+        }
+
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
+        {
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
         }
 
-        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        public override Task SendPartialResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
             return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: false, headers);
         }
 
-        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true, int requestId = 0)
+        public override Task SendResponseBodyAsync(byte[] content, bool isFinal = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
             return SendResponseBodyAsync(streamId, content, isFinal);
         }
 
@@ -952,9 +960,9 @@ namespace System.Net.Test.Common
             return requestData;
         }
 
-        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
-            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            int streamId = _lastStreamId;
 
             Frame frame;
             do
@@ -973,6 +981,8 @@ namespace System.Net.Test.Common
             } while (frame.Type != FrameType.RstStream);
 
             Assert.Equal(streamId, frame.StreamId);
+            RstStreamFrame rstStreamFrame = Assert.IsType<RstStreamFrame>(frame);
+            Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
         }
     }
 }

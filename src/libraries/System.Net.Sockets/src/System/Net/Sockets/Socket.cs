@@ -1169,7 +1169,6 @@ namespace System.Net.Sockets
 
             ValidateBufferArguments(buffer, offset, size);
 
-            errorCode = SocketError.Success;
             ValidateBlockingMode();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
 
@@ -1886,7 +1885,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            int realOptionLength = 0;
+            int realOptionLength;
 
             // IOControl is used for Windows-specific IOCTL operations.  If we need to add support for IOCTLs specific
             // to other platforms, we will likely need to add a new API, as the control codes may overlap with those
@@ -1933,7 +1932,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2015,7 +2014,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2037,7 +2036,7 @@ namespace System.Net.Sockets
                 return GetIPv6MulticastOpt(optionName);
             }
 
-            int optionValue = 0;
+            int optionValue;
 
             // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.GetSockOpt(
@@ -2051,7 +2050,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return optionValue;
@@ -2076,7 +2075,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2100,7 +2099,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             if (optionLength != realOptionLength)
@@ -2136,7 +2135,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return realOptionLength;
@@ -2238,7 +2237,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            SocketError errorCode = SocketError.Success;
+            SocketError errorCode;
 
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
             errorCode = SocketPal.Disconnect(this, _handle, reuseSocket);
@@ -2856,7 +2855,7 @@ namespace System.Net.Sockets
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.Disconnect);
-            SocketError socketError = SocketError.Success;
+            SocketError socketError;
             try
             {
                 socketError = e.DoOperationDisconnect(this, _handle, cancellationToken);
@@ -3402,7 +3401,7 @@ namespace System.Net.Sockets
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "skipping the call");
                 return;
             }
-            SocketError errorCode = SocketError.Success;
+            SocketError errorCode;
             try
             {
                 errorCode = SocketPal.SetSockOpt(_handle, optionLevel, optionName, optionValue);
@@ -3432,7 +3431,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3445,7 +3444,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3472,7 +3471,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3486,7 +3485,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return lingerOption;
@@ -3502,7 +3501,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return multicastOption;
@@ -3519,7 +3518,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return multicastOption;
@@ -3565,8 +3564,7 @@ namespace System.Net.Sockets
         // This method ignores all failures.
         internal void InternalSetBlocking(bool desired)
         {
-            bool current;
-            InternalSetBlocking(desired, out current);
+            InternalSetBlocking(desired, out _);
         }
 
         // CreateAcceptSocket - pulls unmanaged results and assembles them into a new Socket object.
@@ -3690,11 +3688,19 @@ namespace System.Net.Sockets
             }
         }
 
-        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
+        private void UpdateStatusAfterSocketOptionErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
+        {
+            // Don't disconnect socket for unknown options.
+            bool disconnectOnFailure = error != SocketError.ProtocolOption &&
+                                       error != SocketError.OperationNotSupported;
+            UpdateStatusAfterSocketErrorAndThrowException(error, disconnectOnFailure, callerName);
+        }
+
+        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, bool disconnectOnFailure = true, [CallerMemberName] string? callerName = null)
         {
             // Update the internal state of this socket according to the error before throwing.
             var socketException = new SocketException((int)error);
-            UpdateStatusAfterSocketError(socketException);
+            UpdateStatusAfterSocketError(socketException, disconnectOnFailure);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException, memberName: callerName);
             throw socketException;
         }
@@ -3702,18 +3708,18 @@ namespace System.Net.Sockets
         // UpdateStatusAfterSocketError(socketException) - updates the status of a connected socket
         // on which a failure occurred. it'll go to winsock and check if the connection
         // is still open and if it needs to update our internal state.
-        internal void UpdateStatusAfterSocketError(SocketException socketException)
+        internal void UpdateStatusAfterSocketError(SocketException socketException, bool disconnectOnFailure = true)
         {
-            UpdateStatusAfterSocketError(socketException.SocketErrorCode);
+            UpdateStatusAfterSocketError(socketException.SocketErrorCode, disconnectOnFailure);
         }
 
-        internal void UpdateStatusAfterSocketError(SocketError errorCode)
+        internal void UpdateStatusAfterSocketError(SocketError errorCode, bool disconnectOnFailure = true)
         {
             // If we already know the socket is disconnected
             // we don't need to do anything else.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}, disconnectOnFailure:{disconnectOnFailure}");
 
-            if (_isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
+            if (disconnectOnFailure && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
                     errorCode != SocketError.TimedOut)))
             {
@@ -3809,14 +3815,8 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (Disposed)
-            {
-                ThrowObjectDisposedException();
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
         }
-
-        [DoesNotReturn]
-        private void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 

@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(libraryName));
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
-            if (!assembly.IsRuntimeImplemented())
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             return LoadLibraryByName(libraryName,
@@ -125,7 +125,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(libraryName));
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
-            if (!assembly.IsRuntimeImplemented())
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             handle = LoadLibraryByName(libraryName,
@@ -212,7 +212,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(assembly));
             if (resolver == null)
                 throw new ArgumentNullException(nameof(resolver));
-            if (!assembly.IsRuntimeImplemented())
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             if (s_nativeDllResolveMap == null)

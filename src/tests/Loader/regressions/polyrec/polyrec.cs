@@ -8,6 +8,7 @@
 // and niters it the number of type/method instantiations to create each thread
 using System;
 using System.Threading;
+using Xunit;
 
 // Spice things up a bit with some mutual recursion between instantiations
 class C<T>
@@ -63,24 +64,24 @@ public class P
     genmeth2<string>(ninsts);
   }
 
-  public static int Main(String[] args)
+  public static void Test(int threads, int insts)
   {
-    if (args.Length < 2)
-    {
-      Console.WriteLine("Usage: polyrec <nthreads> <ninsts>");
-      return 99;
-    }
-
-    nthreads = Int32.Parse(args[0]);
-    ninsts = Int32.Parse(args[1]);
+    nthreads = threads;
+    ninsts = insts;
 
     for (int i = 0; i < nthreads; i++)
-    {	
+    {
       Thread t = new Thread(i % 2 == 0 ? new ThreadStart(Start) : new ThreadStart(Start2));
       t.Name = "Thread " + i;	
       t.Start();
     }
-      Console.WriteLine("Main thread exited");
-    return 100;
+
+    Console.WriteLine("Main thread exited");
+  }
+
+  [Fact]
+  public static void Test_4_50()
+  {
+    Test(4, 50);
   }
 }

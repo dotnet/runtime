@@ -770,3 +770,158 @@ public class MainPage
     }
 }
 
+public class LoopClass
+{
+    public static void LoopToBreak()
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine($"should pause only on i == 3");
+        }
+        Console.WriteLine("breakpoint to check");
+    }
+}
+
+public class SteppingInto
+{
+    static int currentCount = 0;
+    static MyIncrementer incrementer = new MyIncrementer();
+    public static void MethodToStep()
+    {
+        currentCount = incrementer.Increment(currentCount);
+    }
+}
+
+public class MyIncrementer
+{
+    private Func<DateTime> todayFunc = () => new DateTime(2061, 1, 5); // Wednesday
+
+    public int Increment(int count)
+    {
+        var today = todayFunc();
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            return count + 2;
+        }
+
+        return count + 1;
+    }
+}
+
+public class DebuggerAttribute
+{
+    static int currentCount = 0;
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethod()
+    {
+        currentCount++;
+    }
+
+    [System.Diagnostics.DebuggerHidden]
+    public static void HiddenMethodDebuggerBreak()
+    {
+        var local_var = 12;
+        System.Diagnostics.Debugger.Break();
+        currentCount++;
+    }
+
+    public static void VisibleMethod()
+    {
+        currentCount++;
+    }
+
+    public static void VisibleMethodDebuggerBreak()
+    {
+        System.Diagnostics.Debugger.Break();
+        currentCount++;
+    }
+
+    public static void Run()
+    {
+        HiddenMethod();
+        VisibleMethod();
+    }
+
+    public static void RunDebuggerBreak()
+    {
+        HiddenMethodDebuggerBreak();
+        VisibleMethodDebuggerBreak();
+    }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void StepThrougBp()
+    {
+        var a = 0;
+        currentCount++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void StepThrougUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThrough()
+    {
+        StepThrougBp();
+        StepThrougUserBp();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeBp(Action boundaryTestFun=null)
+    {
+        var a = 0;
+        currentCount++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunNonUserCode()
+    {
+        NonUserCodeBp();
+        NonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryBp()
+    {
+        var a = 5;
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeForBoundaryEscape(Action boundaryTestFun)
+    {
+        boundaryTestFun();
+    }
+
+    public static void RunNoBoundary()
+    {
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
+    }
+}
+
+public class DebugTypeFull
+{
+    public static void CallToEvaluateLocal()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-full-debug-type.dll");
+        var myType = asm.GetType("DebuggerTests.ClassToInspectWithDebugTypeFull");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var a = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}

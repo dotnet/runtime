@@ -1606,9 +1606,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         int byteArgSize = GetArgSize();
 
-                        // Composites greater than 16bytes are passed by reference
-                        TypeHandle dummy;
-                        if (GetArgType(out dummy) == CorElementType.ELEMENT_TYPE_VALUETYPE && GetArgSize() > _transitionBlock.EnregisteredParamTypeMaxSize)
+                        // On ARM64 some composites are implicitly passed by reference.
+                        if (IsArgPassedByRef())
                         {
                             byteArgSize = _transitionBlock.PointerSize;
                         }

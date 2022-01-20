@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 
-class Test{
+class Test_abovestacklimit{
 	public static int Main(){
 		int retVal;
 

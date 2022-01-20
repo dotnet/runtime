@@ -53,4 +53,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldloc_r4.exe{}
+.assembly ldloc_r4{}

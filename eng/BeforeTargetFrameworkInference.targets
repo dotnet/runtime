@@ -3,7 +3,7 @@
   <PropertyGroup Condition="$(TargetFramework.Contains('-'))">
     <_OriginalTargetFramework>$(TargetFramework)</_OriginalTargetFramework>
     <TargetFrameworkSuffix>$(TargetFramework.SubString($([MSBuild]::Add($(TargetFramework.IndexOf('-')), 1))))</TargetFrameworkSuffix>
-    <!-- Strip away the TargetPlatform during the build for frameworks older than net5.0 because the assets file does not know about the TargetPlatform -->
+    <!-- Strip away the TargetPlatform during the build for non .NETCoreApp frameworks because the assets file does not know about the TargetPlatform. -->
     <TargetFramework>$([System.Text.RegularExpressions.Regex]::Replace('$(TargetFramework)', '$(TargetFrameworkPattern)', '${1}'))</TargetFramework>
   </PropertyGroup>
 

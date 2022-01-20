@@ -305,13 +305,13 @@ HRESULT TrackerObjectManager::AfterWrapperCreated(_In_ IReferenceTracker* obj)
     return S_OK;
 }
 
-HRESULT TrackerObjectManager::BeforeWrapperDestroyed(_In_ IReferenceTracker* obj)
+HRESULT TrackerObjectManager::BeforeWrapperFinalized(_In_ IReferenceTracker* obj)
 {
     _ASSERTE(obj != nullptr);
 
     HRESULT hr;
 
-    // Notify tracker runtime that we are about to destroy a wrapper
+    // Notify tracker runtime that we are about to finalize a wrapper
     // (same timing as short weak handle) for this object.
     // They need this information to disconnect weak refs and stop firing events,
     // so that they can avoid resurrecting the object.

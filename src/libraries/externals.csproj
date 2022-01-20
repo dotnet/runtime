@@ -9,6 +9,7 @@
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
@@ -16,7 +17,7 @@
                       Version="$(MicrosoftDiaSymReaderNativeVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true' and '$(UseLiveBuiltDotNetHost)' != 'true'">
     <PackageReference Include="Microsoft.NETCore.DotNetHost"
                       Version="$(MicrosoftNETCoreDotNetHostVersion)" />
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy"
@@ -25,7 +26,8 @@
 
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost"
-          AfterTargets="AfterResolveReferences">
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(TestNativeAot)' != 'true'">
     <PropertyGroup>
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
@@ -38,14 +40,28 @@
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
     </ItemGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(UseLiveBuiltDotNetHost)' != 'true'">
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'hostfxr' or
                                                                   '%(ReferenceCopyLocalPaths.Filename)' == 'libhostfxr'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(UseLiveBuiltDotNetHost)' == 'true'">
+      <CoreHostFiles Include="$(DotNetHostBinDir)*" />
+      <HostFxFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostfxr' or
+                                                          '%(CoreHostFiles.Filename)' == 'libhostfxr'" />
+      <HostPolicyFile Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'hostpolicy' or
+                                                              '%(CoreHostFiles.Filename)' == 'libhostpolicy'" />
+      <DotnetExe Include="@(CoreHostFiles)" Condition="'%(CoreHostFiles.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
     <Copy SourceFiles="@(HostFxFile)"
           DestinationFolder="$(NetCoreAppCurrentTestHostPath)host\fxr\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Copy SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(NetCoreAppCurrentTestHostPath)shared\Microsoft.NETCore.App\$(ProductVersion)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
 
@@ -60,7 +76,7 @@
   <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
           AfterTargets="AfterResolveReferences"
-          Condition="'$(RuntimeFlavor)' != 'Mono'">
+          Condition="'$(RuntimeFlavor)' != 'Mono' and '$(TestNativeAot)' != 'true'">
     <ItemGroup>
       <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
       <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />

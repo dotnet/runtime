@@ -17,7 +17,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(WriteSuccessCases))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58204", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void Write(ITestClass testObj)
         {
             var options = new JsonSerializerOptions { IncludeFields = true };
@@ -138,6 +137,14 @@ namespace System.Text.Json.Serialization.Tests
             string result = JsonSerializer.Serialize(test, options);
 
             Assert.Equal("{\"name\":\"\u6D4B\u8A6611\"}", result);
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/61995
+        [Fact]
+        public static void WriteObjectWithNumberHandling()
+        {
+            var options = new JsonSerializerOptions { NumberHandling = JsonNumberHandling.AllowReadingFromString };
+            JsonSerializer.Serialize(new object(), options);
         }
     }
 }

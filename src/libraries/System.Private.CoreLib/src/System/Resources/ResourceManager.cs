@@ -194,7 +194,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(baseName));
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
-            if (!assembly.IsRuntimeImplemented())
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
@@ -211,7 +211,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(baseName));
             if (null == assembly)
                 throw new ArgumentNullException(nameof(assembly));
-            if (!assembly.IsRuntimeImplemented())
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
@@ -228,7 +228,7 @@ namespace System.Resources
         {
             if (null == resourceSource)
                 throw new ArgumentNullException(nameof(resourceSource));
-            if (!resourceSource.IsRuntimeImplemented())
+            if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             _locationInfo = resourceSource;
@@ -566,7 +566,7 @@ namespace System.Resources
 
             // First, compare type names
             int comma = asmTypeName.IndexOf(',');
-            if (((comma == -1) ? asmTypeName.Length : comma) != typeName.Length)
+            if (((comma < 0) ? asmTypeName.Length : comma) != typeName.Length)
                 return false;
 
             // case sensitive

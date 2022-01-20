@@ -31,9 +31,9 @@ namespace
             tpaList.c_str(),
         };
 
-        static_assert(ARRAYSIZE(keys) == ARRAYSIZE(values), "key/values pairs should match in length");
+        static_assert(ARRAY_SIZE(keys) == ARRAY_SIZE(values), "key/values pairs should match in length");
 
-        return inst->Initialize(ARRAYSIZE(keys), keys, values, "COMAct");
+        return inst->Initialize(ARRAY_SIZE(keys), keys, values, "COMAct");
     }
 }
 

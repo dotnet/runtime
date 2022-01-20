@@ -1394,6 +1394,36 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
+        /// <summary>
+        /// Tests that when a BackgroundService does not call base, the Host still starts and stops successfully.
+        /// </summary>
+        [Fact]
+        public async Task StartOnBackgroundServiceThatDoesNotCallBase()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<BackgroundServiceDoesNotCallBase>();
+                })
+                .Build();
+
+            host.Start();
+            await host.StopAsync();
+
+            foreach (LogEvent logEvent in logger.GetEvents())
+            {
+                Assert.True(logEvent.LogLevel <= LogLevel.Information, "All logged events should be less than or equal to Information. No Warnings or Errors.");
+
+                Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
+            }
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
@@ -1561,6 +1591,15 @@ namespace Microsoft.Extensions.Hosting.Internal
                     await Task.Delay(1000, stoppingToken);
                 }
             }
+        }
+
+        private class BackgroundServiceDoesNotCallBase : BackgroundService
+        {
+            public override Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+            protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+
+            public override Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
     }
 }

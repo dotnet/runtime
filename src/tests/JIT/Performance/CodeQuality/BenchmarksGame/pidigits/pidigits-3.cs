@@ -20,14 +20,9 @@
 using System;
 using System.Numerics;
 using System.Text;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
-
     public class pidigits
     {
         BigInteger q = new BigInteger(), r = new BigInteger(), s = new BigInteger(), t = new BigInteger();
@@ -142,18 +137,6 @@ namespace BenchmarksGame
             pidigits m = new pidigits(n);
             m.Run(verbose);
             return m.lastBuf;
-        }
-    }
-
-    public class PiDigits_3
-    {
-        [Benchmark]
-        [InlineData(3000, "8649423196\t:3000")]
-        public static void RunBench(int n, string expected)
-        {
-            StringBuilder result = null;
-            Benchmark.Iterate(() => result = pidigits.Bench(n, false));
-            Assert.Equal(expected, result.ToString());
         }
     }
 }

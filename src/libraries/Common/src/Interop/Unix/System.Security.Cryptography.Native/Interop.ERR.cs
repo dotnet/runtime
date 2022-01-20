@@ -10,23 +10,23 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
-        internal static extern ulong ErrClearError();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
+        internal static partial ulong ErrClearError();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
-        private static extern ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
+        private static partial ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
-        internal static extern ulong ErrPeekError();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekError")]
+        internal static partial ulong ErrPeekError();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
-        internal static extern ulong ErrPeekLastError();
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrPeekLastError")]
+        internal static partial ulong ErrPeekLastError();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
-        internal static extern IntPtr ErrReasonErrorString(ulong error);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrReasonErrorString")]
+        internal static partial IntPtr ErrReasonErrorString(ulong error);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
-        private static extern unsafe void ErrErrorStringN(ulong e, byte* buf, int len);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrErrorStringN")]
+        private static unsafe partial void ErrErrorStringN(ulong e, byte* buf, int len);
 
         private static unsafe string ErrErrorStringN(ulong error)
         {

@@ -30,8 +30,8 @@ namespace BINDER_SPACE
 
     BOOL IsFileNotFound(HRESULT hr);
 
-    HRESULT GetNextPath(SString& paths, SString::Iterator& startPos, SString& outPath);
-    HRESULT GetNextTPAPath(SString& paths, SString::Iterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage);
+    HRESULT GetNextPath(const SString& paths, SString::CIterator& startPos, SString& outPath);
+    HRESULT GetNextTPAPath(const SString& paths, SString::CIterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage);
 };
 
 #endif

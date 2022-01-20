@@ -259,11 +259,11 @@ inline DWORD GetMaxDBCSCharByteSize()
 #endif // HOST_UNIX
 }
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 BOOL RunningInteractive();
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
 #define RunningInteractive() FALSE
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
@@ -320,8 +320,8 @@ FORCEINLINE
 PVOID
 InterlockedCompareExchangePointer (
     __inout  PVOID volatile *Destination,
-    __in_opt PVOID ExChange,
-    __in_opt PVOID Comperand
+    _In_opt_ PVOID ExChange,
+    _In_opt_ PVOID Comperand
     )
 {
     return((PVOID)(LONG_PTR)_InterlockedCompareExchange((LONG volatile *)Destination, (LONG)(LONG_PTR)ExChange, (LONG)(LONG_PTR)Comperand));

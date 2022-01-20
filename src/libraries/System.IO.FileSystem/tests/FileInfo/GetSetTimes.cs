@@ -10,12 +10,22 @@ namespace System.IO.Tests
 {
     public class FileInfo_GetSetTimes : InfoGetSetTimes<FileInfo>
     {
-        protected override FileInfo GetExistingItem()
+        protected override bool CanBeReadOnly => true;
+
+        protected override FileInfo GetExistingItem(bool readOnly = false)
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
+
+            if (readOnly)
+            {
+                File.SetAttributes(path, FileAttributes.ReadOnly);
+            }
+
             return new FileInfo(path);
         }
+
+        protected override FileInfo CreateSymlink(string path, string pathToTarget) => (FileInfo)File.CreateSymbolicLink(path, pathToTarget);
 
         private static bool HasNonZeroNanoseconds(DateTime dt) => dt.Ticks % 10 != 0;
 

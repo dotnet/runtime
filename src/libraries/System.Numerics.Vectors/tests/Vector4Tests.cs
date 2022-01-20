@@ -7,13 +7,48 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class Vector4Tests
+    public sealed class Vector4Tests
     {
         [Fact]
         public void Vector4MarshalSizeTest()
         {
             Assert.Equal(16, Marshal.SizeOf<Vector4>());
             Assert.Equal(16, Marshal.SizeOf<Vector4>(new Vector4()));
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        public void Vector4IndexerGetTest(float x, float y, float z, float w)
+        {
+            var vector = new Vector4(x, y, z, w);
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
+            Assert.Equal(z, vector[2]);
+            Assert.Equal(w, vector[3]);
+        }
+
+        [Theory]
+        [InlineData(0.0f, 1.0f, 0.0f, 1.0f)]
+        [InlineData(1.0f, 0.0f, 1.0f, 0.0f)]
+        [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
+        [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        public void Vector4IndexerSetTest(float x, float y, float z, float w)
+        {
+            var vector = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+
+            vector[0] = x;
+            vector[1] = y;
+            vector[2] = z;
+            vector[3] = w;
+
+            Assert.Equal(x, vector[0]);
+            Assert.Equal(y, vector[1]);
+            Assert.Equal(z, vector[2]);
+            Assert.Equal(w, vector[3]);
         }
 
         [Fact]
@@ -27,7 +62,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => v1.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => v1.CopyTo(a, a.Length - 2));
+            Assert.Throws<ArgumentException>(() => v1.CopyTo(a, a.Length - 2));
 
             v1.CopyTo(a, 1);
             v1.CopyTo(b);
@@ -1146,7 +1181,7 @@ namespace System.Numerics.Tests
             Vector4 expected = new Vector4(value);
 
             Assert.Equal(expected, target);
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector4(new float[3]));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector4(new float[3]));
         }
 
         // A test for Add (Vector4f, Vector4f)

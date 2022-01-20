@@ -15,7 +15,7 @@ public class AppleAppBuilderTask : Task
     private string targetOS = TargetNames.iOS;
 
     /// <summary>
-    /// The Apple OS we are targeting (iOS or tvOS)
+    /// The Apple OS we are targeting (ios, tvos, iossimulator, tvossimulator)
     /// </summary>
     [Required]
     public string TargetOS
@@ -64,7 +64,7 @@ public class AppleAppBuilderTask : Task
     public ITaskItem[] Assemblies { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
-    /// Target arch, can be "arm64" (device) or "x64" (simulator) at the moment
+    /// Target arch, can be "arm64", "arm" or "x64" at the moment
     /// </summary>
     [Required]
     public string Arch { get; set; } = ""!;
@@ -105,6 +105,11 @@ public class AppleAppBuilderTask : Task
     /// Generate xcode project
     /// </summary>
     public bool GenerateXcodeProject { get; set; }
+
+    /// <summary>
+    /// Generate CMake project
+    /// </summary>
+    public bool GenerateCMakeProject { get; set; }
 
     /// <summary>
     /// Files to be ignored in AppDir
@@ -152,6 +157,11 @@ public class AppleAppBuilderTask : Task
     /// Enables detailed runtime logging
     /// </summary>
     public bool EnableRuntimeLogging { get; set; }
+
+    /// <summary>
+    /// Enables App Sandbox for Mac Catalyst apps
+    /// </summary>
+    public bool EnableAppSandbox { get; set; }
 
     public override bool Execute()
     {
@@ -224,14 +234,17 @@ public class AppleAppBuilderTask : Task
                 throw new ArgumentException("Using DiagnosticPorts require diagnostics_tracing runtime component.");
         }
 
+        if (EnableAppSandbox && (string.IsNullOrEmpty(DevTeamProvisioning) || DevTeamProvisioning == "-"))
+        {
+            throw new ArgumentException("DevTeamProvisioning must be set to a valid value when App Sandbox is enabled, using '-' is not supported.");
+        }
+
+        var generator = new Xcode(Log, TargetOS, Arch);
+
         if (GenerateXcodeProject)
         {
-            Xcode generator = new Xcode(Log, TargetOS, Arch);
-            generator.EnableRuntimeLogging = EnableRuntimeLogging;
-            generator.DiagnosticPorts = DiagnosticPorts;
-
             XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, RuntimeComponents, NativeMainSource);
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
 
             if (BuildAppBundle)
             {
@@ -242,9 +255,14 @@ public class AppleAppBuilderTask : Task
                 }
                 else
                 {
-                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Arch, Optimized, DevTeamProvisioning);
+                    AppBundlePath = generator.BuildAppBundle(XcodeProjectPath, Optimized, DevTeamProvisioning);
                 }
             }
+        }
+        else if (GenerateCMakeProject)
+        {
+             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerFilesToLink,
+                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource);
         }
 
         return true;

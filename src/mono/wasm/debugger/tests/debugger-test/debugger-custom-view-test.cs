@@ -88,4 +88,23 @@ namespace DebuggerTests
             Console.WriteLine("break here");
         }
     }
+
+    class DebuggerCustomViewTest2
+    {
+        public static void run()
+        {
+            List<int> myList = new List<int> ();
+            List<int> myList2 = new List<int> ();
+            
+            myList.Add(1);
+            myList.Add(2);
+            myList.Add(3);
+            myList.Add(4);
+            myList2.Add(1);
+            myList2.Add(1);
+            myList2.Add(1);
+            myList2.Add(1);
+
+        }
+    }
 }

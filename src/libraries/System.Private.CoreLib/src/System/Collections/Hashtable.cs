@@ -123,14 +123,14 @@ namespace System.Collections
 
         // The hash table data.
         // This cannot be serialized
-        private struct bucket
+        private struct Bucket
         {
             public object? key;
             public object? val;
             public int hash_coll;   // Store hash code; sign bit means there was a collision.
         }
 
-        private bucket[] _buckets = null!;
+        private Bucket[] _buckets = null!;
 
         // The total number of entries in the hash table.
         private int _count;
@@ -271,7 +271,7 @@ namespace System.Collections
 
             // Avoid awfully small sizes
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
-            _buckets = new bucket[hashsize];
+            _buckets = new Bucket[hashsize];
 
             _loadsize = (int)(_loadFactor * hashsize);
             _isWriterInProgress = false;
@@ -443,7 +443,7 @@ namespace System.Collections
         // to those Objects.
         public virtual object Clone()
         {
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             Hashtable ht = new Hashtable(_count, _keycomparer);
             ht._version = _version;
             ht._loadFactor = _loadFactor;
@@ -480,11 +480,11 @@ namespace System.Collections
             }
 
             // Take a snapshot of buckets, in case another thread resizes table
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             uint hashcode = InitHash(key, lbuckets.Length, out uint seed, out uint incr);
             int ntry = 0;
 
-            bucket b;
+            Bucket b;
             int bucketNumber = (int)(seed % (uint)lbuckets.Length);
             do
             {
@@ -537,7 +537,7 @@ namespace System.Collections
             Debug.Assert(array != null);
             Debug.Assert(array.Rank == 1);
 
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -556,7 +556,7 @@ namespace System.Collections
             Debug.Assert(array != null);
             Debug.Assert(array.Rank == 1);
 
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -592,7 +592,7 @@ namespace System.Collections
         {
             KeyValuePairs[] array = new KeyValuePairs[_count];
             int index = 0;
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -613,7 +613,7 @@ namespace System.Collections
             Debug.Assert(array != null);
             Debug.Assert(array.Rank == 1);
 
-            bucket[] lbuckets = _buckets;
+            Bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
@@ -638,11 +638,11 @@ namespace System.Collections
 
 
                 // Take a snapshot of buckets, in case another thread does a resize
-                bucket[] lbuckets = _buckets;
+                Bucket[] lbuckets = _buckets;
                 uint hashcode = InitHash(key, lbuckets.Length, out uint seed, out uint incr);
                 int ntry = 0;
 
-                bucket b;
+                Bucket b;
                 int bucketNumber = (int)(seed % (uint)lbuckets.Length);
                 do
                 {
@@ -724,18 +724,18 @@ namespace System.Collections
             _occupancy = 0;
 
             // Don't replace any internal state until we've finished adding to the
-            // new bucket[].  This serves two purposes:
+            // new Bucket[].  This serves two purposes:
             //   1) Allow concurrent readers to see valid hashtable contents
             //      at all times
             //   2) Protect against an OutOfMemoryException while allocating this
-            //      new bucket[].
-            bucket[] newBuckets = new bucket[newsize];
+            //      new Bucket[].
+            Bucket[] newBuckets = new Bucket[newsize];
 
             // rehash table into new buckets
             int nb;
             for (nb = 0; nb < _buckets.Length; nb++)
             {
-                bucket oldb = _buckets[nb];
+                Bucket oldb = _buckets[nb];
                 if ((oldb.key != null) && (oldb.key != _buckets))
                 {
                     int hashcode = oldb.hash_coll & 0x7FFFFFFF;
@@ -743,7 +743,7 @@ namespace System.Collections
                 }
             }
 
-            // New bucket[] is good to go - replace buckets and other internal state.
+            // New Bucket[] is good to go - replace buckets and other internal state.
             _isWriterInProgress = true;
             _buckets = newBuckets;
             _loadsize = (int)(_loadFactor * newsize);
@@ -948,7 +948,7 @@ namespace System.Collections
             throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
         }
 
-        private void putEntry(bucket[] newBuckets, object key, object? nvalue, int hashcode)
+        private void putEntry(Bucket[] newBuckets, object key, object? nvalue, int hashcode)
         {
             Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
@@ -991,7 +991,7 @@ namespace System.Collections
             uint hashcode = InitHash(key, _buckets.Length, out uint seed, out uint incr);
             int ntry = 0;
 
-            bucket b;
+            Bucket b;
             int bn = (int)(seed % (uint)_buckets.Length);  // bucketNumber
             do
             {
@@ -1164,7 +1164,7 @@ namespace System.Collections
                 _keycomparer = new CompatibleComparer(hcp, c);
             }
 
-            _buckets = new bucket[hashsize];
+            _buckets = new Bucket[hashsize];
 
             if (serKeys == null)
             {

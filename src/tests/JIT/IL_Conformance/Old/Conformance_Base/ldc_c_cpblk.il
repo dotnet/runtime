@@ -103,6 +103,6 @@ END:
 }
 
 
-.assembly ldc_c_cpblk.exe {}
+.assembly ldc_c_cpblk {}
 
 

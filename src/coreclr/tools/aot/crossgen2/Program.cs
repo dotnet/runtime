@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -14,6 +15,8 @@ using Internal.CommandLine;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using ILCompiler.Reflection.ReadyToRun;
 
 namespace ILCompiler
 {
@@ -54,6 +57,8 @@ namespace ILCompiler
                 os = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 os = TargetOS.OSX;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                os = TargetOS.FreeBSD;
             else
                 throw new NotImplementedException();
 
@@ -156,6 +161,7 @@ namespace ILCompiler
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
                     "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
+                    "random" => ReadyToRunMethodLayoutAlgorithm.Random,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -209,6 +215,8 @@ namespace ILCompiler
                     _targetOS = TargetOS.Linux;
                 else if (_commandLineOptions.TargetOS.Equals("osx", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.OSX;
+                else if (_commandLineOptions.TargetOS.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.FreeBSD;
                 else
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }
@@ -395,6 +403,12 @@ namespace ILCompiler
                     try
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
+                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                        {
+                            Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
+                            continue;
+                        }
                         _allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                         inputFilePaths.Add(inputFile.Key, inputFile.Value);
                         _referenceableModules.Add(module);
@@ -497,6 +511,8 @@ namespace ILCompiler
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext);
+                        typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
+                        typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
                     }
 
@@ -529,8 +545,21 @@ namespace ILCompiler
             //
             // Initialize output filename
             //
-            var suffixStr = _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble ? ".ni.dll.tmp" : ".ni.dll";
-            var outFile = _commandLineOptions.OutNearInput ? inFilePaths.First().Value.Replace(".dll", suffixStr) : _commandLineOptions.OutputFilePath;
+            string inFilePath = inFilePaths.First().Value;
+            string inputFileExtension = Path.GetExtension(inFilePath);
+            string nearOutFilePath = inputFileExtension switch
+            {
+                ".dll" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.dll.tmp"
+                        : ".ni.dll"),
+                ".exe" => Path.ChangeExtension(inFilePath,
+                    _commandLineOptions.SingleFileCompilation && _commandLineOptions.InputBubble
+                        ? ".ni.exe.tmp"
+                        : ".ni.exe"),
+                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
+            };
+            string outFile = _commandLineOptions.OutNearInput ? nearOutFilePath : _commandLineOptions.OutputFilePath;
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
@@ -676,13 +705,13 @@ namespace ILCompiler
 
                     if (_commandLineOptions.CompositeKeyFile != null)
                     {
-                        ImmutableArray<byte> compositeStrongNameKey = File.ReadAllBytes(_commandLineOptions.CompositeKeyFile).ToImmutableArray();
+                        byte[] compositeStrongNameKey = File.ReadAllBytes(_commandLineOptions.CompositeKeyFile);
                         if (!IsValidPublicKey(compositeStrongNameKey))
                         {
                             throw new Exception(string.Format(SR.ErrorCompositeKeyFileNotPublicKey));
                         }
 
-                        compositeImageSettings.PublicKey = compositeStrongNameKey;
+                        compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
                     }
 
                     //
@@ -707,7 +736,6 @@ namespace ILCompiler
                         .UsePdbFile(_commandLineOptions.Pdb, _commandLineOptions.PdbPath)
                         .UsePerfMapFile(_commandLineOptions.PerfMap, _commandLineOptions.PerfMapPath, _commandLineOptions.PerfMapFormatVersion)
                         .UseProfileFile(jsonProfile != null)
-                        .UseParallelism(_commandLineOptions.Parallelism)
                         .UseProfileData(profileDataManager)
                         .FileLayoutAlgorithms(_methodLayout, _fileLayout)
                         .UseCompositeImageSettings(compositeImageSettings)
@@ -719,6 +747,7 @@ namespace ILCompiler
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
+                        .UseParallelism(_commandLineOptions.Parallelism)
                         .UseDependencyTracking(trackingLevel)
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
@@ -934,7 +963,7 @@ namespace ILCompiler
             }
         }
 
-        private static readonly ImmutableArray<byte> s_ecmaKey = ImmutableArray.Create(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 });
+        private static ReadOnlySpan<byte> s_ecmaKey => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
 
         private const int SnPublicKeyBlobSize = 13;
 
@@ -948,15 +977,21 @@ namespace ILCompiler
         // From StrongNameInternal.cpp
         // Checks to see if a public key is a valid instance of a PublicKeyBlob as
         // defined in StongName.h
-        internal static bool IsValidPublicKey(ImmutableArray<byte> blob)
+        internal static bool IsValidPublicKey(byte[] blob)
         {
             // The number of public key bytes must be at least large enough for the header and one byte of data.
-            if (blob.IsDefault || blob.Length < s_publicKeyHeaderSize + 1)
+            if (blob.Length < s_publicKeyHeaderSize + 1)
             {
                 return false;
             }
 
-            var blobReader = new BinaryReader(new MemoryStream(blob.ToArray()));
+            // Check for the ECMA key, which does not obey the invariants checked below.
+            if (blob.AsSpan().SequenceEqual(s_ecmaKey))
+            {
+                return true;
+            }
+
+            var blobReader = new BinaryReader(new MemoryStream(blob, writable: false));
 
             // Signature algorithm ID
             var sigAlgId = blobReader.ReadUInt32();
@@ -971,12 +1006,6 @@ namespace ILCompiler
             if (blob.Length != s_publicKeyHeaderSize + publicKeySize)
             {
                 return false;
-            }
-
-            // Check for the ECMA key, which does not obey the invariants checked below.
-            if (System.Linq.Enumerable.SequenceEqual(blob, s_ecmaKey))
-            {
-                return true;
             }
 
             // The public key must be in the wincrypto PUBLICKEYBLOB format

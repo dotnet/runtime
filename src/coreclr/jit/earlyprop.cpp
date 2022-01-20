@@ -29,32 +29,6 @@ bool Compiler::optDoEarlyPropForBlock(BasicBlock* block)
     return bbHasArrayRef || bbHasNullCheck;
 }
 
-//--------------------------------------------------------------------
-// gtIsVtableRef: Return true if the tree is a method table reference.
-//
-// Arguments:
-//    tree           - The input tree.
-//
-// Return Value:
-//    Return true if the tree is a method table reference.
-
-bool Compiler::gtIsVtableRef(GenTree* tree)
-{
-    if (tree->OperGet() == GT_IND)
-    {
-        GenTree* addr = tree->AsIndir()->Addr();
-
-        if (addr->OperIsAddrMode())
-        {
-            GenTreeAddrMode* addrMode = addr->AsAddrMode();
-
-            return (!addrMode->HasIndex() && (addrMode->Base()->TypeGet() == TYP_REF));
-        }
-    }
-
-    return false;
-}
-
 //------------------------------------------------------------------------------
 // getArrayLengthFromAllocation: Return the array length for an array allocation
 //                               helper call.
@@ -105,64 +79,6 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
     }
 
     return arrayLength;
-}
-
-//-----------------------------------------------------------------------------
-// getObjectHandleNodeFromAllocation: Return the type handle for an object allocation
-//                              helper call.
-//
-// Arguments:
-//    tree           - The object allocation helper call.
-//    block          - tree's basic block.
-//
-// Return Value:
-//    Return the object type handle node.
-
-GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
-{
-    assert(tree != nullptr);
-
-    if (tree->OperGet() == GT_CALL)
-    {
-        GenTreeCall* call = tree->AsCall();
-
-        if (call->gtCallType == CT_HELPER)
-        {
-            bool hasNewObj = call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWFAST) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_FINALIZE) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_VC) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE);
-
-            bool hasNewArr = call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
-                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8);
-
-#ifdef DEBUG
-            if (hasNewObj)
-            {
-                optCheckFlagsAreSet(OMF_HAS_NEWOBJ, "OMF_HAS_NEWOBJ", BBF_HAS_NEWOBJ, "BBF_HAS_NEWOBJ", tree, block);
-            }
-
-            if (hasNewArr)
-            {
-                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
-                                    block);
-            }
-#endif // DEBUG
-
-            if (hasNewObj || hasNewArr)
-            {
-                // This is an object allocation site. Return the runtime type handle node.
-                fgArgTabEntry* argTabEntry = gtArgEntryByArgNum(call, 0);
-                return argTabEntry->GetNode();
-            }
-        }
-    }
-
-    return nullptr;
 }
 
 #ifdef DEBUG
@@ -372,19 +288,19 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
                 return nullptr;
             }
 
-            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
+            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_BOUNDS_CHECK
             // nodes that have constant operands and thus can be trivially proved to be useless. It's
             // better to remove these range checks here, otherwise they'll pass through assertion prop
             // (creating useless (c1 < c2)-like assertions) and reach RangeCheck where they are finally
             // removed. Common patterns like new int[] { x, y, z } benefit from this.
 
-            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_ARR_BOUNDS_CHECK))
+            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_BOUNDS_CHECK))
             {
                 GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
 
-                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI())
+                if ((check->GetArrayLength() == tree) && check->GetIndex()->IsCnsIntOrI())
                 {
-                    ssize_t checkConstVal = check->gtIndex->AsIntCon()->IconValue();
+                    ssize_t checkConstVal = check->GetIndex()->AsIntCon()->IconValue();
                     if ((checkConstVal >= 0) && (checkConstVal < actualConstVal))
                     {
                         GenTree* comma = check->gtGetParent(nullptr);
@@ -784,7 +700,7 @@ bool Compiler::optIsNullCheckFoldingLegal(GenTree*    tree,
     assert(fgStmtListThreaded);
     while (canRemoveNullCheck && (currentTree != tree) && (currentTree != nullptr))
     {
-        if ((*nullCheckParent == nullptr) && (nullCheckTree->gtGetChildPointer(currentTree) != nullptr))
+        if ((*nullCheckParent == nullptr) && currentTree->TryGetUse(nullCheckTree))
         {
             *nullCheckParent = currentTree;
         }

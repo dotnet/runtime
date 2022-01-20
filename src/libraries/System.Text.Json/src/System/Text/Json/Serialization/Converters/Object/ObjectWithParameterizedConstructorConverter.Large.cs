@@ -67,10 +67,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 JsonParameterInfo? parameterInfo = cache[i].Value;
                 Debug.Assert(parameterInfo != null);
-
-                arguments[parameterInfo.ClrInfo.Position] = parameterInfo.ShouldDeserialize
-                    ? parameterInfo.DefaultValue
-                    : parameterInfo.ClrDefaultValue;
+                arguments[parameterInfo.ClrInfo.Position] = parameterInfo.DefaultValue;
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;

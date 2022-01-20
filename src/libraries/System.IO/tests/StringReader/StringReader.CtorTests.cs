@@ -59,7 +59,7 @@ namespace System.IO.Tests
 
             using (StringReader sr = new StringReader(str1))
             {
-                Assert.Equal(str1, sr.ReadLine());
+                Assert.Same(str1, sr.ReadLine());
             }
             using (StringReader sr = new StringReader(str2))
             {

@@ -30,6 +30,10 @@ Revision History:
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
+// clrconfignocache.h uses macro _ASSERTE, which needd to use variable
+// defdbgchan defined by SET_DEFAULT_DEBUG_CHANNEL.
+#include <clrconfignocache.h>
+
 /*++
 
 Initialization logic for LTTng tracepoint providers.
@@ -62,10 +66,12 @@ PAL_InitializeTracing(void)
     // Check if loading the LTTng providers should be disabled.
     // Note: this env var is formally declared in clrconfigvalues.h, but
     // this code is executed too early to use the mechanics that come with that definition.
-    char *disableValue = getenv("COMPlus_LTTng");
-    if (disableValue != NULL)
+    CLRConfigNoCache cfgLTTng = CLRConfigNoCache::Get("LTTng", /*noprefix*/ false, &getenv);
+    if (cfgLTTng.IsSet())
     {
-        fShouldLoad = strtol(disableValue, NULL, 10);
+        DWORD value;
+        if (cfgLTTng.TryAsInteger(10, value))
+            fShouldLoad = (int)value;
     }
 
     // Get the path to the currently executing shared object (libcoreclr.so).

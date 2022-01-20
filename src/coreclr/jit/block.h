@@ -33,11 +33,7 @@ typedef BitVec          EXPSET_TP;
 typedef BitVec_ValArg_T EXPSET_VALARG_TP;
 typedef BitVec_ValRet_T EXPSET_VALRET_TP;
 
-#if LARGE_EXPSET
 #define EXPSET_SZ 64
-#else
-#define EXPSET_SZ 32
-#endif
 
 typedef BitVec          ASSERT_TP;
 typedef BitVec_ValArg_T ASSERT_VALARG_TP;
@@ -551,12 +547,15 @@ enum BasicBlockFlags : unsigned __int64
 
     BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
     BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
+    BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
+    BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
+    BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
 
     // The following are sets of flags.
 
     // Flags that relate blocks to loop structure.
 
-    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1,
+    BBF_LOOP_FLAGS = BBF_LOOP_PREHEADER | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_LOOP_ALIGN,
 
     // Flags to update when two blocks are compacted
 
@@ -652,9 +651,17 @@ struct BasicBlock : private LIR::Range
     {
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
     }
+
     bool isLoopAlign() const
     {
         return ((bbFlags & BBF_LOOP_ALIGN) != 0);
+    }
+
+    void unmarkLoopAlign(Compiler* comp DEBUG_ARG(const char* reason));
+
+    bool hasAlign() const
+    {
+        return ((bbFlags & BBF_HAS_ALIGN) != 0);
     }
 
 #ifdef DEBUG
@@ -671,13 +678,10 @@ struct BasicBlock : private LIR::Range
     const char* dspToString(int blockNumPadding = 0);
 #endif // DEBUG
 
-    // Type used to hold block and edge weights
-    typedef float weight_t;
-
-#define BB_UNITY_WEIGHT 100.0f       // how much a normal execute once block weighs
+#define BB_UNITY_WEIGHT 100.0        // how much a normal execute once block weighs
 #define BB_UNITY_WEIGHT_UNSIGNED 100 // how much a normal execute once block weighs
-#define BB_LOOP_WEIGHT_SCALE 8.0f    // synthetic profile scale factor for loops
-#define BB_ZERO_WEIGHT 0.0f
+#define BB_LOOP_WEIGHT_SCALE 8.0     // synthetic profile scale factor for loops
+#define BB_ZERO_WEIGHT 0.0
 #define BB_MAX_WEIGHT FLT_MAX // maximum finite weight  -- needs rethinking.
 
     weight_t bbWeight; // The dynamic execution weight of this block
@@ -750,7 +754,7 @@ struct BasicBlock : private LIR::Range
 
     // Scale a blocks' weight by some factor.
     //
-    void scaleBBWeight(BasicBlock::weight_t scale)
+    void scaleBBWeight(weight_t scale)
     {
         this->bbWeight = this->bbWeight * scale;
 
@@ -820,6 +824,17 @@ struct BasicBlock : private LIR::Range
         BasicBlock* bbJumpDest; // basic block
         BBswtDesc*  bbJumpSwt;  // switch descriptor
     };
+
+    bool KindIs(BBjumpKinds kind) const
+    {
+        return bbJumpKind == kind;
+    }
+
+    template <typename... T>
+    bool KindIs(BBjumpKinds kind, T... rest) const
+    {
+        return KindIs(kind) || KindIs(rest...);
+    }
 
     // NumSucc() gives the number of successors, and GetSucc() returns a given numbered successor.
     //
@@ -993,6 +1008,16 @@ struct BasicBlock : private LIR::Range
         bbHndIndex = from->bbHndIndex;
     }
 
+    void copyTryIndex(const BasicBlock* from)
+    {
+        bbTryIndex = from->bbTryIndex;
+    }
+
+    void copyHndIndex(const BasicBlock* from)
+    {
+        bbHndIndex = from->bbHndIndex;
+    }
+
     static bool sameTryRegion(const BasicBlock* blk1, const BasicBlock* blk2)
     {
         return blk1->bbTryIndex == blk2->bbTryIndex;
@@ -1139,24 +1164,18 @@ struct BasicBlock : private LIR::Range
      */
 
     union {
-        EXPSET_TP bbCseGen; // CSEs computed by block
-#if ASSERTION_PROP
+        EXPSET_TP bbCseGen;       // CSEs computed by block
         ASSERT_TP bbAssertionGen; // value assignments computed by block
-#endif
     };
 
     union {
-        EXPSET_TP bbCseIn; // CSEs available on entry
-#if ASSERTION_PROP
+        EXPSET_TP bbCseIn;       // CSEs available on entry
         ASSERT_TP bbAssertionIn; // value assignments available on entry
-#endif
     };
 
     union {
-        EXPSET_TP bbCseOut; // CSEs available on exit
-#if ASSERTION_PROP
+        EXPSET_TP bbCseOut;       // CSEs available on exit
         ASSERT_TP bbAssertionOut; // value assignments available on exit
-#endif
     };
 
     void* bbEmitCookie;
@@ -1241,7 +1260,6 @@ struct BasicBlock : private LIR::Range
         return StatementList(FirstNonPhiDef());
     }
 
-    GenTree* firstNode() const;
     GenTree* lastNode() const;
 
     bool endsWithJmpMethod(Compiler* comp) const;
@@ -1555,6 +1573,10 @@ public:
 // and must be non-null. E.g.,
 //    for (BasicBlock* const block : BasicBlockRangeList(startBlock, endBlock)) ...
 //
+// Note that endBlock->bbNext is captured at the beginning of the iteration. Thus, any blocks
+// inserted before that will continue the iteration. In particular, inserting blocks between endBlock
+// and endBlock->bbNext will yield unexpected results, as the iteration will continue longer than desired.
+//
 class BasicBlockRangeList
 {
     BasicBlock* m_begin;
@@ -1595,8 +1617,8 @@ struct BBswtDesc
 
     // Case number and likelihood of most likely case
     // (only known with PGO, only valid if bbsHasDominantCase is true)
-    unsigned             bbsDominantCase;
-    BasicBlock::weight_t bbsDominantFraction;
+    unsigned bbsDominantCase;
+    weight_t bbsDominantFraction;
 
     bool bbsHasDefault;      // true if last switch case is a default case
     bool bbsHasDominantCase; // true if switch has a dominant case
@@ -1779,9 +1801,9 @@ public:
     flowList* flNext; // The next BasicBlock in the list, nullptr for end of list.
 
 private:
-    BasicBlock*          m_block; // The BasicBlock of interest.
-    BasicBlock::weight_t flEdgeWeightMin;
-    BasicBlock::weight_t flEdgeWeightMax;
+    BasicBlock* m_block; // The BasicBlock of interest.
+    weight_t    flEdgeWeightMin;
+    weight_t    flEdgeWeightMax;
 
 public:
     unsigned flDupCount; // The count of duplicate "edges" (use only for switch stmts)
@@ -1797,12 +1819,12 @@ public:
         m_block = newBlock;
     }
 
-    BasicBlock::weight_t edgeWeightMin() const
+    weight_t edgeWeightMin() const
     {
         return flEdgeWeightMin;
     }
 
-    BasicBlock::weight_t edgeWeightMax() const
+    weight_t edgeWeightMax() const
     {
         return flEdgeWeightMax;
     }
@@ -1812,15 +1834,9 @@ public:
     // They return false if the newWeight is not between the current [min..max]
     // when slop is non-zero we allow for the case where our weights might be off by 'slop'
     //
-    bool setEdgeWeightMinChecked(BasicBlock::weight_t newWeight,
-                                 BasicBlock*          bDst,
-                                 BasicBlock::weight_t slop,
-                                 bool*                wbUsedSlop);
-    bool setEdgeWeightMaxChecked(BasicBlock::weight_t newWeight,
-                                 BasicBlock*          bDst,
-                                 BasicBlock::weight_t slop,
-                                 bool*                wbUsedSlop);
-    void setEdgeWeights(BasicBlock::weight_t newMinWeight, BasicBlock::weight_t newMaxWeight, BasicBlock* bDst);
+    bool setEdgeWeightMinChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    bool setEdgeWeightMaxChecked(weight_t newWeight, BasicBlock* bDst, weight_t slop, bool* wbUsedSlop);
+    void setEdgeWeights(weight_t newMinWeight, weight_t newMaxWeight, BasicBlock* bDst);
 
     flowList(BasicBlock* block, flowList* rest)
         : flNext(rest), m_block(block), flEdgeWeightMin(0), flEdgeWeightMax(0), flDupCount(0)

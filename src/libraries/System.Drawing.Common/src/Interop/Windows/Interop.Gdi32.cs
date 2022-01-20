@@ -42,8 +42,8 @@ internal static partial class Interop
         [DllImport(Libraries.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
         internal static extern IntPtr /*HDC*/ ResetDC(HandleRef hDC, HandleRef /*DEVMODE*/ lpDevMode);
 
-        [DllImport(Libraries.Gdi32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern int AddFontResourceEx(string lpszFilename, int fl, IntPtr pdv);
+        [GeneratedDllImport(Libraries.Gdi32, CharSet = CharSet.Auto, SetLastError = true)]
+        internal static partial int AddFontResourceEx(string lpszFilename, int fl, IntPtr pdv);
 
         internal static int AddFontFile(string fileName)
         {

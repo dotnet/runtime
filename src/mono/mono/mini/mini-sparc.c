@@ -513,7 +513,7 @@ get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 		}
 
 		DEBUG(printf("param %d: ", i));
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			DEBUG(printf("byref\n"));
 			
 			add_general (&gr, &stack_size, ainfo, FALSE);
@@ -905,7 +905,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				arg_type = sig->params [i - sig->hasthis];
 
 #ifndef SPARCV9
-			if (!arg_type->byref && ((arg_type->type == MONO_TYPE_R4) 
+			if (!m_type_is_byref (arg_type) && ((arg_type->type == MONO_TYPE_R4) 
 									 || (arg_type->type == MONO_TYPE_R8)))
 				/*
 				 * Since float arguments are passed in integer registers, we need to
@@ -964,7 +964,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				inst->inst_basereg = sparc_fp;
 				inst->inst_offset = ainfo->offset + ARGS_OFFSET;
 
-				if (!arg_type->byref && (arg_type->type == MONO_TYPE_R8)) {
+				if (!m_type_is_byref (arg_type) && (arg_type->type == MONO_TYPE_R8)) {
 					/* 
 					 * It is very hard to load doubles from non-doubleword aligned
 					 * memory locations. So if the offset is misaligned, we copy the
@@ -1025,7 +1025,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 		}
 	}
 
-	if (!sig->ret->byref && (sig->ret->type == MONO_TYPE_I8 || sig->ret->type == MONO_TYPE_U8)) {
+	if (!m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_I8 || sig->ret->type == MONO_TYPE_U8)) {
 		MonoInst *low = get_vreg_to_inst (cfg, MONO_LVREG_LS (cfg->ret->dreg));
 		MonoInst *high = get_vreg_to_inst (cfg, MONO_LVREG_MS (cfg->ret->dreg));
 
@@ -1298,11 +1298,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		arg_type = mini_get_underlying_type (arg_type);
 		if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis])))
 			emit_pass_vtype (cfg, call, cinfo, ainfo, arg_type, in, sig->pinvoke);
-		else if (!arg_type->byref && ((arg_type->type == MONO_TYPE_I8) || (arg_type->type == MONO_TYPE_U8)))
+		else if (!m_type_is_byref (arg_type) && ((arg_type->type == MONO_TYPE_I8) || (arg_type->type == MONO_TYPE_U8)))
 			emit_pass_long (cfg, call, ainfo, in);
-		else if (!arg_type->byref && (arg_type->type == MONO_TYPE_R8))
+		else if (!m_type_is_byref (arg_type) && (arg_type->type == MONO_TYPE_R8))
 			emit_pass_double (cfg, call, ainfo, in);
-		else if (!arg_type->byref && (arg_type->type == MONO_TYPE_R4))
+		else if (!m_type_is_byref (arg_type) && (arg_type->type == MONO_TYPE_R4))
 			emit_pass_float (cfg, call, ainfo, in);
 		else
 			emit_pass_other (cfg, call, ainfo, arg_type, in);
@@ -2133,7 +2133,7 @@ emit_load_volatile_arguments (MonoCompile *cfg, guint32 *code)
 			sparc_st_imm (code, inst->inst_basereg, stack_offset, sparc_i5);
 		}
 
-		if (!v64 && !arg_type->byref && (arg_type->type == MONO_TYPE_R8)) {
+		if (!v64 && !m_type_is_byref (arg_type) && (arg_type->type == MONO_TYPE_R8)) {
 			if (ainfo->storage == ArgInIRegPair) {
 				if (!sparc_is_imm13 (inst->inst_offset + 4))
 					NOT_IMPLEMENTED;
@@ -3946,7 +3946,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			sparc_st_imm (code, sparc_i5, inst->inst_basereg, stack_offset);
 		}
 
-		if (!v64 && !arg_type->byref && (arg_type->type == MONO_TYPE_R8)) {
+		if (!v64 && !m_type_is_byref (arg_type) && (arg_type->type == MONO_TYPE_R8)) {
 			/* Save the argument to a dword aligned stack location */
 			/*
 			 * stack_offset contains the offset of the argument on the stack.

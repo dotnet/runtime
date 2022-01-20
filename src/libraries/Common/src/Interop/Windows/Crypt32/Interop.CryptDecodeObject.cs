@@ -13,8 +13,8 @@ internal static partial class Interop
             return CryptDecodeObject(MsgEncodingType.All, (IntPtr)lpszStructType, pbEncoded, cbEncoded, 0, pvStructInfo, ref pcbStructInfo);
         }
 
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern unsafe bool CryptDecodeObject(
+        [GeneratedDllImport(Libraries.Crypt32, SetLastError = true)]
+        private static unsafe partial bool CryptDecodeObject(
             MsgEncodingType dwCertEncodingType,
             IntPtr lpszStructType,
             IntPtr pbEncoded,

@@ -34,9 +34,9 @@ namespace Wasm.Build.Tests
                     .UnwrapItemsAsArrays().ToList().Dump();
         }
 
-        public BuildAndRunAttribute(bool aot=false, RunHost host = RunHost.All, params object?[] parameters)
+        public BuildAndRunAttribute(bool aot=false, RunHost host = RunHost.All, string? config=null, params object?[] parameters)
         {
-            _data = BuildTestBase.ConfigWithAOTData(aot)
+            _data = BuildTestBase.ConfigWithAOTData(aot, config)
                     .Multiply(parameters)
                     .WithRunHosts(host)
                     .UnwrapItemsAsArrays().ToList().Dump();

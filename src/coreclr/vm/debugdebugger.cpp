@@ -156,7 +156,7 @@ FCIMPL0(void, DebugDebugger::Break)
 }
 FCIMPLEND
 
-BOOL QCALLTYPE DebugDebugger::Launch()
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 {
     QCALL_CONTRACT;
 
@@ -190,24 +190,26 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsDebuggerAttached)
 }
 FCIMPLEND
 
-
-/*static*/ BOOL DebugDebugger::IsLoggingHelper()
+namespace
 {
-    CONTRACTL
+    BOOL IsLoggingHelper()
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerAttached())
-    {
-        return (g_pDebugInterface->IsLoggingEnabled());
+    #ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached())
+        {
+            return (g_pDebugInterface->IsLoggingEnabled());
+        }
+    #endif // DEBUGGING_SUPPORTED
+        return FALSE;
     }
-#endif // DEBUGGING_SUPPORTED
-    return FALSE;
 }
 
 
@@ -216,7 +218,7 @@ FCIMPLEND
 // appending a newline to anything.
 // It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-void QCALLTYPE DebugDebugger::Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
 {
     CONTRACTL
     {
@@ -294,7 +296,6 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
     FC_RETURN_BOOL(IsLoggingHelper());
 }
 FCIMPLEND
-
 
 FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         StackFrameHelper* pStackFrameHelperUNSAFE,
@@ -713,11 +714,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
-                    PEFile *pPEFile = pModule->GetFile();
+                    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
                     // Get the address and size of the loaded PE image
                     COUNT_T peSize;
-                    PTR_CVOID peAddress = pPEFile->GetLoadedImageContents(&peSize);
+                    PTR_CVOID peAddress = pPEAssembly->GetLoadedImageContents(&peSize);
 
                     // Save the PE address and size
                     PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
@@ -727,11 +728,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     pLoadedPeSize[iNumValidFrames] = (I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
-                    if (!pPEFile->IsDynamic())
+                    if (!pPEAssembly->IsDynamic())
                     {
                         // This flag is only available for non-dynamic assemblies.
                         U1 *pIsFileLayout = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
-                        pIsFileLayout[iNumValidFrames] = (U1) pPEFile->GetLoaded()->IsFlat();
+                        pIsFileLayout[iNumValidFrames] = (U1) pPEAssembly->GetLoadedLayout()->IsFlat();
                     }
 
                     // If there is a in memory symbol stream
@@ -750,7 +751,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString assemblyPath = pPEFile->GetIdentityPath();
+                        SString assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
@@ -775,6 +776,28 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+
+extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+{
+    QCALL_CONTRACT;
+
+    MethodDesc* pResult = nullptr;
+
+    BEGIN_QCALL;
+
+    // TODO: There is a race for dynamic and collectible methods here between getting
+    // the MethodDesc here and when the managed wrapper converts it into a MethodBase
+    // where the method could be collected.
+    EECodeInfo codeInfo((PCODE)ip);
+    if (codeInfo.IsValid())
+    {
+        pResult = codeInfo.GetMethodDesc();
+    }
+
+    END_QCALL;
+
+    return pResult;
+}
 
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
@@ -1160,14 +1183,14 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
     _ASSERTE(!ThreadStore::HoldingThreadStore());
 
-    bool bRes = false; 
+    bool bRes = false;
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
     if ((this->ip != NULL) && g_pDebugInterface)
     {
         // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
-        // adjusted in certain cases when calculating the IL offset. 
+        // adjusted in certain cases when calculating the IL offset.
         //
         // The dwOffset of the stack frame points to either:
         //

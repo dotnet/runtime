@@ -120,7 +120,7 @@ namespace System.Xml
                 if (prefix.Length == 0)
                     return this.localname;
                 else
-                    return this.prefix + ":" + this.localname;
+                    return $"{this.prefix}:{this.localname}";
             }
 
             public static bool operator ==(QName a, QName b)
@@ -1083,7 +1083,7 @@ namespace System.Xml
         public override bool ReadContentAsBoolean()
         {
             int origPos = _pos;
-            bool value = false;
+            bool value;
             try
             {
                 if (SetupContentAsXXX("ReadContentAsBoolean"))
@@ -2536,7 +2536,7 @@ namespace System.Xml
 
         private bool ReadInit(bool skipXmlDecl)
         {
-            string? err = null;
+            string? err;
             if (!_sniffed)
             {
                 // check magic header
@@ -2809,8 +2809,7 @@ namespace System.Xml
                     case BinXmlToken.CData:
                         // skip
                         _pos++;
-                        int pos;
-                        ScanText(out pos);
+                        ScanText(out _);
                         // try again
                         break;
                     case BinXmlToken.EndCData:
@@ -4048,7 +4047,7 @@ namespace System.Xml
                             if (qname.prefix.Length == 0)
                                 return qname.localname;
                             else
-                                return string.Concat(qname.prefix, ":", qname.localname);
+                                return $"{qname.prefix}:{qname.localname}";
                         }
 
                     default:
@@ -4422,7 +4421,7 @@ namespace System.Xml
 
         private Exception ThrowUnexpectedToken(BinXmlToken token)
         {
-            System.Diagnostics.Debug.WriteLine("Unhandled token: " + token.ToString());
+            System.Diagnostics.Debug.WriteLine($"Unhandled token: {token}");
             return ThrowXmlException(SR.XmlBinary_UnexpectedToken);
         }
 

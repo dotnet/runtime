@@ -9,7 +9,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
-public class Test
+public class Test_pluggaps
 {
     public static List<GCHandle> gchList = new List<GCHandle>();
     public static List<byte[]> bList = new List<byte[]>();

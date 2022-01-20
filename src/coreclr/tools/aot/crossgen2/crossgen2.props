@@ -29,7 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
-    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
     <ProjectReference Include="..\ILCompiler.ReadyToRun\ILCompiler.ReadyToRun.csproj" />
   </ItemGroup>
 
@@ -79,17 +79,6 @@
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
-      />
-  </ItemGroup>
-
-  <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
-       this works at runtime, but makes it difficult to debug the jit.-->
-  <ItemGroup Condition="'$(TargetOS)' == 'windows' and Exists('$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)')">
-    <Content Remove="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit$(LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
       />
   </ItemGroup>
 

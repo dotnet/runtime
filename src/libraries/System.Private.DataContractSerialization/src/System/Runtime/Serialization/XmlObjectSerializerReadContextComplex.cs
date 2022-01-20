@@ -39,11 +39,11 @@ namespace System.Runtime.Serialization
                 if (_serializationSurrogateProvider == null)
                     return base.InternalDeserialize(xmlReader, declaredTypeID, declaredTypeHandle, name, ns);
                 else
-                    return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle), null /*surrogateDataContract*/, name, ns);
+                    return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle)!, null /*surrogateDataContract*/, name, ns);
             }
             else
             {
-                return InternalDeserializeInSharedTypeMode(xmlReader, declaredTypeID, Type.GetTypeFromHandle(declaredTypeHandle), name, ns);
+                return InternalDeserializeInSharedTypeMode(xmlReader, declaredTypeID, Type.GetTypeFromHandle(declaredTypeHandle)!, name, ns);
             }
         }
 
@@ -94,8 +94,7 @@ namespace System.Runtime.Serialization
             if (assemblyName != null && typeName != null)
             {
                 Assembly assembly;
-                Type type;
-                DataContract? tempDataContract = ResolveDataContractInSharedTypeMode(assemblyName, typeName, out assembly, out type);
+                DataContract? tempDataContract = ResolveDataContractInSharedTypeMode(assemblyName, typeName, out assembly, out _);
                 if (tempDataContract == null)
                 {
                     if (assembly == null)
@@ -174,9 +173,7 @@ namespace System.Runtime.Serialization
             {
                 if (attributes.ClrAssembly != null && attributes.ClrType != null)
                 {
-                    Assembly assembly;
-                    Type type;
-                    return ResolveDataContractInSharedTypeMode(attributes.ClrAssembly, attributes.ClrType, out assembly, out type);
+                    return ResolveDataContractInSharedTypeMode(attributes.ClrAssembly, attributes.ClrType, out _, out _);
                 }
             }
             return null;

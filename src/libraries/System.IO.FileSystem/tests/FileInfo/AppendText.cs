@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Xunit;
 
 namespace System.IO.Tests
 {
     public class FileInfo_AppendText : File_ReadWriteAllText
     {
+        protected override bool IsAppend => true;
+
         protected override void Write(string path, string content)
         {
             var writer = new FileInfo(path).AppendText();
@@ -14,15 +17,11 @@ namespace System.IO.Tests
             writer.Dispose();
         }
 
-        [Fact]
-        public override void Overwrite()
+        protected override void Write(string path, string content, Encoding encoding)
         {
-            string path = GetTestFilePath();
-            string lines = new string('c', 200);
-            string appendline = new string('b', 100);
-            Write(path, lines);
-            Write(path, appendline);
-            Assert.Equal(lines + appendline, Read(path));
+            var writer = new StreamWriter(path, IsAppend, encoding);
+            writer.Write(content);
+            writer.Dispose();
         }
     }
 }

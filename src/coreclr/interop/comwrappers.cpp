@@ -4,6 +4,7 @@
 #include "comwrappers.hpp"
 #include <interoplibimports.h>
 #include <corerror.h>
+#include <minipal/utils.h>
 
 #ifdef _WIN32
 #include <new> // placement new
@@ -398,8 +399,8 @@ HRESULT ManagedObjectWrapper::Create(
         curr.IID = IID_IReferenceTrackerTarget;
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
-    
-    _ASSERTE(runtimeDefinedCount <= (int) ARRAYSIZE(runtimeDefinedLocal));
+
+    _ASSERTE(runtimeDefinedCount <= (int) ARRAY_SIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
@@ -438,7 +439,7 @@ HRESULT ManagedObjectWrapper::Create(
         { userDefined, userDefinedCount }
     };
 
-    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAYSIZE(AllEntries), AllEntries);
+    ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAY_SIZE(AllEntries), AllEntries);
 
     ManagedObjectWrapper* wrapper = new (wrapperMem) ManagedObjectWrapper
         {
@@ -790,17 +791,6 @@ HRESULT NativeObjectWrapperContext::Create(
 void NativeObjectWrapperContext::Destroy(_In_ NativeObjectWrapperContext* wrapper)
 {
     _ASSERTE(wrapper != nullptr);
-
-    // Check if the tracker object manager should be informed prior to being destroyed.
-    IReferenceTracker* trackerMaybe = wrapper->GetReferenceTracker();
-    if (trackerMaybe != nullptr)
-    {
-        // We only call this during a GC so ignore the failure as
-        // there is no way we can handle it at this point.
-        HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(trackerMaybe);
-        _ASSERTE(SUCCEEDED(hr));
-        (void)hr;
-    }
 
     // Manually trigger the destructor since placement
     // new was used to allocate the object.

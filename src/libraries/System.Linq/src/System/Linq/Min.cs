@@ -541,15 +541,22 @@ namespace System.Linq
 
             if (default(TKey) is null)
             {
-                while (key == null)
+                if (key == null)
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
+                    TSource firstValue = value;
 
-                    value = e.Current;
-                    key = keySelector(value);
+                    do
+                    {
+                        if (!e.MoveNext())
+                        {
+                            // All keys are null, surface the first element.
+                            return firstValue;
+                        }
+
+                        value = e.Current;
+                        key = keySelector(value);
+                    }
+                    while (key == null);
                 }
 
                 while (e.MoveNext())

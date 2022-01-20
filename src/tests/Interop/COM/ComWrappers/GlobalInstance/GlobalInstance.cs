@@ -10,6 +10,7 @@ namespace ComWrappersTests.GlobalInstance
 
     using ComWrappersTests.Common;
     using TestLibrary;
+    using Xunit;
 
     partial class Program
     {
@@ -171,6 +172,11 @@ namespace ComWrappersTests.GlobalInstance
 
             protected override void ReleaseObjects(IEnumerable objects)
             {
+                foreach (object o in objects)
+                {
+                    Assert.NotNull(o);
+                }
+
                 throw new Exception() { HResult = ReleaseObjectsCallAck };
             }
 
@@ -230,14 +236,14 @@ namespace ComWrappersTests.GlobalInstance
                 () =>
                 {
                     ComWrappers.RegisterForMarshalling(wrappers1);
-                }, "Should not be able to re-register for global ComWrappers");
+                });
 
             var wrappers2 = new GlobalComWrappers();
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
                     ComWrappers.RegisterForMarshalling(wrappers2);
-                }, "Should not be able to reset for global ComWrappers");
+                });
         }
 
         private static void ValidateRegisterForTrackerSupport()
@@ -250,14 +256,14 @@ namespace ComWrappersTests.GlobalInstance
                 () =>
                 {
                     ComWrappers.RegisterForTrackerSupport(wrappers1);
-                }, "Should not be able to re-register for global ComWrappers");
+                });
 
             var wrappers2 = new GlobalComWrappers();
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
                     ComWrappers.RegisterForTrackerSupport(wrappers2);
-                }, "Should not be able to reset for global ComWrappers");
+                });
         }
 
         private static void ValidateMarshalAPIs(bool validateUseRegistered)
@@ -272,11 +278,11 @@ namespace ComWrappersTests.GlobalInstance
 
             var testObj = new Test();
             IntPtr comWrapper1 = Marshal.GetIUnknownForObject(testObj);
-            Assert.AreNotEqual(IntPtr.Zero, comWrapper1);
-            Assert.AreEqual(testObj, registeredWrapper.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
+            Assert.NotEqual(IntPtr.Zero, comWrapper1);
+            Assert.Equal(testObj, registeredWrapper.LastComputeVtablesObject);
 
             IntPtr comWrapper2 = Marshal.GetIUnknownForObject(testObj);
-            Assert.AreEqual(comWrapper1, comWrapper2);
+            Assert.Equal(comWrapper1, comWrapper2);
 
             Marshal.Release(comWrapper1);
             Marshal.Release(comWrapper2);
@@ -289,29 +295,29 @@ namespace ComWrappersTests.GlobalInstance
             {
                 var dispatchObj = new TestEx(IID_IDISPATCH);
                 IntPtr dispatchWrapper = Marshal.GetIDispatchForObject(dispatchObj);
-                Assert.AreNotEqual(IntPtr.Zero, dispatchWrapper);
-                Assert.AreEqual(dispatchObj, registeredWrapper.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
+                Assert.NotEqual(IntPtr.Zero, dispatchWrapper);
+                Assert.Equal(dispatchObj, registeredWrapper.LastComputeVtablesObject);
 
                 Console.WriteLine($" -- Validate Marshal.GetIDispatchForObject != Marshal.GetIUnknownForObject...");
                 IntPtr unknownWrapper = Marshal.GetIUnknownForObject(dispatchObj);
-                Assert.AreNotEqual(IntPtr.Zero, unknownWrapper);
-                Assert.AreNotEqual(unknownWrapper, dispatchWrapper);
+                Assert.NotEqual(IntPtr.Zero, unknownWrapper);
+                Assert.NotEqual(unknownWrapper, dispatchWrapper);
             }
 
             Console.WriteLine($" -- Validate Marshal.GetObjectForIUnknown...");
 
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
             object objWrapper1 = Marshal.GetObjectForIUnknown(trackerObjRaw);
-            Assert.AreEqual(validateUseRegistered, objWrapper1 is FakeWrapper, $"GetObjectForIUnknown should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
+            Assert.Equal(validateUseRegistered, objWrapper1 is FakeWrapper);
             object objWrapper2 = Marshal.GetObjectForIUnknown(trackerObjRaw);
-            Assert.AreEqual(objWrapper1, objWrapper2);
+            Assert.Equal(objWrapper1, objWrapper2);
 
             Console.WriteLine($" -- Validate Marshal.GetUniqueObjectForIUnknown...");
 
             object objWrapper3 = Marshal.GetUniqueObjectForIUnknown(trackerObjRaw);
-            Assert.AreEqual(validateUseRegistered, objWrapper3 is FakeWrapper, $"GetObjectForIUnknown should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
+            Assert.Equal(validateUseRegistered, objWrapper3 is FakeWrapper);
 
-            Assert.AreNotEqual(objWrapper1, objWrapper3);
+            Assert.NotEqual(objWrapper1, objWrapper3);
 
             Marshal.Release(trackerObjRaw);
         }
@@ -326,7 +332,7 @@ namespace ComWrappersTests.GlobalInstance
             Console.WriteLine($" -- Validate MarshalAs IUnknown...");
             ValidateInterfaceMarshaler<object>(MarshalInterface.UpdateTestObjectAsIUnknown, shouldSucceed: validateUseRegistered);
             object obj = MarshalInterface.CreateTrackerObjectAsIUnknown();
-            Assert.AreEqual(validateUseRegistered, obj is FakeWrapper, $"Should{(validateUseRegistered ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
+            Assert.Equal(validateUseRegistered, obj is FakeWrapper);
 
             if (validateUseRegistered)
             {
@@ -342,7 +348,7 @@ namespace ComWrappersTests.GlobalInstance
                 Assert.Throws<InvalidCastException>(() => MarshalInterface.CreateTrackerObjectWrongType());
 
                 FakeWrapper wrapper = MarshalInterface.CreateTrackerObjectAsInterface();
-                Assert.IsNotNull(wrapper, $"Should have returned {nameof(FakeWrapper)} instance");
+                Assert.NotNull(wrapper);
             }
         }
 
@@ -357,16 +363,16 @@ namespace ComWrappersTests.GlobalInstance
 
             T retObj;
             int hr = func(testObj as T, value, out retObj);
-            Assert.AreEqual(testObj, GlobalComWrappers.Instance.LastComputeVtablesObject, "Registered ComWrappers instance should have been called");
+            Assert.Equal(testObj, GlobalComWrappers.Instance.LastComputeVtablesObject);
             if (shouldSucceed)
             {
-                Assert.IsTrue(retObj is Test);
-                Assert.AreEqual(value, testObj.GetValue());
-                Assert.AreEqual<object>(testObj, retObj);
+                Assert.True(retObj is Test);
+                Assert.Equal(value, testObj.GetValue());
+                Assert.Equal<object>(testObj, retObj);
             }
             else
             {
-                Assert.AreEqual(E_NOINTERFACE, hr);
+                Assert.Equal(E_NOINTERFACE, hr);
             }
         }
 
@@ -389,11 +395,11 @@ namespace ComWrappersTests.GlobalInstance
 
             Type t= Type.GetTypeFromCLSID(Guid.Parse(Server.Contract.Guids.DispatchTesting));
             var server = Activator.CreateInstance(t);
-            Assert.AreEqual(returnValid, server is FakeWrapper, $"Should{(returnValid ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
+            Assert.Equal(returnValid, server is FakeWrapper);
 
             IntPtr ptr = Marshal.GetIUnknownForObject(server);
             var obj = Marshal.GetObjectForIUnknown(ptr);
-            Assert.AreEqual(server, obj);
+            Assert.Equal(server, obj);
         }
 
         private static void ValidateManagedServerActivation()
@@ -409,14 +415,14 @@ namespace ComWrappersTests.GlobalInstance
             {
                 Type t = Type.GetTypeFromCLSID(Guid.Parse(Server.Contract.Guids.ConsumeNETServerTesting));
                 var server = Activator.CreateInstance(t);
-                Assert.AreEqual(returnValid, server is FakeWrapper, $"Should{(returnValid ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
+                Assert.Equal(returnValid, server is FakeWrapper);
                 object serverUnwrapped = GlobalComWrappers.Instance.LastComputeVtablesObject;
-                Assert.AreEqual(ManagedServerTypeName, serverUnwrapped.GetType().Name);
+                Assert.Equal(ManagedServerTypeName, serverUnwrapped.GetType().Name);
 
                 IntPtr ptr = Marshal.GetIUnknownForObject(server);
                 var obj = Marshal.GetObjectForIUnknown(ptr);
-                Assert.AreEqual(server, obj);
-                Assert.AreEqual(returnValid, obj is FakeWrapper, $"Should{(returnValid ? string.Empty : "not")} have returned {nameof(FakeWrapper)} instance");
+                Assert.Equal(server, obj);
+                Assert.Equal(returnValid, obj is FakeWrapper);
                 serverUnwrapped.GetType().GetMethod("NotEqualByRCW").Invoke(serverUnwrapped, new object[] { obj });
             }
         }
@@ -431,7 +437,7 @@ namespace ComWrappersTests.GlobalInstance
 
             // Trigger the thread lifetime end API and verify the callback occurs.
             int hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
-            Assert.AreEqual(GlobalComWrappers.ReleaseObjectsCallAck, hr);
+            Assert.Equal(GlobalComWrappers.ReleaseObjectsCallAck, hr);
         }
     }
 }

@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using Wasm.Build.Tests;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -12,7 +13,7 @@ using System.Text;
 
 #nullable enable
 
-namespace Wasm.Build.Tests
+namespace Wasm.Build.NativeRebuild.Tests
 {
     // TODO: test for runtime components
     public class NativeRebuildTestsBase : BuildTestBase
@@ -47,11 +48,12 @@ namespace Wasm.Build.Tests
         {
             buildArgs = GenerateProjectContents(buildArgs, nativeRelink, invariant, extraProperties);
             BuildProject(buildArgs,
-                        initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                        dotnetWasmFromRuntimePack: false,
-                        hasIcudt: !invariant,
-                        id: id,
-                        createProject: true);
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: false,
+                                HasIcudt: !invariant,
+                                CreateProject: true));
 
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: RunHost.V8, id: id);
             return (buildArgs, GetBuildPaths(buildArgs));
@@ -76,13 +78,15 @@ namespace Wasm.Build.Tests
             buildArgs = newBuildArgs;
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
+            Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
-                                            dotnetWasmFromRuntimePack: false,
-                                            hasIcudt: !invariant,
-                                            createProject: false,
-                                            useCache: false,
-                                            verbosity: verbosity);
+                                            new BuildProjectOptions(
+                                                DotnetWasmFromRuntimePack: false,
+                                                HasIcudt: !invariant,
+                                                CreateProject: false,
+                                                UseCache: false,
+                                                Verbosity: verbosity));
 
             return output;
         }
@@ -136,27 +140,16 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"CompareStat failed:{Environment.NewLine}{msg}");
         }
 
-        internal IDictionary<string, FileStat> StatFiles(IEnumerable<string> fullpaths)
+        internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(bool unchanged, params string[] baseDirs)
         {
-            Dictionary<string, FileStat> table = new();
-            foreach (string file in fullpaths)
+            var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
+            foreach (var baseDir in baseDirs)
             {
-                if (File.Exists(file))
-                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
-                else
-                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
+                foreach (var file in Directory.EnumerateFiles(baseDir, "*", new EnumerationOptions { RecurseSubdirectories = true }))
+                    dict[Path.GetFileName(file)] = (file, unchanged);
             }
 
-            return table;
-        }
-
-        internal BuildPaths GetBuildPaths(BuildArgs buildArgs)
-        {
-            string objDir = GetObjDir(buildArgs.Config);
-            string bundleDir = Path.Combine(GetBinDir(baseDir: _projectDir, config: buildArgs.Config), "AppBundle");
-            string wasmDir = Path.Combine(objDir, "wasm");
-
-            return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
+            return dict;
         }
 
         internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(BuildArgs buildArgs, BuildPaths paths, bool unchanged)
@@ -203,7 +196,4 @@ namespace Wasm.Build.Tests
                 Assert.DoesNotContain(substring, full);
         }
     }
-
-    internal record FileStat (bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 }

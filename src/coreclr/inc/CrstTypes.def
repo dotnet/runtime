@@ -236,13 +236,6 @@ Crst HandleTable
     SameLevelAs HandleTable
 End
 
-Crst HostAssemblyMap
-End
-
-Crst HostAssemblyMapAdd
-    AcquiredBefore HostAssemblyMap
-End
-
 Crst IbcProfile
 End
 
@@ -381,6 +374,7 @@ End
 // between the thread executing DetachProfiler(), and the DetachThread
 // carrying out the evacuation order.
 Crst ProfilingAPIStatus
+    AcquiredBefore ThreadStore
 End
 
 Crst RCWCache
@@ -496,9 +490,8 @@ End
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
-                   JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilingAPIStatus
-                   ProfilerGCRefDataFreeList SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList
-                   ThreadIdDispenser DebuggerMutex
+                   JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
+                   SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
 End
 
 Crst TypeIDMap

@@ -14,14 +14,14 @@ struct Gen<T>
 // 		Gen<T> inst = new Gen<T>();
 // #pragma warning restore
 		Type monitor = typeof(Gen<T>);
-		TestHelper myHelper = new TestHelper(Test.nThreads);
+		TestHelper myHelper = new TestHelper(Test_TryEnter04.nThreads);
 		// MonitorDelegateTS[] consumer = new MonitorDelegateTS[Test.nThreads];
 		// for(int i=0;i<consumer.Length;i++){
 		// 	consumer[i] = new MonitorDelegateTS(myHelper.ConsumerTryEnter);
 		// 	consumer[i].BeginInvoke(monitor,100,null,null);
 		// }
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_TryEnter04.nThreads; i++)
 		{
 			ThreadPool.QueueUserWorkItem(state =>
 			{
@@ -35,11 +35,11 @@ struct Gen<T>
 			if(myHelper.Error == true)
 				break;
 		}
-		Test.Eval(!myHelper.Error);
+		Test_TryEnter04.Eval(!myHelper.Error);
 	}	
 }
 
-public class Test
+public class Test_TryEnter04
 {
 	public static int nThreads = 25;
 	public static int counter = 0;

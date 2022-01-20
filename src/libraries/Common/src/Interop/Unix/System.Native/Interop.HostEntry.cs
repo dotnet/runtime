@@ -32,10 +32,10 @@ internal static partial class Interop
             internal int IPAddressCount;       // Number of IP addresses in the list
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName")]
-        internal static extern unsafe int GetHostEntryForName(string address, AddressFamily family, HostEntry* entry);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostEntryForName", CharSet = CharSet.Ansi)]
+        internal static unsafe partial int GetHostEntryForName(string address, AddressFamily family, HostEntry* entry);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
-        internal static extern unsafe void FreeHostEntry(HostEntry* entry);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FreeHostEntry")]
+        internal static unsafe partial void FreeHostEntry(HostEntry* entry);
     }
 }

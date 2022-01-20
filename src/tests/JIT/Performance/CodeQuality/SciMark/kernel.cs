@@ -11,34 +11,12 @@
 /// own risk.
 /// </license>
 
-
-using Microsoft.Xunit.Performance;
 using System;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace SciMark2
 {
     public static class kernel
     {
-        [Benchmark]
-        public static void benchFFT()
-        {
-            SciMark2.Random R = new SciMark2.Random(Constants.RANDOM_SEED);
-            int N = Constants.FFT_SIZE;
-            long Iterations = 20000;
-
-            double[] x = RandomVector(2 * N, R);
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    innerFFT(x, Iterations);
-                }
-            }
-            validateFFT(N, x);
-        }
-
         private static void innerFFT(double[] x, long Iterations)
         {
             for (int i = 0; i < Iterations; i++)
@@ -81,23 +59,6 @@ namespace SciMark2
             return FFT.num_flops(N) * cycles / Q.read() * 1.0e-6;
         }
 
-        [Benchmark]
-        public static void benchSOR()
-        {
-            int N = Constants.SOR_SIZE;
-            SciMark2.Random R = new SciMark2.Random(Constants.RANDOM_SEED);
-            int Iterations = 20000;
-            double[][] G = RandomMatrix(N, N, R);
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    SOR.execute(1.25, G, Iterations);
-                }
-            }
-        }
-
         public static double measureSOR(int N, double min_time, Random R)
         {
             double[][] G = RandomMatrix(N, N, R);
@@ -118,20 +79,6 @@ namespace SciMark2
             return SOR.num_flops(N, N, cycles) / Q.read() * 1.0e-6;
         }
 
-        [Benchmark]
-        public static void benchMonteCarlo()
-        {
-            SciMark2.Random R = new SciMark2.Random(Constants.RANDOM_SEED);
-            int Iterations = 40000000;
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    MonteCarlo.integrate(Iterations);
-                }
-            }
-        }
-
         public static double measureMonteCarlo(double min_time, Random R)
         {
             Stopwatch Q = new Stopwatch();
@@ -150,47 +97,6 @@ namespace SciMark2
 
             // approx Mflops
             return MonteCarlo.num_flops(cycles) / Q.read() * 1.0e-6;
-        }
-
-        [Benchmark]
-        public static void benchSparseMult()
-        {
-            int N = Constants.SPARSE_SIZE_M;
-            int nz = Constants.SPARSE_SIZE_nz;
-            int Iterations = 100000;
-            SciMark2.Random R = new SciMark2.Random(Constants.RANDOM_SEED);
-
-            double[] x = RandomVector(N, R);
-            double[] y = new double[N];
-            int nr = nz / N; // average number of nonzeros per row
-            int anz = nr * N; // _actual_ number of nonzeros
-            double[] val = RandomVector(anz, R);
-            int[] col = new int[anz];
-            int[] row = new int[N + 1];
-
-            row[0] = 0;
-            for (int r = 0; r < N; r++)
-            {
-                // initialize elements for row r
-
-                int rowr = row[r];
-                row[r + 1] = rowr + nr;
-                int step = r / nr;
-                if (step < 1)
-                    step = 1;
-                // take at least unit steps
-
-                for (int i = 0; i < nr; i++)
-                    col[rowr + i] = i * step;
-            }
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    SparseCompRow.matmult(y, val, row, col, x, Iterations);
-                }
-            }
         }
 
         public static double measureSparseMatmult(int N, int nz, double min_time, Random R)
@@ -224,7 +130,6 @@ namespace SciMark2
 
             int nr = nz / N; // average number of nonzeros per row
             int anz = nr * N; // _actual_ number of nonzeros
-
 
             double[] val = RandomVector(anz, R);
             int[] col = new int[anz];
@@ -262,36 +167,6 @@ namespace SciMark2
 
             // approx Mflops
             return SparseCompRow.num_flops(N, nz, cycles) / Q.read() * 1.0e-6;
-        }
-
-        [Benchmark]
-        public static void benchmarkLU()
-        {
-            int N = Constants.LU_SIZE;
-            SciMark2.Random R = new SciMark2.Random(Constants.RANDOM_SEED);
-            int Iterations = 2000;
-
-            double[][] A = RandomMatrix(N, N, R);
-            double[][] lu = new double[N][];
-            for (int i = 0; i < N; i++)
-            {
-                lu[i] = new double[N];
-            }
-            int[] pivot = new int[N];
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Iterations; i++)
-                    {
-                        CopyMatrix(lu, A);
-                        LU.factor(lu, pivot);
-                    }
-                }
-            }
-
-            validateLU(N, R, lu, A, pivot);
         }
 
         public static void validateLU(int N, SciMark2.Random R, double[][] lu, double[][] A, int[] pivot)

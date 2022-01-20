@@ -9,8 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr GetProcessHeap();
+        [GeneratedDllImport(Libraries.Kernel32)]
+        internal static partial IntPtr GetProcessHeap();
 
         [Flags]
         internal enum HeapAllocFlags : int
@@ -21,15 +21,10 @@ internal static partial class Interop
             HEAP_GENERATE_EXCEPTIONS = 0x00000004,
         }
 
-        internal static SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, int dwBytes)
-        {
-            return HeapAlloc(hHeap, dwFlags, new IntPtr(dwBytes));
-        }
+        [GeneratedDllImport(Libraries.Kernel32)]
+        internal static partial SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, nint dwBytes);
 
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode)]
-        private static extern SafeHeapAllocHandle HeapAlloc(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr dwBytes);
-
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode)]
-        internal static extern bool HeapFree(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr lpMem);
+        [GeneratedDllImport(Libraries.Kernel32)]
+        internal static partial bool HeapFree(IntPtr hHeap, HeapAllocFlags dwFlags, IntPtr lpMem);
     }
 }

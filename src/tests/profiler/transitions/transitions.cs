@@ -6,16 +6,22 @@ using System.Runtime.InteropServices;
 
 namespace Profiler.Tests
 {
-    class GCTests
+    unsafe class Transitions
     {
         static readonly Guid TransitionsGuid = new Guid("027AD7BB-578E-4921-B29F-B540363D83EC");
 
-        [DllImport("Profiler")]
-        public static extern void DoPInvoke(int i);
-
-        public static int RunTest(String[] args) 
+        [UnmanagedCallersOnly]
+        private static int DoReversePInvoke(int i)
         {
-            DoPInvoke(13);
+            return i;
+        }
+
+        [DllImport("Profiler")]
+        public static extern void DoPInvoke(delegate* unmanaged<int,int> callback, int i);
+
+        public static int RunTest(String[] args)
+        {
+            DoPInvoke(&DoReversePInvoke, 13);
 
             return 100;
         }

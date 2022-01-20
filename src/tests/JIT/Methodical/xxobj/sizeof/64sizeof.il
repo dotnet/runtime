@@ -8,9 +8,10 @@
 }
 
 .assembly extern mscorlib { }
-.assembly 'sizeof'
+.assembly '64sizeof'
 {
 }
+.assembly extern xunit.core {}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .namespace JitTest
 {
@@ -77,6 +78,9 @@
     .method private hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals (int32 V_0)

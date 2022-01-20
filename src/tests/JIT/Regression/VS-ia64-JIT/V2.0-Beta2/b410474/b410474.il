@@ -8,6 +8,7 @@
 }
 .assembly extern mscorlib{}
 .assembly b410474{}
+.assembly extern xunit.core {}
 .class public A{.method static void V1() {.maxstack  50
 ldsfld int8 [b410474]A::a0100
 ldc.i4 0
@@ -241,6 +242,9 @@ throw
 a0104:
 ret}
 .method static int32 Main(string[] args){.entrypoint .maxstack  5
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 call void [b410474]A::V1()
 call void [b410474]A::V2()
 call void [b410474]A::V3()

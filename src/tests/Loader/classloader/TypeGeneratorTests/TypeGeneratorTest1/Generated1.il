@@ -8,7 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated1 { .hash algorithm 0x00008004 }
-.module Generated1.exe
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -113,7 +113,7 @@
 	.method public hidebysig newslot abstract virtual instance string Method2<M0>() cil managed { }
 	.method public hidebysig newslot abstract virtual instance string Method3<M0>() cil managed { }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated1 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -431,14 +431,14 @@
 		initobj valuetype MyStruct51`1<class BaseClass0>
 		.try {  ldloc V_3
 				ldstr "MyStruct51::Method0.405()#MyStruct51::Method1.MI.407()#MyStruct51::Method2.MI.409<System.Object>()#MyStruct51::Method3.MI.411<System.Object>()#"
-				call void Framework::M.IBase0<valuetype MyStruct51`1<class BaseClass0>>(!!0,string) leave.s LV0
+				call void Generated1::M.IBase0<valuetype MyStruct51`1<class BaseClass0>>(!!0,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.locals init (valuetype MyStruct51`1<class BaseClass1> V_4)
 		ldloca V_4
 		initobj valuetype MyStruct51`1<class BaseClass1>
 		.try {  ldloc V_4
 				ldstr "MyStruct51::Method0.405()#MyStruct51::Method1.MI.407()#MyStruct51::Method2.MI.409<System.Object>()#MyStruct51::Method3.MI.411<System.Object>()#"
-				call void Framework::M.IBase0<valuetype MyStruct51`1<class BaseClass1>>(!!0,string) leave.s LV1
+				call void Generated1::M.IBase0<valuetype MyStruct51`1<class BaseClass1>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -457,14 +457,14 @@
 				      "MyStruct51::Method1.MI.407()#" +
 				      "MyStruct51::Method2.MI.409<System.Object>()#" +
 				      "MyStruct51::Method3.MI.411<System.Object>()#"
-				call void Framework::M.MyStruct51.T<class BaseClass0,valuetype MyStruct51`1<class BaseClass0>>(!!1,string) leave.s LV0
+				call void Generated1::M.MyStruct51.T<class BaseClass0,valuetype MyStruct51`1<class BaseClass0>>(!!1,string) leave.s LV0
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV0} LV0:
 		.try {  ldloc V_5
 				ldstr "MyStruct51::Method0.405()#" +
 				      "MyStruct51::Method1.MI.407()#" +
 				      "MyStruct51::Method2.MI.409<System.Object>()#" +
 				      "MyStruct51::Method3.MI.411<System.Object>()#"
-				call void Framework::M.MyStruct51.A<valuetype MyStruct51`1<class BaseClass0>>(!!0,string) leave.s LV1
+				call void Generated1::M.MyStruct51.A<valuetype MyStruct51`1<class BaseClass0>>(!!0,string) leave.s LV1
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV1} LV1:
 		.locals init (valuetype MyStruct51`1<class BaseClass1> V_6)
 		ldloca V_6
@@ -474,14 +474,14 @@
 				      "MyStruct51::Method1.MI.407()#" +
 				      "MyStruct51::Method2.MI.409<System.Object>()#" +
 				      "MyStruct51::Method3.MI.411<System.Object>()#"
-				call void Framework::M.MyStruct51.T<class BaseClass1,valuetype MyStruct51`1<class BaseClass1>>(!!1,string) leave.s LV2
+				call void Generated1::M.MyStruct51.T<class BaseClass1,valuetype MyStruct51`1<class BaseClass1>>(!!1,string) leave.s LV2
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV2} LV2:
 		.try {  ldloc V_6
 				ldstr "MyStruct51::Method0.405()#" +
 				      "MyStruct51::Method1.MI.407()#" +
 				      "MyStruct51::Method2.MI.409<System.Object>()#" +
 				      "MyStruct51::Method3.MI.411<System.Object>()#"
-				call void Framework::M.MyStruct51.B<valuetype MyStruct51`1<class BaseClass1>>(!!0,string) leave.s LV3
+				call void Generated1::M.MyStruct51.B<valuetype MyStruct51`1<class BaseClass1>>(!!0,string) leave.s LV3
 		} catch [mscorlib]System.Security.VerificationException { pop leave.s LV3} LV3:
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
@@ -703,12 +703,15 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated1::MethodCallingTest()
+		call void Generated1::ConstrainedCallsTest()
+		call void Generated1::StructConstrainedInterfaceCallsTest()
+		call void Generated1::CalliTest()
 		ldc.i4 100
 		ret
 	}

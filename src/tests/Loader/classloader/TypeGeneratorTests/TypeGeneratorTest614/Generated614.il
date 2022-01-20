@@ -8,7 +8,7 @@
 
 //TEST ASSEMBLY:
 .assembly Generated614 { .hash algorithm 0x00008004 }
-.module Generated614.exe
+.assembly extern xunit.core {}
 
 .class public BaseClass0 
 {
@@ -279,7 +279,7 @@
 {
 	.method public hidebysig newslot abstract virtual instance string Method7<M0>() cil managed { }
 }
-.class private auto ansi beforefieldinit Framework {
+.class public auto ansi beforefieldinit Generated614 {
 	.method static void M.BaseClass0<(BaseClass0)W>(!!W inst, string exp) cil managed {
 		.maxstack 5
 		.locals init (string[] actualResults)
@@ -1834,155 +1834,155 @@
 		stloc.0
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!2,string)
+		call void Generated614::M.G1_C15.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.B.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
+		call void Generated614::M.G1_C15.B.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.B.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.G1_C15.B.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!2,string)
+		call void Generated614::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
+		call void Generated614::M.IBase2.B.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.IBase2.B.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1086::Method4.MI.14227()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G3_C1086`1<class BaseClass0>>(!!1,string)
+		call void Generated614::M.IBase1.T<class BaseClass0,class G3_C1086`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1086::Method4.MI.14227()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#"
-		call void Framework::M.IBase1.A<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.IBase1.A<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!2,string)
+		call void Generated614::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
+		call void Generated614::M.IBase2.A.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.IBase2.A.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G3_C1086::Method4.14226()#G2_C47::Method5.5180()#G2_C47::Method6.5182<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G2_C47<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.G2_C47<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::Method4.MI.5179()#G2_C47::Method5.MI.5181()#G2_C47::Method6.MI.5183<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
+		call void Generated614::M.IBase1.T<class BaseClass1,class G3_C1086`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C47::Method4.MI.5179()#G2_C47::Method5.MI.5181()#G2_C47::Method6.MI.5183<System.Object>()#"
-		call void Framework::M.IBase1.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.IBase1.B<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::Method0.MI.5185()#G2_C47::Method1.5186()#G2_C47::Method2.MI.5188<System.Object>()#G2_C47::Method3.MI.5190<System.Object>()#"
-		call void Framework::M.IBase0<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.IBase0<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G3_C1086::ClassMethod3566.14230()#G3_C1086::ClassMethod3567.14231<System.Object>()#G3_C1086::ClassMethod3568.14232<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G3_C1086::Method4.14226()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G3_C1086.T<class BaseClass0,class G3_C1086`1<class BaseClass0>>(!!1,string)
+		call void Generated614::M.G3_C1086.T<class BaseClass0,class G3_C1086`1<class BaseClass0>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G3_C1086::ClassMethod3566.14230()#G3_C1086::ClassMethod3567.14231<System.Object>()#G3_C1086::ClassMethod3568.14232<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G3_C1086::Method4.14226()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G3_C1086.A<class G3_C1086`1<class BaseClass0>>(!!0,string)
+		call void Generated614::M.G3_C1086.A<class G3_C1086`1<class BaseClass0>>(!!0,string)
 		newobj instance void class G3_C1086`1<class BaseClass1>::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!2,string)
+		call void Generated614::M.G1_C15.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.B.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
+		call void Generated614::M.G1_C15.B.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.B.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.G1_C15.B.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!2,string)
+		call void Generated614::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
+		call void Generated614::M.IBase2.B.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.IBase2.B.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1086::Method4.MI.14227()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G3_C1086`1<class BaseClass1>>(!!1,string)
+		call void Generated614::M.IBase1.T<class BaseClass0,class G3_C1086`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1086::Method4.MI.14227()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#"
-		call void Framework::M.IBase1.A<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.IBase1.A<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!2,string)
+		call void Generated614::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
+		call void Generated614::M.IBase2.A.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.IBase2.A.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G3_C1086::Method4.14226()#G2_C47::Method5.5180()#G2_C47::Method6.5182<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G2_C47<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.G2_C47<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G3_C1086::Method4.MI.14227()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
+		call void Generated614::M.IBase1.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G3_C1086::Method4.MI.14227()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#"
-		call void Framework::M.IBase1.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.IBase1.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::Method0.MI.5185()#G2_C47::Method1.5186()#G2_C47::Method2.MI.5188<System.Object>()#G2_C47::Method3.MI.5190<System.Object>()#"
-		call void Framework::M.IBase0<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.IBase0<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G3_C1086::ClassMethod3566.14230()#G3_C1086::ClassMethod3567.14231<System.Object>()#G3_C1086::ClassMethod3568.14232<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G3_C1086::Method4.14226()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G3_C1086.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
+		call void Generated614::M.G3_C1086.T<class BaseClass1,class G3_C1086`1<class BaseClass1>>(!!1,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G3_C1086::ClassMethod3566.14230()#G3_C1086::ClassMethod3567.14231<System.Object>()#G3_C1086::ClassMethod3568.14232<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G3_C1086::Method4.14226()#G3_C1086::Method5.14228()#G3_C1086::Method6.14229<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G3_C1086.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
+		call void Generated614::M.G3_C1086.B<class G3_C1086`1<class BaseClass1>>(!!0,string)
 		newobj instance void class G2_C47::.ctor()
 		stloc.0
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.T.T<class BaseClass1,class BaseClass1,class G2_C47>(!!2,string)
+		call void Generated614::M.G1_C15.T.T<class BaseClass1,class BaseClass1,class G2_C47>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.B.T<class BaseClass1,class G2_C47>(!!1,string)
+		call void Generated614::M.G1_C15.B.T<class BaseClass1,class G2_C47>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method4.4887()#G1_C15::Method5.4889()#G1_C15::Method6.4891<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G1_C15.B.B<class G2_C47>(!!0,string)
+		call void Generated614::M.G1_C15.B.B<class G2_C47>(!!0,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C47>(!!2,string)
+		call void Generated614::M.IBase2.T.T<class BaseClass1,class BaseClass1,class G2_C47>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.B.T<class BaseClass1,class G2_C47>(!!1,string)
+		call void Generated614::M.IBase2.B.T<class BaseClass1,class G2_C47>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.B.B<class G2_C47>(!!0,string)
+		call void Generated614::M.IBase2.B.B<class G2_C47>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::Method4.MI.5179()#G2_C47::Method5.MI.5181()#G2_C47::Method6.MI.5183<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass0,class G2_C47>(!!1,string)
+		call void Generated614::M.IBase1.T<class BaseClass0,class G2_C47>(!!1,string)
 		ldloc.0
 		ldstr "G2_C47::Method4.MI.5179()#G2_C47::Method5.MI.5181()#G2_C47::Method6.MI.5183<System.Object>()#"
-		call void Framework::M.IBase1.A<class G2_C47>(!!0,string)
+		call void Generated614::M.IBase1.A<class G2_C47>(!!0,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C47>(!!2,string)
+		call void Generated614::M.IBase2.T.T<class BaseClass0,class BaseClass1,class G2_C47>(!!2,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.A.T<class BaseClass1,class G2_C47>(!!1,string)
+		call void Generated614::M.IBase2.A.T<class BaseClass1,class G2_C47>(!!1,string)
 		ldloc.0
 		ldstr "G1_C15::Method7.MI.4886<System.Object>()#"
-		call void Framework::M.IBase2.A.B<class G2_C47>(!!0,string)
+		call void Generated614::M.IBase2.A.B<class G2_C47>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::ClassMethod1411.5191<System.Object>()#G2_C47::ClassMethod1412.5192<System.Object>()#G2_C47::Method0.5184()#G2_C47::Method1.5186()#G2_C47::Method2.5187<System.Object>()#G2_C47::Method3.5189<System.Object>()#G2_C47::Method4.5178()#G2_C47::Method5.5180()#G2_C47::Method6.5182<System.Object>()#G1_C15::Method7.4885<System.Object>()#"
-		call void Framework::M.G2_C47<class G2_C47>(!!0,string)
+		call void Generated614::M.G2_C47<class G2_C47>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::Method4.MI.5179()#G2_C47::Method5.MI.5181()#G2_C47::Method6.MI.5183<System.Object>()#"
-		call void Framework::M.IBase1.T<class BaseClass1,class G2_C47>(!!1,string)
+		call void Generated614::M.IBase1.T<class BaseClass1,class G2_C47>(!!1,string)
 		ldloc.0
 		ldstr "G2_C47::Method4.MI.5179()#G2_C47::Method5.MI.5181()#G2_C47::Method6.MI.5183<System.Object>()#"
-		call void Framework::M.IBase1.B<class G2_C47>(!!0,string)
+		call void Generated614::M.IBase1.B<class G2_C47>(!!0,string)
 		ldloc.0
 		ldstr "G2_C47::Method0.MI.5185()#G2_C47::Method1.5186()#G2_C47::Method2.MI.5188<System.Object>()#G2_C47::Method3.MI.5190<System.Object>()#"
-		call void Framework::M.IBase0<class G2_C47>(!!0,string)
+		call void Generated614::M.IBase0<class G2_C47>(!!0,string)
 		ldstr "========================================================================\n\n"
 		call void [mscorlib]System.Console::WriteLine(string)
 		ret
@@ -2810,12 +2810,15 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
-		call void Framework::MethodCallingTest()
-		call void Framework::ConstrainedCallsTest()
-		call void Framework::StructConstrainedInterfaceCallsTest()
-		call void Framework::CalliTest()
+		call void Generated614::MethodCallingTest()
+		call void Generated614::ConstrainedCallsTest()
+		call void Generated614::StructConstrainedInterfaceCallsTest()
+		call void Generated614::CalliTest()
 		ldc.i4 100
 		ret
 	}

@@ -10,7 +10,7 @@ namespace ComWrappersTests
     using System.Runtime.InteropServices;
 
     using ComWrappersTests.Common;
-    using TestLibrary;
+    using Xunit;
 
     class Program
     {
@@ -54,7 +54,7 @@ namespace ComWrappersTests
                 var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTrackerComObject;
                 int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTrackerComObject);
-                Assert.AreEqual(0, hr);
+                Assert.Equal(0, hr);
 
                 return new ITrackerObjectWrapper(iTrackerComObject);
             }
@@ -72,9 +72,9 @@ namespace ComWrappersTests
 
                 ComWrappers.GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
-                Assert.AreNotEqual(fpQueryInterface, IntPtr.Zero);
-                Assert.AreNotEqual(fpAddRef, IntPtr.Zero);
-                Assert.AreNotEqual(fpRelease, IntPtr.Zero);
+                Assert.NotEqual(fpQueryInterface, IntPtr.Zero);
+                Assert.NotEqual(fpAddRef, IntPtr.Zero);
+                Assert.NotEqual(fpRelease, IntPtr.Zero);
             }
         }
 
@@ -100,27 +100,27 @@ namespace ComWrappersTests
 
             // Allocate a wrapper for the object
             IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreNotEqual(IntPtr.Zero, comWrapper);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
 
             // Get a wrapper for an object and verify it is the same one.
             IntPtr comWrapperMaybe = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreEqual(comWrapper, comWrapperMaybe);
+            Assert.Equal(comWrapper, comWrapperMaybe);
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            Assert.AreEqual(1, count);
+            Assert.Equal(1, count);
             count = Marshal.Release(comWrapperMaybe);
-            Assert.AreEqual(0, count);
+            Assert.Equal(0, count);
 
             // Create a new wrapper
             IntPtr comWrapperNew = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
 
             // Once a wrapper is created for a managed object it is always present
-            Assert.AreEqual(comWrapperNew, comWrapper);
+            Assert.Equal(comWrapperNew, comWrapper);
 
             // Release the new wrapper
             count = Marshal.Release(comWrapperNew);
-            Assert.AreEqual(0, count);
+            Assert.Equal(0, count);
         }
 
         static void ValidateComInterfaceCreationRoundTrip()
@@ -133,14 +133,14 @@ namespace ComWrappersTests
 
             // Allocate a wrapper for the object
             IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
-            Assert.AreNotEqual(IntPtr.Zero, comWrapper);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
 
             var testObjUnwrapped = wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.Unwrap);
-            Assert.AreEqual(testObj, testObjUnwrapped);
+            Assert.Equal(testObj, testObjUnwrapped);
 
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
-            Assert.AreEqual(0, count);
+            Assert.Equal(0, count);
         }
 
         static void ValidateFallbackQueryInterface()
@@ -163,17 +163,17 @@ namespace ComWrappersTests
             var anyGuid = new Guid("1E42439C-DCB5-4701-ACBD-87FE92E785DE");
             testObj.ICustomQueryInterface_GetInterfaceIID = anyGuid;
             int hr = Marshal.QueryInterface(comWrapper, ref anyGuid, out result);
-            Assert.AreEqual(0, hr);
-            Assert.AreEqual(testObj.ICustomQueryInterface_GetInterfaceResult, result);
+            Assert.Equal(0, hr);
+            Assert.Equal(testObj.ICustomQueryInterface_GetInterfaceResult, result);
 
             var anyGuid2 = new Guid("7996D0F9-C8DD-4544-B708-0F75C6FF076F");
             hr = Marshal.QueryInterface(comWrapper, ref anyGuid2, out result);
             const int E_NOINTERFACE = unchecked((int)0x80004002);
-            Assert.AreEqual(E_NOINTERFACE, hr);
-            Assert.AreEqual(IntPtr.Zero, result);
+            Assert.Equal(E_NOINTERFACE, hr);
+            Assert.Equal(IntPtr.Zero, result);
 
             int count = Marshal.Release(comWrapper);
-            Assert.AreEqual(0, count);
+            Assert.Equal(0, count);
         }
 
         static void ValidateCreateObjectCachingScenario()
@@ -187,13 +187,13 @@ namespace ComWrappersTests
 
             var trackerObj1 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
             var trackerObj2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
-            Assert.AreEqual(trackerObj1, trackerObj2);
+            Assert.Equal(trackerObj1, trackerObj2);
 
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
 
             var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance);
-            Assert.AreNotEqual(trackerObj1, trackerObj3);
+            Assert.NotEqual(trackerObj1, trackerObj3);
         }
 
         static void ValidateWrappersInstanceIsolation()
@@ -208,15 +208,15 @@ namespace ComWrappersTests
             // Allocate a wrapper for the object
             IntPtr comWrapper1 = cw1.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
             IntPtr comWrapper2 = cw2.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreNotEqual(comWrapper1, IntPtr.Zero);
-            Assert.AreNotEqual(comWrapper2, IntPtr.Zero);
-            Assert.AreNotEqual(comWrapper1, comWrapper2);
+            Assert.NotEqual(comWrapper1, IntPtr.Zero);
+            Assert.NotEqual(comWrapper2, IntPtr.Zero);
+            Assert.NotEqual(comWrapper1, comWrapper2);
 
             IntPtr comWrapper3 = cw1.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
             IntPtr comWrapper4 = cw2.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreNotEqual(comWrapper3, comWrapper4);
-            Assert.AreEqual(comWrapper1, comWrapper3);
-            Assert.AreEqual(comWrapper2, comWrapper4);
+            Assert.NotEqual(comWrapper3, comWrapper4);
+            Assert.Equal(comWrapper1, comWrapper3);
+            Assert.Equal(comWrapper2, comWrapper4);
 
             Marshal.Release(comWrapper1);
             Marshal.Release(comWrapper2);
@@ -229,13 +229,13 @@ namespace ComWrappersTests
             // Create objects for the COM instance
             var trackerObj1 = (ITrackerObjectWrapper)cw1.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
             var trackerObj2 = (ITrackerObjectWrapper)cw2.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
-            Assert.AreNotEqual(trackerObj1, trackerObj2);
+            Assert.NotEqual(trackerObj1, trackerObj2);
 
             var trackerObj3 = (ITrackerObjectWrapper)cw1.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
             var trackerObj4 = (ITrackerObjectWrapper)cw2.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
-            Assert.AreNotEqual(trackerObj3, trackerObj4);
-            Assert.AreEqual(trackerObj1, trackerObj3);
-            Assert.AreEqual(trackerObj2, trackerObj4);
+            Assert.NotEqual(trackerObj3, trackerObj4);
+            Assert.Equal(trackerObj1, trackerObj3);
+            Assert.Equal(trackerObj2, trackerObj4);
 
             Marshal.Release(trackerObjRaw);
         }
@@ -253,12 +253,12 @@ namespace ComWrappersTests
             var iid = typeof(ITrackerObject).GUID;
             IntPtr iTestComObject;
             int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
-            Assert.AreEqual(0, hr);
+            Assert.Equal(0, hr);
             var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
             // Register wrapper, but supply the wrapper.
             var nativeWrapper2 = (ITrackerObjectWrapper)cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject, nativeWrapper);
-            Assert.AreEqual(nativeWrapper, nativeWrapper2);
+            Assert.Equal(nativeWrapper, nativeWrapper2);
 
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
@@ -300,12 +300,12 @@ namespace ComWrappersTests
 
             // We are using a tracking resurrection WeakReference<T> so we should be able
             // to get back the objects as they are all continually re-registering for Finalization.
-            Assert.IsTrue(weakRef1.TryGetTarget(out ITrackerObjectWrapper wrapper1));
-            Assert.IsTrue(weakRef2.TryGetTarget(out ITrackerObjectWrapper wrapper2));
+            Assert.True(weakRef1.TryGetTarget(out ITrackerObjectWrapper wrapper1));
+            Assert.True(weakRef2.TryGetTarget(out ITrackerObjectWrapper wrapper2));
 
             // Check that the two wrappers aren't equal, meaning we created a new wrapper since
             // the first wrapper was removed from the internal cache.
-            Assert.AreNotEqual(wrapper1, wrapper2);
+            Assert.NotEqual(wrapper1, wrapper2);
 
             // Let the wrappers Finalize.
             wrapper1.ReregisterForFinalize = false;
@@ -317,7 +317,7 @@ namespace ComWrappersTests
                 var iid = typeof(ITrackerObject).GUID;
                 IntPtr iTestComObject;
                 int hr = Marshal.QueryInterface(trackerObjRaw, ref iid, out iTestComObject);
-                Assert.AreEqual(0, hr);
+                Assert.Equal(0, hr);
                 var nativeWrapper = new ITrackerObjectWrapper(iTestComObject);
 
                 nativeWrapper = (ITrackerObjectWrapper)cw.GetOrRegisterObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, nativeWrapper);
@@ -375,7 +375,7 @@ namespace ComWrappersTests
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
-                        Assert.Fail("Invalid failure mode");
+                        Assert.True(false, "Invalid failure mode");
                         throw new Exception("UNREACHABLE");
                 }
             }
@@ -389,7 +389,7 @@ namespace ComWrappersTests
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
-                        Assert.Fail("Invalid failure mode");
+                        Assert.True(false, "Invalid failure mode");
                         throw new Exception("UNREACHABLE");
                 }
             }
@@ -420,7 +420,7 @@ namespace ComWrappersTests
             }
             catch (Exception e)
             {
-                Assert.AreEqual(BadComWrappers.ExceptionErrorCode, e.HResult);
+                Assert.Equal(BadComWrappers.ExceptionErrorCode, e.HResult);
             }
 
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
@@ -439,7 +439,7 @@ namespace ComWrappersTests
             }
             catch (Exception e)
             {
-                Assert.AreEqual(BadComWrappers.ExceptionErrorCode, e.HResult);
+                Assert.Equal(BadComWrappers.ExceptionErrorCode, e.HResult);
             }
 
             Marshal.Release(trackerObjRaw);
@@ -475,11 +475,11 @@ namespace ComWrappersTests
                 Marshal.Release(testWrapper);
             }
 
-            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
+            Assert.True(testWrapperIds.Count <= Test.InstanceCount);
 
             ForceGC();
 
-            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
+            Assert.True(testWrapperIds.Count <= Test.InstanceCount);
 
             // Remove the managed object ref from the native object.
             foreach (int id in testWrapperIds)
@@ -518,7 +518,7 @@ namespace ComWrappersTests
                 // The COM reference count should be 0 and indicates to the GC the managed object
                 // can be collected.
                 refCount = Marshal.Release(testWrapper);
-                Assert.AreEqual(0, refCount);
+                Assert.Equal(0, refCount);
             }
 
             ForceGC();
@@ -532,11 +532,11 @@ namespace ComWrappersTests
             int hr = Marshal.QueryInterface(refTrackerTarget, ref iid, out iTestComObject);
 
             const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
-            Assert.AreEqual(COR_E_ACCESSING_CCW, hr);
+            Assert.Equal(COR_E_ACCESSING_CCW, hr);
 
             // Release the IReferenceTrackerTarget instance.
             refCount = MockReferenceTrackerRuntime.TrackerTarget_ReleaseFromReferenceTracker(refTrackerTarget);
-            Assert.AreEqual(0, refCount);
+            Assert.Equal(0, refCount);
 
             static IntPtr CreateWrapper(TestComWrappers cw)
             {
@@ -582,8 +582,8 @@ namespace ComWrappersTests
             ForceGC();
 
             // Validate all instances were cleaned up
-            Assert.IsFalse(weakRef.TryGetTarget(out _));
-            Assert.AreEqual(0, allocTracker.GetCount());
+            Assert.False(weakRef.TryGetTarget(out _));
+            Assert.Equal(0, allocTracker.GetCount());
         }
 
         static void ValidateAggregationWithReferenceTrackerObject()
@@ -597,13 +597,13 @@ namespace ComWrappersTests
             ForceGC();
 
             // Validate all instances were cleaned up.
-            Assert.IsFalse(weakRef.TryGetTarget(out _));
+            Assert.False(weakRef.TryGetTarget(out _));
 
             // Reference counter cleanup requires additional GCs since the Finalizer is used
             // to clean up the Reference Tracker runtime references.
             ForceGC();
 
-            Assert.AreEqual(0, allocTracker.GetCount());
+            Assert.Equal(0, allocTracker.GetCount());
         }
 
         static int Main(string[] doNotUse)
@@ -624,6 +624,9 @@ namespace ComWrappersTests
                 ValidateQueryInterfaceAfterManagedObjectCollected();
                 ValidateAggregationWithComObject();
                 ValidateAggregationWithReferenceTrackerObject();
+
+                // Ensure all objects have been cleaned up.
+                ForceGC();
             }
             catch (Exception e)
             {

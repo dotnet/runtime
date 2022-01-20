@@ -2463,6 +2463,33 @@ suIwDAYDVR0TBAUwAwEB/zAKBggqhkjOPQQDAgMwADAtAhUAxMT7z8lLv7hgWmGh
             "028bedeefab9a2be80466fe278fdc50db1b9530e1796b23271b4df2cddd9" +
             "4769c8a21a8f66c6d4bc181713").HexToByteArray();
 
+        internal static byte[] CertificateWithUtf8 = (
+            "30820315308201fda003020102020900e48b784d93645921300d06092a864886" +
+            "f70d01010b0500301b3119301706035504030c10d0bad0b0d180d182d0bed188" +
+            "d0bad0b0301e170d3231303931343230353635365a170d333230383237323035" +
+            "3635365a301b3119301706035504030c10d0bad0b0d180d182d0bed188d0bad0" +
+            "b030820122300d06092a864886f70d01010105000382010f003082010a028201" +
+            "0100c394711b3839a612aaadafde855ccc3479bc1dbe253a29e508cc46464efb" +
+            "ab09b16b85fb67e4be0ab8b09fa6ff73cb3ec5d8f8b7d2869a79c414d025a43e" +
+            "4c158c9711638dbfb070ef92b3633037d5e633a870ed024ab9017c97e26f02de" +
+            "2273dd92c0837a95ff12229981cd661b140afd841671d3397fd44aea05878dd0" +
+            "9362bd2de8da17225dd3caf0181aadf2c9e13faefbbce3ce80ef355dcc15c1b9" +
+            "c6e86bb1cddf32b3113e7a72ad3799cc67f64ea34c0518c22727972802084801" +
+            "e6565b2323e87fd20019a9db151e87b2b1db004583e15dd64c5393439a0ba5ed" +
+            "3b9fd262c8d8bf0263dcba092ca5591d4d34f990daa9ee41811cec6229f2121b" +
+            "582f0203010001a35c305a301b0603551d11041430128210786e2d2d38306161" +
+            "326162746c6f3363301d0603551d250416301406082b0601050507030106082b" +
+            "06010505070302300f0603551d130101ff040530030101ff300b0603551d0f04" +
+            "040302028c300d06092a864886f70d01010b050003820101001c0512d3d99267" +
+            "4ca3a1fdf942052064ffbda824aaeff07d9869eefa86e592102afca0dba4e267" +
+            "e54753552fc23da97b18f739ea437794aac5bb2ae7413ae54ce921b4b96fe420" +
+            "f3fd86f922adcab202589823c4095fc6e7904e61be1716faec7e09ce2d1bf431" +
+            "fa9fc2d7284689d2c940f7d027e16b9c3305f9cd6d5dc6bfee9089d85d342f5b" +
+            "d07920c51899288674a1732708a7e3a39fb11c152417d50a3bb9b09975852baa" +
+            "39767c289baea9330902ea38388932964c410cd22049415712223fb5710a21ef" +
+            "153ac22391a1603547ffb3f9b328c59e59b5d64568b9c451df233fe9a581116f" +
+            "05be8c67b92bc7df9984f30535ad53817cb4abcd77cb521856").HexToByteArray();
+
         internal static byte[] ConcatenatedPemFile = ByteUtils.AsciiBytes(
             @"-----BEGIN CERTIFICATE-----
 MIIFcDCCBFigAwIBAgIQB6krbZc11OZ5l2/FnU3CpTANBgkqhkiG9w0BAQsFADBG
@@ -2883,5 +2910,17 @@ voLmcK+XtmehjMVy7OSSFICNKybLBOvO8paydhCb1J0klkLPAoAjgP2cEd+KueeR
 yJpx+jD1MsjIEXIn5jtjXdUHd0JJmHWAyHdNzmhXrXC7JLnj4ri7xMAV3GZGDpAn
 YvvL0LiXzFyomg==
 -----END PUBLIC KEY-----";
+
+        // This string is for tests that are sensitive to the exact formatting
+        // and line breaks of the PEM.
+        public const string CertRfc7468Wrapped =
+            "-----BEGIN CERTIFICATE-----\n" +
+            "MIIBETCBuaADAgECAgkA9StU5ZnBmM4wCgYIKoZIzj0EAwIwDzENMAsGA1UEAxME\n" +
+            "dGlueTAeFw0yMTA5MTUyMjAyNDNaFw0yMTA5MTUyMjAyNDNaMA8xDTALBgNVBAMT\n" +
+            "BHRpbnkwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQZ+baUXzzLi+p3cZEf4f23\n" +
+            "L/2Dbn5UB/uMCB7L71rWf3UwuCA3Is5uPci/3PQYLNwDkP3m3ZzxyzVCgFVqqYFg\n" +
+            "MAoGCCqGSM49BAMCA0cAMEQCIHafyKHQhv+03DaOJpuotD+jNu0Nc9pUI9OA8pUY\n" +
+            "3+qJAiBsqKjtc8LuGtUoqGvxLLQJwJ2QNY/qyEGtaImlqTYg5w==\n" +
+            "-----END CERTIFICATE-----";
     }
 }

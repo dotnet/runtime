@@ -100,8 +100,6 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 
     regSet.tmpInit();
 
-    instInit();
-
 #ifdef LATE_DISASM
     getDisAssembler().disInit(compiler);
 #endif
@@ -124,10 +122,7 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     compiler->compVSQuirkStackPaddingNeeded = 0;
 #endif // TARGET_AMD64
 
-    //  Initialize the IP-mapping logic.
-    compiler->genIPmappingList        = nullptr;
-    compiler->genIPmappingLast        = nullptr;
-    compiler->genCallSite2ILOffsetMap = nullptr;
+    compiler->genCallSite2DebugInfoMap = nullptr;
 
     /* Assume that we not fully interruptible */
 
@@ -486,13 +481,14 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
 
     assert(varDsc->lvIsInReg());
 
-    if (varTypeUsesFloatReg(varDsc->TypeGet()))
+    regNumber reg = varDsc->GetRegNum();
+    if (genIsValidFloatReg(reg))
     {
-        regMask = genRegMaskFloat(varDsc->GetRegNum(), varDsc->TypeGet());
+        regMask = genRegMaskFloat(reg, varDsc->GetRegisterType());
     }
     else
     {
-        regMask = genRegMask(varDsc->GetRegNum());
+        regMask = genRegMask(reg);
     }
     return regMask;
 }
@@ -504,15 +500,16 @@ regMaskTP CodeGenInterface::genGetRegMask(GenTree* tree)
     assert(tree->gtOper == GT_LCL_VAR);
 
     regMaskTP        regMask = RBM_NONE;
-    const LclVarDsc* varDsc  = compiler->lvaTable + tree->AsLclVarCommon()->GetLclNum();
+    const LclVarDsc* varDsc  = compiler->lvaGetDesc(tree->AsLclVarCommon());
     if (varDsc->lvPromoted)
     {
         for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
         {
-            noway_assert(compiler->lvaTable[i].lvIsStructField);
-            if (compiler->lvaTable[i].lvIsInReg())
+            const LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(i);
+            noway_assert(fieldVarDsc->lvIsStructField);
+            if (fieldVarDsc->lvIsInReg())
             {
-                regMask |= genGetRegMask(&compiler->lvaTable[i]);
+                regMask |= genGetRegMask(fieldVarDsc);
             }
         }
     }
@@ -534,7 +531,8 @@ void CodeGenInterface::genUpdateRegLife(const LclVarDsc* varDsc, bool isBorn, bo
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tV%02u in reg ", (varDsc - compiler->lvaTable));
+        printf("\t\t\t\t\t\t\tV%02u in reg ", compiler->lvaGetLclNum(varDsc));
+
         varDsc->PrintVarReg();
         printf(" is becoming %s  ", (isDying) ? "dead" : "live");
         Compiler::printTreeID(tree);
@@ -1200,8 +1198,7 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
     }
     else if (op->gtOper == GT_LCL_VAR)
     {
-        unsigned   varNum = op->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* varDsc = compiler->lvaTable + varNum;
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
         assert(varDsc->lvType == TYP_STRUCT);
         opSize = varDsc->lvSize();
 #ifndef TARGET_64BIT
@@ -1212,43 +1209,6 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
         else
 #endif // !TARGET_64BIT
         {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->OperIsCopyBlkOp())
-    {
-        GenTree* op2 = op->AsOp()->gtOp2;
-
-        if (op2->OperGet() == GT_CNS_INT)
-        {
-            if (op2->IsIconHandle(GTF_ICON_CLASS_HDL))
-            {
-                CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtIconVal;
-                opSize = roundUp(compiler->info.compCompHnd->getClassSize(clsHnd), TARGET_POINTER_SIZE);
-                alignment =
-                    roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                opSize       = (unsigned)op2->AsIntCon()->gtIconVal;
-                GenTree* op1 = op->AsOp()->gtOp1;
-                assert(op1->OperGet() == GT_LIST);
-                GenTree* dstAddr = op1->AsOp()->gtOp1;
-                if (dstAddr->OperGet() == GT_ADDR)
-                {
-                    InferStructOpSizeAlign(dstAddr->AsOp()->gtOp1, &alignment);
-                }
-                else
-                {
-                    assert(!"Unhandle dstAddr node");
-                    alignment = TARGET_POINTER_SIZE;
-                }
-            }
-        }
-        else
-        {
-            noway_assert(!"Variable sized COPYBLK register arg!");
-            opSize    = 0;
             alignment = TARGET_POINTER_SIZE;
         }
     }
@@ -1298,10 +1258,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *      *rv1Ptr     ...     base operand
  *      *rv2Ptr     ...     optional operand
  *      *revPtr     ...     true if rv2 is before rv1 in the evaluation order
- *  #if SCALED_ADDR_MODES
  *      *mulPtr     ...     optional multiplier (2/4/8) for rv2
  *                          Note that for [reg1 + reg2] and [reg1 + reg2 + icon], *mulPtr == 0.
- *  #endif
  *      *cnsPtr     ...     integer constant [optional]
  *
  *  IMPORTANT NOTE: This routine doesn't generate any code, it merely
@@ -1309,15 +1267,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *                  form an address mode later on.
  */
 
-bool CodeGen::genCreateAddrMode(GenTree*  addr,
-                                bool      fold,
-                                bool*     revPtr,
-                                GenTree** rv1Ptr,
-                                GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
-                                unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                ssize_t* cnsPtr)
+bool CodeGen::genCreateAddrMode(
+    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1367,10 +1318,8 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
     GenTree* op1;
     GenTree* op2;
 
-    ssize_t cns;
-#if SCALED_ADDR_MODES
+    ssize_t  cns;
     unsigned mul;
-#endif // SCALED_ADDR_MODES
 
     GenTree* tmp;
 
@@ -1394,9 +1343,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 
             op1     ...     base address
             op2     ...     optional scaled index
-#if SCALED_ADDR_MODES
             mul     ...     optional multiplier (2/4/8) for op2
-#endif
             cns     ...     optional displacement
 
         Here we try to find such a set of operands and arrange for these
@@ -1404,9 +1351,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
      */
 
     cns = 0;
-#if SCALED_ADDR_MODES
     mul = 0;
-#endif // SCALED_ADDR_MODES
 
 AGAIN:
     /* We come back to 'AGAIN' if we have an add of a constant, and we are folding that
@@ -1415,13 +1360,12 @@ AGAIN:
     */
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if SCALED_ADDR_MODES
     assert(mul == 0);
-#endif // SCALED_ADDR_MODES
 
-    /* Special case: keep constants as 'op2' */
+    /* Special case: keep constants as 'op2', but don't do this for constant handles
+       because they don't fit I32 that we're going to check for below anyway. */
 
-    if (op1->IsCnsIntOrI())
+    if (op1->IsCnsIntOrI() && !op1->IsIconHandle())
     {
         // Presumably op2 is assumed to not be a constant (shouldn't happen if we've done constant folding)?
         tmp = op1;
@@ -1460,7 +1404,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH)
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1483,7 +1427,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#endif // !defined(TARGET_ARMARCH)
 
                 default:
                     break;
@@ -1524,8 +1468,6 @@ AGAIN:
 
             break;
 
-#if SCALED_ADDR_MODES
-
         case GT_MUL:
 
             if (op1->gtOverflow())
@@ -1565,8 +1507,6 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
 #endif // !TARGET_ARMARCH
 
         case GT_NOP:
@@ -1587,7 +1527,9 @@ AGAIN:
     switch (op2->gtOper)
     {
 #if !defined(TARGET_ARMARCH)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
+        // arm doesn't support both scale and offset at the same. Offset is handled
+        // at the emitter as a peephole optimization.
         case GT_ADD:
 
             if (op2->gtOverflow())
@@ -1605,8 +1547,6 @@ AGAIN:
             }
 
             break;
-
-#if SCALED_ADDR_MODES
 
         case GT_MUL:
 
@@ -1643,9 +1583,7 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
+#endif // TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1719,13 +1657,11 @@ FOUND_AM:
                 /* Get hold of the index value */
                 ssize_t ixv = index->AsIntConCommon()->IconValue();
 
-#if SCALED_ADDR_MODES
                 /* Scale the index if necessary */
                 if (tmpMul)
                 {
                     ixv *= tmpMul;
                 }
-#endif
 
                 if (FitsIn<INT32>(cns + ixv))
                 {
@@ -1733,10 +1669,8 @@ FOUND_AM:
 
                     cns += ixv;
 
-#if SCALED_ADDR_MODES
                     /* There is no scaled operand any more */
                     mul = 0;
-#endif
                     rv2 = nullptr;
                 }
             }
@@ -1758,9 +1692,7 @@ FOUND_AM:
     *revPtr = rev;
     *rv1Ptr = rv1;
     *rv2Ptr = rv2;
-#if SCALED_ADDR_MODES
     *mulPtr = mul;
-#endif
     *cnsPtr = cns;
 
     return true;
@@ -1793,7 +1725,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     {
         // load the GS cookie constant into a reg
         //
-        genSetRegToIcon(regGSConst, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, compiler->gsGlobalSecurityCookieVal);
     }
     else
     {
@@ -1828,7 +1760,7 @@ void CodeGen::genExitCode(BasicBlock* block)
        that this is ok  */
 
     // For non-optimized debuggable code, there is only one epilog.
-    genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::EPILOG, true);
+    genIPmappingAdd(IPmappingDscKind::Epilog, DebugInfo(), true);
 
     bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
     if (compiler->getNeedsGSSecurityCookie())
@@ -2180,11 +2112,18 @@ void CodeGen::genGenerateMachineCode()
             printf("unknown architecture");
         }
 
-#if defined(TARGET_WINDOWS)
-        printf(" - Windows");
-#elif defined(TARGET_UNIX)
-        printf(" - Unix");
-#endif
+        if (TargetOS::IsWindows)
+        {
+            printf(" - Windows");
+        }
+        else if (TargetOS::IsMacOS)
+        {
+            printf(" - MacOS");
+        }
+        else if (TargetOS::IsUnix)
+        {
+            printf(" - Unix");
+        }
 
         printf("\n");
 
@@ -2468,6 +2407,8 @@ void CodeGen::genEmitUnwindDebugGCandEH()
     /* Finalize the line # tracking logic after we know the exact block sizes/offsets */
 
     genIPmappingGen();
+
+    INDEBUG(genDumpPreciseDebugInfo());
 
     /* Finalize the Local Var info in terms of generated code */
 
@@ -3216,7 +3157,7 @@ void CodeGen::genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
             }
             else
             {
-                LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
+                const LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
                 if (varDsc->lvIsParam && varDsc->lvType == TYP_BYREF)
                 {
                     wbKind = CWBKind_ByRefArg; // Out (or in/out) arg
@@ -3388,18 +3329,16 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // In other cases, we simply use the type of the lclVar to determine the type of the register.
         var_types getRegType(Compiler* compiler)
         {
-            const LclVarDsc& varDsc = compiler->lvaTable[varNum];
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
             // Check if this is an HFA register arg and return the HFA type
-            if (varDsc.lvIsHfaRegArg())
+            if (varDsc->lvIsHfaRegArg())
             {
-#if defined(TARGET_WINDOWS)
                 // Cannot have hfa types on windows arm targets
                 // in vararg methods.
-                assert(!compiler->info.compIsVarArgs);
-#endif // defined(TARGET_WINDOWS)
-                return varDsc.GetHfaType();
+                assert(!TargetOS::IsWindows || !compiler->info.compIsVarArgs);
+                return varDsc->GetHfaType();
             }
-            return compiler->mangleVarArgsType(varDsc.lvType);
+            return compiler->mangleVarArgsType(varDsc->lvType);
         }
 
 #endif // !UNIX_AMD64_ABI
@@ -3410,7 +3349,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 
     for (varNum = 0; varNum < compiler->lvaCount; ++varNum)
     {
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
         // Is this variable a register arg?
         if (!varDsc->lvIsParam)
@@ -3434,7 +3373,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             if (varDsc->lvIsStructField)
             {
                 assert(!varDsc->lvPromoted);
-                parentVarDsc = &compiler->lvaTable[varDsc->lvParentLcl];
+                parentVarDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
             }
 
             Compiler::lvaPromotionType promotionType = compiler->lvaGetPromotionType(parentVarDsc);
@@ -3463,12 +3402,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (compiler->info.compIsVarArgs)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows && compiler->info.compIsVarArgs)
             {
                 assert(!"Illegal incoming HFA arg encountered in Vararg method.");
             }
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
             regType = varDsc->GetHfaType();
         }
 
@@ -3679,8 +3618,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     // refcnt.  This is in contrast with the non-LSRA case in which all
                     // non-tracked args are assumed live on entry.
                     noway_assert((varDsc->lvRefCnt() == 0) || (varDsc->lvType == TYP_STRUCT) ||
-                                 (varDsc->lvAddrExposed && compiler->info.compIsVarArgs) ||
-                                 (varDsc->lvAddrExposed && compiler->opts.compUseSoftFP));
+                                 (varDsc->IsAddressExposed() && compiler->info.compIsVarArgs) ||
+                                 (varDsc->IsAddressExposed() && compiler->opts.compUseSoftFP));
 #endif // !TARGET_X86
                 }
                 // Mark it as processed and be done with it
@@ -3781,9 +3720,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     continue;
                 }
 
-                varNum = regArgTab[argNum].varNum;
-                noway_assert(varNum < compiler->lvaCount);
-                varDsc                     = compiler->lvaTable + varNum;
+                varNum                     = regArgTab[argNum].varNum;
+                varDsc                     = compiler->lvaGetDesc(varNum);
                 const var_types varRegType = varDsc->GetRegisterType();
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
@@ -3921,8 +3859,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         }
 
         varNum = regArgTab[argNum].varNum;
-        noway_assert(varNum < compiler->lvaCount);
-        varDsc = compiler->lvaTable + varNum;
+        varDsc = compiler->lvaGetDesc(varNum);
 
 #ifndef TARGET_64BIT
         // If this arg is never on the stack, go to the next one.
@@ -4119,14 +4056,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             srcReg           = regArgTab[argNum].trashBy;
 
             varNumDest = regArgTab[destReg].varNum;
-            noway_assert(varNumDest < compiler->lvaCount);
-            varDscDest = compiler->lvaTable + varNumDest;
+            varDscDest = compiler->lvaGetDesc(varNumDest);
             noway_assert(varDscDest->lvIsParam && varDscDest->lvIsRegArg);
 
             noway_assert(srcReg < argMax);
             varNumSrc = regArgTab[srcReg].varNum;
-            noway_assert(varNumSrc < compiler->lvaCount);
-            varDscSrc = compiler->lvaTable + varNumSrc;
+            varDscSrc = compiler->lvaGetDesc(varNumSrc);
             noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
             emitAttr size = EA_PTRSIZE;
@@ -4142,8 +4077,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 /* only 2 registers form the circular dependency - use "xchg" */
 
                 varNum = regArgTab[argNum].varNum;
-                noway_assert(varNum < compiler->lvaCount);
-                varDsc = compiler->lvaTable + varNum;
+                varDsc = compiler->lvaGetDesc(varNum);
                 noway_assert(varDsc->lvIsParam && varDsc->lvIsRegArg);
 
                 noway_assert(genTypeSize(genActualType(varDscSrc->TypeGet())) <= REGSIZE_BYTES);
@@ -4188,7 +4122,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 unsigned iter = begReg;
                 do
                 {
-                    if (compiler->lvaTable[regArgTab[iter].varNum].TypeGet() != TYP_DOUBLE)
+                    if (compiler->lvaGetDesc(regArgTab[iter].varNum)->TypeGet() != TYP_DOUBLE)
                     {
                         cycleAllDouble = false;
                         break;
@@ -4275,8 +4209,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     }
 #endif
                     varNumSrc = regArgTab[srcReg].varNum;
-                    noway_assert(varNumSrc < compiler->lvaCount);
-                    varDscSrc = compiler->lvaTable + varNumSrc;
+                    varDscSrc = compiler->lvaGetDesc(varNumSrc);
                     noway_assert(varDscSrc->lvIsParam && varDscSrc->lvIsRegArg);
 
                     if (destMemType == TYP_REF)
@@ -4337,9 +4270,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 continue;
             }
 
-            varNum = regArgTab[argNum].varNum;
-            noway_assert(varNum < compiler->lvaCount);
-            varDsc                     = compiler->lvaTable + varNum;
+            varNum                     = regArgTab[argNum].varNum;
+            varDsc                     = compiler->lvaGetDesc(varNum);
             const var_types regType    = regArgTab[argNum].getRegType(compiler);
             const regNumber regNum     = genMapRegArgNumToRegNum(argNum, regType);
             const var_types varRegType = varDsc->GetRegisterType();
@@ -4599,11 +4531,9 @@ void CodeGen::genEnregisterIncomingStackArgs()
     }
 #endif
 
-    // OSR handles this specially
-    if (compiler->opts.IsOSR())
-    {
-        return;
-    }
+    // OSR handles this specially -- see genEnregisterOSRArgsAndLocals
+    //
+    assert(!compiler->opts.IsOSR());
 
     assert(compiler->compGeneratingProlog);
 
@@ -5263,22 +5193,22 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
 
     regMaskTP regsToRestoreMask = rsRestoreRegs;
 
-    int totalFrameSize = genTotalFrameSize();
+    const int totalFrameSize = genTotalFrameSize();
 
-    int calleeSaveSPOffset = 0; // This will be the starting place for restoring the callee-saved registers, in
-                                // decreasing order.
-    int frameType         = 0;  // An indicator of what type of frame we are popping.
-    int calleeSaveSPDelta = 0;  // Amount to add to SP after callee-saved registers have been restored.
+    // Fetch info about the frame we saved when creating the prolog.
+    //
+    const int frameType          = compiler->compFrameInfo.frameType;
+    const int calleeSaveSpOffset = compiler->compFrameInfo.calleeSaveSpOffset;
+    const int calleeSaveSpDelta  = compiler->compFrameInfo.calleeSaveSpDelta;
+    const int offsetSpToSavedFp  = compiler->compFrameInfo.offsetSpToSavedFp;
 
-    if (isFramePointerUsed())
+    switch (frameType)
     {
-        if ((compiler->lvaOutgoingArgSpaceSize == 0) && (totalFrameSize <= 504) &&
-            !genSaveFpLrWithAllCalleeSavedRegisters)
+        case 1:
         {
             JITDUMP("Frame type 1. #outsz=0; #framesz=%d; localloc? %s\n", totalFrameSize,
                     dspBool(compiler->compLocallocUsed));
 
-            frameType = 1;
             if (compiler->compLocallocUsed)
             {
                 // Restore sp from fp
@@ -5288,13 +5218,16 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             }
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
-
-            // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
-            // bottom of stack.
-            calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
+            break;
         }
-        else if (totalFrameSize <= 512)
+
+        case 2:
         {
+            JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+            assert(!genSaveFpLrWithAllCalleeSavedRegisters);
+
             if (compiler->compLocallocUsed)
             {
                 // Restore sp from fp
@@ -5304,52 +5237,22 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
                 compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
             }
 
-            if (genSaveFpLrWithAllCalleeSavedRegisters)
-            {
-                JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-
-                frameType = 4;
-
-                calleeSaveSPOffset = compiler->compLclFrameSize;
-
-                // Remove the frame after we're done restoring the callee-saved registers.
-                calleeSaveSPDelta = totalFrameSize;
-            }
-            else
-            {
-                JITDUMP("Frame type 2 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
-                        unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize,
-                        dspBool(compiler->compLocallocUsed));
-
-                frameType = 2;
-
-                regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
-
-                // Compute callee save SP offset which is at the top of local frame while the FP/LR is saved at the
-                // bottom of stack.
-                calleeSaveSPOffset = compiler->compLclFrameSize + 2 * REGSIZE_BYTES;
-            }
+            regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and post-index SP.
+            break;
         }
-        else if (!genSaveFpLrWithAllCalleeSavedRegisters)
+
+        case 3:
         {
             JITDUMP("Frame type 3 (save FP/LR at bottom). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-            frameType = 3;
+            assert(!genSaveFpLrWithAllCalleeSavedRegisters);
 
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize -
-                                             2 * REGSIZE_BYTES; // 2 for FP, LR which we'll restore later.
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
-
-            JITDUMP("    calleeSaveSPDelta=%d\n", calleeSaveSPDelta);
+            JITDUMP("    calleeSaveSpDelta=%d\n", calleeSaveSpDelta);
 
             regsToRestoreMask &= ~(RBM_FP | RBM_LR); // We'll restore FP/LR at the end, and (hopefully) post-index SP.
 
-            int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
+            int remainingFrameSz = totalFrameSize - calleeSaveSpDelta;
             assert(remainingFrameSz > 0);
 
             if (compiler->lvaOutgoingArgSpaceSize > 504)
@@ -5401,83 +5304,117 @@ void CodeGen::genPopCalleeSavedRegistersAndFreeLclFrame(bool jmpEpilog)
             // Unlike frameType=1 or frameType=2 that restore SP at the end,
             // frameType=3 already adjusted SP above to delete local frame.
             // There is at most one alignment slot between SP and where we store the callee-saved registers.
-            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
+
+            break;
         }
-        else
+
+        case 4:
+        {
+            JITDUMP("Frame type 4 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
+                    unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
+
+            assert(genSaveFpLrWithAllCalleeSavedRegisters);
+
+            if (compiler->compLocallocUsed)
+            {
+                // Restore sp from fp
+                //      sub sp, fp, #outsz // Uses #outsz if FP/LR stored at bottom
+                int SPtoFPdelta = genSPtoFPdelta();
+                GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, SPtoFPdelta);
+                compiler->unwindSetFrameReg(REG_FPBASE, SPtoFPdelta);
+            }
+            break;
+        }
+
+        case 5:
         {
             JITDUMP("Frame type 5 (save FP/LR at top). #outsz=%d; #framesz=%d; localloc? %s\n",
                     unsigned(compiler->lvaOutgoingArgSpaceSize), totalFrameSize, dspBool(compiler->compLocallocUsed));
 
-            frameType = 5;
-
-            int calleeSaveSPDeltaUnaligned = totalFrameSize - compiler->compLclFrameSize;
-            assert(calleeSaveSPDeltaUnaligned >= 0);
-            assert((calleeSaveSPDeltaUnaligned % 8) == 0); // It better at least be 8 byte aligned.
-            calleeSaveSPDelta = AlignUp((UINT)calleeSaveSPDeltaUnaligned, STACK_ALIGN);
-
-            calleeSaveSPOffset = calleeSaveSPDelta - calleeSaveSPDeltaUnaligned;
-            assert((calleeSaveSPOffset == 0) || (calleeSaveSPOffset == REGSIZE_BYTES));
+            assert((calleeSaveSpOffset == 0) || (calleeSaveSpOffset == REGSIZE_BYTES));
 
             // Restore sp from fp:
             //      sub sp, fp, #sp-to-fp-delta
             // This is the same whether there is localloc or not. Note that we don't need to do anything to remove the
             // "remainingFrameSz" to reverse the SUB of that amount in the prolog.
-
-            int offsetSpToSavedFp = calleeSaveSPDelta -
-                                    (compiler->info.compIsVarArgs ? MAX_REG_ARG * REGSIZE_BYTES : 0) -
-                                    2 * REGSIZE_BYTES; // -2 for FP, LR
             GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_FPBASE, offsetSpToSavedFp);
             compiler->unwindSetFrameReg(REG_FPBASE, offsetSpToSavedFp);
+            break;
+        }
+
+        default:
+            unreached();
+    }
+
+    JITDUMP("    calleeSaveSpOffset=%d, calleeSaveSpDelta=%d\n", calleeSaveSpOffset, calleeSaveSpDelta);
+    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSpOffset, calleeSaveSpDelta);
+
+    switch (frameType)
+    {
+        case 1:
+        {
+            // Generate:
+            //      ldp fp,lr,[sp],#framesz
+
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
+                                          INS_OPTS_POST_INDEX);
+            compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
+            break;
+        }
+
+        case 2:
+        {
+            // Generate:
+            //      ldr fp,lr,[sp,#outsz]
+            //      add sp,sp,#framesz
+
+            GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
+                                          compiler->lvaOutgoingArgSpaceSize);
+            compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
+
+            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
+            compiler->unwindAllocStack(totalFrameSize);
+            break;
+        }
+        case 3:
+        case 4:
+        case 5:
+        {
+            // Nothing to do after restoring callee-saved registers.
+            break;
+        }
+
+        default:
+        {
+            unreached();
         }
     }
-    else
-    {
-        // No frame pointer (no chaining).
-        NYI("Frame without frame pointer");
-        calleeSaveSPOffset = 0;
-    }
 
-    JITDUMP("    calleeSaveSPOffset=%d, calleeSaveSPDelta=%d\n", calleeSaveSPOffset, calleeSaveSPDelta);
-    genRestoreCalleeSavedRegistersHelp(regsToRestoreMask, calleeSaveSPOffset, calleeSaveSPDelta);
+    // For OSR, we must also adjust the SP to remove the Tier0 frame.
+    //
+    if (compiler->opts.IsOSR())
+    {
+        PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+        const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
+        JITDUMP("Extra SP adjust for OSR to pop off Tier0 frame: %d bytes\n", tier0FrameSize);
 
-    if (frameType == 1)
-    {
-        // Generate:
-        //      ldp fp,lr,[sp],#framesz
-
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE, totalFrameSize,
-                                      INS_OPTS_POST_INDEX);
-        compiler->unwindSaveRegPairPreindexed(REG_FP, REG_LR, -totalFrameSize);
-    }
-    else if (frameType == 2)
-    {
-        // Generate:
-        //      ldr fp,lr,[sp,#outsz]
-        //      add sp,sp,#framesz
-
-        GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, REG_FP, REG_LR, REG_SPBASE,
-                                      compiler->lvaOutgoingArgSpaceSize);
-        compiler->unwindSaveRegPair(REG_FP, REG_LR, compiler->lvaOutgoingArgSpaceSize);
-
-        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, totalFrameSize);
-        compiler->unwindAllocStack(totalFrameSize);
-    }
-    else if (frameType == 3)
-    {
-        // Nothing to do after restoring callee-saved registers.
-    }
-    else if (frameType == 4)
-    {
-        // Nothing to do after restoring callee-saved registers.
-    }
-    else if (frameType == 5)
-    {
-        // Nothing to do after restoring callee-saved registers.
-    }
-    else
-    {
-        unreached();
+        // Tier0 size may exceed simple immediate. We're in the epilog so not clear if we can
+        // use a scratch reg. So just do two subtracts if necessary.
+        //
+        int spAdjust = tier0FrameSize;
+        if (!GetEmitter()->emitIns_valid_imm_for_add(tier0FrameSize, EA_PTRSIZE))
+        {
+            const int lowPart  = spAdjust & 0xFFF;
+            const int highPart = spAdjust - lowPart;
+            assert(GetEmitter()->emitIns_valid_imm_for_add(highPart, EA_PTRSIZE));
+            GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, highPart);
+            compiler->unwindAllocStack(highPart);
+            spAdjust = lowPart;
+        }
+        assert(GetEmitter()->emitIns_valid_imm_for_add(spAdjust, EA_PTRSIZE));
+        GetEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, spAdjust);
+        compiler->unwindAllocStack(spAdjust);
     }
 }
 
@@ -6250,126 +6187,190 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             inst_ST_RV(ins_Store(TYP_I_IMPL), tempThis, 0, genGetZeroReg(initReg, pInitRegZeroed), TYP_I_IMPL);
         }
     }
+}
 
-    // Initialize args and locals for OSR. Note this may include promoted fields.
-    if (compiler->opts.IsOSR())
+//-----------------------------------------------------------------------------
+// genEnregisterOSRArgsAndLocals: Initialize any enregistered args or locals
+//   that get values from the tier0 frame.
+//
+// Arguments:
+//    initReg -- scratch register to use if needed
+//    pInitRegZeroed -- [IN,OUT] if init reg is zero (on entry/exit)
+//
+#if defined(TARGET_ARM64)
+void CodeGen::genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed)
+#else
+void CodeGen::genEnregisterOSRArgsAndLocals()
+#endif
+{
+    assert(compiler->opts.IsOSR());
+    PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+
+    // basic sanity checks (make sure we're OSRing the right method)
+    assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
+
+    const int      originalFrameSize = patchpointInfo->TotalFrameSize();
+    const unsigned patchpointInfoLen = patchpointInfo->NumberOfLocals();
+
+    for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
     {
-        PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
-
-        // basic sanity checks (make sure we're OSRing the right method)
-        assert(patchpointInfo->NumberOfLocals() == compiler->info.compLocalsCount);
-
-        const int      originalFrameSize = patchpointInfo->FpToSpDelta();
-        const unsigned patchpointInfoLen = patchpointInfo->NumberOfLocals();
-
-        for (unsigned varNum = 0; varNum < compiler->lvaCount; varNum++)
+        if (!compiler->lvaIsOSRLocal(varNum))
         {
-            if (!compiler->lvaIsOSRLocal(varNum))
-            {
-                continue;
-            }
-
-            LclVarDsc* const varDsc = compiler->lvaGetDesc(varNum);
-
-            if (!varDsc->lvIsInReg())
-            {
-                JITDUMP("---OSR--- V%02u in memory\n", varNum);
-                continue;
-            }
-
-            if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
-            {
-                JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
-                continue;
-            }
-
-            int      fieldOffset = 0;
-            unsigned lclNum      = varNum;
-
-            if (varDsc->lvIsStructField)
-            {
-                lclNum = varDsc->lvParentLcl;
-                assert(lclNum < patchpointInfoLen);
-
-                fieldOffset = varDsc->lvFldOffset;
-                JITDUMP("---OSR--- V%02u is promoted field of V%02u at offset %d\n", varNum, lclNum, fieldOffset);
-            }
-
-            // Note we are always reading from the original frame here
-            const var_types lclTyp  = genActualType(varDsc->lvType);
-            const emitAttr  size    = emitTypeSize(lclTyp);
-            const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
-
-            // Original frames always use frame pointers, so
-            // stkOffs is the original frame-relative offset
-            // to the variable.
+            // This local was not part of the tier0 method's state.
+            // No work required.
             //
-            // We need to determine the stack or frame-pointer relative
-            // offset for this variable in the current frame.
-            //
-            // If current frame does not use a frame pointer, we need to
-            // add the SP-to-FP delta of this frame and the SP-to-FP delta
-            // of the original frame; that translates from this frame's
-            // stack pointer the old frame frame pointer.
-            //
-            // We then add the original frame's frame-pointer relative
-            // offset (note this offset is usually negative -- the stack
-            // grows down, so locals are below the frame pointer).
-            //
-            // /-----original frame-----/
-            // / return address         /
-            // / saved RBP   --+        /  <--- Original frame ptr   --+
-            // / ...           |        /                              |
-            // / ...       (stkOffs)    /                              |
-            // / ...           |        /                              |
-            // / variable    --+        /                              |
-            // / ...                    /                (original frame sp-fp delta)
-            // / ...                    /                              |
-            // /-----OSR frame ---------/                              |
-            // / pseudo return address  /                            --+
-            // / ...                    /                              |
-            // / ...                    /                    (this frame sp-fp delta)
-            // / ...                    /                              |
-            // /------------------------/  <--- Stack ptr            --+
-            //
-            // If the current frame is using a frame pointer, we need to
-            // add the SP-to-FP delta of/ the original frame and then add
-            // the original frame's frame-pointer relative offset.
-            //
-            // /-----original frame-----/
-            // / return address         /
-            // / saved RBP   --+        /  <--- Original frame ptr   --+
-            // / ...           |        /                              |
-            // / ...       (stkOffs)    /                              |
-            // / ...           |        /                              |
-            // / variable    --+        /                              |
-            // / ...                    /                (original frame sp-fp delta)
-            // / ...                    /                              |
-            // /-----OSR frame ---------/                              |
-            // / pseudo return address  /                            --+
-            // / saved RBP              /  <--- Frame ptr            --+
-            // / ...                    /
-            // / ...                    /
-            // / ...                    /
-            // /------------------------/
-
-            int offset = originalFrameSize + stkOffs;
-
-            if (isFramePointerUsed())
-            {
-                // also adjust for saved RPB on this frame
-                offset += TARGET_POINTER_SIZE;
-            }
-            else
-            {
-                offset += genSPtoFPdelta();
-            }
-
-            JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
-                    varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
-
-            GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
+            continue;
         }
+
+        LclVarDsc* const varDsc = compiler->lvaGetDesc(varNum);
+
+        if (!varDsc->lvIsInReg())
+        {
+            // For args/locals in memory, the OSR frame will continue to access
+            // that memory location. No work required.
+            //
+            JITDUMP("---OSR--- V%02u in memory\n", varNum);
+            continue;
+        }
+
+        // This local was part of the live tier0 state and is enregistered in the
+        // OSR method. Initialize the register from the right frame slot.
+        //
+        // If we ever enable promotion we'll need to generalize what follows to copy each
+        // field from the tier0 frame to its OSR home.
+        //
+        if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        {
+            // This arg or local is not live at entry to the OSR method.
+            // No work required.
+            //
+            JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
+            continue;
+        }
+
+        int      fieldOffset = 0;
+        unsigned lclNum      = varNum;
+
+        if (varDsc->lvIsStructField)
+        {
+            lclNum = varDsc->lvParentLcl;
+            assert(lclNum < patchpointInfoLen);
+
+            fieldOffset = varDsc->lvFldOffset;
+            JITDUMP("---OSR--- V%02u is promoted field of V%02u at offset %d\n", varNum, lclNum, fieldOffset);
+        }
+
+        // Note we are always reading from the tier0 frame here
+        //
+        const var_types lclTyp  = varDsc->GetActualRegisterType();
+        const emitAttr  size    = emitTypeSize(lclTyp);
+        const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
+
+#if defined(TARGET_AMD64)
+
+        // Original frames always use frame pointers, so
+        // stkOffs is the tier0 frame's frame-relative offset
+        // to the variable.
+        //
+        // We need to determine the stack or frame-pointer relative
+        // offset for this variable in the current frame.
+        //
+        // If current frame does not use a frame pointer, we need to
+        // add the SP-to-FP delta of this frame and the SP-to-FP delta
+        // of the original frame; that translates from this frame's
+        // stack pointer the old frame frame pointer.
+        //
+        // We then add the original frame's frame-pointer relative
+        // offset (note this offset is usually negative -- the stack
+        // grows down, so locals are below the frame pointer).
+        //
+        // /-----original frame-----/
+        // / return address         /
+        // / saved RBP   --+        /  <--- Original frame ptr   --+
+        // / ...           |        /                              |
+        // / ...       (stkOffs)    /                              |
+        // / ...           |        /                              |
+        // / variable    --+        /                              |
+        // / ...                    /                (original frame sp-fp delta)
+        // / ...                    /                              |
+        // /-----OSR frame ---------/                              |
+        // / pseudo return address  /                            --+
+        // / ...                    /                              |
+        // / ...                    /                    (this frame sp-fp delta)
+        // / ...                    /                              |
+        // /------------------------/  <--- Stack ptr            --+
+        //
+        // If the current frame is using a frame pointer, we need to
+        // add the SP-to-FP delta of/ the original frame and then add
+        // the original frame's frame-pointer relative offset.
+        //
+        // /-----original frame-----/
+        // / return address         /
+        // / saved RBP   --+        /  <--- Original frame ptr   --+
+        // / ...           |        /                              |
+        // / ...       (stkOffs)    /                              |
+        // / ...           |        /                              |
+        // / variable    --+        /                              |
+        // / ...                    /                (original frame sp-fp delta)
+        // / ...                    /                              |
+        // /-----OSR frame ---------/                              |
+        // / pseudo return address  /                            --+
+        // / saved RBP              /  <--- Frame ptr            --+
+        // / ...                    /
+        // / ...                    /
+        // / ...                    /
+        // /------------------------/
+        //
+        int offset = originalFrameSize + stkOffs;
+
+        if (isFramePointerUsed())
+        {
+            // also adjust for saved RPB on this frame
+            offset += TARGET_POINTER_SIZE;
+        }
+        else
+        {
+            offset += genSPtoFPdelta();
+        }
+
+        JITDUMP("---OSR--- V%02u (reg) old rbp offset %d old frame %d this frame sp-fp %d new offset %d (%02xH)\n",
+                varNum, stkOffs, originalFrameSize, genSPtoFPdelta(), offset, offset);
+
+        GetEmitter()->emitIns_R_AR(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset);
+
+#elif defined(TARGET_ARM64)
+
+        // Patchpoint offset is from top of Tier0 frame
+        //
+        // We need to determine the frame-pointer relative
+        // offset for this variable in the osr frame.
+        //
+        // First add the Tier0 frame size
+        //
+        const int tier0FrameSize = compiler->info.compPatchpointInfo->TotalFrameSize();
+
+        // then add the OSR frame size
+        //
+        const int osrFrameSize = genTotalFrameSize();
+
+        // then subtract OSR SP-FP delta
+        //
+        const int osrSpToFpDelta = genSPtoFPdelta();
+
+        //               | => tier0 top of frame relative
+        //               |         + => tier0 bottom of frame relative
+        //               |         |                + => osr bottom of frame (sp) relative
+        //               |         |                |              - => osr fp relative
+        //               |         |                |              |
+        const int offset = stkOffs + tier0FrameSize + osrFrameSize - osrSpToFpDelta;
+
+        JITDUMP("---OSR--- V%02u (reg) Tier0 virtual offset %d OSR frame size %d OSR sp-fp "
+                "delta %d total offset %d (0x%x)\n",
+                varNum, stkOffs, osrFrameSize, osrSpToFpDelta, offset, offset);
+
+        genInstrWithConstant(ins_Load(lclTyp), size, varDsc->GetRegNum(), genFramePointerReg(), offset, initReg);
+        *pInitRegZeroed = false;
+#endif
     }
 }
 
@@ -6409,7 +6410,7 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
     unsigned contextArg = reportArg ? compiler->info.compTypeCtxtArg : compiler->info.compThisArg;
 
     noway_assert(contextArg != BAD_VAR_NUM);
-    LclVarDsc* varDsc = &compiler->lvaTable[contextArg];
+    LclVarDsc* varDsc = compiler->lvaGetDesc(contextArg);
 
     // We are still in the prolog and compiler->info.compTypeCtxtArg has not been
     // moved to its final home location. So we need to use it from the
@@ -6993,7 +6994,7 @@ void CodeGen::genFnProlog()
 
     // Do this so we can put the prolog instruction group ahead of
     // other instruction groups
-    genIPmappingAddToFront((IL_OFFSETX)ICorDebugInfo::PROLOG);
+    genIPmappingAddToFront(IPmappingDscKind::Prolog, DebugInfo(), true);
 
 #ifdef DEBUG
     if (compiler->opts.dspCode)
@@ -7008,18 +7009,22 @@ void CodeGen::genFnProlog()
         psiBegProlog();
     }
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // For OSR there is a "phantom prolog" to account for the actions taken
-    // in the original frame that impact RBP and RSP on entry to the OSR method.
+    // in the tier0 frame that impact FP and SP on entry to the OSR method.
     if (compiler->opts.IsOSR())
     {
-        PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
-        const int       originalFrameSize = patchpointInfo->FpToSpDelta();
+        PatchpointInfo* patchpointInfo = compiler->info.compPatchpointInfo;
+        const int       tier0FrameSize = patchpointInfo->TotalFrameSize();
 
+#if defined(TARGET_AMD64)
+        // FP is tier0 method's FP.
         compiler->unwindPush(REG_FPBASE);
-        compiler->unwindAllocStack(originalFrameSize);
-    }
 #endif
+        // SP is tier0 method's SP.
+        compiler->unwindAllocStack(tier0FrameSize);
+    }
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 #ifdef DEBUG
 
@@ -7044,7 +7049,7 @@ void CodeGen::genFnProlog()
     // as it will overwrite the real value
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
-        LclVarDsc* varDsc = &compiler->lvaTable[compiler->lvaPSPSym];
+        const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->lvaPSPSym);
         assert(!varDsc->lvMustInit);
     }
 
@@ -7148,8 +7153,9 @@ void CodeGen::genFnProlog()
 
         if (isInReg)
         {
-            regMaskTP regMask = genRegMask(varDsc->GetRegNum());
-            if (!varDsc->IsFloatRegType())
+            regNumber regForVar = varDsc->GetRegNum();
+            regMaskTP regMask   = genRegMask(regForVar);
+            if (!genIsValidFloatReg(regForVar))
             {
                 initRegs |= regMask;
 
@@ -7274,13 +7280,11 @@ void CodeGen::genFnProlog()
         assert((!compiler->opts.ShouldUsePInvokeHelpers()) || (compiler->info.compLvFrameListRoot == BAD_VAR_NUM));
         if (!compiler->opts.ShouldUsePInvokeHelpers())
         {
-            noway_assert(compiler->info.compLvFrameListRoot < compiler->lvaCount);
-
             excludeMask |= (RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH);
 
             // We also must exclude the register used by compLvFrameListRoot when it is enregistered
             //
-            LclVarDsc* varDsc = &compiler->lvaTable[compiler->info.compLvFrameListRoot];
+            const LclVarDsc* varDsc = compiler->lvaGetDesc(compiler->info.compLvFrameListRoot);
             if (varDsc->lvRegister)
             {
                 excludeMask |= genRegMask(varDsc->GetRegNum());
@@ -7467,14 +7471,8 @@ void CodeGen::genFnProlog()
 
     if (compiler->info.compPublishStubParam)
     {
-#if CPU_LOAD_STORE_ARCH
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
                                   compiler->lvaStubArgumentVar, 0);
-#else
-        // mov [lvaStubArgumentVar], EAX
-        GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM, genFramePointerReg(),
-                                   compiler->lvaTable[compiler->lvaStubArgumentVar].GetStackOffset());
-#endif
         assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
 
         // It's no longer live; clear it out so it can be used after this in the prolog
@@ -7539,6 +7537,16 @@ void CodeGen::genFnProlog()
 
 #endif // PROFILING_SUPPORTED
 
+    // For OSR we may have a zero-length prolog. That's not supported
+    // when the method must report a generics context,/ so add a nop if so.
+    //
+    if (compiler->opts.IsOSR() && (GetEmitter()->emitGetPrologOffsetEstimate() == 0) &&
+        (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis()))
+    {
+        JITDUMP("OSR: prolog was zero length and has generic context to report: adding nop to pad prolog.\n");
+        instGen(INS_nop);
+    }
+
     if (!GetInterruptible())
     {
         // The 'real' prolog ends here for non-interruptible methods.
@@ -7562,14 +7570,30 @@ void CodeGen::genFnProlog()
      * Take care of register arguments first
      */
 
-    // Update the arg initial register locations.
-    compiler->lvaUpdateArgsWithInitialReg();
-
     // Home incoming arguments and generate any required inits.
     // OSR handles this by moving the values from the original frame.
     //
-    if (!compiler->opts.IsOSR())
+    // Update the arg initial register locations.
+    //
+    if (compiler->opts.IsOSR())
     {
+        // For OSR  we defer updating "initial reg" for args until
+        // we've set the live-in regs with values from the Tier0 frame.
+        //
+        // Otherwise we'll do some of these fetches twice.
+        //
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_ARM64)
+        genEnregisterOSRArgsAndLocals(initReg, &initRegZeroed);
+#else
+        genEnregisterOSRArgsAndLocals();
+#endif
+        compiler->lvaUpdateArgsWithInitialReg();
+    }
+    else
+    {
+        compiler->lvaUpdateArgsWithInitialReg();
+
         auto assignIncomingRegisterArgs = [this, initReg, &initRegZeroed](RegState* regState) {
             if (regState->rsCalleeRegArgMaskLiveIn)
             {
@@ -7605,10 +7629,10 @@ void CodeGen::genFnProlog()
 #else
         assignIncomingRegisterArgs(&intRegState);
 #endif
-    }
 
-    // Home the incoming arguments.
-    genEnregisterIncomingStackArgs();
+        // Home the incoming arguments.
+        genEnregisterIncomingStackArgs();
+    }
 
     /* Initialize any must-init registers variables now */
 
@@ -7699,9 +7723,9 @@ void CodeGen::genFnProlog()
     // (our argument pointer register has a refcount > 0).
     unsigned argsStartVar = compiler->lvaVarargsBaseOfStkArgs;
 
-    if (compiler->info.compIsVarArgs && compiler->lvaTable[argsStartVar].lvRefCnt() > 0)
+    if (compiler->info.compIsVarArgs && compiler->lvaGetDesc(argsStartVar)->lvRefCnt() > 0)
     {
-        varDsc = &compiler->lvaTable[argsStartVar];
+        varDsc = compiler->lvaGetDesc(argsStartVar);
 
         noway_assert(compiler->info.compArgsCount > 0);
 
@@ -7715,7 +7739,7 @@ void CodeGen::genFnProlog()
         // EDX might actually be holding something here.  So make sure to only use EAX for this code
         // sequence.
 
-        LclVarDsc* lastArg = &compiler->lvaTable[compiler->info.compArgsCount - 1];
+        const LclVarDsc* lastArg = compiler->lvaGetDesc(compiler->info.compArgsCount - 1);
         noway_assert(!lastArg->lvRegister);
         signed offset = lastArg->GetStackOffset();
         assert(offset != BAD_STK_OFFS);
@@ -7741,8 +7765,8 @@ void CodeGen::genFnProlog()
     if (compiler->opts.compStackCheckOnRet)
     {
         noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvOnFrame);
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
@@ -7755,6 +7779,90 @@ void CodeGen::genFnProlog()
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// getCallTarget - Get the node that evalutes to the call target
+//
+// Arguments:
+//    call - the GT_CALL node
+//
+// Returns:
+//   The node. Note that for direct calls this may still return non-null if the direct call
+//   requires a 'complex' tree to load the target (e.g. in R2R or because we go through a stub).
+//
+GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd)
+{
+    // all virtuals should have been expanded into a control expression by this point.
+    assert(!call->IsVirtual() || call->gtControlExpr || call->gtCallAddr);
+
+    if (call->gtCallType == CT_INDIRECT)
+    {
+        assert(call->gtControlExpr == nullptr);
+
+        if (methHnd != nullptr)
+        {
+            *methHnd = nullptr;
+        }
+
+        return call->gtCallAddr;
+    }
+
+    if (methHnd != nullptr)
+    {
+        *methHnd = call->gtCallMethHnd;
+    }
+
+    return call->gtControlExpr;
+}
+
+//------------------------------------------------------------------------
+// getCallIndirectionCellReg - Get the register containing the indirection cell for a call
+//
+// Arguments:
+//    call - the node
+//
+// Returns:
+//   The register containing the indirection cell, or REG_NA if this call does not use an indirection cell argument.
+//
+// Notes:
+//   We currently use indirection cells for VSD on all platforms and for R2R calls on ARM architectures.
+//
+regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
+{
+    regNumber result = REG_NA;
+    switch (call->GetIndirectionCellArgKind())
+    {
+        case NonStandardArgKind::None:
+            break;
+        case NonStandardArgKind::R2RIndirectionCell:
+            result = REG_R2R_INDIRECT_PARAM;
+            break;
+        case NonStandardArgKind::VirtualStubCell:
+            result = compiler->virtualStubParamInfo->GetReg();
+            break;
+        default:
+            unreached();
+    }
+
+#ifdef DEBUG
+    regNumber       foundReg = REG_NA;
+    unsigned        argCount = call->fgArgInfo->ArgCount();
+    fgArgTabEntry** argTable = call->fgArgInfo->ArgTable();
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        NonStandardArgKind kind = argTable[i]->nonStandardArgKind;
+        if ((kind == NonStandardArgKind::R2RIndirectionCell) || (kind == NonStandardArgKind::VirtualStubCell))
+        {
+            foundReg = argTable[i]->GetRegNum();
+            break;
+        }
+    }
+
+    assert(foundReg == result);
+#endif
+
+    return result;
+}
 
 /*****************************************************************************
  *
@@ -8004,7 +8112,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
-                                       BAD_IL_OFFSET, // IL offset
+                                       DebugInfo(),
                                        indCallReg,    // ireg
                                        REG_NA,        // xreg
                                        0,             // xmul
@@ -8017,46 +8125,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if FEATURE_FASTTAILCALL
         else
         {
-            // Fast tail call.
-            GenTreeCall* call     = jmpNode->AsCall();
-            gtCallTypes  callType = (gtCallTypes)call->gtCallType;
-
-            // Fast tail calls cannot happen to helpers.
-            assert((callType == CT_INDIRECT) || (callType == CT_USER_FUNC));
-
-            // Try to dispatch this as a direct branch; this is possible when the call is
-            // truly direct. In this case, the control expression will be null and the direct
-            // target address will be in gtDirectCallAddress. It is still possible that calls
-            // to user funcs require indirection, in which case the control expression will
-            // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
-            {
-                assert(call->gtCallMethHnd != nullptr);
-                // clang-format off
-                GetEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN,
-                                           call->gtCallMethHnd,
-                                           INDEBUG_LDISASM_COMMA(nullptr)
-                                           call->gtDirectCallAddress,
-                                           0,          // argSize
-                                           EA_UNKNOWN  // retSize
-                                           ARM64_ARG(EA_UNKNOWN), // secondRetSize
-                                           gcInfo.gcVarPtrSetCur,
-                                           gcInfo.gcRegGCrefSetCur,
-                                           gcInfo.gcRegByrefSetCur,
-                                           BAD_IL_OFFSET, // IL offset
-                                           REG_NA,        // ireg
-                                           REG_NA,        // xreg
-                                           0,             // xmul
-                                           0,             // disp
-                                           true);         // isJump
-                // clang-format on
-            }
-            else
-            {
-                // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into REG_FASTTAILCALL_TARGET already, so just branch to it.
-                GetEmitter()->emitIns_R(INS_br, emitTypeSize(TYP_I_IMPL), REG_FASTTAILCALL_TARGET);
-            }
+            genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
@@ -8206,21 +8275,21 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         }
 #endif // TARGET_AMD64
 
-        // Extra OSR adjust to get to where RBP was saved by the original frame, and
-        // restore RBP.
+        // Extra OSR adjust to get to where RBP was saved by the tier0 frame to restore RBP.
         //
         // Note the other callee saves made in that frame are dead, the OSR method
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
-            const int       originalFrameSize = patchpointInfo->FpToSpDelta();
+            PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+            const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
 
-            // Use add since we know the SP-to-FP delta of the original method.
+            // Simply add since we know frame size is the SP-to-FP delta of the tier0 method plus
+            // the extra slot pushed by the runtime when we simulate calling the OSR method.
             //
-            // If we ever allow the original method to have localloc this will
-            // need to change.
-            inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize, EA_PTRSIZE);
+            // If we ever support OSR from tier0 methods with localloc, this will need to change.
+            //
+            inst_RV_IV(INS_add, REG_SPBASE, tier0FrameSize, EA_PTRSIZE);
             inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
         }
     }
@@ -8331,21 +8400,21 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         genPopCalleeSavedRegisters();
 
 #ifdef TARGET_AMD64
-        // Extra OSR adjust to get to where RBP was saved by the original frame.
+        // Extra OSR adjust to get to where RBP was saved by the tier0 frame.
         //
         // Note the other callee saves made in that frame are dead, the current method
         // will save and restore what it needs.
         if (compiler->opts.IsOSR())
         {
-            PatchpointInfo* patchpointInfo    = compiler->info.compPatchpointInfo;
-            const int       originalFrameSize = patchpointInfo->FpToSpDelta();
+            PatchpointInfo* const patchpointInfo = compiler->info.compPatchpointInfo;
+            const int             tier0FrameSize = patchpointInfo->TotalFrameSize();
 
             // Use add since we know the SP-to-FP delta of the original method.
             // We also need to skip over the slot where we pushed RBP.
             //
             // If we ever allow the original method to have localloc this will
             // need to change.
-            inst_RV_IV(INS_add, REG_SPBASE, originalFrameSize + TARGET_POINTER_SIZE, EA_PTRSIZE);
+            inst_RV_IV(INS_add, REG_SPBASE, tier0FrameSize + TARGET_POINTER_SIZE, EA_PTRSIZE);
         }
 
         assert(!needMovEspEbp); // "mov esp, ebp" is not allowed in AMD64 epilogs
@@ -8444,7 +8513,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
-                                       BAD_IL_OFFSET, indCallReg, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
+                                       DebugInfo(),
+                                       indCallReg, REG_NA, 0, 0,  /* ireg, xreg, xmul, disp */
                                        true /* isJump */
             );
             // clang-format on
@@ -8452,51 +8522,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #if FEATURE_FASTTAILCALL
         else
         {
-#ifdef TARGET_AMD64
-            // Fast tail call.
-            GenTreeCall* call     = jmpNode->AsCall();
-            gtCallTypes  callType = (gtCallTypes)call->gtCallType;
-
-            // Fast tail calls cannot happen to helpers.
-            assert((callType == CT_INDIRECT) || (callType == CT_USER_FUNC));
-
-            // Calls to a user func can be dispatched as an RIP-relative jump when they are
-            // truly direct; in this case, the control expression will be null and the direct
-            // target address will be in gtDirectCallAddress. It is still possible that calls
-            // to user funcs require indirection, in which case the control expression will
-            // be non-null.
-            if ((callType == CT_USER_FUNC) && (call->gtControlExpr == nullptr))
-            {
-                assert(call->gtCallMethHnd != nullptr);
-                // clang-format off
-                GetEmitter()->emitIns_Call(
-                        emitter::EC_FUNC_TOKEN,
-                        call->gtCallMethHnd,
-                        INDEBUG_LDISASM_COMMA(nullptr)
-                        call->gtDirectCallAddress,
-                        0,                                              // argSize
-                        EA_UNKNOWN                                      // retSize
-                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),// secondRetSize
-                        gcInfo.gcVarPtrSetCur,
-                        gcInfo.gcRegGCrefSetCur,
-                        gcInfo.gcRegByrefSetCur,
-                        BAD_IL_OFFSET, REG_NA, REG_NA, 0, 0,  /* iloffset, ireg, xreg, xmul, disp */
-                        true /* isJump */
-                );
-                // clang-format on
-            }
-            else
-            {
-                // Target requires indirection to obtain. genCallInstruction will have materialized
-                // it into RAX already, so just jump to it. The stack walker requires that a register
-                // indirect tail call be rex.w prefixed.
-                GetEmitter()->emitIns_R(INS_rex_jmp, emitTypeSize(TYP_I_IMPL), REG_RAX);
-            }
-
-#else
-            assert(!"Fast tail call as epilog+jmp");
-            unreached();
-#endif // TARGET_AMD64
+            genCallInstruction(jmpNode->AsCall());
         }
 #endif // FEATURE_FASTTAILCALL
     }
@@ -8521,6 +8547,14 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 
             noway_assert(compiler->compArgSize < 0x10000); // "ret" only has 2 byte operand
         }
+
+#ifdef UNIX_X86_ABI
+        // The called function must remove hidden address argument from the stack before returning
+        // in case of struct returning according to cdecl calling convention on linux.
+        // Details: http://www.sco.com/developers/devspecs/abi386-4.pdf pages 40-43
+        if (compiler->info.compCallConv == CorInfoCallConvExtension::C && compiler->info.compRetBuffArg != BAD_VAR_NUM)
+            stkArgSize += TARGET_POINTER_SIZE;
+#endif // UNIX_X86_ABI
 #endif // TARGET_X86
 
         /* Return, popping our arguments (if any) */
@@ -9385,6 +9419,11 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     int SPtoCallerSPdelta = -genCallerSPtoInitialSPdelta();
 
+    if (compiler->opts.IsOSR())
+    {
+        SPtoCallerSPdelta += compiler->info.compPatchpointInfo->TotalFrameSize();
+    }
+
     // We will just use the initReg since it is an available register
     // and we are probably done using it anyway...
     regNumber regTmp = initReg;
@@ -9826,7 +9865,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     LclVarDsc* varDsc = nullptr;
     for (unsigned i = 0; i < compiler->info.compArgsCount; i++)
     {
-        varDsc = &(compiler->lvaTable[i]);
+        varDsc = compiler->lvaGetDesc(i);
 
         // We should have found a stack parameter (and broken out of this loop) before
         // we find any non-parameters.
@@ -10169,42 +10208,77 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
 
-        if (compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+        if (compiler->compMap2ILvarNum(varNum) == (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
         {
-            VariableLiveKeeper::LiveRangeList* liveRanges = nullptr;
+            continue;
+        }
 
-            for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+        auto reportRange = [this, varDsc, varNum, &liveRangeIndex](siVarLoc* loc, UNATIVE_OFFSET start,
+                                                                   UNATIVE_OFFSET end) {
+            if (varDsc->lvIsParam && (start == end))
             {
-                if (rangeIndex == 0)
-                {
-                    liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
-                }
-                else
-                {
-                    liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
-                }
-                for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
-                {
-                    UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
-                    UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
+                // If the length is zero, it means that the prolog is empty. In that case,
+                // CodeGen::genSetScopeInfo will report the liveness of all arguments
+                // as spanning the first instruction in the method, so that they can
+                // at least be inspected on entry to the method.
+                end++;
+            }
 
-                    if (varDsc->lvIsParam && (startOffs == endOffs))
-                    {
-                        // If the length is zero, it means that the prolog is empty. In that case,
-                        // CodeGen::genSetScopeInfo will report the liveness of all arguments
-                        // as spanning the first instruction in the method, so that they can
-                        // at least be inspected on entry to the method.
-                        endOffs++;
-                    }
+            genSetScopeInfo(liveRangeIndex, start, end - start, varNum, varNum, true, loc);
+            liveRangeIndex++;
+        };
 
-                    genSetScopeInfo(liveRangeIndex, startOffs, endOffs - startOffs, varNum,
-                                    varNum /* I dont know what is the which in eeGetLvInfo */, true,
-                                    &liveRange.m_VarLocation);
-                    liveRangeIndex++;
+        siVarLoc*      curLoc   = nullptr;
+        UNATIVE_OFFSET curStart = 0;
+        UNATIVE_OFFSET curEnd   = 0;
+
+        for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
+        {
+            VariableLiveKeeper::LiveRangeList* liveRanges;
+            if (rangeIndex == 0)
+            {
+                liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
+            }
+            else
+            {
+                liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
+            }
+
+            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+            {
+                UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(GetEmitter());
+                UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(GetEmitter());
+
+                assert(startOffs <= endOffs);
+                assert(startOffs >= curEnd);
+                if ((curLoc != nullptr) && (startOffs == curEnd) && siVarLoc::Equals(curLoc, &liveRange.m_VarLocation))
+                {
+                    // Extend current range.
+                    curEnd = endOffs;
+                    continue;
                 }
+
+                // Report old range if any.
+                if (curLoc != nullptr)
+                {
+                    reportRange(curLoc, curStart, curEnd);
+                }
+
+                // Start a new range.
+                curLoc   = &liveRange.m_VarLocation;
+                curStart = startOffs;
+                curEnd   = endOffs;
             }
         }
+
+        // Report last range
+        if (curLoc != nullptr)
+        {
+            reportRange(curLoc, curStart, curEnd);
+        }
     }
+
+    compiler->eeVarsCount = liveRangeIndex;
 }
 #endif // USING_VARIABLE_LIVE_RANGE
 
@@ -10242,7 +10316,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
     // Is this a varargs function?
     if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
-        varNum < compiler->info.compArgsCount && !compiler->lvaTable[varNum].lvIsRegArg)
+        varNum < compiler->info.compArgsCount && !compiler->lvaGetDesc(varNum)->lvIsRegArg)
     {
         noway_assert(varLoc->vlType == VLT_STK || varLoc->vlType == VLT_STK2);
 
@@ -10251,7 +10325,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
         // and just find its position relative to the varargs handle
 
         PREFIX_ASSUME(compiler->lvaVarargsHandleArg < compiler->info.compArgsCount);
-        if (!compiler->lvaTable[compiler->lvaVarargsHandleArg].lvOnFrame)
+        if (!compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->lvOnFrame)
         {
             noway_assert(!compiler->opts.compDbgCode);
             return;
@@ -10259,9 +10333,9 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
         // Can't check compiler->lvaTable[varNum].lvOnFrame as we don't set it for
         // arguments of vararg functions to avoid reporting them to GC.
-        noway_assert(!compiler->lvaTable[varNum].lvRegister);
-        unsigned cookieOffset = compiler->lvaTable[compiler->lvaVarargsHandleArg].GetStackOffset();
-        unsigned varOffset    = compiler->lvaTable[varNum].GetStackOffset();
+        noway_assert(!compiler->lvaGetDesc(varNum)->lvRegister);
+        unsigned cookieOffset = compiler->lvaGetDesc(compiler->lvaVarargsHandleArg)->GetStackOffset();
+        unsigned varOffset    = compiler->lvaGetDesc(varNum)->GetStackOffset();
 
         noway_assert(cookieOffset < varOffset);
         unsigned offset     = varOffset - cookieOffset;
@@ -10377,32 +10451,38 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
  *  Display a IPmappingDsc. Pass -1 as mappingNum to not display a mapping number.
  */
 
-void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMapping)
+void CodeGen::genIPmappingDisp(unsigned mappingNum, IPmappingDsc* ipMapping)
 {
     if (mappingNum != unsigned(-1))
     {
         printf("%d: ", mappingNum);
     }
 
-    IL_OFFSETX offsx = ipMapping->ipmdILoffsx;
-
-    if (offsx == BAD_IL_OFFSET)
+    switch (ipMapping->ipmdKind)
     {
-        printf("???");
-    }
-    else
-    {
-        Compiler::eeDispILOffs(jitGetILoffsAny(offsx));
+        case IPmappingDscKind::Prolog:
+            printf("PROLOG");
+            break;
+        case IPmappingDscKind::Epilog:
+            printf("EPILOG");
+            break;
+        case IPmappingDscKind::NoMapping:
+            printf("NO_MAP");
+            break;
+        case IPmappingDscKind::Normal:
+            const ILLocation& loc = ipMapping->ipmdLoc;
+            Compiler::eeDispILOffs(loc.GetOffset());
+            if (loc.IsStackEmpty())
+            {
+                printf(" STACK_EMPTY");
+            }
 
-        if (jitIsStackEmpty(offsx))
-        {
-            printf(" STACK_EMPTY");
-        }
+            if (loc.IsCall())
+            {
+                printf(" CALL_INSTRUCTION");
+            }
 
-        if (jitIsCallInstruction(offsx))
-        {
-            printf(" CALL_INSTRUCTION");
-        }
+            break;
     }
 
     printf(" ");
@@ -10420,12 +10500,11 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMa
 
 void CodeGen::genIPmappingListDisp()
 {
-    unsigned                mappingNum = 0;
-    Compiler::IPmappingDsc* ipMapping;
+    unsigned mappingNum = 0;
 
-    for (ipMapping = compiler->genIPmappingList; ipMapping != nullptr; ipMapping = ipMapping->ipmdNext)
+    for (IPmappingDsc& dsc : compiler->genIPmappings)
     {
-        genIPmappingDisp(mappingNum, ipMapping);
+        genIPmappingDisp(mappingNum, &dsc);
         ++mappingNum;
     }
 }
@@ -10439,66 +10518,54 @@ void CodeGen::genIPmappingListDisp()
  *  Record the instr offset as being at the current code gen position.
  */
 
-void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
+void CodeGen::genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel)
 {
     if (!compiler->opts.compDbgInfo)
     {
         return;
     }
 
-    assert(offsx != BAD_IL_OFFSET);
+    assert((kind == IPmappingDscKind::Normal) == di.IsValid());
 
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
+    switch (kind)
     {
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
+        case IPmappingDscKind::Prolog:
+        case IPmappingDscKind::Epilog:
             break;
 
         default:
 
-            if (offsx != (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
+            if (kind == IPmappingDscKind::Normal)
             {
-                noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
+                noway_assert(di.GetLocation().GetOffset() <= compiler->info.compILCodeSize);
             }
 
-            // Ignore this one if it's the same IL offset as the last one we saw.
+            // Ignore this one if it's the same IL location as the last one we saw.
             // Note that we'll let through two identical IL offsets if the flag bits
             // differ, or two identical "special" mappings (e.g., PROLOG).
-            if ((compiler->genIPmappingLast != nullptr) && (offsx == compiler->genIPmappingLast->ipmdILoffsx))
+            if ((compiler->genIPmappings.size() > 0) && (kind == compiler->genIPmappings.back().ipmdKind) &&
+                (di.GetLocation() == compiler->genIPmappings.back().ipmdLoc))
             {
-                JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", offsx);
+                JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", di.GetLocation().GetOffset());
                 return;
             }
             break;
     }
 
-    /* Create a mapping entry and append it to the list */
+    IPmappingDsc addMapping;
+    addMapping.ipmdNativeLoc.CaptureLocation(GetEmitter());
+    addMapping.ipmdKind    = kind;
+    addMapping.ipmdLoc     = di.GetLocation();
+    addMapping.ipmdIsLabel = isLabel;
 
-    Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx = offsx;
-    addMapping->ipmdIsLabel = isLabel;
-    addMapping->ipmdNext    = nullptr;
-
-    if (compiler->genIPmappingList != nullptr)
-    {
-        assert(compiler->genIPmappingLast != nullptr);
-        assert(compiler->genIPmappingLast->ipmdNext == nullptr);
-        compiler->genIPmappingLast->ipmdNext = addMapping;
-    }
-    else
-    {
-        assert(compiler->genIPmappingLast == nullptr);
-        compiler->genIPmappingList = addMapping;
-    }
-
-    compiler->genIPmappingLast = addMapping;
+    assert((kind == IPmappingDscKind::Normal) == addMapping.ipmdLoc.IsValid());
+    compiler->genIPmappings.push_back(addMapping);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Added IP mapping: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
 }
@@ -10507,210 +10574,73 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
  *
  *  Prepend an IPmappingDsc struct to the list that we're maintaining
  *  for the debugger.
- *  Record the instr offset as being at the current code gen position.
  */
-void CodeGen::genIPmappingAddToFront(IL_OFFSETX offsx)
+void CodeGen::genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel)
 {
     if (!compiler->opts.compDbgInfo)
     {
         return;
     }
 
-    assert(offsx != BAD_IL_OFFSET);
-    assert(compiler->compGeneratingProlog); // We only ever do this during prolog generation.
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            break;
-
-        default:
-            noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
-            break;
-    }
+    noway_assert((kind != IPmappingDscKind::Normal) ||
+                 (di.IsValid() && (di.GetLocation().GetOffset() <= compiler->info.compILCodeSize)));
 
     /* Create a mapping entry and prepend it to the list */
 
-    Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx = offsx;
-    addMapping->ipmdIsLabel = true;
-    addMapping->ipmdNext    = nullptr;
-
-    addMapping->ipmdNext       = compiler->genIPmappingList;
-    compiler->genIPmappingList = addMapping;
-
-    if (compiler->genIPmappingLast == nullptr)
-    {
-        compiler->genIPmappingLast = addMapping;
-    }
+    IPmappingDsc addMapping;
+    addMapping.ipmdNativeLoc.CaptureLocation(GetEmitter());
+    addMapping.ipmdKind    = kind;
+    addMapping.ipmdLoc     = di.GetLocation();
+    addMapping.ipmdIsLabel = isLabel;
+    compiler->genIPmappings.push_front(addMapping);
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("Added IP mapping to front: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        genIPmappingDisp(unsigned(-1), &addMapping);
     }
 #endif // DEBUG
 }
 
 /*****************************************************************************/
 
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::NO_MAPPING) != IL_OFFSETX(BAD_IL_OFFSET));
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::PROLOG) != IL_OFFSETX(BAD_IL_OFFSET));
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::EPILOG) != IL_OFFSETX(BAD_IL_OFFSET));
-
-C_ASSERT(IL_OFFSETX(BAD_IL_OFFSET) > MAX_IL_OFFSET);
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::NO_MAPPING) > MAX_IL_OFFSET);
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::PROLOG) > MAX_IL_OFFSET);
-C_ASSERT(IL_OFFSETX(ICorDebugInfo::EPILOG) > MAX_IL_OFFSET);
-
-//------------------------------------------------------------------------
-// jitGetILoffs: Returns the IL offset portion of the IL_OFFSETX type.
-//      Asserts if any ICorDebugInfo distinguished value (like ICorDebugInfo::NO_MAPPING)
-//      is seen; these are unexpected here. Also asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value with the IL offset to extract.
-//
-// Return Value:
-//    The IL offset.
-
-IL_OFFSET jitGetILoffs(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            unreached();
-
-        default:
-            return IL_OFFSET(offsx & ~IL_OFFSETX_BITS);
-    }
-}
-
-//------------------------------------------------------------------------
-// jitGetILoffsAny: Similar to jitGetILoffs(), but passes through ICorDebugInfo
-//      distinguished values. Asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value with the IL offset to extract.
-//
-// Return Value:
-//    The IL offset.
-
-IL_OFFSET jitGetILoffsAny(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            return IL_OFFSET(offsx);
-
-        default:
-            return IL_OFFSET(offsx & ~IL_OFFSETX_BITS);
-    }
-}
-
-//------------------------------------------------------------------------
-// jitIsStackEmpty: Does the IL offset have the stack empty bit set?
-//      Asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value to check
-//
-// Return Value:
-//    'true' if the stack empty bit is set; 'false' otherwise.
-
-bool jitIsStackEmpty(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            return true;
-
-        default:
-            return (offsx & IL_OFFSETX_STKBIT) == 0;
-    }
-}
-
-//------------------------------------------------------------------------
-// jitIsCallInstruction: Does the IL offset have the call instruction bit set?
-//      Asserts if passed BAD_IL_OFFSET.
-//
-// Arguments:
-//    offsx - the IL_OFFSETX value to check
-//
-// Return Value:
-//    'true' if the call instruction bit is set; 'false' otherwise.
-
-bool jitIsCallInstruction(IL_OFFSETX offsx)
-{
-    assert(offsx != BAD_IL_OFFSET);
-
-    switch ((int)offsx) // Need the cast since offs is unsigned and the case statements are comparing to signed.
-    {
-        case ICorDebugInfo::NO_MAPPING:
-        case ICorDebugInfo::PROLOG:
-        case ICorDebugInfo::EPILOG:
-            return false;
-
-        default:
-            return (offsx & IL_OFFSETX_CALLINSTRUCTIONBIT) != 0;
-    }
-}
-
-/*****************************************************************************/
-
-void CodeGen::genEnsureCodeEmitted(IL_OFFSETX offsx)
+void CodeGen::genEnsureCodeEmitted(const DebugInfo& di)
 {
     if (!compiler->opts.compDbgCode)
     {
         return;
     }
 
-    if (offsx == BAD_IL_OFFSET)
+    if (!di.IsValid())
     {
         return;
     }
 
-    /* If other IL were offsets reported, skip */
+    // If other IL were offsets reported, skip
 
-    if (compiler->genIPmappingLast == nullptr)
+    if (compiler->genIPmappings.size() <= 0)
     {
         return;
     }
 
-    if (compiler->genIPmappingLast->ipmdILoffsx != offsx)
+    const IPmappingDsc& prev = compiler->genIPmappings.back();
+    if (prev.ipmdLoc != di.GetLocation())
     {
         return;
     }
 
-    /* offsx was the last reported offset. Make sure that we generated native code */
+    // di represents the last reported offset. Make sure that we generated native code
 
-    if (compiler->genIPmappingLast->ipmdNativeLoc.IsCurrentLocation(GetEmitter()))
+    if (prev.ipmdNativeLoc.IsCurrentLocation(GetEmitter()))
     {
         instGen(INS_nop);
     }
 }
 
-/*****************************************************************************
- *
- *  Shut down the IP-mapping logic, report the info to the EE.
- */
-
+//------------------------------------------------------------------------
+// genIPmappingGen: Shut down the IP-mapping logic, report the info to the EE.
+//
 void CodeGen::genIPmappingGen()
 {
     if (!compiler->opts.compDbgInfo)
@@ -10725,134 +10655,99 @@ void CodeGen::genIPmappingGen()
     }
 #endif
 
-    if (compiler->genIPmappingList == nullptr)
+    if (compiler->genIPmappings.size() <= 0)
     {
         compiler->eeSetLIcount(0);
         compiler->eeSetLIdone();
         return;
     }
 
-    Compiler::IPmappingDsc* tmpMapping;
-    Compiler::IPmappingDsc* prevMapping;
-    unsigned                mappingCnt;
-    UNATIVE_OFFSET          lastNativeOfs;
-
-    /* First count the number of distinct mapping records */
-
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
-
-    for (prevMapping = nullptr, tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr;
-         tmpMapping = tmpMapping->ipmdNext)
+    UNATIVE_OFFSET prevNativeOfs = UNATIVE_OFFSET(~0);
+    for (jitstd::list<IPmappingDsc>::iterator it = compiler->genIPmappings.begin();
+         it != compiler->genIPmappings.end();)
     {
-        IL_OFFSETX srcIP = tmpMapping->ipmdILoffsx;
-
-        // Managed RetVal - since new sequence points are emitted to identify IL calls,
-        // make sure that those are not filtered and do not interfere with filtering of
-        // other sequence points.
-        if (jitIsCallInstruction(srcIP))
+        UNATIVE_OFFSET dscNativeOfs = it->ipmdNativeLoc.CodeOffset(GetEmitter());
+        if (dscNativeOfs != prevNativeOfs)
         {
-            mappingCnt++;
+            prevNativeOfs = dscNativeOfs;
+            ++it;
             continue;
         }
 
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
+        // If we have a previous offset we should have a previous mapping.
+        assert(it != compiler->genIPmappings.begin());
+        jitstd::list<IPmappingDsc>::iterator prev = it;
+        --prev;
 
-        if (nextNativeOfs != lastNativeOfs)
+        // Prev and current mappings have same native offset.
+        // If one does not map to IL then remove that one.
+        if (prev->ipmdKind == IPmappingDscKind::NoMapping)
         {
-            mappingCnt++;
-            lastNativeOfs = nextNativeOfs;
-            prevMapping   = tmpMapping;
+            compiler->genIPmappings.erase(prev);
+            ++it;
             continue;
         }
 
-        /* If there are mappings with the same native offset, then:
-           o If one of them is NO_MAPPING, ignore it
-           o If one of them is a label, report that and ignore the other one
-           o Else report the higher IL offset
-         */
+        if (it->ipmdKind == IPmappingDscKind::NoMapping)
+        {
+            it = compiler->genIPmappings.erase(it);
+            continue;
+        }
 
-        PREFIX_ASSUME(prevMapping != nullptr); // We would exit before if this was true
-        if (prevMapping->ipmdILoffsx == (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
+        // Both have mappings.
+        // If previous is the prolog, keep both if this one is at IL offset 0.
+        // (TODO: Why? Debugger has no problem breaking on the prolog mapping
+        // it seems.)
+        if ((prev->ipmdKind == IPmappingDscKind::Prolog) && (it->ipmdKind == IPmappingDscKind::Normal) &&
+            (it->ipmdLoc.GetOffset() == 0))
         {
-            // If the previous entry was NO_MAPPING, ignore it
-            prevMapping->ipmdNativeLoc.Init();
-            prevMapping = tmpMapping;
+            ++it;
+            continue;
         }
-        else if (srcIP == (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
+
+        // For the special case of an IL instruction with no body followed by
+        // the epilog (say ret void immediately preceding the method end), we
+        // leave both entries in, so that we'll stop at the (empty) ret
+        // statement if the user tries to put a breakpoint there, and then have
+        // the option of seeing the epilog or not based on SetUnmappedStopMask
+        // for the stepper.
+        if (it->ipmdKind == IPmappingDscKind::Epilog)
         {
-            // If the current entry is NO_MAPPING, ignore it
-            // Leave prevMapping unchanged as tmpMapping is no longer valid
-            tmpMapping->ipmdNativeLoc.Init();
+            ++it;
+            continue;
         }
-        else if (srcIP == (IL_OFFSETX)ICorDebugInfo::EPILOG || srcIP == 0)
+
+        // For managed return values we store all calls. Keep both in this case
+        // too.
+        if (((prev->ipmdKind == IPmappingDscKind::Normal) && (prev->ipmdLoc.IsCall())) ||
+            ((it->ipmdKind == IPmappingDscKind::Normal) && (it->ipmdLoc.IsCall())))
         {
-            // counting for special cases: see below
-            mappingCnt++;
-            prevMapping = tmpMapping;
+            ++it;
+            continue;
+        }
+
+        // Otherwise report the higher offset unless the previous mapping is a
+        // label.
+        if (prev->ipmdIsLabel)
+        {
+            it = compiler->genIPmappings.erase(it);
         }
         else
         {
-            noway_assert(prevMapping != nullptr);
-            noway_assert(!prevMapping->ipmdNativeLoc.Valid() ||
-                         lastNativeOfs == prevMapping->ipmdNativeLoc.CodeOffset(GetEmitter()));
-
-            /* The previous block had the same native offset. We have to
-               discard one of the mappings. Simply reinitialize ipmdNativeLoc
-               and prevMapping will be ignored later. */
-
-            if (prevMapping->ipmdIsLabel)
-            {
-                // Leave prevMapping unchanged as tmpMapping is no longer valid
-                tmpMapping->ipmdNativeLoc.Init();
-            }
-            else
-            {
-                prevMapping->ipmdNativeLoc.Init();
-                prevMapping = tmpMapping;
-            }
+            compiler->genIPmappings.erase(prev);
+            ++it;
         }
     }
 
-    /* Tell them how many mapping records we've got */
+    // Tell them how many mapping records we've got
 
-    compiler->eeSetLIcount(mappingCnt);
+    compiler->eeSetLIcount(static_cast<unsigned int>(compiler->genIPmappings.size()));
 
-    /* Now tell them about the mappings */
-
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
-
-    for (tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr; tmpMapping = tmpMapping->ipmdNext)
+    // Now tell them about the mappings
+    unsigned int mappingIdx = 0;
+    for (const IPmappingDsc& dsc : compiler->genIPmappings)
     {
-        // Do we have to skip this record ?
-        if (!tmpMapping->ipmdNativeLoc.Valid())
-        {
-            continue;
-        }
-
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
-        IL_OFFSETX     srcIP         = tmpMapping->ipmdILoffsx;
-
-        if (jitIsCallInstruction(srcIP))
-        {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffs(srcIP), jitIsStackEmpty(srcIP), true);
-        }
-        else if (nextNativeOfs != lastNativeOfs)
-        {
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffsAny(srcIP), jitIsStackEmpty(srcIP), false);
-            lastNativeOfs = nextNativeOfs;
-        }
-        else if (srcIP == (IL_OFFSETX)ICorDebugInfo::EPILOG || srcIP == 0)
-        {
-            // For the special case of an IL instruction with no body
-            // followed by the epilog (say ret void immediately preceding
-            // the method end), we put two entries in, so that we'll stop
-            // at the (empty) ret statement if the user tries to put a
-            // breakpoint there, and then have the option of seeing the
-            // epilog or not based on SetUnmappedStopMask for the stepper.
-            compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffsAny(srcIP), jitIsStackEmpty(srcIP), false);
-        }
+        compiler->eeSetLIinfo(mappingIdx++, dsc.ipmdNativeLoc.CodeOffset(GetEmitter()), dsc.ipmdKind, dsc.ipmdLoc);
     }
 
 #if 0
@@ -10875,12 +10770,12 @@ void CodeGen::genIPmappingGen()
             if ((block->bbRefs > 1) && (stmt != nullptr))
             {
                 bool found = false;
-                if (stmt->GetILOffsetX() != BAD_IL_OFFSET)
+                DebugInfo rootInfo = stmt->GetDebugInfo().GetRoot();
+                if (rootInfo.IsValid())
                 {
-                    IL_OFFSET ilOffs = jitGetILoffs(stmt->GetILOffsetX());
-                    for (unsigned i = 0; i < eeBoundariesCount; ++i)
+                    for (unsigned i = 0; i < compiler->eeBoundariesCount; ++i)
                     {
-                        if (eeBoundaries[i].ilOffset == ilOffs)
+                        if (compiler->eeBoundaries[i].ilOffset == rootInfo.GetLocation().GetOffset())
                         {
                             found = true;
                             break;
@@ -10895,6 +10790,87 @@ void CodeGen::genIPmappingGen()
 
     compiler->eeSetLIdone();
 }
+
+#ifdef DEBUG
+void CodeGen::genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first)
+{
+    if (context->GetSibling() != nullptr)
+    {
+        genDumpPreciseDebugInfoInlineTree(file, context->GetSibling(), first);
+    }
+
+    if (context->IsSuccess())
+    {
+        if (!*first)
+        {
+            fprintf(file, ",");
+        }
+
+        *first = false;
+
+        fprintf(file, "{\"Ordinal\":%u,", context->GetOrdinal());
+        fprintf(file, "\"MethodID\":%lld,", (INT64)context->GetCallee());
+        const char* className;
+        const char* methodName = compiler->eeGetMethodName(context->GetCallee(), &className);
+        fprintf(file, "\"MethodName\":\"%s\",", methodName);
+        fprintf(file, "\"Inlinees\":[");
+        if (context->GetChild() != nullptr)
+        {
+            bool childFirst = true;
+            genDumpPreciseDebugInfoInlineTree(file, context->GetChild(), &childFirst);
+        }
+        fprintf(file, "]}");
+    }
+}
+
+void CodeGen::genDumpPreciseDebugInfo()
+{
+    if (JitConfig.JitDumpPreciseDebugInfoFile() == nullptr)
+        return;
+
+    static CritSecObject s_critSect;
+    CritSecHolder        holder(s_critSect);
+
+    FILE* file = _wfopen(JitConfig.JitDumpPreciseDebugInfoFile(), W("a"));
+    if (file == nullptr)
+        return;
+
+    // MethodID in ETW events are the method handles.
+    fprintf(file, "{\"MethodID\":%lld,", (INT64)compiler->info.compMethodHnd);
+    // Print inline tree.
+    fprintf(file, "\"InlineTree\":");
+
+    bool first = true;
+    genDumpPreciseDebugInfoInlineTree(file, compiler->compInlineContext, &first);
+    fprintf(file, ",\"Mappings\":[");
+    first = true;
+    for (PreciseIPMapping& mapping : compiler->genPreciseIPmappings)
+    {
+        if (!first)
+        {
+            fprintf(file, ",");
+        }
+
+        first = false;
+
+        fprintf(file, "{\"NativeOffset\":%u,\"InlineContext\":%u,\"ILOffset\":%u}",
+                mapping.nativeLoc.CodeOffset(GetEmitter()), mapping.debugInfo.GetInlineContext()->GetOrdinal(),
+                mapping.debugInfo.GetLocation().GetOffset());
+    }
+
+    fprintf(file, "]}\n");
+
+    fclose(file);
+}
+
+void CodeGen::genAddPreciseIPMappingHere(const DebugInfo& di)
+{
+    PreciseIPMapping mapping;
+    mapping.nativeLoc.CaptureLocation(GetEmitter());
+    mapping.debugInfo = di;
+    compiler->genPreciseIPmappings.push_back(mapping);
+}
+#endif
 
 /*============================================================================
  *
@@ -11238,7 +11214,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     LclVarDsc*     varDsc = nullptr;
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
-        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
+        varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar());
         retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->info.compCallConv);
         assert(varDsc->lvIsMultiRegRet);
     }
@@ -11267,7 +11243,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     else if (actualOp1->OperIs(GT_LCL_VAR) && !actualOp1->AsLclVar()->IsMultiReg())
     {
         GenTreeLclVar* lclNode = actualOp1->AsLclVar();
-        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode->GetLclNum());
+        LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
         assert(varDsc->lvIsMultiRegRet);
         int offset = 0;
         for (unsigned i = 0; i < regCount; ++i)
@@ -11649,7 +11625,7 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
         var_types type;
         if (op1->IsMultiRegLclVar())
         {
-            LclVarDsc* parentVarDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
+            LclVarDsc* parentVarDsc = compiler->lvaGetDesc(op1->AsLclVar());
             unsigned   fieldVarNum  = parentVarDsc->lvFieldLclStart + multiRegIndex;
             LclVarDsc* fieldVarDsc  = compiler->lvaGetDesc(fieldVarNum);
             type                    = fieldVarDsc->TypeGet();
@@ -11704,8 +11680,8 @@ void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPo
 {
     if (doStackPointerCheck)
     {
-        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaTable[lvaStackPointerVar].lvDoNotEnregister &&
-                     compiler->lvaTable[lvaStackPointerVar].lvOnFrame);
+        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister &&
+                     compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
         GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
 
         BasicBlock* sp_check = genCreateTempLabel();
@@ -12541,7 +12517,19 @@ void CodeGenInterface::VariableLiveKeeper::dumpLvaVariableLiveRanges() const
 void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 {
     assert(compiler->compShouldPoisonFrame());
-    assert((regLiveIn & genRegMask(REG_SCRATCH)) == 0);
+#if defined(TARGET_XARCH)
+    regNumber poisonValReg = REG_EAX;
+    assert((regLiveIn & (RBM_EDI | RBM_ECX | RBM_EAX)) == 0);
+#else
+    regNumber poisonValReg = REG_SCRATCH;
+    assert((regLiveIn & (genRegMask(REG_SCRATCH) | RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2)) == 0);
+#endif
+
+#ifdef TARGET_64BIT
+    const ssize_t poisonVal = (ssize_t)0xcdcdcdcdcdcdcdcd;
+#else
+    const ssize_t poisonVal = (ssize_t)0xcdcdcdcd;
+#endif
 
     // The first time we need to poison something we will initialize a register to the largest immediate cccccccc that
     // we can fit.
@@ -12549,46 +12537,70 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
     for (unsigned varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
     {
         LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
-        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->lvAddrExposed)
+        if (varDsc->lvIsParam || varDsc->lvMustInit || !varDsc->IsAddressExposed())
         {
             continue;
         }
 
         assert(varDsc->lvOnFrame);
 
-        if (!hasPoisonImm)
+        unsigned int size = compiler->lvaLclSize(varNum);
+        if ((size / TARGET_POINTER_SIZE) > 16)
         {
-#ifdef TARGET_64BIT
-            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd, TYP_LONG);
+            // This will require more than 16 instructions, switch to rep stosd/memset call.
+            CLANG_FORMAT_COMMENT_ANCHOR;
+#if defined(TARGET_XARCH)
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_EDI, (int)varNum, 0);
+            assert(size % 4 == 0);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ECX, size / 4);
+            // On xarch we can leave the value in eax and only set eax once
+            // since rep stosd does not kill eax.
+            if (!hasPoisonImm)
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_EAX, poisonVal);
+                hasPoisonImm = true;
+            }
+            instGen(INS_r_stosd);
 #else
-            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcd, TYP_INT);
+            GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_0, (int)varNum, 0);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_1, static_cast<char>(poisonVal));
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_ARG_2, size);
+            genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+            // May kill REG_SCRATCH, so we need to reload it.
+            hasPoisonImm = false;
 #endif
-            hasPoisonImm = true;
         }
+        else
+        {
+            if (!hasPoisonImm)
+            {
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, poisonValReg, poisonVal);
+                hasPoisonImm = true;
+            }
 
 // For 64-bit we check if the local is 8-byte aligned. For 32-bit, we assume everything is always 4-byte aligned.
 #ifdef TARGET_64BIT
-        bool fpBased;
-        int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
+            bool fpBased;
+            int  addr = compiler->lvaFrameAddress((int)varNum, &fpBased);
 #else
-        int addr = 0;
+            int addr     = 0;
 #endif
-        int size = (int)compiler->lvaLclSize(varNum);
-        int end  = addr + size;
-        for (int offs = addr; offs < end;)
-        {
-#ifdef TARGET_64BIT
-            if ((offs % 8) == 0 && end - offs >= 8)
+            int end = addr + (int)size;
+            for (int offs = addr; offs < end;)
             {
-                GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-                offs += 8;
-                continue;
-            }
+#ifdef TARGET_64BIT
+                if ((offs % 8) == 0 && end - offs >= 8)
+                {
+                    GetEmitter()->emitIns_S_R(ins_Store(TYP_LONG), EA_8BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                    offs += 8;
+                    continue;
+                }
 #endif
 
-            assert((offs % 4) == 0 && end - offs >= 4);
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
-            offs += 4;
+                assert((offs % 4) == 0 && end - offs >= 4);
+                GetEmitter()->emitIns_S_R(ins_Store(TYP_INT), EA_4BYTE, REG_SCRATCH, (int)varNum, offs - addr);
+                offs += 4;
+            }
         }
     }
 }

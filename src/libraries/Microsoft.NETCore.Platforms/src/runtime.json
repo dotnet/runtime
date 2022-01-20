@@ -138,6 +138,29 @@
         "alpine.3.13-x64"
       ]
     },
+    "alpine.3.15": {
+      "#import": [
+        "alpine.3.14"
+      ]
+    },
+    "alpine.3.15-arm": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm"
+      ]
+    },
+    "alpine.3.15-arm64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-arm64"
+      ]
+    },
+    "alpine.3.15-x64": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -1134,26 +1157,15 @@
         "unix-x64"
       ]
     },
-    "freebsd.11": {
-      "#import": [
-        "freebsd"
-      ]
-    },
-    "freebsd.11-x64": {
-      "#import": [
-        "freebsd.11",
-        "freebsd-x64"
-      ]
-    },
     "freebsd.12": {
       "#import": [
-        "freebsd.11"
+        "freebsd"
       ]
     },
     "freebsd.12-x64": {
       "#import": [
         "freebsd.12",
-        "freebsd.11-x64"
+        "freebsd-x64"
       ]
     },
     "freebsd.13": {
@@ -1486,6 +1498,12 @@
         "unix-armel"
       ]
     },
+    "linux-loongarch64": {
+      "#import": [
+        "linux",
+        "unix-loongarch64"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -1738,6 +1756,17 @@
       "#import": [
         "maccatalyst.15",
         "maccatalyst.14-x64"
+      ]
+    },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
       ]
     },
     "ol": {
@@ -2144,6 +2173,23 @@
         "osx.10.16-x64"
       ]
     },
+    "osx.12": {
+      "#import": [
+        "osx.11.0"
+      ]
+    },
+    "osx.12-arm64": {
+      "#import": [
+        "osx.12",
+        "osx.11.0-arm64"
+      ]
+    },
+    "osx.12-x64": {
+      "#import": [
+        "osx.12",
+        "osx.11.0-x64"
+      ]
+    },
     "rhel": {
       "#import": [
         "linux"
@@ -2326,6 +2372,63 @@
       "#import": [
         "rhel.9",
         "rhel-x64"
+      ]
+    },
+    "rocky": {
+      "#import": [
+        "rhel"
+      ]
+    },
+    "rocky-arm64": {
+      "#import": [
+        "rocky",
+        "rhel-arm64"
+      ]
+    },
+    "rocky-x64": {
+      "#import": [
+        "rocky",
+        "rhel-x64"
+      ]
+    },
+    "rocky.8": {
+      "#import": [
+        "rocky",
+        "rhel.8"
+      ]
+    },
+    "rocky.8-arm64": {
+      "#import": [
+        "rocky.8",
+        "rocky-arm64",
+        "rhel.8-arm64"
+      ]
+    },
+    "rocky.8-x64": {
+      "#import": [
+        "rocky.8",
+        "rocky-x64",
+        "rhel.8-x64"
+      ]
+    },
+    "rocky.9": {
+      "#import": [
+        "rocky",
+        "rhel.9"
+      ]
+    },
+    "rocky.9-arm64": {
+      "#import": [
+        "rocky.9",
+        "rocky-arm64",
+        "rhel.9-arm64"
+      ]
+    },
+    "rocky.9-x64": {
+      "#import": [
+        "rocky.9",
+        "rocky-x64",
+        "rhel.9-x64"
       ]
     },
     "sles": {
@@ -3332,6 +3435,11 @@
       ]
     },
     "unix-armel": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-loongarch64": {
       "#import": [
         "unix"
       ]

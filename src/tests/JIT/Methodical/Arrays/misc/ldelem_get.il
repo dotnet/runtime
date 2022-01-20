@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'test'
+.assembly 'ldelem_get'
 {
 
 
@@ -28,7 +28,7 @@
   
   
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi Test
@@ -96,6 +96,9 @@
 
     .method private hidebysig static int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  4
       .locals (float64[10000...10005] V_0,

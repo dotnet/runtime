@@ -17,7 +17,7 @@ class Foo<T> : IFoo<T>
 	}		
 }
 
-public class Test
+public class Test_method012
 {
 	public static int counter = 0;
 	public static bool result = true;

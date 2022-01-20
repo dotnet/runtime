@@ -1326,7 +1326,7 @@ namespace System.Xml
             {
                 localName = prefix;
                 attrPrefix = _xmlns;
-                name = reader.NameTable.Add(string.Concat(_xmlns, ":", prefix));
+                name = reader.NameTable.Add($"{_xmlns}:{prefix}");
             }
 
             if (_nsAttributes[index] == null)

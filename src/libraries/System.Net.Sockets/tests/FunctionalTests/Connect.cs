@@ -364,7 +364,7 @@ namespace System.Net.Sockets.Tests
     // The test class is declared non-parallel because of possible IPv4/IPv6 port-collision on Unix:
     // When running these tests in parallel with other tests, there is some chance that the DualMode client
     // will connect to an IPv4 server of a parallel test case.
-    [Collection(nameof(NoParallelTests))]
+    [Collection(nameof(DisableParallelization))]
     public abstract class Connect_NonParallel<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
         protected Connect_NonParallel(ITestOutputHelper output) : base(output)

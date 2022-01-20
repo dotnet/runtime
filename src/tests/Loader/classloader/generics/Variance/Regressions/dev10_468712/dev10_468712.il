@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
 //  Microsoft (R) .NET Framework IL Disassembler.  Version 4.0.10707.0
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
@@ -26,7 +27,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module dev10_468712.exe
 // MVID: {A08CCC44-9903-487B-892B-8613075988F7}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -74,6 +74,9 @@
 {
   .method public static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init ([0] class ConsoleApplicationVB.ICovariant`1<object> y)

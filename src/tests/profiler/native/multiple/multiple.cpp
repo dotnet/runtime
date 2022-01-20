@@ -45,7 +45,7 @@ HRESULT MultiplyLoaded::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void
     return InitializeCommon(pICorProfilerInfoUnk);
 }
 
-HRESULT MultiplyLoaded::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+HRESULT MultiplyLoaded::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
 {
     *pbNotificationOnly = TRUE;
     return S_OK;

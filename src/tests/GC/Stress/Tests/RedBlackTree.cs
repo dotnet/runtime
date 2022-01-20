@@ -77,21 +77,21 @@ public class Tree
     {
         if (curr == null) return 0;
 
-        if(expectBalanced && notRed && curr.color == Color.Red)
+        if (expectBalanced && notRed && curr.color == Color.Red)
             TestLibrary.TestFramework.LogError("", "Rule 5: Red node, with red child, or red right child");
-        if (curr.parent != parent) 
-            TestLibrary.TestFramework.LogError("","Parent pointer has become corrupt.");
+        if (curr.parent != parent)
+            TestLibrary.TestFramework.LogError("", "Parent pointer has become corrupt.");
 
-        if(curr.left == null && curr.right != null)
+        if (curr.left == null && curr.right != null)
             TestLibrary.TestFramework.LogError("", "Not left leaning.");
 
-        if (curr.key > max && curr.key < min) 
+        if (curr.key > max && curr.key < min)
             TestLibrary.TestFramework.LogError("", "Rule 1: Tree is not sorted");
 
         var leftRank = CheckTreeRecursive(expectBalanced, curr.left, curr, min, curr.key, curr.color == Color.Red);
         var rightRank = CheckTreeRecursive(expectBalanced, curr.right, curr, curr.key, max, true);
 
-        if (expectBalanced && leftRank!=rightRank) 
+        if (expectBalanced && leftRank != rightRank)
             TestLibrary.TestFramework.LogError("", "Rule 6: Tree is not balanced");
 
         var currRank = curr.color == Color.Black ? leftRank + 1 : leftRank;
@@ -173,14 +173,15 @@ public class Tree
         }
     }
 
-    public void InsertNode(ref Node curr, Node newNode, Node parent) {
+    public void InsertNode(ref Node curr, Node newNode, Node parent)
+    {
         if (curr == null)
         {
             curr = newNode;
             newNode.parent = parent;
             return;
         }
-        
+
         if (newNode.key < curr.key)
         {
             InsertNode(ref curr.left, newNode, curr);
@@ -200,9 +201,9 @@ public class Tree
         InsertNode(ref _root, n, null);
 
         // Adjust tree after insertion
-        if(_root.color != Color.Black) 
+        if (_root.color != Color.Black)
             _root.color = Color.Black;
-        
+
         CheckTree(true);
     }
 
@@ -292,7 +293,7 @@ public class Tree
 
     public bool DeleteNode(ref Node n, int key)
     {
-        
+
         if (n.key != key && n.left == null && n.right == null)
         {
             Fixup(ref n);
@@ -300,14 +301,14 @@ public class Tree
         }
 
         var result = false;
-        if (n.key > key) 
-        { 
-            if(!IsRed(n.left) && !IsRed(n.left.left)) 
+        if (n.key > key)
+        {
+            if (!IsRed(n.left) && !IsRed(n.left.left))
                 MoveRedLeft(ref n);
-            
+
             result = DeleteNode(ref n.left, key);
-        } 
-        else 
+        }
+        else
         {
             if (IsRed(n.left)) RotateRight(ref n);
 
@@ -353,7 +354,7 @@ public class Tree
 
         if (!IsRed(curr.left) && !IsRed(curr.left.left))
             MoveRedLeft(ref curr);
-        
+
         min = DeleteMin(ref curr.left);
 
         Fixup(ref curr);
@@ -370,7 +371,7 @@ public class Tree
     public void PrintTree(Node r, String offset)
     {
         if (r == null) return;
-        
+
         offset = offset + " ";
 
         if (r.left != null) PrintTree(r.left, offset);

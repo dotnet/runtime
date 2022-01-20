@@ -170,6 +170,12 @@
              Link="Internal\Cryptography\BasicSymmetricCipher.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherBCrypt.cs"
              Link="Internal\Cryptography\BasicSymmetricCipherBCrypt.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\BasicSymmetricCipherLiteBCrypt.cs"
+             Link="Internal\Cryptography\BasicSymmetricCipherLiteBCrypt.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\ILiteSymmetricCipher.cs"
+             Link="Internal\Cryptography\ILiteSymmetricCipher.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\SymmetricPadding.cs"
+             Link="Internal\Cryptography\SymmetricPadding.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoTransform.cs"
              Link="Internal\Cryptography\UniversalCryptoTransform.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\UniversalCryptoEncryptor.cs"
@@ -360,13 +366,14 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Runtime.Numerics" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>

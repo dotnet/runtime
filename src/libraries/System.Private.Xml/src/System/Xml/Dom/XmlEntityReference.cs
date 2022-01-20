@@ -188,7 +188,7 @@ namespace System.Xml
             if (nCount > 0 && nCount < baseURI.Length)
                 buf = baseURI.Substring(0, nCount);
             else if (nCount == 0)
-                buf = buf + "\\";
+                buf = $"{buf}\\";
             return (buf + systemId.Replace('\\', '/'));
         }
 

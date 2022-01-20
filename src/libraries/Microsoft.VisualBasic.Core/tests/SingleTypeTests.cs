@@ -13,10 +13,17 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         [Theory]
         [MemberData(nameof(FromObject_TestData))]
         [MemberData(nameof(FromString_TestData))]
-        public void FromObject(object value, float expected)
+        public void FromObject(object value, float expected, System.Globalization.NumberFormatInfo numberFormat = null)
         {
-            Assert.Equal(expected, SingleType.FromObject(value));
-            Assert.Equal(expected, SingleType.FromObject(value, System.Globalization.NumberFormatInfo.InvariantInfo));
+            if (numberFormat is null)
+            {
+                Assert.Equal(expected, SingleType.FromObject(value));
+                Assert.Equal(expected, SingleType.FromObject(value, System.Globalization.NumberFormatInfo.InvariantInfo));
+            }
+            else
+            {
+                Assert.Equal(expected, SingleType.FromObject(value, numberFormat));
+            }
         }
 
         [Theory]
@@ -50,10 +57,17 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(FromString_TestData))]
-        public void FromString(string value, float expected)
+        public void FromString(string value, float expected, System.Globalization.NumberFormatInfo numberFormat = null)
         {
-            Assert.Equal(expected, SingleType.FromString(value));
-            Assert.Equal(expected, SingleType.FromString(value, System.Globalization.NumberFormatInfo.InvariantInfo));
+            if (numberFormat is null)
+            {
+                Assert.Equal(expected, SingleType.FromString(value));
+                Assert.Equal(expected, SingleType.FromString(value, System.Globalization.NumberFormatInfo.InvariantInfo));
+            }
+            else
+            {
+                Assert.Equal(expected, SingleType.FromString(value, numberFormat));
+            }
         }
 
         [Theory]
@@ -228,7 +242,8 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             yield return new object[] { " &o5", (float)5 };
             yield return new object[] { "&o0", (float)0 };
             yield return new object[] { "18446744073709551616", 18446744073709551616.0f };
-            yield return new object[] { double.NaN.ToString(), float.NaN };
+            yield return new object[] { double.NaN.ToString(), float.NaN, System.Globalization.NumberFormatInfo.CurrentInfo };
+            yield return new object[] { "NaN", float.NaN, System.Globalization.NumberFormatInfo.InvariantInfo };
         }
 
         public static IEnumerable<object[]> FromString_Other_TestData()

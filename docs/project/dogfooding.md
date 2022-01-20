@@ -161,11 +161,11 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 | Platform | Main |
 | --- |  :---: |
-| **Windows (x64)** | <br>[Installer][win-x64-installer-6.0.X] ([Checksum][win-x64-installer-checksum-6.0.X])<br>[zip][win-x64-zip-6.0.X] ([Checksum][win-x64-zip-checksum-6.0.X]) |
-| **Windows (x86)** | <br>[Installer][win-x86-installer-6.0.X] ([Checksum][win-x86-installer-checksum-6.0.X])<br>[zip][win-x86-zip-6.0.X] ([Checksum][win-x86-zip-checksum-6.0.X]) |
-| **Windows (arm64)** | <br>[Installer][win-arm64-installer-6.0.X] ([Checksum][win-arm64-installer-checksum-6.0.X])<br>[zip][win-arm64-zip-6.0.X] ([Checksum][win-arm64-zip-checksum-6.0.X]) |
-| **macOS (x64)** | <br>[Installer][osx-x64-installer-6.0.X] ([Checksum][osx-x64-installer-checksum-6.0.X])<br>[tar.gz][osx-x64-targz-6.0.X] ([Checksum][osx-x64-targz-checksum-6.0.X]) |
-| **macOS (arm64)** | <br>[Installer][osx-arm64-installer-6.0.X] ([Checksum][osx-arm64-installer-checksum-6.0.X])<br>[tar.gz][osx-arm64-targz-6.0.X] ([Checksum][osx-arm64-targz-checksum-6.0.X]) |
+| **Windows (x64)** | [SDK Installer][win-x64-sdkinstaller-6.0.X]<br>[Runtime Installer][win-x64-installer-6.0.X] ([Checksum][win-x64-installer-checksum-6.0.X])<br>[zip][win-x64-zip-6.0.X] ([Checksum][win-x64-zip-checksum-6.0.X]) |
+| **Windows (x86)** | [SDK Installer][win-x86-sdkinstaller-6.0.X]<br>[Runtime Installer][win-x86-installer-6.0.X] ([Checksum][win-x86-installer-checksum-6.0.X])<br>[zip][win-x86-zip-6.0.X] ([Checksum][win-x86-zip-checksum-6.0.X]) |
+| **Windows (arm64)** | [SDK Installer][win-arm64-sdkinstaller-6.0.X]<br>[Runtime Installer][win-arm64-installer-6.0.X] ([Checksum][win-arm64-installer-checksum-6.0.X])<br>[zip][win-arm64-zip-6.0.X] ([Checksum][win-arm64-zip-checksum-6.0.X]) |
+| **macOS (x64)** | [SDK Installer][osx-x64-sdkinstaller-6.0.X]<br>[Runtime Installer][osx-x64-installer-6.0.X] ([Checksum][osx-x64-installer-checksum-6.0.X])<br>[tar.gz][osx-x64-targz-6.0.X] ([Checksum][osx-x64-targz-checksum-6.0.X]) |
+| **macOS (arm64)** | [SDK Installer][osx-arm64-sdkinstaller-6.0.X]<br>[Runtime Installer][osx-arm64-installer-6.0.X] ([Checksum][osx-arm64-installer-checksum-6.0.X])<br>[tar.gz][osx-arm64-targz-6.0.X] ([Checksum][osx-arm64-targz-checksum-6.0.X]) |
 | **Linux (x64)** (for glibc based OS) | <br>[tar.gz][linux-x64-targz-6.0.X] ([Checksum][linux-x64-targz-checksum-6.0.X]) |
 | **Linux (armhf)** (for glibc based OS) | <br>[tar.gz][linux-arm-targz-6.0.X] ([Checksum][linux-arm-targz-checksum-6.0.X]) |
 | **Linux (arm64)** (for glibc based OS) | <br>[tar.gz][linux-arm64-targz-6.0.X] ([Checksum][linux-arm64-targz-checksum-6.0.X]) |
@@ -187,6 +187,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 [win-x64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_win-x64_Release_version_badge.svg?no-cache
 [win-x64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[win-x64-sdkinstaller-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x64.exe
 [win-x64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.exe
 [win-x64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.exe.sha512
 [win-x64-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x64.zip
@@ -196,6 +197,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 [win-x86-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_win-x86_Release_version_badge.svg?no-cache
 [win-x86-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[win-x86-sdkinstaller-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-x86.exe
 [win-x86-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.exe
 [win-x86-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.exe.sha512
 [win-x86-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-x86.zip
@@ -205,6 +207,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 [win-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_win-arm64_Release_version_badge.svg?no-cache
 [win-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[win-arm64-sdkinstaller-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-sdk-win-arm64.exe
 [win-arm64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.exe
 [win-arm64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.exe.sha512
 [win-arm64-zip-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-win-arm64.zip
@@ -214,6 +217,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 [osx-x64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_osx-x64_Release_version_badge.svg?no-cache
 [osx-x64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[osx-x64-sdkinstaller-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-sdk-osx-x64.pkg
 [osx-x64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.pkg
 [osx-x64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.pkg.sha512
 [osx-x64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-x64.tar.gz
@@ -223,6 +227,7 @@ $ bin\Debug\net6.0\win-x64\publish\App.exe
 
 [osx-arm64-badge-6.0.X]: https://aka.ms/dotnet/6.0/daily/sharedfx_osx-arm64_Release_version_badge.svg?no-cache
 [osx-arm64-version-6.0.X]: https://aka.ms/dotnet/6.0/daily/runtime-productVersion.txt
+[osx-arm64-sdkinstaller-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-sdk-osx-arm64.pkg
 [osx-arm64-installer-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.pkg
 [osx-arm64-installer-checksum-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.pkg.sha512
 [osx-arm64-targz-6.0.X]: https://aka.ms/dotnet/6.0/daily/dotnet-runtime-osx-arm64.tar.gz

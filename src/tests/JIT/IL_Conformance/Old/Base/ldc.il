@@ -3,7 +3,7 @@
 
 .assembly extern legacy library mscorlib {}
 
-.assembly ldc.exe{}
+.assembly ldc{}
 
 .class public ldc {
 

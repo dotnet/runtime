@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'switch'
+.assembly 'bug2'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -19,7 +19,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module switch.exe
+.assembly extern xunit.core {}
 // MVID: {663074E2-0B73-434A-85B1-7077AA61100B}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -34,6 +34,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       67 (0x43)
     .maxstack  1

@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
     internal class ReadyToRunObjectWriter
     {
         /// <summary>
-        /// Nodefactory for which ObjectWriter is instantiated for. 
+        /// Nodefactory for which ObjectWriter is instantiated for.
         /// </summary>
         private readonly NodeFactory _nodeFactory;
 
@@ -180,7 +180,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (generateSymbols)
                 {
-                    _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder);
+                    _symbolFileBuilder = new SymbolFileBuilder(_outputInfoBuilder, _nodeFactory.Target);
                 }
 
                 if (generateProfileFile)
@@ -234,6 +234,7 @@ namespace ILCompiler.DependencyAnalysis
                     peIdProvider);
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
+                PerfMapDebugDirectoryEntryNode perfMapDebugDirectoryEntryNode = null;
                 ISymbolDefinitionNode firstImportThunk = null;
                 ISymbolDefinitionNode lastImportThunk = null;
                 ObjectNode lastWrittenObjectNode = null;
@@ -259,6 +260,13 @@ namespace ILCompiler.DependencyAnalysis
                         // There should be only one NativeDebugDirectoryEntry.
                         Debug.Assert(nativeDebugDirectoryEntryNode == null);
                         nativeDebugDirectoryEntryNode = nddeNode;
+                    }
+
+                    if (node is PerfMapDebugDirectoryEntryNode pmdeNode)
+                    {
+                        // There should be only one PerfMapDebugDirectoryEntryNode.
+                        Debug.Assert(perfMapDebugDirectoryEntryNode is null);
+                        perfMapDebugDirectoryEntryNode = pmdeNode;
                     }
 
                     if (node is ImportThunk importThunkNode)
@@ -305,12 +313,20 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     r2rPeBuilder.AddSymbolForRange(_nodeFactory.DelayLoadMethodCallThunks, firstImportThunk, lastImportThunk);
                 }
-                
+
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {
                     Debug.Assert(_nodeFactory.Win32ResourcesNode.Size != 0);
                     r2rPeBuilder.SetWin32Resources(_nodeFactory.Win32ResourcesNode, _nodeFactory.Win32ResourcesNode.Size);
+                }
+
+                if (_outputInfoBuilder != null)
+                {
+                    foreach (string inputFile in _inputFiles)
+                    {
+                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
+                    }
                 }
 
                 using (var peStream = File.Create(_objectFilePath))
@@ -322,26 +338,36 @@ namespace ILCompiler.DependencyAnalysis
                         _mapFileBuilder.SetFileSize(peStream.Length);
                     }
 
-                    // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
-                    using (var md5Hash = MD5.Create())
+                    if (nativeDebugDirectoryEntryNode is not null)
                     {
-                        peStream.Seek(0, SeekOrigin.Begin);
-                        byte[] hash = md5Hash.ComputeHash(peStream);
-                        byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
+                        Debug.Assert(_generatePdbFile);
+                        // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
+                        using (var md5Hash = MD5.Create())
+                        {
+                            peStream.Seek(0, SeekOrigin.Begin);
+                            byte[] hash = md5Hash.ComputeHash(peStream);
+                            byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
 
-                        int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);
+                            int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);
+                            peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
+                            peStream.Write(rsdsEntry);
+                        }
+                    }
+
+                    if (perfMapDebugDirectoryEntryNode is not null)
+                    {
+                        Debug.Assert(_generatePerfMapFile && _outputInfoBuilder is not null && _outputInfoBuilder.EnumerateInputAssemblies().Any());
+                        byte[] perfmapSig = PerfMapWriter.PerfMapV1SignatureHelper(_outputInfoBuilder.EnumerateInputAssemblies(), _nodeFactory.Target);
+                        byte[] perfMapEntry = perfMapDebugDirectoryEntryNode.GeneratePerfMapEntryData(perfmapSig, _perfMapFormatVersion);
+
+                        int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(perfMapDebugDirectoryEntryNode);
                         peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
-                        peStream.Write(rsdsEntry);
+                        peStream.Write(perfMapEntry);
                     }
                 }
 
                 if (_outputInfoBuilder != null)
                 {
-                    foreach (string inputFile in _inputFiles)
-                    {
-                        _outputInfoBuilder.AddInputModule(_nodeFactory.TypeSystemContext.GetModuleFromPath(inputFile));
-                    }
-
                     r2rPeBuilder.AddSections(_outputInfoBuilder);
 
                     if (_generateMapFile)
@@ -374,7 +400,7 @@ namespace ILCompiler.DependencyAnalysis
                         {
                             path = Path.GetDirectoryName(_objectFilePath);
                         }
-                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath, _nodeFactory.Target.OperatingSystem, _nodeFactory.Target.Architecture);
+                        _symbolFileBuilder.SavePerfMap(path, _perfMapFormatVersion, _objectFilePath);
                     }
 
                     if (_profileFileBuilder != null)

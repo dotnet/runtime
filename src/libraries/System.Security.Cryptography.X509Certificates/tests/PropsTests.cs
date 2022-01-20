@@ -389,6 +389,20 @@ Wry5FNNo
             }
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void GetNameInfo_HandlesUtf8Encoding(bool issuer)
+        {
+            using (X509Certificate2 c = new X509Certificate2(TestData.CertificateWithUtf8))
+            {
+                // Russian word for "potato" in Cyrillic, kartoshka.
+                string expected = "\u043A\u0430\u0440\u0442\u043E\u0448\u043A\u0430";
+                string cn = c.GetNameInfo(X509NameType.SimpleName, issuer);
+                Assert.Equal(expected, cn);
+            }
+        }
+
         [Fact]
         public static void ComplexGetNameInfo_SimpleName_Cert()
         {

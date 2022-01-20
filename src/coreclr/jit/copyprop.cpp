@@ -213,7 +213,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         {
             continue;
         }
-        if (optCopyProp_LclVarScore(&lvaTable[lclNum], &lvaTable[newLclNum], true) <= 0)
+        if (optCopyProp_LclVarScore(lvaGetDesc(lclNum), lvaGetDesc(newLclNum), true) <= 0)
         {
             continue;
         }
@@ -232,7 +232,7 @@ void Compiler::optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, Lc
         // 'c' with 'x.'
         if (!lvaTable[newLclNum].lvVerTypeInfo.IsThisPtr())
         {
-            if (lvaTable[newLclNum].lvAddrExposed)
+            if (lvaTable[newLclNum].IsAddressExposed())
             {
                 continue;
             }

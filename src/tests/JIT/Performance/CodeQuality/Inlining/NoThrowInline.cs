@@ -1,15 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Xunit.Performance;
 using System;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Reflection;
-using System.Collections.Generic;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Inlining
 {
@@ -54,21 +47,6 @@ public static class NoThrowInline
         ThrowIfNull(d);
 
         return a.Length + b.Length + c.Length + d.Length;
-    }
-
-    [Benchmark(InnerIterationCount = Iterations)]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                {
-                    Bench("a", "bc", "def", "ghij");
-                }
-            }
-        }
     }
 
     public static int Main()

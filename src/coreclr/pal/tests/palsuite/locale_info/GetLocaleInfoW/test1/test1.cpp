@@ -5,7 +5,7 @@
 **
 ** Source: test1.c
 **
-** Purpose: Tests that GetLocaleInfoW gives the correction information for 
+** Purpose: Tests that GetLocaleInfoW gives the correction information for
 **          LOCALE_NEUTRAL.
 **
 **
@@ -14,15 +14,13 @@
 #include <palsuite.h>
 
 
-int Types[] = { LOCALE_SDECIMAL, LOCALE_STHOUSAND, LOCALE_ILZERO, 
+int Types[] = { LOCALE_SDECIMAL, LOCALE_STHOUSAND, LOCALE_ILZERO,
     LOCALE_SCURRENCY, LOCALE_SMONDECIMALSEP, LOCALE_SMONTHOUSANDSEP };
 
 char *TypeStrings[] = { "LOCALE_SDECIMAL", "LOCALE_STHOUSAND", "LOCALE_ILZERO",
     "LOCALE_SCURRENCY", "LOCALE_SMONDECIMALSEP", "LOCALE_SMONTHOUSANDSEP" };
 
-#define NUM_TYPES (sizeof(Types) / sizeof(Types[0]))
-
-typedef WCHAR InfoStrings[NUM_TYPES][4];
+typedef WCHAR InfoStrings[ARRAY_SIZE(Types)][4];
 
 typedef struct
 {
@@ -32,7 +30,7 @@ typedef struct
 
 LocalInfoType Locales[] =
 {
-    {LOCALE_NEUTRAL, 
+    {LOCALE_NEUTRAL,
         {{'.',0}, {',',0}, {'1',0}, {'$',0}, {'.',0}, {',',0}}},
 };
 
@@ -40,7 +38,7 @@ int NumLocales = sizeof(Locales) / sizeof(Locales[0]);
 
 
 PALTEST(locale_info_GetLocaleInfoW_test1_paltest_getlocaleinfow_test1, "locale_info/GetLocaleInfoW/test1/paltest_getlocaleinfow_test1")
-{    
+{
     WCHAR buffer[256] = { 0 };
     int ret;
     int i,j;
@@ -52,10 +50,10 @@ PALTEST(locale_info_GetLocaleInfoW_test1_paltest_getlocaleinfow_test1, "locale_i
 
     for (i=0; i<NumLocales; i++)
     {
-        for (j=0; j<NUM_TYPES; j++)
+        for (j=0; j < ARRAY_SIZE(Types); j++)
         {
             ret = GetLocaleInfoW(Locales[i].lcid, Types[j], buffer, 256);
-            
+
             if (ret == 0)
             {
                 Fail("GetLocaleInfoW returned an unexpected error!\n");
@@ -66,20 +64,20 @@ PALTEST(locale_info_GetLocaleInfoW_test1_paltest_getlocaleinfow_test1, "locale_i
             {
 
                 Fail("GetLocaleInfoW gave incorrect result for %s, "
-                    "locale %#x:\nExpected \"%S\", got \"%S\"!\n", TypeStrings[j], 
+                    "locale %#x:\nExpected \"%S\", got \"%S\"!\n", TypeStrings[j],
                     Locales[i].lcid, Locales[i].Strings[j], buffer);
-                    
+
             }
 
             if (ret != wcslen(Locales[i].Strings[j]) + 1)
             {
                 Fail("GetLocaleInfoW returned incorrect value for %s, "
-                    "locale %#x:\nExpected %d, got %d!\n", TypeStrings[j], 
+                    "locale %#x:\nExpected %d, got %d!\n", TypeStrings[j],
                     Locales[i].lcid, wcslen(Locales[i].Strings[j])+1, ret);
             }
-        }        
+        }
     }
-    
+
 
     PAL_Terminate();
 

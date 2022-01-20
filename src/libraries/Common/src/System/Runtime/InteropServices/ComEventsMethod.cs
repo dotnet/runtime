@@ -22,7 +22,7 @@ namespace System.Runtime.InteropServices
         /// handling of this scenario - we are pre-processing delegate's signature by looking for 'ref enums'
         /// and cache the types required for such coercion.
         /// </summary>
-        public class DelegateWrapper
+        public sealed class DelegateWrapper
         {
             private bool _once;
             private int _expectedParamsCount;

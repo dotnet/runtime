@@ -5,7 +5,7 @@
   -->
 
   <PropertyGroup>
-    <NetCoreAppCurrent>net6.0</NetCoreAppCurrent>
+    <NetCoreAppCurrent>net7.0</NetCoreAppCurrent>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
     <!--

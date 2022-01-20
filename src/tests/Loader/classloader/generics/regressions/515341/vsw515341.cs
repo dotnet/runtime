@@ -14,7 +14,7 @@ public class C
 	public void Meth2<T>() where T : GenI<C> { }
 }	 
 
-public class Test
+public class Test_vsw515341
 {
 	public static void RunTest()
 	{

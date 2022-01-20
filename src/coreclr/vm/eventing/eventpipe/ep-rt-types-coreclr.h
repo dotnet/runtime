@@ -2,7 +2,7 @@
 #ifndef __EVENTPIPE_RT_TYPES_CORECLR_H__
 #define __EVENTPIPE_RT_TYPES_CORECLR_H__
 
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "slist.h"

@@ -10,11 +10,8 @@ using System.Diagnostics.Tracing;
 
 namespace System.Reflection
 {
-    [StructLayout(LayoutKind.Sequential)]
     public partial class Assembly
     {
-        internal bool IsRuntimeImplemented() => this is RuntimeAssembly;
-
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly? LoadWithPartialName(string partialName)
         {

@@ -280,7 +280,7 @@ public class GenJaggedObjectArray : IGenSubJaggedObjectArray
 }
 
 
-public class Test
+public class Test_Class05
 {
     public static int counter = 0;
     public static bool result = true;

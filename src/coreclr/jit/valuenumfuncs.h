@@ -12,16 +12,17 @@ ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 
 ValueNumFuncDef(FieldSeq, 2, false, false, false)   // Sequence (VN of null == empty) of (VN's of) field handles.
 ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for FieldSeqStore::NotAField.
-ValueNumFuncDef(ZeroMap, 0, false, false, false)    // The "ZeroMap": indexing at any index yields "zero of the desired type".
 
-ValueNumFuncDef(PtrToLoc, 2, false, false, false)           // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
+ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
-ValueNumFuncDef(PtrToStatic, 1, false, false, false)        // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).  Args: 0: FieldSeq, first element
-                                                     // of which is the static var.
+ValueNumFuncDef(PtrToStatic, 2, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
+                                                            // Args: 0: (VN of) the field handle, 1: the field sequence, of which the first element is the static itself.
+
 ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
 // Wouldn't need this if I'd made memory a regular local variable...
 ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
+ValueNumFuncDef(ZeroObj, 1, false, false, false)    // Zero-initialized struct. Args: 0: VN of the class handle.
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 
 
@@ -69,12 +70,6 @@ ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // CastClass check, 
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
-ValueNumFuncDef(Lng2Dbl, 1, false, false, false)
-ValueNumFuncDef(ULng2Dbl, 1, false, false, false)
-ValueNumFuncDef(Dbl2Int, 1, false, false, false)
-ValueNumFuncDef(Dbl2UInt, 1, false, false, false)
-ValueNumFuncDef(Dbl2Lng, 1, false, false, false)
-ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 
@@ -109,7 +104,7 @@ ValueNumFuncDef(Tanh, 1, false, false, false)
 
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
 
-ValueNumFuncDef(ObjGetType, 1, false, false, false)
+ValueNumFuncDef(ObjGetType, 1, false, true, false)
 ValueNumFuncDef(GetgenericsGcstaticBase, 1, false, true, true)
 ValueNumFuncDef(GetgenericsNongcstaticBase, 1, false, true, true)
 ValueNumFuncDef(GetsharedGcstaticBase, 2, false, true, true)
@@ -134,11 +129,11 @@ ValueNumFuncDef(RuntimeHandleMethod, 2, false, true, false)
 ValueNumFuncDef(RuntimeHandleClass, 2, false, true, false)
 ValueNumFuncDef(ReadyToRunGenericHandle, 2, false, true, false)
 
-ValueNumFuncDef(GetStaticAddrContext, 1, false, true, false)
 ValueNumFuncDef(GetStaticAddrTLS, 1, false, true, false)
 
 ValueNumFuncDef(JitNew, 2, false, true, false)
 ValueNumFuncDef(JitNewArr, 3, false, true, false)
+ValueNumFuncDef(JitNewMdArr, 4, false, true, false)
 ValueNumFuncDef(JitReadyToRunNew, 2, false, true, false)
 ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, false, false)
@@ -174,13 +169,13 @@ ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD i
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64
 #include "hwintrinsiclistxarch.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_As
+#define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
 
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_As
+#define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
 
 #elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32

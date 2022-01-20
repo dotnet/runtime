@@ -117,15 +117,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND (CLR_CMAKE_HOST_ARCH_AMD64 OR CLR_CM
   add_compile_options(-Wa,--divide)
 endif()
 
-include_directories("${CLR_SRC_NATIVE_DIR}/common")
-
 set(SOURCES
   cruntime/file.cpp
   cruntime/filecrt.cpp
   cruntime/malloc.cpp
   cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/path.cpp
   cruntime/printf.cpp
   cruntime/printfcpp.cpp
   cruntime/silent_printf.cpp
@@ -133,7 +130,6 @@ set(SOURCES
   cruntime/stringtls.cpp
   cruntime/thread.cpp
   cruntime/wchar.cpp
-  cruntime/wchartls.cpp
   debug/debug.cpp
   exception/seh.cpp
   exception/signal.cpp
@@ -147,14 +143,12 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  loader/modulename.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
   locale/utf8.cpp
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
-  memory/local.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp

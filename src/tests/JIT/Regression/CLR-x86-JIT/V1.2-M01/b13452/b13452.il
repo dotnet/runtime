@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib{}
 .assembly b13452{}
-.module b13452.exe
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit test extends [mscorlib]System.Object
 {
@@ -15,6 +15,9 @@
   }
   .method public static int32 Main()
   {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.try
 	{

@@ -500,4 +500,4 @@ FAIL:
 	ret
 }
 }
-.assembly add_r8.exe{}
+.assembly add_r8{}

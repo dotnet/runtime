@@ -109,4 +109,4 @@ END:
 }
 }
 
-.assembly ckfinite_r8.exe{}
+.assembly ckfinite_r8{}

@@ -175,7 +175,12 @@ namespace System.IO.Enumeration
 
         private unsafe void FindNextEntry(byte* entryBufferPtr, int bufferLength)
         {
-            int result = Interop.Sys.ReadDirR(_directoryHandle, entryBufferPtr, bufferLength, out _entry);
+            int result;
+            fixed (Interop.Sys.DirectoryEntry* e = &_entry)
+            {
+                result = Interop.Sys.ReadDirR(_directoryHandle, entryBufferPtr, bufferLength, e);
+            }
+
             switch (result)
             {
                 case -1:

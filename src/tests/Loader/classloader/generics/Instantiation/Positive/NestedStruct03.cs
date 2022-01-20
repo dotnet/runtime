@@ -46,7 +46,7 @@ public struct Outer
 	}
 }
 
-public class Test
+public class Test_NestedStruct03
 {
 	public static int counter = 0;
 	public static bool result = true;

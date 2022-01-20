@@ -35,7 +35,6 @@ public:
     static FCDECL2(VOID, CorGetMinThreads, DWORD* workerThreads, DWORD* completionPortThreads);
     static FCDECL2(VOID, CorGetAvailableThreads, DWORD* workerThreads, DWORD* completionPortThreads);
     static FCDECL0(INT32, GetThreadCount);
-    static INT64 QCALLTYPE GetCompletedWorkItemCount();
     static FCDECL0(INT64, GetPendingUnmanagedWorkItemCount);
 
     static FCDECL0(VOID, NotifyRequestProgress);
@@ -55,24 +54,19 @@ public:
     static FCDECL1(void, CorQueueWaitCompletion, Object* completeWaitWorkItemObjectUNSAFE);
 #endif
 
-    static BOOL QCALLTYPE RequestWorkerThread();
-    static BOOL QCALLTYPE PerformGateActivities(INT32 cpuUtilization);
 
     static FCDECL1(FC_BOOL_RET, CorPostQueuedCompletionStatus, LPOVERLAPPED lpOverlapped);
     static FCDECL2(FC_BOOL_RET, CorUnregisterWait, LPVOID WaitHandle, Object * objectToNotify);
     static FCDECL1(void, CorWaitHandleCleanupNative, LPVOID WaitHandle);
     static FCDECL1(FC_BOOL_RET, CorBindIoCompletionCallback, HANDLE fileHandle);
-
-    static void QCALLTYPE ExecuteUnmanagedThreadPoolWorkItem(LPTHREAD_START_ROUTINE callback, LPVOID state);
 };
 
-class AppDomainTimerNative
-{
-public:
-    static HANDLE QCALLTYPE CreateAppDomainTimer(INT32 dueTime, INT32 timerId);
-    static BOOL QCALLTYPE ChangeAppDomainTimer(HANDLE hTimer, INT32 dueTime);
-    static BOOL QCALLTYPE DeleteAppDomainTimer(HANDLE hTimer);
-};
+extern "C" INT64 QCALLTYPE ThreadPool_GetCompletedWorkItemCount();
+extern "C" BOOL QCALLTYPE ThreadPool_RequestWorkerThread();
+extern "C" BOOL QCALLTYPE ThreadPool_PerformGateActivities(INT32 cpuUtilization);
+extern "C" HANDLE QCALLTYPE AppDomainTimer_Create(INT32 dueTime, INT32 timerId);
+extern "C" BOOL QCALLTYPE AppDomainTimer_Change(HANDLE hTimer, INT32 dueTime);
+extern "C" BOOL QCALLTYPE AppDomainTimer_Delete(HANDLE hTimer);
 
 VOID QueueUserWorkItemManagedCallback(PVOID pArg);
 void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,

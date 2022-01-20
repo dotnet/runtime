@@ -11,9 +11,10 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Converts the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonElement"/>.
         /// </summary>
-        /// <returns>A <see cref="JsonDocument"/> representation of the JSON value.</returns>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
+        /// <returns>A <see cref="JsonElement"/> representation of the JSON value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <exception cref="NotSupportedException">
@@ -29,9 +30,9 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Converts the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonElement"/>.
         /// </summary>
-        /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
+        /// <returns>A <see cref="JsonElement"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
@@ -54,9 +55,10 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Converts the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonElement"/>.
         /// </summary>
-        /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
+        /// <returns>A <see cref="JsonElement"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
         /// <exception cref="NotSupportedException">
@@ -77,9 +79,9 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Converts the provided value into a <see cref="JsonDocument"/>.
+        /// Converts the provided value into a <see cref="JsonElement"/>.
         /// </summary>
-        /// <returns>A <see cref="JsonDocument"/> representation of the value.</returns>
+        /// <returns>A <see cref="JsonElement"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="context">A metadata provider for serializable types.</param>

@@ -64,7 +64,7 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     if (mode == ConnectionMode::CONNECT)
         return new IpcStream::DiagnosticsIpc(-1, &serverAddress, ConnectionMode::CONNECT);
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
     mode_t prev_mask = umask(~(S_IRUSR | S_IWUSR)); // This will set the default permission bit to 600
 #endif // __APPLE__
 
@@ -73,14 +73,14 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
         umask(prev_mask);
 #endif // __APPLE__
         _ASSERTE(!"Failed to create diagnostics IPC socket.");
         return nullptr;
     }
 
-#ifndef __APPLE__
+#if !(defined(__APPLE__) || defined(__FreeBSD__))
     if (fchmod(serverSocket, S_IRUSR | S_IWUSR) == -1)
     {
         if (callback != nullptr)
@@ -100,14 +100,14 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
         const int fSuccessClose = ::close(serverSocket);
         _ASSERTE(fSuccessClose != -1);
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
         umask(prev_mask);
 #endif // __APPLE__
 
         return nullptr;
     }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__FreeBSD__)
     umask(prev_mask);
 #endif // __APPLE__
 

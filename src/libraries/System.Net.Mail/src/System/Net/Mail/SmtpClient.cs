@@ -415,21 +415,15 @@ namespace System.Net.Mail
 
         public void Send(string from, string recipients, string? subject, string? body)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-            //validation happends in MailMessage constructor
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            //validation happens in MailMessage constructor
             MailMessage mailMessage = new MailMessage(from, recipients, subject, body);
             Send(mailMessage);
         }
 
         public void Send(MailMessage message)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -508,7 +502,7 @@ namespace System.Net.Mail
                             throw new SmtpException(SR.SmtpPickupDirectoryDoesnotSupportSsl);
                         }
 
-                        allowUnicode = IsUnicodeSupported(); // Determend by the DeliveryFormat paramiter
+                        allowUnicode = IsUnicodeSupported(); // Determined by the DeliveryFormat parameter
                         ValidateUnicodeRequirement(message, recipients, allowUnicode);
                         writer = GetFileMailWriter(pickupDirectory);
                         break;
@@ -516,7 +510,7 @@ namespace System.Net.Mail
                     case SmtpDeliveryMethod.Network:
                     default:
                         GetConnection();
-                        // Detected durring GetConnection(), restrictable using the DeliveryFormat paramiter
+                        // Detected during GetConnection(), restrictable using the DeliveryFormat parameter
                         allowUnicode = IsUnicodeSupported();
                         ValidateUnicodeRequirement(message, recipients, allowUnicode);
                         writer = _transport.SendMail(message.Sender ?? message.From, recipients,
@@ -569,19 +563,13 @@ namespace System.Net.Mail
 
         public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
 
         public void SendAsync(MailMessage message, object? userToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
 
             try
@@ -722,10 +710,7 @@ namespace System.Net.Mail
 
         public void SendAsyncCancel()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (!InCall || _cancelled)
             {
@@ -937,7 +922,7 @@ namespace System.Net.Mail
             try
             {
                 _writer = _transport.EndSendMail(result);
-                // If some recipients failed but not others, send the e-mail anyways, but then return the
+                // If some recipients failed but not others, send the e-mail anyway, but then return the
                 // "Non-fatal" exception reporting the failures.  The sync code path does it this way.
                 // Fatal exceptions would have thrown above at transport.EndSendMail(...)
                 SendMailAsyncResult sendResult = (SendMailAsyncResult)result;
@@ -979,7 +964,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    // Detected durring Begin/EndGetConnection, restrictable using DeliveryFormat
+                    // Detected during Begin/EndGetConnection, restrictable using DeliveryFormat
                     bool allowUnicode = IsUnicodeSupported();
                     ValidateUnicodeRequirement(_message!, _recipients!, allowUnicode);
                     _transport.BeginSendMail(_message!.Sender ?? _message.From!, _recipients!,

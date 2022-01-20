@@ -5,7 +5,8 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
-    internal readonly struct Vector128DebugView<T> where T : struct
+    internal readonly struct Vector128DebugView<T>
+        where T : struct
     {
         private readonly Vector128<T> _value;
 
@@ -18,7 +19,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new byte[16];
+                var items = new byte[Vector128<byte>.Count];
                 Unsafe.WriteUnaligned(ref items[0], _value);
                 return items;
             }
@@ -28,7 +29,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new double[2];
+                var items = new double[Vector128<double>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<double, byte>(ref items[0]), _value);
                 return items;
             }
@@ -38,7 +39,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new short[8];
+                var items = new short[Vector128<short>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<short, byte>(ref items[0]), _value);
                 return items;
             }
@@ -48,7 +49,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new int[4];
+                var items = new int[Vector128<int>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<int, byte>(ref items[0]), _value);
                 return items;
             }
@@ -58,8 +59,28 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new long[2];
+                var items = new long[Vector128<long>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<long, byte>(ref items[0]), _value);
+                return items;
+            }
+        }
+
+        public nint[] NIntView
+        {
+            get
+            {
+                var items = new nint[Vector128<nint>.Count];
+                Unsafe.WriteUnaligned(ref Unsafe.As<nint, byte>(ref items[0]), _value);
+                return items;
+            }
+        }
+
+        public nuint[] NUIntView
+        {
+            get
+            {
+                var items = new nuint[Vector128<nuint>.Count];
+                Unsafe.WriteUnaligned(ref Unsafe.As<nuint, byte>(ref items[0]), _value);
                 return items;
             }
         }
@@ -68,7 +89,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new sbyte[16];
+                var items = new sbyte[Vector128<sbyte>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<sbyte, byte>(ref items[0]), _value);
                 return items;
             }
@@ -78,7 +99,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new float[4];
+                var items = new float[Vector128<float>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<float, byte>(ref items[0]), _value);
                 return items;
             }
@@ -88,7 +109,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new ushort[8];
+                var items = new ushort[Vector128<ushort>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref items[0]), _value);
                 return items;
             }
@@ -98,7 +119,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new uint[4];
+                var items = new uint[Vector128<uint>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<uint, byte>(ref items[0]), _value);
                 return items;
             }
@@ -108,7 +129,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new ulong[2];
+                var items = new ulong[Vector128<ulong>.Count];
                 Unsafe.WriteUnaligned(ref Unsafe.As<ulong, byte>(ref items[0]), _value);
                 return items;
             }

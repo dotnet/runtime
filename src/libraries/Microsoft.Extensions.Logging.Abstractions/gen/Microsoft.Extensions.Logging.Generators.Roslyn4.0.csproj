@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AnalyzerRoslynVersion>4.0</AnalyzerRoslynVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)</RoslynApiVersion>
+    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.Extensions.Logging.Generators.targets" />
+
+  <ItemGroup>
+    <Compile Remove="LoggerMessageGenerator.Roslyn3.11.cs" />
+  </ItemGroup>
+
+</Project>

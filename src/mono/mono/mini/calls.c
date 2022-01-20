@@ -233,7 +233,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 				t = mono_get_int_type ();
 			t = mono_type_get_underlying_type (t);
 
-			if (!t->byref && t->type == MONO_TYPE_R4) {
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
 				MonoInst *iargs [1];
 				MonoInst *conv;
 
@@ -451,7 +451,6 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 							MonoInst **args, MonoInst *this_ins, MonoInst *imt_arg, MonoInst *rgctx_arg)
 {
 	gboolean virtual_ = this_ins != NULL;
-	int context_used;
 	MonoCallInst *call;
 	int rgctx_reg = 0;
 	gboolean need_unbox_trampoline;
@@ -473,7 +472,7 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 		sig = ctor_sig;
 	}
 
-	context_used = mini_method_check_context_used (cfg, method);
+	mini_method_check_context_used (cfg, method);
 
 	if (cfg->llvm_only && virtual_ && (method->flags & METHOD_ATTRIBUTE_VIRTUAL))
 		return mini_emit_llvmonly_virtual_call (cfg, method, sig, 0, args);
@@ -703,7 +702,22 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		helper_sig_llvmonly_imt_trampoline = tmp;
 	}
 
-	if (!fsig->generic_param_count && !is_iface && !is_gsharedvt) {
+	if (!cfg->gsharedvt && (m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke")) {
+		/* Delegate invokes */
+		MONO_EMIT_NULL_CHECK (cfg, this_reg, FALSE);
+
+		/* Make a call to delegate->invoke_impl */
+		int invoke_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, invoke_reg, this_reg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl));
+
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, invoke_reg, 0);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, invoke_reg, TARGET_SIZEOF_VOID_P);
+		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+	}
+
+	if (!is_gsharedvt && !fsig->generic_param_count && !is_iface) {
 		/*
 		 * The simplest case, a normal virtual call.
 		 */
@@ -740,11 +754,10 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		/* Load the address + arg from the vtable slot */
 		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, slot_reg, 0);
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, slot_reg, TARGET_SIZEOF_VOID_P);
-
 		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
 	}
 
-	if (!fsig->generic_param_count && is_iface && !variant_iface && !is_gsharedvt && !special_array_interface) {
+	if (!is_gsharedvt && !fsig->generic_param_count && is_iface && !variant_iface && !special_array_interface) {
 		/*
 		 * A simple interface call
 		 *
@@ -779,11 +792,10 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		icall_args [1] = mini_emit_get_rgctx_method (cfg, context_used,
 												cmethod, MONO_RGCTX_INFO_METHOD);
 		ftndesc_ins = mini_emit_calli (cfg, helper_sig_llvmonly_imt_trampoline, icall_args, thunk_addr_ins, NULL, NULL);
-
 		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
-	if ((fsig->generic_param_count || variant_iface || special_array_interface) && !is_gsharedvt) {
+	if (!is_gsharedvt && (fsig->generic_param_count || variant_iface || special_array_interface)) {
 		/*
 		 * This is similar to the interface case, the vtable slot points to an imt thunk which is
 		 * dynamically extended as more instantiations are discovered.
@@ -850,6 +862,18 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
 	}
 
+	if (is_gsharedvt && !(is_iface || fsig->generic_param_count || variant_iface || special_array_interface)) {
+		MonoInst *ftndesc_ins;
+
+		/* Normal virtual call using a gsharedvt calling conv */
+		icall_args [0] = sp [0];
+		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
+
+		ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_vcall_gsharedvt_fast, icall_args);
+
+		return mini_emit_llvmonly_calli (cfg, fsig, sp, ftndesc_ins);
+	}
+
 	/*
 	 * Non-optimized cases
 	 */
@@ -888,7 +912,7 @@ sig_to_rgctx_sig (MonoMethodSignature *sig)
 	res->param_count = sig->param_count + 1;
 	for (i = 0; i < sig->param_count; ++i)
 		res->params [i] = sig->params [i];
-	res->params [sig->param_count] = m_class_get_this_arg (mono_defaults.int_class);
+	res->params [sig->param_count] = mono_class_get_byref_type (mono_defaults.int_class);
 	return res;
 }
 

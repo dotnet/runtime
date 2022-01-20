@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "SetConsoleTitleW")]
-        internal static extern bool SetConsoleTitle(string title);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "SetConsoleTitleW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool SetConsoleTitle(string title);
     }
 }

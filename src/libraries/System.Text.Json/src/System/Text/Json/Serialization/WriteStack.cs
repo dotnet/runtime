@@ -41,6 +41,12 @@ namespace System.Text.Json
         public CancellationToken CancellationToken;
 
         /// <summary>
+        /// In the case of async serialization, used by resumable converters to signal that
+        /// the current buffer contents should not be flushed to the underlying stream.
+        /// </summary>
+        public bool SuppressFlush;
+
+        /// <summary>
         /// Stores a pending task that a resumable converter depends on to continue work.
         /// It must be awaited by the root context before serialization is resumed.
         /// </summary>
@@ -341,7 +347,7 @@ namespace System.Text.Json
             static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
                 // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.MemberInfo?.Name;
+                string? propertyName = frame.DeclaredJsonPropertyInfo?.ClrName;
                 if (propertyName == null)
                 {
                     // Attempt to get the JSON property name from the property name specified in re-entry.

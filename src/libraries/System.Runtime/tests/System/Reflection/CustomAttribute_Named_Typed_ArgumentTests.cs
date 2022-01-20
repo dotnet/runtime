@@ -52,6 +52,14 @@ namespace System.Reflection.Tests
             Assert.True(false, "Expected to find MyAttr Attribute");
         }
 
+        [Fact]
+        public static void Test_CustomAttributeTypedArgument_ToString()
+        {
+            var argument = new CustomAttributeTypedArgument(new [] { new CustomAttributeTypedArgument(0) });
+
+            Assert.Equal("new CustomAttributeTypedArgument[1] { 0 }", argument.ToString());
+        }
+
         [MyAttr(MyKinds.First, Desc = "This is a description on a method")]
         private static void MyMethod() { }
     }

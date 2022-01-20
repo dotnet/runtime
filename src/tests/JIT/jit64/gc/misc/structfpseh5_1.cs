@@ -85,7 +85,7 @@ struct S
     }
 }
 
-class Test
+class Test_structfpseh5_1
 {
     public static unsafe void c(int a1, float a2, double a3, S s1, S s2, S s3, S s4, double a4)
     {

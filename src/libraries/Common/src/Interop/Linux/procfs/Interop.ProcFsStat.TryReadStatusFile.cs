@@ -12,7 +12,7 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         internal const string RootPath = "/proc/";
         private const string StatusFileName = "/status";

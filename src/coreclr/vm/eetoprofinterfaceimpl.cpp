@@ -102,8 +102,32 @@ enum ClrToProfEntrypointFlags
     kEE2PNoTrigger                      = 0x00000004,
 };
 
-#define ASSERT_EVAC_COUNTER_NONZERO()   \
-    _ASSERTE(m_pProfilerInfo->dwProfilerEvacuationCounter.Load() > 0)
+EvacuationCounterHolder::EvacuationCounterHolder(ProfilerInfo *pProfilerInfo) :
+    m_pProfilerInfo(pProfilerInfo),
+    m_pThread(GetThreadNULLOk())
+{
+    _ASSERTE(m_pProfilerInfo != NULL);
+    if (m_pThread == NULL)
+    {
+        return;
+    }
+
+    m_pThread->IncProfilerEvacuationCounter(m_pProfilerInfo->slot);
+}
+
+EvacuationCounterHolder::~EvacuationCounterHolder()
+{
+    if (m_pThread == NULL)
+    {
+        return;
+    }
+
+    m_pThread->DecProfilerEvacuationCounter(m_pProfilerInfo->slot);
+}
+
+#define ASSERT_EVAC_COUNTER_NONZERO()                                                       \
+    _ASSERTE((GetThreadNULLOk() == NULL) ||                                                 \
+             (GetThread()->GetProfilerEvacuationCounter(m_pProfilerInfo->slot) > 0))
 
 #define CHECK_PROFILER_STATUS(ee2pFlags)                                                \
     /* If one of these asserts fires, perhaps you forgot to use                     */  \
@@ -230,8 +254,8 @@ inline void SetProfilerCallbacksAllowedForThread(Thread * pThread, BOOL fValue)
 
 static HRESULT CoCreateProfiler(
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL,
+    _In_z_ LPCWSTR wszClsid,
+    _In_z_ LPCWSTR wszProfileDLL,
     ICorProfilerCallback2 ** ppCallback,
     HMODULE * phmodProfilerDLL)
 {
@@ -476,8 +500,8 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
 HRESULT EEToProfInterfaceImpl::Init(
     ProfToEEInterfaceImpl * pProfToEE,
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL,
+    _In_z_ LPCWSTR wszClsid,
+    _In_z_ LPCWSTR wszProfileDLL,
     BOOL fLoadedViaAttach,
     DWORD dwConcurrentGCWaitTimeoutInMs)
 {
@@ -620,8 +644,8 @@ void EEToProfInterfaceImpl::SetProfilerInfo(ProfilerInfo *pProfilerInfo)
 
 HRESULT EEToProfInterfaceImpl::CreateProfiler(
     const CLSID * pClsid,
-    __in_z LPCWSTR wszClsid,
-    __in_z LPCWSTR wszProfileDLL)
+    _In_z_ LPCWSTR wszClsid,
+    _In_z_ LPCWSTR wszProfileDLL)
 {
     CONTRACTL
     {
@@ -3010,7 +3034,7 @@ HRESULT EEToProfInterfaceImpl::ThreadAssignedToOSThread(ThreadID managedThreadId
 
 HRESULT EEToProfInterfaceImpl::ThreadNameChanged(ThreadID managedThreadId,
                                                  ULONG cchName,
-                                                 __in_ecount_opt(cchName) WCHAR name[])
+                                                 _In_reads_bytes_opt_(cchName) WCHAR name[])
 {
     CONTRACTL
     {
@@ -6031,7 +6055,7 @@ HRESULT EEToProfInterfaceImpl::EventPipeProviderCreated(EventPipeProvider *provi
 #endif // FEATURE_PERFTRACING
 }
 
-HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+HRESULT EEToProfInterfaceImpl::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
 {
     CONTRACTL
     {
@@ -6047,7 +6071,7 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
 
     LOG((LF_CORPROF,
         LL_INFO1000,
-        "**PROF: LoadAsNotficationOnly.\n"));
+        "**PROF: LoadAsNotificationOnly.\n"));
 
     if (m_pCallback11 == NULL)
     {
@@ -6055,7 +6079,7 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
         return S_OK;
     }
 
-    return m_pCallback11->LoadAsNotficationOnly(pbNotificationOnly);
+    return m_pCallback11->LoadAsNotificationOnly(pbNotificationOnly);
 }
 
 #endif // PROFILING_SUPPORTED

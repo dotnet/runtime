@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Net
 {
-    internal unsafe class SyncRequestContext : RequestContextBase
+    internal sealed unsafe class SyncRequestContext : RequestContextBase
     {
         internal SyncRequestContext(int size)
         {

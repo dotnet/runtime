@@ -142,7 +142,7 @@ public struct MyStructDouble8
     public double double8;
 }
 
-public class BringUpTest
+public class BringUpTest_StructReturn
 {
     const int Pass = 100;
     const int Fail = -1;

@@ -103,32 +103,6 @@ BOOL BaseAssemblySpec::IsCoreLib()
                ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
 }
 
-BOOL BaseAssemblySpec::IsAssemblySpecForCoreLib()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INSTANCE_CHECK;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(strlen(g_psBaseLibraryName) == CoreLibNameLen);
-    }
-    CONTRACTL_END;
-
-    BOOL fIsAssemblySpecForCoreLib = FALSE;
-
-    if (m_pAssemblyName)
-    {
-        size_t iNameLen = strlen(m_pAssemblyName);
-        fIsAssemblySpecForCoreLib = ( (iNameLen >= CoreLibNameLen) &&
-                 ( (!_stricmp(m_pAssemblyName, g_psBaseLibrary)) ||
-                 ( (!_strnicmp(m_pAssemblyName, g_psBaseLibraryName, CoreLibNameLen)) &&
-                   ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
-    }
-
-    return fIsAssemblySpecForCoreLib;
-}
-
 #define CORELIB_PUBLICKEY g_rbTheSilverlightPlatformKey
 
 

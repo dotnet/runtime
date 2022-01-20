@@ -7,7 +7,7 @@
 using System;
 
 
-public class Test
+public class Test_TestWithManyParams
 {
 	public static int i = 0;
 	

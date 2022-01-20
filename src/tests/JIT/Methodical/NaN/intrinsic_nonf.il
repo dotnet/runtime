@@ -15,7 +15,7 @@
 .assembly intrinsic_nonf
 {
 }
-.module NaN.exe
+.assembly extern xunit.core {}
 
 
 .file alignment 512
@@ -2493,6 +2493,9 @@
     .method private hidebysig static int32 
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals (class [mscorlib]System.Exception V_0,

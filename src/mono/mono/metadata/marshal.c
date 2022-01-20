@@ -1158,7 +1158,7 @@ mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *err
 guint
 mono_type_to_ldind (MonoType *type)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return CEE_LDIND_I;
 
 handle_enum:
@@ -1215,7 +1215,7 @@ handle_enum:
 guint
 mono_type_to_stind (MonoType *type)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MONO_TYPE_IS_REFERENCE (type) ? CEE_STIND_REF : CEE_STIND_I;
 
 handle_enum:
@@ -2198,6 +2198,29 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	return res;
 }
 
+WrapperSubtype
+mono_marshal_get_delegate_invoke_subtype (MonoMethod *method, MonoDelegate *del)
+{
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature_internal (method);
+
+	if (!del || !del->method)
+		return WRAPPER_SUBTYPE_NONE;
+
+	if (!del->target && mono_method_signature_internal (del->method)->hasthis) {
+		if (!(del->method->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (del->method->klass) && sig->param_count ==  mono_method_signature_internal (del->method)->param_count + 1)
+			return WRAPPER_SUBTYPE_NONE;
+		else
+			return WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
+	}
+
+	if (mono_method_signature_internal (del->method)->param_count == sig->param_count + 1 && (del->method->flags & METHOD_ATTRIBUTE_STATIC))
+		return WRAPPER_SUBTYPE_DELEGATE_INVOKE_BOUND;
+
+	return WRAPPER_SUBTYPE_NONE;
+}
+
 /**
  * mono_marshal_get_delegate_invoke:
  * The returned method invokes all methods in a multicast delegate.
@@ -2297,7 +2320,7 @@ mono_marshal_get_string_ctor_signature (MonoMethod *method)
 static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 			return t;
 
@@ -2306,7 +2329,7 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 			return t;
 
 		/* Can't share this with 'I' as that needs another indirection */
-		return m_class_get_this_arg (mono_defaults.int_class);
+		return mono_class_get_byref_type (mono_defaults.int_class);
 	}
 
 	if (MONO_TYPE_IS_REFERENCE (t))
@@ -3693,7 +3716,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 static gboolean
 type_is_blittable (MonoType *type)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return FALSE;
 	type = mono_type_get_underlying_type (type);
 	switch (type->type) {
@@ -4958,14 +4981,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_SetLastPInvokeError (guint32 er
 }
 
 guint32
-ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper (MonoQCallTypeHandle type_handle, MonoBoolean throwIfNotMarshalable, MonoError *error)
 {
-	if (MONO_HANDLE_IS_NULL (rtype)) {
-		mono_error_set_argument_null (error, "type", "");
-		return 0;
-	}
-
-	MonoType * const type = MONO_HANDLE_GETVAL (rtype, type);
+	MonoType * const type = type_handle.type;
 	MonoClass * const klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
 		return 0;
@@ -4983,12 +5001,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 
 	guint32 align;
 	return (guint32)mono_marshal_type_size (type, NULL, &align, FALSE, m_class_is_unicode (klass));
-}
-
-guint32
-ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper (MonoReflectionTypeHandle rtype, MonoBoolean throwIfNotMarshalable, MonoError *error)
-{
-	return ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (rtype, error);
 }
 
 void
@@ -5186,14 +5198,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	mono_struct_delete_old (klass, (char *)src);
 }
 
-MonoDelegateHandle
-ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error)
+void
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (MonoQCallTypeHandle type_handle, void *ftn, MonoObjectHandleOnStack res, MonoError *error)
 {
-	MonoClass *klass = mono_type_get_class_internal (MONO_HANDLE_GETVAL (type, type));
+	MonoClass *klass = mono_type_get_class_internal (type_handle.type);
 	if (!mono_class_init_checked (klass, error))
-		return MONO_HANDLE_CAST (MonoDelegate, NULL_HANDLE);
+		return;
 
-	return mono_ftnptr_to_delegate_impl (klass, ftn, error);
+	HANDLE_ON_STACK_SET (res, MONO_HANDLE_RAW (mono_ftnptr_to_delegate_impl (klass, ftn, error)));
 }
 
 gpointer
@@ -5203,9 +5215,9 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateIn
 }
 
 MonoBoolean
-ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoReflectionTypeHandle type_h, MonoError *error)
+ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle)
 {
-	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (type_h, type));
+	MonoClass *klass = mono_class_from_mono_type_internal (type_handle.type);
 
 	if (m_class_get_rank (klass)) {
 		MonoClass *eklass = m_class_get_element_class (klass);
@@ -5441,7 +5453,7 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	if (!align)
 		align = &tmp;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*align = TARGET_SIZEOF_VOID_P;
 		return TARGET_SIZEOF_VOID_P;
 	}
@@ -5934,7 +5946,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	/* setup exception param as byref+[out] */
 	csig->params [param_count - 1] = mono_metadata_type_dup (image, m_class_get_byval_arg (mono_defaults.exception_class));
-	csig->params [param_count - 1]->byref = 1;
+	csig->params [param_count - 1]->byref__ = 1;
 	csig->params [param_count - 1]->attrs = PARAM_ATTRIBUTE_OUT;
 
 	/* convert struct return to object */

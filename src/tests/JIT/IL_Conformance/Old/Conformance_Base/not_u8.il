@@ -60,4 +60,4 @@ FAIL:
 	ret
 }
 }
-.assembly not_u8.exe{}
+.assembly not_u8{}

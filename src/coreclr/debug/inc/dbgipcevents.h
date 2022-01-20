@@ -858,7 +858,7 @@ DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
 
-DEFINE_VMPTR(class PEFile,          PTR_PEFile,         VMPTR_PEFile);
+DEFINE_VMPTR(class PEAssembly,      PTR_PEAssembly,     VMPTR_PEAssembly);
 DEFINE_VMPTR(class MethodDesc,      PTR_MethodDesc,     VMPTR_MethodDesc);
 DEFINE_VMPTR(class FieldDesc,       PTR_FieldDesc,      VMPTR_FieldDesc);
 
@@ -990,7 +990,7 @@ extern const size_t nameCount;
 
 struct MSLAYOUT IPCENames // We use a class/struct so that the function can remain in a shared header file
 {
-    static DebuggerIPCEventType GetEventType(__in_z char * strEventType)
+    static DebuggerIPCEventType GetEventType(_In_z_ char * strEventType)
     {
         // pass in the string of event name and find the matching enum value
         // This is a linear search which is pretty slow. However, this is only used

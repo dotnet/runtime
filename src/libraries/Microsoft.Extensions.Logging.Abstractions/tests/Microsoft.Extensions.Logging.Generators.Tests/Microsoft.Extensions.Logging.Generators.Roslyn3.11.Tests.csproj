@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11)</RoslynApiVersion>
+    <IsHighAotMemoryUsageTest>true</IsHighAotMemoryUsageTest>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.Extensions.Logging.Generators.targets"/>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+</Project>

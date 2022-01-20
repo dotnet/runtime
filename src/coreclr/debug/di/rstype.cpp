@@ -2449,13 +2449,13 @@ HRESULT CordbType::GetFieldInfo(mdFieldDef fldToken, FieldData ** ppFieldData)
                                                  fldToken,
                                                  ppFieldData);
                 // fall through and return.
-                // Let possible CORDBG_E_ENC_HANGING_FIELD errors propogate
+                // Let possible CORDBG_E_ENC_HANGING_FIELD errors propagate
             }
         }
         else
         {
             hr = m_pClass->GetFieldInfo(fldToken, ppFieldData); // this is for non-generic types....
-            // Let possible CORDBG_E_ENC_HANGING_FIELD errors propogate
+            // Let possible CORDBG_E_ENC_HANGING_FIELD errors propagate
         }
     }
     EX_CATCH_HRESULT(hr);

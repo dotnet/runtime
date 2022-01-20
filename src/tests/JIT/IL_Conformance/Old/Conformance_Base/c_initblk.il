@@ -44,5 +44,5 @@ END:
 }
 
 
-.assembly c_initblk.exe {}
+.assembly c_initblk {}
 

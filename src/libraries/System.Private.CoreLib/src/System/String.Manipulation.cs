@@ -1087,7 +1087,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1102,7 +1102,7 @@ namespace System
                 while (true)
                 {
                     int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), Length - i, ref oldValue._firstChar, oldValue.Length);
-                    if (pos == -1)
+                    if (pos < 0)
                     {
                         break;
                     }
@@ -1683,12 +1683,13 @@ namespace System
                 {
                     ProbabilisticMap map = default;
                     uint* charMap = (uint*)&map;
-                    InitializeProbabilisticMap(charMap, separators);
+                    ProbabilisticMap.Initialize(charMap, separators);
 
                     for (int i = 0; i < Length; i++)
                     {
                         char c = this[i];
-                        if (IsCharBitSet(charMap, (byte)c) && IsCharBitSet(charMap, (byte)(c >> 8)) &&
+                        if (ProbabilisticMap.IsCharBitSet(charMap, (byte)c) &&
+                            ProbabilisticMap.IsCharBitSet(charMap, (byte)(c >> 8)) &&
                             separators.Contains(c))
                         {
                             sepListBuilder.Append(i);
@@ -1710,9 +1711,9 @@ namespace System
             // Constant that allows for the truncation of 16-bit (FFFF/0000) values within a register to 4-bit (F/0)
             Vector128<byte> shuffleConstant = Vector128.Create(0x00, 0x02, 0x04, 0x06, 0x08, 0x0A, 0x0C, 0x0E, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
-            Vector128<ushort> v1 = Vector128.Create(c);
-            Vector128<ushort> v2 = Vector128.Create(c2);
-            Vector128<ushort> v3 = Vector128.Create(c3);
+            Vector128<ushort> v1 = Vector128.Create((ushort)c);
+            Vector128<ushort> v2 = Vector128.Create((ushort)c2);
+            Vector128<ushort> v3 = Vector128.Create((ushort)c3);
 
             ref char c0 = ref MemoryMarshal.GetReference(this.AsSpan());
             int cond = Length & -Vector128<ushort>.Count;

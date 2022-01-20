@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Version
     {
-        [DllImport(Libraries.Version, CharSet = CharSet.Unicode, EntryPoint = "GetFileVersionInfoSizeExW")]
-        internal static extern uint GetFileVersionInfoSizeEx(uint dwFlags, string lpwstrFilename, out uint lpdwHandle);
+        [GeneratedDllImport(Libraries.Version, EntryPoint = "GetFileVersionInfoSizeExW", CharSet = CharSet.Unicode)]
+        internal static partial uint GetFileVersionInfoSizeEx(uint dwFlags, string lpwstrFilename, out uint lpdwHandle);
     }
 }

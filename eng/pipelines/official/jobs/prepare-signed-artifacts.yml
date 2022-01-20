@@ -9,8 +9,8 @@ jobs:
   displayName: Prepare Signed Artifacts
   dependsOn: ${{ parameters.dependsOn }}
   pool:
-    name: NetCoreInternal-Pool
-    queue: buildpool.windows.10.amd64.vs2019
+    name: NetCore1ESPool-Internal
+    demands: ImageOverride -equals build.windows.10.amd64.vs2019
   # Double the default timeout.
   timeoutInMinutes: 180
   workspace:

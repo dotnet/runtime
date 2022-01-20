@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <returns>The configuration value.</returns>
-        string this[string key] { get; set; }
+        string? this[string key] { get; set; }
 
         /// <summary>
         /// Gets a configuration sub-section with the specified key.

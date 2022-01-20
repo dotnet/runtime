@@ -13,20 +13,22 @@
 class AssemblyLoaderAllocator;
 class PEImage;
 
-class CustomAssemblyBinder final : public AssemblyLoadContext
+class CustomAssemblyBinder final : public AssemblyBinder
 {
 public:
 
-    //=========================================================================
-    // AssemblyBinder functions
-    //-------------------------------------------------------------------------
     HRESULT BindUsingPEImage(PEImage* pPEImage,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly) override;
 
     HRESULT BindUsingAssemblyName(BINDER_SPACE::AssemblyName* pAssemblyName,
-        BINDER_SPACE::Assembly** ppAssembly);
+        BINDER_SPACE::Assembly** ppAssembly) override;
 
-    AssemblyLoaderAllocator* GetLoaderAllocator();
+    AssemblyLoaderAllocator* GetLoaderAllocator() override;
+
+    bool IsDefault() override
+    {
+        return false;
+    }
 
 public:
     //=========================================================================
@@ -35,7 +37,7 @@ public:
 
     CustomAssemblyBinder();
 
-    static HRESULT SetupContext(DefaultAssemblyBinder *pTPABinder,
+    static HRESULT SetupContext(DefaultAssemblyBinder *pDefaultBinder,
                                 AssemblyLoaderAllocator* pLoaderAllocator,
                                 void* loaderAllocatorHandle,
                                 UINT_PTR ptrAssemblyLoadContext,
@@ -44,13 +46,10 @@ public:
     void PrepareForLoadContextRelease(INT_PTR ptrManagedStrongAssemblyLoadContext);
     void ReleaseLoadContext();
 
-    //=========================================================================
-    // Internal implementation details
-    //-------------------------------------------------------------------------
 private:
     HRESULT BindAssemblyByNameWorker(BINDER_SPACE::AssemblyName *pAssemblyName, BINDER_SPACE::Assembly **ppCoreCLRFoundAssembly);
 
-    DefaultAssemblyBinder *m_pTPABinder;
+    DefaultAssemblyBinder *m_pDefaultBinder;
 
     // A strong GC handle to the managed AssemblyLoadContext. This handle is set when the unload of the AssemblyLoadContext is initiated
     // to keep the managed AssemblyLoadContext alive until the unload is finished.

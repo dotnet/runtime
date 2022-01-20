@@ -54,6 +54,8 @@ static gboolean has_pending_lazy_loaded_assemblies;
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
+extern void mono_wasm_debugger_log (int level, char *message);
+
 void wasm_debugger_log (int level, const gchar *format, ...)
 {
 	va_list args;
@@ -62,19 +64,7 @@ void wasm_debugger_log (int level, const gchar *format, ...)
 	va_start (args, format);
 	mesg = g_strdup_vprintf (format, args);
 	va_end (args);
-
-	EM_ASM ({
-		var level = $0;
-		var message = Module.UTF8ToString ($1);
-		var namespace = "Debugger.Debug";
-
-		if (MONO["logging"] && MONO.logging["debugger"]) {
-			MONO.logging.debugger (level, message);
-			return;
-		}
-
-		console.debug("%s: %s", namespace, message);
-	}, level, mesg);
+	mono_wasm_debugger_log(level, mesg);
 	g_free (mesg);
 }
 
@@ -151,15 +141,13 @@ mono_wasm_enable_debugging_internal (int debug_level)
 }
 
 static void
-mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+mono_wasm_debugger_init (void)
 {
 	int debug_level = mono_wasm_get_debug_level();
 	mono_wasm_enable_debugging_internal (debug_level);
 
 	if (!debugger_enabled)
 		return;
-
-	mdbg_mono_defaults = mono_defaults;
 
 	DebuggerEngineCallbacks cbs = {
 		.tls_get_restore_state = tls_get_restore_state,
@@ -367,16 +355,22 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 	}
 }
 
+extern void mono_wasm_add_dbg_command_received(mono_bool res_ok, int id, void* buffer, int buffer_len);
+
 EMSCRIPTEN_KEEPALIVE gboolean 
 mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue)
 {
+	if (!debugger_enabled) {
+		EM_ASM ({
+			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		}, 0, id, 0, 0);
+		return TRUE;
+	}
 	MdbgProtBuffer bufWithParms;
 	buffer_init (&bufWithParms, 128);
 	m_dbgprot_buffer_add_data (&bufWithParms, data, size);
 	if (!write_value_to_buffer(&bufWithParms, valtype, newvalue)) {
-		EM_ASM ({
-			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
-		}, 0, id, 0, 0);
+		mono_wasm_add_dbg_command_received(0, id, 0, 0);
 		return TRUE;
 	}
 	mono_wasm_send_dbg_command(id, command_set, command, bufWithParms.buf, m_dbgprot_buffer_len(&bufWithParms));
@@ -387,6 +381,12 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 EMSCRIPTEN_KEEPALIVE gboolean 
 mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
+	if (!debugger_enabled) {
+		EM_ASM ({
+			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		}, 0, id, 0, 0);
+		return TRUE;
+	}
 	ss_calculate_framecount (NULL, NULL, TRUE, NULL, NULL);
 	MdbgProtBuffer buf;
 	buffer_init (&buf, 128);
@@ -402,10 +402,9 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	}
 	else
 		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
-	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
-	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
-	
+
+	mono_wasm_add_dbg_command_received(error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
+
 	buffer_free (&buf);
 	return TRUE;
 }
@@ -413,9 +412,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 static gboolean 
 receive_debugger_agent_message (void *data, int len)
 {
-	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
-	}, data, len);
+	mono_wasm_add_dbg_command_received(1, -1, data, len);
 	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message ();	
 	return FALSE;
@@ -434,7 +431,7 @@ mono_wasm_breakpoint_hit (void)
 }
 
 static void
-mono_wasm_debugger_init (MonoDefaults *mono_defaults)
+mono_wasm_debugger_init (void)
 {
 }
 

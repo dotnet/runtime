@@ -9,6 +9,7 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
 
+using Internal.TypeSystem;
 using Microsoft.DiaSymReader;
 
 namespace ILCompiler.Diagnostics
@@ -78,6 +79,7 @@ namespace ILCompiler.Diagnostics
 
         string _pdbPath;
         PDBExtraData _pdbExtraData;
+        readonly TargetDetails _target;
 
         string _pdbFilePath;
         string _tempSourceDllName;
@@ -116,7 +118,7 @@ namespace ILCompiler.Diagnostics
             [MarshalAs(UnmanagedType.LPWStr)] string pdbPath,
             [MarshalAs(UnmanagedType.Interface)] out ISymNGenWriter2 ngenPdbWriter);
 
-        public PdbWriter(string pdbPath, PDBExtraData pdbExtraData)
+        public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, TargetDetails target)
         {
             SymDocument unknownDocument = new SymDocument();
             unknownDocument.Name = "unknown";
@@ -126,6 +128,7 @@ namespace ILCompiler.Diagnostics
             _symDocuments.Add(unknownDocument);
             _pdbPath = pdbPath;
             _pdbExtraData = pdbExtraData;
+            _target = target;
         }
 
         public void WritePDBData(string dllPath, IEnumerable<MethodInfo> methods)
@@ -227,6 +230,7 @@ namespace ILCompiler.Diagnostics
 
             _ngenWriter.OpenModW(originalDllPath, Path.GetFileName(originalDllPath), out _pdbMod);
 
+            WriteCompilerVersion();
             WriteStringTable();
             WriteFileChecksums();
 
@@ -299,6 +303,24 @@ namespace ILCompiler.Diagnostics
             DEBUG_S_MERGED_ASSEMBLYINPUT,
 
             DEBUG_S_COFF_SYMBOL_RVA,
+        }
+
+        private enum SYM_ENUM : ushort
+        {
+            S_COMPILE3      =  0x113c,  // Replacement for S_COMPILE2
+        }
+
+        private enum CV_CPU_TYPE
+        {
+            CV_CFL_PENTIUMIII   = 0x07,
+            CV_CFL_X64          = 0xD0,
+            CV_CFL_ARMNT        = 0xF4,
+            CV_CFL_ARM64        = 0xF6,
+        }
+
+        private enum CV_CFL_LANG
+        {
+            CV_CFL_MSIL     = 0x0F,  // Unknown MSIL (LTCG of .NETMODULE)
         }
 
         private void WriteStringTable()
@@ -383,6 +405,112 @@ namespace ILCompiler.Diagnostics
             // Write string table into pdb file
             byte[] checksumTableArray = checksumStream.ToArray();
             _ngenWriter.ModAddSymbols(_pdbMod, checksumTableArray, checksumTableArray.Length);
+        }
+
+        private void WriteCompilerVersion()
+        {
+            // The only symbol we write into the DEBUG_S_SYMBOLS stream is the compiler version.
+            // Other symbols are represented as "public" symbols which are something else entirely.
+
+            MemoryStream symbolStream = new MemoryStream();
+            BinaryWriter writer = new BinaryWriter(symbolStream, Encoding.UTF8);
+            writer.Write(CV_SIGNATURE_C13);
+            writer.Write((uint)DEBUG_S_SUBSECTION_TYPE.DEBUG_S_SYMBOLS);
+            long startOfSymbolTablePosition = writer.BaseStream.Position;
+            writer.Write((uint)0); // Size of actual symbol table. To be filled in later
+            long startOfSymbolTableOffset = writer.BaseStream.Position;
+
+            {
+                long startOfCompile3RecordLength = writer.BaseStream.Position;
+                writer.Write((ushort)0); // Write record length. Fill in later
+                long startOfCompile3Record = writer.BaseStream.Position;
+                writer.Write((ushort)SYM_ENUM.S_COMPILE3);
+                byte iLanguage = (byte)CV_CFL_LANG.CV_CFL_MSIL;
+                writer.Write(iLanguage);
+                // Write rest of flags
+                writer.Write((byte)0); 
+                writer.Write((byte)0); 
+                writer.Write((byte)0); 
+
+                switch (_target.Architecture)
+                {
+                    case TargetArchitecture.ARM:
+                        writer.Write((ushort)CV_CPU_TYPE.CV_CFL_ARMNT);
+                        break;
+                    case TargetArchitecture.ARM64:
+                        writer.Write((ushort)CV_CPU_TYPE.CV_CFL_ARM64);
+                        break;
+                    case TargetArchitecture.X64:
+                        writer.Write((ushort)CV_CPU_TYPE.CV_CFL_X64);
+                        break;
+                    case TargetArchitecture.X86:
+                        writer.Write((ushort)CV_CPU_TYPE.CV_CFL_PENTIUMIII);
+                        break;
+                    default:
+                        throw new Exception("Unknown target architecture");
+                }
+
+                writer.Write((ushort)0); // Front end Major Version
+                writer.Write((ushort)0); // Front end Minor Version
+                writer.Write((ushort)0); // Front end Build Version
+                writer.Write((ushort)0); // Front end QFE Version
+
+                Version compilerVersion = null;
+                foreach (AssemblyFileVersionAttribute versionAttribute in typeof(PdbWriter).Assembly.GetCustomAttributes(typeof(AssemblyFileVersionAttribute), true))
+                {
+                    string versionString = versionAttribute.Version;
+                    compilerVersion = new Version(versionString);
+                }
+                if (compilerVersion == null)
+                {
+                    throw new Exception("No AssemblyFileVersionAttribute present");
+                }
+
+                writer.Write((ushort)compilerVersion.Major); // Front end Major Version
+                writer.Write((ushort)compilerVersion.Minor); // Front end Minor Version
+                writer.Write((ushort)compilerVersion.Build); // Front end Build Version
+                writer.Write((ushort)compilerVersion.Revision); // Front end QFE Version
+
+                // compiler version string
+                string informationalVersion = null;
+                foreach (AssemblyInformationalVersionAttribute versionAttribute in typeof(PdbWriter).Assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), true))
+                {
+                    informationalVersion = versionAttribute.InformationalVersion;
+                }
+
+                if (informationalVersion == null)
+                {
+                    throw new Exception("No AssemblyInformationalVersionAttribute present");
+                }
+
+                string CompilerVersionString = $"Crossgen2 - {informationalVersion}";
+                writer.Write(CompilerVersionString.AsSpan());
+                writer.Write((byte)0); // Null terminate all strings
+
+                // Must align to the next 4-byte boundary
+                while ((writer.BaseStream.Position % 4) != 0)
+                {
+                    writer.Write((byte)0);
+                }
+
+                // Update Compile3 record size
+                long currentPosition = writer.BaseStream.Position;
+                long compile3RecordSize = writer.BaseStream.Position - startOfCompile3Record;
+                writer.BaseStream.Position = startOfCompile3RecordLength;
+                writer.Write(checked((ushort)compile3RecordSize));
+                writer.Flush();
+                writer.BaseStream.Position = currentPosition;
+            }
+
+            // Update symbol table size
+            long symbolTableSize = writer.BaseStream.Position - startOfSymbolTableOffset;
+            writer.BaseStream.Position = startOfSymbolTablePosition;
+            writer.Write(checked((uint)symbolTableSize));
+            writer.Flush();
+
+            // Write symbol table into pdb file
+            byte[] symbolTableArray = symbolStream.ToArray();
+            _ngenWriter.ModAddSymbols(_pdbMod, symbolTableArray, symbolTableArray.Length);
         }
     }
 }

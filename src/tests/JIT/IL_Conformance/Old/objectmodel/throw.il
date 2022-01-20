@@ -3,7 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly throw.exe{}
+.assembly 'throw'{}
 
 .class public	_throw {
 

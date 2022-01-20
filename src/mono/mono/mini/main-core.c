@@ -115,6 +115,5 @@ int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domai
 	const char* entryPointAssemblyName, const char* entryPointTypeName, const char* entryPointMethodName,
 	void** delegate)
 {
-	g_error ("Not implemented");
-	return 0;
+	return monovm_create_delegate (entryPointAssemblyName, entryPointTypeName, entryPointMethodName, delegate);
 }

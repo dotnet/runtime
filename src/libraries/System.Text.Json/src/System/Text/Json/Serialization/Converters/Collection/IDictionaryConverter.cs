@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
             if (IsValueType)
             {
                 state.Current.ReturnValue = collection;
-            };
+            }
         }
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                if (typeInfo.CreateObject == null)
+                if (typeInfo.CreateObject is null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(TypeToConvert, ref reader, ref state);
                 }
@@ -115,17 +115,6 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override Type RuntimeType
-        {
-            get
-            {
-                if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
-                {
-                    return typeof(Dictionary<string, object>);
-                }
-
-                return TypeToConvert;
-            }
-        }
+        internal override Type RuntimeType => TypeToConvert.IsAbstract || TypeToConvert.IsInterface ? typeof(Dictionary<string, object>) : TypeToConvert;
     }
 }

@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeMemoryMappedFileHandle CreateFileMapping(
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial SafeMemoryMappedFileHandle CreateFileMapping(
             SafeFileHandle hFile,
             ref SECURITY_ATTRIBUTES lpFileMappingAttributes,
             int flProtect,
@@ -19,8 +19,8 @@ internal static partial class Interop
             int dwMaximumSizeLow,
             string? lpName);
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeMemoryMappedFileHandle CreateFileMapping(
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateFileMappingW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial SafeMemoryMappedFileHandle CreateFileMapping(
             IntPtr hFile,
             ref SECURITY_ATTRIBUTES lpFileMappingAttributes,
             int flProtect,

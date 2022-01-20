@@ -612,8 +612,6 @@ HRESULT CorHost2::CreateAppDomainWithManager(
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
-    pDomain->CreateBinderContext();
-
     {
         GCX_COOP();
 
@@ -674,7 +672,7 @@ HRESULT CorHost2::CreateAppDomainWithManager(
         SString sPlatformResourceRoots(pwzPlatformResourceRoots);
         SString sAppPaths(pwzAppPaths);
 
-        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
+        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
         _ASSERTE(pBinder != NULL);
         IfFailThrow(pBinder->SetupBindingPaths(
             sTrustedPlatformAssemblies,
