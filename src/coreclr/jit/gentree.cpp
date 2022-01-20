@@ -11728,41 +11728,53 @@ GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (node->GetHWIntrinsicId())
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         case NI_Vector128_Create:
-        {
-            if ((node->GetOperandCount() == 1) &&
-                (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
-            {
-                node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
-            }
-            break;
-        }
-#endif
-
 #if defined(TARGET_XARCH)
         case NI_Vector256_Create:
-        {
-            if ((node->GetOperandCount() == 1) &&
-                (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
-            {
-                node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
-            }
-            break;
-        }
-#endif
-
-#if defined(TARGET_ARM64)
+#elif defined(TARGET_ARMARCH)
         case NI_Vector64_Create:
+#endif
         {
-            if ((node->GetOperandCount() == 1) &&
-                (node->Op(1)->IsIntegralConst(0) || node->Op(1)->IsFloatPositiveZero()))
+            bool hwAllArgsAreConstZero = true;
+            for (GenTree** use : node->UseEdges())
             {
-                node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
+                if (!(*use)->IsIntegralConst(0) && !(*use)->IsFloatPositiveZero())
+                {
+                    hwAllArgsAreConstZero = false;
+                    break;
+                }
+            }
+
+            if (hwAllArgsAreConstZero)
+            {
+                switch (node->GetHWIntrinsicId())
+                {
+                    case NI_Vector128_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
+                        break;
+                    }
+#if defined(TARGET_XARCH)
+                    case NI_Vector256_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
+                        break;
+                    }
+#elif defined(TARGET_ARMARCH)
+                    case NI_Vector64_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
+                        break;
+                    }
+#endif
+                    default:
+                        assert(!"Unexpected HWIntrinsicId");
+                        break;
+                }
             }
             break;
         }
-#endif
+
         default:
             break;
     }

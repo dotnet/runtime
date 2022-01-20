@@ -14292,11 +14292,13 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 #ifdef FEATURE_HW_INTRINSICS
     if (multiOp->OperIsHWIntrinsic())
     {
+        GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
+
         // See if this is foldable
-        GenTree* optTree = gtFoldHWIntrinsic(multiOp->AsHWIntrinsic());
+        GenTree* optTree = gtFoldHWIntrinsic(hw);
 
         // If we optimized, morph the result
-        if (optTree != multiOp)
+        if (optTree != hw)
         {
             return fgMorphTree(optTree);
         }
