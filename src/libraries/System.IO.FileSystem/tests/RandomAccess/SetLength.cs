@@ -42,6 +42,9 @@ namespace System.IO.Tests
 
                 RandomAccess.SetLength(handle, FileSize / 2);
                 Assert.Equal(FileSize / 2, RandomAccess.GetLength(handle));
+
+                RandomAccess.SetLength(handle, 0);
+                Assert.Equal(0, RandomAccess.GetLength(handle));
             }
         }
 
