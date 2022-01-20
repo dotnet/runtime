@@ -1266,6 +1266,17 @@ bool ValueNumStore::VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet)
     }
 }
 
+//----------------------------------------------------------------------------------------
+// VNPExcIsSubset     - Given two exception sets, returns true when both the liberal and
+//                      conservative value numbers of vnpCandidateSet represent subsets of
+//                      the corresponding numbers in vnpFullSet (see VNExcIsSubset).
+//
+bool ValueNumStore::VNPExcIsSubset(ValueNumPair vnpFullSet, ValueNumPair vnpCandidateSet)
+{
+    return VNExcIsSubset(vnpFullSet.GetLiberal(), vnpCandidateSet.GetLiberal()) &&
+           VNExcIsSubset(vnpFullSet.GetConservative(), vnpCandidateSet.GetConservative());
+}
+
 //-------------------------------------------------------------------------------------
 // VNUnpackExc: - Given a ValueNum 'vnWx, return via write back parameters both
 //                the normal and the exception set components.
@@ -1421,6 +1432,64 @@ ValueNum ValueNumStore::VNMakeNormalUnique(ValueNum orig)
 ValueNumPair ValueNumStore::VNPMakeNormalUniquePair(ValueNumPair vnp)
 {
     return ValueNumPair(VNMakeNormalUnique(vnp.GetLiberal()), VNMakeNormalUnique(vnp.GetConservative()));
+}
+
+//------------------------------------------------------------------------------------
+// VNUniqueWithExc:
+//
+// Arguments:
+//    type       - The type for the unique Value Number
+//    vnExcSet   - The Value Number for the exception set.
+//
+// Return Value:
+//               - VN representing a "new, unique" value, with
+//                 the exceptions contained in "vnExcSet".
+//
+ValueNum ValueNumStore::VNUniqueWithExc(var_types type, ValueNum vnExcSet)
+{
+    ValueNum normVN = VNForExpr(m_pComp->compCurBB, type);
+
+    if (vnExcSet == VNForEmptyExcSet())
+    {
+        return normVN;
+    }
+
+#ifdef DEBUG
+    VNFuncApp excSetFunc;
+    assert(GetVNFunc(vnExcSet, &excSetFunc) && (excSetFunc.m_func == VNF_ExcSetCons));
+#endif // DEBUG
+
+    return VNWithExc(normVN, vnExcSet);
+}
+
+//------------------------------------------------------------------------------------
+// VNPUniqueWithExc:
+//
+// Arguments:
+//    type       - The type for the unique Value Numbers
+//    vnExcSet   - The Value Number Pair for the exception set.
+//
+// Return Value:
+//               - VN Pair representing a "new, unique" value (liberal and conservative
+//                 values will be equal), with the exceptions contained in "vnpExcSet".
+//
+// Notes:        - We use the same unique value number both for liberal and conservative
+//                 portions of the pair to save memory (it would not be useful to make
+//                 them different).
+//
+ValueNumPair ValueNumStore::VNPUniqueWithExc(var_types type, ValueNumPair vnpExcSet)
+{
+#ifdef DEBUG
+    VNFuncApp excSetFunc;
+    assert((GetVNFunc(vnpExcSet.GetLiberal(), &excSetFunc) && (excSetFunc.m_func == VNF_ExcSetCons)) ||
+           (vnpExcSet.GetLiberal() == VNForEmptyExcSet()));
+    assert((GetVNFunc(vnpExcSet.GetConservative(), &excSetFunc) && (excSetFunc.m_func == VNF_ExcSetCons)) ||
+           (vnpExcSet.GetConservative() == VNForEmptyExcSet()));
+#endif // DEBUG
+
+    ValueNum normVN = VNForExpr(m_pComp->compCurBB, type);
+
+    return VNPWithExc(ValueNumPair(normVN, normVN), vnpExcSet);
 }
 
 //--------------------------------------------------------------------------------
@@ -4338,21 +4407,21 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     return vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], elemTypeEqVN, newValAtArrType);
 }
 
-ValueNum Compiler::fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* pFuncApp, ValueNum addrXvn)
+ValueNum Compiler::fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* pFuncApp, ValueNumPair addrXvnp)
 {
     assert(vnStore->IsVNHandle(pFuncApp->m_args[0]));
     CORINFO_CLASS_HANDLE arrElemTypeEQ = CORINFO_CLASS_HANDLE(vnStore->ConstantValue<ssize_t>(pFuncApp->m_args[0]));
     ValueNum             arrVN         = pFuncApp->m_args[1];
     ValueNum             inxVN         = pFuncApp->m_args[2];
     FieldSeqNode*        fldSeq        = vnStore->FieldSeqVNToFieldSeq(pFuncApp->m_args[3]);
-    return fgValueNumberArrIndexVal(tree, arrElemTypeEQ, arrVN, inxVN, addrXvn, fldSeq);
+    return fgValueNumberArrIndexVal(tree, arrElemTypeEQ, arrVN, inxVN, addrXvnp, fldSeq);
 }
 
 ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
                                             CORINFO_CLASS_HANDLE elemTypeEq,
                                             ValueNum             arrVN,
                                             ValueNum             inxVN,
-                                            ValueNum             excVN,
+                                            ValueNumPair         addrXvnp,
                                             FieldSeqNode*        fldSeq)
 {
     assert(tree == nullptr || tree->OperIsIndir());
@@ -4372,7 +4441,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
         JITDUMP("    *** Not a proper arrray access encountered in fgValueNumberArrIndexVal\n");
 
         // a new unique value number
-        selectedElem = vnStore->VNForExpr(compCurBB, elemTyp);
+        selectedElem = vnStore->VNForExpr(compCurBB, indType);
 
 #ifdef DEBUG
         if (verbose)
@@ -4383,7 +4452,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
 
         if (tree != nullptr)
         {
-            tree->gtVNPair.SetBoth(selectedElem);
+            tree->gtVNPair = vnStore->VNPWithExc(ValueNumPair(selectedElem, selectedElem), addrXvnp);
         }
     }
     else
@@ -4422,7 +4491,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
             elemTyp      = vnStore->TypeOfVN(selectedElem);
         }
         selectedElem = vnStore->VNApplySelectorsTypeCheck(selectedElem, indType, elemStructSize);
-        selectedElem = vnStore->VNWithExc(selectedElem, excVN);
+        selectedElem = vnStore->VNWithExc(selectedElem, addrXvnp.GetLiberal());
 
 #ifdef DEBUG
         if (verbose && (selectedElem != wholeElem))
@@ -4434,10 +4503,7 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
         if (tree != nullptr)
         {
             tree->gtVNPair.SetLiberal(selectedElem);
-
-            // TODO-CQ: what to do here about exceptions?  We don't have the array and ind conservative
-            // values, so we don't have their exceptions.  Maybe we should.
-            tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+            tree->gtVNPair.SetConservative(vnStore->VNUniqueWithExc(tree->TypeGet(), addrXvnp.GetConservative()));
         }
     }
 
@@ -5952,8 +6018,7 @@ void ValueNumStore::vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc)
     GetVNFunc(excVN, &excSeq);
 
     printf("norm=");
-    printf(FMT_VN, normVN);
-    vnDump(comp, normVN);
+    comp->vnPrint(normVN, 1);
     printf(", exc=");
     printf(FMT_VN, excVN);
     vnDumpExcSeq(comp, &excSeq, true);
@@ -6793,6 +6858,7 @@ void Compiler::fgValueNumber()
 
 #ifdef DEBUG
     JitTestCheckVN();
+    fgDebugCheckExceptionSets();
 #endif // DEBUG
 
     fgVNPassesCompleted++;
@@ -6812,10 +6878,11 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
         assert(asg->OperIs(GT_ASG));
 
         GenTreeLclVar* newSsaDef = asg->AsOp()->gtGetOp1()->AsLclVar();
+        GenTreePhi*    phiNode   = asg->AsOp()->gtGetOp2()->AsPhi();
         ValueNumPair   phiVNP;
         ValueNumPair   sameVNP;
 
-        for (GenTreePhi::Use& use : asg->AsOp()->gtGetOp2()->AsPhi()->Uses())
+        for (GenTreePhi::Use& use : phiNode->Uses())
         {
             GenTreePhiArg* phiArg         = use.GetNode()->AsPhiArg();
             ValueNum       phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
@@ -6880,6 +6947,10 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
             printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
         }
 #endif // DEBUG
+
+        newSsaDef->gtVNPair = vnStore->VNPForVoid();
+        phiNode->gtVNPair   = newSsaDefVNP;
+        asg->gtVNPair       = vnStore->VNPForVoid();
     }
 
     // Now do the same for each MemoryKind.
@@ -7465,13 +7536,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
     }
 
     // We have to handle the case where the LHS is a comma.  In that case, we don't evaluate the comma,
-    // so we give it VNForVoid, and we're really interested in the effective value.
-    GenTree* lhsCommaIter = lhs;
-    while (lhsCommaIter->OperGet() == GT_COMMA)
-    {
-        lhsCommaIter->gtVNPair.SetBoth(vnStore->VNForVoid());
-        lhsCommaIter = lhsCommaIter->AsOp()->gtOp2;
-    }
+    // and we're really just interested in the effective value.
     lhs = lhs->gtEffectiveVal();
 
     // Now, record the new VN for an assignment (performing the indicated "state update").
@@ -7627,8 +7692,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
             // Indicates whether the argument of the IND is the address of a local.
             bool wasLocal = false;
-
-            lhs->gtVNPair = rhsVNPair;
 
             VNFuncApp funcApp;
             ValueNum  argVN = arg->gtVNPair.GetLiberal();
@@ -7854,10 +7917,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                         newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
                                                                     storeVal, indType);
                     }
-
-                    // It is not strictly necessary to set the lhs value number,
-                    // but the dumps read better with it set to the 'storeVal' that we just computed
-                    lhs->gtVNPair.SetBoth(storeVal);
 
                     // Update the GcHeap value.
                     recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
@@ -8156,7 +8215,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         else if (srcAddrFuncApp.m_func == VNF_PtrToArrElem)
                         {
                             ValueNum elemLib =
-                                fgValueNumberArrIndexVal(nullptr, &srcAddrFuncApp, vnStore->VNForEmptyExcSet());
+                                fgValueNumberArrIndexVal(nullptr, &srcAddrFuncApp, vnStore->VNPForEmptyExcSet());
                             rhsVNPair.SetLiberal(elemLib);
                             rhsVNPair.SetConservative(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                         }
@@ -8312,43 +8371,8 @@ bool Compiler::fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLcl
 void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
+    var_types  typ  = tree->TypeGet();
 
-#ifdef FEATURE_SIMD
-    if ((JitConfig.JitDisableSimdVN() & 1) == 1)
-    {
-        // This Jit Config forces the previous behavior of value numbering for SIMD nodes
-        if (oper == GT_SIMD)
-        {
-            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
-            return;
-        }
-    }
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
-    if ((JitConfig.JitDisableSimdVN() & 2) == 2)
-    {
-        // This Jit Config forces the previous behavior of value numbering for HW Intrinsic nodes
-        if (oper == GT_HWINTRINSIC)
-        {
-            tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
-
-            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-            assert(hwIntrinsicNode != nullptr);
-
-            // For safety/correctness we must mutate the global heap valuenumber
-            //  for any HW intrinsic that performs a memory store operation
-            if (hwIntrinsicNode->OperIsMemoryStore())
-            {
-                fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
-            }
-
-            return;
-        }
-    }
-#endif // FEATURE_HW_INTRINSICS
-
-    var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
         // If this is a struct assignment, with a constant rhs, (i,.e. an initBlk),
@@ -8505,19 +8529,18 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     // We have a Def (write) of the LclVar
 
-                    // TODO-Review: For the short term, we have a workaround for copyblk/initblk.  Those that use
-                    // addrSpillTemp will have a statement like "addrSpillTemp = addr(local)."  If we previously decided
-                    // that this block operation defines the local, we will have labeled the "local" node as a DEF
-                    // This flag propagates to the "local" on the RHS.  So we'll assume that this is correct,
-                    // and treat it as a def (to a new, unique VN).
-                    //
+                    // The below block ensures we give VNs to the fields of
+                    // "CanBeReplacedWithItsField" struct locals. To the numbering
+                    // of block assignments, those appear as untracked locals, but
+                    // we need to give the SSA defs they represent a VN.
                     if (lcl->GetSsaNum() != SsaConfig::RESERVED_SSA_NUM)
                     {
                         ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
                         varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair.SetBoth(uniqVN);
                     }
 
-                    lcl->gtVNPair = ValueNumPair(); // Avoid confusion -- we don't set the VN of a lcl being defined.
+                    // Location nodes get VNForVoid (no exceptions needed).
+                    lcl->gtVNPair = vnStore->VNPForVoid();
                 }
             }
             break;
@@ -8558,6 +8581,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         ValueNumPair lclVNPair = varDsc->GetPerSsaData(ssaNum)->m_vnPair;
                         tree->gtVNPair = vnStore->VNPairApplySelectors(lclVNPair, lclFld->GetFieldSeq(), indType);
                     }
+                }
+                else
+                {
+                    // A location node (LHS).
+                    lclFld->gtVNPair = vnStore->VNPForVoid();
                 }
             }
             break;
@@ -8642,6 +8670,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         clsVarVNPair         = vnStore->VNPairForCast(clsVarVNPair, castToType, castToType);
                     }
                     tree->gtVNPair = clsVarVNPair;
+                }
+                else
+                {
+                    // Location nodes get the "Void" VN.
+                    tree->gtVNPair = vnStore->VNPForVoid();
                 }
                 break;
 
@@ -8839,61 +8872,65 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // Try to parse it.
                 GenTree* arr = nullptr;
                 addr->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
-                if (arr == nullptr)
+                if (arr != nullptr)
                 {
-                    tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    return;
-                }
-                assert(fldSeq != FieldSeqStore::NotAField());
+                    assert(fldSeq != FieldSeqStore::NotAField());
 
-                // Otherwise...
-                // Need to form H[arrType][arr][ind][fldSeq]
-                // Get the array element type equivalence class rep.
-                CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
-                JITDUMP("    VNForHandle(arrElemType: %s) is " FMT_VN "\n",
-                        (arrInfo.m_elemType == TYP_STRUCT) ? eeGetClassName(arrInfo.m_elemStructType)
-                                                           : varTypeName(arrInfo.m_elemType),
-                        elemTypeEqVN)
+                    // Need to form H[arrType][arr][ind][fldSeq]
+                    // Get the array element type equivalence class rep.
+                    CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
+                    ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+                    JITDUMP("    VNForHandle(arrElemType: %s) is " FMT_VN "\n",
+                            (arrInfo.m_elemType == TYP_STRUCT) ? eeGetClassName(arrInfo.m_elemStructType)
+                                                               : varTypeName(arrInfo.m_elemType),
+                            elemTypeEqVN);
 
-                // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will be captured
-                // as part of the value of the composite "addr" operation...
-                ValueNum arrVN = vnStore->VNLiberalNormalValue(arr->gtVNPair);
-                inxVN          = vnStore->VNNormalValue(inxVN);
+                    // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will
+                    // be captured as part of the value of the composite "addr" operation...
+                    ValueNum arrVN = vnStore->VNLiberalNormalValue(arr->gtVNPair);
+                    inxVN          = vnStore->VNNormalValue(inxVN);
 
-                // Additionally, relabel the address with a PtrToArrElem value number.
-                ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
-                ValueNum elemAddr =
-                    vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN);
+                    // Additionally, relabel the address with a PtrToArrElem value number.
+                    ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
+                    ValueNum elemAddr =
+                        vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN);
 
-                // The aggregate "addr" VN should have had all the exceptions bubble up...
-                elemAddr = vnStore->VNWithExc(elemAddr, addrXvnp.GetLiberal());
-                addr->gtVNPair.SetBoth(elemAddr);
+                    // The aggregate "addr" VN should have had all the exceptions bubble up...
+                    addr->gtVNPair = vnStore->VNPWithExc(ValueNumPair(elemAddr, elemAddr), addrXvnp);
 #ifdef DEBUG
-                if (verbose)
-                {
-                    printf("  Relabeled IND_ARR_INDEX address node ");
-                    Compiler::printTreeID(addr);
-                    printf(" with l:" FMT_VN ": ", elemAddr);
-                    vnStore->vnDump(this, elemAddr);
-                    printf("\n");
-                    if (vnStore->VNNormalValue(elemAddr) != elemAddr)
+                    ValueNum elemAddrWithExc = addr->gtVNPair.GetLiberal();
+                    if (verbose)
                     {
-                        printf("      [" FMT_VN " is: ", vnStore->VNNormalValue(elemAddr));
-                        vnStore->vnDump(this, vnStore->VNNormalValue(elemAddr));
-                        printf("]\n");
+                        printf("  Relabeled IND_ARR_INDEX address node ");
+                        Compiler::printTreeID(addr);
+                        printf(" with l:" FMT_VN ": ", elemAddrWithExc);
+                        vnStore->vnDump(this, elemAddrWithExc);
+                        printf("\n");
+                        if (elemAddrWithExc != elemAddr)
+                        {
+                            printf("      [" FMT_VN " is: ", elemAddr);
+                            vnStore->vnDump(this, elemAddr);
+                            printf("]\n");
+                        }
                     }
-                }
 #endif // DEBUG
 
-                // We now need to retrieve the value number for the array element value
-                // and give this value number to the GT_IND node 'tree'
-                // We do this whenever we have an rvalue, but we don't do it for a
-                // normal LHS assignment into an array element.
-                //
-                if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
+                    // We now need to retrieve the value number for the array element value
+                    // and give this value number to the GT_IND node 'tree'
+                    // We do this whenever we have an rvalue, but we don't do it for a
+                    // normal LHS assignment into an array element.
+                    //
+                    if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
+                    {
+                        fgValueNumberArrIndexVal(tree, elemTypeEq, arrVN, inxVN, addrXvnp, fldSeq);
+                    }
+                }
+                else // An unparseable array expression.
                 {
-                    fgValueNumberArrIndexVal(tree, elemTypeEq, arrVN, inxVN, addrXvnp.GetLiberal(), fldSeq);
+                    if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
+                    {
+                        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), addrXvnp);
+                    }
                 }
             }
             // In general we skip GT_IND nodes on that are the LHS of an assignment.  (We labeled these earlier.)
@@ -8952,7 +8989,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToArrElem))
                 {
-                    fgValueNumberArrIndexVal(tree, &funcApp, addrXvnp.GetLiberal());
+                    fgValueNumberArrIndexVal(tree, &funcApp, addrXvnp);
                 }
                 else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq))
                 {
@@ -9005,6 +9042,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
+            }
+
+            // To be able to propagate exception sets, we give location nodes the "Void" VN.
+            if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+            {
+                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), addrXvnp);
             }
         }
         else if (tree->OperGet() == GT_CAST)
@@ -9102,8 +9145,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     if (newVN != ValueNumStore::NoVN)
                     {
                         // We don't care about differences between liberal and conservative for pointer values.
-                        newVN = vnStore->VNWithExc(newVN, excSetPair.GetLiberal());
-                        tree->gtVNPair.SetBoth(newVN);
+                        tree->gtVNPair = vnStore->VNPWithExc(ValueNumPair(newVN, newVN), excSetPair);
                     }
                     else
                     {
@@ -9122,28 +9164,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     case GT_COMMA:
                     {
-                        ValueNumPair op1vnp;
-                        ValueNumPair op1Xvnp;
-                        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
-                        ValueNumPair op2vnp;
-                        ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
-                        GenTree*     op2     = tree->gtGetOp2();
-
-                        if (op2->OperIsIndir() && ((op2->gtFlags & GTF_IND_ASG_LHS) != 0))
-                        {
-                            // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
-                            op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
-                        }
-                        else if ((op2->OperGet() == GT_CLS_VAR) && (op2->gtFlags & GTF_CLS_VAR_ASG_LHS))
-                        {
-                            // If op2 represents the lhs of an assignment then we give a VNForVoid for the lhs
-                            op2vnp = ValueNumPair(ValueNumStore::VNForVoid(), ValueNumStore::VNForVoid());
-                        }
-                        else
-                        {
-                            vnStore->VNPUnpackExc(op2->gtVNPair, &op2vnp, &op2Xvnp);
-                        }
-                        tree->gtVNPair = vnStore->VNPWithExc(op2vnp, vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp));
+                        ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair);
+                        tree->gtVNPair       = vnStore->VNPWithExc(tree->AsOp()->gtOp2->gtVNPair, op1Xvnp);
                     }
                     break;
 
@@ -9171,18 +9193,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         {
                             vnStore->SetVNIsCheckedBound(lengthVN);
                         }
-                    }
-                    break;
-
-                    case GT_NULLCHECK:
-                    {
-                        // An Explicit null check, produces no value
-                        // But we do persist any execeptions produced by op1
-                        //
-                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
-                                                             vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair));
-                        // The exception set with VNF_NullPtrExc will be added below
-                        // by fgValueNumberAddExceptionSet
                     }
                     break;
 
@@ -9220,20 +9230,41 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         break;
                     }
 
+                    // These unary nodes do not produce values. Note that for NULLCHECK the
+                    // additional exception will be added below by "fgValueNumberAddExceptionSet".
                     case GT_JTRUE:
-                        // These nodes never need to have a ValueNumber
-                        tree->gtVNPair.SetBoth(ValueNumStore::NoVN);
+                    case GT_SWITCH:
+                    case GT_RETURN:
+                    case GT_RETFILT:
+                    case GT_NULLCHECK:
+                        if (tree->gtGetOp1() != nullptr)
+                        {
+                            tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
+                                                                 vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+                        }
+                        else
+                        {
+                            tree->gtVNPair = vnStore->VNPForVoid();
+                        }
                         break;
 
+                    // BOX and CKFINITE are passthrough nodes (like NOP). We'll add the exception for the latter later.
                     case GT_BOX:
-                        // BOX doesn't do anything at this point, the actual object allocation
-                        // and initialization happens separately (and not numbering BOX correctly
-                        // prevents seeing allocation related assertions through it)
+                    case GT_CKFINITE:
                         tree->gtVNPair = tree->gtGetOp1()->gtVNPair;
                         break;
 
+                    // These unary nodes will receive a unique VN.
+                    // TODO-CQ: model INIT_VAL properly.
+                    case GT_LCLHEAP:
+                    case GT_INIT_VAL:
+                        tree->gtVNPair =
+                            vnStore->VNPUniqueWithExc(tree->TypeGet(),
+                                                      vnStore->VNPExceptionSet(tree->gtGetOp1()->gtVNPair));
+                        break;
+
                     default:
-                        // The default action is to give the node a new, unique VN.
+                        assert(!"Unhandled node in fgValueNumberTree");
                         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                         break;
                 }
@@ -9300,8 +9331,49 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
             }
 
-            default:
+            // ARR_ELEM is a bounds-checked address. TODO-CQ: model it precisely.
+            case GT_ARR_ELEM:
+            {
+                GenTreeArrElem* arrElem = tree->AsArrElem();
+
+                ValueNumPair vnpExcSet = vnStore->VNPExceptionSet(arrElem->gtArrObj->gtVNPair);
+                for (size_t i = 0; i < arrElem->gtArrRank; i++)
+                {
+                    vnpExcSet = vnStore->VNPUnionExcSet(arrElem->gtArrInds[i]->gtVNPair, vnpExcSet);
+                }
+
+                arrElem->gtVNPair = vnStore->VNPUniqueWithExc(arrElem->TypeGet(), vnpExcSet);
+
+                // TODO: model the IndexOutOfRangeException for this node.
+                fgValueNumberAddExceptionSetForIndirection(arrElem, arrElem->gtArrObj);
+            }
+            break;
+
+            // DYN_BLK is always an L-value.
+            case GT_DYN_BLK:
+                assert(!tree->CanCSE());
+                tree->gtVNPair = vnStore->VNPForVoid();
+                tree->gtVNPair =
+                    vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(tree->AsDynBlk()->Addr()->gtVNPair));
+                tree->gtVNPair =
+                    vnStore->VNPWithExc(tree->gtVNPair,
+                                        vnStore->VNPExceptionSet(tree->AsDynBlk()->gtDynamicSize->gtVNPair));
+                break;
+
+            // FIELD_LIST is an R-value that we currently don't model.
+            case GT_FIELD_LIST:
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
+                {
+                    tree->gtVNPair =
+                        vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(use.GetNode()->gtVNPair));
+                }
+                break;
+
+            default:
+                assert(!"Unhandled special node in fgValueNumberTree");
+                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                break;
         }
     }
 #ifdef DEBUG
@@ -9375,18 +9447,24 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
+    if ((tree->GetOperandCount() > 2) || ((JitConfig.JitDisableSimdVN() & 1) == 1))
+    {
+        // We have a SIMD node with 3 or more args. To retain the
+        // previous behavior, we will generate a unique VN for this case.
+        excSetPair = ValueNumStore::VNPForEmptyExcSet();
+        for (GenTree* operand : tree->Operands())
+        {
+            excSetPair = vnStore->VNPUnionExcSet(operand->gtVNPair, excSetPair);
+        }
+        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), excSetPair);
+        return;
+    }
+
     // There are some SIMD operations that have zero args, i.e.  NI_Vector128_Zero
     if (tree->GetOperandCount() == 0)
     {
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
-    }
-    else if (tree->GetOperandCount() > 2)
-    {
-        // We have a SIMD node with 3 or more args. To retain the
-        // previous behavior, we will generate a unique VN for this case.
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-        return;
     }
     else // SIMD unary or binary operator.
     {
@@ -9512,12 +9590,17 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
 
-    if (tree->GetOperandCount() > 2)
+    if ((tree->GetOperandCount() > 2) || ((JitConfig.JitDisableSimdVN() & 2) == 2))
     {
         // TODO-CQ: allow intrinsics with > 2 operands to be properly VN'ed, it will
         // allow use to process things like Vector128.Create(1,2,3,4) etc.
-        // Generate unique VN for now to retaing previois behavior.
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+        // Generate unique VN for now to retaing previous behavior.
+        ValueNumPair vnpExcSet = vnStore->VNPForEmptyExcSet();
+        for (GenTree* operand : tree->Operands())
+        {
+            vnpExcSet = vnStore->VNPUnionExcSet(operand->gtVNPair, vnpExcSet);
+        }
+        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), vnpExcSet);
         return;
     }
 
@@ -9529,15 +9612,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     //
     if (isMemoryLoad)
     {
-        ValueNumPair op1vnp;
-        ValueNumPair op1Xvnp;
-        vnStore->VNPUnpackExc(tree->Op(1)->gtVNPair, &op1vnp, &op1Xvnp);
+        ValueNumPair op1vnp = vnStore->VNPNormalPair(tree->Op(1)->gtVNPair);
 
         // The addrVN incorporates both op1's ValueNumber and the func operation
         // The func is used because operations such as LoadLow and LoadHigh perform
         // different operations, thus need to compute different ValueNumbers
         // We don't need to encode the result type as it will be encoded by the opcode in 'func'
-        //
+        // TODO-Bug: some HWI loads have more than one operand, we need to encode the rest.
         ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, func, op1vnp.GetLiberal());
 
         // The address could point anywhere, so it is an ByrefExposed load.
@@ -9545,7 +9626,11 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
         tree->gtVNPair.SetLiberal(loadVN);
         tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, op1Xvnp);
+
+        for (GenTree* operand : tree->Operands())
+        {
+            tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(operand->gtVNPair));
+        }
         fgValueNumberAddExceptionSetForIndirection(tree, tree->Op(1));
         return;
     }
@@ -9932,14 +10017,12 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 {
     // First: do value numbering of any argument placeholder nodes in the argument list
     // (by transferring from the VN of the late arg that they are standing in for...)
-    unsigned i = 0;
-    for (GenTreeCall::Use& use : call->Args())
-    {
-        GenTree* arg = use.GetNode();
+
+    auto updateArgVN = [=](GenTree* arg, unsigned argIndex) {
         if (arg->OperGet() == GT_ARGPLACE)
         {
             // Find the corresponding late arg.
-            GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
+            GenTree* lateArg = call->fgArgInfo->GetArgNode(argIndex);
             assert(lateArg->gtVNPair.BothDefined());
             arg->gtVNPair = lateArg->gtVNPair;
 #ifdef DEBUG
@@ -9953,7 +10036,19 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
             }
 #endif
         }
-        i++;
+    };
+
+    unsigned argIndex = 0;
+    if (call->gtCallThisArg != nullptr)
+    {
+        updateArgVN(call->gtCallThisArg->GetNode(), argIndex);
+        argIndex++;
+    }
+
+    for (GenTreeCall::Use& use : call->Args())
+    {
+        updateArgVN(use.GetNode(), argIndex);
+        argIndex++;
     }
 
     if (call->gtCallType == CT_HELPER)
@@ -10497,27 +10592,16 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     // Create baseVNP, from the values we just computed,
     baseVNP = ValueNumPair(baseLVN, baseCVN);
 
-    // Unpack, Norm,Exc for the tree's op1 VN
-    ValueNumPair vnpBaseNorm;
-    ValueNumPair vnpBaseExc;
-    vnStore->VNPUnpackExc(baseVNP, &vnpBaseNorm, &vnpBaseExc);
+    // The exceptions in "baseVNP" should have been added to the "tree"'s set already.
+    assert(vnStore->VNPExcIsSubset(vnStore->VNPExceptionSet(tree->gtVNPair), vnStore->VNPExceptionSet(baseVNP)));
 
-    // The Norm VN for op1 is used to create the NullPtrExc
+    // The normal VN for base address is used to create the NullPtrExc
+    ValueNumPair vnpBaseNorm = vnStore->VNPNormalPair(baseVNP);
+
     ValueNumPair excChkSet = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm));
 
-    // Combine the excChkSet with exception set of op1
-    ValueNumPair excSetBoth = vnStore->VNPExcSetUnion(excChkSet, vnpBaseExc);
-
-    // Retrieve the Normal VN for tree, note that it may be NoVN, so we handle that case
-    ValueNumPair vnpNorm = vnStore->VNPNormalPair(tree->gtVNPair);
-
-    // For as GT_IND on the lhs of an assignment we will get a NoVN value
-    if (vnpNorm.GetLiberal() == ValueNumStore::NoVN)
-    {
-        // Use the special Void VN value instead.
-        vnpNorm = vnStore->VNPForVoid();
-    }
-    tree->gtVNPair = vnStore->VNPWithExc(vnpNorm, excSetBoth);
+    // Add the NullPtrExc to "tree"'s value numbers.
+    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excChkSet);
 }
 
 //--------------------------------------------------------------------------------
@@ -10898,14 +10982,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 // ToDo: model the exceptions for Intrinsics
                 break;
 
-            case GT_IND: // Implicit null check.
-                if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
-                {
-                    // Don't add exception set on LHS of assignment
-                    break;
-                }
-                FALLTHROUGH;
-
+            case GT_IND:
             case GT_BLK:
             case GT_OBJ:
             case GT_DYN_BLK:
@@ -10947,6 +11024,61 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// fgDebugCheckExceptionSets: Verify the exception sets on trees.
+//
+// This function checks that the node's exception set is a superset of
+// the exception sets of its operands.
+//
+void Compiler::fgDebugCheckExceptionSets()
+{
+    struct ExceptionSetsChecker
+    {
+        static void CheckTree(GenTree* tree, ValueNumStore* vnStore)
+        {
+            // We will fail to VN some PHI_ARGs - their values may not
+            // be known at the point we number them because of loops.
+            assert(tree->gtVNPair.BothDefined() || tree->OperIs(GT_PHI_ARG));
+
+            ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
+            tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+
+                CheckTree(operand, vnStore);
+
+                ValueNumPair operandVNP = operand->gtVNPair.BothDefined() ? operand->gtVNPair : vnStore->VNPForVoid();
+                operandsExcSet          = vnStore->VNPUnionExcSet(operandVNP, operandsExcSet);
+
+                return GenTree::VisitResult::Continue;
+            });
+
+            // Currently, we fail to properly maintain the exception sets for trees with user
+            // calls or assignments.
+            if ((tree->gtFlags & (GTF_ASG | GTF_CALL)) != 0)
+            {
+                return;
+            }
+
+            ValueNumPair nodeExcSet = vnStore->VNPExceptionSet(tree->gtVNPair);
+            assert(vnStore->VNExcIsSubset(nodeExcSet.GetLiberal(), operandsExcSet.GetLiberal()));
+            assert(vnStore->VNExcIsSubset(nodeExcSet.GetConservative(), operandsExcSet.GetConservative()));
+        }
+    };
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            // Exclude statements VN hasn't visited for whichever reason...
+            if (stmt->GetRootNode()->GetVN(VNK_Liberal) == ValueNumStore::NoVN)
+            {
+                continue;
+            }
+
+            ExceptionSetsChecker::CheckTree(stmt->GetRootNode(), vnStore);
+        }
+    }
+}
+
 // This method asserts that SSA name constraints specified are satisfied.
 // Until we figure out otherwise, all VN's are assumed to be liberal.
 // TODO-Cleanup: new JitTestLabels for lib vs cons vs both VN classes?
