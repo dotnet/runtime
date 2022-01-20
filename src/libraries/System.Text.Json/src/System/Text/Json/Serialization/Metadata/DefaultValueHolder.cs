@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class DefaultValueHolder
     {
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-                    Justification = "CreateValueType is only called on a ValueType. You can always create an instance of a ValueType.")]
+                    Justification = "GetUninitializedObject is only called on a struct. You can always create an instance of a struct.")]
         private DefaultValueHolder(Type type)
         {
             if (type.IsValueType && Nullable.GetUnderlyingType(type) == null)

@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Metadata
                 DefaultValueHolder holder;
                 if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
                 {
-                    holder = typeInfo.GenericMethods;
+                    holder = typeInfo.DefaultValueHolder;
                 }
                 else
                 {
