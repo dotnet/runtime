@@ -397,9 +397,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_BMI2_X64:
             genBMI1OrBMI2Intrinsic(node);
             break;
-        case InstructionSet_SHA:
-            genSHAIntrinsic(node);
-            break;
         case InstructionSet_FMA:
             genFMAIntrinsic(node);
             break;
@@ -2013,44 +2010,6 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
                 emit->emitIns_AR_R(INS_mov, attr, lowReg, op3Reg, 0);
             }
 
-            break;
-        }
-
-        default:
-        {
-            unreached();
-            break;
-        }
-    }
-
-    genProduceReg(node);
-}
-
-void CodeGen::genSHAIntrinsic(GenTreeHWIntrinsic* node)
-{
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    regNumber      targetReg   = node->GetRegNum();
-    var_types      targetType  = node->TypeGet();
-    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
-    emitter*       emit        = GetEmitter();
-
-    assert(targetReg != REG_NA);
-
-    genConsumeMultiOpOperands(node);
-
-    switch (intrinsicId)
-    {
-        case NI_SHA_Sha1MessageSchedule1:
-        case NI_SHA_Sha1MessageSchedule2:
-        case NI_SHA_Sha1NextE:
-        case NI_SHA_Sha1FourRounds:
-        case NI_SHA_Sha256MessageSchedule1:
-        case NI_SHA_Sha256MessageSchedule2:
-        case NI_SHA_Sha256TwoRounds:
-        {
-            // TODO
-            // assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-            genHWIntrinsic_R_R_RM(node, ins, emitTypeSize(node->TypeGet()));
             break;
         }
 
