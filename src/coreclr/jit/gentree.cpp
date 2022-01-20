@@ -11731,7 +11731,7 @@ GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_Create:
 #if defined(TARGET_XARCH)
         case NI_Vector256_Create:
-#elif defined(TARGET_ARMARCH)
+#elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
 #endif
         {
@@ -11747,30 +11747,7 @@ GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (hwAllArgsAreConstZero)
             {
-                switch (node->GetHWIntrinsicId())
-                {
-                    case NI_Vector128_Create:
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
-                        break;
-                    }
-#if defined(TARGET_XARCH)
-                    case NI_Vector256_Create:
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
-                        break;
-                    }
-#elif defined(TARGET_ARMARCH)
-                    case NI_Vector64_Create:
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
-                        break;
-                    }
-#endif
-                    default:
-                        assert(!"Unexpected HWIntrinsicId");
-                        break;
-                }
+                return gtNewSimdZeroNode(node->gtType, node->GetSimdBaseJitType(), node->GetSimdSize(), node->IsSimdAsHWIntrinsic());
             }
             break;
         }
