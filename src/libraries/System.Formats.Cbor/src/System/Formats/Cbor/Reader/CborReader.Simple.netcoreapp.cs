@@ -29,7 +29,7 @@ namespace System.Formats.Cbor
             {
                 case CborAdditionalInfo.Additional16BitData:
                     EnsureReadCapacity(buffer, 1 + sizeof(short));
-                    result = BinaryPrimitives.ReadHalfBigEndian(buffer.Slice(1));//HalfHelpers.ReadHalfBigEndian(buffer.Slice(1));
+                    result = BinaryPrimitives.ReadHalfBigEndian(buffer.Slice(1));
                     AdvanceBuffer(1 + sizeof(short));
                     AdvanceDataItemCounters();
                     return result;
