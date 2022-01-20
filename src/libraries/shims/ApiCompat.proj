@@ -16,12 +16,12 @@
 
   <Target Name="GetApiCompatInputsAndOutputs">
     <PropertyGroup>
-      <ApiCompatResponseFile>$(IntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
       <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.txt</ApiCompatBaselineFile>
       <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
       <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandard.txt</ApiCompatNSBaselineFile>
       <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netcoreapp.netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
       <PreviousNetCoreAppBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.PreviousNetCoreApp.txt</PreviousNetCoreAppBaselineFile>
+      <ApiCompatMarkerFile>$(BaseIntermediateOutputPath)marker.txt</ApiCompatMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -33,15 +33,15 @@
           DependsOnTargets="GetApiCompatInputsAndOutputs"
           AfterTargets="Build"
           Inputs="@(NetCoreAppCurrentRefFile);$(ApiCompatBaselineFile);$(ApiCompatBaselineIgnoreFile);$(ApiCompatNSBaselineFile);$(ApiCompatNSOnlyBaselineFile);$(PreviousNetCoreAppBaselineFile)"
-          Outputs="$(ApiCompatResponseFile)">
+          Outputs="$(ApiCompatMarkerFile)">
 
     <PropertyGroup>
+      <ApiCompatResponseFile>$(BaseIntermediateOutputPath)apicompat.rsp</ApiCompatResponseFile>
       <ApiCompatExitCode>0</ApiCompatExitCode>
       <ApiCompatArgs>--impl-dirs "$(NetCoreAppCurrentRefPath.TrimEnd('\/'))"</ApiCompatArgs>
       <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) --exclude-attributes "$(ApiCompatExcludeAttributeList)"</ApiCompatArgs>
     </PropertyGroup>
 
-    <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile File="$(ApiCompatResponseFile)"
                       Lines="$(ApiCompatArgs)"
                       Overwrite="true" />
@@ -53,8 +53,6 @@
           IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
-
-    <Delete Condition="'$(ApiCompatExitCode)' != '0'" Files="$(ApiCompatResponseFile)" />
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NETFrameworkReferenceAssemblyTFM) to $(NetCoreAppCurrent)" />
 
     <!-- In order to update the .NETStandard baseline, you can just start the build with /p:UpdateNETStandardBaseline=true -->
@@ -71,7 +69,6 @@
           IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
-    <Delete Condition="'$(ApiCompatExitCode)' != '0'" Files="$(ApiCompatResponseFile)" />
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(NetCoreAppCurrent)" />
 
     <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardLibrary20RefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
@@ -80,7 +77,6 @@
           IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
-    <Delete Condition="'$(ApiCompatExitCode)' != '0'" Files="$(ApiCompatResponseFile)" />
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard to $(NetCoreAppCurrent)" />
  
     <!-- In order to update the previous .NETCoreApp baseline, you can just start the build with /p:UpdatePreviousNetCoreAppBaseline=true -->
@@ -96,8 +92,12 @@
           IgnoreExitCode="true">
       <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
     </Exec>
-    <Delete Condition="'$(ApiCompatExitCode)' != '0'" Files="$(ApiCompatResponseFile)" />
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing $(NetCoreAppLatestStable) to $(NetCoreAppCurrent). If this breaking change is intentional, the ApiCompat baseline can be updated by running 'dotnet build $(MSBuildThisFileFullPath) /p:UpdatePreviousNetCoreAppBaseline=true'" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <Touch Files="$(ApiCompatMarkerFile)"
+           AlwaysCreate="true" />
+ 
   </Target>
 
 </Project>
