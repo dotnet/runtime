@@ -1020,3 +1020,11 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
+    ret lr
+LEAF_END JIT_ValidateIndirectCall, _TEXT
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
+    br x15
+LEAF_END JIT_DispatchIndirectCall, _TEXT
