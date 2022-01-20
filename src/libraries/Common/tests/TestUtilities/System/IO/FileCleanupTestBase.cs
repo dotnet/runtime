@@ -141,7 +141,7 @@ namespace System.IO
                 return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }
 
-            if (PlatformDetection.IsWindows)
+            if (PlatformDetection.IsWindows || !PlatformDetection.IsNotRunningOnMacOS)
             {
                 return Guid.NewGuid().ToString("N");
             }
