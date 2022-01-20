@@ -9,8 +9,7 @@ using Xunit;
 
 class Validate
 {
-    // [Fact]
-    // [SkipOnMono("Mono doesn't validate ref field state during type load")]
+    [Fact]
     public static void Validate_Invalid_RefField_Fails()
     {
         Console.WriteLine($"{nameof(Validate_Invalid_RefField_Fails)}...");
