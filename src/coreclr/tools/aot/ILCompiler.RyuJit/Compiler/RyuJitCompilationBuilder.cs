@@ -110,7 +110,7 @@ namespace ILCompiler
             if ((_mitigationOptions & SecurityMitigationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= RyuJitCompilationOptions.ControlFlowGuardAnnotations;
 
-            if (_useDrawf5)
+            if (_useDwarf5)
                 options |= RyuJitCompilationOptions.UseDwarf5;
 
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, GetPreinitializationManager());

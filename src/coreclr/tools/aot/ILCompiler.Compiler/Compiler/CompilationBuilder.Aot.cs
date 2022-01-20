@@ -24,7 +24,7 @@ namespace ILCompiler
         protected bool _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
-        protected bool _useDrawf5;
+        protected bool _useDwarf5;
 
         partial void InitializePartial()
         {
@@ -106,7 +106,7 @@ namespace ILCompiler
 
         public CompilationBuilder UseDwarf5(bool value)
         {
-            _useDrawf5 = value;
+            _useDwarf5 = value;
             return this;
         }
 
