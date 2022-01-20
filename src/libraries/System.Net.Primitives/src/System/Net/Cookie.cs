@@ -307,34 +307,6 @@ namespace System.Net
                    (string.Compare(host, 0, domain, 1, host.Length, StringComparison.OrdinalIgnoreCase) == 0);
         }
 
-        internal static int CompareDomain(string? left, string? right)
-        {
-            if (left is null)
-            {
-                return right is null ? 0 : -1;
-            }
-
-            if (right is null)
-            {
-                return 1;
-            }
-
-            int indexLeft = GetComparisonStartIndex(left);
-            int indexRight = GetComparisonStartIndex(right);
-
-            int result;
-
-            if ((result = (left.Length - indexLeft).CompareTo(right.Length - indexRight)) != 0)
-            {
-                return result;
-            }
-
-            return string.Compare(left, indexLeft, right, indexRight, left.Length - indexLeft, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int GetComparisonStartIndex(string domain)
-            => domain.Length != 0 && domain[0] == '.' ? 1 : 0;
-
         // According to spec we must assume default values for attributes but still
         // keep in mind that we must not include them into the requests.
         // We also check the validity of all attributes based on the version and variant (read RFC)
@@ -745,7 +717,7 @@ namespace System.Net
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
-                    && CompareDomain(Domain, other.Domain) == 0
+                    && CookieComparer.EqualsDomain(Domain, other.Domain)
                     && (Version == other.Version);
         }
 
