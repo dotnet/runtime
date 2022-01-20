@@ -176,7 +176,7 @@ namespace JIT.HardwareIntrinsics.X86
         private struct TestStruct
         {
             public Vector128<Byte> _fld1;
-            public Vector256<Byte> _fld2;
+            public Vector128<Byte> _fld2;
 
             public static TestStruct Create()
             {
@@ -185,7 +185,7 @@ namespace JIT.HardwareIntrinsics.X86
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref testStruct._fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref testStruct._fld2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref testStruct._fld2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
 
                 return testStruct;
             }
@@ -201,11 +201,11 @@ namespace JIT.HardwareIntrinsics.X86
             public void RunStructFldScenario_Load(SimpleBinaryOpTest__Sha256MessageSchedule2Byte testClass)
             {
                 fixed (Vector128<Byte>* pFld1 = &_fld1)
-                fixed (Vector256<Byte>* pFld2 = &_fld2)
+                fixed (Vector128<Byte>* pFld2 = &_fld2)
                 {
                     var result = Sha.Sha256MessageSchedule2(
                         Sha.LoadVector128((Byte*)(pFld1)),
-                        Sha.LoadVector256((Byte*)(pFld2))
+                        Sha.LoadVector128((Byte*)(pFld2))
                     );
 
                     Unsafe.Write(testClass._dataTable.outArrayPtr, result);
@@ -217,17 +217,17 @@ namespace JIT.HardwareIntrinsics.X86
         private static readonly int LargestVectorSize = 16;
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Byte>>() / sizeof(Byte);
-        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector256<Byte>>() / sizeof(Byte);
+        private static readonly int Op2ElementCount = Unsafe.SizeOf<Vector128<Byte>>() / sizeof(Byte);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Byte>>() / sizeof(Byte);
 
         private static Byte[] _data1 = new Byte[Op1ElementCount];
         private static Byte[] _data2 = new Byte[Op2ElementCount];
 
         private static Vector128<Byte> _clsVar1;
-        private static Vector256<Byte> _clsVar2;
+        private static Vector128<Byte> _clsVar2;
 
         private Vector128<Byte> _fld1;
-        private Vector256<Byte> _fld2;
+        private Vector128<Byte> _fld2;
 
         private DataTable _dataTable;
 
@@ -236,7 +236,7 @@ namespace JIT.HardwareIntrinsics.X86
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _clsVar2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
         }
 
         public SimpleBinaryOpTest__Sha256MessageSchedule2Byte()
@@ -246,7 +246,7 @@ namespace JIT.HardwareIntrinsics.X86
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _fld1), ref Unsafe.As<Byte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Byte>, byte>(ref _fld2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _fld2), ref Unsafe.As<Byte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetByte(); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetByte(); }
@@ -263,7 +263,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = Sha.Sha256MessageSchedule2(
                 Unsafe.Read<Vector128<Byte>>(_dataTable.inArray1Ptr),
-                Unsafe.Read<Vector256<Byte>>(_dataTable.inArray2Ptr)
+                Unsafe.Read<Vector128<Byte>>(_dataTable.inArray2Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -276,7 +276,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = Sha.Sha256MessageSchedule2(
                 Sha.LoadVector128((Byte*)(_dataTable.inArray1Ptr)),
-                Sha.LoadVector256((Byte*)(_dataTable.inArray2Ptr))
+                Sha.LoadVector128((Byte*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -289,7 +289,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = Sha.Sha256MessageSchedule2(
                 Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr)),
-                Sha.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr))
+                Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray2Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -300,10 +300,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Sha).GetMethod(nameof(Sha.Sha256MessageSchedule2), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
+            var result = typeof(Sha).GetMethod(nameof(Sha.Sha256MessageSchedule2), new Type[] { typeof(Vector128<Byte>), typeof(Vector128<Byte>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<Byte>>(_dataTable.inArray1Ptr),
-                                        Unsafe.Read<Vector256<Byte>>(_dataTable.inArray2Ptr)
+                                        Unsafe.Read<Vector128<Byte>>(_dataTable.inArray2Ptr)
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Byte>)(result));
@@ -314,10 +314,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var result = typeof(Sha).GetMethod(nameof(Sha.Sha256MessageSchedule2), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
+            var result = typeof(Sha).GetMethod(nameof(Sha.Sha256MessageSchedule2), new Type[] { typeof(Vector128<Byte>), typeof(Vector128<Byte>) })
                                      .Invoke(null, new object[] {
                                         Sha.LoadVector128((Byte*)(_dataTable.inArray1Ptr)),
-                                        Sha.LoadVector256((Byte*)(_dataTable.inArray2Ptr))
+                                        Sha.LoadVector128((Byte*)(_dataTable.inArray2Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Byte>)(result));
@@ -328,10 +328,10 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
 
-            var result = typeof(Sha).GetMethod(nameof(Sha.Sha256MessageSchedule2), new Type[] { typeof(Vector128<Byte>), typeof(Vector256<Byte>) })
+            var result = typeof(Sha).GetMethod(nameof(Sha.Sha256MessageSchedule2), new Type[] { typeof(Vector128<Byte>), typeof(Vector128<Byte>) })
                                      .Invoke(null, new object[] {
                                         Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr)),
-                                        Sha.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr))
+                                        Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray2Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Byte>)(result));
@@ -356,11 +356,11 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
 
             fixed (Vector128<Byte>* pClsVar1 = &_clsVar1)
-            fixed (Vector256<Byte>* pClsVar2 = &_clsVar2)
+            fixed (Vector128<Byte>* pClsVar2 = &_clsVar2)
             {
                 var result = Sha.Sha256MessageSchedule2(
                     Sha.LoadVector128((Byte*)(pClsVar1)),
-                    Sha.LoadVector256((Byte*)(pClsVar2))
+                    Sha.LoadVector128((Byte*)(pClsVar2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -373,7 +373,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
             var op1 = Unsafe.Read<Vector128<Byte>>(_dataTable.inArray1Ptr);
-            var op2 = Unsafe.Read<Vector256<Byte>>(_dataTable.inArray2Ptr);
+            var op2 = Unsafe.Read<Vector128<Byte>>(_dataTable.inArray2Ptr);
             var result = Sha.Sha256MessageSchedule2(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -385,7 +385,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
             var op1 = Sha.LoadVector128((Byte*)(_dataTable.inArray1Ptr));
-            var op2 = Sha.LoadVector256((Byte*)(_dataTable.inArray2Ptr));
+            var op2 = Sha.LoadVector128((Byte*)(_dataTable.inArray2Ptr));
             var result = Sha.Sha256MessageSchedule2(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -397,7 +397,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
             var op1 = Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray1Ptr));
-            var op2 = Sha.LoadAlignedVector256((Byte*)(_dataTable.inArray2Ptr));
+            var op2 = Sha.LoadAlignedVector128((Byte*)(_dataTable.inArray2Ptr));
             var result = Sha.Sha256MessageSchedule2(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -422,11 +422,11 @@ namespace JIT.HardwareIntrinsics.X86
             var test = new SimpleBinaryOpTest__Sha256MessageSchedule2Byte();
 
             fixed (Vector128<Byte>* pFld1 = &test._fld1)
-            fixed (Vector256<Byte>* pFld2 = &test._fld2)
+            fixed (Vector128<Byte>* pFld2 = &test._fld2)
             {
                 var result = Sha.Sha256MessageSchedule2(
                     Sha.LoadVector128((Byte*)(pFld1)),
-                    Sha.LoadVector256((Byte*)(pFld2))
+                    Sha.LoadVector128((Byte*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -449,11 +449,11 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
 
             fixed (Vector128<Byte>* pFld1 = &_fld1)
-            fixed (Vector256<Byte>* pFld2 = &_fld2)
+            fixed (Vector128<Byte>* pFld2 = &_fld2)
             {
                 var result = Sha.Sha256MessageSchedule2(
                     Sha.LoadVector128((Byte*)(pFld1)),
-                    Sha.LoadVector256((Byte*)(pFld2))
+                    Sha.LoadVector128((Byte*)(pFld2))
                 );
 
                 Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -479,7 +479,7 @@ namespace JIT.HardwareIntrinsics.X86
             var test = TestStruct.Create();
             var result = Sha.Sha256MessageSchedule2(
                 Sha.LoadVector128((Byte*)(&test._fld1)),
-                Sha.LoadVector256((Byte*)(&test._fld2))
+                Sha.LoadVector128((Byte*)(&test._fld2))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -523,7 +523,7 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<Byte> op1, Vector256<Byte> op2, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Byte> op1, Vector128<Byte> op2, void* result, [CallerMemberName] string method = "")
         {
             Byte[] inArray1 = new Byte[Op1ElementCount];
             Byte[] inArray2 = new Byte[Op2ElementCount];
@@ -543,7 +543,7 @@ namespace JIT.HardwareIntrinsics.X86
             Byte[] outArray = new Byte[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Byte>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector256<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<Byte>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Byte>>());
 
             ValidateResult(inArray1, inArray2, outArray, method);
@@ -571,7 +571,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Sha)}.{nameof(Sha.Sha256MessageSchedule2)}<Byte>(Vector128<Byte>, Vector256<Byte>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sha)}.{nameof(Sha.Sha256MessageSchedule2)}<Byte>(Vector128<Byte>, Vector128<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
