@@ -277,12 +277,12 @@ namespace System
                         string? tzLookupLine;
                         while (sr.Peek() >= 0)
                         {
-                            if (!(tzLookupLine = sr.ReadLine())!.TrimStart().StartsWith("<id"))
+                            if (!(tzLookupLine = sr.ReadLine())!.TrimStart().StartsWith("<id", StringComparison.Ordinal))
                                 continue;
 
                             int idStart = tzLookupLine.IndexOf('>') + 1;
-                            int idLength = tzLookupLine.LastIndexOf("</") - idStart;
-                            if (idStart == 0 || idLength < 0)
+                            int idLength = tzLookupLine.LastIndexOf("</", StringComparison.Ordinal) - idStart;
+                            if (idStart <= 0 || idLength < 0)
                             {
                                 // Either the start tag <id ... > or the end tag </id> are not found
                                 continue;
@@ -307,18 +307,7 @@ namespace System
                         _lengths = cleanLengths.ToArray();
                     }
                 }
-                catch (FileNotFoundException)
-                {
-                    // Some versions of Android will not have tzlookup.xml, so just warn that there may be backward timezone IDs
-                }
-                catch (IOException)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_TimeZoneLookupParsing, lookupPath));
-                }
-                catch (OutOfMemoryException)
-                {
-                    throw new OutOfMemoryException(SR.Format(SR.OutOfMemory_TimeZoneLookupParsing, lookupPath));
-                }
+                catch {}
 
                 _isFiltered = true;
             }
