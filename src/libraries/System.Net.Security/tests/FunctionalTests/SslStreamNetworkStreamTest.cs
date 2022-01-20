@@ -352,7 +352,7 @@ namespace System.Net.Security.Tests
 
                 // Send application data instead of Client hello.
                 await client.WriteAsync(new byte[500], cts.Token);
-                // Fail as it is not allowed to receive non hnadshake frames during handshake.
+                // Fail as it is not allowed to receive non handshake frames during handshake.
                 await Assert.ThrowsAsync<InvalidOperationException>(()=> t);
             }
         }
@@ -364,9 +364,11 @@ namespace System.Net.Security.Tests
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
-            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
-            using (client)
-            using (server)
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+
+            // use RandomReadWriteStream in the middle to receive incomplete TLS frames
+            using (SslStream server = new SslStream(new RandomReadWriteSizeStream(serverStream, 4 * 1024)))
+            using (SslStream client = new SslStream(clientStream))
             {
                 using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
                 using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
@@ -389,17 +391,22 @@ namespace System.Net.Security.Tests
 
                 Assert.Null(server.RemoteCertificate);
 
+                byte[] buffer = new byte[20 * 1024];
+
                 // Send application data instead of Client hello.
-                await client.WriteAsync(new byte[500], cts.Token);
-                // Server don't drain the client data
-                await server.ReadAsync(new byte[1]);
-                // Fail as it is not allowed to receive non hnadshake frames during handshake.
+                _ = client.WriteAsync(buffer, cts.Token);
+                // Server don't drain all client data (reading 16kB leaves further TLS frames undecrypted)
+                int read = await server.ReadAsync(buffer.AsMemory(0, 16 * 1024), cts.Token);
+                // Fail as it is not allowed to receive non handshake frames during handshake.
                 await Assert.ThrowsAsync<InvalidOperationException>(()=>
                     server.NegotiateClientCertificateAsync(cts.Token)
                 );
 
                 // Drain client data.
-                await server.ReadAsync(new byte[499]);
+                while (read < buffer.Length)
+                {
+                    read += await server.ReadAsync(buffer);
+                }
                 // Verify that the session is usable even renego request failed.
                 await TestHelper.PingPong(client, server, cts.Token);
                 await TestHelper.PingPong(server, client, cts.Token);
