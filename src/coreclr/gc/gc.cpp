@@ -43430,8 +43430,15 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 
 unsigned int GCHeap::WhichGeneration (Object* object)
 {
-    gc_heap* hp = gc_heap::heap_of ((uint8_t*)object);
-    unsigned int g = hp->object_gennum ((uint8_t*)object);
+    uint8_t* o = (uint8_t*)object;
+#ifdef FEATURE_BASICFREEZE
+    if (!((o < g_gc_highest_address) && (o >= g_gc_lowest_address)))
+    {
+        return max_generation;
+    }
+#endif //FEATURE_BASICFREEZE
+    gc_heap* hp = gc_heap::heap_of (o);
+    unsigned int g = hp->object_gennum (o);
     dprintf (3, ("%Ix is in gen %d", (size_t)object, g));
     return g;
 }
