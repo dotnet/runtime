@@ -44,24 +44,25 @@ namespace ILCompiler
         const string AllAssembliesFullName = "*";
         protected const string XmlNamespace = "";
 
-        // protected readonly string _xmlDocumentLocation;
+        protected readonly string _xmlDocumentLocation;
         readonly XPathNavigator _document;
         protected readonly ModuleDesc? _owningModule;
         private readonly IReadOnlyDictionary<string, bool> _featureSwitchValues;
         protected readonly TypeSystemContext _context;
 
-        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, IReadOnlyDictionary<string, bool> featureSwitchValues)
+        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
         {
             _context = context;
             using (documentStream)
             {
                 _document = XDocument.Load(documentStream, LoadOptions.SetLineInfo).CreateNavigator();
             }
+            _xmlDocumentLocation = xmlDocumentLocation;
             _featureSwitchValues = featureSwitchValues;
         }
 
-        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, IReadOnlyDictionary<string, bool> featureSwitchValues)
-            : this(context, documentStream, featureSwitchValues)
+        protected ProcessLinkerXmlBase(TypeSystemContext context, UnmanagedMemoryStream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            : this(context, documentStream, xmlDocumentLocation, featureSwitchValues)
         {
             _owningModule = resourceAssembly ?? throw new ArgumentNullException(nameof(resourceAssembly));
         }
