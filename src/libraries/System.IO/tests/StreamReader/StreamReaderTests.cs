@@ -111,6 +111,53 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        public async Task ReadToEndAsync_WithCancellationToken()
+        {
+            using var sw = new StreamReader(GetLargeStream());
+            var result = await sw.ReadToEndAsync(default);
+
+            Assert.Equal(5000, result.Length);
+        }
+
+        [Fact]
+        public async Task ReadToEndAsync_WithCanceledCancellationToken()
+        {
+            using var sw = new StreamReader(GetLargeStream());
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sw.ReadToEndAsync(cts.Token));
+        }
+
+        [Fact]
+        public async Task ReadToEndAsync_WithCancellation()
+        {
+            var path = Path.GetTempFileName();
+            try
+            {
+                // create large (~100MB) file
+                using (var writer = new StreamWriter(path))
+                {
+                    for (var i = 0; i < 1_000_000; i++)
+                        writer.WriteLine("A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.");
+                }
+
+                using var reader = File.OpenText(path);
+                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(cts.Token));
+            }
+            finally
+            {
+                try
+                {
+                    File.Delete(path);
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        [Fact]
         public void GetBaseStream()
         {
             var ms = GetSmallStream();
@@ -299,6 +346,27 @@ namespace System.IO.Tests
             sr.Read(temp, 0, 1);
             var data = sr.ReadLine();
             Assert.Equal(valueString.Substring(1, valueString.IndexOf('\r') - 1), data);
+        }
+
+        [Fact]
+        public async Task VanillaReadLineAsync()
+        {
+            var baseInfo = GetCharArrayStream();
+            var sr = baseInfo.Item2;
+
+            string valueString = new string(baseInfo.Item1);
+
+            var data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(0, valueString.IndexOf('\r')), data);
+
+            data = await sr.ReadLineAsync(default);
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\r') + 1, 3), data);
+
+            data = await sr.ReadLineAsync();
+            Assert.Equal(valueString.Substring(valueString.IndexOf('\n') + 1, 2), data);
+
+            data = await sr.ReadLineAsync(default);
+            Assert.Equal((valueString.Substring(valueString.LastIndexOf('\n') + 1)), data);
         }
 
         [Fact]

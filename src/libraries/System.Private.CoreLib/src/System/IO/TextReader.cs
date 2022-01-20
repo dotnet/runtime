@@ -203,18 +203,26 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        public virtual Task<string?> ReadLineAsync() =>
-            Task<string?>.Factory.StartNew(static state => ((TextReader)state!).ReadLine(), this,
-                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        public virtual Task<string?> ReadLineAsync() => ReadLineCoreAsync(default);
 
-        public virtual async Task<string> ReadToEndAsync()
+        public virtual ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+            new ValueTask<string?>(ReadLineCoreAsync(cancellationToken));
+
+        private Task<string?> ReadLineCoreAsync(CancellationToken cancellationToken) =>
+            Task<string?>.Factory.StartNew(static state => ((TextReader)state!).ReadLine(), this,
+                cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+
+        public virtual Task<string> ReadToEndAsync() =>
+            ReadToEndAsync(default);
+
+        public virtual async Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {
             var sb = new StringBuilder(4096);
             char[] chars = ArrayPool<char>.Shared.Rent(4096);
             try
             {
                 int len;
-                while ((len = await ReadAsyncInternal(chars, default).ConfigureAwait(false)) != 0)
+                while ((len = await ReadAsyncInternal(chars, cancellationToken).ConfigureAwait(false)) != 0)
                 {
                     sb.Append(chars, 0, len);
                 }
@@ -369,7 +377,13 @@ namespace System.IO
             public override Task<string?> ReadLineAsync() => Task.FromResult(ReadLine());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
+            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) => cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : new ValueTask<string?>(ReadLine());
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<string> ReadToEndAsync() => Task.FromResult(ReadToEnd());
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) => cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult(ReadToEnd());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)

@@ -10855,8 +10855,10 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask<int> ReadBlockAsync(System.Memory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string? ReadLine() { throw null; }
         public override System.Threading.Tasks.Task<string?> ReadLineAsync() { throw null; }
+        public override System.Threading.Tasks.ValueTask<string?> ReadLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override string ReadToEnd() { throw null; }
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class StreamWriter : System.IO.TextWriter
     {
@@ -10920,8 +10922,10 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask<int> ReadBlockAsync(System.Memory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public override string? ReadLine() { throw null; }
         public override System.Threading.Tasks.Task<string?> ReadLineAsync() { throw null; }
+        public override System.Threading.Tasks.ValueTask<string?> ReadLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override string ReadToEnd() { throw null; }
         public override System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public override System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class StringWriter : System.IO.TextWriter
     {
@@ -10972,8 +10976,10 @@ namespace System.IO
         public virtual System.Threading.Tasks.ValueTask<int> ReadBlockAsync(System.Memory<char> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual string? ReadLine() { throw null; }
         public virtual System.Threading.Tasks.Task<string?> ReadLineAsync() { throw null; }
+        public virtual System.Threading.Tasks.ValueTask<string?> ReadLineAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual string ReadToEnd() { throw null; }
         public virtual System.Threading.Tasks.Task<string> ReadToEndAsync() { throw null; }
+        public virtual System.Threading.Tasks.Task<string> ReadToEndAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.IO.TextReader Synchronized(System.IO.TextReader reader) { throw null; }
     }
     public abstract partial class TextWriter : System.MarshalByRefObject, System.IAsyncDisposable, System.IDisposable
