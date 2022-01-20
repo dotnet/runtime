@@ -11738,7 +11738,7 @@ GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
             bool hwAllArgsAreConstZero = true;
             for (GenTree* arg : node->Operands())
             {
-                if (arg->IsIntegralConst(0) && arg->IsFloatPositiveZero())
+                if (!arg->IsIntegralConst(0) && !arg->IsFloatPositiveZero())
                 {
                     hwAllArgsAreConstZero = false;
                     break;
