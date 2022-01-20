@@ -9404,7 +9404,7 @@ void gc_heap::remove_ro_segment (heap_segment* seg)
 
     enter_spin_lock (&gc_heap::gc_lock);
 
-    seg_table->remove ((uint8_t*)seg);
+    seg_table->remove (heap_segment_mem (seg));
     seg_mapping_table_remove_ro_segment (seg);
 
     // Locate segment (and previous segment) in the list.
