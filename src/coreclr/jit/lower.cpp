@@ -2332,10 +2332,12 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     }
 
                     JITDUMP("Arg uses register(s) ");
+#ifdef DEBUG
                     if (comp->verbose)
                     {
-                        INDEBUG(dspRegMask(argRegs & trashedByValidator));
+                        dspRegMask(argRegs & trashedByValidator);
                     }
+#endif
                     JITDUMP("\n");
 
                     // If validate call will clobber any register used by this
@@ -2343,10 +2345,12 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
                     if ((argRegs & trashedByValidator) != 0)
                     {
                         JITDUMP("CFG validator will trash register(s) ");
+#ifdef DEBUG
                         if (comp->verbose)
                         {
-                            INDEBUG(dspRegMask(argRegs & trashedByValidator));
+                            dspRegMask(argRegs & trashedByValidator);
                         }
+#endif
                         JITDUMP("\n");
 
                         MoveCFGCallLateArg(call, node);
