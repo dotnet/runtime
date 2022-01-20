@@ -1985,18 +1985,6 @@ public:
         return dac_cast<TADDR>(m_ModuleID);
     }
 
-    SIZE_T *             GetAddrModuleID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (SIZE_T*) &m_ModuleID;
-    }
-
-    static SIZE_T       GetOffsetOfModuleID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return offsetof(Module, m_ModuleID);
-    }
-
     PTR_DomainLocalModule   GetDomainLocalModule();
 
     // LoaderHeap for storing IJW thunks

@@ -10824,6 +10824,9 @@ void Compiler::gtDispTree(GenTree*     tree,
                 case NI_System_Object_GetType:
                     printf(" objGetType");
                     break;
+                case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                    printf(" isKnownConst");
+                    break;
 
                 default:
                     unreached();
