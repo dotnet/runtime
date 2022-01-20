@@ -11747,7 +11747,8 @@ GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (hwAllArgsAreConstZero)
             {
-                return gtNewSimdZeroNode(node->gtType, node->GetSimdBaseJitType(), node->GetSimdSize(), node->IsSimdAsHWIntrinsic());
+                return gtNewSimdZeroNode(node->gtType, node->GetSimdBaseJitType(), node->GetSimdSize(),
+                                         node->IsSimdAsHWIntrinsic());
             }
             break;
         }
