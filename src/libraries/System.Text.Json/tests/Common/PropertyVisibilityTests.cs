@@ -1227,6 +1227,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public async Task JsonIgnoreAttribute_UnsupportedBigInteger()
         {
             string json = @"{""MyBigInteger"":1}";
@@ -2816,6 +2817,38 @@ namespace System.Text.Json.Serialization.Tests
 
         public class BadConverter
         {
+        }
+
+        [Fact]
+        public async Task TestClassWithIgnoredCallbacks()
+        {
+            Assert.Equal("{}", await JsonSerializerWrapperForString.SerializeWrapper(new ClassWithIgnoredCallbacks()));
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredCallbacks>(@"{""Func"":"""",""Action"":""""}");
+            Assert.False(obj.Func(""));
+            Assert.Null(obj.Action);
+        }
+
+        [Fact]
+        public async Task TestClassWithCallbacks()
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new ClassWithCallbacks()));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithCallbacks>(@"{""Func"":{},""Action"":{}"));
+        }
+
+        public class ClassWithIgnoredCallbacks
+        {
+            [JsonIgnore]
+            public Func<string, bool> Func { get; set; } = (val) => false;
+
+            [JsonIgnore]
+            public Action<bool> Action { get; set; }
+        }
+
+        public class ClassWithCallbacks
+        {
+            public Func<string, bool> Func { get; set; }
+
+            public Action<bool> Action { get; set; } = (val) => Console.WriteLine();
         }
     }
 }

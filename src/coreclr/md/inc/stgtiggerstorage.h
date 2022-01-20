@@ -87,7 +87,7 @@ public:
 //*****************************************************************************
     HRESULT Init(                           // Return code.
         StgIO       *pStgIO,                // The I/O subsystem.
-        __in __in_z LPSTR       pVersion);  // Compiler-supplied CLR version
+        _In_ _In_z_ LPSTR       pVersion);  // Compiler-supplied CLR version
 
 //*****************************************************************************
 // Retrieves a the size and a pointer to the extra data that can optionally be
@@ -132,7 +132,7 @@ public:
 // This is not good enough to fulfill ACID props, but it ain't that bad.
 //*****************************************************************************
     HRESULT Restore(                        // Return code.
-        __in __in_z LPWSTR szBackup,        // If non-0, backup the file.
+        _In_ _In_z_ LPWSTR szBackup,        // If non-0, backup the file.
         int         bDeleteOnSuccess);      // Delete backup file if successful.
 
 //*****************************************************************************
@@ -209,7 +209,7 @@ public:
         const OLECHAR * wcsName,
         IStorage *      pStgPriority,
         DWORD           dwMode,
-      __in
+      _In_
         SNB             snbExclude,
         DWORD           reserved,
         IStorage **     ppStg);
@@ -217,7 +217,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE CopyTo(
         DWORD       cIidExclude,
         const IID * rgIidExclude,
-      __in
+      _In_
         SNB         snbExclude,
         IStorage *  pStgDest);
 
@@ -284,7 +284,7 @@ protected:
         ULONG       *pcbWritten);       // How much did we write.
 
 private:
-    HRESULT FindStream(LPCSTR szName, __out PSTORAGESTREAM *stream);
+    HRESULT FindStream(LPCSTR szName, _Out_ PSTORAGESTREAM *stream);
     HRESULT WriteSignature(LPCSTR pVersion);
     HRESULT VerifySignature(PSTORAGESIGNATURE pSig);
     HRESULT ReadHeader();

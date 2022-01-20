@@ -5,7 +5,7 @@ namespace System
 {
     public static partial class Buffer
     {
-#if TARGET_ARM64
+#if TARGET_ARM64 || TARGET_LOONGARCH64
         // Managed code is currently faster than glibc unoptimized memmove
         // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
         // https://github.com/dotnet/runtime/issues/8897

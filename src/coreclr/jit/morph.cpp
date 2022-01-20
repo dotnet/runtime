@@ -37,7 +37,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
         {
             return fgMorphTree(tree);
         }
-        else if (tree->OperKind() & GTK_CONST)
+        else if (tree->OperIsConst())
         {
             return fgMorphConst(tree);
         }
@@ -5198,7 +5198,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
                                                                      asIndex->Arr()->AsStrCon()->gtSconCPX, &length);
             if ((cnsIndex < length) && (str != nullptr))
             {
-                GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], elemTyp);
+                GenTree* cnsCharNode = gtNewIconNode(str[cnsIndex], TYP_INT);
                 INDEBUG(cnsCharNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return cnsCharNode;
             }
@@ -5758,7 +5758,6 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
 
     if (!varAddr && varDsc->lvNormalizeOnLoad())
     {
-#if LOCAL_ASSERTION_PROP
         // TYP_BOOL quirk: previously, the code in optAssertionIsSubrange did not handle TYP_BOOL.
         // Now it does, but this leads to some regressions because we lose the uniform VNs for trees
         // that represent the "reduced" normalize-on-load locals, i. e. LCL_VAR(small type V00), created
@@ -5784,7 +5783,7 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
             assert(tree->TypeGet() == varDsc->TypeGet());
             return tree;
         }
-#endif
+
         // Small-typed arguments and aliased locals are normalized on load.
         // Other small-typed locals are normalized on store.
         // Also, under the debugger as the debugger could write to the variable.
@@ -6249,8 +6248,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
-            // Normal static field reference
+            assert(!fieldMayOverlap);
 
+            // Normal static field reference
             //
             // If we can we access the static's address directly
             // then pFldAddr will be NULL and
@@ -6262,6 +6262,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // We should always be able to access this static field address directly
             //
             assert(pFldAddr == nullptr);
+
+            // For boxed statics, this direct address will be for the box. We have already added
+            // the indirection for the field itself and attached the sequence, in importation.
+            bool          isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
+            FieldSeqNode* fldSeq =
+                !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(symHnd) : FieldSeqStore::NotAField();
 
 #ifdef TARGET_64BIT
             bool isStaticReadOnlyInited = false;
@@ -6276,11 +6282,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // apply GTF_IND_INVARIANT flag and make it hoistable/CSE-friendly
             if (isStaticReadOnlyInited || (IMAGE_REL_BASED_REL32 != eeGetRelocTypeHint(fldAddr)))
             {
-                // The address is not directly addressible, so force it into a
-                // constant, so we handle it properly
-
-                bool         isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-                GenTreeFlags handleKind    = GTF_EMPTY;
+                // The address is not directly addressible, so force it into a constant, so we handle it properly.
+                GenTreeFlags handleKind = GTF_EMPTY;
                 if (isBoxedStatic)
                 {
                     handleKind = GTF_ICON_STATIC_BOX_PTR;
@@ -6293,8 +6296,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 {
                     handleKind = GTF_ICON_STATIC_HDL;
                 }
-                FieldSeqNode* fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd);
-                GenTree*      addr     = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
 
                 // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
                 if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
@@ -6331,9 +6333,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                 static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
                 tree->SetOper(GT_CLS_VAR);
                 tree->AsClsVar()->gtClsVarHnd = symHnd;
-                FieldSeqNode* fieldSeq =
-                    fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-                tree->AsClsVar()->gtFieldSeq = fieldSeq;
+                tree->AsClsVar()->gtFieldSeq  = fldSeq;
             }
 
             return tree;
@@ -9414,12 +9414,12 @@ GenTree* Compiler::fgExpandVirtualVtableCallTarget(GenTreeCall* call)
 
 /*****************************************************************************
  *
- *  Transform the given GTK_CONST tree for code generation.
+ *  Transform the given constant tree for code generation.
  */
 
 GenTree* Compiler::fgMorphConst(GenTree* tree)
 {
-    assert(tree->OperKind() & GTK_CONST);
+    assert(tree->OperIsConst());
 
     /* Clear any exception flags or other unnecessary flags
      * that may have been set before folding this node to a constant */
@@ -9861,7 +9861,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
         if (destVarDsc != nullptr)
         {
-#if LOCAL_ASSERTION_PROP
             // Kill everything about dest
             if (optLocalAssertionProp)
             {
@@ -9870,7 +9869,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                     fgKillDependentAssertions(destVarNum DEBUGARG(tree));
                 }
             }
-#endif // LOCAL_ASSERTION_PROP
 
             // A previous incarnation of this code also required the local not to be
             // address-exposed(=taken).  That seems orthogonal to the decision of whether
@@ -10234,12 +10232,10 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
 
         GenTree* asg = gtNewAssignNode(dest, src);
 
-#if LOCAL_ASSERTION_PROP
         if (optLocalAssertionProp)
         {
             optAssertionGen(asg);
         }
-#endif // LOCAL_ASSERTION_PROP
 
         if (tree != nullptr)
         {
@@ -10947,13 +10943,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
     bool isQmarkColon = false;
 
-#if LOCAL_ASSERTION_PROP
     AssertionIndex origAssertionCount = DUMMY_INIT(0);
     AssertionDsc*  origAssertionTab   = DUMMY_INIT(NULL);
 
     AssertionIndex thenAssertionCount = DUMMY_INIT(0);
     AssertionDsc*  thenAssertionTab   = DUMMY_INIT(NULL);
-#endif
 
     if (fgGlobalMorph)
     {
@@ -11021,7 +11015,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             noway_assert(op1);
 
-            if (op1->OperKind() & GTK_RELOP)
+            if (op1->OperIsCompare())
             {
                 /* Mark the comparison node with GTF_RELOP_JMP_USED so it knows that it does
                    not need to materialize the result as a 0 or 1. */
@@ -11046,9 +11040,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_COLON:
-#if LOCAL_ASSERTION_PROP
             if (optLocalAssertionProp)
-#endif
             {
                 isQmarkColon = true;
             }
@@ -11569,8 +11561,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
     if (op1)
     {
-
-#if LOCAL_ASSERTION_PROP
         // If we are entering the "then" part of a Qmark-Colon we must
         // save the state of the current copy assignment table
         // so that we can restore this state when entering the "else" part
@@ -11591,7 +11581,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 origAssertionTab   = nullptr;
             }
         }
-#endif // LOCAL_ASSERTION_PROP
 
         // We might need a new MorphAddressContext context.  (These are used to convey
         // parent context about how addresses being calculated will be used; see the
@@ -11682,7 +11671,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1, subMac1);
 
-#if LOCAL_ASSERTION_PROP
         // If we are exiting the "then" part of a Qmark-Colon we must
         // save the state of the current copy assignment table
         // so that we can merge this state with the "else" part exit
@@ -11703,7 +11691,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 thenAssertionTab   = nullptr;
             }
         }
-#endif // LOCAL_ASSERTION_PROP
 
         /* Morphing along with folding and inlining may have changed the
          * side effect flags, so we have to reset them
@@ -11734,8 +11721,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
     if (op2)
     {
-
-#if LOCAL_ASSERTION_PROP
         // If we are entering the "else" part of a Qmark-Colon we must
         // reset the state of the current copy assignment table
         if (isQmarkColon)
@@ -11749,7 +11734,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 optAssertionReset(origAssertionCount);
             }
         }
-#endif // LOCAL_ASSERTION_PROP
 
         // We might need a new MorphAddressContext context to use in evaluating op2.
         // (These are used to convey parent context about how addresses being calculated
@@ -11792,7 +11776,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         tree->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
 
-#if LOCAL_ASSERTION_PROP
         // If we are exiting the "else" part of a Qmark-Colon we must
         // merge the state of the current copy assignment table with
         // that of the exit of the "then" part.
@@ -11864,8 +11847,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 }
             }
         }
-#endif // LOCAL_ASSERTION_PROP
-    }  // if (op2)
+    } // if (op2)
 
 DONE_MORPHING_CHILDREN:
 
@@ -11967,7 +11949,7 @@ DONE_MORPHING_CHILDREN:
 
         return tree;
     }
-    else if (tree->OperKind() & GTK_CONST)
+    else if (tree->OperIsConst())
     {
         return tree;
     }
@@ -12029,7 +12011,7 @@ DONE_MORPHING_CHILDREN:
             effectiveOp1 = op1->gtEffectiveVal();
 
             // If we are storing a small type, we might be able to omit a cast.
-            if (effectiveOp1->OperIs(GT_IND) && varTypeIsSmall(effectiveOp1))
+            if (effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) && varTypeIsSmall(effectiveOp1))
             {
                 if (!gtIsActiveCSE_Candidate(op2) && op2->OperIs(GT_CAST) &&
                     varTypeIsIntegral(op2->AsCast()->CastOp()) && !op2->gtOverflow())
@@ -12105,7 +12087,7 @@ DONE_MORPHING_CHILDREN:
 
         COMPARE:
 
-            noway_assert(tree->OperKind() & GTK_RELOP);
+            noway_assert(tree->OperIsCompare());
             break;
 
         case GT_MUL:
@@ -13219,7 +13201,7 @@ DONE_MORPHING_CHILDREN:
                     return throwNode;
                 }
 
-                noway_assert(op1->OperKind() & GTK_RELOP);
+                noway_assert(op1->OperIsCompare());
                 noway_assert(op1->gtFlags & GTF_EXCEPT);
 
                 // We need to keep op1 for the side-effects. Hang it off
@@ -13238,6 +13220,45 @@ DONE_MORPHING_CHILDREN:
                 op1->gtFlags &= ~GTF_UNSIGNED; // Clear the unsigned flag if it was set on the relop
                 op1->gtType = op1->AsOp()->gtOp1->gtType;
 
+                return tree;
+            }
+            break;
+
+        case GT_INTRINSIC:
+            if (tree->AsIntrinsic()->gtIntrinsicName ==
+                NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
+            {
+                // Should be expanded by the time it reaches CSE phase
+                assert(!optValnumCSE_phase);
+
+                JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to ");
+                if (op1->OperIsConst())
+                {
+                    // We're lucky to catch a constant here while importer was not
+                    JITDUMP("true\n");
+                    DEBUG_DESTROY_NODE(tree, op1);
+                    tree = gtNewIconNode(1);
+                }
+                else
+                {
+                    GenTree* op1SideEffects = nullptr;
+                    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
+                    if (op1SideEffects != nullptr)
+                    {
+                        DEBUG_DESTROY_NODE(tree);
+                        // Keep side-effects of op1
+                        tree = gtNewOperNode(GT_COMMA, TYP_INT, op1SideEffects, gtNewIconNode(0));
+                        JITDUMP("false with side effects:\n")
+                        DISPTREE(tree);
+                    }
+                    else
+                    {
+                        JITDUMP("false\n");
+                        DEBUG_DESTROY_NODE(tree, op1);
+                        tree = gtNewIconNode(0);
+                    }
+                }
+                INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return tree;
             }
             break;
@@ -14167,18 +14188,45 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
 GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 {
     gtUpdateNodeOperSideEffects(multiOp);
+
+    bool dontCseConstArguments = false;
+#if defined(FEATURE_HW_INTRINSICS)
+    // Opportunistically, avoid unexpected CSE for hw intrinsics with IMM arguments
+    if (multiOp->OperIs(GT_HWINTRINSIC))
+    {
+        NamedIntrinsic hwIntrinsic = multiOp->AsHWIntrinsic()->GetHWIntrinsicId();
+#if defined(TARGET_XARCH)
+        if (HWIntrinsicInfo::lookupCategory(hwIntrinsic) == HW_Category_IMM)
+        {
+            dontCseConstArguments = true;
+        }
+#elif defined(TARGET_ARMARCH)
+        if (HWIntrinsicInfo::HasImmediateOperand(hwIntrinsic))
+        {
+            dontCseConstArguments = true;
+        }
+#endif
+    }
+#endif
+
     for (GenTree** use : multiOp->UseEdges())
     {
         *use = fgMorphTree(*use);
         multiOp->gtFlags |= ((*use)->gtFlags & GTF_ALL_EFFECT);
+
+        if (dontCseConstArguments && (*use)->OperIsConst())
+        {
+            (*use)->SetDoNotCSE();
+        }
     }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+#if defined(FEATURE_HW_INTRINSICS)
     if (opts.OptimizationEnabled() && multiOp->OperIs(GT_HWINTRINSIC))
     {
         GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
         switch (hw->GetHWIntrinsicId())
         {
+#if defined(TARGET_XARCH)
             case NI_SSE_Xor:
             case NI_SSE2_Xor:
             case NI_AVX_Xor:
@@ -14204,6 +14252,36 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 }
                 break;
             }
+#endif
+
+            case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+            case NI_Vector256_Create:
+#elif defined(TARGET_ARMARCH)
+            case NI_Vector64_Create:
+#endif
+            {
+                bool hwAllArgsAreConst = true;
+                for (GenTree** use : multiOp->UseEdges())
+                {
+                    if (!(*use)->OperIsConst())
+                    {
+                        hwAllArgsAreConst = false;
+                        break;
+                    }
+                }
+
+                // Avoid unexpected CSE for constant arguments for Vector_.Create
+                // but only if all arguments are constants.
+                if (hwAllArgsAreConst)
+                {
+                    for (GenTree** use : multiOp->UseEdges())
+                    {
+                        (*use)->SetDoNotCSE();
+                    }
+                }
+            }
+            break;
 
             default:
                 break;
@@ -14714,7 +14792,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
         /* Ensure that we haven't morphed this node already */
         assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
 
-#if LOCAL_ASSERTION_PROP
         /* Before morphing the tree, we try to propagate any active assertions */
         if (optLocalAssertionProp)
         {
@@ -14733,7 +14810,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
         }
         PREFAST_ASSUME(tree != nullptr);
-#endif
     }
 
     /* Save the original un-morphed tree for fgMorphTreeDone */
@@ -14746,7 +14822,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     /* Is this a constant node? */
 
-    if (kind & GTK_CONST)
+    if (tree->OperIsConst())
     {
         tree = fgMorphConst(tree);
         goto DONE;
@@ -14897,7 +14973,6 @@ DONE:
     return tree;
 }
 
-#if LOCAL_ASSERTION_PROP
 //------------------------------------------------------------------------
 // fgKillDependentAssertionsSingle: Kill all assertions specific to lclNum
 //
@@ -14985,7 +15060,6 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
         fgKillDependentAssertionsSingle(lclNum DEBUGARG(tree));
     }
 }
-#endif // LOCAL_ASSERTION_PROP
 
 /*****************************************************************************
  *
@@ -14993,7 +15067,7 @@ void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree)
  *  It should only be called once for each node.
  *  If DEBUG is defined the flag GTF_DEBUG_NODE_MORPHED is checked and updated,
  *  to enforce the invariant that each node is only morphed once.
- *  If LOCAL_ASSERTION_PROP is enabled the result tree may be replaced
+ *  If local assertion prop is enabled the result tree may be replaced
  *  by an equivalent tree.
  *
  */
@@ -15031,12 +15105,10 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
         assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
     }
 
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
     {
         goto DONE;
     }
-
-#if LOCAL_ASSERTION_PROP
 
     if (!optLocalAssertionProp)
     {
@@ -15068,8 +15140,6 @@ void Compiler::fgMorphTreeDone(GenTree* tree,
 
     /* If this tree makes a new assertion - make it available */
     optAssertionGen(tree);
-
-#endif // LOCAL_ASSERTION_PROP
 
 DONE:;
 
@@ -15130,7 +15200,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         GenTree* cond;
         cond = condTree->gtEffectiveVal(true);
 
-        if (cond->OperKind() & GTK_CONST)
+        if (cond->OperIsConst())
         {
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
@@ -15354,7 +15424,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
         GenTree* cond;
         cond = condTree->gtEffectiveVal(true);
 
-        if (cond->OperKind() & GTK_CONST)
+        if (cond->OperIsConst())
         {
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
@@ -15749,7 +15819,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             {
                 GenTree* op1 = last->AsOp()->gtOp1;
 
-                if (op1->OperKind() & GTK_RELOP)
+                if (op1->OperIsCompare())
                 {
                     /* Unmark the comparison node with GTF_RELOP_JMP_USED */
                     op1->gtFlags &= ~GTF_RELOP_JMP_USED;
@@ -15797,7 +15867,6 @@ void Compiler::fgMorphBlocks()
 
     fgGlobalMorph = true;
 
-#if LOCAL_ASSERTION_PROP
     //
     // Local assertion prop is enabled if we are optimized
     //
@@ -15810,15 +15879,6 @@ void Compiler::fgMorphBlocks()
         //
         optAssertionInit(true);
     }
-#elif ASSERTION_PROP
-    //
-    // If LOCAL_ASSERTION_PROP is not set
-    // and we have global assertion prop
-    // then local assertion prop is always off
-    //
-    optLocalAssertionProp = false;
-
-#endif
 
     if (!compEnregLocals())
     {
@@ -15846,7 +15906,6 @@ void Compiler::fgMorphBlocks()
         }
 #endif
 
-#if LOCAL_ASSERTION_PROP
         if (optLocalAssertionProp)
         {
             //
@@ -15856,7 +15915,7 @@ void Compiler::fgMorphBlocks()
             //
             optAssertionReset(0);
         }
-#endif
+
         // Make the current basic block address available globally.
         compCurBB = block;
 

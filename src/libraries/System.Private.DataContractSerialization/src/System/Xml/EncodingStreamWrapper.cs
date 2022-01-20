@@ -319,7 +319,7 @@ namespace System.Xml
             int max = offset + Math.Min(count, BufferLength);
 
             // Encoding should be second "=", abort at first "?"
-            int i = 0;
+            int i;
             int eq = 0;
             for (i = offset + 2; i < max; i++)  // Skip the "<?" so we don't get caught by the first "?"
             {

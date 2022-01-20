@@ -226,8 +226,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode InvokeOnCurrentNodeChanged()
         {
             Debug.Assert(IsDebug && _curLoop.IsFocusSet);
-            QilIterator i;
-            return _f.Loop(i = _f.Let(_f.InvokeOnCurrentNodeChanged(_curLoop.GetCurrent()!)), _f.Sequence());
+            return _f.Loop(_f.Let(_f.InvokeOnCurrentNodeChanged(_curLoop.GetCurrent()!)), _f.Sequence());
         }
 
         [Conditional("DEBUG")]
@@ -1056,8 +1055,6 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        private static readonly char[] s_curlyBraces = { '{', '}' };
-
         [return: NotNullIfNotNull("avt")]
         private QilNode? CompileStringAvt(string? avt)
         {
@@ -1065,7 +1062,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 return null;
             }
-            if (avt.IndexOfAny(s_curlyBraces) == -1)
+            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
             {
                 return _f.String(avt);
             }
@@ -1075,7 +1072,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileTextAvt(string avt)
         {
             Debug.Assert(avt != null);
-            if (avt.IndexOfAny(s_curlyBraces) == -1)
+            if (avt.AsSpan().IndexOfAny('{', '}') < 0)
             {
                 return _f.TextCtor(_f.String(avt));
             }
@@ -1623,8 +1620,8 @@ namespace System.Xml.Xsl.Xslt
                         if (!fwdCompat)
                         {
                             // check for qname-but-not-ncname
-                            string prefix, local, nsUri;
-                            bool isValid = _compiler.ParseQName(dataType, out prefix, out local, (IErrorHelper)this);
+                            string prefix, nsUri;
+                            bool isValid = _compiler.ParseQName(dataType, out prefix, out _, (IErrorHelper)this);
                             nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/true, prefix) : _compiler.CreatePhantomNamespace();
 
                             if (nsUri.Length == 0)
@@ -1640,13 +1637,13 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     // Precalculate its value outside of for-each loop
-                    QilIterator dt, qname;
+                    QilIterator dt;
 
                     result = _f.Loop(dt = _f.Let(result),
                         _f.Conditional(_f.Eq(dt, _f.String(DtNumber)), _f.False(),
                         _f.Conditional(_f.Eq(dt, _f.String(DtText)), _f.True(),
                         fwdCompat ? _f.True() :
-                        _f.Loop(qname = _f.Let(ResolveQNameDynamic(/*ignoreDefaultNs:*/true, dt)),
+                        _f.Loop(_f.Let(ResolveQNameDynamic(/*ignoreDefaultNs:*/true, dt)),
                             _f.Error(_lastScope!.SourceLine,
                                 SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber
                             )
@@ -1787,7 +1784,6 @@ namespace System.Xml.Xsl.Xslt
                 _strConcat.Append(separator);
                 _strConcat.Append("upperFirst=");
                 _strConcat.Append(caseOrder);
-                separator = '&';
             }
 
             QilNode collation = _strConcat.ToQil();

@@ -1598,7 +1598,7 @@ namespace System.Data.Common
         private int UpdatedRowStatus(RowUpdatedEventArgs rowUpdatedEvent, BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != rowUpdatedEvent, "null rowUpdatedEvent");
-            int cumulativeDataRowsAffected = 0;
+            int cumulativeDataRowsAffected;
             switch (rowUpdatedEvent.Status)
             {
                 case UpdateStatus.Continue:

@@ -61,6 +61,7 @@
       - $(WasmBuildOnlyAfterPublish)        - Causes relinking to be done only for Publish. Defaults to false.
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
+      - $(WasmAotProfilePath)               - Path to an AOT profile file.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).

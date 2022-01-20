@@ -931,58 +931,6 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-//-------------------------------------------------------------------------
-// One-time creation of special prestub to initialize UMEntryThunks.
-//-------------------------------------------------------------------------
-Stub *GenerateUMThunkPrestub()
-{
-    CONTRACT(Stub*)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CodeLabel* rgRareLabels[] = { psl->NewCodeLabel(),
-                                  psl->NewCodeLabel(),
-                                  psl->NewCodeLabel()
-                                };
-
-
-    CodeLabel* rgRejoinLabels[] = { psl->NewCodeLabel(),
-                                    psl->NewCodeLabel(),
-                                    psl->NewCodeLabel()
-                                };
-
-    // emit the initial prolog
-    psl->EmitComMethodStubProlog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kECX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    // The call conv is a __stdcall
-    psl->X86EmitPushReg(kECX);
-
-    // call UMEntryThunk::DoRunTimeInit
-    psl->X86EmitCall(psl->NewExternalCodeLabel((LPVOID)UMEntryThunk::DoRunTimeInit), 4);
-
-    // mov ecx, [esi+UMThkCallFrame.pUMEntryThunk]
-    psl->X86EmitIndexRegLoad(kEAX, kESI, UMThkCallFrame::GetOffsetOfUMEntryThunk());
-
-    //    lea eax, [eax + UMEntryThunk.m_code]  // point to fixedup UMEntryThunk
-    psl->X86EmitOp(0x8d, kEAX, kEAX,
-                   UMEntryThunk::GetCodeOffset() + UMEntryThunkCode::GetEntryPointOffset());
-
-    psl->EmitComMethodStubEpilog(UMThkCallFrame::GetMethodFrameVPtr(), rgRareLabels, rgRejoinLabels, FALSE /*Don't profile*/);
-
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-}
-#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
 Stub *GenerateInitPInvokeFrameHelper()
 {
     CONTRACT(Stub*)

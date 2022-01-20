@@ -779,9 +779,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtDebugFlags = GTF_DEBUG_NONE;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
-#if ASSERTION_PROP
     ClearAssertion();
-#endif
 
     gtNext = nullptr;
     gtPrev = nullptr;
@@ -1080,45 +1078,57 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
     return node;
 }
 
-/*****************************************************************************
- *
- *  A little helper to create a data member reference node.
- */
-
-inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+//------------------------------------------------------------------------
+// gtNewFieldRef: a helper for creating GT_FIELD nodes.
+//
+// Normalizes struct types (for SIMD vectors). Sets GTF_GLOB_REF for fields
+// that may be pointing into globally visible memory.
+//
+// Arguments:
+//    type   - type for the field node
+//    fldHnd - the field handle
+//    obj    - the instance, an address
+//    offset - the field offset
+//
+// Return Value:
+//    The created node.
+//
+inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
-    /* 'GT_FIELD' nodes may later get transformed into 'GT_IND' */
+    // GT_FIELD nodes are transformed into GT_IND nodes.
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
 
-    if (typ == TYP_STRUCT)
+    if (type == TYP_STRUCT)
     {
-        CORINFO_CLASS_HANDLE fieldClass;
-        (void)info.compCompHnd->getFieldType(fldHnd, &fieldClass);
-        typ = impNormStructType(fieldClass);
+        CORINFO_CLASS_HANDLE structHnd;
+        eeGetFieldType(fldHnd, &structHnd);
+        type = impNormStructType(structHnd);
     }
-    GenTree* tree = new (this, GT_FIELD) GenTreeField(typ, obj, fldHnd, offset);
+
+    GenTree* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
-    if (obj != nullptr && obj->OperGet() == GT_ADDR && varTypeIsStruct(obj->AsOp()->gtOp1) &&
-        obj->AsOp()->gtOp1->OperGet() == GT_LCL_VAR)
+    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
+        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
-        unsigned lclNum                  = obj->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-        lvaTable[lclNum].lvFieldAccessed = 1;
+        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
+
+        varDsc->lvFieldAccessed = 1;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // These structs are passed by reference; we should probably be able to treat these
         // as non-global refs, but downstream logic expects these to be marked this way.
-        if (lvaTable[lclNum].lvIsParam)
+        if (varDsc->lvIsParam)
         {
-            tree->gtFlags |= GTF_GLOB_REF;
+            fieldNode->gtFlags |= GTF_GLOB_REF;
         }
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
     }
     else
     {
-        tree->gtFlags |= GTF_GLOB_REF;
+        fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 
-    return tree;
+    return fieldNode;
 }
 
 /*****************************************************************************
@@ -3224,8 +3234,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if LOCAL_ASSERTION_PROP
-
 /*****************************************************************************
  *
  *  The following resets the value assignment table
@@ -3337,16 +3345,15 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         optAssertionReset(newAssertionCount);
     }
 }
-#endif // LOCAL_ASSERTION_PROP
 
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
+inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
     if (lpFieldsModified == nullptr)
     {
         lpFieldsModified =
             new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
     }
-    lpFieldsModified->Set(fldHnd, true, FieldHandleSet::Overwrite);
+    lpFieldsModified->Set(fldHnd, fieldKind, FieldHandleSet::Overwrite);
 }
 
 inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
@@ -4509,11 +4516,12 @@ inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
     return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
-/*****************************************************************************
- * This node should not be referenced by anyone now. Set its values to garbage
- * to catch extra references
- */
-
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of tree to garbage to catch extra references
+//
+// Arguments:
+//    tree: This node should not be referenced by anyone now
+//
 inline void DEBUG_DESTROY_NODE(GenTree* tree)
 {
 #ifdef DEBUG
@@ -4532,6 +4540,19 @@ inline void DEBUG_DESTROY_NODE(GenTree* tree)
     // Don't call SetOper, because GT_COUNT is not a valid value
     tree->gtOper = GT_COUNT;
 #endif
+}
+
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of trees to garbage to catch extra references
+//
+// Arguments:
+//    tree, ...rest: These nodes should not be referenced by anyone now
+//
+template <typename... T>
+void DEBUG_DESTROY_NODE(GenTree* tree, T... rest)
+{
+    DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(rest...);
 }
 
 //------------------------------------------------------------------------------

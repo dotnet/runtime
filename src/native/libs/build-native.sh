@@ -31,8 +31,6 @@ __TargetOS=Linux
 __BuildType=Debug
 __CMakeArgs=""
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __CrossBuild=0
 __PortableBuild=1
 __RootBinDir="$__RepoRootDir/artifacts"
@@ -53,7 +51,6 @@ if [[ "$__BuildArch" == wasm ]]; then
     source "$EMSDK_PATH"/emsdk_env.sh
 
     export CLR_CC=$(which emcc)
-    export CLR_CXX=$(which em++)
 elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
     # nothing to do here
     true
@@ -73,14 +70,7 @@ else
     fi
 fi
 
-if [[ "$__TargetOS" == OSX ]]; then
-    # set default OSX deployment target
-    if [[ "$__BuildArch" == x64 ]]; then
-        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=10.13 $__CMakeArgs"
-    else
-        __CMakeArgs="-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $__CMakeArgs"
-    fi
-elif [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+if [[ "$__TargetOS" == Android && -z "$ROOTFS_DIR" ]]; then
     # Android SDK defaults to c++_static; we only need C support
     __CMakeArgs="-DANDROID_STL=none $__CMakeArgs"
 elif [[ "$__TargetOS" == iOSSimulator ]]; then

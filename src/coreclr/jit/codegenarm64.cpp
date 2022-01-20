@@ -3356,6 +3356,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             else
             {
                 // issue a full memory barrier before a volatile StInd
+                // Note: We cannot issue store barrier ishst because it is a weaker barrier.
+                // The loads can get rearranged around the barrier causing to read wrong
+                // value.
                 instGen_MemoryBarrier();
             }
         }
@@ -3963,10 +3966,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             break;
 
         case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt64:
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
@@ -4051,10 +4050,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicCast:
                 result = INS_mov;
                 break;
-            case SIMDIntrinsicConvertToInt32:
-            case SIMDIntrinsicConvertToInt64:
-                result = INS_fcvtzs;
-                break;
             case SIMDIntrinsicEqual:
                 result = INS_fcmeq;
                 break;
@@ -4080,10 +4075,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicCast:
                 result = INS_mov;
-                break;
-            case SIMDIntrinsicConvertToDouble:
-            case SIMDIntrinsicConvertToSingle:
-                result = isUnsigned ? INS_ucvtf : INS_scvtf;
                 break;
             case SIMDIntrinsicEqual:
                 result = INS_cmeq;
@@ -4232,11 +4223,7 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToSingle) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToInt32) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToDouble) ||
-           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicConvertToInt64));
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast);
 
     GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
@@ -6935,8 +6922,11 @@ void CodeGen::genArm64EmitterUnitTests()
 
 #ifdef ALL_ARM64_EMITTER_UNIT_TESTS
     //
-    // R_R   fmov/fcmp/fcvt
+    // R_R   cmeq/fmov/fcmp/fcvt
     //
+
+    // cmeq scalar
+    theEmitter->emitIns_R_R(INS_cmeq, EA_8BYTE, REG_V0, REG_V1);
 
     // fmov to vector to vector
     theEmitter->emitIns_Mov(INS_fmov, EA_8BYTE, REG_V0, REG_V2, /* canSkip */ false);

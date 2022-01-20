@@ -145,7 +145,7 @@ namespace System.IO.Enumeration
         public DateTimeOffset CreationTimeUtc => _status.GetCreationTime(FullPath, continueOnError: true);
         public DateTimeOffset LastAccessTimeUtc => _status.GetLastAccessTime(FullPath, continueOnError: true);
         public DateTimeOffset LastWriteTimeUtc => _status.GetLastWriteTime(FullPath, continueOnError: true);
-        public bool IsHidden => _status.IsHidden(FullPath, FileName, continueOnError: true);
+        public bool IsHidden => _status.IsFileSystemEntryHidden(FullPath, FileName);
         internal bool IsReadOnly => _status.IsReadOnly(FullPath, continueOnError: true);
 
         public bool IsDirectory => _status.InitiallyDirectory;

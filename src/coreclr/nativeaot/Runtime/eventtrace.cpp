@@ -3912,7 +3912,7 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
 /****************************************************************************/
 /* This is called by the runtime when a domain is loaded */
 /****************************************************************************/
-void ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName)
+void ETW::LoaderLog::DomainLoadReal(BaseDomain *pDomain, _In_opt_ LPWSTR wszFriendlyName)
 {
     CONTRACTL {
         NOTHROW;
@@ -4342,7 +4342,7 @@ void ETW::MethodLog::MethodTableRestored(MethodTable *pMethodTable)
 /****************************************************************************/
 /* This is called by the runtime when a Strong Name Verification Starts */
 /****************************************************************************/
-void ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR strFullyQualifiedAssemblyName)
+void ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, _In_ LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
 #ifndef FEATURE_CORECLR
@@ -4362,7 +4362,7 @@ void ETW::SecurityLog::StrongNameVerificationStart(DWORD dwInFlags, __in LPWSTR 
 /****************************************************************************/
 /* This is called by the runtime when a Strong Name Verification Ends */
 /****************************************************************************/
-void ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, __in LPWSTR strFullyQualifiedAssemblyName)
+void ETW::SecurityLog::StrongNameVerificationStop(DWORD dwInFlags,ULONG result, _In_ LPWSTR strFullyQualifiedAssemblyName)
 {
     WRAPPER_NO_CONTRACT;
 #ifndef FEATURE_CORECLR
@@ -4885,8 +4885,8 @@ void ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
 ETW_INLINE
     ULONG
     ETW::LoaderLog::SendModuleRange(
-    __in Module *pModule,
-    __in DWORD dwEventOptions)
+    _In_ Module *pModule,
+    _In_ DWORD dwEventOptions)
 
 {
     ULONG Result = ERROR_SUCCESS;

@@ -41,18 +41,20 @@ namespace System.Diagnostics
             ProcessModuleCollection modules = Interop.procfs.ParseMapsModules(processId) ?? new(capacity: 0);
 
             // Move the main executable module to be the first in the list if it's not already
-            string? exePath = Process.GetExePath(processId);
-            for (int i = 0; i < modules.Count; i++)
+            if (Process.GetExePath(processId) is string exePath)
             {
-                ProcessModule module = modules[i];
-                if (module.FileName == exePath)
+                for (int i = 0; i < modules.Count; i++)
                 {
-                    if (i > 0)
+                    ProcessModule module = modules[i];
+                    if (module.FileName == exePath)
                     {
-                        modules.RemoveAt(i);
-                        modules.Insert(0, module);
+                        if (i > 0)
+                        {
+                            modules.RemoveAt(i);
+                            modules.Insert(0, module);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
 

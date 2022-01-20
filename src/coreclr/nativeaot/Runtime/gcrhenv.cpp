@@ -923,7 +923,7 @@ void GCToEEInterface::DisablePreemptiveGC()
 Thread* GCToEEInterface::GetThread()
 {
 #ifndef DACCESS_COMPILE
-    return ThreadStore::GetCurrentThread();
+    return ThreadStore::GetCurrentThreadIfAvailable();
 #else
     return NULL;
 #endif
@@ -1478,7 +1478,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* 
 #ifdef UNICODE
     size_t keyLength = strlen(privateKey) + 1;
     TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (int i = 0; i < keyLength; i++)
+    for (size_t i = 0; i < keyLength; i++)
         pKey[i] = privateKey[i];
 #else
     const TCHAR* pKey = privateKey;
@@ -1497,7 +1497,7 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
 #ifdef UNICODE
     size_t keyLength = strlen(privateKey) + 1;
     TCHAR* pKey = (TCHAR*)_alloca(sizeof(TCHAR) * keyLength);
-    for (int i = 0; i < keyLength; i++)
+    for (size_t i = 0; i < keyLength; i++)
         pKey[i] = privateKey[i];
 #else
     const TCHAR* pKey = privateKey;

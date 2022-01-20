@@ -293,15 +293,6 @@ namespace System.Runtime
             return objClone;
         }
 
-        [RuntimeExport("RhpReversePInvokeBadTransition")]
-        public static void RhpReversePInvokeBadTransition(IntPtr returnAddress)
-        {
-            EH.FailFastViaClasslib(
-                RhFailFastReason.IllegalUnmanagedCallersOnlyEntry,
-                null,
-                returnAddress);
-        }
-
         [RuntimeExport("RhGetCurrentThreadStackTrace")]
         [MethodImpl(MethodImplOptions.NoInlining)] // Ensures that the RhGetCurrentThreadStackTrace frame is always present
         public static unsafe int RhGetCurrentThreadStackTrace(IntPtr[] outputBuffer)

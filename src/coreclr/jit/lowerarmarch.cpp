@@ -53,7 +53,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
     if (!varTypeIsFloating(parentNode->TypeGet()))
     {
 #ifdef TARGET_ARM64
-        if (parentNode->OperIsRelop() && childNode->IsFPZero())
+        if (parentNode->OperIsCompare() && childNode->IsFPZero())
         {
             // Contain 0.0 constant in fcmp on arm64
             // TODO: Enable for arm too (vcmp)
@@ -436,24 +436,14 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     GenTreeIntCon* offsetNode = addr->AsOp()->gtGetOp2()->AsIntCon();
     ssize_t        offset     = offsetNode->IconValue();
 
-    // All integer load/store instructions on both ARM32 and ARM64 support
-    // offsets in range -255..255. Of course, this is a rather conservative
-    // check. For example, if the offset and size are a multiple of 8 we
-    // could allow a combined offset of up to 32760 on ARM64.
+#ifdef TARGET_ARM
+    // All integer load/store instructions on Arm support offsets in range -255..255.
+    // Of course, this is a rather conservative check.
     if ((offset < -255) || (offset > 255) || (offset + static_cast<int>(size) > 256))
     {
         return;
     }
-
-#ifdef TARGET_ARM64
-    // If we're going to use LDP/STP we need to ensure that the offset is
-    // a multiple of 8 since these instructions do not have an unscaled
-    // offset variant.
-    if ((size >= 2 * REGSIZE_BYTES) && (offset % REGSIZE_BYTES != 0))
-    {
-        return;
-    }
-#endif
+#endif // TARGET_ARM
 
     if (!IsSafeToContainMem(blkNode, addr))
     {
@@ -500,7 +490,6 @@ void Lowering::LowerCast(GenTree* tree)
     GenTree*  op1     = tree->AsOp()->gtOp1;
     var_types dstType = tree->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
-    var_types tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
     {
@@ -510,16 +499,6 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     assert(!varTypeIsSmall(srcType));
-
-    if (tmpType != TYP_UNDEF)
-    {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, op1, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(op1, tmp);
-    }
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
@@ -1862,6 +1841,21 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 MakeSrcContained(node, intrin.op2);
                 MakeSrcContained(node, intrin.op4);
                 break;
+
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            {
+                if (intrin.op1->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                else if (intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
 
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:

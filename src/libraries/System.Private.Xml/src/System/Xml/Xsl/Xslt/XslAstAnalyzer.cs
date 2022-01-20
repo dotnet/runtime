@@ -83,7 +83,7 @@ namespace System.Xml.Xsl.Xslt
 
                 // NOTE: We do not check for duplicate edges here
                 adjList.Add(v2);
-                if (!TryGetValue(v2, out adjList))
+                if (!TryGetValue(v2, out _))
                 {
                     this[v2] = null;
                 }

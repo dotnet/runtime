@@ -28,6 +28,10 @@
 #undef min
 #undef max
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) (0)
+#endif
+
 #if __has_cpp_attribute(fallthrough)
 #define FALLTHROUGH [[fallthrough]]
 #else
@@ -100,7 +104,7 @@ extern "C"
 #   define __NR_membarrier  283
 #  elif defined(__loongarch64)
 #   define __NR_membarrier  283
-#  elif
+#  else
 #   error Unknown architecture
 #  endif
 # endif

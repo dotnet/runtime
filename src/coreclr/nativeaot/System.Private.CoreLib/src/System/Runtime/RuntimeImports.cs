@@ -28,7 +28,7 @@ namespace System.Runtime
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        internal static extern ulong PalGetTickCount64();
+        internal static extern ulong RhpGetTickCount64();
 
         [DllImport(RuntimeLibrary, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr RhpGetCurrentThread();
@@ -678,18 +678,6 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
         internal static extern void MemoryBarrier();
-
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fabs")]
-        internal static extern double fabs(double x);
-
-        [Intrinsic]
-        internal static float fabsf(float x)
-        {
-            // fabsf is not a real export for some architectures
-            return (float)fabs(x);
-        }
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

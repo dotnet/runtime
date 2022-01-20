@@ -50,6 +50,8 @@ build_cross_architecture_components()
         __SkipCrossArchBuild=0
     elif [[ "$__BuildArch" == "arm64" && "$__CrossArch" == "x64" ]]; then
         __SkipCrossArchBuild=0
+    elif [[ "$__BuildArch" == "loongarch64" && "$__CrossArch" == "x64" ]]; then
+        __SkipCrossArchBuild=0
     else
         # not supported
         return
@@ -116,8 +118,6 @@ __CodeCoverage=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __Compiler=clang
-__CompilerMajorVersion=
-__CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0

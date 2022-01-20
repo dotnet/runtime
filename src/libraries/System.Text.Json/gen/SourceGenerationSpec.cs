@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json.Reflection;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -11,6 +13,9 @@ namespace System.Text.Json.SourceGeneration
     {
         public List<ContextGenerationSpec> ContextGenerationSpecList { get; init; }
 
+#if DEBUG
+        public MetadataLoadContextInternal MetadataLoadContext { get; init; }
+#endif
         public Type BooleanType { get; init; }
         public Type ByteArrayType { get; init; }
         public Type CharType { get; init; }

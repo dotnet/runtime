@@ -901,7 +901,7 @@ namespace System.Xml.Schema
 
             //Not locking set as this will not be accessible outside the validator
             XmlSchema? schema;
-            if (IsSchemaLoaded(new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute), targetNamespace, out schema))
+            if (IsSchemaLoaded(new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute), targetNamespace, out _))
             {
                 return;
             }
@@ -1344,7 +1344,6 @@ namespace System.Xml.Schema
 
         internal bool IsSchemaLoaded(Uri schemaUri, string? targetNamespace, out XmlSchema? schema)
         {
-            schema = null;
             if (targetNamespace == null)
             {
                 targetNamespace = string.Empty;

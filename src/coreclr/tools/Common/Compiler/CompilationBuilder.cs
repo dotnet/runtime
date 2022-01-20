@@ -23,6 +23,7 @@ namespace ILCompiler
         private DependencyTrackingLevel _dependencyTrackingLevel = DependencyTrackingLevel.None;
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
+        protected int _parallelism = -1;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -38,6 +39,12 @@ namespace ILCompiler
         public CompilationBuilder UseLogger(Logger logger)
         {
             _logger = logger;
+            return this;
+        }
+
+        public CompilationBuilder UseParallelism(int parallelism)
+        {
+            _parallelism = parallelism;
             return this;
         }
 
