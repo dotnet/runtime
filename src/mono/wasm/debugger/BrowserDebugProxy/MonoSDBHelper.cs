@@ -2665,6 +2665,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
             return true;
         }
+
+        public async Task<bool> SetNextIP(MethodInfoWithDebugInformation method, int threadId, IlLocation ilOffset, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(threadId);
+            commandParamsWriter.Write(method.DebugId);
+            commandParamsWriter.Write((long)ilOffset.Offset);
+            using var getDebuggerCmdReader = await SendDebuggerAgentCommand(CmdThread.SetIp, commandParamsWriter, token);
+            if (getDebuggerCmdReader.HasError)
+                return false;
+            return true;
+        }
     }
 
     internal static class HelperExtensions

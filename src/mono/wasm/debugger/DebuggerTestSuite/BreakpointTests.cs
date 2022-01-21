@@ -777,6 +777,84 @@ namespace DebuggerTests
             );
         }
 
+        [Fact]
+        public async Task ContinueExecutionToLocation()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 9, 8);
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 9, 8,
+                "IntAdd",
+                wait_for_event_fn: (pause_location) =>
+                {
+                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                    var top_frame = pause_location["callFrames"][0];
+                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+                    return Task.CompletedTask;
+                }
+            );
+            var top_frame = pause_location["callFrames"][0]["functionLocation"];
+            await ContinueExecutionToAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "c", 0);
+                    CheckNumber(locals, "d", 0);
+                    CheckNumber(locals, "e", 0);
+                    await CheckBool(locals, "f", false);
+                    await Task.CompletedTask;
+                });
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 13, 8, "IntAdd",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "c", 0);
+                    CheckNumber(locals, "d", 0);
+                    CheckNumber(locals, "e", 0);
+                    await CheckBool(locals, "f", true);
+                    await Task.CompletedTask;
+                });
+            await ContinueExecutionToAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 9, 8, "IntAdd",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "c", 0);
+                    CheckNumber(locals, "d", 0);
+                    CheckNumber(locals, "e", 0);
+                    await CheckBool(locals, "f", true);
+                    await Task.CompletedTask;
+                });
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "c", 30);
+                    CheckNumber(locals, "d", 0);
+                    CheckNumber(locals, "e", 0);
+                    await CheckBool(locals, "f", true);
+                    await Task.CompletedTask;
+                });
+            await ContinueExecutionToAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 11, 8, "IntAdd",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "c", 30);
+                    CheckNumber(locals, "d", 0);
+                    CheckNumber(locals, "e", 0);
+                    await CheckBool(locals, "f", true);
+                    await Task.CompletedTask;
+                });
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
+            locals_fn: async (locals) =>
+                {
+                    CheckNumber(locals, "c", 30);
+                    CheckNumber(locals, "d", 0);
+                    CheckNumber(locals, "e", 10);
+                    await CheckBool(locals, "f", true);
+                    await Task.CompletedTask;
+                });
+        }
 
     }
 }

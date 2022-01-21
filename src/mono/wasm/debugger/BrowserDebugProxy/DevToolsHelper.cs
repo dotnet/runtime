@@ -327,6 +327,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
+        internal int BreakpointToDisable { get; set; }
+
         public DebugStore Store
         {
             get

@@ -990,6 +990,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 executionContextId,
                 executionContextAuxData,
                 //hash:  should be the v8 hash algo, managed implementation is pending
+                isLiveEdit = false,
+                isModule = false,
+                scriptLanguage = "JavaScript",
+                hasSourceURL = false,
                 dotNetUrl = DotNetUrl,
             };
         }
@@ -1142,7 +1146,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (end.Line < spStart.Line)
                 return false;
 
-            if (end.Column < spStart.Column && end.Line == spStart.Line)
+            if (end.Column < spStart.Column && end.Line == spStart.Line && end.Column != -1)
                 return false;
 
             return true;
@@ -1170,16 +1174,21 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             foreach (MethodInfo method in doc.Methods)
             {
-                if (!method.DebugInformation.SequencePointsBlob.IsNil)
-                {
-                    foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
-                    {
-                        if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
-                            res.Add(new SourceLocation(method, sequencePoint));
-                    }
-                }
+                AddPossibleBreakpointsInMethodToList(start, end, res, method);
             }
             return res;
+        }
+
+        public void AddPossibleBreakpointsInMethodToList(SourceLocation start, SourceLocation end, List<SourceLocation> res, MethodInfo method)
+        {
+            if (!method.DebugInformation.SequencePointsBlob.IsNil)
+            {
+                foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
+                {
+                    if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
+                        res.Add(new SourceLocation(method, sequencePoint));
+                }
+            }
         }
 
         /*

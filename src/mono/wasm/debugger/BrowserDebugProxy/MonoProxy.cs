@@ -573,6 +573,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
                     }
+                case "Debugger.continueToLocation":
+                    {
+                        if (await OnContinueToLocation(id, args["location"]?["scriptId"]?.Value<string>(), args["location"]["lineNumber"].Value<int>(), token))
+                        {
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                            return true;
+                        }
+                        break;
+                    }
             }
 
             return false;
@@ -968,6 +977,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case EventKind.Breakpoint:
                     {
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
+                        if (request_id == context.BreakpointToDisable)
+                        {
+                                context.BreakpointToDisable = -1;
+                                await context.SdbAgent.RemoveBreakpoint(request_id, token);
+                        }
                         string reason = "other";//other means breakpoint
                         int methodId = 0;
                         if (event_kind != EventKind.UserBreak)
@@ -1430,6 +1444,28 @@ namespace Microsoft.WebAssembly.Diagnostics
         private void OnCompileDotnetScript(MessageId msg_id, CancellationToken token)
         {
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
+        }
+
+        private async Task<bool> OnContinueToLocation(MessageId sessionId, string script_id, int lineNumber, CancellationToken token)
+        {
+            DebugStore store = await RuntimeReady(sessionId, token);
+            ExecutionContext context = GetContext(sessionId);
+            Frame scope = context.CallStack.First<Frame>();
+            if (!SourceId.TryParse(script_id, out SourceId id))
+                return false;
+
+            var res = new List<SourceLocation>();
+
+            var sourceLocation = new SourceLocation(id, lineNumber, -1);
+
+            store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, scope.Method.Info);
+            var ilOffset = res.First().IlLocation;
+
+            var ret = await context.SdbAgent.SetNextIP(scope.Method, context.ThreadId, ilOffset, token);
+            var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
+            context.BreakpointToDisable = breakpointId;
+            await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+            return ret;
         }
 
         private async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
