@@ -13536,8 +13536,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     // Fold (x + 0) - given it won't change the tree type to TYP_REF.
     // TODO-Bug: this code will lose the GC-ness of a tree like "native int + byref(0)".
-    if (op2->IsCnsIntOrI() && (op2->AsIntCon()->IconValue() == 0) &&
-        ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
+    if (op2->IsIntegralConst(0) && ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
     {
         if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq != nullptr) &&
             (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
