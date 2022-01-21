@@ -26,43 +26,9 @@ namespace System.Drawing
                 !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
                 Environment.GetEnvironmentVariable("SYSTEM_DRAWING_COMMON_FORCE_X11") != null;
 
-            internal static IntPtr LoadNativeLibrary()
-            {
-                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-
-                IntPtr lib;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    if (!NativeLibrary.TryLoad("libgdiplus.dylib", assembly, default, out lib))
-                    {
-                        // homebrew install location
-                        if (!NativeLibrary.TryLoad("/usr/local/lib/libgdiplus.dylib", assembly, default, out lib))
-                        {
-                            // macports install location
-                            NativeLibrary.TryLoad("/opt/local/lib/libgdiplus.dylib", assembly, default, out lib);
-                        }
-                    }
-                }
-                else
-                {
-                    // Various Unix package managers have chosen different names for the "libgdiplus" shared library.
-                    // The mono project, where libgdiplus originated, allowed both of the names below to be used, via
-                    // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
-                    // the name suffixed with ".0".
-                    if (!NativeLibrary.TryLoad("libgdiplus.so", assembly, default, out lib))
-                    {
-                        NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
-                    }
-                }
-
-                // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
-                // but not until an attempt is made to actually use the function (rather than load it). This matches how PInvokes behave.
-                return lib;
-            }
-
             private static void PlatformInitialize()
             {
-                LibraryResolver.EnsureRegistered();
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix);
             }
 
             // Imported functions
