@@ -7661,7 +7661,7 @@ inline bool GenTree::IsSIMDZero() const
 //
 inline bool GenTree::IsFloatPositiveZero() const
 {
-    return !(IsCnsNonZeroFltOrDbl());
+    return IsCnsFltOrDbl() && !IsCnsNonZeroFltOrDbl();
 }
 
 //-------------------------------------------------------------------
