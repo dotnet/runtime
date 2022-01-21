@@ -1048,9 +1048,9 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 {
     GenTreeOp* asgFields = nullptr;
 
-    GenTree* addrSpill            = nullptr;
-    unsigned addrSpillTemp        = BAD_VAR_NUM;
-    bool     addrSpillIsStackDest = false; // true if 'addrSpill' represents the address in our local stack frame
+    GenTree* addrSpill          = nullptr;
+    unsigned addrSpillSrcLclNum = BAD_VAR_NUM;
+    unsigned addrSpillTemp      = BAD_VAR_NUM;
 
     GenTree* addrSpillAsg = nullptr;
 
@@ -1095,7 +1095,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     // We will spill m_srcAddr (i.e. assign to a temp "BlockOp address local")
                     // no need to clone a new copy as it is only used once
                     //
-                    addrSpill = m_srcAddr; // addrSpill represents the 'm_srcAddr'
+                    addrSpill          = m_srcAddr; // addrSpill represents the 'm_srcAddr'
+                    addrSpillSrcLclNum = m_srcLclNum;
                 }
             }
         }
@@ -1144,25 +1145,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     // We will spill m_dstAddr (i.e. assign to a temp "BlockOp address local")
                     // no need to clone a new copy as it is only used once
                     //
-                    addrSpill = m_dstAddr; // addrSpill represents the 'm_dstAddr'
+                    addrSpill          = m_dstAddr; // addrSpill represents the 'm_dstAddr'
+                    addrSpillSrcLclNum = m_dstLclNum;
                 }
             }
-        }
-    }
-
-    // TODO-CQ: this should be based on a more general
-    // "BaseAddress" method, that handles fields of structs, before or after
-    // morphing.
-    if ((addrSpill != nullptr) && addrSpill->OperIs(GT_ADDR))
-    {
-        GenTree* addrSpillOp = addrSpill->AsOp()->gtGetOp1();
-        if (addrSpillOp->IsLocal())
-        {
-            // We will *not* consider this to define the local, but rather have each individual field assign
-            // be a definition.
-            addrSpillOp->gtFlags &= ~(GTF_LIVENESS_MASK);
-            addrSpillIsStackDest = true; // addrSpill represents the address of LclVar[varNum] in our
-                                         // local stack frame
         }
     }
 
@@ -1178,30 +1164,26 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
 
         addrSpillDsc->lvType = TYP_BYREF;
 
-        if (addrSpillIsStackDest)
+        if (addrSpillSrcLclNum != BAD_VAR_NUM)
         {
+            // addrSpill represents the address of LclVar[varNum] in our local stack frame.
             addrSpillDsc->lvStackByref = true;
         }
 
         GenTreeLclVar* addrSpillNode = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
         addrSpillAsg                 = m_comp->gtNewAssignNode(addrSpillNode, addrSpill);
 
-        // If we are assigning the address of a LclVar here
-        // liveness does not account for this kind of address taken use.
+        // If we are assigning the address of a LclVar here liveness will not
+        // account for this kind of address taken use. Mark the local as
+        // address-exposed so that we don't do illegal optimizations with it.
         //
-        // We have to mark this local as address exposed so
-        // that we don't delete the definition for this LclVar
-        // as a dead store later on.
+        // TODO-CQ: usage of "addrSpill" for local addresses is a workaround
+        // for cases where we fail to use LCL_FLD nodes instead. Fix them and
+        // delete this code.
         //
-        if (addrSpill->OperGet() == GT_ADDR)
+        if (addrSpillSrcLclNum != BAD_VAR_NUM)
         {
-            GenTree* addrOp = addrSpill->AsOp()->gtOp1;
-            if (addrOp->IsLocal())
-            {
-                unsigned lclVarNum = addrOp->AsLclVarCommon()->GetLclNum();
-                m_comp->lvaGetDesc(lclVarNum)->SetAddressExposed(true DEBUGARG(AddressExposedReason::COPY_FLD_BY_FLD));
-                m_comp->lvaSetVarDoNotEnregister(lclVarNum DEBUGARG(DoNotEnregisterReason::AddrExposed));
-            }
+            m_comp->lvaSetVarAddrExposed(addrSpillSrcLclNum DEBUGARG(AddressExposedReason::COPY_FLD_BY_FLD));
         }
     }
 
@@ -1209,7 +1191,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     // So, beyond this point we cannot rely on the old values of 'm_srcVarDsc' and 'm_dstVarDsc'.
     for (unsigned i = 0; i < fieldCnt; ++i)
     {
-
         GenTree* dstFld;
         if (m_dstDoFldAsg)
         {
