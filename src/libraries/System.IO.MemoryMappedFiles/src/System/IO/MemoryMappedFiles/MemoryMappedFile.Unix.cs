@@ -173,8 +173,15 @@ namespace System.IO.MemoryMappedFiles
         private static FileStream? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            // The POSIX shared memory object name must begin with '/'.  After that we just want something short and unique.
-            string mapName = string.Create(null, stackalloc char[128], $"/corefx_map_{Guid.NewGuid():N}");
+            // The POSIX shared memory object name must begin with '/'.  After that we just want something short (32) and unique.
+            string mapName = Guid.NewGuid().ToString("N");
+            unsafe
+            {
+                fixed (char* mutable = mapName)
+                {
+                    mutable[0] = '/';
+                }
+            }
 
             // Determine the flags to use when creating the shared memory object
             Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
