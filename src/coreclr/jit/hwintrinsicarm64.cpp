@@ -787,7 +787,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op1 = gtNewSimdHWIntrinsicNode(simdBaseType, op1, NI_Vector64_ToScalar, simdBaseJitType, 8,
                                                /* isSimdAsHWIntrinsic */ false);
-                op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, simdBaseType);
+                op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
                 GenTree* zero = gtNewSimdZeroNode(simdType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
                 ssize_t  index = 8 / genTypeSize(simdBaseType);
@@ -809,7 +809,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (!varTypeIsLong(simdBaseType))
                 {
-                    if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
+                    if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
                     {
                         CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
 
