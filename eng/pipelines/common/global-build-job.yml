@@ -141,7 +141,7 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
-    - ${{ if contains(parameters.nameSuffix, 'Windows_wasm') }}:
+    - ${{ if eq(parameters.platform, 'Browser_wasm_win') }}:
       # Update machine certs
       - task: PowerShell@2
         displayName: Update machine certs
