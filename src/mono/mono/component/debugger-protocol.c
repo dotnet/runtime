@@ -11,7 +11,7 @@ static int32_t packet_id = 0;
 /*
  * Functions to decode protocol data
  */
-int  
+int
 m_dbgprot_buffer_add_command_header (MdbgProtBuffer *data, int command_set, int command, MdbgProtBuffer *out)
 {
 	int id = dbg_rt_atomic_inc_int32_t ((volatile int32_t *)&packet_id);
@@ -27,7 +27,7 @@ m_dbgprot_buffer_add_command_header (MdbgProtBuffer *data, int command_set, int 
 	return id;
 }
 
-void 
+void
 m_dbgprot_decode_command_header (MdbgProtBuffer *recvbuf, MdbgProtHeader *header)
 {
 	header->len = m_dbgprot_decode_int (recvbuf->p, &recvbuf->p, recvbuf->end);

@@ -124,7 +124,7 @@ g_log_set_always_fatal (GLogLevelFlags fatal_mask)
 	GLogLevelFlags old_fatal = fatal;
 
 	fatal |= fatal_mask;
-	
+
 	return old_fatal;
 }
 
@@ -147,7 +147,7 @@ g_logstr (const gchar *log_domain, GLogLevelFlags log_level, const gchar *msg)
 {
 	if (!default_log_func)
 		default_log_func = g_log_default_handler;
-	
+
 	default_log_func (log_domain, log_level, msg, default_log_func_user_data);
 }
 

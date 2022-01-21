@@ -101,8 +101,8 @@ typedef enum {
 #define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
 #define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
 
-/* 
- * Structure representing a method transformed for the interpreter 
+/*
+ * Structure representing a method transformed for the interpreter
  */
 typedef struct InterpMethod InterpMethod;
 struct InterpMethod {

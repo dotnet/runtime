@@ -87,7 +87,7 @@ hot_reload_table_bounds_check (MonoImage *base_image, int table_index, int token
 static gboolean
 hot_reload_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, uint32_t orig_index, MonoImage **image_out, uint32_t *index_out);
 
-static gpointer 
+static gpointer
 hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx);
 
 static gboolean
@@ -188,14 +188,14 @@ static MonoNativeTlsKey exposed_generation_id;
  * In each delta, the physical tables contain the rows that modify existing rows of a prior generation,
  * followed by inserted rows.
  * https://github.com/dotnet/runtime/blob/6072e4d3a7a2a1493f514cdf4be75a3d56580e84/src/libraries/System.Reflection.Metadata/src/System/Reflection/Metadata/Ecma335/MetadataAggregator.cs#L324
- * 
+ *
  * The total logical number of rows in a table for a particular generation is
  *    prev_gen_rows + inserted_rows.
  */
 typedef struct _delta_row_count {
 	guint32 prev_gen_rows;
 	guint32 modified_rows;
-	guint32 inserted_rows; 
+	guint32 inserted_rows;
 } delta_row_count;
 
 /* Additional informaiton for MonoImages representing deltas */
@@ -212,7 +212,7 @@ struct _DeltaInfo {
 	// for each table, the row in the EncMap table that has the first token for remapping it?
 	uint32_t enc_recs [MONO_TABLE_NUM];
 	delta_row_count count [MONO_TABLE_NUM];
-	
+
 	MonoPPDBFile *ppdb_file;
 
 	MonoMemPool *pool; /* mutated tables are allocated here */
@@ -1607,7 +1607,7 @@ set_update_method (MonoImage *image_base, BaselineInfo *base_info, uint32_t gene
 	/* FIXME: this is a race if other threads are doing a lookup. */
 	g_hash_table_insert (base_info->method_table_update, GUINT_TO_POINTER (token_index), GUINT_TO_POINTER (generation));
 	g_hash_table_insert (delta_info->method_table_update, GUINT_TO_POINTER (token_index), (gpointer) il_address);
-	set_delta_method_debug_info (delta_info, token_index, pdb_address); 
+	set_delta_method_debug_info (delta_info, token_index, pdb_address);
 }
 
 static MonoDebugInformationEnc *
@@ -1813,7 +1813,7 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			if (!delta_info->method_table_update)
 				delta_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 			if (!delta_info->method_ppdb_table_update)
-			
+
 				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
@@ -2089,7 +2089,7 @@ get_method_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t 
 	gpointer loc = NULL;
 	uint32_t cur = hot_reload_get_thread_generation ();
 	int generation = -1;
-	
+
 	/* Go through all the updates that the current thread can see and see
 	 * if they updated the method.	Keep the latest visible update */
 	for (GList *ptr = base_info->delta_info; ptr != NULL; ptr = ptr->next) {
@@ -2117,7 +2117,7 @@ get_method_update_rva (MonoImage *image_base, BaselineInfo *base_info, uint32_t 
 	return loc;
 }
 
-gpointer 
+gpointer
 hot_reload_get_updated_method_ppdb (MonoImage *base_image, uint32_t idx)
 {
 	BaselineInfo *info = baseline_info_lookup (base_image);
