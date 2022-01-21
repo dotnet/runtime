@@ -618,6 +618,8 @@ namespace Microsoft.VisualBasic.Tests
                             {
                             }
                         }
+
+                        return 0;
                     },
                     fileName,
                     text,
