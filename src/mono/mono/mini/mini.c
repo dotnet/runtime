@@ -3752,6 +3752,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		mono_cfg_dump_ir (cfg, "decompose_array_access_opts");
 	}
 
+	/* Eliminate the mrgctx init call if the method has no mrgctx entries */
+	if (cfg->gshared_info && !cfg->gshared_info->num_entries) {
+		NULLIFY_INS (cfg->init_method_rgctx_ins);
+		/* Needed by the assert in get_gshared_info_slot () */
+		cfg->init_method_rgctx_ins = NULL;
+	}
+
 	if (cfg->got_var) {
 #ifndef MONO_ARCH_GOT_REG
 		GList *regs;
@@ -3839,6 +3846,13 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	mono_insert_branches_between_bblocks (cfg);
+
+	if (cfg->gshared_info) {
+		MonoGSharedMethodInfo *info = mini_gshared_method_info_dup (cfg->mem_manager, cfg->gshared_info);
+
+		/* cfg->gshared_info is already allocated from permanent memory, so change only the entries */
+		cfg->gshared_info->entries = info->entries;
+	}
 
 	if (COMPILE_LLVM (cfg)) {
 #ifdef ENABLE_LLVM
