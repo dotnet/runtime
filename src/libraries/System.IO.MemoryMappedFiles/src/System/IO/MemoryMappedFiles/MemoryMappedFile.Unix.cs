@@ -176,12 +176,12 @@ namespace System.IO.MemoryMappedFiles
         {
             const int MaxSharedMemoryObjectNameLength = 32; // SHM_NAME_MAX on OSX ARM64, on other systems it's equal PATH_MAX (250)
             // The POSIX shared memory object name must begin with '/'.  After that we just want something short (32) and unique.
-            Span<char> characters = stackalloc char[MaxSharedMemoryObjectNameLength];
-            char format = 'N';
-            bool success = Guid.NewGuid().TryFormat(characters, out int charsWritten, new ReadOnlySpan<char>(&format, 1));
-            Debug.Assert(success && charsWritten == MaxSharedMemoryObjectNameLength);
-            characters[0] = '/';
-            string mapName = new string(characters);
+            string mapName = string.Create(MaxSharedMemoryObjectNameLength, 0, (span, state) =>
+            {
+                Guid.NewGuid().TryFormat(span, out int charsWritten, "N");
+                Debug.Assert(charsWritten == MaxSharedMemoryObjectNameLength);
+                span[0] = '/';
+            });
 
             // Determine the flags to use when creating the shared memory object
             Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
