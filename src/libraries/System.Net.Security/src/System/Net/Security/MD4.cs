@@ -5,7 +5,7 @@
 // MD4.cs - Message Digest 4 Abstract class
 //
 // Author:
-//	Sebastien Pouliot (sebastien@xamarin.com)
+//  Sebastien Pouliot (sebastien@xamarin.com)
 //
 // (C) 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright 2013 Xamarin Inc. (http://www.xamarin.com)
@@ -19,10 +19,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
