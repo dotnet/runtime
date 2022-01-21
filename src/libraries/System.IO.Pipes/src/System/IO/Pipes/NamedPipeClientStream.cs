@@ -79,7 +79,7 @@ namespace System.IO.Pipes
             }
             if (impersonationLevel < TokenImpersonationLevel.None || impersonationLevel > TokenImpersonationLevel.Delegation)
             {
-               throw new ArgumentOutOfRangeException(nameof(impersonationLevel), SR.ArgumentOutOfRange_ImpersonationInvalid);
+                throw new ArgumentOutOfRangeException(nameof(impersonationLevel), SR.ArgumentOutOfRange_ImpersonationInvalid);
             }
             if (inheritability < HandleInheritability.None || inheritability > HandleInheritability.Inheritable)
             {
@@ -89,6 +89,7 @@ namespace System.IO.Pipes
             {
                 IsCurrentUserOnly = true;
             }
+
             _normalizedPipePath = GetPipePath(serverName, pipeName);
             _direction = direction;
             _inheritability = inheritability;
