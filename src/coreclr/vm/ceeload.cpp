@@ -1772,7 +1772,7 @@ BOOL Module::IsRuntimeMarshallingEnabled()
 
     HRESULT hr;
 
-    IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
+    IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
 
     mdToken token;
     if (SUCCEEDED(hr = mdImport->GetAssemblyFromScope(&token)))
