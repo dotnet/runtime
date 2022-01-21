@@ -606,7 +606,7 @@ add_valuetype_win64 (MonoMethodSignature *signature, ArgInfo *arg_info, MonoType
 	assert (signature != NULL && arg_info != NULL && type != NULL && current_int_reg != NULL && current_float_reg != NULL && stack_size != NULL);
 
 	klass = mono_class_from_mono_type_internal (type);
-	get_valuetype_size_win64 (klass, signature->pinvoke, arg_info, type, &arg_class, &arg_size);
+	get_valuetype_size_win64 (klass, signature->pinvoke && !signature->marshalling_disabled, arg_info, type, &arg_class, &arg_size);
 
 	/* Only drop value type if its not an empty struct as input that must be represented in call */
 	if ((arg_size == 0 && !arg_info->pass_empty_struct) || (arg_info->pass_empty_struct && is_return)) {
@@ -640,7 +640,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	int struct_size;
 
 	klass = mono_class_from_mono_type_internal (type);
-	size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
+	size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
 
 	if (!sig->pinvoke && ((is_return && (size == 8)) || (!is_return && (size <= 16)))) {
 		/* We pass and return vtypes of size 8 in a register */
@@ -650,7 +650,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	/* If this struct can't be split up naturally into 8-byte */
 	/* chunks (registers), pass it on the stack.              */
-	if (sig->pinvoke) {
+	if (sig->pinvoke && !sig->marshalling_disabled) {
 		MonoMarshalType *info = mono_marshal_load_type_info (klass);
 		g_assert (info);
 		struct_size = info->native_size;
@@ -662,7 +662,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	 * handle nested structures.
 	 */
 	fields_array = g_array_new (FALSE, TRUE, sizeof (StructFieldInfo));
-	collect_field_info_nested (klass, fields_array, 0, sig->pinvoke, m_class_is_unicode (klass));
+	collect_field_info_nested (klass, fields_array, 0, sig->pinvoke && !sig->marshalling_disabled, m_class_is_unicode (klass));
 	fields = (StructFieldInfo*)fields_array->data;
 	nfields = fields_array->len;
 
@@ -2311,7 +2311,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			guint32 align;
 			guint32 size;
 
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_type_native_stack_size (t, &align);
 			else {
 				/*
@@ -2462,7 +2462,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		g_assert (ainfo->storage == ArgValuetypeAddrInIReg || (ainfo->storage == ArgValuetypeAddrOnStack && ainfo->pair_storage [0] == ArgNone));
 		
 		vtaddr = mono_compile_create_var (cfg, m_class_get_byval_arg (ins->klass), OP_LOCAL);
-		vtaddr->backend.is_pinvoke = call->signature->pinvoke;
+		vtaddr->backend.is_pinvoke = call->signature->pinvoke && !call->signature->marshalling_disabled;
 
 		MONO_INST_NEW (cfg, load, OP_LDADDR);
 		cfg->has_indirection = TRUE;
