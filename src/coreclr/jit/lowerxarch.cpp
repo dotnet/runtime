@@ -3047,8 +3047,6 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     if (simdSize == 32)
     {
-        assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
-
         switch (simdBaseType)
         {
             case TYP_SHORT:
@@ -3056,6 +3054,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             case TYP_INT:
             case TYP_UINT:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
                 multiply      = NI_AVX2_MultiplyLow;
                 horizontalAdd = NI_AVX2_HorizontalAdd;
                 add           = NI_AVX2_Add;
@@ -3064,6 +3064,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             case TYP_FLOAT:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+
                 // We will be constructing the following parts:
                 //   idx  =    CNS_INT       int    0xF1
                 //          /--*  op1  simd16
@@ -3127,6 +3129,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             case TYP_DOUBLE:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+
                 multiply      = NI_AVX_Multiply;
                 horizontalAdd = NI_AVX_HorizontalAdd;
                 add           = NI_AVX_Add;
