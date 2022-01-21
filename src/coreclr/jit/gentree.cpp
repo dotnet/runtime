@@ -21414,7 +21414,9 @@ GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(
 bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-    HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(GetHWIntrinsicId());
+    NamedIntrinsic      intrinsicId = GetHWIntrinsicId();
+    HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+
     if (category == HW_Category_MemoryLoad)
     {
         return true;
@@ -21423,17 +21425,42 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
     else if (HWIntrinsicInfo::MaybeMemoryLoad(GetHWIntrinsicId()))
     {
         // Some intrinsics (without HW_Category_MemoryLoad) also have MemoryLoad semantics
+        // This is generally because they have both vector and pointer overloads, e.g.,
+        // * Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
+        // * Vector128<byte> BroadcastScalarToVector128(byte* source)
+        // So, we need to check the argument's type is memory-reference or Vector128
 
-        if (category == HW_Category_SIMDScalar)
+        if ((category == HW_Category_SimpleSIMD) || (category == HW_Category_SIMDScalar))
         {
-            // Avx2.BroadcastScalarToVector128/256 have vector and pointer overloads both, e.g.,
-            // Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
-            // Vector128<byte> BroadcastScalarToVector128(byte* source)
-            // So, we need to check the argument's type is memory-reference or Vector128
             assert(GetOperandCount() == 1);
-            return (GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128 ||
-                    GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256) &&
-                   !Op(1)->TypeIs(TYP_SIMD16);
+
+            switch (intrinsicId)
+            {
+                case NI_SSE41_ConvertToVector128Int16:
+                case NI_SSE41_ConvertToVector128Int32:
+                case NI_SSE41_ConvertToVector128Int64:
+                case NI_AVX2_BroadcastScalarToVector128:
+                case NI_AVX2_BroadcastScalarToVector256:
+                case NI_AVX2_ConvertToVector256Int16:
+                case NI_AVX2_ConvertToVector256Int32:
+                case NI_AVX2_ConvertToVector256Int64:
+                {
+                    CorInfoType auxiliaryType = GetAuxiliaryJitType();
+
+                    if (auxiliaryType == CORINFO_TYPE_PTR)
+                    {
+                        return true;
+                    }
+
+                    assert(auxiliaryType == CORINFO_TYPE_UNDEF);
+                    return false;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
         }
         else if (category == HW_Category_IMM)
         {
