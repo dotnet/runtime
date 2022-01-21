@@ -15,29 +15,22 @@ namespace System.Threading.Tasks
     {
         private Task<int>? _task;
 
-        /// <summary>
-        /// Gets a completed <see cref="Task{Int32}"/> whose result is <paramref name="result"/>.
-        /// </summary>
-        /// <remarks>
-        /// This method will try to return an already cached task if available.
-        /// </remarks>
-        /// <param name="result">The task's result.</param>
+        /// <summary>Gets a completed <see cref="Task{Int32}"/> whose result is <paramref name="result"/>.</summary>
+        /// <remarks>This method will try to return an already cached task if available.</remarks>
+        /// <param name="result">The result value for which a <see cref="Task{Int32}"/> is needed.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Task<int> GetTask(int result)
         {
-            Task<int>? task;
-#pragma warning disable CA1849 // Call async methods when in an async method
-            if ((task = _task) is not null && task.Result == result)
-#pragma warning restore CA1849 // Call async methods when in an async method
+            if (_task is Task<int> task)
             {
-                Debug.Assert(task.IsCompletedSuccessfully,
-                    "Expected that a stored last task completed successfully");
-                return task;
+                Debug.Assert(task.IsCompletedSuccessfully, "Expected that a stored last task completed successfully");
+                if (task.Result == result)
+                {
+                    return task;
+                }
             }
-            else
-            {
-                return _task = Task.FromResult(result);
-            }
+
+            return _task = Task.FromResult(result);
         }
     }
 }

@@ -345,6 +345,7 @@ typedef __int64 time_t;
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
+#define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -359,7 +360,8 @@ typedef __int64 time_t;
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
-                                        PAL_INITIALIZE_REGISTER_SIGNALS)
+                                        PAL_INITIALIZE_REGISTER_SIGNALS | \
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -2842,24 +2844,6 @@ VirtualQuery(
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-#define LMEM_FIXED          0x0000
-#define LMEM_MOVEABLE       0x0002
-#define LMEM_ZEROINIT       0x0040
-#define LPTR                (LMEM_FIXED | LMEM_ZEROINIT)
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalAlloc(
-       IN UINT uFlags,
-       IN SIZE_T uBytes);
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalFree(
-      IN HLOCAL hMem);
-
 PALIMPORT
 BOOL
 PALAPI
@@ -3261,8 +3245,8 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 Function:
 InterlockedAdd
 
-The InterlockedAdd function adds the value of the specified variable 
-with another specified value. The function prevents more than one thread 
+The InterlockedAdd function adds the value of the specified variable
+with another specified value. The function prevents more than one thread
 from using the same variable simultaneously.
 
 Parameters

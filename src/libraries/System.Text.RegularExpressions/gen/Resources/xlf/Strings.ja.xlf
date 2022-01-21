@@ -292,11 +292,6 @@
         <target state="translated">パターンの末尾に無効な \\ があります。</target>
         <note />
       </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">正規表現の生成中に予期しない Opcode: {0} が発生しました。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
         <source>Unrecognized control character.</source>
         <target state="translated">認識されない制御文字です。</target>

@@ -21,6 +21,7 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
@@ -28,26 +29,26 @@ jobs:
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'Linux_arm') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+      - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Debian.10.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7-20210304164340-6616c63
         - (Debian.11.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7-20210304164347-5a7c380
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-        - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-20210106155927-56c6673
+      - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Ubuntu.2110.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-21.10-helix-arm64v8-20211116135000-0f8d97e
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Ubuntu.1804.ArmArch.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-20210106155927-56c6673
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
-      - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
+        - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
+      - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.313.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-amd64-20210910135845-8a6f4f3
 
     # Linux musl arm64
-    - ${{ if and(eq(parameters.platform, 'Linux_musl_arm64'), eq(parameters.jobParameters.isFullMatrix, true)) }}:
+    - ${{ if and(eq(parameters.platform, 'Linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
       - (Alpine.313.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm64v8-20210910135808-8a6f4f3
       - (Alpine.314.Arm64.Open)ubuntu.1804.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
 
@@ -62,21 +63,16 @@ jobs:
           - (Ubuntu.2110.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-21.10-helix-amd64-20211116135132-0f8d97e
           - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-bfcd90a-20200121150006
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-            - (Centos.7.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-mlnet-helix-20210714125435-dde38af
-            - (Centos.8.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
-            - RedHat.7.Amd64.Open
-            - Ubuntu.1804.Amd64.Open
-            - SLES.12.Amd64.Open
+          - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
+            - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
             - SLES.15.Amd64.Open
-            - (Fedora.34.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210913123654-4f64125
-            - (Ubuntu.2110.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-21.10-helix-amd64-20211116135132-0f8d97e
-            - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
+            - (Fedora.34.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210913123654-4f64125
+            - (Ubuntu.2110.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-21.04-helix-amd64-20210922170909-34a2d72
             - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
-            - (Mariner.1.0.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix-20210528192219-92bf620
-            - (openSUSE.15.2.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64-20211018152525-9cc02fe
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
-            - (Centos.7.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-mlnet-helix-20210714125435-dde38af
+            - (Mariner.1.0.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix-20210528192219-92bf620
+            - (openSUSE.15.2.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64-20211018152525-9cc02fe
+          - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
+            - (Centos.7.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-mlnet-helix-20210714125435-dde38af
             - RedHat.7.Amd64.Open
             - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
             - Ubuntu.1804.Amd64.Open
@@ -94,10 +90,9 @@ jobs:
 
     # OSX x64
     - ${{ if eq(parameters.platform, 'OSX_x64') }}:
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+      - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - OSX.1014.Amd64.Open
-        - OSX.1015.Amd64.Open
-      - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
+      - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - OSX.1015.Amd64.Open
 
     # Android
@@ -126,18 +121,18 @@ jobs:
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
+        # libraries on mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.81.Amd64.Open
           - Windows.10.Amd64.Server19H1.Open
+        # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-            - Windows.81.Amd64.Open
+          - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.10.Amd64.ServerRS5.Open
-            - Windows.10.Amd64.Server19H1.Open
-            - ${{ if ne(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-              - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
+            - ${{ if ne(parameters.jobParameters.testScope, 'outerloop') }}:
+              - Windows.10.Amd64.Server19H1.Open
               - (Windows.Server.Core.1909.Amd64.Open)windows.10.amd64.server20h1.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-2004-helix-amd64-20200904200251-272704c
-          - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
+          - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.81.Amd64.Open
             - Windows.10.Amd64.Server19H1.ES.Open
             - Windows.11.Amd64.ClientPre.Open
@@ -154,20 +149,18 @@ jobs:
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
       # netcoreapp
       - ${{ if notIn(parameters.jobParameters.framework, 'net48') }}:
+        # mono outerloop
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.ServerRS5.Open
+        # libraries on coreclr (outerloop and innerloop), or libraries on mono innerloop
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
-            - Windows.7.Amd64.Open
+          - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - Windows.10.Amd64.ServerRS5.Open
             - Windows.10.Amd64.Server19H1.Open
-          - ${{ if ne(parameters.jobParameters.isFullMatrix, true) }}:
-            - ${{ if eq(parameters.jobParameters.buildConfig, 'Release') }}:
-              - Windows.10.Amd64.Server19H1.ES.Open
-            - ${{ if eq(parameters.jobParameters.buildConfig, 'Debug') }}:
-              - Windows.7.Amd64.Open
-              - Windows.10.Amd64.Server19H1.Open
+          - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
+            - Windows.10.Amd64.Server19H1.ES.Open
+            - Windows.7.Amd64.Open
 
       # .NETFramework
       - ${{ if eq(parameters.jobParameters.framework, 'net48') }}:
