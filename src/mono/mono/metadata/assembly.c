@@ -2672,7 +2672,8 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		goto cleanup_and_fail;
+		// compat: If we got here, the attribute name is unknown to us. Ignore it.
+		tmp++;
 	}
 
 	/* if retargetable flag is set, then we must have a fully qualified name */
