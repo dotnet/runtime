@@ -19,7 +19,7 @@ namespace System.Reflection
             if (assemblyName.Length == 0 || assemblyName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
-            if (assemblyName.Contains("\0"))
+            if (assemblyName.Contains('\0'))
                 throw new FileLoadException("The assembly name is invalid.");
 
             using (SafeStringMarshal name = RuntimeMarshal.MarshalString(assemblyName))
