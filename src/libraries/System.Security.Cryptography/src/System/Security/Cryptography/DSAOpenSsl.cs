@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class DSAOpenSsl : DSA
     {
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public DSAOpenSsl(DSAParameters parameters)
         {
             ThrowIfNotSupported();
@@ -25,6 +31,11 @@ namespace System.Security.Cryptography
         ///   <paramref name="pkeyHandle"/> <see cref="Runtime.InteropServices.SafeHandle.IsInvalid" />
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="pkeyHandle"/> is not a valid enveloped <c>DSA*</c></exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public DSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
             if (pkeyHandle == null)
@@ -54,6 +65,11 @@ namespace System.Security.Cryptography
         /// </remarks>
         /// <param name="handle">A pointer to an OpenSSL <c>DSA*</c></param>
         /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public DSAOpenSsl(IntPtr handle)
         {
             if (handle == IntPtr.Zero)

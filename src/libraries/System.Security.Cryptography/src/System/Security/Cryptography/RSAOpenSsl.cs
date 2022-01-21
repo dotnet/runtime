@@ -2,12 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class RSAOpenSsl : RSA
     {
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public RSAOpenSsl(RSAParameters parameters)
         {
             ThrowIfNotSupported();
@@ -27,6 +33,11 @@ namespace System.Security.Cryptography
         /// </remarks>
         /// <param name="handle">A pointer to an OpenSSL <c>RSA*</c></param>
         /// <exception cref="ArgumentException"><paramref name="handle" /> is invalid</exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public RSAOpenSsl(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
@@ -49,6 +60,11 @@ namespace System.Security.Cryptography
         ///   <paramref name="pkeyHandle"/> <see cref="Runtime.InteropServices.SafeHandle.IsInvalid" />
         /// </exception>
         /// <exception cref="CryptographicException"><paramref name="pkeyHandle"/> is not a valid enveloped <c>RSA*</c></exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
         public RSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
             if (pkeyHandle == null)

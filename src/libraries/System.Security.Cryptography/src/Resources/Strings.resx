@@ -483,6 +483,9 @@
   <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
     <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_CryptographyOpenSSL" xml:space="preserve">
+    <value>OpenSSL is not supported on this platform.</value>
+  </data>
   <data name="SystemSecurityCryptography_PlatformNotSupported" xml:space="preserve">
     <value>System.Security.Cryptography is not supported on this platform.</value>
   </data>
