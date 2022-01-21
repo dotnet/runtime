@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.MemoryMappedFiles
@@ -170,18 +171,17 @@ namespace System.IO.MemoryMappedFiles
                 ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
         }
 
-        private static FileStream? CreateSharedBackingObjectUsingMemory(
+        private static unsafe FileStream? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
+            const int MaxSharedMemoryObjectNameLength = 32; // SHM_NAME_MAX on OSX ARM64, on other systems it's equal PATH_MAX (250)
             // The POSIX shared memory object name must begin with '/'.  After that we just want something short (32) and unique.
-            string mapName = Guid.NewGuid().ToString("N");
-            unsafe
-            {
-                fixed (char* mutable = mapName)
-                {
-                    mutable[0] = '/';
-                }
-            }
+            Span<char> characters = stackalloc char[MaxSharedMemoryObjectNameLength];
+            char format = 'N';
+            bool success = Guid.NewGuid().TryFormat(characters, out int charsWritten, new ReadOnlySpan<char>(&format, 1));
+            Debug.Assert(success && charsWritten == MaxSharedMemoryObjectNameLength);
+            characters[0] = '/';
+            string mapName = new string(characters);
 
             // Determine the flags to use when creating the shared memory object
             Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
