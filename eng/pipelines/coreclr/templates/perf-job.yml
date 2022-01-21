@@ -166,13 +166,6 @@ jobs:
           artifactFileName: 'MauiAndroidApp.tar.gz'
           artifactName: 'MauiAndroidApp'
           displayName: 'Maui Android App'
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          unpackFolder: $(Build.SourcesDirectory)/androidHelloWorldWithDiag
-          cleanUnpackFolder: false
-          artifactFileName: 'AndroidMonoWithDiagarm64.tar.gz'
-          artifactName: 'AndroidMonoWithDiagarm64'
-          displayName: 'Mono Android Diagnostic Helloworld'
 
     # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
