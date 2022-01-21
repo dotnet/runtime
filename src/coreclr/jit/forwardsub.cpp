@@ -145,6 +145,15 @@ public:
                     m_parentNode = parent;
                 }
             }
+
+            // Uses of address-exposed locals are modelled as global refs.
+            //
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (varDsc->IsAddressExposed())
+            {
+                m_accumulatedFlags |= GTF_GLOB_REF;
+            }
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
@@ -215,8 +224,8 @@ public:
 
         if (node->OperIs(GT_LCL_VAR))
         {
-            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
-            LclVarDsc*     varDsc = m_compiler->lvaGetDesc(lclNum);
+            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
             if (varDsc->IsAddressExposed())
             {
