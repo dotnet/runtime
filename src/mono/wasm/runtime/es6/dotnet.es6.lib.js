@@ -13,10 +13,14 @@ const DotnetSupportLib = {
     // Also fix of scriptDirectory would be delayed
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of readAsync and fetch
+    // Disable webpack compile time import checker for module "module".
+    // defaultLocateFile
+    // - When loading dotnet.wasm on NodeJS, use import.meta.url to determine current path on filesystem
+    // - If we are not on node, ignore local filesystem protocol (file:///) and use only relative path (managed/*.dll etc)
     $DOTNET__postset: `
 let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 if (ENVIRONMENT_IS_NODE) {
-    __dotnet_replacements.requirePromise = import('module').then(mod => {
+    __dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => {
         const require = mod.createRequire(import.meta.url);
         const path = require('path');
         const url = require('url');
