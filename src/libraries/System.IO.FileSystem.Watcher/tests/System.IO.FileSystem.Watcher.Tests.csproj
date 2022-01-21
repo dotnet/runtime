@@ -31,6 +31,8 @@
     <!-- Helpers -->
     <Compile Include="Utility\TestFileSystemWatcher.cs" />
     <Compile Include="Utility\FileSystemWatcherTest.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"

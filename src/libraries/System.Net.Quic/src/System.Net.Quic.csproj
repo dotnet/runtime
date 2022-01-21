@@ -27,6 +27,9 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicListenerHandle.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicRegistrationHandle.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\SafeMsQuicStreamHandle.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs">
+      <Link>Common\DisableRuntimeMarshalling.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- System.Net common -->
   <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
@@ -104,7 +107,7 @@
     <PackageReference Include="System.Net.MsQuic.Transport"
                       Version="$(SystemNetMsQuicTransportVersion)"
                       PrivateAssets="all"
-                      GeneratePathProperty="true" 
+                      GeneratePathProperty="true"
                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 

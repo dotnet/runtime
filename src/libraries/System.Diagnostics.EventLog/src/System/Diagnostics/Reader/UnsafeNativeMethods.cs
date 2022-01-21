@@ -338,7 +338,10 @@ namespace Microsoft.Win32
             EvtRpcLogin = 1
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+#if NET7_0_OR_GREATER
+        [NativeMarshalling(typeof(Marshaller))]
+#endif
+        [StructLayout(LayoutKind.Sequential)]
         internal struct EvtRpcLogin
         {
             [MarshalAs(UnmanagedType.LPWStr)]
@@ -349,6 +352,72 @@ namespace Microsoft.Win32
             public string Domain;
             public CoTaskMemUnicodeSafeHandle Password;
             public int Flags;
+#if NET7_0_OR_GREATER
+            public struct Marshaller
+            {
+                public struct Native
+                {
+                    public IntPtr Server;
+                    public IntPtr User;
+                    public IntPtr Domain;
+                    public IntPtr Password;
+                    public int Flags;
+                }
+
+                private CoTaskMemUnicodeSafeHandle _passwordHandle;
+                private Native _value;
+                private bool _passwordHandleAddRefd;
+
+                public Marshaller(EvtRpcLogin managed)
+                {
+                    _passwordHandleAddRefd = false;
+                    _value.Server = Marshal.StringToCoTaskMemUni(managed.Server);
+                    _value.User = Marshal.StringToCoTaskMemUni(managed.User);
+                    _value.Domain = Marshal.StringToCoTaskMemUni(managed.Domain);
+                    _passwordHandle = managed.Password;
+                    _passwordHandle.DangerousAddRef(ref _passwordHandleAddRefd);
+                    _value.Password = _passwordHandle.DangerousGetHandle();
+                    _value.Flags = managed.Flags;
+                }
+
+                public Native Value
+                {
+                    get => _value;
+                    set
+                    {
+                        // SafeHandle fields cannot change the underlying handle value during marshalling.
+                        if (_value.Password != value.Password)
+                        {
+                            throw new InvalidOperationException();
+                        }
+                        _value = value;
+                    }
+                }
+
+                public EvtRpcLogin ToManaged()
+                {
+                    return new EvtRpcLogin
+                    {
+                        Server = Marshal.PtrToStringUni(_value.Server),
+                        User = Marshal.PtrToStringUni(_value.User),
+                        Domain = Marshal.PtrToStringUni(_value.Domain),
+                        Password = _passwordHandle,
+                        Flags = _value.Flags
+                    };
+                }
+
+                public void FreeNative()
+                {
+                    Marshal.FreeCoTaskMem(_value.Server);
+                    Marshal.FreeCoTaskMem(_value.User);
+                    Marshal.FreeCoTaskMem(_value.Domain);
+                    if (_passwordHandleAddRefd)
+                    {
+                        _passwordHandle.DangerousRelease();
+                    }
+                }
+            }
+#endif
         }
 
         // SEEK
@@ -597,7 +666,10 @@ namespace Microsoft.Win32
                             out int buffUsed,
                             out int propCount);
 
-        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Auto)]
+#if NET7_0_OR_GREATER
+        [NativeMarshalling(typeof(Native))]
+#endif
+        [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
         internal struct EvtStringVariant
         {
             [MarshalAs(UnmanagedType.LPWStr), FieldOffset(0)]
@@ -606,12 +678,45 @@ namespace Microsoft.Win32
             public uint Count;
             [FieldOffset(12)]
             public uint Type;
+
+#if NET7_0_OR_GREATER
+            [StructLayout(LayoutKind.Explicit)]
+            public struct Native
+            {
+                [FieldOffset(0)]
+                private IntPtr StringVal;
+                [FieldOffset(8)]
+                private uint Count;
+                [FieldOffset(12)]
+                private uint Type;
+
+                public Native(EvtStringVariant managed)
+                {
+                    StringVal = Marshal.StringToCoTaskMemUni(managed.StringVal);
+                    Count = managed.Count;
+                    Type = managed.Type;
+                }
+
+                public EvtStringVariant ToManaged()
+                {
+                    return new EvtStringVariant
+                    {
+                        StringVal = Marshal.PtrToStringUni(StringVal),
+                        Count = Count,
+                        Type = Type
+                    };
+                }
+
+                public void FreeNative()
+                {
+                    Marshal.FreeCoTaskMem(StringVal);
+                }
+            }
+#endif
         };
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        [DllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        internal static extern bool EvtFormatMessage(
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial bool EvtFormatMessage(
                              EventLogHandle publisherMetadataHandle,
                              EventLogHandle eventHandle,
                              uint messageId,
@@ -621,7 +726,6 @@ namespace Microsoft.Win32
                              int bufferSize,
                              [Out] char[]? buffer,
                              out int bufferUsed);
-#pragma warning restore DLLIMPORTGENANALYZER015
 
         [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtFormatMessage", SetLastError = true)]
         internal static partial bool EvtFormatMessageBuffer(
@@ -636,15 +740,12 @@ namespace Microsoft.Win32
                              out int bufferUsed);
 
         // SESSION
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        [DllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
-        internal static extern EventLogHandle EvtOpenSession(
+        [GeneratedDllImport(Interop.Libraries.Wevtapi, SetLastError = true)]
+        internal static partial EventLogHandle EvtOpenSession(
                             EvtLoginClass loginClass,
                             ref EvtRpcLogin login,
                             int timeout,
                             int flags);
-#pragma warning restore DLLIMPORTGENANALYZER015
 
         // BOOKMARK
         [GeneratedDllImport(Interop.Libraries.Wevtapi, EntryPoint = "EvtCreateBookmark", SetLastError = true)]
