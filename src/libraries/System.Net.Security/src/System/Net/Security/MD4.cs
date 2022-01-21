@@ -81,7 +81,7 @@ namespace System.Net.Security
             /* Transform as many times as possible. */
             if (input.Length >= partLen)
             {
-                BlockCopy(input, 0, buffer, index, partLen);
+                input.Slice(0, partLen).CopyTo(buffer.Slice(index));
                 MD4Transform(state, buffer);
 
                 for (i = partLen; i + 63 < input.Length; i += 64)
@@ -97,14 +97,6 @@ namespace System.Net.Security
         }
 
         //--- private methods ---------------------------------------------------
-
-        private static void BlockCopy(ReadOnlySpan<byte> source, int srcOffset, Span<byte> destination, int dstOffset, int count)
-        {
-            for (int srcIndex = srcOffset, dstIndex = dstOffset; srcIndex < srcOffset + count; srcIndex++, dstIndex++)
-            {
-                destination[dstIndex] = source[srcIndex];
-            }
-        }
 
         /* F, G and H are basic MD4 functions. */
         private static uint F(uint x, uint y, uint z)
