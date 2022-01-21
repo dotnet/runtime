@@ -9373,17 +9373,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             break;
 
-            // DYN_BLK is always an L-value.
-            case GT_DYN_BLK:
-                assert(!tree->CanCSE());
-                tree->gtVNPair = vnStore->VNPForVoid();
-                tree->gtVNPair =
-                    vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(tree->AsDynBlk()->Addr()->gtVNPair));
-                tree->gtVNPair =
-                    vnStore->VNPWithExc(tree->gtVNPair,
-                                        vnStore->VNPExceptionSet(tree->AsDynBlk()->gtDynamicSize->gtVNPair));
-                break;
-
             // FIELD_LIST is an R-value that we currently don't model.
             case GT_FIELD_LIST:
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
