@@ -441,11 +441,12 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         private void EliminateEndingBacktracking()
         {
-            Debug.Assert((Options & RegexOptions.NonBacktracking) == 0, "NonBacktracking doesn't have backtracking to be eliminated and doesn't support atomic groups.");
-
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack() ||
+                (Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
             {
                 // If we can't recur further, just stop optimizing.
+                // We haven't done the work to validate this is correct for RTL.
+                // And NonBacktracking doesn't support atomic groups and doesn't have backtracking to be eliminated.
                 return;
             }
 
@@ -470,7 +471,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     // For Capture and Concatenate, we just recur into their last child (only child in the case
-                    // of Capture).  However, if the child is Alternate, Loop, and Lazyloop, we can also make the
+                    // of Capture).  However, if the child is an alternation or loop, we can also make the
                     // node itself atomic by wrapping it in an Atomic node. Since we later check to see whether a
                     // node is atomic based on its parent or grandparent, we don't bother wrapping such a node in
                     // an Atomic one if its grandparent is already Atomic.
@@ -478,7 +479,7 @@ namespace System.Text.RegularExpressions
                     case Capture:
                     case Concatenate:
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
-                        if ((existingChild.Type is Alternate or Loop or Lazyloop) &&
+                        if ((existingChild.Type is Alternate or Testref or Testgroup or Loop or Lazyloop) &&
                             (node.Next is null || node.Next.Type != Atomic)) // validate grandparent isn't atomic
                         {
                             var atomic = new RegexNode(Atomic, existingChild.Options);
@@ -489,17 +490,25 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     // For alternate, we can recur into each branch separately.  We use this iteration for the first branch.
+                    // Conditionals are just like alternations in this regard.
                     // e.g. abc*|def* => ab(?>c*)|de(?>f*)
                     case Alternate:
+                    case Testref:
+                    case Testgroup:
                         {
                             int branches = node.ChildCount();
                             for (int i = 1; i < branches; i++)
                             {
                                 node.Child(i).EliminateEndingBacktracking();
                             }
+
+                            if (node.Type != Testgroup) // ReduceTestgroup will have already applied ending backtracking removal
+                            {
+                                node = node.Child(0);
+                                continue;
+                            }
                         }
-                        node = node.Child(0);
-                        continue;
+                        break;
 
                     // For {Lazy}Loop, we search to see if there's a viable last expression, and iff there
                     // is we recur into processing it.  Also, as with the single-char lazy loops, LazyLoop
@@ -1793,15 +1802,19 @@ namespace System.Text.RegularExpressions
                             node.MakeLoopAtomic();
                             break;
                         case Alternate:
+                        case Testref:
+                        case Testgroup:
                             // In the case of alternation, we can't change the alternation node itself
                             // based on what comes after it (at least not with more complicated analysis
                             // that factors in all branches together), but we can look at each individual
                             // branch, and analyze ending loops in each branch individually to see if they
                             // can be made atomic.  Then if we do end up backtracking into the alternation,
-                            // we at least won't need to backtrack into that loop.
+                            // we at least won't need to backtrack into that loop.  The same is true for
+                            // conditionals, though we don't want to process the condition expression
+                            // itself, as it's already considered atomic and handled as part of ReduceTestgroup.
                             {
                                 int alternateBranches = node.ChildCount();
-                                for (int b = 0; b < alternateBranches; b++)
+                                for (int b = node.Type == Testgroup ? 1 : 0; b < alternateBranches; b++)
                                 {
                                     ProcessNode(node.Child(b), subsequent);
                                 }
@@ -1857,6 +1870,11 @@ namespace System.Text.RegularExpressions
         {
             Debug.Assert(Type == Require);
             Debug.Assert(ChildCount() == 1);
+
+            // A positive lookaround is a zero-width atomic assertion.
+            // As it's atomic, nothing will backtrack into it, and we can
+            // eliminate any ending backtracking from it.
+            EliminateEndingBacktracking();
 
             // A positive lookaround wrapped around an empty is a nop, and can just
             // be made into an empty.  A developer typically doesn't write this, but
@@ -1932,6 +1950,11 @@ namespace System.Text.RegularExpressions
                 ReplaceChild(0, condition.Child(0));
             }
 
+            // We can also eliminate any ending backtracking in the condition, as the condition
+            // is considered to be a positive lookahead, which is an atomic zero-width assertion.
+            condition = Child(0);
+            condition.EliminateEndingBacktracking();
+
             return this;
         }
 
@@ -1954,7 +1977,8 @@ namespace System.Text.RegularExpressions
             while (true)
             {
                 // Skip the successor down to the closest node that's guaranteed to follow it.
-                while (subsequent.ChildCount() > 0)
+                int childCount;
+                while ((childCount = subsequent.ChildCount()) > 0)
                 {
                     Debug.Assert(subsequent.Type != Group);
                     switch (subsequent.Type)
@@ -1972,6 +1996,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If the two nodes don't agree on options in any way, don't try to optimize them.
+                // TODO: Remove this once https://github.com/dotnet/runtime/issues/61048 is implemented.
                 if (node.Options != subsequent.Options)
                 {
                     return false;
@@ -1979,18 +2004,22 @@ namespace System.Text.RegularExpressions
 
                 // If the successor is an alternation, all of its children need to be evaluated, since any of them
                 // could come after this node.  If any of them fail the optimization, then the whole node fails.
-                if (subsequent.Type == Alternate)
+                // This applies to expression conditionals as well, as long as they have both a yes and a no branch (if there's
+                // only a yes branch, we'd need to also check whatever comes after the conditional).  It doesn't apply to
+                // backreference conditionals, as the condition itself is unknown statically and could overlap with the
+                // loop being considered for atomicity.
+                switch (subsequent.Type)
                 {
-                    int childCount = subsequent.ChildCount();
-                    for (int i = 0; i < childCount; i++)
-                    {
-                        if (!CanBeMadeAtomic(node, subsequent.Child(i), allowSubsequentIteration))
+                    case Alternate:
+                    case Testgroup when childCount == 3: // condition, yes, and no branch
+                        for (int i = 0; i < childCount; i++)
                         {
-                            return false;
+                            if (!CanBeMadeAtomic(node, subsequent.Child(i), allowSubsequentIteration))
+                            {
+                                return false;
+                            }
                         }
-                    }
-
-                    return true;
+                        return true;
                 }
 
                 // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
@@ -2183,6 +2212,14 @@ namespace System.Text.RegularExpressions
                         return min;
                     }
 
+                case Testref:
+                    // Minimum of its yes and no branches.  The backreference doesn't add to the length.
+                    return Math.Min(Child(0).ComputeMinLength(), Child(1).ComputeMinLength());
+
+                case Testgroup:
+                    // Minimum of its yes and no branches.  The condition is a zero-width assertion.
+                    return Math.Min(Child(1).ComputeMinLength(), Child(2).ComputeMinLength());
+
                 case Concatenate:
                     // The sum of all of the concatenation's children.
                     {
@@ -2225,8 +2262,6 @@ namespace System.Text.RegularExpressions
                 // a different structure, as they can't be added as part of a concatenation, since they overlap
                 // with what comes after.
                 case Ref:
-                case Testgroup:
-                case Testref:
                     // Constructs requiring data at runtime from the matching pattern can't influence min length.
                     return 0;
 

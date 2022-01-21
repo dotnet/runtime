@@ -97,7 +97,7 @@ export interface t_Cwraps {
     mono_wasm_find_corlib_type(namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
-    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObject): MonoObject;
+    mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: VoidPtr): MonoObject;
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
     mono_wasm_string_from_utf16(str: CharPtr, len: number): MonoString;
     mono_wasm_get_obj_type(str: MonoObject): number;

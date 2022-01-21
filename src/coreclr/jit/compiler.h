@@ -5432,7 +5432,7 @@ public:
 
     // Requires that "tree" is a GT_IND marked as an array index, and that its address argument
     // has been parsed to yield the other input arguments.  If evaluation of the address
-    // can raise exceptions, those should be captured in the exception set "excVN."
+    // can raise exceptions, those should be captured in the exception set "addrXvnp".
     // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
     // Marks "tree" with the VN for H[elemTypeEq][arrVN][inx][fldSeq] (for the liberal VN; a new unique
     // VN for the conservative VN.)  Also marks the tree's argument as the address of an array element.
@@ -5443,14 +5443,14 @@ public:
                                       CORINFO_CLASS_HANDLE elemTypeEq,
                                       ValueNum             arrVN,
                                       ValueNum             inxVN,
-                                      ValueNum             excVN,
+                                      ValueNumPair         addrXvnp,
                                       FieldSeqNode*        fldSeq);
 
-    // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvn" to represent the exception set thrown
+    // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvnp" to represent the exception set thrown
     // by evaluating the array index expression "tree".  Returns the value number resulting from
     // dereferencing the array in the current GcHeap state.  If "tree" is non-null, it must be the
     // "GT_IND" that does the dereference, and it is given the returned value number.
-    ValueNum fgValueNumberArrIndexVal(GenTree* tree, struct VNFuncApp* funcApp, ValueNum addrXvn);
+    ValueNum fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* funcApp, ValueNumPair addrXvnp);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -5559,6 +5559,10 @@ public:
 
     // Adds the exception sets for the current tree node
     void fgValueNumberAddExceptionSet(GenTree* tree);
+
+#ifdef DEBUG
+    void fgDebugCheckExceptionSets();
+#endif
 
     // These are the current value number for the memory implicit variables while
     // doing value numbering.  These are the value numbers under the "liberal" interpretation

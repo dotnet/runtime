@@ -850,7 +850,7 @@ public class DebuggerAttribute
     }
     
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void NotStopOnJustMyCode()
+    public static void StepThrougBp()
     {
         var a = 0;
         currentCount++;
@@ -858,15 +858,59 @@ public class DebuggerAttribute
     }
 
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void NotStopOnJustMyCodeUserBp()
+    public static void StepThrougUserBp()
     {
         System.Diagnostics.Debugger.Break();
     }
 
     public static void RunStepThrough()
     {
-        NotStopOnJustMyCode();
-        NotStopOnJustMyCodeUserBp();
+        StepThrougBp();
+        StepThrougUserBp();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeBp(Action boundaryTestFun=null)
+    {
+        var a = 0;
+        currentCount++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunNonUserCode()
+    {
+        NonUserCodeBp();
+        NonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryBp()
+    {
+        var a = 5;
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeForBoundaryEscape(Action boundaryTestFun)
+    {
+        boundaryTestFun();
+    }
+
+    public static void RunNoBoundary()
+    {
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
     }
 }
 
