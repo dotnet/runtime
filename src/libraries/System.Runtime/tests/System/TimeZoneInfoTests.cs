@@ -2930,12 +2930,7 @@ namespace System.Tests
 
             foreach (TimeZoneInfo timezone in tzCollection)
             {
-                Console.WriteLine($"tzCollection: id {timezone.Id} has DisplayName {timezone.DisplayName}");
                 tzDisplayNames.Add(timezone.DisplayName);
-            }
-            foreach (string timezone in tzDisplayNames)
-            {
-                Console.WriteLine($"tzDisplayNames: {timezone}");
             }
             Assert.Equal(tzCollection.Count, tzDisplayNames.Count);
         }

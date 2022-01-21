@@ -311,7 +311,7 @@ namespace System
                     }
                     return true;
                 }
-                catch {} // TODO add warning
+                catch {}
 
                 return false;
             }
