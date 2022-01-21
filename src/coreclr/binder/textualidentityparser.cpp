@@ -200,26 +200,6 @@ namespace BINDER_SPACE
         // Nothing to do here
     }
 
-    BOOL TextualIdentityParser::IsSeparatorChar(WCHAR wcChar)
-    {
-        return ((wcChar == W(',')) || (wcChar == W('=')));
-    }
-
-    StringLexer::LEXEME_TYPE TextualIdentityParser::GetLexemeType(WCHAR wcChar)
-    {
-        switch (wcChar)
-        {
-        case W('='):
-            return LEXEME_TYPE_EQUALS;
-        case W(','):
-            return LEXEME_TYPE_COMMA;
-        case 0:
-            return LEXEME_TYPE_END_OF_STREAM;
-        default:
-            return LEXEME_TYPE_STRING;
-        }
-    }
-
     /* static */
     HRESULT TextualIdentityParser::Parse(SString          &textualIdentity,
                                          AssemblyIdentity *pAssemblyIdentity)

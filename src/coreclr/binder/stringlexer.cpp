@@ -147,4 +147,24 @@ namespace BINDER_SPACE
             currentString.Truncate(cursor + 1);
         }
     }
+
+    BOOL StringLexer::IsSeparatorChar(WCHAR wcChar)
+    {
+        return ((wcChar == W(',')) || (wcChar == W('=')));
+    }
+
+    StringLexer::LEXEME_TYPE StringLexer::GetLexemeType(WCHAR wcChar)
+    {
+        switch (wcChar)
+        {
+        case W('='):
+            return LEXEME_TYPE_EQUALS;
+        case W(','):
+            return LEXEME_TYPE_COMMA;
+        case 0:
+            return LEXEME_TYPE_END_OF_STREAM;
+        default:
+            return LEXEME_TYPE_STRING;
+        }
+    }
 };

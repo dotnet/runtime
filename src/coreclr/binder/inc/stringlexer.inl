@@ -29,7 +29,6 @@ void StringLexer::Init(SString &inputString)
 {
     m_cursor = inputString.Begin();
     m_end = inputString.End();
-    m_fReadRawCharacter = FALSE;
 }
 
 BOOL StringLexer::IsWhitespace(WCHAR wcChar)
@@ -54,6 +53,7 @@ WCHAR StringLexer::PopCharacter(BOOL *pfIsEscaped)
     {
         m_wcCurrentChar = INVALID_CHARACTER;
         *pfIsEscaped = m_fCurrentCharIsEscaped;
+        m_cursor++;
     }
     else
     {
@@ -70,6 +70,7 @@ void StringLexer::PushCharacter(WCHAR wcCurrentChar,
 
     m_wcCurrentChar = wcCurrentChar;
     m_fCurrentCharIsEscaped = fIsEscaped;
+    m_cursor--;
 }
 
 WCHAR StringLexer::GetRawCharacter()
@@ -79,24 +80,13 @@ WCHAR StringLexer::GetRawCharacter()
     if (m_cursor <= m_end)
     {
         wcCurrentChar = m_cursor[0];
-        m_fReadRawCharacter = TRUE;
         m_cursor++;
     }
     else
     {
-        m_fReadRawCharacter = FALSE;
     }
 
     return wcCurrentChar;
-}
-
-void StringLexer::PushRawCharacter()
-{
-    if (m_fReadRawCharacter)
-    {
-        m_cursor--;
-        m_fReadRawCharacter = FALSE;
-    }
 }
 
 WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
@@ -117,15 +107,9 @@ WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
         case L'\\':
         case L'/':
         case L'=':
-            break;
         case L't':
-            wcTempChar = 9;
-            break;
         case L'n':
-            wcTempChar = 10;
-            break;
         case L'r':
-            wcTempChar = 13;
             break;
         default:
             return INVALID_CHARACTER;

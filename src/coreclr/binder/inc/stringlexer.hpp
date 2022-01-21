@@ -61,8 +61,8 @@ namespace BINDER_SPACE
         static inline BOOL IsEOS(WCHAR wcChar);
         static inline BOOL IsQuoteCharacter(WCHAR wcChar);
 
-        virtual BOOL IsSeparatorChar(WCHAR wcChar) = NULL;
-        virtual LEXEME_TYPE GetLexemeType(WCHAR wcChar) = NULL;
+        BOOL IsSeparatorChar(WCHAR wcChar);
+        LEXEME_TYPE GetLexemeType(WCHAR wcChar);
 
     protected:
         static const WCHAR INVALID_CHARACTER = -1;
@@ -74,7 +74,6 @@ namespace BINDER_SPACE
                                   BOOL fIsEscaped);
 
         inline WCHAR GetRawCharacter();
-        inline void PushRawCharacter();
         inline WCHAR GetNextCharacter(BOOL *pfIsEscaped);
 
         LEXEME_TYPE ParseString(SString &currentString);
@@ -86,7 +85,6 @@ namespace BINDER_SPACE
 
         WCHAR m_wcCurrentChar;
         BOOL m_fCurrentCharIsEscaped;
-        BOOL m_fReadRawCharacter;
     };
 
 #include "stringlexer.inl"
