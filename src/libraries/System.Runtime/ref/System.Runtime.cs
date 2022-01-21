@@ -9187,6 +9187,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string Syntax { get { throw null; } }
         public object?[] Arguments { get { throw null; } }
         public const string DateTimeFormat = "DateTimeFormat";
+        public const string Json = "Json";
         public const string Regex = "Regex";
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
