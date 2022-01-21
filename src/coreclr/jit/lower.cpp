@@ -2264,22 +2264,30 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // the call target from memory between calling
             // CORINFO_HELP_VALIDATE_INDIRECT_CALL and the target. This is
             // something that would easily occur in debug codegen if we
-            // produced high-level IR. Instead we will produce
+            // produced high-level IR. Instead we will use a GT_PHYSREG node
+            // to get the target back from the register that contains the target.
             //
-            // tx... = <early args>
-            // ty = callTarget
-            // GT_CALL CORINFO_HELP_VALIDATE_INDIRECT_CALL, ty
-            // tz = PHYS_REG REG_ARG_0 (preserved by helper)
-            // tw... = <late args>
-            // GT_CALL tz, tx..., tw...
+            // Additionally, since the validator may not preserve arg registers
+            // (e.g. on x64) we have to move all GT_PUTARG_REG nodes that would
+            // otherwise be trashed ahead.
             //
-            // The most problematic thing here is that the callTarget may
-            // effectively null-check 'this', and should normally happen after
-            // late args that can have some side effects. Therefore we ensure
-            // in fgArgInfo::ArgsComplete that we evaluate side-effecting args
-            // early for CFG.
-            // Note that early args may place stack args, but that's ok as the
-            // validator has a custom calling convention.
+            // In total, we end up transforming
+            //
+            // ta... = <early args>
+            // tb... = <late args> (without trashed GT_PUTARG_REG nodes)
+            // tc = callTarget
+            // GT_CALL tc, ta..., tb...
+            //
+            // into
+            //
+            // ta... = <early args>
+            // tb... = <late args> (without trashed GT_PUTARG_REG nodes)
+            // tc = callTarget
+            // GT_CALL CORINFO_HELP_VALIDATE_INDIRECT_CALL, tc
+            // td = GT_PHYSREG REG_VALIDATE_INDIRECT_CALL_ADDR (preserved by helper)
+            // te = <moved GT_PUTARG_REG nodes>
+            // GT_CALL te, ta..., tb..., te...
+            //
 
             GenTree* regNode = PhysReg(REG_VALIDATE_INDIRECT_CALL_ADDR, TYP_I_IMPL);
             LIR::Use useOfTar;
