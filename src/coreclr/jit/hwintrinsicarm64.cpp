@@ -687,6 +687,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 case TYP_UBYTE:
                 {
                     op2             = gtNewIconNode(0x80);
+                    simdBaseType    = TYP_UBYTE;
+                    simdBaseJitType = CORINFO_TYPE_UBYTE;
                     vectorCreateOp1 = gtNewLconNode(0x00FFFEFDFCFBFAF9);
 
                     if (simdSize == 16)
