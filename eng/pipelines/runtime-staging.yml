@@ -295,9 +295,7 @@ jobs:
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true)
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -307,9 +305,7 @@ jobs:
         scenarios:
         - buildwasmapps
         condition: >-
-          or(
-            eq(variables['wasmbuildtestsContainsChange'], true),
-            eq(variables['isRollingBuild'], true))
+            eq(variables['wasmbuildtestsContainsChange'], true)
 
 #
 # Build Browser_wasm, on windows, run console and browser tests
@@ -337,8 +333,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -381,8 +376,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -394,8 +388,7 @@ jobs:
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(variables['monoContainsChange'], true))
 
 # Wasm debugger tests - windows
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -416,9 +409,7 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=windows
       timeoutInMinutes: 180
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true)
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -447,9 +438,7 @@ jobs:
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false
       timeoutInMinutes: 180
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
-          eq(variables['isRollingBuild'], true))
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true)
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
