@@ -125,7 +125,10 @@ namespace System.IO.Tests
             using var sw = new StreamReader(GetLargeStream());
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sw.ReadToEndAsync(cts.Token));
+            var token = cts.Token;
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sw.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
         }
 
         [Fact]
@@ -138,8 +141,10 @@ namespace System.IO.Tests
 
             using StreamReader reader = File.OpenText(path);
             using CancellationTokenSource cts = new (TimeSpan.FromMilliseconds(50));
-            
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(cts.Token));
+            var token = cts.Token;
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
         }
 
         [Fact]

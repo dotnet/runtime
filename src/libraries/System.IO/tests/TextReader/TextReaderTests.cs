@@ -69,9 +69,9 @@ namespace System.IO.Tests
             using var tr = new CharArrayTextReader(TestDataProvider.LargeData);
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            CancellationToken token = cts.Token;
+            var token = cts.Token;
 
-            TaskCanceledException ex = await Assert.ThrowsAsync<OperationCanceledException>(async () => await tr.ReadToEndAsync(token));
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await tr.ReadToEndAsync(token));
             Assert.Equal(token, ex.CancellationToken);
         }
 
