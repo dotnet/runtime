@@ -2929,7 +2929,7 @@ namespace System.Tests
 
             foreach (TimeZoneInfo timezone in tzCollection)
             {
-                Console.WriteLine($"tzCollection: {timezone.DisplayName}");
+                Console.WriteLine($"tzCollection: id {timezone.Id} has DisplayName {timezone.DisplayName}");
                 tzDisplayNames.Add(timezone.DisplayName);
             }
             foreach (string timezone in tzDisplayNames)
