@@ -2874,6 +2874,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64111", typeof(PlatformDetection), nameof(PlatformDetection.IsLinux), nameof(PlatformDetection.IsArm64Process))]
         public static void NoBackwardTimeZones()
         {
             ReadOnlyCollection<TimeZoneInfo> tzCollection = TimeZoneInfo.GetSystemTimeZones();
