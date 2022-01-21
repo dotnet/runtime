@@ -12,7 +12,18 @@ namespace System.Drawing.Printing
 
         static LibcupsNative()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix);
+            LibraryResolver.EnsureRegistered();
+        }
+
+        internal static IntPtr LoadLibcups()
+        {
+            // We allow both "libcups.so" and "libcups.so.2" to be loaded.
+            if (!NativeLibrary.TryLoad("libcups.so", out IntPtr lib))
+            {
+                NativeLibrary.TryLoad("libcups.so.2", out lib);
+            }
+
+            return lib;
         }
 
         [GeneratedDllImport(LibraryName)]

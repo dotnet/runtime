@@ -223,7 +223,7 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\Internal\GpPathData.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
-    <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.Windows.cs" />
     <Compile Include="System\Drawing\Pen.Windows.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
@@ -373,6 +373,7 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
     <Compile Include="System\Drawing\GdiPlusStreamHelper.Unix.cs" />
     <Compile Include="System\Drawing\LibX11Functions.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.Unix.cs" />
     <Compile Include="System\Drawing\MarshallingHelpers.cs" />
     <Compile Include="System\Drawing\Image.Unix.cs" />
     <Compile Include="System\Drawing\Pen.Unix.cs" />
@@ -384,6 +385,7 @@ Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows 
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.Unix.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
+    <Compile Include="System\Drawing\LibraryResolver.cs" />
     <Compile Include="Interop\Unix\Interop.Libraries.cs" />
     <EmbeddedResource Include="Resources\System\Drawing\Error.ico">
       <LogicalName>placeholder.ico</LogicalName>
