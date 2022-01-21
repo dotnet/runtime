@@ -51,5 +51,12 @@ namespace Internal.Cryptography
             }
             return oddParityKey;
         }
+
+        internal static byte[] GenerateRandom(int count)
+        {
+            byte[] buffer = new byte[count];
+            RandomNumberGenerator.Fill(buffer);
+            return buffer;
+        }
     }
 }

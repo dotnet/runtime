@@ -69,6 +69,9 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
+  <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
+    <value>The method cannot be called with an invalid or closed SafeHandle.</value>
+  </data>
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
   </data>
@@ -129,11 +132,20 @@
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
     <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
   </data>
+  <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
+    <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
+  </data>
   <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
     <value>The keys from both parties must be the same size to generate a secret agreement.</value>
   </data>
   <data name="Cryptography_ArgECDHRequiresECDHKey" xml:space="preserve">
     <value>Keys used with the ECDiffieHellmanCng algorithm must have an algorithm group of ECDiffieHellman.</value>
+  </data>
+  <data name="Cryptography_ArgECDsaRequiresECDsaKey" xml:space="preserve">
+    <value>Keys used with the ECDsaCng algorithm must have an algorithm group of ECDsa.</value>
+  </data>
+  <data name="Cryptography_ArgRSARequiresRSAKey" xml:space="preserve">
+    <value>Keys used with the RSACng algorithm must have an algorithm group of RSA.</value>
   </data>
   <data name="Cryptography_AuthTagMismatch" xml:space="preserve">
     <value>The computed authentication tag did not match the input authentication tag.</value>
@@ -149,6 +161,9 @@
   </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
+  </data>
+  <data name="Cryptography_CngKeyWrongAlgorithm" xml:space="preserve">
+    <value>This key is for algorithm '{0}'. Expected '{1}'.</value>
   </data>
   <data name="Cryptography_Config_EncodedOIDError" xml:space="preserve">
     <value>Encoded OID length is too large (greater than 0x7f bytes).</value>
@@ -206,6 +221,12 @@
   </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
+  </data>
+  <data name="Cryptography_InvalidAlgorithmGroup" xml:space="preserve">
+    <value>The algorithm group '{0}' is invalid.</value>
+  </data>
+  <data name="Cryptography_InvalidAlgorithmName" xml:space="preserve">
+    <value>The algorithm name '{0}' is invalid.</value>
   </data>
   <data name="Cryptography_InvalidBlockSize" xml:space="preserve">
     <value>Specified block size is not valid for this algorithm.</value>
@@ -273,6 +294,9 @@
   <data name="Cryptography_InvalidKey_Weak" xml:space="preserve">
     <value>Specified key is a known weak key for '{0}' and cannot be used.</value>
   </data>
+  <data name="Cryptography_InvalidKeyBlobFormat" xml:space="preserve">
+    <value>The key blob format '{0}' is invalid.</value>
+  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
@@ -288,11 +312,17 @@
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
   </data>
+  <data name="Cryptography_InvalidProviderName" xml:space="preserve">
+    <value>The provider name '{0}' is invalid.</value>
+  </data>
   <data name="Cryptography_InvalidOperation" xml:space="preserve">
     <value>This operation is not supported for this class.</value>
   </data>
   <data name="Cryptography_InvalidTagLength" xml:space="preserve">
     <value>The specified tag is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_KeyBlobParsingError" xml:space="preserve">
+    <value>Key Blob not in expected format.</value>
   </data>
   <data name="Cryptography_KeyTooSmall" xml:space="preserve">
     <value>The key is too small for the requested operation.</value>
@@ -338,6 +368,9 @@
   </data>
   <data name="Cryptography_Okm_TooLarge" xml:space="preserve">
     <value>Output keying material length can be at most {0} bytes (255 * hash length).</value>
+  </data>
+  <data name="Cryptography_OpenEphemeralKeyHandleWithoutEphemeralFlag" xml:space="preserve">
+    <value>The CNG key handle being opened was detected to be ephemeral, but the EphemeralKey open option was not specified.</value>
   </data>
   <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
     <value>Cannot open an invalid handle.</value>
@@ -393,6 +426,9 @@
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
   </data>
+  <data name="Cryptography_TlsRequiresLabelAndSeed" xml:space="preserve">
+    <value>The TLS key derivation function requires both the label and seed properties to be set.</value>
+  </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
   </data>
@@ -443,6 +479,9 @@
   </data>
   <data name="NotSupported_UnwritableStream" xml:space="preserve">
     <value>Stream does not support writing.</value>
+  </data>
+  <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
+    <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
   </data>
   <data name="SystemSecurityCryptography_PlatformNotSupported" xml:space="preserve">
     <value>System.Security.Cryptography is not supported on this platform.</value>
