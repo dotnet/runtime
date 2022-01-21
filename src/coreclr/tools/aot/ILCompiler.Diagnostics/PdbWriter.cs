@@ -136,18 +136,16 @@ namespace ILCompiler.Diagnostics
             bool failed = true;
             try
             {
-                using (_ngenWriter)
+                try
                 {
-                    try
+                    WritePDBDataHelper(dllPath, methods);
+                }
+                finally
+                {
+                    if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
                     {
-                        WritePDBDataHelper(dllPath, methods);
-                    }
-                    finally
-                    {
-                        if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
-                        {
-                            _ngenWriter.CloseMod(_pdbMod);
-                        }
+                        _ngenWriter.CloseMod(_pdbMod);
+                        _ngenWriter?.Dispose();
                     }
                 }
 
