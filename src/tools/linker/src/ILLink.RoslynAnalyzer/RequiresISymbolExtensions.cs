@@ -54,7 +54,8 @@ namespace ILLink.RoslynAnalyzer
 			if (member is ISymbol containingSymbol) {
 				if (containingSymbol.HasAttribute (requiresAttribute)
 					|| (containingSymbol is not ITypeSymbol &&
-						 containingSymbol.ContainingType.HasAttribute (requiresAttribute))) {
+						containingSymbol.ContainingType is ITypeSymbol containingType &&
+						containingType.HasAttribute (requiresAttribute))) {
 					return true;
 				}
 			}

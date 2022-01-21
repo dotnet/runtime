@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -15,7 +15,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[ExpectedNoWarnings]
 	public class RequiresOnAttributeCtor
 	{
-		[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
+		[ExpectedWarning ("IL2026", "RUC on MethodAnnotatedWithRequires")]
+		[ExpectedWarning ("IL2026", "RUC on TestTypeWithRequires")]
 		public static void Main ()
 		{
 			var type = new Type ();
@@ -27,6 +28,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			type.EventAdd -= (sender, e) => { };
 			type.EventRemove += (sender, e) => { };
 			Type.Interface annotatedInterface = new Type.NestedType ();
+
+			TestTypeWithRequires ();
+		}
+
+		[RequiresUnreferencedCode ("RUC on TestTypeWithRequires")]
+		public static void TestTypeWithRequires ()
+		{
+			var typeWithRequires = new TypeWithRequires ();
+			typeWithRequires.Method ();
+			TypeWithRequires.StaticMethod ();
+			TypeWithRequires.Interface annotatedInterface = new TypeWithRequires.NestedType ();
 		}
 
 		[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
@@ -40,7 +52,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
-			[RequiresUnreferencedCode ("Message from attribute's ctor.")]
+			[RequiresUnreferencedCode ("RUC on MethodAnnotatedWithRequires")]
 			[RequiresOnAttributeCtor]
 			public void MethodAnnotatedWithRequires ()
 			{
@@ -82,6 +94,41 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 			}
 
+			[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
+			[RequiresOnAttributeCtor]
+			public class NestedType : Interface
+			{
+			}
+		}
+
+		// https://github.com/dotnet/linker/issues/2529
+		[ExpectedWarning ("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Trimmer)]
+		[RequiresUnreferencedCode ("RUC on TypeWithRequires")]
+		[RequiresOnAttributeCtor]
+		public class TypeWithRequires
+		{
+			// https://github.com/dotnet/linker/issues/2529
+			[ExpectedWarning ("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
+			[RequiresOnAttributeCtor]
+			public void Method ()
+			{
+			}
+
+			// https://github.com/dotnet/linker/issues/2529
+			[ExpectedWarning ("IL2026", "Message from attribute's ctor.", ProducedBy = ProducedBy.Analyzer)]
+			[RequiresOnAttributeCtor]
+			public static void StaticMethod ()
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
+			[RequiresOnAttributeCtor]
+			public interface Interface
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "Message from attribute's ctor.")]
+			[RequiresOnAttributeCtor]
 			public class NestedType : Interface
 			{
 			}
