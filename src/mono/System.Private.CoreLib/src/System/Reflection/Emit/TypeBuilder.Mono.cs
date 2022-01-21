@@ -74,13 +74,13 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
+        private bool is_byreflike;
 
         private int state;
 #endregion
 
         private ITypeName fullname;
         private bool createTypeCalled;
-        private bool isByRefLike;
         private Type? underlying_type;
 
         public const int UnspecifiedTypeSize = 0;
@@ -890,7 +890,7 @@ namespace System.Reflection.Emit
 
                 // If a type has a ref field but isn't a ByRefLike
                 // value type, then the type is invalid.
-                if (containsRefField && !(IsValueType && isByRefLike))
+                if (containsRefField && !(IsValueType && is_byreflike))
                     throw new TypeLoadException();
             }
 
@@ -1552,7 +1552,7 @@ namespace System.Reflection.Emit
             }
             else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
             {
-                isByRefLike = true;
+                is_byreflike = true;
             }
 
             if (cattrs != null)
