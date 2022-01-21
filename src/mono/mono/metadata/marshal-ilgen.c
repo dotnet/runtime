@@ -1991,6 +1991,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	gboolean func_param = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM) != 0;
 	gboolean func_param_unboxed = (flags & EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED) != 0;
 	gboolean skip_gc_trans = (flags & EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS) != 0;
+	gboolean runtime_marshalling_enabled = (flags & EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED) != 0;
 	EmitMarshalContext m;
 	MonoMethodSignature *csig;
 	MonoClass *klass;
@@ -2001,6 +2002,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	GCSafeTransitionBuilder gc_safe_transition_builder;
 
 	memset (&m, 0, sizeof (m));
+	m.runtime_marshalling_enabled = runtime_marshalling_enabled;
 	m.mb = mb;
 	m.sig = sig;
 	m.piinfo = piinfo;
@@ -2016,6 +2018,8 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	}
 	csig = mono_metadata_signature_dup_full (get_method_image (mb->method), sig);
 	csig->pinvoke = 1;
+	if (!runtime_marshalling_enabled)
+		csig->marshalling_disabled = 1;
 	m.csig = csig;
 	m.image = image;
 
@@ -2101,6 +2105,10 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		 */
 		csig->ret = int_type;
 	}
+
+	// Check if SetLastError usage is valid early so we don't try to throw an exception after transitioning GC modes.
+	if (piinfo && (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) && !m.runtime_marshalling_enabled)
+		mono_mb_emit_exception_marshal_directive(mb, g_strdup("Setting SetLastError=true is not supported when runtime marshalling is disabled."));
 
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
@@ -6763,6 +6771,18 @@ mb_emit_exception_for_error_ilgen (MonoMethodBuilder *mb, const MonoError *error
 }
 
 static void
+emit_marshal_directive_exception_ilgen (EmitMarshalContext *m, int argnum, const char* msg)
+{
+	char* fullmsg = NULL;
+	if (argnum == 0)
+		fullmsg = g_strdup_printf("Error marshalling return value: %s", msg);
+	else 
+		fullmsg = g_strdup_printf("Error marshalling parameter #%d: %s", argnum, msg);
+
+	mono_mb_emit_exception_marshal_directive (m->mb, fullmsg);
+}
+
+static void
 emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type)
 {
 	for (int i = 0; i < param_count; i++)
@@ -6850,6 +6870,7 @@ mono_marshal_ilgen_init (void)
 	cb.mb_emit_exception = mb_emit_exception_ilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
+	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_ilgen;
 #ifdef DISABLE_NONBLITTABLE
 	mono_marshal_noilgen_init_blittable (&cb);
 #endif

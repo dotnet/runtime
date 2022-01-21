@@ -1231,7 +1231,7 @@ mono_class_get_generic_container (MonoClass *klass);
 gpointer
 mono_class_alloc (MonoClass *klass, int size);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_class_alloc0 (MonoClass *klass, int size);
 
 #define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 ((klass), (size))))
@@ -1455,6 +1455,18 @@ mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);
 GSList*
 mono_class_get_dim_conflicts (MonoClass *klass);
 
+/* opaque struct of class specific hot reload info */
+typedef struct _MonoClassMetadataUpdateInfo MonoClassMetadataUpdateInfo;
+
+MONO_COMPONENT_API gboolean
+mono_class_has_metadata_update_info (MonoClass *klass);
+
+MONO_COMPONENT_API MonoClassMetadataUpdateInfo *
+mono_class_get_metadata_update_info (MonoClass *klass);
+
+MONO_COMPONENT_API void
+mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateInfo *value);
+
 MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
@@ -1492,7 +1504,7 @@ mono_class_get_default_finalize_method (void);
 const char *
 mono_field_get_rva (MonoClassField *field, int swizzle);
 
-void
+MONO_COMPONENT_API void
 mono_field_resolve_type (MonoClassField *field, MonoError *error);
 
 gboolean
@@ -1574,12 +1586,6 @@ m_field_get_meta_flags (MonoClassField *field)
 {
 	return (unsigned int)(field->parent_and_flags & MONO_CLASS_FIELD_META_FLAG_MASK);
 }
-
-void
-m_field_set_parent (MonoClassField *field, MonoClass *klass);
-
-void
-m_field_set_meta_flags (MonoClassField *field, unsigned int flags);
 
 static inline gboolean
 m_field_get_offset (MonoClassField *field)

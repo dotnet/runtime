@@ -510,7 +510,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 
 	for (k = 0; k < param_count; k++) {
 		
-		if (csig->pinvoke)
+		if (csig->pinvoke && !csig->marshalling_disabled)
 			size = mono_type_native_stack_size (csig->params [k], (guint32 *) &align);
 		else
 			size = mini_type_stack_size (csig->params [k], &align);
@@ -556,7 +556,7 @@ emit_new_move(MonoCompile *cfg, int dr, MonoInst *ins, MonoInst *src)
 	MonoInst *move; 						
 	int size;
 	
-	if (call->signature->pinvoke) {
+	if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 		size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 		vtcopy->backend.is_pinvoke = 1;
 	} else {
@@ -1130,7 +1130,7 @@ enum_retvalue:
 				simpleType = mono_class_enum_basetype_internal (klass)->type;
 				goto enum_retvalue;
 			}
-			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
+			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
 	
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -1139,7 +1139,7 @@ enum_retvalue:
 		}
 		case MONO_TYPE_TYPEDBYREF: {
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
-			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
+			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
 	
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
@@ -1288,7 +1288,7 @@ enum_retvalue:
 			MonoMarshalType *info;
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size(klass, NULL);
 			else
 				size = mono_class_value_size(klass, NULL);
@@ -1950,7 +1950,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		guint32 size;
 
 		/* FIXME: alignment? */
-		if (call->signature->pinvoke) {
+		if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
@@ -5814,7 +5814,7 @@ printf("ns: %s k: %s m: %s\n",method->klass->name_space,method->klass->name,meth
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 
-				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE  
+				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && sig->pinvoke &&  !sig->marshalling_disabled
 					? mono_class_native_size(mono_class_from_mono_type_internal (inst->inst_vtype), NULL)
 					: ainfo->size);
 

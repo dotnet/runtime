@@ -1297,7 +1297,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		arg_type = mini_get_underlying_type (arg_type);
 		if ((i >= sig->hasthis) && (MONO_TYPE_ISSTRUCT(sig->params [i - sig->hasthis])))
-			emit_pass_vtype (cfg, call, cinfo, ainfo, arg_type, in, sig->pinvoke);
+			emit_pass_vtype (cfg, call, cinfo, ainfo, arg_type, in, sig->pinvoke && !sig->marshalling_disabled);
 		else if (!m_type_is_byref (arg_type) && ((arg_type->type == MONO_TYPE_I8) || (arg_type->type == MONO_TYPE_U8)))
 			emit_pass_long (cfg, call, ainfo, in);
 		else if (!m_type_is_byref (arg_type) && (arg_type->type == MONO_TYPE_R8))
@@ -2016,7 +2016,7 @@ emit_vret_token (MonoInst *ins, guint32 *code)
 	 * The sparc ABI requires that calls to functions which return a structure
 	 * contain an additional unimpl instruction which is checked by the callee.
 	 */
-	if (call->signature->pinvoke && MONO_TYPE_ISSTRUCT(call->signature->ret)) {
+	if (call->signature->pinvoke && !call->signature->marshalling_disabled && MONO_TYPE_ISSTRUCT(call->signature->ret)) {
 		if (call->signature->ret->type == MONO_TYPE_TYPEDBYREF)
 			size = mini_type_stack_size (call->signature->ret, NULL);
 		else

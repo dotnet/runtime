@@ -3256,6 +3256,8 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 
 #if defined(MONO_CROSS_COMPILE)
 	ctx->valid = FALSE; //A cross compiler doesn't need to suspend.
+#elif defined(HOST_WASI)
+	// TODO: For WASI, we need to review how thread state is initialized
 #elif MONO_ARCH_HAS_MONO_CONTEXT
 	MONO_CONTEXT_GET_CURRENT (ctx->ctx);
 #else

@@ -973,7 +973,7 @@ namespace ILCompiler
             }
         }
 
-        private class LinkAttributesReader : ProcessLinkerXmlBase
+        private class LinkAttributesReader : ProcessXmlBase
         {
             private readonly HashSet<TypeDesc> _removedAttributes;
 

@@ -119,15 +119,15 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
                     if proc.poll() is not None:
                         break
                     if output:
-                        output_str = output.strip().decode("utf-8")
+                        output_str = output.strip().decode("utf-8", errors='replace')
                         print(output_str)
                         of.write(output_str + "\n")
         else:
             command_stdout, command_stderr = proc.communicate()
             if len(command_stdout) > 0:
-                print(command_stdout.decode("utf-8"))
+                print(command_stdout.decode("utf-8", errors='replace'))
             if len(command_stderr) > 0:
-                print(command_stderr.decode("utf-8"))
+                print(command_stderr.decode("utf-8", errors='replace'))
 
         return_code = proc.returncode
         if _exit_on_fail and return_code != 0:

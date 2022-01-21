@@ -508,6 +508,21 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 	return 0;
 }
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+
+void
+mono_runtime_install_handlers (void)
+{
+}
+
+void
+mono_init_native_crash_info (void)
+{
+	return;
+}
+
+#endif
+
 #ifdef HOST_BROWSER
 
 void
@@ -522,17 +537,6 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	g_error ("mono_chain_signal");
 	
 	return FALSE;
-}
-
-void
-mono_runtime_install_handlers (void)
-{
-}
-
-void
-mono_init_native_crash_info (void)
-{
-	return;
 }
 
 gboolean
