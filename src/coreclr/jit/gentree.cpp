@@ -11721,10 +11721,10 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     // Defer folding if not optimizing.
-    //if (opts.OptimizationDisabled())
-    //{
-    //    return node;
-    //}
+    if (opts.OptimizationDisabled())
+    {
+        return node;
+    }
 
     switch (node->GetHWIntrinsicId())
     {
