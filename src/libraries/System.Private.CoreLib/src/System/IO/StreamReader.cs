@@ -929,8 +929,7 @@ namespace System.IO
             return sb.ToString();
         }
 
-        public override Task<string> ReadToEndAsync() =>
-            ReadToEndAsync(default);
+        public override Task<string> ReadToEndAsync() => ReadToEndAsync(default);
 
         public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {

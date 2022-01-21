@@ -131,30 +131,15 @@ namespace System.IO.Tests
         [Fact]
         public async Task ReadToEndAsync_WithCancellation()
         {
-            var path = Path.GetTempFileName();
-            try
-            {
-                // create large (~100MB) file
-                using (var writer = new StreamWriter(path))
-                {
-                    for (var i = 0; i < 1_000_000; i++)
-                        writer.WriteLine("A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.");
-                }
+            string path = GetTestFilePath();
+            
+            // create large (~100MB) file
+            File.WriteAllLines(path, Enumerable.Repeat("A very large file used for testing StreamReader cancellation. 0123456789012345678901234567890123456789.", 1_000_000));
 
-                using var reader = File.OpenText(path);
-                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(cts.Token));
-            }
-            finally
-            {
-                try
-                {
-                    File.Delete(path);
-                }
-                catch (Exception)
-                {
-                }
-            }
+            using StreamReader reader = File.OpenText(path);
+            using CancellationTokenSource cts = new (TimeSpan.FromMilliseconds(50));
+            
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadToEndAsync(cts.Token));
         }
 
         [Fact]
