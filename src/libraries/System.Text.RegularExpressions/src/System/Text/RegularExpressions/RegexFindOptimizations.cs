@@ -626,7 +626,7 @@ namespace System.Text.RegularExpressions
                         Debug.Assert(LiteralAfterLoop is not null);
                         (RegexNode loopNode, (char Char, string? String, char[]? Chars) literal) = LiteralAfterLoop.GetValueOrDefault();
 
-                        Debug.Assert(loopNode.Type is RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic);
+                        Debug.Assert(loopNode.Kind is RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic);
                         Debug.Assert(loopNode.N == int.MaxValue);
 
                         int startingPos = pos;

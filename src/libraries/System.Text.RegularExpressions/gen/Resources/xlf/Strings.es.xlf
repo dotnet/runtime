@@ -292,11 +292,6 @@
         <target state="translated">\\ no válido al final del patrón.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Código de operación inesperado en la generación de expresión regular: {0}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
         <source>Unrecognized control character.</source>
         <target state="translated">Carácter de control no reconocido.</target>
