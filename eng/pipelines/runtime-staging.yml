@@ -374,7 +374,7 @@ jobs:
     jobParameters:
       isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
       testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_AOT
+      nameSuffix: LibraryTests_AOT
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
       condition: >-
@@ -412,7 +412,7 @@ jobs:
         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
     jobParameters:
       testGroup: innerloop
-      nameSuffix: Windows_wasm_DebuggerTests
+      nameSuffix: Mono_DebuggerTests
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=windows
       timeoutInMinutes: 180
       condition: >-
