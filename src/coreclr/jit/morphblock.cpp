@@ -26,7 +26,6 @@ protected:
 
     static GenTree* MorphBlock(Compiler* comp, GenTree* tree, bool isDest);
     static GenTree* MorphCommaBlock(Compiler* comp, GenTreeOp* firstComma);
-    static GenTreeBlk* MorphDynamicBlock(Compiler* comp, GenTreeDynBlk* dynBlock);
 
 protected:
     Compiler* m_comp;
@@ -36,9 +35,7 @@ protected:
     GenTree*   m_dst = nullptr;
     GenTree*   m_src = nullptr;
 
-    unsigned m_blockSize        = 0;
-    bool     m_blockSizeIsConst = false;
-
+    unsigned             m_blockSize          = 0;
     unsigned             m_dstLclNum          = BAD_VAR_NUM;
     GenTreeLclVarCommon* m_dstLclNode         = nullptr;
     LclVarDsc*           m_dstVarDsc          = nullptr;
@@ -212,9 +209,8 @@ void MorphInitBlockHelper::PrepareDst()
 
     if (m_dst->IsLocal())
     {
-        m_dstLclNode       = m_dst->AsLclVarCommon();
-        m_dstVarDsc        = m_comp->lvaGetDesc(m_dstLclNode);
-        m_blockSizeIsConst = true;
+        m_dstLclNode = m_dst->AsLclVarCommon();
+        m_dstVarDsc  = m_comp->lvaGetDesc(m_dstLclNode);
 
         if (m_dst->OperIs(GT_LCL_VAR))
         {
@@ -248,21 +244,19 @@ void MorphInitBlockHelper::PrepareDst()
     else
     {
         assert(m_dst == m_dst->gtEffectiveVal() && "the commas were skipped in MorphBlock");
-        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ, GT_DYN_BLK));
+        assert(m_dst->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
         GenTree* dstAddr = m_dst->AsIndir()->Addr();
         if (m_dst->OperGet() == GT_IND)
         {
             assert(m_dst->TypeGet() != TYP_STRUCT);
-            m_blockSize        = genTypeSize(m_dst);
-            m_blockSizeIsConst = true;
+            m_blockSize = genTypeSize(m_dst);
         }
         else
         {
             assert(m_dst->OperIsBlk());
-            GenTreeBlk* blk    = m_dst->AsBlk();
-            m_blockSize        = blk->Size();
-            m_blockSizeIsConst = !blk->OperIs(GT_DYN_BLK);
+            GenTreeBlk* blk = m_dst->AsBlk();
+            m_blockSize     = blk->Size();
         }
 
         noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
@@ -444,22 +438,10 @@ GenTree* MorphInitBlockHelper::MorphBlock(Compiler* comp, GenTree* tree, bool is
         return tree;
     }
 
-    GenTreeBlk* blkNode = tree->AsBlk();
-    if (blkNode->OperIs(GT_DYN_BLK))
-    {
-        blkNode = MorphDynamicBlock(comp, blkNode->AsDynBlk());
-        if (blkNode->OperIs(GT_DYN_BLK))
-        {
-            JITDUMP("MorphBlock after:\n");
-            DISPTREE(blkNode);
-            return blkNode;
-        }
-    }
-
-    GenTree* blkAddr = blkNode->Addr();
+    GenTree* blkAddr = tree->AsBlk()->Addr();
     assert(blkAddr != nullptr);
     assert(blkAddr->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
-    // GT_ADDR, GT_LCL_VAR/FLD, GT_ADD, GT_COMMA, GT_CALL, GT_CNST_INT, GT_LCL_VAR/FLD_ADDR
+    // GT_ADDR, GT_LCL_VAR/FLD, GT_ADD, GT_COMMA, GT_CALL, GT_CNS_INT, GT_LCL_VAR/FLD_ADDR
 
     JITDUMP("MorphBlock after:\n");
     DISPTREE(tree);
@@ -537,41 +519,6 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
     comp->gtUpdateNodeSideEffects(res);
     INDEBUG(res->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
     return res;
-}
-
-//------------------------------------------------------------------------
-// MorphDynamicBlock: tries to transform a dynamic block as a const block.
-//
-// static
-GenTreeBlk* MorphInitBlockHelper::MorphDynamicBlock(Compiler* comp, GenTreeDynBlk* dynBlock)
-{
-    if (dynBlock->gtDynamicSize->IsCnsIntOrI())
-    {
-        GenTreeIntCon* dynSize = dynBlock->gtDynamicSize->AsIntCon();
-        assert(dynSize->FitsInI32());
-        unsigned size = static_cast<unsigned>(dynSize->IconValue());
-        // A GT_BLK with size of zero is not supported,
-        // so if we encounter such a thing we just leave it as a GT_DYN_BLK
-        if (size != 0)
-        {
-            dynBlock->gtDynamicSize = nullptr;
-            GenTreeBlk* blkNode     = dynBlock;
-            blkNode->ChangeOper(GT_BLK);
-            blkNode->SetLayout(comp->typGetBlkLayout(size));
-            JITDUMP("MorphDynamicBlock: DYN_BLK was morphed into BLK:\n");
-            return blkNode;
-        }
-        else
-        {
-            JITDUMP("MorphDynamicBlock: DYN_BLK with zero size can't be morphed:\n");
-            return dynBlock;
-        }
-    }
-    else
-    {
-        JITDUMP("MorphDynamicBlock: DYN_BLK with non-const size can't be morphed:\n");
-        return dynBlock;
-    }
 }
 
 class MorphCopyBlockHelper : public MorphInitBlockHelper
@@ -745,7 +692,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (m_dstVarDsc != nullptr)
     {
-        if (m_dstVarDsc->lvPromoted && m_blockSizeIsConst)
+        if (m_dstVarDsc->lvPromoted)
         {
             noway_assert(varTypeIsStruct(m_dstVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
@@ -765,7 +712,7 @@ void MorphCopyBlockHelper::MorphStructCases()
 
     if (m_srcVarDsc != nullptr)
     {
-        if (m_srcVarDsc->lvPromoted && m_blockSizeIsConst)
+        if (m_srcVarDsc->lvPromoted)
         {
             noway_assert(varTypeIsStruct(m_srcVarDsc));
             noway_assert(!m_comp->opts.MinOpts());
@@ -912,7 +859,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             //   [000085] -A----------     =         long
             //   [000083] D------N----        lclVar    long   V17 tmp9
             //
-            if (m_blockSizeIsConst && (m_dstVarDsc->lvFieldCnt == 1) && (m_srcVarDsc != nullptr) &&
+            if ((m_dstVarDsc->lvFieldCnt == 1) && (m_srcVarDsc != nullptr) &&
                 (m_blockSize == genTypeSize(m_srcVarDsc->TypeGet())))
             {
                 // Reject the following tree:
@@ -950,7 +897,7 @@ void MorphCopyBlockHelper::MorphStructCases()
             //               [000243] -----+------                \--*  addr      byref
             //               [000242] D----+-N----                   \--*  lclVar    byref  V28 tmp19
             //
-            if (m_blockSizeIsConst && (m_srcVarDsc->lvFieldCnt == 1) && (m_dstVarDsc != nullptr) &&
+            if ((m_srcVarDsc->lvFieldCnt == 1) && (m_dstVarDsc != nullptr) &&
                 (m_blockSize == genTypeSize(m_dstVarDsc->TypeGet())))
             {
                 // Check for type agreement
@@ -1259,7 +1206,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         // Is the address of a local?
                         GenTreeLclVarCommon* lclVarTree = nullptr;
                         bool                 isEntire   = false;
-                        bool*                pIsEntire  = (m_blockSizeIsConst ? &isEntire : nullptr);
+                        bool*                pIsEntire  = &isEntire;
                         if (dstAddrClone->DefinesLocalAddr(m_comp, m_blockSize, &lclVarTree, pIsEntire))
                         {
                             lclVarTree->gtFlags |= GTF_VAR_DEF;
@@ -1531,4 +1478,51 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 {
     return MorphInitBlockHelper::MorphInitBlock(this, tree);
+}
+
+//------------------------------------------------------------------------
+// fgMorphStoreDynBlock: Morph a dynamic block store (GT_STORE_DYN_BLK).
+//
+// Performs full (pre-order and post-order) morphing for a STORE_DYN_BLK.
+//
+// Arguments:
+//    tree - The GT_STORE_DYN_BLK tree to morph.
+//
+// Return Value:
+//    In case the size turns into a constant - the store, transformed
+//    into an "ordinary" ASG(BLK, Data()) one, and further morphed by
+//    "fgMorphInitBlock"/"fgMorphCopyBlock". Otherwise, the original
+//    tree (fully morphed).
+//
+GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
+{
+    tree->Addr()        = fgMorphTree(tree->Addr());
+    tree->Data()        = fgMorphTree(tree->Data());
+    tree->gtDynamicSize = fgMorphTree(tree->gtDynamicSize);
+
+    if (tree->gtDynamicSize->IsIntegralConst())
+    {
+        int64_t size = tree->gtDynamicSize->AsIntConCommon()->IntegralValue();
+        assert(FitsIn<int32_t>(size));
+
+        if (size != 0)
+        {
+            GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
+            lhs->SetIndirExceptionFlags(this);
+
+            GenTree* asg = gtNewAssignNode(lhs, tree->Data());
+            asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
+            INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+            JITDUMP("MorphStoreDynBlock: trasformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+
+            return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
+        }
+    }
+
+    tree->SetAllEffectsFlags(tree->Addr(), tree->Data(), tree->gtDynamicSize);
+    tree->SetIndirExceptionFlags(this);
+    tree->gtFlags |= GTF_ASG;
+
+    return tree;
 }

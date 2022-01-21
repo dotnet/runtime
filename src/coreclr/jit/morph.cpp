@@ -11601,7 +11601,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     break;
                 case GT_OBJ:
                 case GT_BLK:
-                case GT_DYN_BLK:
                 case GT_IND:
                     // A non-null mac here implies this node is part of an address computation (the tree parent is
                     // GT_ADDR).
@@ -14971,23 +14970,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            if (tree->OperGet() == GT_STORE_DYN_BLK)
-            {
-                tree->AsDynBlk()->Data() = fgMorphTree(tree->AsDynBlk()->Data());
-            }
-            tree->AsDynBlk()->Addr()        = fgMorphTree(tree->AsDynBlk()->Addr());
-            tree->AsDynBlk()->gtDynamicSize = fgMorphTree(tree->AsDynBlk()->gtDynamicSize);
-
-            tree->gtFlags &= ~GTF_CALL;
-            tree->SetIndirExceptionFlags(this);
-
-            if (tree->OperGet() == GT_STORE_DYN_BLK)
-            {
-                tree->gtFlags |= tree->AsDynBlk()->Data()->gtFlags & GTF_ALL_EFFECT;
-            }
-            tree->gtFlags |= tree->AsDynBlk()->Addr()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsDynBlk()->gtDynamicSize->gtFlags & GTF_ALL_EFFECT;
+            tree = fgMorphStoreDynBlock(tree->AsStoreDynBlk());
             break;
 
         default:

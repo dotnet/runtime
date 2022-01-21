@@ -6404,6 +6404,7 @@ private:
     GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
+    GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
@@ -11501,41 +11502,13 @@ public:
                 break;
             }
 
-            case GT_DYN_BLK:
-            {
-                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
-
-                GenTree** op1Use = &dynBlock->gtOp1;
-                GenTree** op2Use = &dynBlock->gtDynamicSize;
-
-                result = WalkTree(op1Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(op2Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                break;
-            }
-
             case GT_STORE_DYN_BLK:
             {
-                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
+                GenTreeStoreDynBlk* const dynBlock = node->AsStoreDynBlk();
 
                 GenTree** op1Use = &dynBlock->gtOp1;
                 GenTree** op2Use = &dynBlock->gtOp2;
                 GenTree** op3Use = &dynBlock->gtDynamicSize;
-
-                if (TVisitor::UseExecutionOrder)
-                {
-                    if (dynBlock->IsReverseOp())
-                    {
-                        std::swap(op1Use, op2Use);
-                    }
-                }
 
                 result = WalkTree(op1Use, dynBlock);
                 if (result == fgWalkResult::WALK_ABORT)

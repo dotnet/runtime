@@ -258,7 +258,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_FIELD]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_CMPXCHG]       = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_QMARK]         = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_DYN_BLK]       = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_STORE_DYN_BLK] = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INTRINSIC]     = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ALLOCOBJ]      = TREE_NODE_SZ_LARGE;
@@ -320,7 +319,7 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeObj)          <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeDynBlk)       <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeStoreDynBlk)  <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeClsVar)       <= TREE_NODE_SZ_SMALL);
@@ -1609,10 +1608,9 @@ AGAIN:
                    Compare(op1->AsCmpXchg()->gtOpComparand, op2->AsCmpXchg()->gtOpComparand);
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            return Compare(op1->AsDynBlk()->Addr(), op2->AsDynBlk()->Addr()) &&
-                   Compare(op1->AsDynBlk()->Data(), op2->AsDynBlk()->Data()) &&
-                   Compare(op1->AsDynBlk()->gtDynamicSize, op2->AsDynBlk()->gtDynamicSize);
+            return Compare(op1->AsStoreDynBlk()->Addr(), op2->AsStoreDynBlk()->Addr()) &&
+                   Compare(op1->AsStoreDynBlk()->Data(), op2->AsStoreDynBlk()->Data()) &&
+                   Compare(op1->AsStoreDynBlk()->gtDynamicSize, op2->AsStoreDynBlk()->gtDynamicSize);
 
         default:
             assert(!"unexpected operator");
@@ -2073,11 +2071,9 @@ AGAIN:
             break;
 
         case GT_STORE_DYN_BLK:
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Data()));
-            FALLTHROUGH;
-        case GT_DYN_BLK:
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->Addr()));
-            hash = genTreeHashAdd(hash, gtHashValue(tree->AsDynBlk()->gtDynamicSize));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsStoreDynBlk()->Data()));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsStoreDynBlk()->Addr()));
+            hash = genTreeHashAdd(hash, gtHashValue(tree->AsStoreDynBlk()->gtDynamicSize));
             break;
 
         default:
@@ -4136,7 +4132,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 case GT_IND:
                 case GT_BLK:
                 case GT_OBJ:
-                case GT_DYN_BLK:
 
                     // In an indirection, the destination address is evaluated prior to the source.
                     // If we have any side effects on the target indirection,
@@ -4645,23 +4640,19 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            level  = gtSetEvalOrder(tree->AsDynBlk()->Addr());
-            costEx = tree->AsDynBlk()->Addr()->GetCostEx();
-            costSz = tree->AsDynBlk()->Addr()->GetCostSz();
+            level  = gtSetEvalOrder(tree->AsStoreDynBlk()->Addr());
+            costEx = tree->AsStoreDynBlk()->Addr()->GetCostEx();
+            costSz = tree->AsStoreDynBlk()->Addr()->GetCostSz();
 
-            if (oper == GT_STORE_DYN_BLK)
-            {
-                lvl2  = gtSetEvalOrder(tree->AsDynBlk()->Data());
-                level = max(level, lvl2);
-                costEx += tree->AsDynBlk()->Data()->GetCostEx();
-                costSz += tree->AsDynBlk()->Data()->GetCostSz();
-            }
-
-            lvl2  = gtSetEvalOrder(tree->AsDynBlk()->gtDynamicSize);
+            lvl2  = gtSetEvalOrder(tree->AsStoreDynBlk()->Data());
             level = max(level, lvl2);
-            costEx += tree->AsDynBlk()->gtDynamicSize->GetCostEx();
-            costSz += tree->AsDynBlk()->gtDynamicSize->GetCostSz();
+            costEx += tree->AsStoreDynBlk()->Data()->GetCostEx();
+            costSz += tree->AsStoreDynBlk()->Data()->GetCostSz();
+
+            lvl2  = gtSetEvalOrder(tree->AsStoreDynBlk()->gtDynamicSize);
+            level = max(level, lvl2);
+            costEx += tree->AsStoreDynBlk()->gtDynamicSize->GetCostEx();
+            costSz += tree->AsStoreDynBlk()->gtDynamicSize->GetCostSz();
             break;
 
         default:
@@ -4965,25 +4956,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             return false;
         }
 
-        case GT_DYN_BLK:
-        {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
-            if (operand == dynBlock->gtOp1)
-            {
-                *pUse = &dynBlock->gtOp1;
-                return true;
-            }
-            if (operand == dynBlock->gtDynamicSize)
-            {
-                *pUse = &dynBlock->gtDynamicSize;
-                return true;
-            }
-            return false;
-        }
-
         case GT_STORE_DYN_BLK:
         {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
             if (operand == dynBlock->gtOp1)
             {
                 *pUse = &dynBlock->gtOp1;
@@ -5184,7 +5159,8 @@ GenTree* GenTree::gtRetExprVal(BasicBlockFlags* pbbFlags /* = nullptr */)
 
 bool GenTree::OperRequiresAsgFlag()
 {
-    if (OperIs(GT_ASG) || OperIs(GT_XADD, GT_XORR, GT_XAND, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
+    if (OperIs(GT_ASG, GT_STORE_DYN_BLK) ||
+        OperIs(GT_XADD, GT_XORR, GT_XAND, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
     {
         return true;
     }
@@ -5266,7 +5242,6 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_CMPXCHG:
         case GT_BLK:
         case GT_OBJ:
-        case GT_DYN_BLK:
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
@@ -5353,9 +5328,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_IND:
         case GT_BLK:
         case GT_OBJ:
-        case GT_DYN_BLK:
-        case GT_STORE_BLK:
         case GT_NULLCHECK:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
             return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()));
 
         case GT_ARR_LENGTH:
@@ -7430,10 +7405,6 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeBlk(GT_BLK, tree->TypeGet(), tree->AsBlk()->Addr(), tree->AsBlk()->GetLayout());
                 break;
 
-            case GT_DYN_BLK:
-                copy = new (this, GT_DYN_BLK) GenTreeDynBlk(tree->AsOp()->gtGetOp1(), tree->AsDynBlk()->gtDynamicSize);
-                break;
-
             case GT_FIELD:
                 copy = new (this, GT_FIELD) GenTreeField(tree->TypeGet(), tree->AsField()->GetFldObj(),
                                                          tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
@@ -7661,10 +7632,10 @@ GenTree* Compiler::gtCloneExpr(
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
             copy = new (this, oper)
-                GenTreeDynBlk(gtCloneExpr(tree->AsDynBlk()->Addr(), addFlags, deepVarNum, deepVarVal),
-                              gtCloneExpr(tree->AsDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
+                GenTreeStoreDynBlk(gtCloneExpr(tree->AsStoreDynBlk()->Addr(), addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsStoreDynBlk()->Data(), addFlags, deepVarNum, deepVarVal),
+                                   gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
 
         default:
@@ -8348,20 +8319,10 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_advance = &GenTreeUseEdgeIterator::AdvanceArrOffset;
             return;
 
-        case GT_DYN_BLK:
-            m_edge = &m_node->AsDynBlk()->Addr();
-            assert(*m_edge != nullptr);
-            m_advance = &GenTreeUseEdgeIterator::AdvanceDynBlk;
-            return;
-
         case GT_STORE_DYN_BLK:
-        {
-            GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
-            m_edge                        = dynBlock->IsReverseOp() ? &dynBlock->gtOp2 : &dynBlock->gtOp1;
+            m_edge = &m_node->AsStoreDynBlk()->Addr();
             assert(*m_edge != nullptr);
-
             m_advance = &GenTreeUseEdgeIterator::AdvanceStoreDynBlk;
-        }
             return;
 
         case GT_CALL:
@@ -8440,27 +8401,15 @@ void GenTreeUseEdgeIterator::AdvanceArrOffset()
 }
 
 //------------------------------------------------------------------------
-// GenTreeUseEdgeIterator::AdvanceDynBlk: produces the next operand of a DynBlk node and advances the state.
-//
-void GenTreeUseEdgeIterator::AdvanceDynBlk()
-{
-    GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
-
-    m_edge = &dynBlock->gtDynamicSize;
-    assert(*m_edge != nullptr);
-    m_advance = &GenTreeUseEdgeIterator::Terminate;
-}
-
-//------------------------------------------------------------------------
 // GenTreeUseEdgeIterator::AdvanceStoreDynBlk: produces the next operand of a StoreDynBlk node and advances the state.
 //
 void GenTreeUseEdgeIterator::AdvanceStoreDynBlk()
 {
-    GenTreeDynBlk* const dynBlock = m_node->AsDynBlk();
+    GenTreeStoreDynBlk* const dynBlock = m_node->AsStoreDynBlk();
     switch (m_state)
     {
         case 0:
-            m_edge  = dynBlock->IsReverseOp() ? &dynBlock->gtOp1 : &dynBlock->gtOp2;
+            m_edge  = &dynBlock->Data();
             m_state = 1;
             break;
         case 1:
@@ -9252,7 +9201,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_LEA:
             case GT_BLK:
             case GT_OBJ:
-            case GT_DYN_BLK:
             case GT_STORE_BLK:
             case GT_STORE_OBJ:
             case GT_STORE_DYN_BLK:
@@ -11071,7 +11019,6 @@ void Compiler::gtDispTree(GenTree*     tree,
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
             if (tree->OperIsCopyBlkOp())
             {
                 printf(" (copy)");
@@ -11084,12 +11031,12 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (!topOnly)
             {
-                if (tree->AsDynBlk()->Data() != nullptr)
+                gtDispChild(tree->AsStoreDynBlk()->Addr(), indentStack, IIArc, nullptr, topOnly);
+                if (tree->AsStoreDynBlk()->Data() != nullptr)
                 {
-                    gtDispChild(tree->AsDynBlk()->Data(), indentStack, IIArc, nullptr, topOnly);
+                    gtDispChild(tree->AsStoreDynBlk()->Data(), indentStack, IIArc, nullptr, topOnly);
                 }
-                gtDispChild(tree->AsDynBlk()->Addr(), indentStack, IIArc, nullptr, topOnly);
-                gtDispChild(tree->AsDynBlk()->gtDynamicSize, indentStack, IIArcBottom, nullptr, topOnly);
+                gtDispChild(tree->AsStoreDynBlk()->gtDynamicSize, indentStack, IIArcBottom, nullptr, topOnly);
             }
             break;
 
@@ -11482,7 +11429,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                 displayOperand(operand, buf, operandArc, indentStack, prefixIndent);
             }
         }
-        else if (node->OperIsDynBlkOp())
+        else if (node->OperIs(GT_STORE_DYN_BLK))
         {
             if (operand == node->AsBlk()->Addr())
             {
@@ -11494,19 +11441,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
             }
             else
             {
-                assert(operand == node->AsDynBlk()->gtDynamicSize);
-                displayOperand(operand, "size", operandArc, indentStack, prefixIndent);
-            }
-        }
-        else if (node->OperGet() == GT_DYN_BLK)
-        {
-            if (operand == node->AsBlk()->Addr())
-            {
-                displayOperand(operand, "lhs", operandArc, indentStack, prefixIndent);
-            }
-            else
-            {
-                assert(operand == node->AsDynBlk()->gtDynamicSize);
+                assert(operand == node->AsStoreDynBlk()->gtDynamicSize);
                 displayOperand(operand, "size", operandArc, indentStack, prefixIndent);
             }
         }
@@ -14539,14 +14474,14 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
 {
     if (flags & GTF_ASG)
     {
-        // TODO-Cleanup: This only checks for GT_ASG but according to OperRequiresAsgFlag there
-        // are many more opers that are considered to have an assignment side effect: atomic ops
+        // TODO-Bug: This only checks for GT_ASG/GT_STORE_DYN_BLK but according to OperRequiresAsgFlag
+        // there are many more opers that are considered to have an assignment side effect: atomic ops
         // (GT_CMPXCHG & co.), GT_MEMORYBARRIER (not classified as an atomic op) and HW intrinsic
         // memory stores. Atomic ops have special handling in gtExtractSideEffList but the others
         // will simply be dropped is they are ever subject to an "extract side effects" operation.
         // It is possible that the reason no bugs have yet been observed in this area is that the
         // other nodes are likely to always be tree roots.
-        if (tree->OperIs(GT_ASG))
+        if (tree->OperIs(GT_ASG, GT_STORE_DYN_BLK))
         {
             return true;
         }
@@ -15272,33 +15207,21 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         GenTree* destAddr = blkNode->Addr();
         unsigned width    = blkNode->Size();
         // Do we care about whether this assigns the entire variable?
-        if (pIsEntire != nullptr && blkNode->OperIs(GT_DYN_BLK))
+        if (pIsEntire != nullptr && blkNode->OperIs(GT_STORE_DYN_BLK))
         {
-            GenTree* blockWidth = blkNode->AsDynBlk()->gtDynamicSize;
+            GenTree* blockWidth = blkNode->AsStoreDynBlk()->gtDynamicSize;
             if (blockWidth->IsCnsIntOrI())
             {
-                if (blockWidth->IsIconHandle())
+                assert(blockWidth->AsIntConCommon()->FitsInI32());
+                width = static_cast<unsigned>(blockWidth->AsIntConCommon()->IconValue());
+
+                if (width == 0)
                 {
-                    // If it's a handle, it must be a class handle.  We only create such block operations
-                    // for initialization of struct types, so the type of the argument(s) will match this
-                    // type, by construction, and be "entire".
-                    assert(blockWidth->IsIconHandle(GTF_ICON_CLASS_HDL));
-                    width = comp->info.compCompHnd->getClassSize(
-                        CORINFO_CLASS_HANDLE(blockWidth->AsIntConCommon()->IconValue()));
-                }
-                else
-                {
-                    ssize_t swidth = blockWidth->AsIntConCommon()->IconValue();
-                    assert(swidth >= 0);
-                    // cpblk of size zero exists in the wild (in yacc-generated code in SQL) and is valid IL.
-                    if (swidth == 0)
-                    {
-                        return false;
-                    }
-                    width = unsigned(swidth);
+                    return false;
                 }
             }
         }
+
         return destAddr->DefinesLocalAddr(comp, width, pLclVarTree, pIsEntire);
     }
     // Otherwise...
