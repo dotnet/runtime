@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Security.Cryptography.Apple;
 using Internal.Cryptography;
 
+using PAL_HashAlgorithm = Interop.AppleCrypto.PAL_HashAlgorithm;
+
 namespace System.Security.Cryptography
 {
     internal static partial class HashProviderDispenser
@@ -142,18 +144,29 @@ namespace System.Security.Cryptography
 
             public AppleHmacProvider(string hashAlgorithmId, ReadOnlySpan<byte> key)
             {
-                _liteHmac = LiteHashProvider.CreateHmac(hashAlgorithmId, key);
+                PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
+                _liteHmac = new LiteHmac(algorithm, key, preinitialize: false);
                 _key = key.ToArray();
             }
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                if (!_running)
+                {
+                    _liteHmac.Reset(_key);
+                }
+
                 _liteHmac.Append(data);
                 _running = true;
             }
 
             public override int FinalizeHashAndReset(Span<byte> destination)
             {
+                if (!_running)
+                {
+                    _liteHmac.Reset(_key);
+                }
+
                 int written = _liteHmac.Finalize(destination);
                 _liteHmac.Reset(_key);
                 _running = false;
@@ -162,6 +175,11 @@ namespace System.Security.Cryptography
 
             public override int GetCurrentHash(Span<byte> destination)
             {
+                if (!_running)
+                {
+                    _liteHmac.Reset(_key);
+                }
+
                 return _liteHmac.Current(destination);
             }
 
@@ -178,11 +196,7 @@ namespace System.Security.Cryptography
 
             public override void Reset()
             {
-                if (_running)
-                {
-                    _liteHmac.Reset(_key);
-                    _running = false;
-                }
+                _running = false;
             }
         }
     }

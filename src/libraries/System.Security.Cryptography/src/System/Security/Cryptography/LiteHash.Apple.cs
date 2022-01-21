@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
         internal static LiteHmac CreateHmac(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
-            return new LiteHmac(algorithm, key);
+            return new LiteHmac(algorithm, key, preinitialize: true);
         }
     }
 
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography
 
         public int HashSizeInBytes => _hashSizeInBytes;
 
-        internal LiteHmac(PAL_HashAlgorithm algorithm, ReadOnlySpan<byte> key)
+        internal LiteHmac(PAL_HashAlgorithm algorithm, ReadOnlySpan<byte> key, bool preinitialize)
         {
             int hashSizeInBytes = 0;
             _ctx = Interop.AppleCrypto.HmacCreate(algorithm, ref hashSizeInBytes);
@@ -147,10 +147,13 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            if (Interop.AppleCrypto.HmacInit(_ctx, key) != Success)
+            if (preinitialize)
             {
-                _ctx.Dispose();
-                throw new CryptographicException();
+                if (Interop.AppleCrypto.HmacInit(_ctx, key) != Success)
+                {
+                    _ctx.Dispose();
+                    throw new CryptographicException();
+                }
             }
 
             _hashSizeInBytes = hashSizeInBytes;
