@@ -1974,6 +1974,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	gboolean has_static_refs = FALSE;
 	MonoClassField *field;
 	gboolean blittable;
+	gboolean any_field_has_auto_layout;
 	int instance_size = base_instance_size;
 	int element_size = -1;
 	int class_size, min_align;
@@ -2045,12 +2046,17 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			gc_aware_layout = TRUE;
 	}
 
-	/* Compute klass->blittable */
+	/* Compute klass->blittable and klass->any_field_has_auto_layout */
 	blittable = TRUE;
-	if (klass->parent)
+	any_field_has_auto_layout = FALSE;
+	if (klass->parent) {
 		blittable = klass->parent->blittable;
-	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System") && !strcmp (klass->name, "ValueType")) && top)
+		any_field_has_auto_layout = klass->parent->any_field_has_auto_layout;
+	}
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System") && !strcmp (klass->name, "ValueType")) && top) {
 		blittable = FALSE;
+		any_field_has_auto_layout = TRUE; // If a type is auto-layout, treat it as having an auto-layout field in its layout.
+	}
 	for (i = 0; i < top; i++) {
 		field = &klass->fields [i];
 
@@ -2080,8 +2086,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					blittable = FALSE;
 			}
 		}
-		if (klass->enumtype)
-			blittable = klass->element_class->blittable;
+		if (!any_field_has_auto_layout && field->type->type == MONO_TYPE_VALUETYPE && m_class_any_field_has_auto_layout (mono_class_from_mono_type_internal (field->type)))
+			any_field_has_auto_layout = TRUE;
+	}
+	if (klass->enumtype) {
+		blittable = klass->element_class->blittable;
+		any_field_has_auto_layout = klass->element_class->any_field_has_auto_layout;
 	}
 	if (mono_class_has_failure (klass))
 		return;
@@ -2308,6 +2318,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	klass->has_references = has_references;
 	klass->packing_size = packing_size;
 	klass->min_align = min_align;
+	klass->any_field_has_auto_layout = any_field_has_auto_layout;
 	for (i = 0; i < top; ++i) {
 		field = &klass->fields [i];
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))

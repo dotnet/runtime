@@ -1775,6 +1775,42 @@ ErrExit:
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeMarshallingEnabled()
+{
+    CONTRACTL
+    {
+        THROWS;
+        if (IsRuntimeMarshallingEnabledCached()) GC_NOTRIGGER; else GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (IsRuntimeMarshallingEnabledCached())
+    {
+        return !!(m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED);
+    }
+
+    HRESULT hr;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
+
+    mdToken token;
+    if (SUCCEEDED(hr = mdImport->GetAssemblyFromScope(&token)))
+    {
+        const BYTE *pVal;
+        ULONG       cbVal;
+
+        hr = mdImport->GetCustomAttributeByName(token,
+                        g_DisableRuntimeMarshallingAttribute,
+                        (const void**)&pVal, &cbVal);
+    }
+
+    FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
+        (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
+
+    return hr != S_OK;
+}
+
 BOOL Module::IsPreV4Assembly()
 {
     CONTRACTL

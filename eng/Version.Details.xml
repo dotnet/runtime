@@ -16,37 +16,37 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
-    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22060.1">
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.ObjWriter" Version="1.0.0-alpha.1.22070.1">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
-      <Sha>e7e0ebc663c70ccb19c331af50d418a06dc92df8</Sha>
+      <Sha>fe77708023f3d8a51c1548b86487a692897227ec</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -270,17 +270,17 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>91d6b3c1f51888d166701510189505f35714665c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.2-alpha.0.22060.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.0.2-alpha.0.22069.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>5bc948c6242bc9423c3269d122dcdf0ad6c06a83</Sha>
+      <Sha>b6504c8dca937ff1a59d3283374241eacf26684a</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="7.0.0-beta.22060.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>a597df23119faf540d95cebab14b82f084c47384</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22067.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22068.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>6c43d213c426cf64c78eb1e9e38e4b9ec6454181</Sha>
+      <Sha>f471d3381584f10f9908432e0b2b2b8ef07a0aa6</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Compatibility" Version="2.0.0-alpha.1.21525.11">
       <Uri>https://github.com/dotnet/sdk</Uri>

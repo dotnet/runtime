@@ -488,7 +488,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
-		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke);
+		size = mini_type_stack_size_full (csig->params [k], &align, csig->pinvoke && !csig->marshalling_disabled);
 
 		/* ignore alignment for now */
 		align = 1;
@@ -1156,7 +1156,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				alignment = sizeof (target_mgreg_t);
 			} else {
 				klass = mono_class_from_mono_type_internal (sig->params [i]);
-				if (is_pinvoke)
+				if (sig->pinvoke && !sig->marshalling_disabled)
 					size = mono_class_native_size (klass, NULL);
 				else
 					size = mono_class_value_size (klass, NULL);
@@ -1878,7 +1878,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		guint32 size;
 
 		/* FIXME: alignment? */
-		if (call->signature->pinvoke) {
+		if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {

@@ -7661,12 +7661,7 @@ inline bool GenTree::IsSIMDZero() const
 //
 inline bool GenTree::IsFloatPositiveZero() const
 {
-    if (OperGet() == GT_CNS_DBL)
-    {
-        return !(IsCnsNonZeroFltOrDbl());
-    }
-
-    return false;
+    return IsCnsFltOrDbl() && !IsCnsNonZeroFltOrDbl();
 }
 
 //-------------------------------------------------------------------

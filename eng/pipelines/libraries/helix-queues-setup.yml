@@ -21,6 +21,7 @@ jobs:
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
     pool: ${{ parameters.pool }}
+    platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
     runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}

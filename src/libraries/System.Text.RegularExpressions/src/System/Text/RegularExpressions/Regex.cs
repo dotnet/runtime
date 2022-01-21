@@ -22,6 +22,7 @@ namespace System.Text.RegularExpressions
     {
         internal const int MaxOptionShift = 11;
 
+        [StringSyntax(StringSyntaxAttribute.Regex)]
         protected internal string? pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;             // the top-level options from the options string
         protected internal RegexRunnerFactory? factory;       // Factory used to create runner instances for executing the regex
