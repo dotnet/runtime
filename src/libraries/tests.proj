@@ -356,9 +356,6 @@ Roslyn4.0.Tests.csproj" />
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true' and '$(TargetOS)' == 'Android'">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\InternalUnitTests\System.Net.Security.InternalUnit.Tests.csproj" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"
