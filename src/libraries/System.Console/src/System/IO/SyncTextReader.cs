@@ -98,7 +98,9 @@ namespace System.IO
 
         public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
         {
-            return cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : new ValueTask<string?>(ReadLine());
+            return cancellationToken.IsCancellationRequested ?
+                ValueTask.FromCanceled<string?>(cancellationToken) :
+                new ValueTask<string?>(ReadLine());
         }
 
         public override Task<string> ReadToEndAsync()
@@ -108,7 +110,9 @@ namespace System.IO
 
         public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {
-            return cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult(ReadToEnd());
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled<string>(cancellationToken) :
+                Task.FromResult(ReadToEnd());
         }
 
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
