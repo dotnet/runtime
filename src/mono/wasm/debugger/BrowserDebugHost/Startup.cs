@@ -88,19 +88,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                 async Task ReturnPageLinksToDebug(HttpContext context)
                 {
                     HttpRequest request = context.Request;
-
+                    Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context) + "json/list");
+                    context.Response.ContentType = "text/html";
+                    string urlsToInspect = "<title>Inspectable pages</title><h3>Inspectable pages</h3><hr>";
+                    if (tabs.Length == 0)
+                        urlsToInspect += "No inspectable pages available";
+                    foreach (var tab in tabs)
                     {
-                        Dictionary<string, string>[] tabs = await ProxyGetJsonAsync<Dictionary<string, string>[]>(GetEndpoint(context) + "json/list");
-                        context.Response.ContentType = "text/html";
-                        string urlsToInspect = "<title>Inspectable pages</title><h3>Inspectable pages</h3><hr>";
-                        foreach (var tab in tabs)
-                        {
-                            string aHref = tab["devtoolsFrontendUrl"];
-                            aHref = aHref.Replace($"ws={devToolsHost.Authority}", $"ws={request.Host}");
-                            urlsToInspect += $"<a href=\"http://{devToolsHost.Authority}{aHref}\">{tab["title"]}<br><span>{tab["url"]}</a><br><br>";
-                        }
-                        await context.Response.Body.WriteAsync(Encoding.ASCII.GetBytes(urlsToInspect));
+                        string aHref = tab["devtoolsFrontendUrl"];
+                        aHref = aHref.Replace($"ws={devToolsHost.Authority}", $"ws={request.Host}");
+                        urlsToInspect += $"<a href=\"http://{devToolsHost.Authority}{aHref}\">{tab["title"]}<br><span>{tab["url"]}</a><br><br>";
                     }
+                    await context.Response.Body.WriteAsync(Encoding.ASCII.GetBytes(urlsToInspect));
                 }
 
                 async Task Copy(HttpContext context)
