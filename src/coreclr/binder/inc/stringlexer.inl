@@ -77,13 +77,21 @@ WCHAR StringLexer::GetRawCharacter()
 {
     WCHAR wcCurrentChar = 0;
 
-    if (m_cursor <= m_end)
+    if (m_cursor < m_end)
     {
         wcCurrentChar = m_cursor[0];
         m_cursor++;
+
+        // do not allow \0 anywhere in the string.
+        if (wcCurrentChar == 0)
+        {
+            wcCurrentChar = INVALID_CHARACTER;
+        }
     }
     else
     {
+        // EOS
+        wcCurrentChar = 0;
     }
 
     return wcCurrentChar;

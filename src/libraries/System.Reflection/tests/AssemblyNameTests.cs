@@ -100,6 +100,9 @@ namespace System.Reflection.Tests
         [InlineData("aa\\/tname", typeof(FileLoadException))]
         [InlineData("aaaa, publickey=neutral", typeof(FileLoadException))]
         [InlineData("aaaa, publickeytoken=neutral", typeof(FileLoadException))]
+        [InlineData("aaaa\0", typeof(FileLoadException))]
+        [InlineData("aaaa\0potato", typeof(FileLoadException))]
+        [InlineData("aaaa, publickeytoken=null\0,culture=en-en", typeof(FileLoadException))]
         public void Ctor_String_Invalid_Legacy(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
