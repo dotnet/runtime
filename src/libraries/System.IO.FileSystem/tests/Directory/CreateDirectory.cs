@@ -264,7 +264,6 @@ namespace System.IO.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64019")]
         [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void DirectoryLongerThanMaxLongPathWithExtendedSyntax_ThrowsException()
