@@ -1,7 +1,7 @@
 /**
  * \file
  * Routines for marshaling complex types in P/Invoke methods.
- * 
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -78,7 +78,7 @@ typedef enum {
 	/*
 	 * The result from the unmanaged call is at the top of the stack when
 	 * this action is invoked.    The result should be stored in the
-	 * third local variable slot. 
+	 * third local variable slot.
 	 */
 	MARSHAL_ACTION_CONV_RESULT,
 
@@ -378,7 +378,7 @@ gint32
 mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			gboolean as_field, gboolean unicode);
 
-int            
+int
 mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 
 mono_bstr
@@ -542,18 +542,18 @@ mono_marshal_unlock_internal (void);
 
 /* marshaling internal calls */
 
-void * 
+void *
 mono_marshal_alloc (gsize size, MonoError *error);
 
 ICALL_EXPORT
-void 
+void
 mono_marshal_free (gpointer ptr);
 
 ICALL_EXPORT
 void
 mono_marshal_free_array (gpointer *ptr, int size);
 
-gboolean 
+gboolean
 mono_marshal_free_ccw (MonoObject* obj);
 
 MONO_API void *
@@ -564,12 +564,12 @@ void
 mono_marshal_set_last_error_windows (int error);
 
 ICALL_EXPORT
-void 
+void
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
 int
-mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
-	      MonoMarshalSpec *spec, int conv_arg, 
+mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
+	      MonoMarshalSpec *spec, int conv_arg,
 	      MonoType **conv_arg_type, MarshalAction action);
 
 ICALL_EXPORT

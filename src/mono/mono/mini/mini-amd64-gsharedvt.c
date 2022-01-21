@@ -62,7 +62,7 @@ arg_info_desc (ArgInfo *info)
 
 	g_string_append_printf (str, "offset %d reg %s storage %s nregs %d", info->offset, mono_arch_regname (info->reg), storage_name (info->storage), info->nregs);
 	if (info->storage == ArgValuetypeInReg)
-		g_string_append_printf (str, " {(%s %s), (%s %s)", 
+		g_string_append_printf (str, " {(%s %s), (%s %s)",
 			storage_name (info->pair_storage [0]),
 			mono_arch_regname (info->pair_regs [0]),
 			storage_name (info->pair_storage [1]),
@@ -432,7 +432,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 #ifdef DEBUG_AMD64_GSHAREDVT
 	printf ("final map:\n");
 	for (i = 0; i < map->len; i += 2) {
-		printf ("\t[%d] src %x dst %x\n ", 
+		printf ("\t[%d] src %x dst %x\n ",
 			i / 2,
 			GPOINTER_TO_UINT (g_ptr_array_index (map, i)),
 			GPOINTER_TO_UINT (g_ptr_array_index (map, i + 1)));
