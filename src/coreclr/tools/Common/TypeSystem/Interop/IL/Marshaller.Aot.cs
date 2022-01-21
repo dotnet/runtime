@@ -1158,15 +1158,10 @@ namespace Internal.TypeSystem.Interop
                 return MarshallerLocalVariable;
             }
 
-            var marshallerTypeName = MarshalAsDescriptor.CustomMarshallerTypeName;
-            var module = MarshalAsDescriptor.MarshallerModule;
-            var marshallerType = Internal.TypeSystem.CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeName(
-                module,
-                marshallerTypeName,
-                false);
-            if (marshallerType == null || marshallerType.IsGenericDefinition)
+            var marshallerType = MarshalAsDescriptor.MarshallerType;
+            if (marshallerType.IsGenericDefinition)
             {
-                ThrowHelper.ThrowTypeLoadException(marshallerTypeName ?? string.Empty, module);
+                ThrowHelper.ThrowTypeLoadException(marshallerType);
             }
 
             var customMarshallerType = Context.SystemModule.GetKnownType("System.Runtime.InteropServices", "ICustomMarshaler");

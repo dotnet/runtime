@@ -536,8 +536,7 @@ namespace Internal.TypeSystem.Ecma
             NativeTypeKind arraySubType = NativeTypeKind.Default;
             uint? paramNum = null, numElem = null;
             string cookie = null;
-            ModuleDesc marshallerModule = null;
-            string customMarshallerTypeName = null;
+            TypeDesc marshallerType = null;
 
             switch (type)
             {
@@ -617,8 +616,8 @@ namespace Internal.TypeSystem.Ecma
                         _reader.ReadSerializedString();
 
                         // Read managed marshaler name
-                        customMarshallerTypeName = _reader.ReadSerializedString();
-                        marshallerModule = _ecmaModule;
+                        var customMarshallerTypeName = _reader.ReadSerializedString();
+                        marshallerType = _ecmaModule.GetTypeByCustomAttributeTypeName(customMarshallerTypeName, true);
 
                         // Read cookie
                         cookie = _reader.ReadSerializedString();
@@ -630,7 +629,7 @@ namespace Internal.TypeSystem.Ecma
 
             Debug.Assert(_reader.RemainingBytes == 0);
 
-            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem, marshallerModule, customMarshallerTypeName, cookie);
+            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem, marshallerType, cookie);
         }
     }
 }
