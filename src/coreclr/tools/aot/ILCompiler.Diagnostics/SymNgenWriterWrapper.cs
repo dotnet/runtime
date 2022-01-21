@@ -128,14 +128,14 @@ namespace Microsoft.DiaSymReader
             }
         }
 
-        public unsafe void QueryPDBNameExW(StringBuilder pdb, IntPtr cchMax)
+        public unsafe void QueryPDBNameExW(char[] pdb, IntPtr cchMax)
         {
-            fixed (void* pdbPtr = pdb.ToString())
+            fixed (char* pdbPtr = pdb)
             {
                 var pdbLocal = (IntPtr)pdbPtr;
                 var inst = ISymNGenWriter2Inst;
-                var func = (delegate* unmanaged<IntPtr, IntPtr, IntPtr, int>)(*(*(void***)inst + 9));
-                int hr = func(inst, pdbLocal, cchMax);
+                var func = (delegate* unmanaged<IntPtr, char*, IntPtr, int>)(*(*(void***)inst + 9));
+                int hr = func(inst, pdbPtr, cchMax);
                 if (hr != 0)
                 {
                     Marshal.ThrowExceptionForHR(hr);

@@ -145,7 +145,7 @@ namespace Microsoft.DiaSymReader
             uint dwRelocCrc);
 
         void QueryPDBNameExW(
-            [MarshalAs(UnmanagedType.LPWStr)] StringBuilder pdb,
+            [MarshalAs(UnmanagedType.LPWStr)] char[] pdb,
             IntPtr cchMax);
     }
 }

@@ -215,9 +215,9 @@ namespace ILCompiler.Diagnostics
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
                 // can be deleted if we don't make it successfully to the end.
-                StringBuilder pdbFilePathBuilder = new StringBuilder();
-                pdbFilePathBuilder.Capacity = 1024;
-                _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(pdbFilePathBuilder.Capacity));
+                const int capacity = 1024;
+                var pdbFilePathBuilder = new char[capacity];
+                _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(capacity - 1) /* remove 1 byte for null */);
                 _pdbFilePath = pdbFilePathBuilder.ToString();
             }
 
