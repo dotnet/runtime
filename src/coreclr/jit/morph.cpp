@@ -13550,9 +13550,8 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         return op1;
     }
 
-    // TODO-CQ: this transform preserves VNs and can be enabled outside global morph.
     // Note that these transformations are legal for floating-point ADDs as well.
-    if (opts.OptimizationEnabled() && fgGlobalMorph)
+    if (opts.OptimizationEnabled())
     {
         // - a + b = > b - a
         // ADD((NEG(a), b) => SUB(b, a)
