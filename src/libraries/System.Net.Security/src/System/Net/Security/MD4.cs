@@ -112,15 +112,21 @@ namespace System.Net.Security
             /* Transform as many times as possible. */
             if (input.Length >= partLen)
             {
-                input.Slice(0, partLen).CopyTo(buffer.Slice(index));
-                MD4Transform(state, buffer);
+                if (index != 0)
+                {
+                    input.Slice(0, partLen).CopyTo(buffer.Slice(index));
+                    MD4Transform(state, buffer);
+                    index = 0;
+                }
+                else
+                {
+                    partLen  = 0;
+                }
 
                 for (i = partLen; i + 63 < input.Length; i += 64)
                 {
                     MD4Transform(state, input.Slice(i));
                 }
-
-                index = 0;
             }
 
             /* Buffer remaining input */
