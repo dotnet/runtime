@@ -568,8 +568,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
-          eq(variables['isManualOrIsNotPR'], true),
-          eq(variables['isFullMatrix'], true))
+          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
