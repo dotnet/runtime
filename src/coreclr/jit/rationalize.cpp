@@ -416,13 +416,10 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 }
                 GenTreeSIMD* simdTree =
                     comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                assignment->AsOp()->gtOp2 = simdTree;
-                value                     = simdTree;
-                initVal->gtNext           = simdTree;
-                simdTree->gtPrev          = initVal;
+                assignment->gtOp2 = simdTree;
+                value             = simdTree;
 
-                simdTree->gtNext = location;
-                location->gtPrev = simdTree;
+                BlockRange().InsertAfter(initVal, simdTree);
             }
         }
 #endif // FEATURE_SIMD

@@ -70,6 +70,8 @@ INLINE_OBSERVATION(ARG_FEEDS_CONSTANT_TEST,   bool,   "argument feeds constant t
 INLINE_OBSERVATION(ARG_FEEDS_TEST,            bool,   "argument feeds test",                  INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_CAST,            int,    "argument feeds castclass or isinst",   INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_FEEDS_RANGE_CHECK,     bool,   "argument feeds range check",           INFORMATION, CALLEE)
+INLINE_OBSERVATION(ARG_FEEDS_ISCONST,         bool,   "argument feeds IsKnownConstant",       INFORMATION, CALLEE)
+INLINE_OBSERVATION(CONST_ARG_FEEDS_ISCONST,   bool,   "const argument feeds IsKnownConstant", INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_STRUCT,                int,    "arg is a struct passed by value",      INFORMATION, CALLEE)
 INLINE_OBSERVATION(RETURNS_STRUCT,            bool,   "returns a struct by value",            INFORMATION, CALLEE)
 INLINE_OBSERVATION(ARG_STRUCT_FIELD_ACCESS,   int,    "ldfld/stfld over arg (struct)",        INFORMATION, CALLEE)

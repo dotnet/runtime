@@ -7,6 +7,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Text;
 
 namespace System.IO
 {
@@ -132,6 +133,33 @@ namespace System.IO
             Debug.Assert(testFilePath.Length <= maxLength + "...".Length);
 
             return testFileName;
+        }
+
+        protected static string GetNamedPipeServerStreamName()
+        {
+            if (PlatformDetection.IsInAppContainer)
+            {
+                return @"LOCAL\" + Guid.NewGuid().ToString("N");
+            }
+
+            if (PlatformDetection.IsWindows)
+            {
+                return Guid.NewGuid().ToString("N");
+            }
+
+            const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
+            const int MinAvailableForSufficientRandomness = 5; // we want enough randomness in the name to avoid conflicts between concurrent tests
+            string prefix = Path.Combine(Path.GetTempPath(), "CoreFxPipe_");
+            int availableLength = MinUdsPathLength - prefix.Length - 1; // 1 - for possible null terminator
+            Assert.True(availableLength >= MinAvailableForSufficientRandomness, $"UDS prefix {prefix} length {prefix.Length} is too long");
+
+            StringBuilder sb = new(availableLength);
+            Random random = new Random();
+            for (int i = 0; i < availableLength; i++)
+            {
+                sb.Append((char)('a' + random.Next(0, 26)));
+            }
+            return sb.ToString();
         }
 
         private string GenerateTestFileName(int? index, string memberName, int lineNumber) =>

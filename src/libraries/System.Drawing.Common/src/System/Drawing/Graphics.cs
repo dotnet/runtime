@@ -382,7 +382,7 @@ namespace System.Drawing
 
         public IntPtr GetHdc()
         {
-            IntPtr hdc = IntPtr.Zero;
+            IntPtr hdc;
             Gdip.CheckStatus(Gdip.GdipGetDC(new HandleRef(this, NativeGraphics), out hdc));
 
             _nativeHdc = hdc; // need to cache the hdc to be able to release with a call to IDeviceContext.ReleaseHdc().
@@ -706,6 +706,16 @@ namespace System.Drawing
         public void DrawBezier(Pen pen, Point pt1, Point pt2, Point pt3, Point pt4)
         {
             DrawBezier(pen, pt1.X, pt1.Y, pt2.X, pt2.Y, pt3.X, pt3.Y, pt4.X, pt4.Y);
+        }
+
+        /// <summary>
+        /// Draws the outline of a rectangle specified by <paramref name="rect"/>.
+        /// </summary>
+        /// <param name="pen">A Pen that determines the color, width, and style of the rectangle.</param>
+        /// <param name="rect">A Rectangle structure that represents the rectangle to draw.</param>
+        public void DrawRectangle(Pen pen, RectangleF rect)
+        {
+            DrawRectangle(pen, rect.X, rect.Y, rect.Width, rect.Height);
         }
 
         /// <summary>
@@ -1328,6 +1338,18 @@ namespace System.Drawing
         /// <summary>
         /// Fills the interior of a pie section defined by an ellipse and two radial lines.
         /// </summary>
+        /// <param name="brush">A Brush that determines the characteristics of the fill.</param>
+        /// <param name="rect">A Rectangle structure that represents the bounding rectangle that defines the ellipse from which the pie section comes.</param>
+        /// <param name="startAngle">Angle in degrees measured clockwise from the x-axis to the first side of the pie section.</param>
+        /// <param name="sweepAngle">Angle in degrees measured clockwise from the <paramref name="startAngle"/> parameter to the second side of the pie section.</param>
+        public void FillPie(Brush brush, RectangleF rect, float startAngle, float sweepAngle)
+        {
+            FillPie(brush, rect.X, rect.Y, rect.Width, rect.Height, startAngle, sweepAngle);
+        }
+
+        /// <summary>
+        /// Fills the interior of a pie section defined by an ellipse and two radial lines.
+        /// </summary>
         public void FillPie(Brush brush, float x, float y, float width, float height, float startAngle, float sweepAngle)
         {
             if (brush == null)
@@ -1544,8 +1566,8 @@ namespace System.Drawing
                 ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
                 ref boundingBox,
-                out int a,
-                out int b));
+                out _,
+                out _));
 
             return boundingBox.Size;
         }
@@ -1570,8 +1592,8 @@ namespace System.Drawing
                 ref layout,
                 new HandleRef(stringFormat, stringFormat?.nativeFormat ?? IntPtr.Zero),
                 ref boundingBox,
-                out int a,
-                out int b));
+                out _,
+                out _));
 
             return boundingBox.Size;
         }

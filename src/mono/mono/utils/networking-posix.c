@@ -174,6 +174,15 @@ fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
 	return *proto;
 }
 
+#elif defined(HOST_WASI)
+
+static int
+fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
+{
+	g_critical("fetch_protocol is not implemented on WASI\n");
+	return 0;
+}
+
 #endif
 
 int

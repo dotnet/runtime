@@ -433,6 +433,16 @@ X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
     return SSL_get_peer_cert_chain(ssl);
 }
 
+int32_t CryptoNative_SslUseCertificate(SSL* ssl, X509* x)
+{
+    return SSL_use_certificate(ssl, x);
+}
+
+int32_t CryptoNative_SslUsePrivateKey(SSL* ssl, EVP_PKEY* pkey)
+{
+    return SSL_use_PrivateKey(ssl, pkey);
+}
+
 int32_t CryptoNative_SslCtxUseCertificate(SSL_CTX* ctx, X509* x)
 {
     return SSL_CTX_use_certificate(ctx, x);
@@ -466,6 +476,16 @@ X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 void CryptoNative_SslSetVerifyPeer(SSL* ssl)
 {
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+}
+
+void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
+{
+    // We never reuse same CTX for both client and server
+    SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF, NULL);
+    if (mode == 0)
+    {
+        SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
+    }
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
@@ -623,6 +643,21 @@ int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509)
     return 0;
 }
 
+int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
+{
+    if (!x509 || !ssl)
+    {
+        return 0;
+    }
+
+    if (SSL_ctrl(ssl, SSL_CTRL_CHAIN_CERT, 1,(void*)x509) == 1)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, void* arg)
 {
 #if HAVE_OPENSSL_ALPN
@@ -638,6 +673,19 @@ void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, 
 #endif
 }
 
+static int client_certificate_cb(SSL *ssl, void* state)
+{
+    (void*)ssl;
+    (void*)state;
+    // if we return negative number handshake will pause with SSL_ERROR_WANT_X509_LOOKUP
+    return -1;
+}
+
+void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set)
+{
+    SSL_set_cert_cb(ssl, set ? client_certificate_cb : NULL, NULL);
+}
+
 int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
 {
     return SSL_set_ex_data(ssl, 0, ptr);
@@ -645,7 +693,6 @@ int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
 
 void* CryptoNative_SslGetData(SSL* ssl)
 {
-//    void* data = SSL_get_ex_data(ssl, 0, ptr);
     return SSL_get_ex_data(ssl, 0);
 }
 

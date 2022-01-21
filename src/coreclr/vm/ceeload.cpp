@@ -1775,6 +1775,42 @@ ErrExit:
     return !!(m_dwPersistedFlags & WRAP_EXCEPTIONS);
 }
 
+BOOL Module::IsRuntimeMarshallingEnabled()
+{
+    CONTRACTL
+    {
+        THROWS;
+        if (IsRuntimeMarshallingEnabledCached()) GC_NOTRIGGER; else GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    if (IsRuntimeMarshallingEnabledCached())
+    {
+        return !!(m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED);
+    }
+
+    HRESULT hr;
+
+    IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
+
+    mdToken token;
+    if (SUCCEEDED(hr = mdImport->GetAssemblyFromScope(&token)))
+    {
+        const BYTE *pVal;
+        ULONG       cbVal;
+
+        hr = mdImport->GetCustomAttributeByName(token,
+                        g_DisableRuntimeMarshallingAttribute,
+                        (const void**)&pVal, &cbVal);
+    }
+
+    FastInterlockOr(&m_dwPersistedFlags, RUNTIME_MARSHALLING_ENABLED_IS_CACHED |
+        (hr == S_OK ? 0 : RUNTIME_MARSHALLING_ENABLED));
+
+    return hr != S_OK;
+}
+
 BOOL Module::IsPreV4Assembly()
 {
     CONTRACTL
@@ -3857,7 +3893,7 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
 #ifdef _DEBUG
         CONTRACT_VIOLATION(ThrowsViolation);
         char szMethodName [MAX_CLASSNAME_LENGTH];
-        CEEInfo::findNameOfToken(this, pMethod, szMethodName, COUNTOF (szMethodName));
+        CEEInfo::findNameOfToken(this, pMethod, szMethodName, ARRAY_SIZE(szMethodName));
         // This used to be IJW, but changed to LW_INTEROP to reclaim a bit in our log facilities
         LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG

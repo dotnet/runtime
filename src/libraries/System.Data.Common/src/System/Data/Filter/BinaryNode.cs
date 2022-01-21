@@ -1437,7 +1437,7 @@ namespace System.Data
 
             DataTypePrecedence higherPrec = (DataTypePrecedence)Math.Max(leftPrecedence, rightPrecedence);
 
-            StorageType result = GetPrecedenceType(higherPrec);
+            StorageType result;
             // if we have at least one Sql type, the intermediate result should be Sql type
             result = GetPrecedenceType((DataTypePrecedence)SqlResultType((int)higherPrec));
 
@@ -1598,7 +1598,7 @@ namespace System.Data
             char[] patchars = new char[length + 1];
             pat.CopyTo(0, patchars, 0, length);
             patchars[length] = (char)0;
-            string? substring = null;
+            string? substring;
 
             char[] constchars = new char[length + 1];
             int newLength = 0;
