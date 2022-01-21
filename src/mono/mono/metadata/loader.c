@@ -107,6 +107,12 @@ mono_loader_init ()
 	}
 }
 
+MonoDefaults *
+mono_get_defaults (void)
+{
+	return &mono_defaults;
+}
+
 void
 mono_global_loader_data_lock (void)
 {

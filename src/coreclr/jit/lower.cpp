@@ -2534,7 +2534,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #ifdef TARGET_ARM64
                 (op2Value == 0) && cmp->OperIs(GT_EQ, GT_NE, GT_GT) &&
 #endif
-                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical()
+                (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIs(GT_OR, GT_XOR, GT_AND)
 #ifdef TARGET_XARCH
                  || IsContainableMemoryOp(castOp)
 #endif
@@ -2555,7 +2555,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
                 op2->gtType    = castToType;
 #endif
                 // If we have any contained memory ops on castOp, they must now not be contained.
-                if (castOp->OperIsLogical())
+                if (castOp->OperIs(GT_OR, GT_XOR, GT_AND))
                 {
                     GenTree* op1 = castOp->gtGetOp1();
                     if ((op1 != nullptr) && !op1->IsCnsIntOrI())
@@ -6922,6 +6922,14 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+
+    // Lose the type information stored in the source - we no longer need it.
+    if (blkNode->Data()->OperIs(GT_OBJ, GT_BLK))
+    {
+        blkNode->Data()->SetOper(GT_IND);
+        LowerIndir(blkNode->Data()->AsIndir());
+    }
+
     if (TryTransformStoreObjAsStoreInd(blkNode))
     {
         return;
@@ -6996,7 +7004,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    JITDUMP("Replacing STORE_OBJ with STOREIND for [06%u]", blkNode->gtTreeID);
+    JITDUMP("Replacing STORE_OBJ with STOREIND for [%06u]\n", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 

@@ -79,55 +79,6 @@ namespace System.Text.RegularExpressions
                             return !rtl;
                         }
 
-                    // Alternation: find a string that's a shared prefix of all branches
-                    case RegexNode.Alternate:
-                        {
-                            int childCount = node.ChildCount();
-
-                            // Store the initial branch into the target builder
-                            int initialLength = vsb.Length;
-                            bool keepExploring = Process(node.Child(0), ref vsb);
-                            int addedLength = vsb.Length - initialLength;
-
-                            // Then explore the rest of the branches, finding the length
-                            // a prefix they all share in common with the initial branch.
-                            if (addedLength != 0)
-                            {
-                                var alternateSb = new ValueStringBuilder(64);
-
-                                // Process each branch.  If we reach a point where we've proven there's
-                                // no overlap, we can bail early.
-                                for (int i = 1; i < childCount && addedLength != 0; i++)
-                                {
-                                    alternateSb.Length = 0;
-
-                                    // Process the branch.  We want to keep exploring after this alternation,
-                                    // but we can't if either this branch doesn't allow for it or if the prefix
-                                    // supplied by this branch doesn't entirely match all the previous ones.
-                                    keepExploring &= Process(node.Child(i), ref alternateSb);
-                                    keepExploring &= alternateSb.Length == addedLength;
-
-                                    addedLength = Math.Min(addedLength, alternateSb.Length);
-                                    for (int j = 0; j < addedLength; j++)
-                                    {
-                                        if (vsb[initialLength + j] != alternateSb[j])
-                                        {
-                                            addedLength = j;
-                                            keepExploring = false;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                alternateSb.Dispose();
-
-                                // Then cull back on what was added based on the other branches.
-                                vsb.Length = initialLength + addedLength;
-                            }
-
-                            return !rtl && keepExploring;
-                        }
-
                     // One character
                     case RegexNode.One when (node.Options & RegexOptions.IgnoreCase) == 0:
                         vsb.Append(node.Ch);
@@ -532,11 +483,13 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        // Computes a character class for the first character in tree.  This uses a more robust algorithm
-        // than is used by TryFindFixedLiterals and thus can find starting sets it couldn't.  For example,
-        // fixed literals won't find the starting set for a*b, as the a isn't guaranteed and the b is at a
-        // variable position, but this will find [ab] as it's instead looking for anything that under any
-        // circumstance could possibly start a match.
+        /// <summary>
+        /// Computes a character class for the first character in tree.  This uses a more robust algorithm
+        /// than is used by TryFindFixedLiterals and thus can find starting sets it couldn't.  For example,
+        /// fixed literals won't find the starting set for a*b, as the a isn't guaranteed and the b is at a
+        /// variable position, but this will find [ab] as it's instead looking for anything that under any
+        /// circumstance could possibly start a match.
+        /// </summary>
         public static (string CharClass, bool CaseInsensitive)? FindFirstCharClass(RegexTree tree, CultureInfo culture)
         {
             var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
@@ -554,6 +507,90 @@ namespace System.Text.RegularExpressions
             }
 
             return (fc.GetFirstChars(), fc.CaseInsensitive);
+        }
+
+        /// <summary>
+        /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
+        /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
+        /// </summary>
+        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexTree tree)
+        {
+            RegexNode node = tree.Root;
+            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            {
+                // As a simplification, ignore RightToLeft.
+                return null;
+            }
+
+            // Find the first concatenation.
+            while ((node.Type is RegexNode.Atomic or RegexNode.Capture) || (node.Type is RegexNode.Loop or RegexNode.Lazyloop && node.M > 0))
+            {
+                node = node.Child(0);
+            }
+            if (node.Type != RegexNode.Concatenate)
+            {
+                return null;
+            }
+
+            // Bail if the first node isn't a set loop.  We treat any kind of set loop (Setloop, Setloopatomic, and Setlazy)
+            // the same because of two important constraints: the loop must not have an upper bound, and the literal we look
+            // for immediately following it must not overlap.  With those constraints, all three of these kinds of loops will
+            // end up having the same semantics; in fact, if atomic optimizations are used, we will have converted Setloop
+            // into a Setloopatomic (but those optimizations are disabled for NonBacktracking in general). This
+            // could also be made to support Oneloopatomic and Notoneloopatomic, but the scenarios for that are rare.
+            Debug.Assert(node.ChildCount() >= 2);
+            RegexNode firstChild = node.Child(0);
+            if (firstChild.Type is not (RegexNode.Setloop or RegexNode.Setloopatomic or RegexNode.Setlazy) || firstChild.N != int.MaxValue)
+            {
+                return null;
+            }
+
+            // Get the subsequent node.  An UpdateBumpalong may have been added as an optimization, but it doesn't have an
+            // impact on semantics and we can skip it.
+            RegexNode nextChild = node.Child(1);
+            if (nextChild.Type == RegexNode.UpdateBumpalong)
+            {
+                if (node.ChildCount() == 2)
+                {
+                    return null;
+                }
+                nextChild = node.Child(2);
+            }
+
+            // If the subsequent node is a literal, we need to ensure it doesn't overlap with the prior set.
+            // For simplicity, we also want to ensure they're both case-sensitive.  If there's no overlap
+            // and they're both case-sensitive, we have a winner.
+            if (((firstChild.Options | nextChild.Options) & RegexOptions.IgnoreCase) == 0)
+            {
+                switch (nextChild.Type)
+                {
+                    case RegexNode.One when !RegexCharClass.CharInClass(nextChild.Ch, firstChild.Str!):
+                        return (firstChild, (nextChild.Ch, null, null));
+
+                    case RegexNode.Multi when !RegexCharClass.CharInClass(nextChild.Str![0], firstChild.Str!):
+                        return (firstChild, ('\0', nextChild.Str, null));
+
+                    case RegexNode.Set when !RegexCharClass.IsNegated(nextChild.Str!):
+                        Span<char> chars = stackalloc char[5]; // maximum number of chars optimized by IndexOfAny
+                        chars = chars.Slice(0, RegexCharClass.GetSetChars(nextChild.Str!, chars));
+                        if (!chars.IsEmpty)
+                        {
+                            foreach (char c in chars)
+                            {
+                                if (RegexCharClass.CharInClass(c, firstChild.Str!))
+                                {
+                                    return null;
+                                }
+                            }
+
+                            return (firstChild, ('\0', null, chars.ToArray()));
+                        }
+                        break;
+                }
+            }
+
+            // Otherwise, we couldn't find the pattern of an atomic set loop followed by a literal.
+            return null;
         }
 
         /// <summary>Takes a RegexTree and computes the leading anchor that it encounters.</summary>
