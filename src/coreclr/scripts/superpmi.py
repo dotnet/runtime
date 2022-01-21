@@ -834,9 +834,12 @@ class SuperPMICollect:
                 pmi_complus_env["JitName"] = self.collection_shim_name
 
                 if self.coreclr_args.pmi_path is not None:
-                    root_env["PMIPATH"] = ";".join(self.coreclr_args.pmi_path)
+                    pmi_root_env = root_env.copy()
+                    pmi_root_env["PMIPATH"] = ";".join(self.coreclr_args.pmi_path)
+                else:
+                    pmi_root_env = root_env
 
-                set_and_report_env(pmi_command_env, root_env, pmi_complus_env)
+                set_and_report_env(pmi_command_env, pmi_root_env, pmi_complus_env)
 
                 old_env = os.environ.copy()
                 os.environ.update(pmi_command_env)
