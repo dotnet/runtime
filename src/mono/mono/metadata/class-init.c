@@ -364,7 +364,7 @@ mono_class_setup_fields (MonoClass *klass)
 			g_free (type_name);
 			break;
 		}
-		if (field->type->byref__) {
+		if (m_type_is_byref (field->type)) {
 			if (!m_class_is_byreflike (klass)) {
 				char *class_name = mono_type_get_full_name (klass);
 				mono_class_set_type_load_failure (klass, "Type %s is not a ByRefLike type so ref field, '%s', is invalid", class_name, field->name);
