@@ -528,8 +528,7 @@ namespace BINDER_SPACE
     {
         BOOL fIsValid = TRUE;
 
-        if (EqualsCaseInsensitive(attributeString, W("culture")) ||
-            EqualsCaseInsensitive(attributeString, W("language")))
+        if (EqualsCaseInsensitive(attributeString, W("culture")))
         {
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_CULTURE);
             GO_IF_WILDCARD(valueString);

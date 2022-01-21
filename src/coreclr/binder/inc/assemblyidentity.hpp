@@ -30,7 +30,6 @@ namespace BINDER_SPACE
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN       = 0x004,
             IDENTITY_FLAG_PUBLIC_KEY             = 0x008,
             IDENTITY_FLAG_CULTURE                = 0x010,
-            IDENTITY_FLAG_LANGUAGE               = 0x020,
             IDENTITY_FLAG_PROCESSOR_ARCHITECTURE = 0x040,
             IDENTITY_FLAG_RETARGETABLE           = 0x080,
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL  = 0x100,

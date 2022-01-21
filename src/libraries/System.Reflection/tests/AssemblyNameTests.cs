@@ -82,6 +82,14 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [InlineData("aaaa, language=en-en", "aaaa")]
+        public void Ctor_String_Valid_Legacy(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName(name);
+            Assert.Equal(expectedName, assemblyName.Name);
+        }
+
+        [Theory]
         [InlineData("name\\u50; ", typeof(FileLoadException))]
         [InlineData("aa/name ", typeof(FileLoadException))]
         [InlineData("aa\\/tname", typeof(FileLoadException))]
