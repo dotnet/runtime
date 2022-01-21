@@ -889,7 +889,8 @@ namespace DebuggerTests
                 }
             );
             //pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 38, 8, "StaticMethod4");
-
+        }
+        
         [Theory]
         [InlineData(false, "RunStepThrough")]
         [InlineData(true, "RunStepThrough")]
