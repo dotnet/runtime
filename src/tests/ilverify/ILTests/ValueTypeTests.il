@@ -31,7 +31,7 @@
 {
     .field public int32 InstanceField
 
-    .method public static int32 CallMethod_Valid(object o) cil managed
+    .method public static int32 ValueType.UnboxLdfld(object o) cil managed
     {
         ldarg.0
         unbox      ValueTypeFieldTests
