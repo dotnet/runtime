@@ -883,8 +883,6 @@ namespace System.Reflection.Emit
                 {
                     if (fb == null)
                         continue;
-                    if (fb.FieldType.IsByRef)
-                        throw new TypeLoadException();
                 }
             }
 
