@@ -420,13 +420,14 @@ namespace ILCompiler
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
 
-                // If AVX was enabled, we can opportunistically enable FMA/BMI
+                // If AVX was enabled, we can opportunistically enable FMA/BMI/VNNI
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                 }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
