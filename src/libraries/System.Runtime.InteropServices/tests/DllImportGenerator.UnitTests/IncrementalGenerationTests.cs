@@ -96,7 +96,7 @@ namespace DllImportGenerator.UnitTests
                 step =>
                 {
                     Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 },
                 step =>
                 {
@@ -108,8 +108,6 @@ namespace DllImportGenerator.UnitTests
         [ConditionalFact]
         public async Task ReplacingFileWithNewGeneratedDllImport_DoesNotRegenerateStubsInOtherFiles()
         {
-            string source = CodeSnippets.BasicParametersAndModifiers<int>();
-
             Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.BasicParametersAndModifiers<bool>() });
 
             Microsoft.Interop.DllImportGenerator generator = new();
@@ -125,12 +123,12 @@ namespace DllImportGenerator.UnitTests
                 step =>
                 {
                     Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.Cached, output.Reason));
+                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
                 },
                 step =>
                 {
                     Assert.Collection(step.Outputs,
-                        output => Assert.Equal(IncrementalStepRunReason.Modified, output.Reason));
+                        output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
         }
 

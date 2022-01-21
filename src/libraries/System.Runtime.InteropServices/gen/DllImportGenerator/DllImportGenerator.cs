@@ -106,7 +106,7 @@ namespace Microsoft.Interop
                 });
 
             IncrementalValueProvider<DllImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
-                .Select((options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
+                .Select(static (options, ct) => new DllImportGeneratorOptions(options.GlobalOptions));
 
             IncrementalValueProvider<StubEnvironment> stubEnvironment = compilationAndTargetFramework
                 .Combine(stubOptions)
@@ -129,23 +129,23 @@ namespace Microsoft.Interop
                     Environment = data.Right
                 })
                 .Select(
-                    (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct))
+                    static (data, ct) => (data.Syntax, StubContext: CalculateStubInformation(data.Symbol, data.Environment, ct))
                 )
                 .WithComparer(Comparers.CalculatedContextWithSyntax)
                 .WithTrackingName(StepNames.CalculateStubInformation)
                 .Combine(stubOptions)
                 .Select(
-                    (data, ct) => GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right)
+                    static (data, ct) => GenerateSource(data.Left.StubContext, data.Left.Syntax, data.Right)
                 )
                 .WithComparer(Comparers.GeneratedSyntax)
                 .WithTrackingName(StepNames.GenerateSingleStub)
                 // Handle NormalizeWhitespace as a separate stage for incremental runs since it is an expensive operation.
                 .Select(
-                    (data, ct) => (data.Item1.NormalizeWhitespace().ToFullString(), data.Item2))
+                    static (data, ct) => (data.Item1.NormalizeWhitespace().ToFullString(), data.Item2))
                 .WithTrackingName(StepNames.NormalizeWhitespace)
                 .Collect()
                 .WithComparer(Comparers.GeneratedSourceSet)
-                .Select((generatedSources, ct) =>
+                .Select(static (generatedSources, ct) =>
                 {
                     StringBuilder source = new();
                     // Mark in source that the file is auto-generated.
@@ -162,7 +162,7 @@ namespace Microsoft.Interop
                 .WithTrackingName(StepNames.ConcatenateStubs);
 
             context.RegisterSourceOutput(methodSourceAndDiagnostics,
-                (context, data) =>
+                static (context, data) =>
                 {
                     foreach (Diagnostic diagnostic in data.Item2)
                     {
@@ -420,7 +420,7 @@ namespace Microsoft.Interop
             return new IncrementalStubGenerationContext(environment, dllImportStub, additionalAttributes.ToImmutableArray(), stubDllImportData, generatorDiagnostics.Diagnostics.ToImmutableArray());
         }
 
-        private (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
+        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateSource(
             IncrementalStubGenerationContext dllImportStub,
             MethodDeclarationSyntax originalSyntax,
             DllImportGeneratorOptions options)
@@ -475,7 +475,7 @@ namespace Microsoft.Interop
             return (PrintGeneratedSource(originalSyntax, dllImportStub.StubContext, code), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
-        private MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
+        private static MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
         {
             SyntaxTokenList modifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);
             modifiers = AddToModifiers(modifiers, SyntaxKind.ExternKeyword);
