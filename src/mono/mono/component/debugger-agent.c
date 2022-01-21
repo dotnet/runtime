@@ -7013,7 +7013,6 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_GET_MODULE_BY_GUID: {
-		int i;
 		int len = 0;
 		uint8_t* guid = m_dbgprot_decode_byte_array (p, &p, end, &len);
 		MonoAssembly *assembly = NULL;
@@ -7028,8 +7027,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		g_ptr_array_free (assemblies, TRUE);
 		if (!assembly) {
 			PRINT_DEBUG_MSG (1, "Could not resolve guid\n");
-			buffer_add_int (buf, -1);
 			g_free (guid);
+			buffer_add_int (buf, -1);
 			break;
 		}
 		g_free (guid);
