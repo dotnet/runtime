@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
@@ -47,7 +48,7 @@ internal static partial class Interop
         internal static partial void SslSetAcceptState(SafeSslHandle ssl);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAlpnProtos")]
-        internal static partial int SslSetAlpnProtos(SafeSslHandle ssl, IntPtr protos, int len);
+        internal static unsafe partial int SslSetAlpnProtos(SafeSslHandle ssl, byte* protos, int len);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         internal static partial IntPtr SslGetVersion(SafeSslHandle ssl);
@@ -168,16 +169,7 @@ internal static partial class Interop
             internal static readonly bool Tls13Supported = Tls13SupportedImpl() != 0;
         }
 
-        internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> protocols)
-        {
-            byte[] buffer = ConvertAlpnProtocolListToByteArray(protocols);
-            fixed (byte* b = buffer)
-            {
-                return SslSetAlpnProtos(ssl, (IntPtr)b, buffer.Length);
-            }
-        }
-
-        internal static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> applicationProtocols)
+        internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol> applicationProtocols)
         {
             int protocolSize = 0;
             foreach (SslApplicationProtocol protocol in applicationProtocols)
@@ -190,16 +182,37 @@ internal static partial class Interop
                 protocolSize += protocol.Protocol.Length + 1;
             }
 
-            byte[] buffer = new byte[protocolSize];
-            var offset = 0;
+            return protocolSize;
+        }
+
+        internal static void SerializeAlpnProtocolList(List<SslApplicationProtocol> applicationProtocols, Span<byte> buffer)
+        {
+            Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length,
+                "GetAlpnProtocolListSerializedSize(applicationProtocols) == buffer.Length");
+
+            int offset = 0;
             foreach (SslApplicationProtocol protocol in applicationProtocols)
             {
-                buffer[offset++] = (byte)(protocol.Protocol.Length);
-                protocol.Protocol.Span.CopyTo(buffer.AsSpan(offset));
+                buffer[offset++] = (byte)protocol.Protocol.Length;
+                protocol.Protocol.Span.CopyTo(buffer.Slice(offset));
                 offset += protocol.Protocol.Length;
             }
+        }
 
-            return buffer;
+        internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> applicationProtocols)
+        {
+            int length = GetAlpnProtocolListSerializedLength(applicationProtocols);
+            Span<byte> buffer = length <= 256 ? stackalloc byte[256].Slice(0, length) : new byte[length];
+            SerializeAlpnProtocolList(applicationProtocols, buffer);
+            return SslSetAlpnProtos(ssl, buffer);
+        }
+
+        internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, Span<byte> serializedProtocols)
+        {
+            fixed (byte* pBuffer = &MemoryMarshal.GetReference(serializedProtocols))
+            {
+                return SslSetAlpnProtos(ssl, pBuffer, serializedProtocols.Length);
+            }
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]

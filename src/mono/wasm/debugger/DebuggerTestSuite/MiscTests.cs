@@ -913,7 +913,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 860, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 924, 8,
                 "CallToEvaluateLocal",
                 wait_for_event_fn: async (pause_location) =>
                 {

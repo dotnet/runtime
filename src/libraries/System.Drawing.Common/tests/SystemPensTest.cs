@@ -77,7 +77,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => pen.StartCap = LineCap.RoundAnchor);
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => pen.Transform = matrix);
+                AssertExtensions.Throws<ArgumentException>(null, () => pen.Transform = matrix);
             }
             AssertExtensions.Throws<ArgumentException>(null, () => pen.Width = 10);
         }

@@ -2151,11 +2151,11 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         if (block == fgEntryBB)
         {
-            printf("original-entry");
+            printf(" original-entry");
         }
         if (block == fgOSREntryBB)
         {
-            printf("osr-entry");
+            printf(" osr-entry");
         }
     }
 

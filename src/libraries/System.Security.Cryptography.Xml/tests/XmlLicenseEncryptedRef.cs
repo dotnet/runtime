@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml.Tests
                     KeyInfoEncryptedKey encryptedKeyInfo = clause as KeyInfoEncryptedKey;
                     EncryptedKey encryptedKey = encryptedKeyInfo.EncryptedKey;
 
-                    Assert.Equal(encryptedKey.EncryptionMethod.KeyAlgorithm, EncryptedXml.XmlEncRSAOAEPUrl);
+                    Assert.Equal(EncryptedXml.XmlEncRSAOAEPUrl, encryptedKey.EncryptionMethod.KeyAlgorithm);
                     Assert.Equal(1, encryptedKey.KeyInfo.Count);
                     Assert.NotEqual(0, _asymmetricKeys.Count);
 

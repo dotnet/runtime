@@ -6922,6 +6922,14 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+
+    // Lose the type information stored in the source - we no longer need it.
+    if (blkNode->Data()->OperIs(GT_OBJ, GT_BLK))
+    {
+        blkNode->Data()->SetOper(GT_IND);
+        LowerIndir(blkNode->Data()->AsIndir());
+    }
+
     if (TryTransformStoreObjAsStoreInd(blkNode))
     {
         return;
@@ -6996,7 +7004,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    JITDUMP("Replacing STORE_OBJ with STOREIND for [06%u]", blkNode->gtTreeID);
+    JITDUMP("Replacing STORE_OBJ with STOREIND for [%06u]\n", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 

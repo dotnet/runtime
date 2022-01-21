@@ -1012,7 +1012,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 		}
 	}
 
-	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS);
+	mono_marshal_emit_native_wrapper (m_class_get_image (method->klass), mb_native, sig_native, piinfo, mspecs, piinfo->addr, EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS | EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED);
 
 	res = mono_mb_create_method (mb_native, sig_native, sig_native->param_count + 16);	
 
@@ -2103,6 +2103,7 @@ cominterop_get_ccw_method (MonoClass *iface, MonoMethod *method, MonoError *erro
 
 	cominterop_setup_marshal_context (&m, adjust_method);
 	m.mb = mb;
+	m.runtime_marshalling_enabled = TRUE;
 	mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0);
 	mono_cominterop_lock ();
 	wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);

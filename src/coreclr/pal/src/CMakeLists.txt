@@ -143,14 +143,12 @@ set(SOURCES
   init/pal.cpp
   init/sxs.cpp
   loader/module.cpp
-  loader/modulename.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
   locale/utf8.cpp
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
-  memory/local.cpp
   misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp

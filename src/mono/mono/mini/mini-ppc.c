@@ -248,7 +248,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 	for (k = 0; k < param_count; k++) {
 		
-		if (csig->pinvoke)
+		if (csig->pinvoke && !csig->marshalling_disabled)
 			size = mono_type_native_stack_size (csig->params [k], (guint32*)&align);
 		else
 			size = mini_type_stack_size (csig->params [k], &align);
@@ -1109,7 +1109,7 @@ get_call_info (MonoMethodSignature *sig)
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (simpletype->type == MONO_TYPE_TYPEDBYREF)
 				size = MONO_ABI_SIZEOF (MonoTypedRef);
-			else if (is_pinvoke)
+			else if (sig->pinvoke && !sig->marshalling_disabled)
 			    size = mono_class_native_size (klass, NULL);
 			else
 			    size = mono_class_value_size (klass, NULL);
@@ -1498,7 +1498,7 @@ mono_arch_allocate_vars (MonoCompile *m)
 		if (inst->opcode != OP_REGVAR) {
 			inst->opcode = OP_REGOFFSET;
 			inst->inst_basereg = frame_reg;
-			if (sig->pinvoke) {
+			if (sig->pinvoke && !sig->marshalling_disabled) {
 				size = mono_type_native_stack_size (sig->params [i], (guint32*)&align);
 				inst->backend.is_pinvoke = 1;
 			} else {
@@ -1739,7 +1739,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		 * and 2 byte arguments
 		 */
 		g_assert (ins->klass);
-		if (call->signature->pinvoke)
+		if (call->signature->pinvoke && !call->signature->marshalling_disabled)
 			size =  mono_class_native_size (ins->klass, NULL);
 		if (size == 2 || size == 1) {
 			int tmpr = mono_alloc_ireg (cfg);
@@ -1801,7 +1801,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		guint32 size;
 
 		/* FIXME: alignment? */
-		if (call->signature->pinvoke) {
+		if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
@@ -5036,7 +5036,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (target_mgreg_t)));
 				/* FIXME: what if there is no class? */
-				if (sig->pinvoke && mono_class_from_mono_type_internal (inst->inst_vtype))
+				if (sig->pinvoke && !sig->marshalling_disabled && mono_class_from_mono_type_internal (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
 					if (ainfo->size == 4) {
@@ -5055,7 +5055,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (target_mgreg_t)));
 				/* FIXME: what if there is no class? */
-				if (sig->pinvoke && mono_class_from_mono_type_internal (inst->inst_vtype))
+				if (sig->pinvoke && !sig->marshalling_disabled && mono_class_from_mono_type_internal (inst->inst_vtype))
 					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
 #if __APPLE__

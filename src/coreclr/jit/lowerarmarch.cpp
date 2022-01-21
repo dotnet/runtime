@@ -293,6 +293,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
+    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -306,7 +308,18 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        unsigned initBlockUnrollLimit = INITBLK_UNROLL_LIMIT;
+
+#ifdef TARGET_ARM64
+        if (isDstAddrLocal)
+        {
+            // Since dstAddr points to the stack CodeGen can use more optimal
+            // quad-word store SIMD instructions for InitBlock.
+            initBlockUnrollLimit = INITBLK_LCL_UNROLL_LIMIT;
+        }
+#endif
+
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= initBlockUnrollLimit) && src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -353,19 +366,39 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         assert(src->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD));
         src->SetContained();
 
+        bool isSrcAddrLocal = false;
+
         if (src->OperIs(GT_IND))
         {
+            GenTree* srcAddr = src->AsIndir()->Addr();
             // TODO-Cleanup: Make sure that GT_IND lowering didn't mark the source address as contained.
             // Sometimes the GT_IND type is a non-struct type and then GT_IND lowering may contain the
             // address, not knowing that GT_IND is part of a block op that has containment restrictions.
-            src->AsIndir()->Addr()->ClearContained();
+            srcAddr->ClearContained();
+            isSrcAddrLocal = srcAddr->OperIsLocalAddr();
         }
-        else if (src->OperIs(GT_LCL_VAR))
+        else
         {
-            // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
-            const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+            isSrcAddrLocal = true;
+
+            if (src->OperIs(GT_LCL_VAR))
+            {
+                // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
+                const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
+                comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+            }
         }
+
+        unsigned copyBlockUnrollLimit = CPBLK_UNROLL_LIMIT;
+
+#ifdef TARGET_ARM64
+        if (isSrcAddrLocal && isDstAddrLocal)
+        {
+            // Since both srcAddr and dstAddr point to the stack CodeGen can use more optimal
+            // quad-word load and store SIMD instructions for CopyBlock.
+            copyBlockUnrollLimit = CPBLK_LCL_UNROLL_LIMIT;
+        }
+#endif
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
@@ -373,7 +406,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
-            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -389,7 +422,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -490,7 +523,6 @@ void Lowering::LowerCast(GenTree* tree)
     GenTree*  op1     = tree->AsOp()->gtOp1;
     var_types dstType = tree->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
-    var_types tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
     {
@@ -500,16 +532,6 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     assert(!varTypeIsSmall(srcType));
-
-    if (tmpType != TYP_UNDEF)
-    {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, op1, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(op1, tmp);
-    }
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
@@ -1852,6 +1874,21 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 MakeSrcContained(node, intrin.op2);
                 MakeSrcContained(node, intrin.op4);
                 break;
+
+            case NI_AdvSimd_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqual:
+            case NI_AdvSimd_Arm64_CompareEqualScalar:
+            {
+                if (intrin.op1->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op1);
+                }
+                else if (intrin.op2->IsVectorZero())
+                {
+                    MakeSrcContained(node, intrin.op2);
+                }
+                break;
+            }
 
             case NI_Vector64_CreateScalarUnsafe:
             case NI_Vector128_CreateScalarUnsafe:
