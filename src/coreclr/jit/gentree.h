@@ -7661,7 +7661,13 @@ inline bool GenTree::IsSIMDZero() const
 //
 inline bool GenTree::IsFloatPositiveZero() const
 {
-    return IsCnsFltOrDbl() && !IsCnsNonZeroFltOrDbl();
+    if (OperGet() == GT_CNS_DBL)
+    {
+        double constValue = AsDblCon()->gtDconVal;
+        return *(__int64*)&constValue == 0;
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------------
