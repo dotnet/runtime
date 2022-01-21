@@ -25,5 +25,6 @@ namespace System.Text.RegularExpressions.Symbolic
         EndAnchorZRev = 0x8000,
         CaptureStart = 0x10000,
         CaptureEnd = 0x20000,
+        OrderedOr = 0x40000,
     }
 }

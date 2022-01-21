@@ -220,7 +220,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             nested[i] = Convert(node.Child(i), topLevel);
                         }
-                        return _builder.MkOr(nested);
+                        return _builder.MkOrderedOr(nested);
                     }
 
                 case RegexNodeKind.Beginning:

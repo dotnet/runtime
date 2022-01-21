@@ -186,7 +186,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the dot-star pattern (a concatenation of any* with the original pattern)
             // and all of its initial states.
-            _dotStarredPattern = _builder.MkConcat(_builder._anyStar, _pattern);
+            var unorderedPattern = _pattern.IgnoreOrOrder();
+            _dotStarredPattern = _builder.MkConcat(_builder._anyStar, unorderedPattern);
             var dotstarredInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < dotstarredInitialStates.Length; i++)
             {
@@ -202,7 +203,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Create the reverse pattern (the original pattern in reverse order) and all of its
             // initial states.
-            _reversePattern = _pattern.Reverse();
+            _reversePattern = unorderedPattern.Reverse();
             var reverseInitialStates = new DfaMatchingState<TSetType>[statesCount];
             for (uint i = 0; i < reverseInitialStates.Length; i++)
             {
@@ -301,8 +302,9 @@ namespace System.Text.RegularExpressions.Symbolic
             };
         }
 
+        private HashSet<DfaMatchingState<TSetType>> _seenCapturingStates = new(); // TODO: should this be a member?
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CapturingDelta(string input, int i, Dictionary<DfaMatchingState<TSetType>, Registers> sourceStates, Dictionary<DfaMatchingState<TSetType>, Registers> targetStates)
+        private void CapturingDelta(ReadOnlySpan<char> input, int i, List<(DfaMatchingState<TSetType>, Registers)> sourceStates, List<(DfaMatchingState<TSetType>, Registers)> targetStates)
         {
             Debug.Assert(targetStates.Count == 0);
 
@@ -311,6 +313,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             int c = input[i];
 
+            _seenCapturingStates.Clear();
             foreach (var (sourceState, sourceRegisters) in sourceStates)
             {
                 int mintermId = c == '\n' && i == input.Length - 1 && sourceState.StartsWithLineAnchor ?
@@ -326,15 +329,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 var transitions = Volatile.Read(ref _builder._capturingDelta[offset]) ?? CreateNewCapturingTransitions(sourceState, minterm, offset);
 
                 foreach (var (targetState, effects) in transitions) {
-                    if (targetStates.TryGetValue(targetState, out Registers existingRegisters))
-                    {
-                        // TODO: choose intelligently between registers
-                    }
-                    else
+                    if (!_seenCapturingStates.Contains(targetState))
                     {
                         Registers newRegisters = sourceRegisters.Clone(); // TODO: avoid this the last time
                         newRegisters.ApplyEffects(effects, i);
-                        targetStates.Add(targetState, newRegisters);
+                        targetStates.Add((targetState, newRegisters));
                     }
                 }
             }
@@ -596,7 +595,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
         }
 
-        private int FindEndPositionCapturing(string input, int exclusiveEnd, int i, out Registers resultRegisters)
+        private int FindEndPositionCapturing(ReadOnlySpan<char> input, int exclusiveEnd, int i, out Registers resultRegisters)
         {
             int i_end = exclusiveEnd;
             Registers endRegisters = default(Registers);
@@ -627,8 +626,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            Dictionary<DfaMatchingState<TSetType>, Registers> current = new(), next = new();
-            current.Add(state, initialRegisters);
+            List<(DfaMatchingState<TSetType>, Registers)> current = new(), next = new();
+            current.Add((state, initialRegisters));
 
             while (i < exclusiveEnd)
             {
@@ -638,8 +637,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 next = tmp;
                 next.Clear();
 
-                foreach (var (q, registers) in current)
+                for (int m = 0; m < current.Count; ++m)
                 {
+                    var (q, registers) = current[m];
                     if (q.IsNullable(GetCharKind(input, i + 1)))
                     {
                         // Accepting state has been reached. Record the position.
@@ -647,29 +647,35 @@ namespace System.Text.RegularExpressions.Symbolic
                         endRegisters = registers.Clone();
                         q.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1));
 
-                        // Stop here if q is lazy.
+                        // Remove any lower priority states
                         if (q.IsLazy)
                         {
-                            Debug.Assert(i_end != exclusiveEnd);
-                            resultRegisters = endRegisters;
-                            return i_end;
+                            // Also remove this state if it is lazy
+                            current.RemoveRange(m, current.Count - m);
                         }
+                        else
+                        {
+                            current.RemoveRange(m + 1, current.Count - m - 1);
+                        }
+                        break;
                     }
                     else if (q.IsDeadend)
                     {
-                        // Non-accepting sink state (deadend) has been reached in the original pattern.
-                        // So the match ended when the last i_end was updated.
-                        Debug.Assert(i_end != exclusiveEnd);
-                        resultRegisters = endRegisters;
-                        return i_end;
+                        current.RemoveAt(m);
+                        --m;
                     }
+                }
+                if (current.Count == 0)
+                {
+                    Debug.Assert(i_end != exclusiveEnd);
+                    resultRegisters = endRegisters;
+                    return i_end;
                 }
 
                 i++;
             }
 
-            // This should never happen, as a final state is already known to exist.
-            Debug.Assert(false);
+            Debug.Assert(i_end != exclusiveEnd);
             resultRegisters = endRegisters;
             return i_end;
         }

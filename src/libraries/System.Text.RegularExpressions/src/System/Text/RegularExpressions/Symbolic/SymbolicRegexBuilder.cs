@@ -142,6 +142,29 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TElement>.MkOr(this, regexes);
 
         /// <summary>
+        /// Make an ordered disjunction of given regexes, simplify by eliminating any regex that accepts no inputs
+        /// </summary>
+        internal SymbolicRegexNode<TElement> MkOrderedOr(params SymbolicRegexNode<TElement>[] regexes)
+        {
+            SymbolicRegexNode<TElement>? or = null;
+            foreach (SymbolicRegexNode<TElement> elem in regexes)
+            {
+                if (elem == _nothing)
+                    continue;
+                if (or == null)
+                    or = elem;
+                else
+                    or = SymbolicRegexNode<TElement>.MkOrderedOr(this, or, elem);
+                if (elem == _anyStar)
+                    break; // .* is the absorbing element
+            }
+            if (or == null)
+                return _nothing;
+            else
+                return or;
+        }
+
+        /// <summary>
         /// Make a conjunction of given regexes, simplify by eliminating regexes that accept everything
         /// </summary>
         internal SymbolicRegexNode<TElement> MkAnd(params SymbolicRegexNode<TElement>[] regexes) =>
@@ -230,7 +253,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             if (lower == 0 && upper == 0)
             {
-                return isLazy ? _epsilon : _eagerEmptyLoop;
+                return _epsilon;
             }
 
             if (!isLazy && lower == 0 && upper == int.MaxValue && regex._kind == SymbolicRegexKind.Singleton)
@@ -353,6 +376,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexKind.Or:
                     Debug.Assert(sr._alts is not null);
                     return builderT.MkOr(sr._alts.Transform(builderT, predicateTransformer));
+
+                case SymbolicRegexKind.OrderedOr:
+                    Debug.Assert(sr._left is not null && sr._right is not null);
+                    return builderT.MkOrderedOr(Transform(sr._left, builderT, predicateTransformer), Transform(sr._right, builderT, predicateTransformer));
 
                 case SymbolicRegexKind.And:
                     Debug.Assert(sr._alts is not null);
