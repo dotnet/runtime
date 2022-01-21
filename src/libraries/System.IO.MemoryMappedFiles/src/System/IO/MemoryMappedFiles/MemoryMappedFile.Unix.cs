@@ -180,8 +180,7 @@ namespace System.IO.MemoryMappedFiles
             {
                 Guid.NewGuid().TryFormat(span, out int charsWritten, "N");
                 Debug.Assert(charsWritten == MaxSharedMemoryObjectNameLength);
-                span[0] = '/';
-                "dotnet".CopyTo(span.Slice(1));
+                "/dotnet".CopyTo(span);
             });
 
             // Determine the flags to use when creating the shared memory object
