@@ -7,21 +7,17 @@
 const DotnetSupportLib = {
     $DOTNET: {},
     // these lines will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // we replace implementation of readAsync and fetch
+    // replacement of require is there for consistency with ES6 code
     $DOTNET__postset: `
-let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch, require};
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isES6:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_ }, 
+    { isESM:false, isGlobal:ENVIRONMENT_IS_GLOBAL, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, requirePromise:Promise.resolve(require)}, 
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
-
-// here we replace things which are not exposed in another way
-scriptDirectory = __dotnet_replacements.scriptDirectory;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
-if (ENVIRONMENT_IS_NODE) { 
-    __dirname = __dotnet_replacements.scriptDirectory; 
-    require = __dotnet_replacements.require;
-}
+require = __dotnet_replacements.requireOut;
 `,
 };
 

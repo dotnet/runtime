@@ -35,6 +35,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCode.cs" Link="Production\RegexCode.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexFindOptimizations.cs" Link="Production\RegexFindOptimizations.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexNode.cs" Link="Production\RegexNode.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexNodeKind.cs" Link="Production\RegexNodeKind.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexOptions.cs" Link="Production\RegexOptions.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="Production\RegexParseError.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseException.cs" Link="Production\RegexParseException.cs" />
@@ -42,6 +43,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" Link="Production\RegexPrefixAnalyzer.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexTree.cs" Link="Production\RegexTree.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
+    <Compile Include="..\src\System\Collections\HashtableExtensions.cs" Link="Production\HashtableExtensions.cs" />
   </ItemGroup>
 
 </Project>

@@ -479,10 +479,10 @@ namespace System.Drawing.Printing.Tests
             using (Graphics graphic = printerSettings.CreateMeasurementGraphics())
             {
                 Assert.NotNull(graphic);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.X, graphic.VisibleClipBounds.X, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Y, graphic.VisibleClipBounds.Y, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.Bounds.X, graphic.VisibleClipBounds.X, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.Bounds.Y, graphic.VisibleClipBounds.Y, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
@@ -494,8 +494,8 @@ namespace System.Drawing.Printing.Tests
             using (Graphics graphic = printerSettings.CreateMeasurementGraphics(true))
             {
                 Assert.NotNull(graphic);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
@@ -508,10 +508,10 @@ namespace System.Drawing.Printing.Tests
             using (Graphics graphic = printerSettings.CreateMeasurementGraphics(pageSettings))
             {
                 Assert.NotNull(graphic);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.X, graphic.VisibleClipBounds.X, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.Bounds.Y, graphic.VisibleClipBounds.Y, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.Bounds.X, graphic.VisibleClipBounds.X, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.Bounds.Y, graphic.VisibleClipBounds.Y, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 
@@ -524,8 +524,8 @@ namespace System.Drawing.Printing.Tests
             using (Graphics graphic = printerSettings.CreateMeasurementGraphics(pageSettings, true))
             {
                 Assert.NotNull(graphic);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
-                Assert.Equal(printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Height, graphic.VisibleClipBounds.Height, 0);
+                Assert.Equal((double)printerSettings.DefaultPageSettings.PrintableArea.Width, graphic.VisibleClipBounds.Width, 0);
             }
         }
 

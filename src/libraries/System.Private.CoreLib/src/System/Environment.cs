@@ -195,7 +195,7 @@ namespace System
 
                 // Strip optional suffixes
                 int separatorIndex = versionSpan.IndexOfAny('-', '+', ' ');
-                if (separatorIndex != -1)
+                if (separatorIndex >= 0)
                     versionSpan = versionSpan.Slice(0, separatorIndex);
 
                 // Return zeros rather then failing if the version string fails to parse

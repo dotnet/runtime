@@ -794,7 +794,7 @@ public class SteppingInto
 
 public class MyIncrementer
 {
-    private Func<DateTime> todayFunc = () => DateTime.Now;
+    private Func<DateTime> todayFunc = () => new DateTime(2061, 1, 5); // Wednesday
 
     public int Increment(int count)
     {
@@ -848,6 +848,70 @@ public class DebuggerAttribute
         HiddenMethodDebuggerBreak();
         VisibleMethodDebuggerBreak();
     }
+    
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void StepThrougBp()
+    {
+        var a = 0;
+        currentCount++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    public static void StepThrougUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunStepThrough()
+    {
+        StepThrougBp();
+        StepThrougUserBp();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeBp(Action boundaryTestFun=null)
+    {
+        var a = 0;
+        currentCount++;
+        var b = 1;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public static void RunNonUserCode()
+    {
+        NonUserCodeBp();
+        NonUserCodeUserBp();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryBp()
+    {
+        var a = 5;
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    public static void BoundaryUserBp()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    public static void NonUserCodeForBoundaryEscape(Action boundaryTestFun)
+    {
+        boundaryTestFun();
+    }
+
+    public static void RunNoBoundary()
+    {
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryBp);
+        NonUserCodeForBoundaryEscape(DebuggerAttribute.BoundaryUserBp);
+    }
 }
 
 public class DebugTypeFull
@@ -860,4 +924,30 @@ public class DebugTypeFull
         var a = myMethod.Invoke(new object[]{});
         System.Diagnostics.Debugger.Break();
     }
+}
+
+public class TestHotReloadUsingSDB {
+        static System.Reflection.Assembly loadedAssembly;
+        public static string LoadLazyHotReload(string asm_base64, string pdb_base64)
+        {
+            byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+            byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+            loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+            var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
+            return Convert.ToBase64String(GUID);
+        }
+
+        public static string GetModuleGUID()
+        {
+            var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
+            return Convert.ToBase64String(GUID);
+        }
+
+        public static void RunMethod(string className, string methodName)
+        {
+            var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            var myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+        }
 }

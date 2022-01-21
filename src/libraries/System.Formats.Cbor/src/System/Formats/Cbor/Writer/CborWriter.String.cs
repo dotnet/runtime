@@ -131,7 +131,7 @@ namespace System.Formats.Cbor
             int length;
             try
             {
-                length = utf8Encoding.GetByteCount(value);
+                length = CborHelpers.GetByteCount(utf8Encoding, value);
             }
             catch (EncoderFallbackException e)
             {
@@ -150,7 +150,7 @@ namespace System.Formats.Cbor
                 _currentIndefiniteLengthStringRanges.Add((_offset, value.Length));
             }
 
-            utf8Encoding.GetBytes(value, _buffer.AsSpan(_offset, length));
+            CborHelpers.GetBytes(utf8Encoding, value, _buffer.AsSpan(_offset, length));
             _offset += length;
             AdvanceDataItemCounters();
         }

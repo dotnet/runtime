@@ -101,7 +101,7 @@ namespace System.Drawing
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    MemberInfo? member = null;
+                    MemberInfo? member;
                     object[]? args = null;
 
                     if (c.IsEmpty)

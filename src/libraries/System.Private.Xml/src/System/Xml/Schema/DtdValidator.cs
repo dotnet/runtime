@@ -149,7 +149,7 @@ namespace System.Xml.Schema
             Debug.Assert(reader.NodeType == XmlNodeType.Element);
             if (context!.NeedValidateChildren)
             { //i think i can get away with removing this if cond since won't make this call for documentelement
-                int errorCode = 0;
+                int errorCode;
                 context.ElementDecl!.ContentValidator!.ValidateElement(elementName, context, out errorCode);
                 if (errorCode < 0)
                 {

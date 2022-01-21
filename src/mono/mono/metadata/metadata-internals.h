@@ -213,6 +213,8 @@ struct _MonoAssembly {
 	guint8 wrap_non_exception_throws_inited;
 	guint8 jit_optimizer_disabled;
 	guint8 jit_optimizer_disabled_inited;
+	guint8 runtime_marshalling_enabled;
+	guint8 runtime_marshalling_enabled_inited;
 	/* security manager flags (one bit is for lazy initialization) */
 	guint32 skipverification:2;	/* Has SecurityPermissionFlag.SkipVerification permission */
 };
@@ -657,6 +659,7 @@ struct _MonoMethodSignature {
 	unsigned int  is_inflated         : 1;
 	unsigned int  has_type_parameters : 1;
 	unsigned int  suppress_gc_transition : 1;
+	unsigned int  marshalling_disabled : 1;
 	MonoType     *params [MONO_ZERO_LEN_ARRAY];
 };
 

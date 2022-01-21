@@ -9,6 +9,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <SignAssembly>true</SignAssembly>
+    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 
   <Import Project="ILVerification.projitems" />

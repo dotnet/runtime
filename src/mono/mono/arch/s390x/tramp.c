@@ -166,7 +166,7 @@ enum_retvalue:
 				goto enum_retvalue;
 			}
 			gr++;
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size (sig->ret->data.klass, &align);
 			else
                         	size = mono_class_value_size (sig->ret->data.klass, &align);
@@ -235,7 +235,7 @@ enum_retvalue:
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size (sig->params [i]->data.klass, &align);
 			else
 				size = mono_class_value_size (sig->params [i]->data.klass, &align);
@@ -423,7 +423,7 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 				simpletype = sig->params [i]->data.klass->enum_basetype->type;
 				goto enum_calc_size;
 			}
-			if (sig->pinvoke) 
+			if (sig->pinvoke && !sig->marshalling_disabled) 
 				size = mono_class_native_size (sig->params [i]->data.klass, &align);
 			else
 				size = mono_class_value_size (sig->params [i]->data.klass, &align);
@@ -625,7 +625,7 @@ enum_retvalue:
 				simpletype = sig->ret->data.klass->enum_basetype->type;
 				goto enum_retvalue;
 			}
-			if (sig->pinvoke) 
+			if (sig->pinvoke && !sig->marshalling_disabled) 
 				retSize = mono_class_native_size (sig->ret->data.klass, &align);
 			else
 				retSize = mono_class_value_size (sig->ret->data.klass, &align);
@@ -848,7 +848,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* area. If necessary save this hidden parameter for later  */
 	/*----------------------------------------------------------*/
 	if (MONO_TYPE_ISSTRUCT(sig->ret)) {
-		if (sig->pinvoke) 
+		if (sig->pinvoke && !sig->marshalling_disabled) 
 			retSize = mono_class_native_size (sig->ret->data.klass, &align);
 		else
 			retSize = mono_class_value_size (sig->ret->data.klass, &align);
@@ -904,7 +904,10 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 			if (klass->enumtype)
 				continue;
-			size = mono_class_native_size (klass, &align);
+			if (sig->pinvoke && !sig->marshalling_disabled) 
+				size = mono_class_native_size (sig->ret->data.klass, &align);
+			else
+				size = mono_class_value_size (sig->ret->data.klass, &align);
 			cpos += align - 1;
 			cpos &= ~(align - 1);
 			vtbuf [i] = cpos;
@@ -947,7 +950,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 					simple_type = sig->params [i]->data.klass->enum_basetype->type;
 					goto enum_savechk;
 				}
-				if (sig->pinvoke)
+				if (sig->pinvoke && !sig->marshalling_disabled)
 					parSize = mono_class_native_size (sig->params [i]->data.klass, &align);
 				else
 					parSize = mono_class_value_size (sig->params [i]->data.klass, &align);
@@ -996,7 +999,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 
 		/* fixme: alignment */
 		DEBUG (printf ("arg_pos %d --> ", arg_pos));
-		if (sig->pinvoke)
+		if (sig->pinvoke && !sig->marshalling_disabled)
 			arg_pos += mono_type_native_stack_size (sig->params [i], &align);
 		else
 			arg_pos += mono_type_stack_size (sig->params [i], &align);

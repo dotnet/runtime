@@ -434,7 +434,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	error_init (error);
 
 	/* FIXME: metadata-update - this function needs extensive work */
-	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || tidx > table_info_get_rows (tt)) {
+	if (mono_metadata_token_table (type_token) != MONO_TABLE_TYPEDEF || mono_metadata_table_bounds_check (image, MONO_TABLE_TYPEDEF, tidx)) {
 		mono_error_set_bad_image (error, image, "Invalid typedef token %x", type_token);
 		return NULL;
 	}
@@ -614,27 +614,33 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/*
 	 * Compute the field and method lists
 	 */
-	int first_field_idx;
-	first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
-	mono_class_set_first_field_idx (klass, first_field_idx);
-	int first_method_idx;
-	first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
-	mono_class_set_first_method_idx (klass, first_method_idx);
+	/*
+	 * EnC metadata-update: new classes are added with method and field indices set to 0, new
+	 * methods are added using the EnCLog AddMethod or AddField functions that will be added to
+	 * MonoClassMetadataUpdateInfo
+	 */
+	if (G_LIKELY (cols [MONO_TYPEDEF_FIELD_LIST] != 0 || cols [MONO_TYPEDEF_METHOD_LIST] != 0)) {
+		int first_field_idx;
+		first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
+		mono_class_set_first_field_idx (klass, first_field_idx);
+		int first_method_idx;
+		first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
+		mono_class_set_first_method_idx (klass, first_method_idx);
+		if (table_info_get_rows (tt) > tidx) {
+			mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
+			field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
+			method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
+		} else {
+			field_last  = table_info_get_rows (&image->tables [MONO_TABLE_FIELD]);
+			method_last = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
+		}
 
-	if (table_info_get_rows (tt) > tidx){		
-		mono_metadata_decode_row (tt, tidx, cols_next, MONO_TYPEDEF_SIZE);
-		field_last  = cols_next [MONO_TYPEDEF_FIELD_LIST] - 1;
-		method_last = cols_next [MONO_TYPEDEF_METHOD_LIST] - 1;
-	} else {
-		field_last  = table_info_get_rows (&image->tables [MONO_TABLE_FIELD]);
-		method_last = table_info_get_rows (&image->tables [MONO_TABLE_METHOD]);
+		if (cols [MONO_TYPEDEF_FIELD_LIST] &&
+		    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
+			mono_class_set_field_count (klass, field_last - first_field_idx);
+		if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
+			mono_class_set_method_count (klass, method_last - first_method_idx);
 	}
-
-	if (cols [MONO_TYPEDEF_FIELD_LIST] && 
-	    cols [MONO_TYPEDEF_FIELD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_FIELD]))
-		mono_class_set_field_count (klass, field_last - first_field_idx);
-	if (cols [MONO_TYPEDEF_METHOD_LIST] <= table_info_get_rows (&image->tables [MONO_TABLE_METHOD]))
-		mono_class_set_method_count (klass, method_last - first_method_idx);
 
 	/* reserve space to store vector pointer in arrays */
 	if (mono_is_corlib_image (image) && !strcmp (nspace, "System") && !strcmp (name, "Array")) {
@@ -1968,6 +1974,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	gboolean has_static_refs = FALSE;
 	MonoClassField *field;
 	gboolean blittable;
+	gboolean any_field_has_auto_layout;
 	int instance_size = base_instance_size;
 	int element_size = -1;
 	int class_size, min_align;
@@ -2039,12 +2046,17 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			gc_aware_layout = TRUE;
 	}
 
-	/* Compute klass->blittable */
+	/* Compute klass->blittable and klass->any_field_has_auto_layout */
 	blittable = TRUE;
-	if (klass->parent)
+	any_field_has_auto_layout = FALSE;
+	if (klass->parent) {
 		blittable = klass->parent->blittable;
-	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System") && !strcmp (klass->name, "ValueType")) && top)
+		any_field_has_auto_layout = klass->parent->any_field_has_auto_layout;
+	}
+	if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT && !(mono_is_corlib_image (klass->image) && !strcmp (klass->name_space, "System") && !strcmp (klass->name, "ValueType")) && top) {
 		blittable = FALSE;
+		any_field_has_auto_layout = TRUE; // If a type is auto-layout, treat it as having an auto-layout field in its layout.
+	}
 	for (i = 0; i < top; i++) {
 		field = &klass->fields [i];
 
@@ -2074,8 +2086,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 					blittable = FALSE;
 			}
 		}
-		if (klass->enumtype)
-			blittable = klass->element_class->blittable;
+		if (!any_field_has_auto_layout && field->type->type == MONO_TYPE_VALUETYPE && m_class_any_field_has_auto_layout (mono_class_from_mono_type_internal (field->type)))
+			any_field_has_auto_layout = TRUE;
+	}
+	if (klass->enumtype) {
+		blittable = klass->element_class->blittable;
+		any_field_has_auto_layout = klass->element_class->any_field_has_auto_layout;
 	}
 	if (mono_class_has_failure (klass))
 		return;
@@ -2302,6 +2318,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	klass->has_references = has_references;
 	klass->packing_size = packing_size;
 	klass->min_align = min_align;
+	klass->any_field_has_auto_layout = any_field_has_auto_layout;
 	for (i = 0; i < top; ++i) {
 		field = &klass->fields [i];
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
@@ -4079,10 +4096,4 @@ mono_classes_init (void)
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &inflated_classes_size);
 	mono_counters_register ("MonoClass size",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &classes_size);
-}
-
-void
-m_field_set_parent (MonoClassField *field, MonoClass *klass)
-{
-	field->parent_ = klass;
 }

@@ -617,7 +617,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         mngstdinterfaces.cpp
-        notifyexternals.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -634,7 +633,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         mngstdinterfaces.h
-        notifyexternals.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h
