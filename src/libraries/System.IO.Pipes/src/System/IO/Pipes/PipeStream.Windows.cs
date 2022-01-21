@@ -232,11 +232,6 @@ namespace System.IO.Pipes
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
-            if (RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                || RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator"))
-            {
-                return $"/tmp/{pipeName}";
-            }
 
             string normalizedPipePath = Path.GetFullPath(@"\\" + serverName + @"\pipe\" + pipeName);
             if (string.Equals(normalizedPipePath, @"\\.\pipe\" + AnonymousPipeName, StringComparison.OrdinalIgnoreCase))
