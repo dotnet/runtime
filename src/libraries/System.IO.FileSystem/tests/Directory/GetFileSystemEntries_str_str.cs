@@ -4,7 +4,6 @@
 using System.Runtime.InteropServices;
 using Xunit;
 using System.Linq;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {

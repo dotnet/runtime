@@ -7,7 +7,6 @@ using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.IO.Pipes
 {

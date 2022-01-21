@@ -61,7 +61,7 @@ namespace System
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
         public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
-                && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
