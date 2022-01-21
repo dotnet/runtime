@@ -75,10 +75,8 @@ namespace BINDER_SPACE
 
         inline WCHAR GetRawCharacter();
         inline void PushRawCharacter();
-        inline WCHAR DecodeUTF16Character();
         inline WCHAR GetNextCharacter(BOOL *pfIsEscaped);
 
-        inline WCHAR ParseUnicode();
         LEXEME_TYPE ParseString(SString &currentString);
 
         void TrimTrailingWhiteSpaces(SString &currentString);

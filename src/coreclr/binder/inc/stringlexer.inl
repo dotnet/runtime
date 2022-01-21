@@ -99,51 +99,14 @@ void StringLexer::PushRawCharacter()
     }
 }
 
-WCHAR StringLexer::DecodeUTF16Character()
-{
-    // See http://www.ietf.org/rfc/rfc2781.txt for details on UTF-16 encoding.
-
-    WCHAR wcCurrentChar = 0;
-    SCOUNT_T nCharacters = m_end - m_cursor + 1;
-    WCHAR wcChar1 = GetRawCharacter();
-
-    if (wcChar1 < 0xd800)
-    {
-        wcCurrentChar = wcChar1;
-    }
-    else
-    {
-        // StringLexer is not designed to handle UTF-16 characters beyond the Basic Multilingual Plane,
-        // since it stores all characters in 16-bit WCHARs.
-        // However, since the vast majority of the time, we (Microsoft) produce the manifests,
-        // this is likely a non-scenario, as the other Unicode planes would never be used in practice.
-
-        if (wcChar1 <= 0xdbff) // 0xd800 - 0xdbff indicates the first WCHAR of a surrogate pair
-        {
-            if (nCharacters >= 2)
-            {
-                GetRawCharacter(); // Skip the second WCHAR of the surrogate pair
-            }
-        }
-        // Otherwise, the character is either in the 0xdc00 - 0xdfff range, indicating the second WCHAR of a surrogate pair,
-        // or in the 0xE000 - 0xFFFF range, which has within it ranges of invalid characters, and which we conservatively treat
-        // as invalid.
-
-        wcCurrentChar = INVALID_CHARACTER;
-    }
-
-    return wcCurrentChar;
-}
-
-
 WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
 {
     *pfIsEscaped = FALSE;
 
-    WCHAR wcCurrentChar = GetRawCharacter(); // DecodeUTF16Character()
+    WCHAR wcCurrentChar = GetRawCharacter();
     if (wcCurrentChar == L'\\')
     {
-        WCHAR wcTempChar = GetRawCharacter(); // DecodeUTF16Character()
+        WCHAR wcTempChar = GetRawCharacter();
 
         // Handle standard escapes
         switch (wcTempChar)
@@ -164,9 +127,6 @@ WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
         case L'r':
             wcTempChar = 13;
             break;
-        case L'u':
-            wcTempChar = ParseUnicode();
-            break;
         default:
             return INVALID_CHARACTER;
         }
@@ -176,48 +136,6 @@ WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
     }
 
     return wcCurrentChar;
-}
-
-WCHAR StringLexer::ParseUnicode()
-{
-    int nCharacters = 0;
-    WCHAR wcUnicodeChar = 0;
-
-    for(;;)
-    {
-        WCHAR wcCurrentChar = DecodeUTF16Character();
-        nCharacters++;
-
-        if (wcCurrentChar == L';')
-        {
-            break;
-        }
-        else if ((wcCurrentChar == INVALID_CHARACTER) || (nCharacters >= 9))
-        {
-            return INVALID_CHARACTER;
-        }
-
-        wcUnicodeChar <<= 4;
-
-        if ((wcCurrentChar >= L'0') && (wcCurrentChar <= L'9'))
-        {
-            wcUnicodeChar += (wcCurrentChar - L'0');
-        }
-        else if ((wcCurrentChar >= L'a') && (wcCurrentChar <= L'f'))
-        {
-            wcUnicodeChar += (wcCurrentChar - L'a') + 10;
-        }
-        else if ((wcCurrentChar >= L'A') && (wcCurrentChar <= L'F'))
-        {
-            wcUnicodeChar += (wcCurrentChar - L'A') + 10;
-        }
-        else
-        {
-            return INVALID_CHARACTER;
-        }
-    }
-
-    return wcUnicodeChar;
 }
 
 #endif
