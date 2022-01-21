@@ -20775,8 +20775,8 @@ GenTree* Compiler::gtNewSimdSumNode(
             {
                 op1 = impCloneExpr(op1, &tmp, clsHnd, (unsigned)CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for vector sum"));
-                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_AddPairwise, simdBaseJitType,
-                                               simdSize, isSimdAsHWIntrinsic);
+                op1 = gtNewSimdHWIntrinsicNode(simdType, op1, tmp, NI_AdvSimd_AddPairwise, simdBaseJitType, simdSize,
+                                               isSimdAsHWIntrinsic);
             }
             else
             {
@@ -20806,7 +20806,8 @@ GenTree* Compiler::gtNewSimdSumNode(
                                                    simdSize, isSimdAsHWIntrinsic);
                 }
             }
-            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            return gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_ToScalar, simdBaseJitType, simdSize,
+                                            isSimdAsHWIntrinsic);
         }
 
         case TYP_DOUBLE:
