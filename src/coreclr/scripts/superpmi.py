@@ -597,11 +597,6 @@ class SuperPMICollect:
         if coreclr_args.pmi:
             self.pmi_location = determine_pmi_location(coreclr_args)
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
-        else:
-            if coreclr_args.pmi_path is not None:
-                logging.warning("Warning: -pmi_path is set but --pmi is not.")
-            if coreclr_args.pmi_location is not None:
-                logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
         if coreclr_args.crossgen2:
             self.corerun = os.path.join(self.core_root, self.corerun_tool_name)
@@ -3135,6 +3130,12 @@ def setup_args(args):
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
             sys.exit(1)
+
+        if not args.pmi:
+            if args.pmi_path is not None:
+                logging.warning("Warning: -pmi_path is set but --pmi is not.")
+            if args.pmi_location is not None:
+                logging.warning("Warning: -pmi_location is set but --pmi is not.")
 
         if args.collection_command is None and args.merge_mch_files is not True:
             assert args.collection_args is None
