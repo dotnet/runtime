@@ -505,35 +505,41 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HashData_Stream_Source_Null()
         {
-            AssertExtensions.Throws<ArgumentNullException>("source",
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
                 () => HashDataOneShot(ReadOnlySpan<byte>.Empty, (Stream)null));
 
-            AssertExtensions.Throws<ArgumentNullException>("source",
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
                 () => HashDataOneShot(Array.Empty<byte>(), (Stream)null));
         }
 
         [Fact]
-        public async Task HashData_Stream_Source_Null_Async()
+        public void HashData_Stream_Source_Null_Async()
         {
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("source",
-                async () => await HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, (Stream)null, default));
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, (Stream)null, default));
 
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("source",
-                async () => await HashDataOneShotAsync(Array.Empty<byte>(), (Stream)null, default));
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataOneShotAsync(Array.Empty<byte>(), (Stream)null, default));
         }
 
         [Fact]
         public void HashData_Stream_ByteKey_Null()
         {
-            AssertExtensions.Throws<ArgumentNullException>("key",
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
                 () => HashDataOneShot((byte[])null, Stream.Null));
         }
 
         [Fact]
-        public async Task HashData_Stream_ByteKey_Null_Async()
+        public void HashData_Stream_ByteKey_Null_Async()
         {
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>("key",
-                async () => await HashDataOneShotAsync((byte[])null, Stream.Null, default));
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => HashDataOneShotAsync((byte[])null, Stream.Null, default));
         }
 
         [Fact]
@@ -553,29 +559,31 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public async Task HashData_Stream_DestinationTooSmall_Async()
+        public void HashData_Stream_DestinationTooSmall_Async()
         {
             byte[] destination = new byte[MacSize - 1];
 
-            await AssertExtensions.ThrowsAsync<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "destination",
-                async () => await HashDataOneShotAsync(Array.Empty<byte>(), Stream.Null, destination, default));
+                () => HashDataOneShotAsync(Array.Empty<byte>(), Stream.Null, destination, default));
             AssertExtensions.FilledWith<byte>(0, destination);
 
-            await AssertExtensions.ThrowsAsync<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "destination",
-                async () => await HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, destination, default));
+                () => HashDataOneShotAsync(ReadOnlyMemory<byte>.Empty, Stream.Null, destination, default));
             AssertExtensions.FilledWith<byte>(0, destination);
         }
 
         [Fact]
         public void HashData_Stream_NotReadable()
         {
-            AssertExtensions.Throws<ArgumentException>("source", () =>
-                HashDataOneShot(Array.Empty<byte>(), UntouchableStream.Instance));
+            AssertExtensions.Throws<ArgumentException>(
+                "source",
+                () => HashDataOneShot(Array.Empty<byte>(), UntouchableStream.Instance));
 
-            AssertExtensions.Throws<ArgumentException>("source", () =>
-                HashDataOneShot(ReadOnlySpan<byte>.Empty, UntouchableStream.Instance));
+            AssertExtensions.Throws<ArgumentException>(
+                "source",
+                () => HashDataOneShot(ReadOnlySpan<byte>.Empty, UntouchableStream.Instance));
         }
 
         [Fact]

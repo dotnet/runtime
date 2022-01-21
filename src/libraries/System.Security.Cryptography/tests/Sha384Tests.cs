@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public void SHA384_Fips180_MultiBlock()
+        public void Sha384_Fips180_MultiBlock()
         {
             VerifyMultiBlock(
                 "a",

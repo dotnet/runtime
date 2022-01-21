@@ -418,23 +418,23 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public async Task HashDataAsync_Null_Stream_Throws()
+        public void HashDataAsync_Null_Stream_Throws()
         {
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "source",
-                async () => await HashDataAsync((Stream)null, cancellationToken: default));
+                () => HashDataAsync((Stream)null, cancellationToken: default));
 
-            await AssertExtensions.ThrowsAsync<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "source",
-                async () => await HashDataAsync((Stream)null, Memory<byte>.Empty, cancellationToken: default));
+                () => HashDataAsync((Stream)null, Memory<byte>.Empty, cancellationToken: default));
         }
 
         [Fact]
-        public async Task HashDataAsync_ShortDestination_Throws()
+        public void HashDataAsync_ShortDestination_Throws()
         {
-            await AssertExtensions.ThrowsAsync<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "destination",
-                async () => await HashDataAsync(Stream.Null, Memory<byte>.Empty, cancellationToken: default));
+                () => HashDataAsync(Stream.Null, Memory<byte>.Empty, cancellationToken: default));
         }
 
         [Fact]
