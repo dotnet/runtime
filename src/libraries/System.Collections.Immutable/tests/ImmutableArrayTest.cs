@@ -2620,8 +2620,8 @@ namespace System.Collections.Immutable.Tests
             // Null comparers should be accepted and translated to the default comparer.
             yield return null;
             yield return EqualityComparer<T>.Default;
-            yield return new DelegateEqualityComparer<T>(equals: (x, y) => true, objectGetHashCode: obj => 0);
-            yield return new DelegateEqualityComparer<T>(equals: (x, y) => false, objectGetHashCode: obj => 0);
+            yield return new DelegateEqualityComparer<T>(equals: (x, y) => true, objectGetHashCode: obj => 0, getHashCode: obj => 0);
+            yield return new DelegateEqualityComparer<T>(equals: (x, y) => false, objectGetHashCode: obj => 0, getHashCode: obj => 0);
         }
 
         /// <summary>

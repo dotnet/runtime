@@ -881,17 +881,64 @@ namespace System.Collections.Immutable
                 return self.Remove(items[0], equalityComparer);
             }
 
-            var indicesToRemove = new SortedSet<int>();
-            foreach (var item in items)
+#nullable disable
+            var itemsDic = new Dictionary<T, int>(equalityComparer);
+#nullable restore
+            int nullValueCount = 0;
+            foreach (ref readonly T item in items)
             {
-                int index = -1;
-                do
+                if (item == null)
                 {
-                    index = self.IndexOf(item, index + 1, equalityComparer);
-                } while (index >= 0 && !indicesToRemove.Add(index) && index < self.Length - 1);
+                    nullValueCount++;
+                }
+                else if (itemsDic.TryGetValue(item, out int count))
+                {
+                    itemsDic[item] = count + 1;
+                }
+                else
+                {
+                    itemsDic[item] = 1;
+                }
             }
 
-            return self.RemoveAtRange(indicesToRemove);
+            List<int>? indicesToRemove = null;
+            T[] selfArray = self.array!;
+            for (int i = 0; i < selfArray.Length; i++)
+            {
+                bool found = false;
+                if (selfArray[i] == null)
+                {
+                    if (nullValueCount > 0)
+                    {
+                        found = true;
+                        nullValueCount--;
+                    }
+                }
+                else if (itemsDic.TryGetValue(selfArray[i], out int count))
+                {
+                    found = true;
+                    if (count == 1)
+                    {
+                        itemsDic.Remove(selfArray[i]);
+                    }
+                    else
+                    {
+                        Debug.Assert(count > 1);
+                        itemsDic[selfArray[i]] = count - 1;
+                    }
+                }
+
+                if (found)
+                {
+                    if (indicesToRemove == null)
+                    {
+                        indicesToRemove = new List<int>();
+                    }
+                    indicesToRemove.Add(i);
+                }
+            }
+
+            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
