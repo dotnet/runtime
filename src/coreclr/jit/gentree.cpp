@@ -15219,6 +15219,11 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
             {
                 assert(blockWidth->AsIntConCommon()->FitsInI32());
                 width = static_cast<unsigned>(blockWidth->AsIntConCommon()->IconValue());
+
+                if (width == 0)
+                {
+                    return false;
+                }
             }
         }
 
