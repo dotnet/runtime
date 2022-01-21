@@ -107,6 +107,7 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
 
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+    m_pMetadataModule = pMD->GetModule();
     m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
 
     INDEBUG(InitDebugNames());
@@ -133,11 +134,13 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule)
     {
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
+        m_pMetadataModule = pMD->GetModule();
         m_pLoaderModule = pMD->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
     }
     else
     {
         m_tkMethodDef = mdMethodDefNil;
+        m_pMetadataModule = m_pModule;
         m_pLoaderModule = m_pModule;
     }
 
@@ -166,7 +169,8 @@ StubSigDesc::StubSigDesc(MethodTable* pMT, const Signature& sig, Module* pModule
     if (pMT != NULL)
     {
         SigTypeContext::InitTypeContext(pMT, &m_typeContext);
-        m_pLoaderModule = pMT->GetLoaderModule();   // Used for ILStubCache selection and MethodTable creation.
+        m_pMetadataModule = pMT->GetModule();
+        m_pLoaderModule = pMT->GetLoaderModule();
     }
     else
     {
@@ -193,6 +197,7 @@ StubSigDesc::StubSigDesc(const Signature& sig, Module* pModule)
     m_sig = sig;
     m_pModule = pModule;
     m_tkMethodDef = mdMethodDefNil;
+    m_pMetadataModule = m_pModule;
     m_pLoaderModule = m_pModule;
 
     INDEBUG(InitDebugNames());
@@ -3621,7 +3626,7 @@ static void CreateNDirectStubWorker(StubState*               pss,
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnInteropStubSetup: '%s' ", pSigDesc->m_pDebugName));
 #endif // _DEBUG
 
-    bool runtimeMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pModule->IsRuntimeMarshallingEnabled();
+    bool runtimeMarshallingEnabled = SF_IsCOMStub(dwStubFlags) || pSigDesc->m_pMetadataModule->IsRuntimeMarshallingEnabled();
     if (SF_IsCOMStub(dwStubFlags))
     {
         _ASSERTE(0 == nlType);
