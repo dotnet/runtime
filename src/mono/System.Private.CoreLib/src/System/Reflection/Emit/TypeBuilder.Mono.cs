@@ -80,6 +80,7 @@ namespace System.Reflection.Emit
 
         private ITypeName fullname;
         private bool createTypeCalled;
+        private bool isByRefLike;
         private Type? underlying_type;
 
         public const int UnspecifiedTypeSize = 0;
@@ -879,11 +880,18 @@ namespace System.Reflection.Emit
 
             if (fields != null)
             {
+                bool containsRefField = false;
                 foreach (FieldBuilder fb in fields)
                 {
                     if (fb == null)
                         continue;
+                    containsRefField = fb.FieldType.IsByRef;
                 }
+
+                // If a type has a ref field but isn't a ByRefLike
+                // value type, then the type is invalid.
+                if (containsRefField && !(IsValueType && isByRefLike))
+                    throw new TypeLoadException();
             }
 
             if (methods != null)
@@ -1541,6 +1549,10 @@ namespace System.Reflection.Emit
             else if (attrname == "System.Security.SuppressUnmanagedCodeSecurityAttribute")
             {
                 attrs |= TypeAttributes.HasSecurity;
+            }
+            else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+            {
+                isByRefLike = true;
             }
 
             if (cattrs != null)
