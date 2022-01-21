@@ -314,18 +314,6 @@ namespace BINDER_SPACE
                 textualIdentity.Append(ContentTypeToString(pAssemblyIdentity->m_kContentType));
             }
 
-            if (AssemblyIdentity::Have(dwIdentityFlags, AssemblyIdentity::IDENTITY_FLAG_CUSTOM))
-            {
-                textualIdentity.Append(W(", Custom="));
-                tmpString.Clear();
-                BlobToHex(pAssemblyIdentity->m_customBLOB, tmpString);
-                textualIdentity.Append(tmpString);
-            }
-            else if (AssemblyIdentity::Have(dwIdentityFlags,
-                                            AssemblyIdentity::IDENTITY_FLAG_CUSTOM_NULL))
-            {
-                textualIdentity.Append(W(", Custom=null"));
-            }
         }
         EX_CATCH_HRESULT(hr);
 
@@ -637,23 +625,6 @@ namespace BINDER_SPACE
             else
             {
                 fIsValid = FALSE;
-            }
-        }
-        else if (EqualsCaseInsensitive(attributeString, W("custom")))
-        {
-            GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_CUSTOM);
-
-            if (EqualsCaseInsensitive(valueString, W("null")))
-            {
-                m_pAssemblyIdentity->SetHave(AssemblyIdentity::IDENTITY_FLAG_CUSTOM_NULL);
-            }
-            else
-            {
-                GO_IF_VALIDATE_FAILED(ValidateHex, AssemblyIdentity::IDENTITY_FLAG_CUSTOM);
-                HexToBlob(valueString,
-                          FALSE /* fValidateHex */,
-                          FALSE /* fIsToken */,
-                          m_pAssemblyIdentity->m_customBLOB);
             }
         }
 

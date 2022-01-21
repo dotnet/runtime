@@ -85,6 +85,9 @@ namespace System.Reflection.Tests
         [InlineData("aaaa, language=en-en", "aaaa")]
         [InlineData("aaaa, foo=bar, foo=baz", "aaaa")]
         [InlineData("aaaa, foo = bar, foo = bar", "aaaa")]
+        [InlineData("aaaa, custom=10", "aaaa")]
+        [InlineData("aaaa, custom=10, custom=20", "aaaa")]
+        [InlineData("aaaa, custom=lalala", "aaaa")]
         public void Ctor_String_Valid_Legacy(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
