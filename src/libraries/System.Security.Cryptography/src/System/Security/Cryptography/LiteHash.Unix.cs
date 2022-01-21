@@ -9,13 +9,13 @@ namespace System.Security.Cryptography
 {
     internal static partial class LiteHashProvider
     {
-        private static LiteHash CreateHash(string hashAlgorithmId)
+        internal static LiteHash CreateHash(string hashAlgorithmId)
         {
             IntPtr algorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
             return new LiteHash(algorithm);
         }
 
-        private static LiteHmac CreateHmac(string hashAlgorithmId, ReadOnlySpan<byte> key)
+        internal static LiteHmac CreateHmac(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             IntPtr algorithm = Interop.Crypto.HashAlgorithmToEvp(hashAlgorithmId);
             return new LiteHmac(algorithm, key);
@@ -25,15 +25,16 @@ namespace System.Security.Cryptography
     internal readonly struct LiteHash : ILiteHash
     {
         private readonly SafeEvpMdCtxHandle _ctx;
+        private readonly IntPtr _algorithm;
         private readonly int _hashSizeInBytes;
-
-        private const int Success = 1;
 
         public int HashSizeInBytes => _hashSizeInBytes;
 
         internal LiteHash(IntPtr algorithm)
         {
             Debug.Assert(algorithm != IntPtr.Zero);
+
+            _algorithm = algorithm;
             _hashSizeInBytes = Interop.Crypto.EvpMdSize(algorithm);
 
             if (_hashSizeInBytes <= 0 || _hashSizeInBytes > Interop.Crypto.EVP_MAX_MD_SIZE)
@@ -53,13 +54,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            int ret = Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length);
-
-            if (ret != Success)
-            {
-                Debug.Assert(ret == 0);
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
+            Check(Interop.Crypto.EvpDigestUpdate(_ctx, data, data.Length));
         }
 
         public int Finalize(Span<byte> destination)
@@ -67,14 +62,21 @@ namespace System.Security.Cryptography
             Debug.Assert(destination.Length >= _hashSizeInBytes);
 
             uint length = (uint)destination.Length;
-            int ret = Interop.Crypto.EvpDigestFinalEx(_ctx, ref MemoryMarshal.GetReference(destination), ref length);
+            Check(Interop.Crypto.EvpDigestFinalEx(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
 
-            if (ret != Success)
-            {
-                Debug.Assert(ret == 0);
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
+            Debug.Assert(length == _hashSizeInBytes);
+            return _hashSizeInBytes;
+        }
 
+        public void Reset()
+        {
+            Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithm));
+        }
+
+        public int Current(Span<byte> destination)
+        {
+            uint length = (uint)destination.Length;
+            Check(Interop.Crypto.EvpDigestCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
             Debug.Assert(length == _hashSizeInBytes);
             return _hashSizeInBytes;
         }
@@ -83,14 +85,23 @@ namespace System.Security.Cryptography
         {
             _ctx.Dispose();
         }
+
+        private static void Check(int result)
+        {
+            const int Success = 1;
+
+            if (result != Success)
+            {
+                Debug.Assert(result == 0);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+        }
     }
 
     internal readonly struct LiteHmac : ILiteHash
     {
         private readonly SafeHmacCtxHandle _ctx;
         private readonly int _hashSizeInBytes;
-
-        private const int Success = 1;
 
         public int HashSizeInBytes => _hashSizeInBytes;
 
@@ -116,13 +127,17 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            int ret = Interop.Crypto.HmacUpdate(_ctx, data, data.Length);
+            Check(Interop.Crypto.HmacUpdate(_ctx, data, data.Length));
+        }
 
-            if (ret != Success)
-            {
-                Debug.Assert(ret == 0);
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
+        public int Current(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= _hashSizeInBytes);
+
+            int length = destination.Length;
+            Check(Interop.Crypto.HmacCurrent(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
+            Debug.Assert(length == _hashSizeInBytes);
+            return _hashSizeInBytes;
         }
 
         public int Finalize(Span<byte> destination)
@@ -130,21 +145,30 @@ namespace System.Security.Cryptography
             Debug.Assert(destination.Length >= _hashSizeInBytes);
 
             int length = destination.Length;
-            int ret = Interop.Crypto.HmacFinal(_ctx, ref MemoryMarshal.GetReference(destination), ref length);
-
-            if (ret != Success)
-            {
-                Debug.Assert(ret == 0);
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
+            Check(Interop.Crypto.HmacFinal(_ctx, ref MemoryMarshal.GetReference(destination), ref length));
             Debug.Assert(length == _hashSizeInBytes);
             return _hashSizeInBytes;
+        }
+
+        public void Reset()
+        {
+            Check(Interop.Crypto.HmacReset(_ctx));
         }
 
         public void Dispose()
         {
             _ctx.Dispose();
+        }
+
+        private static void Check(int result)
+        {
+            const int Success = 1;
+
+            if (result != Success)
+            {
+                Debug.Assert(result == 0);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
         }
     }
 }

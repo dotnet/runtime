@@ -10,13 +10,13 @@ namespace System.Security.Cryptography
 {
     internal static partial class LiteHashProvider
     {
-        private static LiteHash CreateHash(string hashAlgorithmId)
+        internal static LiteHash CreateHash(string hashAlgorithmId)
         {
             PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
             return new LiteHash(algorithm);
         }
 
-        private static LiteHmac CreateHmac(string hashAlgorithmId, ReadOnlySpan<byte> key)
+        internal static LiteHmac CreateHmac(string hashAlgorithmId, ReadOnlySpan<byte> key)
         {
             PAL_HashAlgorithm algorithm = HashAlgorithmNames.HashAlgorithmToPal(hashAlgorithmId);
             return new LiteHmac(algorithm, key);
@@ -71,8 +71,25 @@ namespace System.Security.Cryptography
             }
         }
 
+        public int Current(Span<byte> destination)
+        {
+            Debug.Assert(destination.Length >= _hashSizeInBytes);
+
+            int ret = Interop.AppleCrypto.DigestCurrent(_ctx, destination);
+
+            if (ret != Success)
+            {
+                Debug.Assert(ret == 0, $"{nameof(Interop.AppleCrypto.DigestCurrent)} return value {ret} was not 0 or 1");
+                throw new CryptographicException();
+            }
+
+            return _hashSizeInBytes;
+        }
+
         public int Finalize(Span<byte> destination)
         {
+            Debug.Assert(destination.Length >= _hashSizeInBytes);
+
             int ret = Interop.AppleCrypto.DigestFinal(_ctx, destination);
 
             if (ret != Success)
@@ -82,6 +99,17 @@ namespace System.Security.Cryptography
             }
 
             return _hashSizeInBytes;
+        }
+
+        public void Reset()
+        {
+            int ret = Interop.AppleCrypto.DigestReset(_ctx);
+
+            if (ret != Success)
+            {
+                Debug.Assert(ret == 0, $"DigestReset return value {ret} was not 0 or 1");
+                throw new CryptographicException();
+            }
         }
 
         public void Dispose()
@@ -142,6 +170,19 @@ namespace System.Security.Cryptography
             }
         }
 
+        public int Current(ReadOnlySpan<byte> destination)
+        {
+            Debug.Assert(destination.Length >= _hashSizeInBytes);
+
+            if (Interop.AppleCrypto.HmacCurrent(_ctx, destination) != Success)
+            {
+                Debug.Fail($"{nameof(Interop.AppleCrypto.HmacCurrent)} unexpectedly failed.");
+                throw new CryptographicException();
+            }
+
+            return _hashSizeInBytes;
+        }
+
         public int Finalize(Span<byte> destination)
         {
             Debug.Assert(destination.Length >= _hashSizeInBytes);
@@ -153,6 +194,14 @@ namespace System.Security.Cryptography
             }
 
             return _hashSizeInBytes;
+        }
+
+        public void Reset(ReadOnlySpan<byte> key)
+        {
+            if (Interop.AppleCrypto.HmacInit(_ctx, key) != Success)
+            {
+                Debug.Fail($"{nameof(Interop.AppleCrypto.HmacInit)} unexpectedly failed.");
+            }
         }
 
         public void Dispose()
