@@ -20,7 +20,7 @@ namespace System.Net.NetworkInformation
             }
             catch (Exception e)
             {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform, e);
+                throw CreateNetworkInformationException(e);
             }
         }
 
@@ -32,7 +32,7 @@ namespace System.Net.NetworkInformation
             }
             catch (Exception e)
             {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform, e);
+                throw CreateNetworkInformationException(e);
             }
         }
 
@@ -45,8 +45,19 @@ namespace System.Net.NetworkInformation
             }
             catch (Exception e)
             {
-                throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform, e);
+                throw CreateNetworkInformationException(e);
             }
+        }
+
+        internal static NetworkInformationException CreateNetworkInformationException(Exception inner)
+        {
+            // Overload accepting message and inner exception is internal and thus inaccessible in
+            // the unit test project
+#if NETWORKINFORMATION_TEST
+            return new NetworkInformationException();
+#else
+            return new NetworkInformationException(SR.net_PInvokeError, inner);
+#endif
         }
 
         internal static int ParseNumRoutesFromRouteFile(string filePath)
