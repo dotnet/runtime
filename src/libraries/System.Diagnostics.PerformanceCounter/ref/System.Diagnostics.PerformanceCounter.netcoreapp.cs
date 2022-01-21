@@ -4,13 +4,9 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System.ServiceProcess
+namespace System.Diagnostics
 {
-    public partial class ServiceController : System.ComponentModel.Component
-    {
-        public void Stop(bool stopDependentServices) { }
-    }
-    public readonly partial struct SessionChangeDescription : System.IEquatable<System.ServiceProcess.SessionChangeDescription>
+    public readonly partial struct CounterSample : System.IEquatable<System.Diagnostics.CounterSample>
     {
     }
 }
