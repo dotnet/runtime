@@ -273,7 +273,7 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         ((STRINGREF) (*pName)->GetSimpleName())->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
 
         // we will not parse names that contain nulls
-        if (fParse && (wcslen(pString) != iString))
+        if (fParse && (wcslen(pString) != (size_t)iString))
             ThrowHR(FUSION_E_INVALID_NAME);
 
         DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
