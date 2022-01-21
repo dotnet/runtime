@@ -5428,6 +5428,11 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
 
     if (dwExactGenericArgsTokenIndex == 0)
     {
+        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null token for certain stack frame variables 
+        if (rawToken == 0)
+        {
+            return rawToken;
+        }
         // In this case the real generics type token is the MethodTable of the "this" object.
         // Note that we want the target address here.
 
