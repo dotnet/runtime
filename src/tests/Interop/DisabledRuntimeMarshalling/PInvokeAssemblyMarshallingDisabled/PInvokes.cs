@@ -64,24 +64,29 @@ public class PInvokes
     [Fact]
     public static void Varargs_NotSupported()
     {
-        AssertThrowsMarshalDirectiveOrInvalidProgram(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
+        AssertThrowsCorrectException(() => DisabledRuntimeMarshallingNative.CallWithVarargs(__arglist(1, 2, 3)));
         
-        static void AssertThrowsMarshalDirectiveOrInvalidProgram(Action testCode)
+        static void AssertThrowsCorrectException(Action testCode)
         {
             try
             {
                 testCode();
                 return;
             }
-            catch (Exception ex) when(ex is MarshalDirectiveException or InvalidProgramException)
+#pragma warning disable CS0618 // ExecutionEngineException has an ObsoleteAttribute
+            catch (Exception ex) when(ex is MarshalDirectiveException or InvalidProgramException or ExecutionEngineException)
+#pragma warning restore CS0618
             {
+                // CoreCLR is expected to throw MarshalDirectiveException
+                // JIT-enabled Mono is expected to throw an InvalidProgramException
+                // AOT-only Mono throws an ExecutionEngineException when attempting to JIT the callback that would throw the InvalidProgramException.
                 return;
             }
             catch (Exception ex)
             {
-                Assert.False(true, $"Expected either a MarshalDirectiveException or a InvalidProgramException, but received a '{ex.GetType().FullName}' exception: '{ex.ToString()}'");
+                Assert.False(true, $"Expected either a MarshalDirectiveException, InvalidProgramException, or ExecutionEngineException, but received a '{ex.GetType().FullName}' exception: '{ex.ToString()}'");
             }
-            Assert.False(true, $"Expected either a MarshalDirectiveException or a InvalidProgramException, but received no exception.");
+            Assert.False(true, $"Expected either a MarshalDirectiveException, InvalidProgramException, or ExecutionEngineException, but received no exception.");
         }
     }
 
