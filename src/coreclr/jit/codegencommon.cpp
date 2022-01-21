@@ -2207,6 +2207,11 @@ void CodeGen::genGenerateMachineCode()
                    compiler->fgPgoInlineePgo, compiler->fgPgoInlineeNoPgoSingleBlock, compiler->fgPgoInlineeNoPgo);
         }
 
+        if (compiler->opts.IsCFGEnabled())
+        {
+            printf("; control-flow guard enabled\n");
+        }
+
         if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
         {
             printf("; invoked as altjit\n");
