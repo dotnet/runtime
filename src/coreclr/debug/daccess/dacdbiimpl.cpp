@@ -5469,7 +5469,8 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
 
     if (dwExactGenericArgsTokenIndex == 0)
     {
-        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null token for certain stack frame variables 
+        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null generics argument token. This workaround
+        // should only cause us to degrade generic types from exact type parameters to approximate or canonical type parameters.
         if (rawToken == 0)
         {
             return rawToken;
