@@ -809,8 +809,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 if (!varTypeIsLong(simdBaseType))
                 {
-                    op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType,
-                                                   simdSize, /* isSimdAsHWIntrinsic */ false);
+                    if ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT))
+                    {
+                        op1 = impCloneExpr(op1, &op2, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                                           nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseJitType,
+                                                       simdSize, /* isSimdAsHWIntrinsic */ false);
+                    }
+                    else
+                    {
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType,
+                                                       simdSize, /* isSimdAsHWIntrinsic */ false);
+                    }
                 }
                 else if (simdSize == 16)
                 {
