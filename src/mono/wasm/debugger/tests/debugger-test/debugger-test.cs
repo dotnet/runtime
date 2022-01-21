@@ -925,3 +925,29 @@ public class DebugTypeFull
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public class TestHotReloadUsingSDB {
+        static System.Reflection.Assembly loadedAssembly;
+        public static string LoadLazyHotReload(string asm_base64, string pdb_base64)
+        {
+            byte[] asm_bytes = Convert.FromBase64String(asm_base64);
+            byte[] pdb_bytes = Convert.FromBase64String(pdb_base64);
+
+            loadedAssembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromStream(new System.IO.MemoryStream(asm_bytes), new System.IO.MemoryStream(pdb_bytes));
+            var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
+            return Convert.ToBase64String(GUID);
+        }
+
+        public static string GetModuleGUID()
+        {
+            var GUID = loadedAssembly.Modules.FirstOrDefault()?.ModuleVersionId.ToByteArray();
+            return Convert.ToBase64String(GUID);
+        }
+
+        public static void RunMethod(string className, string methodName)
+        {
+            var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
+            var myMethod = myType.GetMethod(methodName);
+            myMethod.Invoke(null, null);
+        }
+}
