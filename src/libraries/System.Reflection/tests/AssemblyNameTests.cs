@@ -98,6 +98,8 @@ namespace System.Reflection.Tests
         [InlineData("name\\u50; ", typeof(FileLoadException))]
         [InlineData("aa/name ", typeof(FileLoadException))]
         [InlineData("aa\\/tname", typeof(FileLoadException))]
+        [InlineData("aaaa, publickey=neutral", typeof(FileLoadException))]
+        [InlineData("aaaa, publickeytoken=neutral", typeof(FileLoadException))]
         public void Ctor_String_Invalid_Legacy(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));

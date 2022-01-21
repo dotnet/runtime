@@ -552,8 +552,7 @@ namespace BINDER_SPACE
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
             GO_IF_WILDCARD(valueString);
 
-            if (!EqualsCaseInsensitive(valueString, W("null")) &&
-                !EqualsCaseInsensitive(valueString, W("neutral")))
+            if (!EqualsCaseInsensitive(valueString, W("null")))
             {
                 GO_IF_VALIDATE_FAILED(ValidatePublicKeyToken,
                                       AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
@@ -572,8 +571,7 @@ namespace BINDER_SPACE
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN);
             GO_IF_SEEN(AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY);
 
-            if (!EqualsCaseInsensitive(valueString, W("null")) &&
-                !EqualsCaseInsensitive(valueString, W("neutral")))
+            if (!EqualsCaseInsensitive(valueString, W("null")))
             {
                 GO_IF_VALIDATE_FAILED(ValidatePublicKey, AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY);
                 HexToBlob(valueString,
