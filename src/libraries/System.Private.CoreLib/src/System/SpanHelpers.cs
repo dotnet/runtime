@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -402,6 +404,122 @@ namespace System
 
             // Write only element.
             ip = default;
+        }
+
+        public static void ReverseInt32Ref(ref int buf, nint length)
+        {
+            nint numBytes = length * sizeof(int);
+            int numBytesWritten = 0;
+            ref byte first = ref Unsafe.As<int, byte>(ref buf);
+            ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -sizeof(int));
+            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
+            {
+                Vector256<byte> ReverseMask = Vector256.Create(
+                    (byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3, // first 128-bit lane
+                    12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3); // second 128-bit lane
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector256<byte>.Count);
+                do
+                {
+                    Vector256<byte> tempFirst = Unsafe.As<byte, Vector256<byte>>(ref first);
+                    Vector256<byte> tempLast = Unsafe.As<byte, Vector256<byte>>(ref last);
+                    tempFirst = Avx2.Shuffle(tempFirst, ReverseMask);
+                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
+                    tempLast = Avx2.Shuffle(tempLast, ReverseMask);
+                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
+                    Unsafe.As<byte, Vector256<byte>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector256<byte>>(ref last) = tempFirst;
+                    first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
+                    last = ref Unsafe.Add(ref last, -Vector256<byte>.Count);
+                    numBytesWritten += Vector256<byte>.Count * 2;
+                } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
+            }
+            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= length)
+            {
+                Vector128<byte> ReverseMask = Vector128.Create((byte)12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector128<byte>.Count);
+                do
+                {
+                    Vector128<byte> tempFirst = Unsafe.As<byte, Vector128<byte>>(ref first);
+                    Vector128<byte> tempLast = Unsafe.As<byte, Vector128<byte>>(ref last);
+                    tempFirst = Ssse3.Shuffle(tempFirst, ReverseMask);
+                    tempLast = Ssse3.Shuffle(tempLast, ReverseMask);
+                    Unsafe.As<byte, Vector128<byte>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector128<byte>>(ref last) = tempFirst;
+                    first = ref Unsafe.Add(ref first, Vector128<byte>.Count);
+                    last = ref Unsafe.Add(ref last, -Vector128<byte>.Count);
+                    numBytesWritten += Vector128<byte>.Count * 2;
+                } while ((numBytes - numBytesWritten) >= Vector128<byte>.Count * 2);
+            }
+            last = ref Unsafe.Add(ref first, (numBytes - numBytesWritten) - sizeof(int));
+            ref int firstInt = ref Unsafe.As<byte, int>(ref first);
+            ref int lastInt = ref Unsafe.As<byte, int>(ref last);
+            while (numBytes - numBytesWritten > sizeof(int))
+            {
+                int temp = firstInt;
+                firstInt = lastInt;
+                lastInt = temp;
+                firstInt = ref Unsafe.Add(ref firstInt, 1);
+                lastInt = ref Unsafe.Add(ref lastInt, -1);
+                numBytesWritten += sizeof(int) * 2;
+            }
+        }
+
+        public static void ReverseInt64Ref(ref long buf, nint length)
+        {
+            nint numBytes = length * sizeof(long);
+            int numBytesWritten = 0;
+            ref byte first = ref Unsafe.As<long, byte>(ref buf);
+            ref byte last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -sizeof(long));
+            if (Avx2.IsSupported && Vector256<byte>.Count * 2 <= numBytes)
+            {
+                Vector256<byte> ReverseMask = Vector256.Create(
+                    (byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7, // first 128-bit lane
+                     8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7); // second 128-bit lane
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector256<byte>.Count);
+                do
+                {
+                    Vector256<byte> tempFirst = Unsafe.As<byte, Vector256<byte>>(ref first);
+                    Vector256<byte> tempLast = Unsafe.As<byte, Vector256<byte>>(ref last);
+                    tempFirst = Avx2.Shuffle(tempFirst, ReverseMask);
+                    tempFirst = Avx2.Permute2x128(tempFirst, tempFirst, 1);
+                    tempLast = Avx2.Shuffle(tempLast, ReverseMask);
+                    tempLast = Avx2.Permute2x128(tempLast, tempLast, 1);
+                    Unsafe.As<byte, Vector256<byte>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector256<byte>>(ref last) = tempFirst;
+                    first = ref Unsafe.Add(ref first, Vector256<byte>.Count);
+                    last = ref Unsafe.Add(ref last, -Vector256<byte>.Count);
+                    numBytesWritten += Vector256<byte>.Count * 2;
+                } while (numBytes - numBytesWritten >= Vector256<byte>.Count * 2);
+            }
+            else if (Ssse3.IsSupported && Vector128<byte>.Count * 2 <= length)
+            {
+                Vector128<byte> ReverseMask = Vector128.Create((byte)8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7);
+                last = ref Unsafe.Add(ref Unsafe.Add(ref first, numBytes), -Vector128<byte>.Count);
+                do
+                {
+                    Vector128<byte> tempFirst = Unsafe.As<byte, Vector128<byte>>(ref first);
+                    Vector128<byte> tempLast = Unsafe.As<byte, Vector128<byte>>(ref last);
+                    tempFirst = Ssse3.Shuffle(tempFirst, ReverseMask);
+                    tempLast = Ssse3.Shuffle(tempLast, ReverseMask);
+                    Unsafe.As<byte, Vector128<byte>>(ref first) = tempLast;
+                    Unsafe.As<byte, Vector128<byte>>(ref last) = tempFirst;
+                    first = ref Unsafe.Add(ref first, Vector128<byte>.Count);
+                    last = ref Unsafe.Add(ref last, -Vector128<byte>.Count);
+                    numBytesWritten += Vector128<byte>.Count * 2;
+                } while ((numBytes - numBytesWritten) >= Vector128<byte>.Count * 2);
+            }
+            last = ref Unsafe.Add(ref first, (numBytes - numBytesWritten) - sizeof(long));
+            ref long firstLong = ref Unsafe.As<byte, long>(ref first);
+            ref long lastLong = ref Unsafe.As<byte, long>(ref last);
+            while (numBytes - numBytesWritten > sizeof(long))
+            {
+                long temp = firstLong;
+                firstLong = lastLong;
+                lastLong = temp;
+                firstLong = ref Unsafe.Add(ref firstLong, 1);
+                lastLong = ref Unsafe.Add(ref lastLong, -1);
+                numBytesWritten += sizeof(long) * 2;
+            }
         }
     }
 }
