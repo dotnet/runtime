@@ -105,7 +105,6 @@ WCHAR StringLexer::GetNextCharacter(BOOL *pfIsEscaped)
         case L'\'':
         case L',':
         case L'\\':
-        case L'/':
         case L'=':
         case L't':
         case L'n':
