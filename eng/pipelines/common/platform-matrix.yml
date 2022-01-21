@@ -273,7 +273,6 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      hostedOs: Linux
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
@@ -282,6 +281,7 @@ jobs:
         image: ubuntu-18.04-webassembly-20210707133424-12f133e
         registry: mcr
       jobParameters:
+        hostedOs: Linux
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -297,12 +297,12 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      hostedOs: windows
       osGroup: Browser
       archType: wasm
       targetRid: browser-wasm
       platform: Browser_wasm_win
       jobParameters:
+        hostedOs: windows
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}

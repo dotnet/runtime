@@ -7572,6 +7572,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         fgAddRefPred(preHead, predBlock);
                     }
                 } while (++jumpTab, --jumpCnt);
+
+                UpdateSwitchTableTarget(predBlock, entry, preHead);
                 break;
 
             default:
