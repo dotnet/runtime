@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep">Dependency type.</typeparam>
     public class PostConfigureOptions<TOptions, TDep> : IPostConfigureOptions<TOptions>
         where TOptions : class
-        where TDep : class?
+        where TDep : class
     {
         /// <summary>
         /// Constructor.
@@ -123,8 +123,8 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
     public class PostConfigureOptions<TOptions, TDep1, TDep2> : IPostConfigureOptions<TOptions>
         where TOptions : class
-        where TDep1 : class?
-        where TDep2 : class?
+        where TDep1 : class
+        where TDep2 : class
     {
         /// <summary>
         /// Constructor.
@@ -196,9 +196,9 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
     public class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3> : IPostConfigureOptions<TOptions>
         where TOptions : class
-        where TDep1 : class?
-        where TDep2 : class?
-        where TDep3 : class?
+        where TDep1 : class
+        where TDep2 : class
+        where TDep3 : class
     {
         /// <summary>
         /// Constructor.
@@ -278,10 +278,10 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep4">Fourth dependency type.</typeparam>
     public class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : IPostConfigureOptions<TOptions>
         where TOptions : class
-        where TDep1 : class?
-        where TDep2 : class?
-        where TDep3 : class?
-        where TDep4 : class?
+        where TDep1 : class
+        where TDep2 : class
+        where TDep3 : class
+        where TDep4 : class
     {
         /// <summary>
         /// Constructor.
@@ -369,11 +369,11 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep5">Fifth dependency type.</typeparam>
     public class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : IPostConfigureOptions<TOptions>
         where TOptions : class
-        where TDep1 : class?
-        where TDep2 : class?
-        where TDep3 : class?
-        where TDep4 : class?
-        where TDep5 : class?
+        where TDep1 : class
+        where TDep2 : class
+        where TDep3 : class
+        where TDep4 : class
+        where TDep5 : class
     {
         /// <summary>
         /// Constructor.

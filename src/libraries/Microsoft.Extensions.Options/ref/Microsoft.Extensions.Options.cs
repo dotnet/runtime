@@ -227,7 +227,7 @@ namespace Microsoft.Extensions.Options
         public string? Name { get { throw null; } }
         public virtual void PostConfigure(string? name, TOptions options) { }
     }
-    public partial class PostConfigureOptions<TOptions, TDep> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep : class?
+    public partial class PostConfigureOptions<TOptions, TDep> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep : class
     {
         public PostConfigureOptions(string? name, TDep dependency, System.Action<TOptions, TDep>? action) { }
         public System.Action<TOptions, TDep>? Action { get { throw null; } }
@@ -236,7 +236,7 @@ namespace Microsoft.Extensions.Options
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
-    public partial class PostConfigureOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class?
+    public partial class PostConfigureOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class
     {
         public PostConfigureOptions(string? name, TDep1 dependency, TDep2 dependency2, System.Action<TOptions, TDep1, TDep2>? action) { }
         public System.Action<TOptions, TDep1, TDep2>? Action { get { throw null; } }
@@ -246,7 +246,7 @@ namespace Microsoft.Extensions.Options
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
-    public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class? where TDep3 : class?
+    public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class
     {
         public PostConfigureOptions(string? name, TDep1 dependency, TDep2 dependency2, TDep3 dependency3, System.Action<TOptions, TDep1, TDep2, TDep3>? action) { }
         public System.Action<TOptions, TDep1, TDep2, TDep3>? Action { get { throw null; } }
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.Options
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
-    public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class? where TDep3 : class? where TDep4 : class
+    public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class
     {
         public PostConfigureOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4>? action) { }
         public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4>? Action { get { throw null; } }
@@ -269,7 +269,7 @@ namespace Microsoft.Extensions.Options
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
-    public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class? where TDep3 : class? where TDep4 : class? where TDep5 : class?
+    public partial class PostConfigureOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IPostConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class where TDep5 : class
     {
         public PostConfigureOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? action) { }
         public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? Action { get { throw null; } }
