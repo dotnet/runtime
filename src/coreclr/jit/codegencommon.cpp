@@ -6385,15 +6385,37 @@ void CodeGen::genEnregisterOSRArgsAndLocals()
 
 void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed)
 {
-    // For OSR the original method has set this up for us.
-    if (compiler->opts.IsOSR())
-    {
-        return;
-    }
-
     assert(compiler->compGeneratingProlog);
 
-    bool reportArg = compiler->lvaReportParamTypeArg();
+    const bool reportArg = compiler->lvaReportParamTypeArg();
+
+    if (compiler->opts.IsOSR())
+    {
+        if (reportArg)
+        {
+            // OSR method will use Tier0 slot to report context arg.
+            //
+            JITDUMP("OSR method will use Tier0 frame slot for generics context arg.\n");
+            return;
+        }
+
+        if (compiler->lvaKeepAliveAndReportThis())
+        {
+            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
+            if (ppInfo->HasKeptAliveThis())
+            {
+                // OSR method will use Tier0 slot to report `this` as context.
+                //
+                JITDUMP("OSR method will use Tier0 frame slot for generic context `this`.\n");
+                return;
+            }
+
+            // OSR method will use OSR frame slot to report `this` as context,
+            // and must initialize the slot.
+            //
+            JITDUMP("OSR method will report `this` generics context on its frame.\n");
+        }
+    }
 
     // We should report either generic context arg or "this" when used so.
     if (!reportArg)
