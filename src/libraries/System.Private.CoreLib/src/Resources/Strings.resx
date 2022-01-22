@@ -1021,10 +1021,10 @@
     <value>Must complete Convert() operation or call Encoder.Reset() before calling GetBytes() or GetByteCount(). Encoder '{0}' fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
-    <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
+    <value>The output byte buffer is too small to contain the encoded data, encoding codepage '{0}' and fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
-    <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
+    <value>The output char buffer is too small to contain the decoded characters, encoding codepage '{0}' and fallback '{1}'.</value>
   </data>
   <data name="Argument_EncodingNotSupported" xml:space="preserve">
     <value>'{0}' is not a supported encoding name. For information on defining a custom encoding, see the documentation for the Encoding.RegisterProvider method.</value>
@@ -1824,7 +1824,7 @@
     <value>Pointer startIndex and length do not refer to a valid string.</value>
   </data>
   <data name="ArgumentOutOfRange_PeriodTooLarge" xml:space="preserve">
-    <value>Period must be less than 2^32-2.</value>
+    <value>Period must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_PositionLessThanCapacityRequired" xml:space="preserve">
     <value>The position may not be greater or equal to the capacity of the accessor.</value>
@@ -1854,7 +1854,7 @@
     <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
   </data>
   <data name="ArgumentOutOfRange_TimeoutTooLarge" xml:space="preserve">
-    <value>Time-out interval must be less than 2^32-2.</value>
+    <value>Time-out interval must be less than 2^32-1.</value>
   </data>
   <data name="ArgumentOutOfRange_UIntPtrMax" xml:space="preserve">
     <value>The length of the buffer must be less than the maximum UIntPtr value for your platform.</value>

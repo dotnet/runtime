@@ -15,7 +15,7 @@ namespace System.IO
     {
         public static bool DirectoryExists(string? fullPath)
         {
-            return DirectoryExists(fullPath, out int lastError);
+            return DirectoryExists(fullPath, out _);
         }
 
         private static bool DirectoryExists(string? path, out int lastError)

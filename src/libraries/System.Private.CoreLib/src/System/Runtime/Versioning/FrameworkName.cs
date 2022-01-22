@@ -161,7 +161,7 @@ namespace System.Runtime.Versioning
                 string component = components[i];
                 int separatorIndex = component.IndexOf(KeyValueSeparator);
 
-                if (separatorIndex == -1 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
+                if (separatorIndex < 0 || separatorIndex != component.LastIndexOf(KeyValueSeparator))
                 {
                     throw new ArgumentException(SR.Argument_FrameworkNameInvalid, nameof(frameworkName));
                 }

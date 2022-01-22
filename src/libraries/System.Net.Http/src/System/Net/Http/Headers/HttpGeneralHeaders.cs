@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Net.Http.Headers
@@ -74,29 +73,11 @@ namespace System.Net.Http.Headers
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.Date.Descriptor, value); }
         }
 
-        public HttpHeaderValueCollection<NameValueHeaderValue> Pragma
-        {
-            get
-            {
-                if (_pragma == null)
-                {
-                    _pragma = new HttpHeaderValueCollection<NameValueHeaderValue>(KnownHeaders.Pragma.Descriptor, _parent);
-                }
-                return _pragma;
-            }
-        }
+        public HttpHeaderValueCollection<NameValueHeaderValue> Pragma =>
+            _pragma ??= new HttpHeaderValueCollection<NameValueHeaderValue>(KnownHeaders.Pragma.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<string> Trailer
-        {
-            get
-            {
-                if (_trailer == null)
-                {
-                    _trailer = new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor, _parent);
-                }
-                return _trailer;
-            }
-        }
+        public HttpHeaderValueCollection<string> Trailer =>
+            _trailer ??= new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor, _parent);
 
         internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders? headers)
         {
@@ -139,65 +120,20 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public HttpHeaderValueCollection<ProductHeaderValue> Upgrade
-        {
-            get
-            {
-                if (_upgrade == null)
-                {
-                    _upgrade = new HttpHeaderValueCollection<ProductHeaderValue>(KnownHeaders.Upgrade.Descriptor, _parent);
-                }
-                return _upgrade;
-            }
-        }
+        public HttpHeaderValueCollection<ProductHeaderValue> Upgrade =>
+            _upgrade ??= new HttpHeaderValueCollection<ProductHeaderValue>(KnownHeaders.Upgrade.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<ViaHeaderValue> Via
-        {
-            get
-            {
-                if (_via == null)
-                {
-                    _via = new HttpHeaderValueCollection<ViaHeaderValue>(KnownHeaders.Via.Descriptor, _parent);
-                }
-                return _via;
-            }
-        }
+        public HttpHeaderValueCollection<ViaHeaderValue> Via =>
+            _via ??= new HttpHeaderValueCollection<ViaHeaderValue>(KnownHeaders.Via.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<WarningHeaderValue> Warning
-        {
-            get
-            {
-                if (_warning == null)
-                {
-                    _warning = new HttpHeaderValueCollection<WarningHeaderValue>(KnownHeaders.Warning.Descriptor, _parent);
-                }
-                return _warning;
-            }
-        }
+        public HttpHeaderValueCollection<WarningHeaderValue> Warning =>
+            _warning ??= new HttpHeaderValueCollection<WarningHeaderValue>(KnownHeaders.Warning.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<string> Connection
-        {
-            get
-            {
-                if (_connection == null)
-                {
-                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor, _parent);
-                }
-                return _connection;
-            }
-        }
+        public HttpHeaderValueCollection<string> Connection =>
+            _connection ??= new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor, _parent);
 
-        public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding
-        {
-            get
-            {
-                if (_transferEncoding == null)
-                {
-                    _transferEncoding = new HttpHeaderValueCollection<TransferCodingHeaderValue>(KnownHeaders.TransferEncoding.Descriptor, _parent);
-                }
-                return _transferEncoding;
-            }
-        }
+        public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding =>
+            _transferEncoding ??= new HttpHeaderValueCollection<TransferCodingHeaderValue>(KnownHeaders.TransferEncoding.Descriptor, _parent);
 
         internal HttpGeneralHeaders(HttpHeaders parent)
         {

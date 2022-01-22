@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Text.RegularExpressions;
@@ -12,14 +13,14 @@ public sealed class RegexGeneratorAttribute : Attribute
 {
     /// <summary>Initializes a new instance of the <see cref="RegexGeneratorAttribute"/> with the specified pattern.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
-    public RegexGeneratorAttribute(string pattern) : this (pattern, RegexOptions.None)
+    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex)] string pattern) : this (pattern, RegexOptions.None)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="RegexGeneratorAttribute"/> with the specified pattern and options.</summary>
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
-    public RegexGeneratorAttribute(string pattern, RegexOptions options) : this (pattern, options, Timeout.Infinite)
+    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) : this (pattern, options, Timeout.Infinite)
     {
     }
 
@@ -27,7 +28,7 @@ public sealed class RegexGeneratorAttribute : Attribute
     /// <param name="pattern">The regular expression pattern to match.</param>
     /// <param name="options">A bitwise combination of the enumeration values that modify the regular expression.</param>
     /// <param name="matchTimeoutMilliseconds">A time-out interval (milliseconds), or <see cref="Timeout.Infinite"/> to indicate that the method should not time out.</param>
-    public RegexGeneratorAttribute(string pattern, RegexOptions options, int matchTimeoutMilliseconds)
+    public RegexGeneratorAttribute([StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, int matchTimeoutMilliseconds)
     {
         Pattern = pattern;
         Options = options;

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.ts</WasmMainJSPath>
+    <!--
+    <WasmEnableES6>true</WasmEnableES6>
+    -->
+  </PropertyGroup>
+
+  <Target Name="TypeScript" AfterTargets="WasmBuildApp" DependsOnTargets="Build">
+    <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <Exec Command="npm install $(MicrosoftNetCoreAppRuntimePackNativeDir) --no-save" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <Exec Command="npm run tsc -- --outDir $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+  </Target>
+
+  <Target Name="RunSample" DependsOnTargets="TypeScript">
+    <Exec Command="node main.js" IgnoreExitCode="true" WorkingDirectory="bin/$(Configuration)/AppBundle" />
+  </Target>
+</Project>

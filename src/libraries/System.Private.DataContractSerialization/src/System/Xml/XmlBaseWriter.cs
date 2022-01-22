@@ -251,12 +251,8 @@ namespace System.Xml
             else if (ns == null)
             {
                 // A null namespace means the namespace of the given prefix.
-                if (prefix.Length == 0)
-                {
-                    // An empty prefix on an attribute means no namespace (not the default namespace)
-                    ns = string.Empty;
-                }
-                else
+                // An empty prefix on an attribute means no namespace (not the default namespace)
+                if (prefix.Length != 0)
                 {
                     ns = _nsMgr.LookupNamespace(prefix);
 

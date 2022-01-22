@@ -246,6 +246,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(DISABLE_COMPONENTS 1)
+
+  set(WASI_DRIVER_SOURCES
+    wasi/mono-wasi-driver/driver.c
+    wasi/mono-wasi-driver/stubs.c
+    wasi/mono-wasi-driver/synthetic-pthread.c
+  )
+  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
+  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
+  install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -440,6 +449,19 @@ if(ENABLE_MONOTOUCH)
   add_definitions(-DMONOTOUCH=1)
 endif()
 
+# Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
+if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
+  if(INTERNAL_ZLIB)
+    # defines ZLIB_SOURCES
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
+  else()
+    # if we're not on a platform where we use the in-tree zlib, require system zlib
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+    set(Z_LIBS)
+    append_extra_compression_libs(Z_LIBS)
+  endif()
+endif()
+
 ######################################
 # HEADER/FUNCTION CHECKS
 ######################################
@@ -450,8 +472,13 @@ include(configure)
 ######################################
 
 if(GCC)
-  # We require C99 with some GNU extensions, e.g. `linux` macro
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  if(HOST_WASI)
+    # WASI SDK only includes some required definitions if the C version is at least this new
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+  else()
+    # We require C99 with some GNU extensions, e.g. `linux` macro
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  endif()
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave

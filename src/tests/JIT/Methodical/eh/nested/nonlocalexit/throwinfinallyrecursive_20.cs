@@ -1631,7 +1631,7 @@ class Class1
     }
 
 
-    static public int Main(string[] args)
+    static public int Main()
     {
         //Start recording
         testLog.StartRecording();

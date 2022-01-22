@@ -32,7 +32,7 @@ namespace System
             {
                 // Do a quick search for the first element of "value".
                 int relativeIndex = IndexOf(ref Unsafe.Add(ref searchSpace, index), valueHead, remainingSearchSpaceLength);
-                if (relativeIndex == -1)
+                if (relativeIndex < 0)
                     break;
 
                 remainingSearchSpaceLength -= relativeIndex;

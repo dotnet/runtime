@@ -2553,7 +2553,7 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     }
     CONTRACTL_END
 
-    if ((UINT)etype >= COUNTOF(gElementTypeInfo))
+    if ((UINT)etype >= ARRAY_SIZE(gElementTypeInfo))
         ThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_COMPLUS_SIG);
 
     int cbsize = gElementTypeInfo[(UINT)etype].m_cbSize;

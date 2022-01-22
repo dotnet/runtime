@@ -716,9 +716,8 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
-            // If the set is negated, it's likely to contain a large number of characters,
-            // so we don't even try.  We also get the characters by enumerating the set
-            // portion, so we validate that it's set up to enable that, e.g. no categories.
+            // We get the characters by enumerating the set portion, so we validate that it's
+            // set up to enable that, e.g. no categories.
             if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
@@ -1046,6 +1045,14 @@ namespace System.Text.RegularExpressions
                     const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
                     return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;
             }
+        }
+
+        /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>
+        /// <remarks>This isn't specific to RegexCharClass; it's just a convenient place to host it.</remarks>
+        public static bool DifferByOneBit(char a, char b, out int mask)
+        {
+            mask = a ^ b;
+            return mask != 0 && (mask & (mask - 1)) == 0;
         }
 
         /// <summary>Determines a character's membership in a character class (via the string representation of the class).</summary>
