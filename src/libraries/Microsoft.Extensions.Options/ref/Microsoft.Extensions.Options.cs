@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Options
         public virtual void Configure(string? name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
-    public partial class ConfigureNamedOptions<TOptions, TDep> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep : class?
+    public partial class ConfigureNamedOptions<TOptions, TDep> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep : class
     {
         public ConfigureNamedOptions(string? name, TDep dependency, System.Action<TOptions, TDep>? action) { }
         public System.Action<TOptions, TDep>? Action { get { throw null; } }
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Options
         public virtual void Configure(string? name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
-    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class?
+    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class
     {
         public ConfigureNamedOptions(string? name, TDep1 dependency, TDep2 dependency2, System.Action<TOptions, TDep1, TDep2>? action) { }
         public System.Action<TOptions, TDep1, TDep2>? Action { get { throw null; } }
@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Options
         public virtual void Configure(string? name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
-    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class? where TDep3 : class?
+    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class
     {
         public ConfigureNamedOptions(string? name, TDep1 dependency, TDep2 dependency2, TDep3 dependency3, System.Action<TOptions, TDep1, TDep2, TDep3>? action) { }
         public System.Action<TOptions, TDep1, TDep2, TDep3>? Action { get { throw null; } }
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Options
         public virtual void Configure(string? name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
-    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class? where TDep3 : class? where TDep4 : class?
+    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class
     {
         public ConfigureNamedOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4>? action) { }
         public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4>? Action { get { throw null; } }
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Options
         public virtual void Configure(string? name, TOptions options) { }
         public void Configure(TOptions options) { }
     }
-    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class? where TDep2 : class? where TDep3 : class? where TDep4 : class? where TDep5 : class?
+    public partial class ConfigureNamedOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IConfigureNamedOptions<TOptions>, Microsoft.Extensions.Options.IConfigureOptions<TOptions> where TOptions : class where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class where TDep5 : class
     {
         public ConfigureNamedOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? action) { }
         public System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>? Action { get { throw null; } }
