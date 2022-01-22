@@ -105,8 +105,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		public override MultiValue HandleMethodCall (IMethodSymbol calledMethod, ValueOfOperation instance, ImmutableArray<ValueOfOperation> arguments, IOperation operation)
 		{
-			Intrinsics intrinsics = new (Context, operation);
-			if (intrinsics.HandleMethodCall (new MethodProxy (calledMethod), instance.Value, arguments.Select (a => a.Value).ToImmutableList (), out MultiValue methodReturnValue))
+			var handleCallAction = new HandleCallAction (Context, operation);
+			if (handleCallAction.Invoke (new MethodProxy (calledMethod), instance.Value, arguments.Select (a => a.Value).ToImmutableList (), out MultiValue methodReturnValue))
 				return methodReturnValue;
 
 			// If the intrinsic handling didn't work we have to:

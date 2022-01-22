@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using ILLink.Shared.DataFlow;
+using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Linker;
 using Mono.Linker.Dataflow;
@@ -118,6 +119,8 @@ namespace ILLink.Shared.TrimAnalysis
 		public SystemTypeValue (TypeDefinition typeRepresented) => TypeRepresented = typeRepresented;
 
 		public readonly TypeDefinition TypeRepresented;
+
+		public partial TypeProxy GetRepresentedType () => new (TypeRepresented);
 
 		public override string ToString () => this.ValueToString (TypeRepresented);
 	}

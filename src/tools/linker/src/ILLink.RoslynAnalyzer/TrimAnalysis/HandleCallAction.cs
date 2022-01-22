@@ -10,14 +10,14 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial struct Intrinsics
+	partial struct HandleCallAction
 	{
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods
 
 		readonly OperationBlockAnalysisContext _context;
 		readonly IOperation _operation;
 
-		public Intrinsics (OperationBlockAnalysisContext context, IOperation operation) => (_context, _operation) = (context, operation);
+		public HandleCallAction (OperationBlockAnalysisContext context, IOperation operation) => (_context, _operation) = (context, operation);
 
 		// TODO: This is relatively expensive on the analyzer since it doesn't cache the annotation information
 		// In linker this is an optimization to avoid the heavy lifting of analysis if there's no point
