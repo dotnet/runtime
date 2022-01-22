@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
         /// <returns>An <see cref="IDisposable"/> which should be disposed to stop listening for changes.</returns>
-        public IDisposable OnChange(Action<TOptions, string?> listener)
+        public IDisposable OnChange(Action<TOptions, string> listener)
         {
             var disposable = new ChangeTrackerDisposable(this, listener);
             _onChange += disposable.OnChange;
@@ -117,16 +117,16 @@ namespace Microsoft.Extensions.Options
 
         internal sealed class ChangeTrackerDisposable : IDisposable
         {
-            private readonly Action<TOptions, string?> _listener;
+            private readonly Action<TOptions, string> _listener;
             private readonly OptionsMonitor<TOptions> _monitor;
 
-            public ChangeTrackerDisposable(OptionsMonitor<TOptions> monitor, Action<TOptions, string?> listener)
+            public ChangeTrackerDisposable(OptionsMonitor<TOptions> monitor, Action<TOptions, string> listener)
             {
                 _listener = listener;
                 _monitor = monitor;
             }
 
-            public void OnChange(TOptions options, string? name) => _listener.Invoke(options, name);
+            public void OnChange(TOptions options, string name) => _listener.Invoke(options, name);
 
             public void Dispose() => _monitor._onChange -= OnChange;
         }

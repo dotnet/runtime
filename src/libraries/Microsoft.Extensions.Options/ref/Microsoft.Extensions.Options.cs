@@ -205,7 +205,7 @@ namespace Microsoft.Extensions.Options
         public TOptions CurrentValue { get { throw null; } }
         public void Dispose() { }
         public virtual TOptions Get(string? name) { throw null; }
-        public System.IDisposable OnChange(System.Action<TOptions, string?> listener) { throw null; }
+        public System.IDisposable OnChange(System.Action<TOptions, string> listener) { throw null; }
     }
     public partial class OptionsValidationException : System.Exception
     {
