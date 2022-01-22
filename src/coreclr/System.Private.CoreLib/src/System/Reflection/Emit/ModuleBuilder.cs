@@ -233,6 +233,7 @@ namespace System.Reflection.Emit
                 typeName = UnmangleTypeName(typeName);
             }
 
+            Debug.Assert(!type.IsByRef, "Must not be ByRef. Get token from TypeSpec.");
             Debug.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
 
             ModuleBuilder thisModule = this;
