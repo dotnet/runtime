@@ -1,4 +1,4 @@
-﻿<linker>
+<linker>
 	<!-- IL2007 -->
 	<assembly fullname="NonExistentAssembly" />
 	<assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
