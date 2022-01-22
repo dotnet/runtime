@@ -35,6 +35,20 @@ namespace System.Reflection
             return GetNext(out _);
         }
 
+        private static bool IsWhiteSpace(char ch)
+        {
+            switch (ch)
+            {
+                case '\n':
+                case '\r':
+                case ' ':
+                case '\t':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         //
         // Return the next token in assembly name. If the result is DisplayNameToken.String,
         // sets "tokenString" to the tokenized string.
@@ -42,11 +56,11 @@ namespace System.Reflection
         internal Token GetNext(out string tokenString)
         {
             tokenString = string.Empty;
-            while (char.IsWhiteSpace(_chars[_index]))
+            while (IsWhiteSpace(_chars[_index]))
                 _index++;
 
             char c = _chars[_index++];
-            if (c == 0)
+            if (c == 0)                 // TODO: VS Should add helper that checks for the string end, if not throw on 0
                 return Token.End;
             if (c == ',')
                 return Token.Comma;
@@ -62,7 +76,7 @@ namespace System.Reflection
                 c = _chars[_index++];
             }
 
-            for (;;)
+            for (; ; )
             {
                 if (c == 0)
                 {
@@ -116,9 +130,14 @@ namespace System.Reflection
                 c = _chars[_index++];
             }
 
-            tokenString = sb.ToString();
+
             if (quoteChar == 0)
-                tokenString = tokenString.Trim(); // Unless quoted, whitespace at beginning or end doesn't count.
+            {
+                while (sb.Length > 0 && IsWhiteSpace(sb[sb.Length - 1]))
+                    sb.Length--;
+            }
+
+            tokenString = sb.ToString();
             return Token.String;
         }
 
