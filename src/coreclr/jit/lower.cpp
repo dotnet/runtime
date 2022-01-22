@@ -3704,6 +3704,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             if ((comp->eeGetRelocTypeHint(addr) != IMAGE_REL_ARM64_BRANCH26) &&
                 (call->gtCallType == CT_HELPER))
             {
+                // TODO: ask vm here and do the same for InternalCall and Tier1->Tier1 chains
+                // in order to avoid potential jump stubs.
                 preferIndirCall = true;
             }
 #endif
