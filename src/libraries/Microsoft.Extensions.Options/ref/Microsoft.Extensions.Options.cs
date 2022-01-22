@@ -287,9 +287,10 @@ namespace Microsoft.Extensions.Options
         public static readonly Microsoft.Extensions.Options.ValidateOptionsResult Skip;
         public static readonly Microsoft.Extensions.Options.ValidateOptionsResult Success;
         public ValidateOptionsResult() { }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Failures))]
         public bool Failed { get { throw null; } protected set { } }
         public string? FailureMessage { get { throw null; } protected set { } }
-        public System.Collections.Generic.IEnumerable<string?> Failures { get { throw null; } protected set { } }
+        public System.Collections.Generic.IEnumerable<string?>? Failures { get { throw null; } protected set { } }
         public bool Skipped { get { throw null; } protected set { } }
         public bool Succeeded { get { throw null; } protected set { } }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string?> failures) { throw null; }
