@@ -2024,7 +2024,12 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            if (varTypeIsFloating(simdBaseType))
+            if ((simdSize == 32) && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // Vector256 for integer types requires AVX2
+                break;
+            }
+            else if (varTypeIsFloating(simdBaseType))
             {
                 if (!compOpportunisticallyDependsOn(InstructionSet_SSE3))
                 {
