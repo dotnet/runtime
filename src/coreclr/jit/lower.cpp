@@ -3698,11 +3698,21 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     switch (accessType)
     {
         case IAT_VALUE:
+        {
+            bool preferIndirCall = false;
+#ifdef TARGET_ARM64
+            if ((comp->eeGetRelocTypeHint(addr) != IMAGE_REL_ARM64_BRANCH26) &&
+                (call->gtCallType == CT_HELPER))
+            {
+                preferIndirCall = true;
+            }
+#endif
+
             // Non-virtual direct call to known address.
             // For JIT helper based tailcall (only used on x86) the target
             // address is passed as an arg to the helper so we want a node for
             // it.
-            if (!IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
+            if (preferIndirCall || !IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
             {
                 result = AddrGen(addr);
             }
@@ -3713,6 +3723,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
                 call->gtDirectCallAddress = addr;
             }
             break;
+        }
 
         case IAT_PVALUE:
         {

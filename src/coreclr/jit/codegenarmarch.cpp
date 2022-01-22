@@ -3448,15 +3448,29 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             else
 #endif // TARGET_ARM
             {
+                auto funcType = emitter::EmitCallType::EC_FUNC_TOKEN;
+                regNumber targetReg = REG_NA;
+
+                if ((compiler->eeGetRelocTypeHint(addr) != IMAGE_REL_ARM64_BRANCH26) &&
+                    (call->gtCallType == CT_HELPER))
+                {
+                    // This helper call will most likely emit a jump-stub, let's avoid that
+                    // by emitting an indirect call.
+                    // TODO: do the same for InternalCall and Tier1->Tier1 managed calls
+                    targetReg = call->GetSingleTempReg();
+                    instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC /*EA_PTRSIZE ?*/, targetReg, (ssize_t)addr);
+                    funcType = emitter::EmitCallType::EC_INDIR_R;
+                }
+
                 // clang-format off
-                genEmitCall(emitter::EC_FUNC_TOKEN,
+                genEmitCall(funcType,
                             methHnd,
                             INDEBUG_LDISASM_COMMA(sigInfo)
                             addr,
                             retSize
                             MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
                             di,
-                            REG_NA,
+                            targetReg,
                             call->IsFastTailCall());
                 // clang-format on
             }
