@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Caching.Memory
     public partial class PostEvictionCallbackRegistration
     {
         public PostEvictionCallbackRegistration() { }
-        public Microsoft.Extensions.Caching.Memory.PostEvictionDelegate EvictionCallback { get { throw null; } set { } }
+        public Microsoft.Extensions.Caching.Memory.PostEvictionDelegate? EvictionCallback { get { throw null; } set { } }
         public object? State { get { throw null; } set { } }
     }
     public delegate void PostEvictionDelegate(object key, object? value, Microsoft.Extensions.Caching.Memory.EvictionReason reason, object? state);
