@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -209,7 +211,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(IndexOfSubSeqData))]
-        public void ValueStartsAndEndsWithTheSameChars(string searchSpace, string value, int expectedIndexOfValue, int expectedLastIndexOfValue)
+        public static void ValueStartsAndEndsWithTheSameChars(string searchSpace, string value, int expectedIndexOfValue, int expectedLastIndexOfValue)
         {
             ReadOnlySpan<char> searchSpaceSpan = searchSpace;
             ReadOnlySpan<char> valueSpan = value;
