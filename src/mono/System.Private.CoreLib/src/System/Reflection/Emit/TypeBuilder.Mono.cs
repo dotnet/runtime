@@ -838,7 +838,7 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsByRef)
-                    throw new ArgumentException();
+                    throw new NotSupportedException();
                 if (IsInterface)
                     throw new TypeLoadException();
             }
@@ -1535,7 +1535,9 @@ namespace System.Reflection.Emit
             }
             else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
             {
-                is_byreflike = true;
+                // The IsByRefLike attribute only applies to value types and enums.
+                // This matches CoreCLR behavior.
+                is_byreflike = IsValueType || IsEnum;
             }
 
             if (cattrs != null)

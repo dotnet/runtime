@@ -2555,7 +2555,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	klass->type_token = MONO_TOKEN_TYPE_DEF | table_idx;
 	mono_class_set_flags (klass, MONO_HANDLE_GETVAL (ref_tb, attrs));
 	klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike);
-	
+
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
 	klass->element_class = klass;
@@ -3555,6 +3555,11 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 				mono_class_set_type_load_failure (klass, "Field '%s' is an enum type with a bad underlying type", field->name);
 				goto leave;
 			}
+		}
+
+		if (m_type_is_byref (field->type) && !m_class_is_byreflike (klass)) {
+			mono_error_set_type_load_name (error, NULL, NULL, "Field '%s' is a byref in a non-byref-like type", field->name);
+			goto leave;
 		}
 
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
