@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
+using ILLink.Shared.TypeSystemProxy;
 using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TrimAnalysis
@@ -15,6 +15,8 @@ namespace ILLink.Shared.TrimAnalysis
 		public SystemTypeValue (INamedTypeSymbol namedTypeSymbol) => NamedTypeSymbol = namedTypeSymbol;
 
 		public readonly INamedTypeSymbol NamedTypeSymbol;
+
+		public partial TypeProxy GetRepresentedType () => new (NamedTypeSymbol);
 
 		public override string ToString ()
 			=> this.ValueToString (NamedTypeSymbol);
