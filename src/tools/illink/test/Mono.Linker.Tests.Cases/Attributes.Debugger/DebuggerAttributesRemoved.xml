@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<linker>
+<linker xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../src/ILLink.Shared/ILLink.LinkAttributes.xsd">
   <assembly fullname="*">
     <type fullname="System.Diagnostics.DebuggerTypeProxyAttribute">
       <attribute internal="RemoveAttributeInstances"/>

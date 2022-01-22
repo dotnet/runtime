@@ -1,4 +1,4 @@
-﻿<linker>
+<linker>
     <assembly fullname="EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
         <type fullname="Mono.Linker.Tests.Cases.Resources.Dependencies.EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1" preserve="all">
         </type>

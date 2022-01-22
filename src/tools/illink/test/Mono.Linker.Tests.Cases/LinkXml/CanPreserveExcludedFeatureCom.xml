@@ -1,4 +1,4 @@
-﻿<linker>
+<linker>
   <assembly fullname="mscorlib">
     <type fullname="System.Runtime.InteropServices.GuidAttribute" preserve="all">
     </type>
