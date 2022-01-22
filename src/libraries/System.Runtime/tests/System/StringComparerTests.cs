@@ -247,6 +247,8 @@ namespace System.Tests
             public override int Compare(string x, string y) => throw new NotImplementedException();
             public override bool Equals(string x, string y) => throw new NotImplementedException();
             public override int GetHashCode(string obj) => throw new NotImplementedException();
+            public override bool Equals(ReadOnlySpan<char> x, ReadOnlySpan<char> y) => throw new NotImplementedException();
+            public override int GetHashCode(ReadOnlySpan<char> obj) => throw new NotImplementedException();
         }
     }
 }

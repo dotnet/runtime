@@ -178,6 +178,8 @@ namespace System.Runtime.InteropServices
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
+        public static ref TValue GetValueRefOrNullRef<TValue>(System.Collections.Generic.Dictionary<string, TValue> dictionary, System.ReadOnlySpan<char> key) { throw null; }
+        public static ref TValue? GetValueRefOrAddDefault<TValue>(System.Collections.Generic.Dictionary<string, TValue> dictionary, System.ReadOnlySpan<char> key, out bool exists) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class ComAliasNameAttribute : System.Attribute

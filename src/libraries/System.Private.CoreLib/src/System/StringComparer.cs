@@ -5,13 +5,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
+    public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>, IInternalReadOnlySpanEqualityComparer<char>
     {
         public static StringComparer InvariantCulture => CultureAwareComparer.InvariantCaseSensitiveInstance;
 
@@ -210,10 +211,26 @@ namespace System
         }
 
         public abstract int Compare(string? x, string? y);
-        public abstract bool Equals(string? x, string? y);
+        public virtual bool Equals(string? x, string? y)
+        {
+            if (object.ReferenceEquals(x, y)) return true;
+            if (x == null || y == null) return false;
+            return Equals(x.AsSpan(), y.AsSpan());
+        }
+
 #pragma warning disable CS8614 // Remove warning disable when nullable attributes are respected
-        public abstract int GetHashCode(string obj);
+        public virtual int GetHashCode(string obj)
+        {
+            if (obj is null)
+            {
+                throw new ArgumentNullException(nameof(obj));
+            }
+            return GetHashCode(obj.AsSpan());
+        }
 #pragma warning restore CS8614
+
+        public abstract bool Equals(System.ReadOnlySpan<char> x, System.ReadOnlySpan<char> y);
+        public abstract int GetHashCode(System.ReadOnlySpan<char> obj);
     }
 
     [Serializable]
@@ -262,19 +279,10 @@ namespace System
             return _compareInfo.Compare(x, y, _options);
         }
 
-        public override bool Equals(string? x, string? y)
-        {
-            if (object.ReferenceEquals(x, y)) return true;
-            if (x == null || y == null) return false;
-            return _compareInfo.Compare(x, y, _options) == 0;
-        }
+        public override bool Equals(ReadOnlySpan<char> x, ReadOnlySpan<char> y) => _compareInfo.Compare(x, y, _options) == 0;
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(ReadOnlySpan<char> obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
             return _compareInfo.GetHashCode(obj, _options);
         }
 
@@ -335,37 +343,31 @@ namespace System
             return string.CompareOrdinal(x, y);
         }
 
-        public override bool Equals(string? x, string? y)
+        public override bool Equals(ReadOnlySpan<char> x, ReadOnlySpan<char> y)
         {
-            if (ReferenceEquals(x, y))
-                return true;
-            if (x == null || y == null)
-                return false;
-
             if (_ignoreCase)
             {
                 if (x.Length != y.Length)
                 {
                     return false;
                 }
-                return System.Globalization.Ordinal.EqualsIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
+                if (x.Length == 0)
+                {
+                    return true;
+                }
+                return System.Globalization.Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(x), ref MemoryMarshal.GetReference(y), x.Length);
             }
-            return x.Equals(y);
+            return x.SequenceEqual(y);
         }
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(ReadOnlySpan<char> obj)
         {
-            if (obj == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-            }
-
             if (_ignoreCase)
             {
-                return obj.GetHashCodeOrdinalIgnoreCase();
+                return string.GetHashCodeOrdinalIgnoreCase(obj);
             }
 
-            return obj.GetHashCode();
+            return string.GetHashCode(obj);
         }
 
         // Equals method for the comparer itself.
@@ -413,6 +415,10 @@ namespace System
             return obj.GetHashCode();
         }
 
+        public override bool Equals(ReadOnlySpan<char> x, ReadOnlySpan<char> y) => string.CompareOrdinal(x, y) == 0;
+
+        public override int GetHashCode(ReadOnlySpan<char> obj) => string.GetHashCode(obj);
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.SetType(typeof(OrdinalComparer));
@@ -459,6 +465,23 @@ namespace System
             }
             return obj.GetHashCodeOrdinalIgnoreCase();
         }
+
+        public override bool Equals(ReadOnlySpan<char> x, ReadOnlySpan<char> y)
+        {
+            if (x.Length != y.Length)
+            {
+                return false;
+            }
+
+            if (x.Length == 0)
+            {
+                return true;
+            }
+
+            return System.Globalization.Ordinal.EqualsIgnoreCase(ref MemoryMarshal.GetReference(x), ref MemoryMarshal.GetReference(y), x.Length);
+        }
+
+        public override int GetHashCode(ReadOnlySpan<char> obj) => string.GetHashCodeOrdinalIgnoreCase(obj);
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {

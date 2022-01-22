@@ -478,6 +478,61 @@ namespace System.Collections.Generic
             goto Return;
         }
 
+        internal ref TValue FindValue<TKeyElement, TConverter>(ReadOnlySpan<TKeyElement> key, TConverter converter)
+            where TConverter : struct, IInternalConverterFromReadOnlySpan<TKey, TKeyElement>
+        {
+            ref Entry entry = ref Unsafe.NullRef<Entry>();
+            ref TValue value = ref Unsafe.NullRef<TValue>();
+            if (_buckets == null)
+            {
+                goto ReturnNotFound;
+            }
+
+            Debug.Assert(_entries != null, "expected entries to be != null");
+            if (_comparer is not IInternalReadOnlySpanEqualityComparer<TKeyElement> comparer)
+            {
+                value = ref FindValue(converter.ConvertFromSpan(key));
+                goto Return;
+            }
+
+            uint hashCode = (uint)comparer.GetHashCode(key);
+            int i = GetBucket(hashCode);
+            Entry[]? entries = _entries;
+            uint collisionCount = 0;
+            i--; // Value in _buckets is 1-based; subtract 1 from i. We do it here so it fuses with the following conditional.
+            do
+            {
+                // Should be a while loop https://github.com/dotnet/runtime/issues/9422
+                // Test in if to drop range check for following array access
+                if ((uint)i >= (uint)entries.Length)
+                {
+                    goto ReturnNotFound;
+                }
+
+                entry = ref entries[i];
+                if (entry.hashCode == hashCode && comparer.Equals(converter.ConvertToSpan(entry.key), key))
+                {
+                    goto ReturnFound;
+                }
+
+                i = entry.next;
+
+                collisionCount++;
+            } while (collisionCount <= (uint)entries.Length);
+
+            // The chain of entries forms a loop; which means a concurrent update has happened.
+            // Break out of the loop and throw, rather than looping forever.
+            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+
+        ReturnFound:
+            value = ref entry.value;
+        Return:
+            return ref value;
+        ReturnNotFound:
+            value = ref Unsafe.NullRef<TValue>();
+            goto Return;
+        }
+
         private int Initialize(int capacity)
         {
             int size = HashHelpers.GetPrime(capacity);
@@ -856,6 +911,110 @@ namespace System.Collections.Generic
                     // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
                     // lookup is guaranteed to always find a value though and it will never return a null reference here.
                     ref TValue? value = ref dictionary.FindValue(key)!;
+
+                    Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
+
+                    return ref value;
+                }
+
+                exists = false;
+
+                return ref entry.value!;
+            }
+
+            public static ref TValue? GetValueRefOrAddDefault<TKeyElement, TConverter>(Dictionary<TKey, TValue> dictionary, ReadOnlySpan<TKeyElement> key, TConverter converter, out bool exists)
+                where TConverter : struct, IInternalConverterFromReadOnlySpan<TKey, TKeyElement>
+            {
+                if (dictionary._comparer is not IInternalReadOnlySpanEqualityComparer<TKeyElement> comparer)
+                {
+                    return ref GetValueRefOrAddDefault(dictionary, converter.ConvertFromSpan(key), out exists);
+                }
+
+                if (dictionary._buckets == null)
+                {
+                    dictionary.Initialize(0);
+                }
+                Debug.Assert(dictionary._buckets != null);
+
+                Entry[]? entries = dictionary._entries;
+                Debug.Assert(entries != null, "expected entries to be non-null");
+
+                uint hashCode = (uint)comparer.GetHashCode(key);
+
+                uint collisionCount = 0;
+                ref int bucket = ref dictionary.GetBucket(hashCode);
+                int i = bucket - 1; // Value in _buckets is 1-based
+
+                while (true)
+                {
+                    // Should be a while loop https://github.com/dotnet/runtime/issues/9422
+                    // Test uint in if rather than loop condition to drop range check for following array access
+                    if ((uint)i >= (uint)entries.Length)
+                    {
+                        break;
+                    }
+
+                    if (entries[i].hashCode == hashCode && comparer.Equals(converter.ConvertToSpan(entries[i].key), key))
+                    {
+                        exists = true;
+
+                        return ref entries[i].value!;
+                    }
+
+                    i = entries[i].next;
+
+                    collisionCount++;
+                    if (collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop; which means a concurrent update has happened.
+                        // Break out of the loop and throw, rather than looping forever.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                    }
+                }
+
+                int index;
+                if (dictionary._freeCount > 0)
+                {
+                    index = dictionary._freeList;
+                    Debug.Assert((StartOfFreeList - entries[dictionary._freeList].next) >= -1, "shouldn't overflow because `next` cannot underflow");
+                    dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].next;
+                    dictionary._freeCount--;
+                }
+                else
+                {
+                    int count = dictionary._count;
+                    if (count == entries.Length)
+                    {
+                        dictionary.Resize();
+                        bucket = ref dictionary.GetBucket(hashCode);
+                    }
+                    index = count;
+                    dictionary._count = count + 1;
+                    entries = dictionary._entries;
+                }
+
+                ref Entry entry = ref entries![index];
+                entry.hashCode = hashCode;
+                entry.next = bucket - 1; // Value in _buckets is 1-based
+                var dictionaryKey = converter.ConvertFromSpan(key);
+                entry.key = dictionaryKey;
+                entry.value = default!;
+                bucket = index + 1; // Value in _buckets is 1-based
+                dictionary._version++;
+
+                // Value types never rehash
+                if (!typeof(TKey).IsValueType && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
+                {
+                    // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
+                    // i.e. EqualityComparer<string>.Default.
+                    dictionary.Resize(entries.Length, true);
+
+                    exists = false;
+
+                    // At this point the entries array has been resized, so the current reference we have is no longer valid.
+                    // We're forced to do a new lookup and return an updated reference to the new entry instance. This new
+                    // lookup is guaranteed to always find a value though and it will never return a null reference here.
+                    ref TValue? value = ref dictionary.FindValue(dictionaryKey)!;
 
                     Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
 

@@ -5977,10 +5977,12 @@ namespace System
         public static System.StringComparer Create(System.Globalization.CultureInfo culture, bool ignoreCase) { throw null; }
         public static System.StringComparer Create(System.Globalization.CultureInfo culture, System.Globalization.CompareOptions options) { throw null; }
         public new bool Equals(object? x, object? y) { throw null; }
-        public abstract bool Equals(string? x, string? y);
+        public virtual bool Equals(string? x, string? y) { throw null; }
+        public abstract bool Equals(System.ReadOnlySpan<char> x, System.ReadOnlySpan<char> y);
         public static System.StringComparer FromComparison(System.StringComparison comparisonType) { throw null; }
         public int GetHashCode(object obj) { throw null; }
-        public abstract int GetHashCode(string obj);
+        public virtual int GetHashCode(string obj) { throw null; }
+        public abstract int GetHashCode(System.ReadOnlySpan<char> obj);
         public static bool IsWellKnownCultureAwareComparer(System.Collections.Generic.IEqualityComparer<string?>? comparer, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Globalization.CompareInfo? compareInfo, out System.Globalization.CompareOptions compareOptions) { throw null; }
         public static bool IsWellKnownOrdinalComparer(System.Collections.Generic.IEqualityComparer<string?>? comparer, out bool ignoreCase) { throw null; }
     }

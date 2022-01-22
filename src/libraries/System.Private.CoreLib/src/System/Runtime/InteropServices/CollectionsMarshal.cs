@@ -39,5 +39,33 @@ namespace System.Runtime.InteropServices
         /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{TKey, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull
             => ref Dictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
+
+        /// <summary>
+        /// Gets either a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{String, TValue}"/> or a ref null if it does not exist in the <paramref name="dictionary"/>.
+        /// </summary>
+        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
+        /// <param name="key">The key used for lookup.</param>
+        /// <remarks>
+        /// Items should not be added or removed from the <see cref="Dictionary{String, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.
+        /// The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
+        /// </remarks>
+        public static ref TValue GetValueRefOrNullRef<TValue>(Dictionary<string, TValue> dictionary, ReadOnlySpan<char> key)
+            => ref dictionary.FindValue(key, default(ConverterFromReadOnlySpanCharToString));
+
+        /// <summary>
+        /// Gets a ref to a <typeparamref name="TValue"/> in the <see cref="Dictionary{String, TValue}"/>, adding a new entry with a default value if it does not exist in the <paramref name="dictionary"/>.
+        /// </summary>
+        /// <param name="dictionary">The dictionary to get the ref to <typeparamref name="TValue"/> from.</param>
+        /// <param name="key">The key used for lookup.</param>
+        /// <param name="exists">Whether or not a new entry for the given key was added to the dictionary.</param>
+        /// <remarks>Items should not be added to or removed from the <see cref="Dictionary{String, TValue}"/> while the ref <typeparamref name="TValue"/> is in use.</remarks>
+        public static ref TValue? GetValueRefOrAddDefault<TValue>(Dictionary<string, TValue> dictionary, ReadOnlySpan<char> key, out bool exists)
+            => ref Dictionary<string, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, default(ConverterFromReadOnlySpanCharToString), out exists);
+
+        private readonly struct ConverterFromReadOnlySpanCharToString : IInternalConverterFromReadOnlySpan<string, char>
+        {
+            public string ConvertFromSpan(ReadOnlySpan<char> span) => span.IsEmpty ? string.Empty : new string(span);
+            public ReadOnlySpan<char> ConvertToSpan(string obj) => obj.AsSpan();
+        }
     }
 }

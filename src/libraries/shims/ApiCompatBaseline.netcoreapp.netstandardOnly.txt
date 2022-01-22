@@ -205,4 +205,6 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString()' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
-Total Issues: 207
+CannotAddAbstractMembers : Member 'public System.Boolean System.StringComparer.Equals(System.ReadOnlySpan<System.Char>, System.ReadOnlySpan<System.Char>)' is abstract in the implementation but is missing in the contract.
+CannotAddAbstractMembers : Member 'public System.Int32 System.StringComparer.GetHashCode(System.ReadOnlySpan<System.Char>)' is abstract in the implementation but is missing in the contract.
+Total Issues: 209
