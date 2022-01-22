@@ -34,6 +34,28 @@ namespace System.Reflection
             public byte[]? _publicKeyOrToken;
         }
 
+        private enum AttributeKind
+        {
+            Version = 1,
+            Culture = 2,
+            PublicKeyOrToken = 4,
+            ProcessorArchitecture = 8,
+            Retargetable = 16,
+            ContentType = 32
+        }
+
+        private static void RecordNewSeenOrThrow(ref AttributeKind seenAttributes, AttributeKind newAttribute)
+        {
+            if ((seenAttributes & newAttribute) != 0)
+            {
+                throw new FileLoadException(SR.InvalidAssemblyName);
+            }
+            else
+            {
+                seenAttributes |= newAttribute;
+            }
+        }
+
         public static AssemblyNameParts Parse(string s)
         {
             Debug.Assert(s != null);
@@ -60,7 +82,7 @@ namespace System.Reflection
             byte[]? pkt = null;
             AssemblyNameFlags flags = 0;
 
-            List<string> alreadySeen = new List<string>();
+            AttributeKind alreadySeen = default;
             token = lexer.GetNext();
             while (token != AssemblyNameLexer.Token.End)
             {
@@ -83,35 +105,39 @@ namespace System.Reflection
                 if (attributeName == string.Empty)
                     throw new FileLoadException(SR.InvalidAssemblyName);
 
-                for (int i = 0; i < alreadySeen.Count; i++)
-                {
-                    if (alreadySeen[i].Equals(attributeName, StringComparison.OrdinalIgnoreCase))
-                        throw new FileLoadException(SR.InvalidAssemblyName); // Cannot specify the same attribute twice.
-                }
-                alreadySeen.Add(attributeName);
-
                 if (attributeName.Equals("Version", StringComparison.OrdinalIgnoreCase))
                 {
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Version);
                     version = ParseVersion(attributeValue);
                 }
 
                 if (attributeName.Equals("Culture", StringComparison.OrdinalIgnoreCase))
                 {
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Culture);
                     cultureName = ParseCulture(attributeValue);
+                }
+
+                if (attributeName.Equals("PublicKey", StringComparison.OrdinalIgnoreCase))
+                {
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.PublicKeyOrToken);
+                    pkt = ParsePKT(attributeValue, isToken: false);
                 }
 
                 if (attributeName.Equals("PublicKeyToken", StringComparison.OrdinalIgnoreCase))
                 {
-                    pkt = ParsePKT(attributeValue);
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.PublicKeyOrToken);
+                    pkt = ParsePKT(attributeValue, isToken: true);
                 }
 
                 if (attributeName.Equals("ProcessorArchitecture", StringComparison.OrdinalIgnoreCase))
                 {
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.ProcessorArchitecture);
                     flags |= (AssemblyNameFlags)(((int)ParseProcessorArchitecture(attributeValue)) << 4);
                 }
 
                 if (attributeName.Equals("Retargetable", StringComparison.OrdinalIgnoreCase))
                 {
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.Retargetable);
                     if (attributeValue.Equals("Yes", StringComparison.OrdinalIgnoreCase))
                         flags |= AssemblyNameFlags.Retargetable;
                     else if (attributeValue.Equals("No", StringComparison.OrdinalIgnoreCase))
@@ -124,13 +150,14 @@ namespace System.Reflection
 
                 if (attributeName.Equals("ContentType", StringComparison.OrdinalIgnoreCase))
                 {
+                    RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.ContentType);
                     if (attributeValue.Equals("WindowsRuntime", StringComparison.OrdinalIgnoreCase))
                         flags |= (AssemblyNameFlags)(((int)AssemblyContentType.WindowsRuntime) << 9);
                     else
                         throw new FileLoadException(SR.InvalidAssemblyName);
                 }
 
-                // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it (as long it's not duplicated.)
+                // Desktop compat: If we got here, the attribute name is unknown to us. Ignore it.
                 token = lexer.GetNext();
             }
 
@@ -184,12 +211,12 @@ namespace System.Reflection
             }
         }
 
-        private static byte[] ParsePKT(string attributeValue)
+        private static byte[] ParsePKT(string attributeValue, bool isToken)
         {
             if (attributeValue.Equals("null", StringComparison.OrdinalIgnoreCase) || attributeValue == string.Empty)
                 return Array.Empty<byte>();
 
-            if (attributeValue.Length != 8 * 2)
+            if (isToken && attributeValue.Length != 8 * 2)
                 throw new FileLoadException(SR.InvalidAssemblyName);
 
             byte[] pkt = new byte[8];
