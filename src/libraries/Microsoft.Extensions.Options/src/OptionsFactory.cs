@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Options
                 }
                 if (failures.Count > 0)
                 {
-                    throw new OptionsValidationException(name!, typeof(TOptions), failures);
+                    throw new OptionsValidationException(name, typeof(TOptions), failures);
                 }
             }
 

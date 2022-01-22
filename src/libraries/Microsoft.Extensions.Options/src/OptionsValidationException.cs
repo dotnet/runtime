@@ -17,17 +17,17 @@ namespace Microsoft.Extensions.Options
         /// <param name="optionsName">The name of the options instance that failed.</param>
         /// <param name="optionsType">The options type that failed.</param>
         /// <param name="failureMessages">The validation failure messages.</param>
-        public OptionsValidationException(string optionsName, Type optionsType, IEnumerable<string>? failureMessages)
+        public OptionsValidationException(string? optionsName, Type optionsType, IEnumerable<string>? failureMessages)
         {
             Failures = failureMessages ?? new List<string>();
             OptionsType = optionsType ?? throw new ArgumentNullException(nameof(optionsType));
-            OptionsName = optionsName ?? throw new ArgumentNullException(nameof(optionsName));
+            OptionsName = optionsName;
         }
 
         /// <summary>
         /// The name of the options instance that failed.
         /// </summary>
-        public string OptionsName { get; }
+        public string? OptionsName { get; }
 
         /// <summary>
         /// The type of the options that failed.

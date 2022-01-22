@@ -209,10 +209,10 @@ namespace Microsoft.Extensions.Options
     }
     public partial class OptionsValidationException : System.Exception
     {
-        public OptionsValidationException(string optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string>? failureMessages) { }
+        public OptionsValidationException(string? optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string>? failureMessages) { }
         public System.Collections.Generic.IEnumerable<string> Failures { get { throw null; } }
         public override string Message { get { throw null; } }
-        public string OptionsName { get { throw null; } }
+        public string? OptionsName { get { throw null; } }
         public System.Type OptionsType { get { throw null; } }
     }
     public partial class OptionsWrapper<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
