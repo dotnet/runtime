@@ -1985,6 +1985,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Directed/debugging/debuginfo/**">
             <Issue>Tests coreclr JIT's debug info generation</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
