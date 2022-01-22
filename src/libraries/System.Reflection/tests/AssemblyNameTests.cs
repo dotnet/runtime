@@ -85,6 +85,7 @@ namespace System.Reflection.Tests
         [InlineData("/a", typeof(FileLoadException))]
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
+        [InlineData("aa, culture=en-en, culture=en-en", typeof(FileLoadException))]
         [InlineData("MyAssemblyName, PublicKey=00000000000000000400000000000000, PublicKeyToken=b77a5c561934e089", typeof(FileLoadException))]
         public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
         {
