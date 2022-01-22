@@ -274,8 +274,7 @@ namespace System.Reflection.Emit
         {
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
-            if (interfaceType.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotUseByRefType);
+
             check_not_created();
 
             if (interfaces != null)
@@ -876,22 +875,6 @@ namespace System.Reflection.Emit
                     if (iface is TypeBuilder builder && !builder.is_created)
                         throw new TypeLoadException();
                 }
-            }
-
-            if (fields != null)
-            {
-                bool containsRefField = false;
-                foreach (FieldBuilder fb in fields)
-                {
-                    if (fb == null)
-                        continue;
-                    containsRefField = fb.FieldType.IsByRef;
-                }
-
-                // If a type has a ref field but isn't a ByRefLike
-                // value type, then the type is invalid.
-                if (containsRefField && !(IsValueType && is_byreflike))
-                    throw new TypeLoadException();
             }
 
             if (methods != null)
@@ -1581,8 +1564,7 @@ namespace System.Reflection.Emit
             if (eventtype == null)
                 throw new ArgumentNullException(nameof(eventtype));
             check_not_created();
-            if (eventtype.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotUseByRefType);
+
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
             if (events != null)
             {
