@@ -363,7 +363,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, bool> validation, string? failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate(Func<TOptions, bool> validation, string failureMessage)
         {
             if (validation == null)
             {
@@ -390,7 +390,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation, string? failureMessage) where TDep : notnull
+        public virtual OptionsBuilder<TOptions> Validate<TDep>(Func<TOptions, TDep, bool> validation, string failureMessage) where TDep : notnull
         {
             if (validation == null)
             {
@@ -422,7 +422,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, bool> validation, string? failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2>(Func<TOptions, TDep1, TDep2, bool> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
         {
@@ -463,7 +463,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, bool> validation, string? failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(Func<TOptions, TDep1, TDep2, TDep3, bool> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
             where TDep3 : notnull
@@ -509,7 +509,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation, string? failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
             where TDep3 : notnull
@@ -560,7 +560,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="validation">The validation function.</param>
         /// <param name="failureMessage">The failure message to use when validation fails.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>
-        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string? failureMessage)
+        public virtual OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string failureMessage)
             where TDep1 : notnull
             where TDep2 : notnull
             where TDep3 : notnull

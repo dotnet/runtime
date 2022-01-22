@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.Options
 
             if (_validations.Length > 0)
             {
-                var failures = new List<string?>();
+                var failures = new List<string>();
                 foreach (IValidateOptions<TOptions> validate in _validations)
                 {
                     ValidateOptionsResult result = validate.Validate(name, options);

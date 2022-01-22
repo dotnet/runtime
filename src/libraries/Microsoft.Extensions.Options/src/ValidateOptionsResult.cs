@@ -36,6 +36,7 @@ namespace Microsoft.Extensions.Options
         /// True if validation failed.
         /// </summary>
         [MemberNotNullWhen(true, nameof(Failures))]
+        [MemberNotNullWhen(true, nameof(FailureMessage))]
         public bool Failed { get; protected set; }
 
         /// <summary>
@@ -46,22 +47,22 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Full list of failures (can be multiple).
         /// </summary>
-        public IEnumerable<string?>? Failures { get; protected set; }
+        public IEnumerable<string>? Failures { get; protected set; }
 
         /// <summary>
         /// Returns a failure result.
         /// </summary>
         /// <param name="failureMessage">The reason for the failure.</param>
         /// <returns>The failure result.</returns>
-        public static ValidateOptionsResult Fail(string? failureMessage)
-            => new ValidateOptionsResult { Failed = true, FailureMessage = failureMessage, Failures = new string?[] { failureMessage } };
+        public static ValidateOptionsResult Fail(string failureMessage)
+            => new ValidateOptionsResult { Failed = true, FailureMessage = failureMessage, Failures = new string[] { failureMessage } };
 
         /// <summary>
         /// Returns a failure result.
         /// </summary>
         /// <param name="failures">The reasons for the failure.</param>
         /// <returns>The failure result.</returns>
-        public static ValidateOptionsResult Fail(IEnumerable<string?> failures)
+        public static ValidateOptionsResult Fail(IEnumerable<string> failures)
             => new ValidateOptionsResult { Failed = true, FailureMessage = string.Join("; ", failures), Failures = failures };
     }
 }

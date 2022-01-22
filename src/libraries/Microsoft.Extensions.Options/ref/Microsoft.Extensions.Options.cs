@@ -162,17 +162,17 @@ namespace Microsoft.Extensions.Options
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3, TDep4>(System.Action<TOptions, TDep1, TDep2, TDep3, TDep4> configureOptions) where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> PostConfigure<TDep1, TDep2, TDep3, TDep4, TDep5>(System.Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> configureOptions) where TDep1 : class where TDep2 : class where TDep3 : class where TDep4 : class where TDep5 : class { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate(System.Func<TOptions, bool> validation) { throw null; }
-        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate(System.Func<TOptions, bool> validation, string? failureMessage) { throw null; }
+        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate(System.Func<TOptions, bool> validation, string failureMessage) { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep>(System.Func<TOptions, TDep, bool> validation) where TDep : notnull { throw null; }
-        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep>(System.Func<TOptions, TDep, bool> validation, string? failureMessage) where TDep : notnull { throw null; }
+        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep>(System.Func<TOptions, TDep, bool> validation, string failureMessage) where TDep : notnull { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2>(System.Func<TOptions, TDep1, TDep2, bool> validation) where TDep1 : notnull where TDep2 : notnull { throw null; }
-        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2>(System.Func<TOptions, TDep1, TDep2, bool> validation, string? failureMessage) where TDep1 : notnull where TDep2 : notnull { throw null; }
+        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2>(System.Func<TOptions, TDep1, TDep2, bool> validation, string failureMessage) where TDep1 : notnull where TDep2 : notnull { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(System.Func<TOptions, TDep1, TDep2, TDep3, bool> validation) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull { throw null; }
-        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(System.Func<TOptions, TDep1, TDep2, TDep3, bool> validation, string? failureMessage) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull { throw null; }
+        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3>(System.Func<TOptions, TDep1, TDep2, TDep3, bool> validation, string failureMessage) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull where TDep4 : notnull { throw null; }
-        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation, string? failureMessage) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull where TDep4 : notnull { throw null; }
+        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool> validation, string failureMessage) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull where TDep4 : notnull { throw null; }
         public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull where TDep4 : notnull where TDep5 : notnull { throw null; }
-        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string? failureMessage) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull where TDep4 : notnull where TDep5 : notnull { throw null; }
+        public virtual Microsoft.Extensions.Options.OptionsBuilder<TOptions> Validate<TDep1, TDep2, TDep3, TDep4, TDep5>(System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool> validation, string failureMessage) where TDep1 : notnull where TDep2 : notnull where TDep3 : notnull where TDep4 : notnull where TDep5 : notnull { throw null; }
     }
     public partial class OptionsCache<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptionsMonitorCache<TOptions> where TOptions : class
     {
@@ -209,8 +209,8 @@ namespace Microsoft.Extensions.Options
     }
     public partial class OptionsValidationException : System.Exception
     {
-        public OptionsValidationException(string optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string?>? failureMessages) { }
-        public System.Collections.Generic.IEnumerable<string?> Failures { get { throw null; } }
+        public OptionsValidationException(string optionsName, System.Type optionsType, System.Collections.Generic.IEnumerable<string>? failureMessages) { }
+        public System.Collections.Generic.IEnumerable<string> Failures { get { throw null; } }
         public override string Message { get { throw null; } }
         public string OptionsName { get { throw null; } }
         public System.Type OptionsType { get { throw null; } }
@@ -288,73 +288,74 @@ namespace Microsoft.Extensions.Options
         public static readonly Microsoft.Extensions.Options.ValidateOptionsResult Success;
         public ValidateOptionsResult() { }
         [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Failures))]
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(FailureMessage))]
         public bool Failed { get { throw null; } protected set { } }
         public string? FailureMessage { get { throw null; } protected set { } }
-        public System.Collections.Generic.IEnumerable<string?>? Failures { get { throw null; } protected set { } }
+        public System.Collections.Generic.IEnumerable<string>? Failures { get { throw null; } protected set { } }
         public bool Skipped { get { throw null; } protected set { } }
         public bool Succeeded { get { throw null; } protected set { } }
-        public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string?> failures) { throw null; }
-        public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(string? failureMessage) { throw null; }
+        public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string> failures) { throw null; }
+        public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(string failureMessage) { throw null; }
     }
     public partial class ValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
-        public ValidateOptions(string? name, System.Func<TOptions, bool>? validation, string? failureMessage) { }
-        public string? FailureMessage { get { throw null; } }
+        public ValidateOptions(string? name, System.Func<TOptions, bool>? validation, string failureMessage) { }
+        public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, bool>? Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
-        public ValidateOptions(string? name, TDep dependency, System.Func<TOptions, TDep, bool>? validation, string? failureMessage) { }
+        public ValidateOptions(string? name, TDep dependency, System.Func<TOptions, TDep, bool>? validation, string failureMessage) { }
         public TDep Dependency { get { throw null; } }
-        public string? FailureMessage { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep, bool>? Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, System.Func<TOptions, TDep1, TDep2, bool>? validation, string? failureMessage) { }
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, System.Func<TOptions, TDep1, TDep2, bool>? validation, string failureMessage) { }
         public TDep1 Dependency1 { get { throw null; } }
         public TDep2 Dependency2 { get { throw null; } }
-        public string? FailureMessage { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, bool>? Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2, TDep3> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, System.Func<TOptions, TDep1, TDep2, TDep3, bool>? validation, string? failureMessage) { }
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, System.Func<TOptions, TDep1, TDep2, TDep3, bool>? validation, string failureMessage) { }
         public TDep1 Dependency1 { get { throw null; } }
         public TDep2 Dependency2 { get { throw null; } }
         public TDep3 Dependency3 { get { throw null; } }
-        public string? FailureMessage { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, TDep3, bool>? Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool>? validation, string? failureMessage) { }
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool>? validation, string failureMessage) { }
         public TDep1 Dependency1 { get { throw null; } }
         public TDep2 Dependency2 { get { throw null; } }
         public TDep3 Dependency3 { get { throw null; } }
         public TDep4 Dependency4 { get { throw null; } }
-        public string? FailureMessage { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool>? Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }
     }
     public partial class ValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool>? validation, string? failureMessage) { }
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool>? validation, string failureMessage) { }
         public TDep1 Dependency1 { get { throw null; } }
         public TDep2 Dependency2 { get { throw null; } }
         public TDep3 Dependency3 { get { throw null; } }
         public TDep4 Dependency4 { get { throw null; } }
         public TDep5 Dependency5 { get { throw null; } }
-        public string? FailureMessage { get { throw null; } }
+        public string FailureMessage { get { throw null; } }
         public string? Name { get { throw null; } }
         public System.Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool>? Validation { get { throw null; } }
         public Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, TOptions options) { throw null; }

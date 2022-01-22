@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="name">Options name.</param>
         /// <param name="validation">Validation function.</param>
         /// <param name="failureMessage">Validation failure message.</param>
-        public ValidateOptions(string? name, Func<TOptions, bool>? validation, string? failureMessage)
+        public ValidateOptions(string? name, Func<TOptions, bool>? validation, string failureMessage)
         {
             Name = name;
             Validation = validation;
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The error to return when validation fails.
         /// </summary>
-        public string? FailureMessage { get; }
+        public string FailureMessage { get; }
 
         /// <summary>
         /// Validates a specific named options instance (or all when <paramref name="name"/> is null).
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency">The dependency.</param>
         /// <param name="validation">Validation function.</param>
         /// <param name="failureMessage">Validation failure message.</param>
-        public ValidateOptions(string? name, TDep dependency, Func<TOptions, TDep, bool>? validation, string? failureMessage)
+        public ValidateOptions(string? name, TDep dependency, Func<TOptions, TDep, bool>? validation, string failureMessage)
         {
             Name = name;
             Validation = validation;
@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The error to return when validation fails.
         /// </summary>
-        public string? FailureMessage { get; }
+        public string FailureMessage { get; }
 
         /// <summary>
         /// The dependency.
@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency2">The second dependency.</param>
         /// <param name="validation">Validation function.</param>
         /// <param name="failureMessage">Validation failure message.</param>
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, Func<TOptions, TDep1, TDep2, bool>? validation, string? failureMessage)
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, Func<TOptions, TDep1, TDep2, bool>? validation, string failureMessage)
         {
             Name = name;
             Validation = validation;
@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The error to return when validation fails.
         /// </summary>
-        public string? FailureMessage { get; }
+        public string FailureMessage { get; }
 
         /// <summary>
         /// The first dependency.
@@ -218,7 +218,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency3">The third dependency.</param>
         /// <param name="validation">Validation function.</param>
         /// <param name="failureMessage">Validation failure message.</param>
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, Func<TOptions, TDep1, TDep2, TDep3, bool>? validation, string? failureMessage)
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, Func<TOptions, TDep1, TDep2, TDep3, bool>? validation, string failureMessage)
         {
             Name = name;
             Validation = validation;
@@ -241,7 +241,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The error to return when validation fails.
         /// </summary>
-        public string? FailureMessage { get; }
+        public string FailureMessage { get; }
 
         /// <summary>
         /// The first dependency.
@@ -301,7 +301,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency4">The fourth dependency.</param>
         /// <param name="validation">Validation function.</param>
         /// <param name="failureMessage">Validation failure message.</param>
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool>? validation, string? failureMessage)
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, Func<TOptions, TDep1, TDep2, TDep3, TDep4, bool>? validation, string failureMessage)
         {
             Name = name;
             Validation = validation;
@@ -325,7 +325,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The error to return when validation fails.
         /// </summary>
-        public string? FailureMessage { get; }
+        public string FailureMessage { get; }
 
         /// <summary>
         /// The first dependency.
@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="dependency5">The fifth dependency.</param>
         /// <param name="validation">Validation function.</param>
         /// <param name="failureMessage">Validation failure message.</param>
-        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool>? validation, string? failureMessage)
+        public ValidateOptions(string? name, TDep1 dependency1, TDep2 dependency2, TDep3 dependency3, TDep4 dependency4, TDep5 dependency5, Func<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5, bool>? validation, string failureMessage)
         {
             Name = name;
             Validation = validation;
@@ -417,7 +417,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// The error to return when validation fails.
         /// </summary>
-        public string? FailureMessage { get; }
+        public string FailureMessage { get; }
 
         /// <summary>
         /// The first dependency.
