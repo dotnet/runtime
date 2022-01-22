@@ -2554,7 +2554,6 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	goto_if_nok (error, leave);
 	klass->type_token = MONO_TOKEN_TYPE_DEF | table_idx;
 	mono_class_set_flags (klass, MONO_HANDLE_GETVAL (ref_tb, attrs));
-	klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike);
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
@@ -3862,6 +3861,12 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	klass->supertypes = NULL;
 	mono_class_setup_supertypes (klass);
 	mono_class_setup_mono_type (klass);
+
+	/* Check if the type is marked as byreflike.
+	 * The IsByRefLike attribute only applies to value types and enums. This matches CoreCLR behavior.
+	 */
+	if (klass->enumtype || klass->valuetype)
+		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set);
 
 	/* enums are done right away */
 	if (!klass->enumtype)

@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
-        private bool is_byreflike;
+        private bool is_byreflike_set;
 
         private int state;
 #endregion
@@ -1535,9 +1535,7 @@ namespace System.Reflection.Emit
             }
             else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
             {
-                // The IsByRefLike attribute only applies to value types and enums.
-                // This matches CoreCLR behavior.
-                is_byreflike = IsValueType || IsEnum;
+                is_byreflike_set = true;
             }
 
             if (cattrs != null)
