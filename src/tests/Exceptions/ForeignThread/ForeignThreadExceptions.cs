@@ -32,6 +32,17 @@ class ForeignThreadExceptionsTest
             }
         });
 
+        try
+        {
+            InvokeCallback(() => {
+                MethodThatThrows();
+            });
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Caught exception thrown inside unmanaged code in a function called by a delegate called through Reverse PInvoke.");
+        }
+
         InvokeCallbackOnNewThread(() => {
             try
             {
