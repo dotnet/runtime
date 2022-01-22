@@ -69,6 +69,15 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [InlineData("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089", "MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089")]
+        [InlineData("MyAssemblyName, Version=1.0.0.0, PublicKey=00000000000000000400000000000000", "MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089")]
+        public void Ctor_String_Public_Key(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName(name);
+            Assert.Equal(expectedName, assemblyName.FullName);
+        }
+
+        [Theory]
         [InlineData(null, typeof(ArgumentNullException))]
         [InlineData("", typeof(ArgumentException))]
         [InlineData("\0", typeof(ArgumentException))]
@@ -76,6 +85,7 @@ namespace System.Reflection.Tests
         [InlineData("/a", typeof(FileLoadException))]
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
+        [InlineData("MyAssemblyName, PublicKey=00000000000000000400000000000000, PublicKeyToken=b77a5c561934e089", typeof(FileLoadException))]
         public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
