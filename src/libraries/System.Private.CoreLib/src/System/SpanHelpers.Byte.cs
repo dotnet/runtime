@@ -79,8 +79,12 @@ namespace System
                 // Subtract Vector256<byte>.Count in order to make a fast loop where we will never
                 // cross boundaries, we'll handle the last chunk separately
                 int lengthToExamine = searchSpaceLength - valueTailLength - Vector256<byte>.Count;
+                Debug.Assert(lengthToExamine >= 0);
                 do
                 {
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(offset + ch1ch2Distance + Vector256<byte>.Count <= searchSpaceLength);
+
                     Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
                     Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
@@ -108,8 +112,15 @@ namespace System
                 // Handle the last Vector256<byte>.Count chunk we previously subtracted
                 // We might overlap with the previously processed data
                 {
-                    Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)lengthToExamine));
-                    Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(lengthToExamine + ch1ch2Distance)));
+                    if (offset == searchSpaceLength - valueTailLength)
+                        return -1;
+                    offset = searchSpaceLength - valueTailLength - Vector256<byte>.Count;
+
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(offset + ch1ch2Distance + Vector256<byte>.Count <= searchSpaceLength);
+
+                    Vector256<byte> cmpCh1 = Vector256.Equals(ch1, Vector256.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector256<byte> cmpCh2 = Vector256.Equals(ch2, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
                     if (cmpAnd == Vector256<byte>.Zero)
                         return -1;
@@ -122,7 +133,7 @@ namespace System
                                 ref Unsafe.Add(ref searchSpace, offset + bitPos),
                                 ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
                         {
-                            return lengthToExamine + bitPos;
+                            return offset + bitPos;
                         }
                         mask = BitOperations.ResetLowestSetBit(mask); // Clear the lowest set bit
                     } while (mask != 0);
@@ -144,8 +155,12 @@ namespace System
                 // Subtract Vector128<byte>.Count in order to make a fast loop where we will never
                 // cross boundaries, we'll handle the last chunk separately
                 int lengthToExamine = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
+                Debug.Assert(lengthToExamine >= 0);
                 do
                 {
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(offset + ch1ch2Distance + Vector128<byte>.Count <= searchSpaceLength);
+
                     Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
                     Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
@@ -175,8 +190,15 @@ namespace System
                 // Handle the last Vector128<byte>.Count chunk we previously subtracted
                 // We might overlap with the previously processed data
                 {
-                    Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)lengthToExamine));
-                    Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(lengthToExamine + ch1ch2Distance)));
+                    if (offset == searchSpaceLength - valueTailLength)
+                        return -1;
+                    offset = searchSpaceLength - valueTailLength - Vector128<byte>.Count;
+
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(offset + ch1ch2Distance + Vector128<byte>.Count <= searchSpaceLength);
+
+                    Vector128<byte> cmpCh1 = Vector128.Equals(ch1, Vector128.LoadUnsafe(ref searchSpace, (nuint)offset));
+                    Vector128<byte> cmpCh2 = Vector128.Equals(ch2, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
                     if (cmpAnd == Vector128<byte>.Zero)
                         return -1;
@@ -189,7 +211,7 @@ namespace System
                                     ref Unsafe.Add(ref searchSpace, offset + bitPos),
                                     ref value, (nuint)(uint)valueLength)) // The (nuint)-cast is necessary to pick the correct overload
                         {
-                            return lengthToExamine + bitPos;
+                            return offset + bitPos;
                         }
                         mask = BitOperations.ResetLowestSetBit(mask); // Clear the lowest set bit
                     } while (mask != 0);

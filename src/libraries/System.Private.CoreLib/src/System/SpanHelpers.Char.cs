@@ -85,8 +85,13 @@ namespace System
                 // Subtract Vector256<ushort>.Count in order to make a fast loop where we will never
                 // cross boundaries, we'll handle the last chunk separately
                 int lengthToExamine = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
+                Debug.Assert(lengthToExamine >= 0);
+
                 do
                 {
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(index + ch1ch2Distance + Vector256<ushort>.Count <= searchSpaceLength);
+
                     Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, LoadVector256(ref searchSpace, index));
                     Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
@@ -121,6 +126,13 @@ namespace System
                 // Handle the last Vector256<ushort>.Count chunk we previously subtracted
                 // We might overlap with the previously processed data
                 {
+                    if (index == searchSpaceLength - valueTailLength)
+                        return -1;
+                    index = searchSpaceLength - valueTailLength - Vector256<ushort>.Count;
+
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(index + ch1ch2Distance + Vector256<ushort>.Count <= searchSpaceLength);
+
                     Vector256<ushort> cmpCh1 = Vector256.Equals(ch1, LoadVector256(ref searchSpace, index));
                     Vector256<ushort> cmpCh2 = Vector256.Equals(ch2, LoadVector256(ref searchSpace, index + ch1ch2Distance));
                     Vector256<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
@@ -168,8 +180,12 @@ namespace System
                 // Subtract Vector128<ushort>.Count in order to make a fast loop where we will never
                 // cross boundaries, we'll handle the last chunk separately
                 int lengthToExamine = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
+                Debug.Assert(lengthToExamine >= 0);
                 do
                 {
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(index + ch1ch2Distance + Vector128<ushort>.Count <= searchSpaceLength);
+
                     Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, LoadVector128(ref searchSpace, index));
                     Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
@@ -205,6 +221,13 @@ namespace System
                 // Handle the last Vector128<ushort>.Count chunk we previously subtracted
                 // We might overlap with the previously processed data
                 {
+                    if (index == searchSpaceLength - valueTailLength)
+                        return -1;
+                    index = searchSpaceLength - valueTailLength - Vector128<ushort>.Count;
+
+                    // Make sure we don't go out of bounds
+                    Debug.Assert(index + ch1ch2Distance + Vector128<ushort>.Count <= searchSpaceLength);
+
                     Vector128<ushort> cmpCh1 = Vector128.Equals(ch1, LoadVector128(ref searchSpace, index));
                     Vector128<ushort> cmpCh2 = Vector128.Equals(ch2, LoadVector128(ref searchSpace, index + ch1ch2Distance));
                     Vector128<byte> cmpAnd = (cmpCh1 & cmpCh2).AsByte();
