@@ -164,6 +164,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         [ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
         [ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "Name must not be longer than 100 characters")]
         public string Name { get; set; }
+
+        [ComponentModel.DataAnnotations.Required]
+        public string Email { get; set; }
     }
 
     public class BaseAttribute : Attribute

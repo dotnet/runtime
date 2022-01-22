@@ -886,10 +886,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public void TypeWithValidationAttributes()
         {
-            var instance = new TypeWithValidationAttributes { Name = "Test Name" };
+            var instance = new TypeWithValidationAttributes { Name = "Test Name", Email = "email@test.com" };
 
             string json = JsonSerializer.Serialize(instance, DefaultContext.TypeWithValidationAttributes);
-            JsonTestHelper.AssertJsonEqual(@"{""Name"":""Test Name""}", json);
+            JsonTestHelper.AssertJsonEqual(@"{""Name"":""Test Name"",""Email"":""email@test.com""}", json);
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
                 // Deserialization not supported in fast path serialization only mode
@@ -899,6 +899,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithValidationAttributes);
                 Assert.Equal("Test Name", instance.Name);
+                Assert.Equal("email@test.com", instance.Email);
             }
         }
 
