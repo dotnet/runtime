@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices
 
                     // Strip the git hash if there is one
                     int plusIndex = versionString.IndexOf('+');
-                    if (plusIndex != -1)
+                    if (plusIndex >= 0)
                     {
                         versionString = versionString.Slice(0, plusIndex);
                     }

@@ -25,7 +25,7 @@ namespace strswitch
             s_testLog = new TestUtil.TestLog(expectedOut);
         }
 
-        private static int Main(string[] args)
+        private static int Main()
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };
             s_testLog.StartRecording();

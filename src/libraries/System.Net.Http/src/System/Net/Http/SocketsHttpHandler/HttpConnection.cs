@@ -258,10 +258,12 @@ namespace System.Net.Http
         {
             Debug.Assert(_currentRequest != null);
 
-            if (headers.HeaderStore != null)
+            if (headers.GetEntriesArray() is HeaderEntry[] entries)
             {
-                foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
+                for (int i = 0; i < headers.Count; i++)
                 {
+                    HeaderEntry header = entries[i];
+
                     if (header.Key.KnownHeader != null)
                     {
                         await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
@@ -298,10 +300,10 @@ namespace System.Net.Http
                                 separator = parser.Separator!;
                             }
 
-                            for (int i = 1; i < headerValuesCount; i++)
+                            for (int j = 1; j < headerValuesCount; j++)
                             {
                                 await WriteAsciiStringAsync(separator, async).ConfigureAwait(false);
-                                await WriteStringAsync(_headerValues[i], async, valueEncoding).ConfigureAwait(false);
+                                await WriteStringAsync(_headerValues[j], async, valueEncoding).ConfigureAwait(false);
                             }
                         }
                     }

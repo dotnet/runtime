@@ -212,7 +212,7 @@ namespace Internal.Cryptography.Pal
             }
 
             uint persistentHash = unchecked((uint)persistentHashLong);
-            Span<byte> hash = stackalloc byte[256 >> 3];
+            Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
 
             // Endianness isn't important, it just needs to be consistent.
             // (Even if the same storage was used for two different endianness systems it'd stabilize at two files).

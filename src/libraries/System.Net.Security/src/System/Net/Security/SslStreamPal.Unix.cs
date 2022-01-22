@@ -139,11 +139,6 @@ namespace System.Net.Security
             connectionInfo = new SslConnectionInfo(securityContext.SslContext);
         }
 
-        public static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> applicationProtocols)
-        {
-            return Interop.Ssl.ConvertAlpnProtocolListToByteArray(applicationProtocols);
-        }
-
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer, ref byte[]? outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
