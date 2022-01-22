@@ -17,6 +17,42 @@ namespace System.DirectoryServices.AccountManagement.Tests
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
         internal static bool IsDomainJoinedClient => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
 
+        [Fact]
+        public void TestConstructors()
+        {
+            using var context = new PrincipalContext(ContextType.Machine);
+
+            using (var principal = new ComputerPrincipal(context))
+            {
+                Assert.Same(context, principal.Context);
+                Assert.Empty(principal.ServicePrincipalNames);
+                Assert.Equal(ContextType.Machine, principal.ContextType);
+            }
+            Assert.Throws<ArgumentException>(() => new ComputerPrincipal(null));
+            Assert.Throws<ArgumentException>(() => new ComputerPrincipal(null, "samAccountName", "password", true));
+            Assert.Throws<ArgumentException>(() => new ComputerPrincipal(context, null, "password", true));
+            Assert.Throws<ArgumentException>(() => new ComputerPrincipal(context, "samAccountName", null, true));
+
+            using (var principal = new UserPrincipal(context))
+            {
+                Assert.Same(context, principal.Context);
+                Assert.Equal(ContextType.Machine, principal.ContextType);
+            }
+            Assert.Throws<ArgumentException>(() => new UserPrincipal(null));
+            Assert.Throws<ArgumentException>(() => new UserPrincipal(null, "samAccountName", "password", true));
+            Assert.Throws<ArgumentException>(() => new UserPrincipal(context, null, "password", true));
+            Assert.Throws<ArgumentException>(() => new UserPrincipal(context, "samAccountName", null, true));
+
+            using (var principal = new GroupPrincipal(context))
+            {
+                Assert.Same(context, principal.Context);
+                Assert.Equal(ContextType.Machine, principal.ContextType);
+            }
+            Assert.Throws<ArgumentException>(() => new GroupPrincipal(null));
+            Assert.Throws<ArgumentException>(() => new GroupPrincipal(null, "samAccountName"));
+            Assert.Throws<ArgumentException>(() => new GroupPrincipal(context, null));
+        }
+
         [ConditionalFact(nameof(IsActiveDirectoryServer))]
         public void TestCurrentUser()
         {
@@ -24,7 +60,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             using (UserPrincipal p = FindUser(LdapConfiguration.Configuration.UserNameWithNoDomain, context))
             {
                 Assert.NotNull(p);
-                Assert.Equal(LdapConfiguration.Configuration.UserNameWithNoDomain, p.Name);
+                Assert.Equal(LdapConfiguration.Configuration.UserNameWithNoDomain, p.SamAccountName);
             }
         }
 
@@ -35,6 +71,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             using (UserPrincipal p = FindUser(LdapConfiguration.Configuration.UserNameWithNoDomain, context))
             using (UserPrincipal cu = UserPrincipal.Current)
             {
+                Assert.NotNull(cu);
                 Assert.NotEqual(cu.Context.Name, p.Context.Name);
             }
         }
@@ -46,7 +83,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             using (UserPrincipal p = FindUserUsingFilter(LdapConfiguration.Configuration.UserNameWithNoDomain, context))
             {
                 Assert.NotNull(p);
-                Assert.Equal(LdapConfiguration.Configuration.UserNameWithNoDomain, p.Name);
+                Assert.Equal(LdapConfiguration.Configuration.UserNameWithNoDomain, p.SamAccountName);
             }
         }
 
@@ -280,6 +317,27 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        public void TestInvalidSaves()
+        {
+            UserData u1 = UserData.GenerateUserData("CoreFxUser9");
+
+            DeleteUser(u1.Name);
+
+            try
+            {
+                using var context = DomainContext;
+                using var user = new UserPrincipal(context, u1.Name, u1.Password, true);
+                
+                Assert.Throws<InvalidOperationException>(() => user.Save(null));
+                Assert.Throws<InvalidOperationException>(() => user.Save(new PrincipalContext(ContextType.Machine)));
+            }
+            finally
+            {
+                DeleteUser(u1.Name);
+            }
+        }
+
+        [ConditionalFact(nameof(IsActiveDirectoryServer))]
         public void TestComputerContext()
         {
             using (PrincipalContext context = DomainContext)
@@ -305,6 +363,13 @@ namespace System.DirectoryServices.AccountManagement.Tests
                     }
                 }
             }
+        }
+
+        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        public void TestComputerNegativeCases()
+        {
+            using var context = DomainContext;
+
         }
 
         [ConditionalFact(nameof(IsActiveDirectoryServer))]
@@ -591,7 +656,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         private UserPrincipal FindUser(string userName, PrincipalContext context)
         {
-            return UserPrincipal.FindByIdentity(context, IdentityType.Name, userName);
+            return UserPrincipal.FindByIdentity(context, IdentityType.SamAccountName, userName);
         }
 
         private CustomUserPrincipal FindCustomUser(string userName, PrincipalContext context)
@@ -723,7 +788,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
         public void SetFilter(string userName)
         {
-            this.AdvancedFilterSet("cn", userName, typeof(string), MatchType.Equals);
+            this.AdvancedFilterSet("samAccountName", userName, typeof(string), MatchType.Equals);
         }
     }
 }
