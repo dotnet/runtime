@@ -518,10 +518,6 @@ namespace System.Reflection.Emit
                         // cannot contain null in the interface list
                         throw new ArgumentNullException(nameof(interfaces));
                     }
-                    if (interfaces[i].IsByRef)
-                    {
-                        throw new ArgumentException(SR.Argument_CannotUseByRefType);
-                    }
                 }
                 interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
@@ -1867,11 +1863,6 @@ namespace System.Reflection.Emit
 
             tkType = m_module.GetTypeTokenInternal(eventtype);
 
-            // For compat, check for ByRef after acquiring the token. The primary
-            // compat issue here is throwing on a null instance.
-            if (eventtype.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotUseByRefType);
-
             // Internal helpers to define property records
             ModuleBuilder module = m_module;
             evToken = DefineEvent(
@@ -1932,9 +1923,6 @@ namespace System.Reflection.Emit
             int tkParent = 0;
             if (m_typeParent != null)
             {
-                if (m_typeParent.IsByRef)
-                    throw new ArgumentException(SR.Argument_CannotUseByRefType);
-
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
             }
 
@@ -2145,10 +2133,6 @@ namespace System.Reflection.Emit
             if (interfaceType == null)
             {
                 throw new ArgumentNullException(nameof(interfaceType));
-            }
-            if (interfaceType.IsByRef)
-            {
-                throw new ArgumentException(SR.Argument_CannotUseByRefType);
             }
 
             AssemblyBuilder.CheckContext(interfaceType);
