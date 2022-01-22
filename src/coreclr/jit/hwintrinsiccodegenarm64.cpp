@@ -206,6 +206,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     const HWIntrinsic intrin(node);
 
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrin.id);
+    assert(compiler->compIsaSupportedDebugOnly(isa));
+
     regNumber targetReg = node->GetRegNum();
 
     regNumber op1Reg = REG_NA;
