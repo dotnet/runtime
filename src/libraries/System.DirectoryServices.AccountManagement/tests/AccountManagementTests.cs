@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.DirectoryServices.Tests;
 using System.Linq;
 using Xunit;
+using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement.Tests
 {
@@ -325,6 +326,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
                     using (GroupPrincipal gp = FindGroup(g1.Name, context)) { Assert.Equal(group.DisplayName, gp.DisplayName); }
 
                     user.DisplayName = "Updated CoreFx Test Child User 4";
+                    
                     user.Save();
                     group.DisplayName = "Updated CoreFX Test Group Container 4";
                     group.Save();
@@ -362,6 +364,91 @@ namespace System.DirectoryServices.AccountManagement.Tests
             finally
             {
                 DeleteUser(u1.Name);
+            }
+        }
+
+        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        public void TestCustomUserAttributes()
+        {
+            var userData = CustomUserData.GenerateUserData("CustomCoreFxUser1");
+
+            DeleteUser(userData.Name);
+
+            try
+            {
+                using var context = DomainContext;
+                using (var principal = CreateCustomUser(context, userData))
+                {
+                    Assert.NotNull(principal);
+                    ValidateRecentAddedUser(context, userData);
+                    ValidateUserUsingPrincipal(context, principal);
+
+                    using var foundPrincipal = FindCustomUser(userData.Name, context);
+                    Assert.NotNull(foundPrincipal);
+
+                    Assert.Equal(userData.PostalCode, foundPrincipal.PostalCode);
+                    Assert.Equal(principal.PostalCode, foundPrincipal.PostalCode);
+
+                    Assert.Equal(userData.PostalAddress, foundPrincipal.PostalAddress);
+                    Assert.Equal(principal.PostalAddress, foundPrincipal.PostalAddress);
+                }
+            }
+            finally
+            {
+                DeleteUser(userData.Name);
+            }
+        }
+
+        [ConditionalFact(nameof(IsActiveDirectoryServer))]
+        public void TestMultiValueCustomAttributes()
+        {
+            var userData = CustomUserData.GenerateUserData("CustomCoreFxUser2");
+            userData.PostalAddress.Add("Second address");
+
+            DeleteUser(userData.Name);
+
+            // Check whether directory-data is equivalent to expected data
+            void CheckAddressWithDirectory(PrincipalContext context, List<string> address)
+            {
+                using var foundPrincipal = FindCustomUser(userData.Name, context);
+                Assert.NotNull(foundPrincipal);
+                Assert.Equal(address.ToHashSet(), foundPrincipal.PostalAddress.ToHashSet());
+            };
+
+            // Helper to update list
+            void UpdateAddressList(CustomUserPrincipal principal, Action<List<string>> update)
+            {
+                var localCopy = principal.PostalAddress;
+                update(localCopy);
+                principal.PostalAddress = localCopy;
+                principal.Save();
+            }
+
+            try
+            {
+                // Initial setup
+                using var context = DomainContext;
+                using var principal = CreateCustomUser(context, userData);
+                Assert.NotNull(principal);
+                Assert.Equal(userData.PostalAddress, principal.PostalAddress);
+
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+
+                // Add address
+                UpdateAddressList(principal, addresses => addresses.Add("Third address"));
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+
+                // Remove address
+                UpdateAddressList(principal, addresses => addresses.Remove("Second address"));
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+
+                // Remove address so we have one remaining
+                UpdateAddressList(principal, addresses => addresses.Remove("Third address"));
+                CheckAddressWithDirectory(context, principal.PostalAddress);
+            }
+            finally
+            {
+                DeleteUser(userData.Name);
             }
         }
 
@@ -440,6 +527,20 @@ namespace System.DirectoryServices.AccountManagement.Tests
             return user;
         }
 
+        private CustomUserPrincipal CreateCustomUser(PrincipalContext context, CustomUserData userData)
+        {
+            CustomUserPrincipal user = new CustomUserPrincipal(context, userData.Name, userData.Password, true);
+
+            // assign some properties to the custom user principal
+            user.GivenName = userData.FirstName;
+            user.Surname = userData.LastName;
+            user.DisplayName = userData.DisplayName;
+            user.PostalCode = userData.PostalCode;
+            user.PostalAddress = userData.PostalAddress;
+            user.Save();
+            return user;
+        }
+
         private GroupPrincipal CreateGroup(PrincipalContext context, GroupData groupData)
         {
             GroupPrincipal group = new GroupPrincipal(context, groupData.Name);
@@ -493,6 +594,11 @@ namespace System.DirectoryServices.AccountManagement.Tests
             return UserPrincipal.FindByIdentity(context, IdentityType.Name, userName);
         }
 
+        private CustomUserPrincipal FindCustomUser(string userName, PrincipalContext context)
+        {
+            return CustomUserPrincipal.FindByIdentity(context, IdentityType.SamAccountName, userName);
+        }
+
         private UserPrincipal FindUserUsingFilter(string userName, PrincipalContext context)
         {
             CustomUserPrincipal userPrincipal = new CustomUserPrincipal(context);
@@ -528,6 +634,23 @@ namespace System.DirectoryServices.AccountManagement.Tests
         internal string DisplayName { get; set; }
     }
 
+    internal class CustomUserData : UserData
+    {
+        internal static new CustomUserData GenerateUserData(string name) => new CustomUserData
+        {
+            Name = name,
+            Password = Guid.NewGuid().ToString() + "#1aZ",
+            FirstName = "First " + name,
+            LastName = "Last " + name,
+            DisplayName = "Display " + name,
+            PostalAddress = new List<string> { "Postal Address " + name },
+            PostalCode = "Code " + name
+        };
+
+        internal string PostalCode { get; set; }
+        internal List<string> PostalAddress { get; set; }
+    }
+
     internal class GroupData
     {
         internal static GroupData GenerateGroupData(string name)
@@ -545,11 +668,14 @@ namespace System.DirectoryServices.AccountManagement.Tests
     }
 
     [DirectoryObjectClass("user")]
+    [DirectoryRdnPrefix("CN")]
     public class CustomUserPrincipal : UserPrincipal
     {
         private CustomFilter _customFilter;
 
         public CustomUserPrincipal(PrincipalContext context) : base(context) { }
+        public CustomUserPrincipal(PrincipalContext context, string samAccountName, string password, bool enabled)
+            : base(context, samAccountName, password, enabled) { }
 
         public void SetUserNameFilter(string name)
         {
@@ -567,6 +693,27 @@ namespace System.DirectoryServices.AccountManagement.Tests
 
                 return _customFilter;
             }
+        }
+
+        // Custom properties
+        [DirectoryProperty("postalCode")]
+        public string PostalCode
+        {
+            get => ExtensionGet("postalCode").FirstOrDefault() as string;
+            set => ExtensionSet("postalCode", value);
+        }
+
+        [DirectoryProperty("postalAddress")]
+        public List<string> PostalAddress
+        {
+            get => ExtensionGet("postalAddress").OfType<string>().ToList();
+            set => ExtensionSet("postalAddress", value == null || value?.Count == 0 ? null : value.ToArray());
+        }
+
+        // Method overrides
+        public new static CustomUserPrincipal FindByIdentity(PrincipalContext context, IdentityType identityType, string identityValue)
+        {
+            return FindByIdentityWithType(context, typeof(CustomUserPrincipal), identityType, identityValue) as CustomUserPrincipal;
         }
     }
 
