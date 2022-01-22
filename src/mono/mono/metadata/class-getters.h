@@ -1,4 +1,4 @@
-/* 
+/*
  * \file Definitions of getters for the fields of struct _MonoClass
  *
  * Copyright 2018 Microsoft
@@ -8,7 +8,7 @@
 /* No include guards - this file is meant to be included multiple times.
  * Before including the file define the following macros:
  * MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname)
- * 
+ *
  * MONO_CLASS_OFFSET(funcname, argtype, fieldname)
  */
 
@@ -24,6 +24,7 @@ MONO_CLASS_GETTER(m_class_is_size_inited, gboolean, , MonoClass, size_inited)
 MONO_CLASS_GETTER(m_class_is_valuetype, gboolean, , MonoClass, valuetype)
 MONO_CLASS_GETTER(m_class_is_enumtype, gboolean, , MonoClass, enumtype)
 MONO_CLASS_GETTER(m_class_is_blittable, gboolean, , MonoClass, blittable)
+MONO_CLASS_GETTER(m_class_any_field_has_auto_layout, gboolean, , MonoClass, any_field_has_auto_layout)
 MONO_CLASS_GETTER(m_class_is_unicode, gboolean, , MonoClass, unicode)
 MONO_CLASS_GETTER(m_class_was_typebuilder, gboolean, , MonoClass, wastypebuilder)
 MONO_CLASS_GETTER(m_class_is_array_special_interface, gboolean, , MonoClass, is_array_special_interface)

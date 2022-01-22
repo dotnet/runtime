@@ -139,7 +139,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         StopBuffering = 15,
         VmReadMemory = 16,
         VmWriteMemory = 17,
-        GetAssemblyByName = 18
+        GetAssemblyByName = 18,
+        GetModuleByGUID = 19
     }
 
     internal enum CmdFrame {
@@ -483,8 +484,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override void Write(string val)
         {
             var bytes = Encoding.UTF8.GetBytes(val);
-            Write(bytes.Length);
-            Write(bytes);
+            WriteByteArray(bytes);
         }
 
         public override void Write(long val) => WriteBigEndian<long>(val);
@@ -520,6 +520,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 Write(SdbHelper.valueTypes[objectId.Value].valueTypeBuffer);
             }
         }
+
+        public void WriteByteArray(byte[] bytes)
+        {
+            Write(bytes.Length);
+            Write(bytes);
+        }
+
         public async Task<bool> WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
         {
             switch (constValue.Kind())
@@ -993,6 +1000,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(asm_name);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyByName, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<int> GetModuleId(string moduleGuid, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            var guidArray = Convert.FromBase64String(moduleGuid);
+            commandParamsWriter.WriteByteArray(guidArray);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetModuleByGUID, commandParamsWriter, token);
             return retDebuggerCmdReader.ReadInt32();
         }
 
@@ -2663,6 +2680,39 @@ namespace Microsoft.WebAssembly.Diagnostics
             using var setDebuggerCmdReader = await SendDebuggerAgentCommandWithParms(CmdFrame.SetValues, commandParamsWriter.ToBase64(), etype, newValue, token);
             if (setDebuggerCmdReader.HasError)
                 return false;
+            return true;
+        }
+
+        public async Task<int> CreateByteArray(string diff, CancellationToken token)
+        {
+            var diffArr = Convert.FromBase64String(diff);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAppDomain.GetRootDomain, commandParamsWriter, token);
+            var root = retDebuggerCmdReader.ReadInt32();
+
+            commandParamsWriter.Write(root);
+            commandParamsWriter.WriteByteArray(diffArr);
+            using var arrayDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAppDomain.CreateByteArray, commandParamsWriter, token);
+            return arrayDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<bool> ApplyUpdates(int moduleId, string dmeta, string dil, string dpdb, CancellationToken token)
+        {
+            int dpdbId = -1;
+            var dmetaId = await CreateByteArray(dmeta, token);
+            var dilId = await CreateByteArray(dil, token);
+            if (dpdb != null)
+                dpdbId = await CreateByteArray(dpdb, token);
+
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(moduleId);
+            commandParamsWriter.Write(dmetaId);
+            commandParamsWriter.Write(dilId);
+            if (dpdbId != -1)
+                commandParamsWriter.Write(dpdbId);
+            else
+                commandParamsWriter.Write((byte)ValueTypeId.Null);
+            await SendDebuggerAgentCommand(CmdModule.ApplyChanges, commandParamsWriter, token);
             return true;
         }
     }

@@ -5428,6 +5428,16 @@ GENERICS_TYPE_TOKEN DacDbiInterfaceImpl::ResolveExactGenericArgsToken(DWORD     
 
     if (dwExactGenericArgsTokenIndex == 0)
     {
+        // In a rare case of VS4Mac debugging VS4Mac ARM64 optimized code we get a null generics argument token. We aren't sure 
+        // why the token is null, it may be a bug or it may be by design in the runtime. In the interest of time we are working 
+        // around the issue rather than investigating the root cause. This workaround should only cause us to degrade generic 
+        // types from exact type parameters to approximate or canonical type parameters. In the future if we discover this issue 
+        // is happening more frequently than we expect or the workaround is more impactful than we expect we may need to remove 
+        // this workaround and resolve the underlying issue.
+        if (rawToken == 0)
+        {
+            return rawToken;
+        }
         // In this case the real generics type token is the MethodTable of the "this" object.
         // Note that we want the target address here.
 

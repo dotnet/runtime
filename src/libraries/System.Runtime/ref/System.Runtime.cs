@@ -9187,6 +9187,7 @@ namespace System.Diagnostics.CodeAnalysis
         public string Syntax { get { throw null; } }
         public object?[] Arguments { get { throw null; } }
         public const string DateTimeFormat = "DateTimeFormat";
+        public const string Json = "Json";
         public const string Regex = "Regex";
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
@@ -10760,6 +10761,7 @@ namespace System.IO
     public static partial class RandomAccess
     {
         public static long GetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle) { throw null; }
+        public static void SetLength(Microsoft.Win32.SafeHandles.SafeFileHandle handle, long length) { throw null; }
         public static long Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset) { throw null; }
         public static int Read(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Span<byte> buffer, long fileOffset) { throw null; }
         public static System.Threading.Tasks.ValueTask<long> ReadAsync(Microsoft.Win32.SafeHandles.SafeFileHandle handle, System.Collections.Generic.IReadOnlyList<System.Memory<byte>> buffers, long fileOffset, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -13007,6 +13009,11 @@ namespace System.Runtime.CompilerServices
     public sealed partial class DisablePrivateReflectionAttribute : System.Attribute
     {
         public DisablePrivateReflectionAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
+    public sealed class DisableRuntimeMarshallingAttribute : Attribute
+    {
+        public DisableRuntimeMarshallingAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
     public partial class DiscardableAttribute : System.Attribute

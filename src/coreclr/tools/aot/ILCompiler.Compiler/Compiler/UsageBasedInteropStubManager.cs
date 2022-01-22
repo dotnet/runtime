@@ -30,7 +30,7 @@ namespace ILCompiler
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.IsPInvoke)
+            if (method.IsPInvoke && method.OwningType is MetadataType type && MarshalHelpers.IsRuntimeMarshallingEnabled(type.Module))
             {
                 dependencies = dependencies ?? new DependencyList();
 

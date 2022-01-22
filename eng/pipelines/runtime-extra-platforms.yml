@@ -130,8 +130,7 @@ jobs:
     platforms:
     # BuildWasmApps should only happen on the extra platforms build as we already have coverage for this build on PRs.
     - Browser_wasm
-    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
-    # - Browser_wasm_win
+    - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: wasmbuildtestsContainsChange
@@ -169,8 +168,7 @@ jobs:
     buildConfig: release
     runtimeFlavor: mono
     platforms:
-    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
-    # - Browser_wasm_win
+    - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -257,8 +255,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Browser_wasm
-    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
-    # - Browser_wasm_win
+    - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -541,8 +538,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
-          eq(variables['isManualOrIsNotPR'], true),
-          eq(variables['isFullMatrix'], true))
+          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
@@ -559,8 +555,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    # disable until https://github.com/dotnet/runtime/issues/63987 is fixed
-    # - Browser_wasm_win
+    - Browser_wasm_win
     variables:
       # map dependencies variables to local variables
       - name: wasmdebuggertestsContainsChange
@@ -573,8 +568,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true),
-          eq(variables['isManualOrIsNotPR'], true),
-          eq(variables['isFullMatrix'], true))
+          eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
