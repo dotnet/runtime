@@ -456,15 +456,18 @@ bool Compiler::fgForwardSub(Statement* stmt)
 
     // Quirks:
     //
-    // We may sometimes lose a simd type handle. Avoid substituting if so.
+    // We may sometimes lose or change a type handle. Avoid substituting if so.
     //
-    if (varTypeIsSIMD(fwdSubNode))
+    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
     {
-        if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
-        {
-            JITDUMP(" would lose or gain struct handle\n");
-            return false;
-        }
+        JITDUMP(" would change struct handle (substitution)\n");
+        return false;
+    }
+
+    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(lhsNode))
+    {
+        JITDUMP(" would change struct handle (assignment)\n");
+        return false;
     }
 
     // There are implicit assumptions downstream on where/how multi-reg ops
