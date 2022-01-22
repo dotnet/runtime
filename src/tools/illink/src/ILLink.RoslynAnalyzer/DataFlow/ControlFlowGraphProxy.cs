@@ -75,7 +75,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			return TryGetTryOrCatch (regionProxy.Region.EnclosingRegion, out tryOrCatchRegion);
 		}
 
-		bool TryGetTryOrCatch (ControlFlowRegion? region, out RegionProxy tryOrCatchRegion)
+		static bool TryGetTryOrCatch (ControlFlowRegion? region, out RegionProxy tryOrCatchRegion)
 		{
 			tryOrCatchRegion = default;
 			while (region != null) {
@@ -105,7 +105,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		public RegionProxy GetCorrespondingTry (RegionProxy catchOrFinallyRegion)
 		{
 			if (catchOrFinallyRegion.Region.Kind is not (ControlFlowRegionKind.Finally or ControlFlowRegionKind.Catch))
-				throw new ArgumentException (nameof (catchOrFinallyRegion));
+				throw new ArgumentOutOfRangeException (nameof (catchOrFinallyRegion));
 
 			foreach (var nested in catchOrFinallyRegion.Region.EnclosingRegion!.NestedRegions) {
 				// Note that for try+catch+finally, the try corresponding to the finally will not be the same as

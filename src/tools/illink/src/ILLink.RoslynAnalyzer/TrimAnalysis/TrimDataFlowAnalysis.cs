@@ -45,6 +45,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 		}
 
 #if DEBUG
+#pragma warning disable CA1805 // Do not initialize unnecessarily
 		// Set this to a method name to trace the analysis of the method.
 		readonly string? traceMethod = null;
 
@@ -52,6 +53,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		// Set this to true to print out the dataflow states encountered during the analysis.
 		readonly bool showStates = false;
+#pragma warning restore CA1805 // Do not initialize unnecessarily
 		ControlFlowGraphProxy cfg;
 
 		public override void TraceStart (ControlFlowGraphProxy cfg)

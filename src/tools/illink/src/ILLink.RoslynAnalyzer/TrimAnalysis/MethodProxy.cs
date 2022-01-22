@@ -33,7 +33,7 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial TypeProxy GetReturnType () => new (Method.ReturnType);
 
-		bool IsTypeOf (ITypeSymbol type, string fullTypeName)
+		static bool IsTypeOf (ITypeSymbol type, string fullTypeName)
 		{
 			if (type is not INamedTypeSymbol namedType)
 				return false;
