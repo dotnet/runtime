@@ -5529,12 +5529,12 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // We need to assume, by default, that all flags coming from the VM are invalid.
         instructionSetFlags.Reset();
 
-        // We then add each available instruction set for the target architecture provided
-        // that the corresponding JitConfig switch hasn't explicitly asked for it to be
-        // disabled. This allows us to default to "everything" supported for altjit scenarios
-        // while also still allowing instruction set opt-out providing users with the ability
-        // to, for example, see and debug ARM64 codegen for any desired CPU configuration without
-        // needing to have the hardware in question.
+// We then add each available instruction set for the target architecture provided
+// that the corresponding JitConfig switch hasn't explicitly asked for it to be
+// disabled. This allows us to default to "everything" supported for altjit scenarios
+// while also still allowing instruction set opt-out providing users with the ability
+// to, for example, see and debug ARM64 codegen for any desired CPU configuration without
+// needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
         if (JitConfig.EnableHWIntrinsic() != 0)
