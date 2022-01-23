@@ -10595,17 +10595,6 @@ namespace System.IO
     }
     public sealed partial class FileStreamOptions
     {
-        public static string[] GetLogicalDrives() { throw null; }
-        public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
-        public static void Move(string sourceDirName, string destDirName) { }
-        public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
-        public static void SetCreationTime(string path, System.DateTime creationTime) { }
-        public static void SetCreationTimeUtc(string path, System.DateTime creationTimeUtc) { }
-        public static void SetCurrentDirectory(string path) { }
-        public static void SetLastAccessTime(string path, System.DateTime lastAccessTime) { }
-        public static void SetLastAccessTimeUtc(string path, System.DateTime lastAccessTimeUtc) { }
-        public static void SetLastWriteTime(string path, System.DateTime lastWriteTime) { }
-        public static void SetLastWriteTimeUtc(string path, System.DateTime lastWriteTimeUtc) { }
         public FileStreamOptions() { }
         public System.IO.FileAccess Access { get { throw null; } set { } }
         public int BufferSize { get { throw null; } set { } }
