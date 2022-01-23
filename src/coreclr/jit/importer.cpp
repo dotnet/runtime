@@ -14411,15 +14411,27 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impStackTop(0);
                 }
 
-                // If the expression to dup is simple, just clone it.
-                // Otherwise spill it to a temp, and reload the temp
-                // twice.
                 StackEntry se   = impPopStack();
                 GenTree*   tree = se.val;
                 tiRetVal        = se.seTypeInfo;
                 op1             = tree;
 
-                if (!opts.compDbgCode && !op1->IsIntegralConst(0) && !op1->IsFPZero() && !op1->IsLocal())
+                // If the expression to dup is simple, just clone it.
+                // Otherwise spill it to a temp, and reload the temp twice.
+                bool needsTemp = true;
+                if (opts.OptimizationEnabled())
+                {
+                    if (op1->IsIntegralConst(0) || op1->IsFPZero() || op1->IsLocal())
+                    {
+                        needsTemp = false;
+                    }
+                    else if (tree->TypeIs(TYP_BYREF) && tree->OperIs(GT_ADDR) && tree->gtGetOp1()->IsLocal())
+                    {
+                        needsTemp = false;
+                    }
+                }
+
+                if (needsTemp)
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
                     impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
