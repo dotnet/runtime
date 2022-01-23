@@ -887,6 +887,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				} else {
 					/* fall through */
 				}
+			case MONO_TYPE_TYPEDBYREF:
 			case MONO_TYPE_VALUETYPE: {
 				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
 				if (m_class_has_references (fclass)) {

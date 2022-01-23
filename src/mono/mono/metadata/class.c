@@ -4626,13 +4626,20 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 	case MONO_TOKEN_TYPE_REF:
 	case MONO_TOKEN_TYPE_SPEC: {
 		MonoType *type;
+		MonoClass *klass;
 		if (handle_class)
 			*handle_class = mono_defaults.typehandle_class;
 		type = mono_type_get_checked (image, token, context, error);
 		if (!type)
 			return NULL;
 
-		mono_class_init_internal (mono_class_from_mono_type_internal (type));
+		klass = mono_class_from_mono_type_internal (type);
+		mono_class_init_internal (klass);
+		if (mono_class_has_failure (klass)) {
+			mono_error_set_for_class_failure (error, klass);
+			return NULL;
+		}
+
 		/* We return a MonoType* as handle */
 		return type;
 	}
