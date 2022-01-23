@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Indicates that this version of runtime supports ref fields.
         /// </summary>
-        public const string RefFields = nameof(RefFields);
+        public const string ByRefFields = nameof(ByRefFields);
 
         /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
@@ -47,7 +47,7 @@ namespace System.Runtime.CompilerServices
             {
                 case PortablePdb:
                 case CovariantReturnsOfClasses:
-                case RefFields:
+                case ByRefFields:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
 #pragma warning disable CA2252
