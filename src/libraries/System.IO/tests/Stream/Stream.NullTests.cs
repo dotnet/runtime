@@ -131,16 +131,57 @@ namespace System.IO.Tests
 
             if (sr != null)
                 Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
-            input.ReadLine();
+            Assert.Null(input.ReadLine());
             input.Dispose();
 
             input.ReadLine();
             if (sr != null)
                 Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
-            input.Read();
-            input.Peek();
-            input.Read(new char[2], 0, 2);
-            input.ReadToEnd();
+            Assert.Equal(-1, input.Read());
+            Assert.Equal(-1, input.Peek());
+
+            var chars = new char[2];
+            Assert.Equal(0, input.Read(chars, 0, chars.Length));
+            Assert.Equal(0, input.Read(chars.AsSpan()));
+            Assert.Equal(0, input.ReadBlock(chars, 0, chars.Length));
+            Assert.Equal(0, input.ReadBlock(chars.AsSpan()));
+            Assert.Equal("", input.ReadToEnd());
+            input.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
+        public static async Task TestNullTextReaderAsync(TextReader input)
+        {
+            var chars = new char[2];
+            Assert.Equal(0, await input.ReadAsync(chars, 0, chars.Length));
+            Assert.Equal(0, await input.ReadAsync(chars.AsMemory(), default));
+            Assert.Equal(0, await input.ReadBlockAsync(chars, 0, chars.Length));
+            Assert.Equal(0, await input.ReadBlockAsync(chars.AsMemory(), default));
+            Assert.Null(await input.ReadLineAsync());
+            Assert.Null(await input.ReadLineAsync(default));
+            Assert.Equal("", await input.ReadToEndAsync());
+            Assert.Equal("", await input.ReadToEndAsync(default));
+            input.Dispose();
+        }
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
+        public static async Task TestCanceledNullTextReaderAsync(TextReader input)
+        {
+            using var tokenSource = new CancellationTokenSource();
+            tokenSource.Cancel();
+            var token = tokenSource.Token;
+            var chars = new char[2];
+            OperationCanceledException ex;
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadAsync(chars.AsMemory(), token));
+            Assert.Equal(token, ex.CancellationToken);
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadBlockAsync(chars.AsMemory(), token));
+            Assert.Equal(token, ex.CancellationToken);
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadLineAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
+            ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await input.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
             input.Dispose();
         }
 
