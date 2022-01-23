@@ -1577,7 +1577,7 @@ namespace System
         /// <returns>Tuple : Exponent (power of 2) and adjusted mantissa </returns>
         internal static (int Exponent, ulong Mantissa) ComputeFloat(long q, ulong w, FloatingPointInfo info)
         {
-            int exponent = 0;
+            int exponent;
             ulong mantissa = 0;
 
             if ((w == 0) || (q < info.MinDecimalExponent))
