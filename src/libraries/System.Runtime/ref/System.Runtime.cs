@@ -10595,44 +10595,6 @@ namespace System.IO
     }
     public sealed partial class FileStreamOptions
     {
-        public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
-        public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
-        public static void Delete(string path) { }
-        public static void Delete(string path, bool recursive) { }
-        public static bool Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static System.Collections.Generic.IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static bool Exists([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? path) { throw null; }
-        public static System.DateTime GetCreationTime(string path) { throw null; }
-        public static System.DateTime GetCreationTimeUtc(string path) { throw null; }
-        public static string GetCurrentDirectory() { throw null; }
-        public static string[] GetDirectories(string path) { throw null; }
-        public static string[] GetDirectories(string path, string searchPattern) { throw null; }
-        public static string[] GetDirectories(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static string[] GetDirectories(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static string GetDirectoryRoot(string path) { throw null; }
-        public static string[] GetFiles(string path) { throw null; }
-        public static string[] GetFiles(string path, string searchPattern) { throw null; }
-        public static string[] GetFiles(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static string[] GetFiles(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static string[] GetFileSystemEntries(string path) { throw null; }
-        public static string[] GetFileSystemEntries(string path, string searchPattern) { throw null; }
-        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.EnumerationOptions enumerationOptions) { throw null; }
-        public static string[] GetFileSystemEntries(string path, string searchPattern, System.IO.SearchOption searchOption) { throw null; }
-        public static System.DateTime GetLastAccessTime(string path) { throw null; }
-        public static System.DateTime GetLastAccessTimeUtc(string path) { throw null; }
-        public static System.DateTime GetLastWriteTime(string path) { throw null; }
-        public static System.DateTime GetLastWriteTimeUtc(string path) { throw null; }
         public static string[] GetLogicalDrives() { throw null; }
         public static System.IO.DirectoryInfo? GetParent(string path) { throw null; }
         public static void Move(string sourceDirName, string destDirName) { }
