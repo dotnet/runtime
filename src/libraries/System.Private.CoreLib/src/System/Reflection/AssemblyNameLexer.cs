@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Globalization;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
@@ -15,14 +12,12 @@ namespace System.Reflection
     //
     internal ref struct AssemblyNameLexer
     {
-        private ReadOnlySpan<char> _chars;
+        private string _input;
         private int _index;
 
         internal AssemblyNameLexer(string s)
         {
-            // Get a ReadOnlySpan<char> for the string including NUL terminator.(An actual NUL terminator in the input string will be treated
-            // as an actual end of string: this is compatible with desktop behavior.)
-            _chars = new ReadOnlySpan<char>(ref s.GetRawStringData(), s.Length);
+            _input = s;
             _index = 0;
         }
 
@@ -49,12 +44,13 @@ namespace System.Reflection
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private char GetNextChar()
         {
             char ch;
-            if (_index < _chars.Length)
+            if (_index < _input.Length)
             {
-                ch = _chars[_index++];
+                ch = _input[_index++];
                 if (ch == '\0')
                 {
                     throw new FileLoadException();
@@ -68,10 +64,11 @@ namespace System.Reflection
             return ch;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private char PeekNextChar()
         {
-            return _index < _chars.Length ?
-                _chars[_index] :
+            return _index < _input.Length ?
+                _input[_index] :
                 '\0';
         }
 
@@ -86,7 +83,7 @@ namespace System.Reflection
                 _index++;
 
             char c = GetNextChar();
-            if (c == 0)                 // TODO: VS Should add helper that checks for the string end, if not throw on 0
+            if (c == 0)
                 return Token.End;
             if (c == ',')
                 return Token.Comma;
