@@ -38,7 +38,15 @@ namespace System.Reflection
             _name = parts._name;
             _version = parts._version;
             _flags = parts._flags;
-            _publicKeyToken = parts._publicKeyOrToken;
+            if ((parts._flags & AssemblyNameFlags.PublicKey) != 0)
+            {
+                _publicKey = parts._publicKeyOrToken;
+            }
+            else
+            {
+                _publicKeyToken = parts._publicKeyOrToken;
+            }
+
             if (parts._cultureName != null)
                 _cultureInfo = new CultureInfo(parts._cultureName);
         }

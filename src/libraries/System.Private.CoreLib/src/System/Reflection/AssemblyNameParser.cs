@@ -59,10 +59,6 @@ namespace System.Reflection
         public static AssemblyNameParts Parse(string s)
         {
             Debug.Assert(s != null);
-
-            int indexOfNul = s.IndexOf((char)0);
-            if (indexOfNul != -1)
-                s = s.Substring(0, indexOfNul);
             if (s.Length == 0)
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
@@ -121,6 +117,7 @@ namespace System.Reflection
                 {
                     RecordNewSeenOrThrow(ref alreadySeen, AttributeKind.PublicKeyOrToken);
                     pkt = ParsePKT(attributeValue, isToken: false);
+                    flags |= AssemblyNameFlags.PublicKey;
                 }
 
                 if (attributeName.Equals("PublicKeyToken", StringComparison.OrdinalIgnoreCase))
@@ -219,9 +216,9 @@ namespace System.Reflection
             if (isToken && attributeValue.Length != 8 * 2)
                 throw new FileLoadException(SR.InvalidAssemblyName);
 
-            byte[] pkt = new byte[8];
+            byte[] pkt = new byte[attributeValue.Length / 2];
             int srcIndex = 0;
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < pkt.Length; i++)
             {
                 char hi = attributeValue[srcIndex++];
                 char lo = attributeValue[srcIndex++];

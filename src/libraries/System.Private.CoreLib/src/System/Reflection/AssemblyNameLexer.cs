@@ -22,7 +22,7 @@ namespace System.Reflection
         {
             // Get a ReadOnlySpan<char> for the string including NUL terminator.(An actual NUL terminator in the input string will be treated
             // as an actual end of string: this is compatible with desktop behavior.)
-            _chars = new ReadOnlySpan<char>(ref s.GetRawStringData(), s.Length + 1);
+            _chars = new ReadOnlySpan<char>(ref s.GetRawStringData(), s.Length);
             _index = 0;
         }
 
@@ -49,6 +49,32 @@ namespace System.Reflection
             }
         }
 
+        private char GetNextChar()
+        {
+            char ch;
+            if (_index < _chars.Length)
+            {
+                ch = _chars[_index++];
+                if (ch == '\0')
+                {
+                    throw new FileLoadException();
+                }
+            }
+            else
+            {
+                ch = '\0';
+            }
+
+            return ch;
+        }
+
+        private char PeekNextChar()
+        {
+            return _index < _chars.Length ?
+                _chars[_index] :
+                '\0';
+        }
+
         //
         // Return the next token in assembly name. If the result is DisplayNameToken.String,
         // sets "tokenString" to the tokenized string.
@@ -56,10 +82,10 @@ namespace System.Reflection
         internal Token GetNext(out string tokenString)
         {
             tokenString = string.Empty;
-            while (IsWhiteSpace(_chars[_index]))
+            while (IsWhiteSpace(PeekNextChar()))
                 _index++;
 
-            char c = _chars[_index++];
+            char c = GetNextChar();
             if (c == 0)                 // TODO: VS Should add helper that checks for the string end, if not throw on 0
                 return Token.End;
             if (c == ',')
@@ -69,19 +95,27 @@ namespace System.Reflection
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
-            char quoteChar = (char)0;
+            char quoteChar = '\0';
             if (c == '\'' || c == '\"')
             {
                 quoteChar = c;
-                c = _chars[_index++];
+                c = GetNextChar();
             }
 
             for (; ; )
             {
                 if (c == 0)
                 {
-                    _index--;
-                    break;  // Terminate: End of string (desktop compat: if string was quoted, permitted to terminate without end-quote.)
+                    if (quoteChar != 0)
+                    {
+                        // EOS and unclosed quotes is an error
+                        throw new FileLoadException();
+                    }
+                    else
+                    {
+                        // Reached end of input and therefore of string
+                        break;
+                    }
                 }
 
                 if (quoteChar != 0 && c == quoteChar)
@@ -98,7 +132,7 @@ namespace System.Reflection
 
                 if (c == '\\')
                 {
-                    c = _chars[_index++];
+                    c = GetNextChar();
 
                     switch (c)
                     {
@@ -127,7 +161,7 @@ namespace System.Reflection
                     sb.Append(c);
                 }
 
-                c = _chars[_index++];
+                c = GetNextChar();
             }
 
 
