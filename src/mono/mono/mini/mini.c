@@ -3055,7 +3055,7 @@ mini_get_rgctx_access_for_method (MonoMethod *method)
 		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (method->klass))
-		return MONO_RGCTX_ACCESS_VTABLE;
+		return MONO_RGCTX_ACCESS_MRGCTX;
 
 	return MONO_RGCTX_ACCESS_THIS;
 }

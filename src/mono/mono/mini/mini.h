@@ -1086,8 +1086,6 @@ typedef enum {
 	MONO_RGCTX_ACCESS_THIS = 1,
 	/* Loaded from an additional mrgctx argument */
 	MONO_RGCTX_ACCESS_MRGCTX = 2,
-	/* Loaded from an additional vtable argument */
-	MONO_RGCTX_ACCESS_VTABLE = 3
 } MonoRgctxAccess;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {

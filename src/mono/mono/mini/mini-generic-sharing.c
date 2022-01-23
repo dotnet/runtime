@@ -3962,6 +3962,8 @@ mini_method_needs_mrgctx (MonoMethod *m)
 {
 	if (mono_class_is_ginst (m->klass) && mini_method_is_default_method (m))
 		return TRUE;
+	if (m->flags & METHOD_ATTRIBUTE_STATIC || m_class_is_valuetype (m->klass))
+		return TRUE;
 	return (mini_method_get_context (m) && mini_method_get_context (m)->method_inst);
 }
 
