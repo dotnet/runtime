@@ -11344,11 +11344,7 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
 #endif // TARGET_AMD64
 
 #ifdef TARGET_ARM64
-    // Unlike x86/x86_64 we can't rely on IsPreferredExecutableRange here, instead we'll try to
-    // guess whether the native instruction (e.g. br) will be able to reach this target or not
-    // within 128Mb (1Mb is subtracted because we don't know the exact code size at this point)
-    // NOTE: it's still just a hint
-    if (FitsInRel28(abs((INT64)m_CodeHeader->GetCodeStartAddress()) - (INT64)target) + 1024 * 1024)
+    if (ExecutableAllocator::IsPreferredExecutableRange(target))
         return IMAGE_REL_ARM64_BRANCH26;
 #endif
 
