@@ -5,6 +5,7 @@
 
     <PropertyGroup>
       <OOBAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</OOBAssembliesTrimmedArtifactsPath>
+      <OOBAssembliesMarkerFile>$(ILLinkTrimAssemblyArtifactsRootDir)oob-marker.txt</OOBAssembliesMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -56,7 +57,7 @@
           AfterTargets="Build"
           DependsOnTargets="GetOOBAssembliesToTrim;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
-          Outputs="@(OOBLibraryTrimmed)">
+          Outputs="$(OOBAssembliesMarkerFile)">
 
     <Message Text="Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
 
@@ -72,6 +73,10 @@
         ExtraArgs="$(OOBILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
+
+    <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <Touch Files="$(OOBAssembliesMarkerFile)"
+           AlwaysCreate="true" />
 
   </Target>
 
