@@ -719,7 +719,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 
 //
-// Hardware Intrinsic ISAs
+// Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1, "Allows Base+ hardware intrinsics to be disabled")
 
