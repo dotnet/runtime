@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILLink.Shared;
 
 using Internal.IL;
 using Internal.IL.Stubs;

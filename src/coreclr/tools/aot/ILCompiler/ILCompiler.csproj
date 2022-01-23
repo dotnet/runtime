@@ -123,6 +123,4 @@
     <Content Remove="$(RuntimeBinDir)$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
     <Content Include="$(RuntimeBinDir)$(LibPrefix)clrjit$(LibSuffix)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
   </ItemGroup>
-
-  <Import Project="..\ILLink.Shared\ILLink.Shared.projitems" Label="Shared" />
 </Project>
