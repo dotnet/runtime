@@ -3703,15 +3703,15 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 #ifdef TARGET_ARM64
             if (comp->eeGetRelocTypeHint(addr) != IMAGE_REL_ARM64_BRANCH26)
             {
-                if (call->gtCallType == CT_HELPER )
+                if (call->gtCallType == CT_HELPER)
                 {
                     avoidRelativeCall = true;
                 }
                 else
                 {
-                    avoidRelativeCall = comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) & CORINFO_FLG_OPTIMIZED;
+                    avoidRelativeCall =
+                        comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) & CORINFO_FLG_OPTIMIZED;
                 }
-                avoidRelativeCall = true;
             }
 #endif
 
