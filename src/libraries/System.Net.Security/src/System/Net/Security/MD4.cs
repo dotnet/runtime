@@ -63,53 +63,50 @@ namespace System.Net.Security
         internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             Debug.Assert(destination.Length == 128 >> 3);
-            Span<byte> buffer = stackalloc byte[64];
-            Span<uint> state = stackalloc uint[4];
-            Span<uint> count = stackalloc uint[2];
 
-            // the initialize our context
-            count[0] = 0;
-            count[1] = 0;
-            state[0] = 0x67452301;
-            state[1] = 0xefcdab89;
-            state[2] = 0x98badcfe;
-            state[3] = 0x10325476;
-            // Zeroize sensitive information
-            buffer.Fill(0);
+            Span<byte> buffer = stackalloc byte[64];
+            buffer.Clear();
+            // Initialize the context
+            Span<uint> state = stackalloc uint[4] { 0x67452301, 0xefcdab89,  0x98badcfe, 0x10325476 };
+            Span<uint> count = stackalloc uint[2] { 0, 0 };
 
             HashCore(source, state, count, buffer);
 
-            /* Save number of bits */
+            // Save number of bits
             Span<byte> bits = stackalloc byte[8];
             Encode(bits, count);
 
-            /* Pad out to 56 mod 64. */
+            // Pad out to 56 mod 64
             uint index = ((count[0] >> 3) & 0x3f);
             int padLen = (int)((index < 56) ? (56 - index) : (120 - index));
             Span<byte> padding = stackalloc byte[padLen];
+            padding.Clear();
             padding[0] = 0x80;
             HashCore(padding, state, count, buffer);
 
-            /* Append length (before padding) */
+            // Append length (before padding)
             HashCore(bits, state, count, buffer);
 
-            /* Write state to destination */
+            // Write state to destination
             Encode(destination, state);
         }
 
         private static void HashCore(ReadOnlySpan<byte> input, Span<uint> state, Span<uint> count, Span<byte> buffer)
         {
-            /* Compute number of bytes mod 64 */
+            // Compute number of bytes mod 64
             int index = (int)((count[0] >> 3) & 0x3F);
-            /* Update number of bits */
+            // Update number of bits
             count[0] += (uint)(input.Length << 3);
             if (count[0] < (input.Length << 3))
+            {
                 count[1]++;
+            }
+
             count[1] += (uint)(input.Length >> 29);
 
             int partLen = 64 - index;
             int i = 0;
-            /* Transform as many times as possible. */
+            // Transform as many times as possible.
             if (input.Length >= partLen)
             {
                 if (index != 0)
@@ -129,13 +126,13 @@ namespace System.Net.Security
                 }
             }
 
-            /* Buffer remaining input */
+            // Buffer remaining input
             input.Slice(i).CopyTo(buffer.Slice(index));
         }
 
         //--- private methods ---------------------------------------------------
 
-        /* F, G and H are basic MD4 functions. */
+        // F, G and H are basic MD4 functions.
         private static uint F(uint x, uint y, uint z)
         {
             return (uint)(((x) & (y)) | ((~x) & (z)));
@@ -151,8 +148,8 @@ namespace System.Net.Security
             return (uint)((x) ^ (y) ^ (z));
         }
 
-        /* FF, GG and HH are transformations for rounds 1, 2 and 3 */
-        /* Rotation is separate from addition to prevent recomputation */
+        // FF, GG and HH are transformations for rounds 1, 2 and 3.
+        // Rotation is separate from addition to prevent recomputation.
         private static void FF(ref uint a, uint b, uint c, uint d, uint x, byte s)
         {
             a += F(b, c, d) + x;
@@ -197,58 +194,58 @@ namespace System.Net.Security
 
             Decode(x, block);
 
-            /* Round 1 */
-            FF(ref a, b, c, d, x[0], S11); /* 1 */
-            FF(ref d, a, b, c, x[1], S12); /* 2 */
-            FF(ref c, d, a, b, x[2], S13); /* 3 */
-            FF(ref b, c, d, a, x[3], S14); /* 4 */
-            FF(ref a, b, c, d, x[4], S11); /* 5 */
-            FF(ref d, a, b, c, x[5], S12); /* 6 */
-            FF(ref c, d, a, b, x[6], S13); /* 7 */
-            FF(ref b, c, d, a, x[7], S14); /* 8 */
-            FF(ref a, b, c, d, x[8], S11); /* 9 */
-            FF(ref d, a, b, c, x[9], S12); /* 10 */
-            FF(ref c, d, a, b, x[10], S13); /* 11 */
-            FF(ref b, c, d, a, x[11], S14); /* 12 */
-            FF(ref a, b, c, d, x[12], S11); /* 13 */
-            FF(ref d, a, b, c, x[13], S12); /* 14 */
-            FF(ref c, d, a, b, x[14], S13); /* 15 */
-            FF(ref b, c, d, a, x[15], S14); /* 16 */
+            // Round 1
+            FF(ref a, b, c, d, x[0], S11); // 1
+            FF(ref d, a, b, c, x[1], S12); // 2
+            FF(ref c, d, a, b, x[2], S13); // 3
+            FF(ref b, c, d, a, x[3], S14); // 4
+            FF(ref a, b, c, d, x[4], S11); // 5
+            FF(ref d, a, b, c, x[5], S12); // 6
+            FF(ref c, d, a, b, x[6], S13); // 7
+            FF(ref b, c, d, a, x[7], S14); // 8
+            FF(ref a, b, c, d, x[8], S11); // 9
+            FF(ref d, a, b, c, x[9], S12); // 10
+            FF(ref c, d, a, b, x[10], S13); // 11
+            FF(ref b, c, d, a, x[11], S14); // 12
+            FF(ref a, b, c, d, x[12], S11); // 13
+            FF(ref d, a, b, c, x[13], S12); // 14
+            FF(ref c, d, a, b, x[14], S13); // 15
+            FF(ref b, c, d, a, x[15], S14); // 16
 
-            /* Round 2 */
-            GG(ref a, b, c, d, x[0], S21); /* 17 */
-            GG(ref d, a, b, c, x[4], S22); /* 18 */
-            GG(ref c, d, a, b, x[8], S23); /* 19 */
-            GG(ref b, c, d, a, x[12], S24); /* 20 */
-            GG(ref a, b, c, d, x[1], S21); /* 21 */
-            GG(ref d, a, b, c, x[5], S22); /* 22 */
-            GG(ref c, d, a, b, x[9], S23); /* 23 */
-            GG(ref b, c, d, a, x[13], S24); /* 24 */
-            GG(ref a, b, c, d, x[2], S21); /* 25 */
-            GG(ref d, a, b, c, x[6], S22); /* 26 */
-            GG(ref c, d, a, b, x[10], S23); /* 27 */
-            GG(ref b, c, d, a, x[14], S24); /* 28 */
-            GG(ref a, b, c, d, x[3], S21); /* 29 */
-            GG(ref d, a, b, c, x[7], S22); /* 30 */
-            GG(ref c, d, a, b, x[11], S23); /* 31 */
-            GG(ref b, c, d, a, x[15], S24); /* 32 */
+            // Round 2
+            GG(ref a, b, c, d, x[0], S21); // 17
+            GG(ref d, a, b, c, x[4], S22); // 18
+            GG(ref c, d, a, b, x[8], S23); // 19
+            GG(ref b, c, d, a, x[12], S24); // 20
+            GG(ref a, b, c, d, x[1], S21); // 21
+            GG(ref d, a, b, c, x[5], S22); // 22
+            GG(ref c, d, a, b, x[9], S23); // 23
+            GG(ref b, c, d, a, x[13], S24); // 24
+            GG(ref a, b, c, d, x[2], S21); // 25
+            GG(ref d, a, b, c, x[6], S22); // 26
+            GG(ref c, d, a, b, x[10], S23); // 27
+            GG(ref b, c, d, a, x[14], S24); // 28
+            GG(ref a, b, c, d, x[3], S21); // 29
+            GG(ref d, a, b, c, x[7], S22); // 30
+            GG(ref c, d, a, b, x[11], S23); // 31
+            GG(ref b, c, d, a, x[15], S24); // 32
 
-            HH(ref a, b, c, d, x[0], S31); /* 33 */
-            HH(ref d, a, b, c, x[8], S32); /* 34 */
-            HH(ref c, d, a, b, x[4], S33); /* 35 */
-            HH(ref b, c, d, a, x[12], S34); /* 36 */
-            HH(ref a, b, c, d, x[2], S31); /* 37 */
-            HH(ref d, a, b, c, x[10], S32); /* 38 */
-            HH(ref c, d, a, b, x[6], S33); /* 39 */
-            HH(ref b, c, d, a, x[14], S34); /* 40 */
-            HH(ref a, b, c, d, x[1], S31); /* 41 */
-            HH(ref d, a, b, c, x[9], S32); /* 42 */
-            HH(ref c, d, a, b, x[5], S33); /* 43 */
-            HH(ref b, c, d, a, x[13], S34); /* 44 */
-            HH(ref a, b, c, d, x[3], S31); /* 45 */
-            HH(ref d, a, b, c, x[11], S32); /* 46 */
-            HH(ref c, d, a, b, x[7], S33); /* 47 */
-            HH(ref b, c, d, a, x[15], S34); /* 48 */
+            HH(ref a, b, c, d, x[0], S31); // 33
+            HH(ref d, a, b, c, x[8], S32); // 34
+            HH(ref c, d, a, b, x[4], S33); // 35
+            HH(ref b, c, d, a, x[12], S34); // 36
+            HH(ref a, b, c, d, x[2], S31); // 37
+            HH(ref d, a, b, c, x[10], S32); // 38
+            HH(ref c, d, a, b, x[6], S33); // 39
+            HH(ref b, c, d, a, x[14], S34); // 40
+            HH(ref a, b, c, d, x[1], S31); // 41
+            HH(ref d, a, b, c, x[9], S32); // 42
+            HH(ref c, d, a, b, x[5], S33); // 43
+            HH(ref b, c, d, a, x[13], S34); // 44
+            HH(ref a, b, c, d, x[3], S31); // 45
+            HH(ref d, a, b, c, x[11], S32); // 46
+            HH(ref c, d, a, b, x[7], S33); // 47
+            HH(ref b, c, d, a, x[15], S34); // 48
 
             state[0] += a;
             state[1] += b;
