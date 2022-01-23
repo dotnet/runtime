@@ -206,7 +206,6 @@ jobs:
     buildConfig: debug
     platforms:
     - Linux_x64
-    - windows_x64
     jobParameters:
       testGroup: innerloop
       timeoutInMinutes: 120
