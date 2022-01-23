@@ -28,6 +28,11 @@ namespace System.Runtime.CompilerServices
         public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
 
         /// <summary>
+        /// Indicates that this version of runtime supports ref fields.
+        /// </summary>
+        public const string RefFields = nameof(RefFields);
+
+        /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
         [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
@@ -42,6 +47,7 @@ namespace System.Runtime.CompilerServices
             {
                 case PortablePdb:
                 case CovariantReturnsOfClasses:
+                case RefFields:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
 #pragma warning disable CA2252
