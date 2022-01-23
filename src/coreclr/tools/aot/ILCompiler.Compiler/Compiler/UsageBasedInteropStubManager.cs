@@ -30,7 +30,7 @@ namespace ILCompiler
 
         public override void AddDependeciesDueToPInvoke(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            if (method.IsPInvoke)
+            if (method.IsPInvoke && method.OwningType is MetadataType type && MarshalHelpers.IsRuntimeMarshallingEnabled(type.Module))
             {
                 dependencies = dependencies ?? new DependencyList();
 
@@ -61,11 +61,23 @@ namespace ILCompiler
             if ((type.IsWellKnownType(WellKnownType.MulticastDelegate)
                     || type == context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType))
             {
+                // If we hit this p/invoke as part of delegate marshalling (i.e. this is a delegate
+                // that has another delegate in the signature), blame the delegate type, not the marshalling thunk.
+                // This should ideally warn from the use site (e.g. where GetDelegateForFunctionPointer
+                // is called) but it's currently hard to get a warning from those spots and this guarantees
+                // we won't miss a spot (e.g. a p/invoke that has a delegate and that delegate contains
+                // a System.Delegate parameter).
+                MethodDesc reportedMethod = method;
+                if (reportedMethod is Internal.IL.Stubs.DelegateMarshallingMethodThunk delegateThunkMethod)
+                {
+                    reportedMethod = delegateThunkMethod.InvokeMethod;
+                }
+
                 var message = new DiagnosticString(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(method));
                 _logger.LogWarning(
                     message,
                     (int)DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed,
-                    method,
+                    reportedMethod,
                     MessageSubCategory.AotAnalysis);
             }
 

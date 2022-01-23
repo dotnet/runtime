@@ -113,7 +113,7 @@ mono_mempool_new_size (int initial_size)
 
 	pool->next = NULL;
 	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL; // Start after header
-	pool->end = (guint8*)pool + initial_size;    // End at end of allocated space 
+	pool->end = (guint8*)pool + initial_size;    // End at end of allocated space
 	pool->d.allocated = pool->size = initial_size;
 	UnlockedAdd64 (&total_bytes_allocated, initial_size);
 	return pool;

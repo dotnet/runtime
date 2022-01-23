@@ -292,11 +292,6 @@
         <target state="translated">Unzulässiger \\ am Ende des Musters.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Unerwarteter "opcode" bei Generierung von regulärem Ausdruck: {0}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
         <source>Unrecognized control character.</source>
         <target state="translated">Unbekanntes Steuerzeichen.</target>

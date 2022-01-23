@@ -496,7 +496,9 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
 
 #ifndef HOST_WINDOWS
 
-extern int g_common_signal_handler_context_locvar_offset;
+// Frame pointer relative offset of a local containing a pointer to the windows style context of a location
+// where a hardware exception occured.
+int g_hardware_exception_context_locvar_offset = 0;
 
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
@@ -506,19 +508,17 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
     DWORD64 curPc = CONTEXTGetPC(context);
 
-#ifndef __APPLE__
-    // Check if the PC is the return address from the SEHProcessException in the common_signal_handler.
-    // If that's the case, extract its local variable containing the windows style context of the hardware
+    // Check if the PC is the return address from the SEHProcessException.
+    // If that's the case, extract its local variable containing a pointer to the windows style context of the hardware
     // exception and return that. This skips the hardware signal handler trampoline that the libunwind
-    // cannot cross on some systems.
+    // cannot cross on some systems. On macOS, it skips a similar trampoline we create in HijackFaultingThread.
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
-        CONTEXT* signalContext = (CONTEXT*)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), signalContext, sizeof(CONTEXT));
+        CONTEXT* exceptionContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_hardware_exception_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), exceptionContext, sizeof(CONTEXT));
 
         return TRUE;
     }
-#endif
 
     if ((context->ContextFlags & CONTEXT_EXCEPTION_ACTIVE) != 0)
     {
@@ -699,7 +699,7 @@ Parameters:
 Note:
     The name of this function and the name of the ExceptionRecord
     parameter is used in the sos lldb plugin code to read the exception
-    record. See coreclr\ToolBox\SOS\lldbplugin\services.cpp.
+    record. See coreclr\tools\SOS\lldbplugin\services.cpp.
 
     This function must not be inlined or optimized so the below PAL_VirtualUnwind
     calls end up with RaiseException caller's context and so the above debugger

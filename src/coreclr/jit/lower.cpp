@@ -3792,32 +3792,29 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     assert(thisArgNode != nullptr);
     assert(thisArgNode->gtOper == GT_PUTARG_REG);
-    GenTree* originalThisExpr = thisArgNode->AsOp()->gtOp1;
-    GenTree* thisExpr         = originalThisExpr;
+    GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
 
-    unsigned lclNum;
-
-    if (call->IsTailCallViaJitHelper() && originalThisExpr->IsLocal())
+    GenTree* base;
+    if (thisExpr->OperIs(GT_LCL_VAR))
     {
-        // For ordering purposes for the special tailcall arguments on x86, we forced the
-        // 'this' pointer in this case to a local in Compiler::fgMorphTailCall().
-        // We could possibly use this case to remove copies for all architectures and non-tailcall
-        // calls by creating a new lcl var or lcl field reference, as is done in the
-        // LowerVirtualVtableCall() code.
-        assert(originalThisExpr->OperGet() == GT_LCL_VAR);
-        lclNum = originalThisExpr->AsLclVarCommon()->GetLclNum();
+        base = comp->gtNewLclvNode(thisExpr->AsLclVar()->GetLclNum(), thisExpr->TypeGet());
+    }
+    else if (thisExpr->OperIs(GT_LCL_FLD))
+    {
+        base = comp->gtNewLclFldNode(thisExpr->AsLclFld()->GetLclNum(), thisExpr->TypeGet(),
+                                     thisExpr->AsLclFld()->GetLclOffs());
     }
     else
     {
         unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
+        base                       = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
 
         LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
         ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
 
         thisExpr = thisExprUse.Def(); // it's changed; reload it.
-        lclNum   = delegateInvokeTmp;
     }
 
     // replace original expression feeding into thisPtr with
@@ -3835,8 +3832,6 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 
     // the control target is
     // [originalThis + firstTgtOffs]
-
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, originalThisExpr->TypeGet(), lclNum);
 
     unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
@@ -4606,7 +4601,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // If what we are passing as the thisptr is not already a local, make a new local to place it in
     // because we will be creating expressions based on it.
     unsigned lclNum;
-    if (thisPtr->IsLocal())
+    if (thisPtr->OperIsLocal())
     {
         lclNum = thisPtr->AsLclVarCommon()->GetLclNum();
     }
@@ -6922,6 +6917,14 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+
+    // Lose the type information stored in the source - we no longer need it.
+    if (blkNode->Data()->OperIs(GT_OBJ, GT_BLK))
+    {
+        blkNode->Data()->SetOper(GT_IND);
+        LowerIndir(blkNode->Data()->AsIndir());
+    }
+
     if (TryTransformStoreObjAsStoreInd(blkNode))
     {
         return;
@@ -6996,7 +6999,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    JITDUMP("Replacing STORE_OBJ with STOREIND for [06%u]", blkNode->gtTreeID);
+    JITDUMP("Replacing STORE_OBJ with STOREIND for [%06u]\n", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 

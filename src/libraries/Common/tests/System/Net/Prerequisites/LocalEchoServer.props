@@ -1,9 +1,5 @@
 <Project>
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
-    <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-
     <!-- handle different path to middleware in Helix -->
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/TestEchoMiddleware</_TestEchoMiddleware>
