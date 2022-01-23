@@ -376,10 +376,17 @@ bool Compiler::fgForwardSub(Statement* stmt)
     }
 
     // Bail if types disagree.
+    // Might be able to tolerate these by retyping.
     //
     if (fsv.GetNode()->TypeGet() != fwdSubNode->TypeGet())
     {
-        JITDUMP(" mismatched types\n");
+        JITDUMP(" mismatched types (substitution)\n");
+        return false;
+    }
+
+    if (lhsNode->TypeGet() != fwdSubNode->TypeGet())
+    {
+        JITDUMP(" mismatched types (assignment)\n");
         return false;
     }
 
