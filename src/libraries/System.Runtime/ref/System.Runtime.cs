@@ -10208,6 +10208,7 @@ namespace System.IO
     }
     public static partial class Directory
     {
+        public static bool Copy(string sourcePath, string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.IO.DirectoryInfo CreateDirectory(string path) { throw null; }
         public static System.IO.FileSystemInfo CreateSymbolicLink(string path, string pathToTarget) { throw null; }
         public static void Delete(string path) { }
@@ -10264,6 +10265,7 @@ namespace System.IO
         public override string Name { get { throw null; } }
         public System.IO.DirectoryInfo? Parent { get { throw null; } }
         public System.IO.DirectoryInfo Root { get { throw null; } }
+        public bool CopyTo(string destinationPath, bool recursive, bool skipExistingFiles = true, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Create() { }
         public System.IO.DirectoryInfo CreateSubdirectory(string path) { throw null; }
         public override void Delete() { }
@@ -10549,6 +10551,7 @@ namespace System.IO
         public virtual Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
