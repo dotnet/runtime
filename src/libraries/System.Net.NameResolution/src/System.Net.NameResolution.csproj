@@ -55,8 +55,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\AddressInfoHints.cs"
              Link="Common\Interop\Windows\WinSock\AddressInfoHints.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\WinSock\hostent.cs"
-             Link="Common\Interop\Windows\WinSock\hostent.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.closesocket.cs"
              Link="Common\Interop\Windows\WinSock\Interop.closesocket.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.gethostname.cs"

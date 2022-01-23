@@ -356,8 +356,10 @@ namespace System.Threading
             SleepInternal(millisecondsTimeout);
         }
 
+#if !CORERT
         /// <summary>Returns the operating system identifier for the current thread.</summary>
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
+#endif
 
         public ExecutionContext? ExecutionContext => ExecutionContext.Capture();
 

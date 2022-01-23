@@ -119,24 +119,24 @@ namespace System.IO.Tests
             Assert.False(di.Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectoryInfo()
         {
             string path = GetTestFilePath();
             new DirectoryInfo(path).Create();
 
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(new DirectoryInfo(path).Exists);
             Assert.True(new DirectoryInfo(linkPath).Exists);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             var pathFI = new DirectoryInfo(path);
             var linkPathFI = new DirectoryInfo(linkPath);

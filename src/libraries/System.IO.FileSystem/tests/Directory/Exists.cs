@@ -106,11 +106,11 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             Directory.CreateDirectory(path);
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
@@ -153,13 +153,13 @@ namespace System.IO.Tests
             Assert.False(File.Exists(linkPath), "linkPath should no longer exist as a file");
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectory()
         {
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
 
-            string linkPath = GetTestFilePath();
+            string linkPath = GetRandomLinkPath();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(Directory.Exists(path));
@@ -299,6 +299,7 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]

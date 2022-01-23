@@ -244,8 +244,7 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(invoke, new ParameterAndConstantChangingVisitor().Visit(invoke));
         }
 
-        // When we don't have IsNotLinqExpressionsBuiltWithIsInterpretingOnly we don't have the Reflection.Emit used in the tests.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void InvokePrivateDelegate(bool useInterpreter)
         {
@@ -263,8 +262,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, invFunc());
         }
 
-        // When we don't have IsNotLinqExpressionsBuiltWithIsInterpretingOnly we don't have the Reflection.Emit used in the tests.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void InvokePrivateDelegateTypeLambda(bool useInterpreter)
         {

@@ -4,9 +4,12 @@
 #include "dotenv.hpp"
 #include <istream>
 #include <locale>
-#include <codecvt>
 #include <sstream>
 #include <algorithm>
+
+#ifdef TARGET_WINDOWS
+#include <codecvt>
+#endif
 
 namespace
 {

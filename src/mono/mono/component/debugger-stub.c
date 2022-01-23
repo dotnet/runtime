@@ -16,7 +16,7 @@ static void
 stub_debugger_parse_options (char *options);
 
 static void
-stub_debugger_init (MonoDefaults *mono_defaults);
+stub_debugger_init (void);
 
 static void
 stub_debugger_breakpoint_hit (void *sigctx);
@@ -113,7 +113,7 @@ stub_debugger_parse_options (char *options)
 }
 
 static void
-stub_debugger_init (MonoDefaults *mono_defaults)
+stub_debugger_init (void)
 {
 }
 

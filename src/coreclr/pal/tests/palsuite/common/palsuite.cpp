@@ -20,16 +20,19 @@ CRITICAL_SECTION CriticalSection;
 
 WCHAR* convert(const char * aString) 
 {
-    int size;
-    WCHAR* wideBuffer;
+    WCHAR* wideBuffer = nullptr;
 
-    size = MultiByteToWideChar(CP_ACP,0,aString,-1,NULL,0);
-    wideBuffer = (WCHAR*) malloc(size*sizeof(WCHAR));
-    if (wideBuffer == NULL)
+    if (aString != nullptr)
     {
-        Fail("ERROR: Unable to allocate memory!\n");
+        int size = MultiByteToWideChar(CP_ACP,0,aString,-1,NULL,0);
+        wideBuffer = (WCHAR*) malloc(size*sizeof(WCHAR));
+        if (wideBuffer == NULL)
+        {
+            Fail("ERROR: Unable to allocate memory!\n");
+        }
+        MultiByteToWideChar(CP_ACP,0,aString,-1,wideBuffer,size);
     }
-    MultiByteToWideChar(CP_ACP,0,aString,-1,wideBuffer,size);
+
     return wideBuffer;
 }
 

@@ -140,7 +140,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
         public async Task CanZipNamedPipe()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
@@ -155,7 +155,7 @@ namespace System.IO.Compression.Tests
             await Task.WhenAll(
                 Task.Run(() =>
                 {
-                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    using FileStream fs = new (fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read, bufferSize: 0);
                     foreach (byte content in contentBytes)
                     {
                         fs.WriteByte(content);

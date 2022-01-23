@@ -7,6 +7,7 @@ endif()
 project(mono)
 
 include(../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
@@ -437,6 +438,19 @@ endif()
 
 if(ENABLE_MONOTOUCH)
   add_definitions(-DMONOTOUCH=1)
+endif()
+
+# Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
+if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
+  if(INTERNAL_ZLIB)
+    # defines ZLIB_SOURCES
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
+  else()
+    # if we're not on a platform where we use the in-tree zlib, require system zlib
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+    set(Z_LIBS)
+    append_extra_compression_libs(Z_LIBS)
+  endif()
 endif()
 
 ######################################

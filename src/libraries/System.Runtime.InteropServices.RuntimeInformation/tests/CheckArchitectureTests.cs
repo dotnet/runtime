@@ -40,6 +40,10 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.Equal(Architecture.S390x, processArch);
                     break;
 
+                case Architecture.LoongArch64:
+                    Assert.Equal(Architecture.LoongArch64, processArch);
+                    break;
+
                 default:
                     Assert.False(true, "Unexpected Architecture.");
                     break;

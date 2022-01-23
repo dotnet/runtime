@@ -4,13 +4,11 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace DebuggerTests
 {
-
     public class ArrayTests : DebuggerTestBase
     {
 
@@ -233,10 +231,10 @@ namespace DebuggerTests
 
             var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             Assert.Equal(4, locals.Count());
-            CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", $"{etype_name}[{array?.Length ?? 0}]");
-            CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", $"{etype_name}[0]");
-            CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null: true);
-            CheckBool(locals, "call_other", test_prev_frame);
+            await CheckArray(locals, $"{local_var_name_prefix}_arr", $"{etype_name}[]", $"{etype_name}[{array?.Length ?? 0}]");
+            await CheckArray(locals, $"{local_var_name_prefix}_arr_empty", $"{etype_name}[]", $"{etype_name}[0]");
+            await CheckObject(locals, $"{local_var_name_prefix}_arr_null", $"{etype_name}[]", is_null: true);
+            await CheckBool(locals, "call_other", test_prev_frame);
 
             var local_arr_name = $"{local_var_name_prefix}_arr";
 
@@ -307,7 +305,7 @@ namespace DebuggerTests
             var pause_location = await EvaluateAndCheck(eval_expr, debugger_test_loc, line, col, method_name);
             var locals = await GetProperties(pause_location["callFrames"][frame_idx]["callFrameId"].Value<string>());
             Assert.Single(locals);
-            CheckObject(locals, "c", "DebuggerTests.Container");
+            await CheckObject(locals, "c", "DebuggerTests.Container");
 
             var c_props = await GetObjectOnFrame(pause_location["callFrames"][frame_idx], "c");
             await CheckProps(c_props, new
@@ -553,6 +551,7 @@ namespace DebuggerTests
                 label: "this#0");
         }
 
+#if false // https://github.com/dotnet/runtime/issues/63560
         [Fact]
         public async Task InvalidArrayId() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
@@ -618,31 +617,40 @@ namespace DebuggerTests
                id_args["arrayIdx"] = "qwe";
                await GetProperties($"dotnet:valuetype:{id_args.ToString(Newtonsoft.Json.Formatting.None)}", expect_ok: false);
            });
+#endif
 
         [Fact]
         public async Task InvalidAccessors() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.Container", "PlaceholderMethod", 1, "PlaceholderMethod",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.ArrayTestsClass:ObjectArrayMembers'); }, 1);",
             locals_fn: async (locals) =>
-           {
-               var this_obj = GetAndAssertObjectWithName(locals, "this");
-               var c_obj = GetAndAssertObjectWithName(await GetProperties(this_obj["value"]["objectId"].Value<string>()), "c");
-               var c_obj_id = c_obj["value"]?["objectId"]?.Value<string>();
-               Assert.NotNull(c_obj_id);
+            {
+                var this_obj = GetAndAssertObjectWithName(locals, "this");
+                var this_obj_id = this_obj["value"]?["objectId"]?.Value<string>();
+                Assert.NotNull(this_obj_id);
 
-               var c_props = await GetProperties(c_obj_id);
+                var this_props = await GetProperties(this_obj_id);
 
-               var pf_arr = GetAndAssertObjectWithName(c_props, "PointsField");
+                var pf_arr = GetAndAssertObjectWithName(this_props, "PointsField");
 
-               var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
-               foreach (var invalid_accessor in invalid_accessors)
-               {
-                   // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
-                   var res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
-                   AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
-               }
+                // Validate the way we test the accessors, with a valid one
+                var res = await InvokeGetter(pf_arr, "0", expect_ok: true);
+                await CheckValue(res.Value["result"], TValueType("DebuggerTests.Point"), "pf_arr[0]");
+                var pf_arr0_props = await GetProperties(res.Value["result"]["objectId"]?.Value<string>());
+                await CheckProps(pf_arr0_props, new
+                 {
+                     X = TNumber(5)
+                 }, "pf_arr0_props", num_fields: 4);
+
+                var invalid_accessors = new object[] { "NonExistant", "10000", "-2", 10000, -2, null, String.Empty };
+                foreach (var invalid_accessor in invalid_accessors)
+                {
+                    // var res = await InvokeGetter (JObject.FromObject (new { value = new { objectId = obj_id } }), invalid_accessor, expect_ok: true);
+                    res = await InvokeGetter(pf_arr, invalid_accessor, expect_ok: true);
+                    AssertEqual("undefined", res.Value["result"]?["type"]?.ToString(), "Expected to get undefined result for non-existant accessor");
+                }
            });
-        
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]

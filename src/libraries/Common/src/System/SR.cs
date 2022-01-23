@@ -27,7 +27,7 @@ namespace System
             try
             {
                 resourceString =
-#if SYSTEM_PRIVATE_CORELIB
+#if SYSTEM_PRIVATE_CORELIB || CORERT
                     InternalGetResourceString(resourceKey);
 #else
                     ResourceManager.GetString(resourceKey);

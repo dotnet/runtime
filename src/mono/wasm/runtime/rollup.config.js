@@ -35,12 +35,13 @@ const terserConfig = {
     },
     mangle: {
         // because of stack walk at src/mono/wasm/debugger/BrowserDebugProxy/MonoProxy.cs
-        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message)/,
+        // and unit test at src\libraries\System.Private.Runtime.InteropServices.JavaScript\tests\timers.js
+        keep_fnames: /(mono_wasm_runtime_ready|mono_wasm_fire_debugger_agent_message|mono_wasm_set_timeout_exec)/,
     },
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 const banner = "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n";
-const banner_generated = banner + "//! \n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js \n";
+const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/runtime/rollup.config.js\n\n//! This is not considered public API with backward compatibility guarantees. \n";
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const format = "iife";
 const name = "__dotnet_runtime";
@@ -64,6 +65,13 @@ const iffeConfig = {
             plugins,
         }
     ],
+    onwarn: (warning, handler) => {
+        if (warning.code === "EVAL" && warning.loc.file.indexOf("method-calls.ts") != -1) {
+            return;
+        }
+
+        handler(warning);
+    },
     plugins: [consts({ productVersion, configuration }), typescript()]
 };
 const typesConfig = {
@@ -72,7 +80,7 @@ const typesConfig = {
         {
             format: "es",
             file: nativeBinDir + "/dotnet.d.ts",
-            banner: banner_generated,
+            banner: banner_dts,
             plugins: [writeOnChangePlugin()],
         }
     ],
@@ -85,8 +93,8 @@ if (isDebug) {
     typesConfig.output.push({
         format: "es",
         file: "./dotnet.d.ts",
-        banner: banner_generated,
-        plugins: [writeOnChangePlugin()],
+        banner: banner_dts,
+        plugins: [alwaysLF(), writeOnChangePlugin()],
     });
 }
 
@@ -100,6 +108,19 @@ function writeOnChangePlugin() {
     return {
         name: "writeOnChange",
         generateBundle: writeWhenChanged
+    };
+}
+
+// force always unix line ending
+function alwaysLF() {
+    return {
+        name: "writeOnChange",
+        generateBundle: (options, bundle) => {
+            const name = Object.keys(bundle)[0];
+            const asset = bundle[name];
+            const code = asset.code;
+            asset.code = code.replace(/\r/g, "");
+        }
     };
 }
 

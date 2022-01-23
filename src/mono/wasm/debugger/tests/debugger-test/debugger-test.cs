@@ -794,7 +794,7 @@ public class SteppingInto
 
 public class MyIncrementer
 {
-    private Func<DateTime> todayFunc = () => DateTime.Now;
+    private Func<DateTime> todayFunc = () => new DateTime(2061, 1, 5); // Wednesday
 
     public int Increment(int count)
     {
@@ -847,5 +847,17 @@ public class DebuggerAttribute
     {
         HiddenMethodDebuggerBreak();
         VisibleMethodDebuggerBreak();
+    }
+}
+
+public class DebugTypeFull
+{
+    public static void CallToEvaluateLocal()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-full-debug-type.dll");
+        var myType = asm.GetType("DebuggerTests.ClassToInspectWithDebugTypeFull");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var a = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
     }
 }

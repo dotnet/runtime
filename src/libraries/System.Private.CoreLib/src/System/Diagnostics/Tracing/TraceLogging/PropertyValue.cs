@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 #endif
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -20,7 +21,13 @@ namespace System.Diagnostics.Tracing
     ///
     /// To get the value of a property quickly, use a delegate produced by <see cref="PropertyValue.GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
-    internal readonly unsafe struct PropertyValue
+#if CORERT
+    [CLSCompliant(false)]
+    public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#else
+    internal
+#endif
+    readonly unsafe struct PropertyValue
     {
         /// <summary>
         /// Union of well-known value types, to avoid boxing those types.
@@ -195,23 +202,41 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="property"></param>
         /// <returns></returns>
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "Instantiation over a reference type. See comments above.")]
+#endif
         private static Func<PropertyValue, PropertyValue> GetReferenceTypePropertyGetter(PropertyInfo property)
         {
             var helper = (TypeHelper)Activator.CreateInstance(typeof(ReferenceTypeHelper<>).MakeGenericType(property.DeclaringType!))!;
             return helper.GetPropertyGetter(property);
         }
 
-        private abstract class TypeHelper
+#if CORERT
+        public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#else
+        private
+#endif
+        abstract class TypeHelper
         {
             public abstract Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property);
 
+#if !ES_BUILD_STANDALONE
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+                Justification = "Instantiation over a reference type. See comments above.")]
+#endif
             protected static Delegate GetGetMethod(PropertyInfo property, Type propertyType)
             {
                 return property.GetMethod!.CreateDelegate(typeof(Func<,>).MakeGenericType(property.DeclaringType!, propertyType));
             }
         }
 
-        private sealed class ReferenceTypeHelper<TContainer> : TypeHelper where TContainer : class
+#if CORERT
+        public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#else
+        private
+#endif
+        sealed class ReferenceTypeHelper<TContainer> : TypeHelper where TContainer : class
         {
             private static Func<TContainer, TProperty> GetGetMethod<TProperty>(PropertyInfo property) where TProperty : struct =>
 #if ES_BUILD_STANDALONE

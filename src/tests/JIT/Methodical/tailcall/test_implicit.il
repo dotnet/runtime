@@ -6,7 +6,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly tailcall
+.assembly 'test_implicit'
 {
 
 
@@ -15,7 +15,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module tailcall.exe
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000

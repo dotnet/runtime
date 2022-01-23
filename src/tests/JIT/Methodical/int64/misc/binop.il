@@ -17,7 +17,6 @@
 {
 }
 .assembly extern xunit.core {}
-.module 'binop.exe'
 // MVID: {E24B38CB-1AB3-45BA-AA54-5C10DD72CDBA}
 .namespace JitTest
 {

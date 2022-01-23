@@ -58,36 +58,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public void ReadFileOver2GB()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public void ReadFileOverMaxArrayLength()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(Array.MaxLength + 1L);
-            }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
         public void Overwrite()
         {
             string path = GetTestFilePath();

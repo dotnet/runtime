@@ -26,7 +26,6 @@
   .ver 0:0:0:0
 }
 .assembly extern xunit.core {}
-.module LdfldaHack.exe
 // MVID: {61DBCACC-D02C-4722-BA4E-7206DE5BD656}
 .imagebase 0x00400000
 .file alignment 0x00000200

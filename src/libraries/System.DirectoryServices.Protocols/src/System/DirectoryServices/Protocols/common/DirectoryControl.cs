@@ -173,7 +173,7 @@ namespace System.DirectoryServices.Protocols
                 else if (controls[i].Type == "1.2.840.113556.1.4.474")
                 {
                     // The control is a SortControl.
-                    int result = 0;
+                    int result;
                     string attribute = null;
                     object[] o = BerConverter.TryDecode("{ea}", value, out bool decodeSucceeded);
 
@@ -746,7 +746,7 @@ namespace System.DirectoryServices.Protocols
 
                 LdapControl managedControl = new LdapControl();
                 Marshal.PtrToStructure(control, managedControl);
-                berval value = managedControl.ldctl_value;
+                BerVal value = managedControl.ldctl_value;
                 // reinitialize the value
                 _directoryControlValue = null;
                 if (value != null)

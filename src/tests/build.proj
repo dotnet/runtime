@@ -7,8 +7,6 @@
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
-    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
-    <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
     <Language>C#</Language>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
@@ -27,6 +25,7 @@
     <RestoreProjects Include="Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperGenerator\XUnitWrapperGenerator.csproj" />
     <RestoreProjects Include="Common\XUnitWrapperLibrary\XUnitWrapperLibrary.csproj" />
+    <RestoreProjects Include="Common\XHarnessRunnerLibrary\XHarnessRunnerLibrary.csproj" />
     <RestoreProjects Include="Common\external\external.csproj" />
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
@@ -51,7 +50,6 @@
            Text="$(XunitTestBinBase) does not exist. Please run src\tests\build / src/tests/build.sh from the repo root at least once to get the tests built." />
 
     <ItemGroup>
-
       <AllTestDirsNonCanonicalPaths Include="$([System.IO.Directory]::GetDirectories(`$(XunitTestBinBase)`))" />
       <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" />
       <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" >
@@ -59,13 +57,15 @@
       </AllTestDirsPaths>
       <SkipTestDirsPaths Include="$([System.IO.Path]::GetFullPath('$(XunitTestBinBase)%(_SkipTestDir.Identity)'))" />
       <NonExcludedTestDirectories Include="@(AllTestDirsPaths -> '%(Path)')" Exclude="@(SkipTestDirsPaths)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(LegacyRunnableTestPaths)' != ''">
       <TopLevelDirectories Include="@(NonExcludedTestDirectories)" />
       <SecondLevel Include="$([System.IO.Directory]::GetDirectories(%(TopLevelDirectories.Identity)))" />
       <SecondLevelDirectories Include="@(SecondLevel)">
-        <Path>$([System.IO.Path]::GetFullPath(%(AllRunnableTestPaths.Identity)))</Path>
+        <Path>$([System.IO.Path]::GetFullPath(%(LegacyRunnableTestPaths.Identity)))</Path>
       </SecondLevelDirectories>
       <TestDirectoriesWithDup Include="@(SecondLevelDirectories -> '%(Identity)')" Condition="$([System.String]::new('%(Path)').StartsWith('%(Identity)'))" />
-
     </ItemGroup>
 
     <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
@@ -88,7 +88,7 @@
         Text="$(XunitTestBinBase) does not exist. Please run src\tests\build / src/tests/build.sh from the repo root at least once to get the tests built." />
 
     <PropertyGroup>
-        <TestCount>@(AllRunnableTestPaths->Count())</TestCount>
+        <TestCount>@(LegacyRunnableTestPaths->Count())</TestCount>
     </PropertyGroup>
 
     <Message Text="Found $(TestCount) built tests"/>
@@ -211,7 +211,7 @@
     <MakeDir Directories="$(BuildDir)"/>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)"/>
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.$(TestScriptExtension)" Exclude="$(_CMDDIR)\**\AppBundle\*.$(TestScriptExtension)" />
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
@@ -260,7 +260,11 @@
   </Target>
 
   <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+    <MSBuild
+      Projects="$(MSBuildProjectFile)"
+      Targets="BuildAndroidApp"
+      Properties="_CMDDIR=%(TestDirectories.Identity)"
+      Condition="'@(TestDirectories)' != ''" />
   </Target>
 
   <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
@@ -283,7 +287,7 @@
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
     </PropertyGroup>
     <ItemGroup>
-      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" />
+      <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
     </ItemGroup>
     <ItemGroup>
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
@@ -336,6 +340,7 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
         Assemblies="@(BundleAssemblies)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        EnableAppSandbox="$(EnableAppSandbox)"
         UseConsoleUITemplate="True"
         GenerateXcodeProject="True"
         BuildAppBundle="True"
@@ -371,6 +376,7 @@
       Projects="@(RunProj)"
       Targets="BuildiOSApp"
       BuildInParallel="true"
+      Condition="'@(TestDirectories)' != ''"
       />
   </Target>
 
@@ -378,6 +384,15 @@
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.$(TestScriptExtension)"/>
       <AllRunnableTestPaths Remove="$(XunitTestBinBase)\**\run-v8.sh" Condition="'$(TargetArchitecture)' == 'wasm'" />
+      <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
+      <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+    </ItemGroup>
+    <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+      <MergedRunnableTestAppBundleScriptPathsPattern>@(MergedAssemblyMarkerPaths->'%(RootDir)%(Directory)AppBundle/**/*.$(TestScriptExtension)')</MergedRunnableTestAppBundleScriptPathsPattern>
+    </PropertyGroup>
+    <ItemGroup>
+      <LegacyRunnableTestPaths Include="@(AllRunnableTestPaths)" Exclude="@(MergedRunnableTestPaths);$(MergedRunnableTestAppBundleScriptPathsPattern)" />
     </ItemGroup>
   </Target>
 
@@ -433,18 +448,22 @@
     <!-- See https://github.com/Microsoft/msbuild/issues/2993 -->
 
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup;CopyNativeTestBinaries" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup;CopyNativeTestBinaries" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" />
   </Target>
 
   <Target Name="BuildManagedTestGroup"
       DependsOnTargets="ResolveDisabledProjects"
-      Condition="'$(__SkipManaged)' != '1' and '$(__CopyNativeTestBinaries)' != '1'" >
+      Condition="'$(__SkipManaged)' != '1'" >
 
     <PropertyGroup>
+      <TargetToBuild>Build</TargetToBuild>
+      <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
+      <TargetToBuild Condition="'$(__CopyNativeTestBinaries)' == '1'">CopyAllNativeTestProjectBinaries</TargetToBuild>
+
       <GroupBuildCmd>$(DotNetCli) msbuild</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) $(MSBuildThisFileFullPath)</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) /t:Build</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /t:$(TargetToBuild)</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
@@ -463,15 +482,6 @@
     <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
 
     <Exec Command="$(GroupBuildCmd)" />
-  </Target>
-
-  <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
-  <Target Name="CopyNativeTestBinaries"
-      DependsOnTargets="CopyAllNativeTestProjectBinaries"
-      AfterTargets="ResolveDisabledProjects"
-      Condition="'$(__CopyNativeTestBinaries)' == '1'">
-
-    <Message Importance="High" Text="$(MsgPrefix)Copied native binaries for test group $(__TestGroupToBuild)" />
   </Target>
 
   <Target Name="CheckTestBuildStep"
@@ -546,4 +556,15 @@
       DependsOnTargets="MonoAotCompileTests"
       AfterTargets="ManagedBuild"
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
+
+  <Target Name="NativeAotCompileFramework" AfterTargets="CopyDependencyToCoreRoot" Condition="'$(NativeAotMultimodule)' == 'true'">
+    <!-- MSBuild doesn't understand the Checked configuration -->
+    <PropertyGroup>
+      <_OptimizeFlagValue Condition="'$(Configuration)' == 'Checked' or '$(Configuration)' == 'Release'">true</_OptimizeFlagValue>
+    </PropertyGroup>
+    <MSBuild Projects="$(CORE_ROOT)/nativeaot/build/BuildFrameworkNativeObjects.proj"
+      Targets="CreateLib"
+      Properties="FrameworkLibPath=$(CORE_ROOT)/nativeaot/sdk;FrameworkObjPath=$(BaseIntermediateOutputPath)/NativeAOTFX;IlcPath=$(CORE_ROOT)/nativeaot;Optimize=$(_OptimizeFlagValue);NETCoreSdkVersion=6.0.0" />
+  </Target>
+
 </Project>

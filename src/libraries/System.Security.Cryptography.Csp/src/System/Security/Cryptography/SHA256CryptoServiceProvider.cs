@@ -13,21 +13,20 @@ namespace System.Security.Cryptography
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class SHA256CryptoServiceProvider : SHA256
     {
-        private const int HashSizeBits = 256;
         private readonly IncrementalHash _incrementalHash;
         private bool _running;
 
         public SHA256CryptoServiceProvider()
         {
             _incrementalHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            HashSizeValue = HashSizeBits;
+            HashSizeValue = HashSizeInBits;
         }
 
         public override void Initialize()
         {
             if (_running)
             {
-                Span<byte> destination = stackalloc byte[HashSizeBits / 8];
+                Span<byte> destination = stackalloc byte[HashSizeInBytes];
 
                 if (!_incrementalHash.TryGetHashAndReset(destination, out _))
                 {

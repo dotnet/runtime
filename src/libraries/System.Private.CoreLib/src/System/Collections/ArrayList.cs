@@ -12,6 +12,7 @@
 ===========================================================*/
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections
 {
@@ -716,6 +717,7 @@ namespace System.Collections
         // downcasting all elements.  This copy may fail and is an O(n) operation.
         // Internally, this implementation calls Array.Copy.
         //
+        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
         public virtual Array ToArray(Type type)
         {
             if (type == null)
@@ -1099,6 +1101,7 @@ namespace System.Collections
                 return array;
             }
 
+            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
             public override Array ToArray(Type type)
             {
                 if (type == null)
@@ -1492,6 +1495,7 @@ namespace System.Collections
                 }
             }
 
+            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
             public override Array ToArray(Type type)
             {
                 lock (_root)
@@ -1874,6 +1878,7 @@ namespace System.Collections
                 return _list.ToArray();
             }
 
+            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
             public override Array ToArray(Type type)
             {
                 return _list.ToArray(type);
@@ -2125,6 +2130,7 @@ namespace System.Collections
                 return _list.ToArray();
             }
 
+            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
             public override Array ToArray(Type type)
             {
                 return _list.ToArray(type);
@@ -2578,6 +2584,7 @@ namespace System.Collections
                 return array;
             }
 
+            [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
             public override Array ToArray(Type type)
             {
                 if (type == null)

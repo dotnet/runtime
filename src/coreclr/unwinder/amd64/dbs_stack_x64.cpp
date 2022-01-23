@@ -63,10 +63,10 @@ DbsX64StackUnwinder::s_UnwindOpSlotTable[] =
 
 HRESULT
 DbsX64StackUnwinder::UnwindPrologue(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in ULONG64 FrameBase,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ ULONG64 FrameBase,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PAMD64_CONTEXT ContextRecord
     )
 
@@ -520,11 +520,11 @@ Arguments:
 
 HRESULT
 DbsX64StackUnwinder::VirtualUnwind(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PAMD64_CONTEXT ContextRecord,
-    __out PULONG64 EstablisherFrame
+    _Out_ PULONG64 EstablisherFrame
     )
 
 /*++
@@ -1033,9 +1033,9 @@ Arguments:
 
 ULONG64
 DbsX64StackUnwinder::LookupPrimaryUnwindInfo(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __out _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry
     )
 
 /*++
@@ -1114,10 +1114,10 @@ Return Value:
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 DbsX64StackUnwinder::SameFunction(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __out _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer
     )
 
 /*++
@@ -1213,7 +1213,7 @@ Return Value:
      (((_DbhFrame)->Reserved[2]) & ~DBHX64_IS_RESTART_FLAG) | \
       ((_IsRestart) ? DBHX64_IS_RESTART_FLAG : 0))
 
-DbsX64StackUnwinder::DbsX64StackUnwinder(__in_opt DbsStackServices* Services)
+DbsX64StackUnwinder::DbsX64StackUnwinder(_In_opt_ DbsStackServices* Services)
     : DbsStackUnwinder(Services, "x64", IMAGE_FILE_MACHINE_AMD64,
                        sizeof(m_Context),
                        sizeof(_IMAGE_RUNTIME_FUNCTION_ENTRY),
@@ -1265,7 +1265,7 @@ DbsX64StackUnwinder::Unwind(void)
 
 DWORD
 DbsX64StackUnwinder::
-GetFullUnwindInfoSize(__in PVOID InfoHeader)
+GetFullUnwindInfoSize(_In_ PVOID InfoHeader)
 {
     PAMD64_UNWIND_INFO UnwindInfo = (PAMD64_UNWIND_INFO)InfoHeader;
 
@@ -1289,9 +1289,9 @@ GetFullUnwindInfoSize(__in PVOID InfoHeader)
 
 HRESULT
 DbsX64StackUnwinder::DbhStart(__inout LPSTACKFRAME64 StackFrame,
-                              __in DWORD DbhVersion,
-                              __in_bcount(DbhStorageBytes) PVOID DbhStorage,
-                              __in DWORD DbhStorageBytes,
+                              _In_ DWORD DbhVersion,
+                              _In_reads_bytes_(DbhStorageBytes) PVOID DbhStorage,
+                              _In_ DWORD DbhStorageBytes,
                               __inout PVOID Context)
 {
     HRESULT Status;
@@ -1343,9 +1343,9 @@ DbsX64StackUnwinder::DbhStart(__inout LPSTACKFRAME64 StackFrame,
 HRESULT
 DbsX64StackUnwinder::
 DbhContinue(__inout LPSTACKFRAME64 StackFrame,
-            __in DWORD DbhVersion,
-            __in_bcount(DbhStorageBytes) PVOID DbhStorage,
-            __in DWORD DbhStorageBytes,
+            _In_ DWORD DbhVersion,
+            _In_reads_bytes_(DbhStorageBytes) PVOID DbhStorage,
+            _In_ DWORD DbhStorageBytes,
             __inout PVOID Context)
 {
     HRESULT Status;
@@ -1385,7 +1385,7 @@ DbsX64StackUnwinder::DbhUpdatePreUnwind(__inout LPSTACKFRAME64 StackFrame)
 
 HRESULT
 DbsX64StackUnwinder::DbhUpdatePostUnwind(__inout LPSTACKFRAME64 StackFrame,
-                                         __in HRESULT UnwindStatus)
+                                         _In_ HRESULT UnwindStatus)
 {
     HRESULT Status;
 

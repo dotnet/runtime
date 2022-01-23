@@ -56,9 +56,9 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
-bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
+bool Compiler::eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
-    return info.compCompHnd->isJitIntrinsic(ftn);
+    return info.compCompHnd->isIntrinsic(ftn);
 }
 
 FORCEINLINE

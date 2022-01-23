@@ -5,9 +5,14 @@ namespace System.Globalization
 {
     internal static partial class GlobalizationMode
     {
+#if CORERT
+        // CORERT-TODO: Enable Icu on Windows
+        internal static bool UseNls { get; } = !Invariant;
+#else
         internal static bool UseNls { get; } = !Invariant &&
             (AppContextConfigHelper.GetBooleanConfig("System.Globalization.UseNls", "DOTNET_SYSTEM_GLOBALIZATION_USENLS") ||
                 !LoadIcu());
+#endif
 
         private static bool LoadIcu()
         {

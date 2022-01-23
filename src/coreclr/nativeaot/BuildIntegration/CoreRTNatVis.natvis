@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="String">
+        <DisplayString>{&amp;(_firstChar),su}</DisplayString>
+        <StringView>&amp;(_firstChar),su</StringView>
+    </Type>
+    <Type Name="__Array&lt;*&gt;">
+        <DisplayString>{{count = {_numComponents}}}</DisplayString>
+        <Expand>
+            <ArrayItems>
+                <Size>_numComponents</Size>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x02">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x12">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x22">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x32">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x42">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x52">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x62">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x72">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x82">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x92">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xA2">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xB2">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xC2">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xD2">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xE2">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xF2">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x00">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x10">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x20">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x30">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x40">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x50">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x60">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x70">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x80">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x90">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xA0">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xB0">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xC0">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xD0">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xE0">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xF0">($T1**)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x08">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x18">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x28">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x38">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x48">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x58">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x68">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x78">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x88">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0x98">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xA8">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xB8">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xC8">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xD8">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xE8">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+                <ValuePointer Condition="*(((char*)(*((*((void***)this))+1)))+2)==0xF8">($T1*)(((char*)this)+sizeof(void*)+sizeof(void*))</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+    <Type Name="__ThreadStaticHelper&lt;*&gt;">
+        <Intrinsic Name="HasModuleStorage" Expression="TypeManagerSlot-&gt;ModuleIndex &lt; tls_CurrentThread.m_numThreadLocalModuleStatics"/>
+        <Intrinsic Name="GetStorage" Expression="*(__Array&lt;Object&gt;**)tls_CurrentThread.m_pThreadLocalModuleStatics[TypeManagerSlot-&gt;ModuleIndex]"/>
+        <Intrinsic Name="Get" Expression="*($T1**)(&amp;(*GetStorage()).values)[ClassIndex]"/>
+        <Intrinsic Name="IsInit" Expression="HasModuleStorage() &amp;&amp; GetStorage() != nullptr &amp;&amp; ClassIndex &lt; GetStorage()-&gt;count &amp;&amp; Get() != nullptr"/>
+
+        <DisplayString  Condition="!IsInit()">Null</DisplayString>
+        <DisplayString  Condition="IsInit()">{*Get()}</DisplayString>
+        <Expand>
+            <ExpandedItem Condition="IsInit()">Get()</ExpandedItem>
+        </Expand>
+    </Type>
+    <Type Name="Object" Inheritable="false">
+        <Expand>
+            <!--Empty to hide Object fields outside of raw view-->
+        </Expand>
+    </Type>
+</AutoVisualizer>

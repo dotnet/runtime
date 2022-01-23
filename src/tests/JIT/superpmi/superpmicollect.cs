@@ -369,7 +369,7 @@ namespace SuperPMICollection
 
             if (File.Exists(s_baseFailMclFile) && !String.IsNullOrEmpty(File.ReadAllText(s_baseFailMclFile)))
             {
-                RunProgram(Global.McsPath, "-strip " + s_baseMchFile + " " + s_finalMchFile);
+                RunProgram(Global.McsPath, "-strip " + s_baseFailMclFile + " " + s_baseMchFile + " " + s_finalMchFile);
             }
             else
             {

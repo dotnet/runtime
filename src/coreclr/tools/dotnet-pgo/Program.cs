@@ -41,7 +41,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
     }
 
     [Flags]
-    public enum jittraceoptions
+    public enum JitTraceOptions
     {
         none = 0,
         sorted = 1,
@@ -1650,7 +1650,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
-        static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, jittraceoptions jittraceOptions)
+        static void GenerateJittraceFile(FileInfo outputFileName, IEnumerable<ProcessedMethodData> methodsToAttemptToPrepare, JitTraceOptions jittraceOptions)
         {
             PrintMessage($"JitTrace options {jittraceOptions}");
 
@@ -1677,7 +1677,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 try
                 {
                     string timeStampAddon = "";
-                    if (jittraceOptions.HasFlag(jittraceoptions.showtimestamp))
+                    if (jittraceOptions.HasFlag(JitTraceOptions.showtimestamp))
                         timeStampAddon = time.ToString("F4") + "-";
 
                     methodPrepareInstruction.Append(CsvEscape(timeStampAddon + method.ToString(), outerCsvEscapeChar));
@@ -1712,7 +1712,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
 
-            if (jittraceOptions.HasFlag(jittraceoptions.sorted))
+            if (jittraceOptions.HasFlag(JitTraceOptions.sorted))
             {
                 methodsToPrepare.Sort();
             }

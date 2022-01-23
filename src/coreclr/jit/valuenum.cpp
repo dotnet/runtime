@@ -3889,13 +3889,8 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
 {
     for (FieldSeqNode* field = fieldSeq; field != nullptr; field = field->m_next)
     {
-        // Skip any "FirstElem" pseudo-fields or any "ConstantIndex" pseudo-fields.
-        if (field->IsPseudoField())
-        {
-            continue;
-        }
-
         assert(field != FieldSeqStore::NotAField());
+        assert(!field->IsPseudoField());
 
         JITDUMP("  VNApplySelectors:\n");
         var_types fieldType;
@@ -4054,20 +4049,13 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
     else
     {
         assert(fieldSeq != FieldSeqStore::NotAField());
-
-        // Skip any "FirstElem" pseudo-fields or any "ConstantIndex" pseudo-fields
-        // These will occur, at least, in struct static expressions, for method table offsets.
-        if (fieldSeq->IsPseudoField())
-        {
-            return VNApplySelectorsAssign(vnk, map, fieldSeq->m_next, value, dstIndType);
-        }
+        assert(!fieldSeq->IsPseudoField());
 
         if (fieldSeq->m_next == nullptr)
         {
             JITDUMP("  VNApplySelectorsAssign:\n");
         }
 
-        // Otherwise, fldHnd is a real field handle.
         var_types fieldType;
         ValueNum  fldHndVN = VNForFieldSelector(fieldSeq->GetFieldHandle(), &fieldType);
 
@@ -4240,7 +4228,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq)
     else if (funcApp.m_func == VNF_PtrToStatic)
     {
         ValueNum fldSeqVN = VNForFieldSeq(fldSeq);
-        res               = VNForFunc(TYP_BYREF, VNF_PtrToStatic, FieldSeqVNAppend(funcApp.m_args[0], fldSeqVN));
+        res = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
     }
     else if (funcApp.m_func == VNF_PtrToArrElem)
     {
@@ -4663,7 +4651,7 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
         {
             const genTreeOps op = (genTreeOps)newFunc;
 
-            if (!GenTree::OperIsRelop(op))
+            if (!GenTree::OperIsCompare(op))
             {
                 return NoVN;
             }
@@ -4700,7 +4688,7 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
         {
             const genTreeOps op = (genTreeOps)newFunc;
 
-            if (!GenTree::OperIsRelop(op))
+            if (!GenTree::OperIsCompare(op))
             {
                 return NoVN;
             }
@@ -4767,7 +4755,7 @@ bool ValueNumStore::IsVNRelop(ValueNum vn)
     else
     {
         const genTreeOps op = (genTreeOps)func;
-        return GenTree::OperIsRelop(op);
+        return GenTree::OperIsCompare(op);
     }
 }
 
@@ -6159,13 +6147,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ADDR, GT_ARR_BOUNDS_CHECK,
-#ifdef FEATURE_SIMD
-                                                 GT_SIMD_CHK,
-#endif
-#ifdef FEATURE_HW_INTRINSICS
-                                                 GT_HW_INTRINSIC_CHK,
-#endif
+                                                 GT_ADDR, GT_BOUNDS_CHECK,
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -7816,106 +7798,78 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 }
                 else if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq))
                 {
-                    if (fldSeq == FieldSeqStore::NotAField())
+                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) && !fldSeq->IsPseudoField());
+
+                    // The value number from the rhs of the assignment
+                    ValueNum storeVal  = rhsVNPair.GetLiberal();
+                    ValueNum newHeapVN = ValueNumStore::NoVN;
+
+                    // We will check that the final field in the sequence matches 'indType'.
+                    var_types indType = lhs->TypeGet();
+
+                    // when (obj != nullptr) we have an instance field, otherwise a static field
+                    // when (staticOffset != nullptr) it represents a offset into a static or the call to
+                    // Shared Static Base
+                    if ((obj != nullptr) || (staticOffset != nullptr))
                     {
-                        fgMutateGcHeap(tree DEBUGARG("NotAField"));
-                    }
-                    else
-                    {
-                        assert(fldSeq != nullptr);
-#ifdef DEBUG
-                        CORINFO_CLASS_HANDLE fldCls = info.compCompHnd->getFieldClass(fldSeq->m_fieldHnd);
+                        var_types firstFieldType;
+                        ValueNum  firstFieldSelectorVN =
+                            vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(), &firstFieldType);
+
+                        // Construct the "field map" VN. It represents memory state of the first field
+                        // of all objects on the heap. This is our primary map.
+                        ValueNum fldMapVN =
+                            vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
+
+                        ValueNum firstFieldValueSelectorVN = ValueNumStore::NoVN;
                         if (obj != nullptr)
                         {
-                            // Make sure that the class containing it is not a value class (as we are expecting
-                            // an instance field)
-                            assert((info.compCompHnd->getClassAttribs(fldCls) & CORINFO_FLG_VALUECLASS) == 0);
-                            assert(staticOffset == nullptr);
+                            firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                         }
-#endif // DEBUG
-
-                        // Get the first (instance or static) field from field seq.  GcHeap[field] will yield
-                        // the "field map".
-                        if (fldSeq->IsFirstElemFieldSeq())
+                        else // (staticOffset != nullptr)
                         {
-                            fldSeq = fldSeq->m_next;
-                            assert(fldSeq != nullptr);
+                            firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                         }
 
-                        // The value number from the rhs of the assignment
-                        ValueNum storeVal  = rhsVNPair.GetLiberal();
-                        ValueNum newHeapVN = ValueNumStore::NoVN;
-
-                        // We will check that the final field in the sequence matches 'indType'.
-                        var_types indType = lhs->TypeGet();
-
-                        // when (obj != nullptr) we have an instance field, otherwise a static field
-                        // when (staticOffset != nullptr) it represents a offset into a static or the call to
-                        // Shared Static Base
-                        if ((obj != nullptr) || (staticOffset != nullptr))
+                        ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
+                        // Optimization: avoid traversting the maps for the value of the first field if
+                        // we do not need it, which is the case if the rest of the field sequence is empty.
+                        if (fldSeq->m_next == nullptr)
                         {
-                            var_types firstFieldType;
-                            ValueNum  firstFieldSelectorVN =
-                                vnStore->VNForFieldSelector(fldSeq->GetFieldHandle(), &firstFieldType);
-
-                            // Construct the "field map" VN. It represents memory state of the first field
-                            // of all objects on the heap. This is our primary map.
-                            ValueNum fldMapVN = vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[GcHeap],
-                                                                        firstFieldSelectorVN);
-
-                            ValueNum firstFieldValueSelectorVN = ValueNumStore::NoVN;
-                            if (obj != nullptr)
-                            {
-                                firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(obj->gtVNPair);
-                            }
-                            else // (staticOffset != nullptr)
-                            {
-                                firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
-                            }
-
-                            ValueNum newFirstFieldValueVN = ValueNumStore::NoVN;
-                            // Optimization: avoid traversting the maps for the value of the first field if
-                            // we do not need it, which is the case if the rest of the field sequence is empty.
-                            if (fldSeq->m_next == nullptr)
-                            {
-                                newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
-                            }
-                            else
-                            {
-                                // Construct the ValueNumber for fldMap[obj/offset]. This (struct)
-                                // map represents the specific field we're looking to store to.
-                                ValueNum firstFieldValueVN =
-                                    vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
-                                                            firstFieldValueSelectorVN);
-
-                                // Construct the maps updating the rest of the fields in the sequence.
-                                newFirstFieldValueVN =
-                                    vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN, fldSeq->m_next,
-                                                                    storeVal, indType);
-                            }
-
-                            // Finally, construct the new field map...
-                            ValueNum newFldMapVN =
-                                vnStore->VNForMapStore(fldMapVN, firstFieldValueSelectorVN, newFirstFieldValueVN);
-
-                            // ...and a new value for the heap.
-                            newHeapVN =
-                                vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], firstFieldSelectorVN, newFldMapVN);
+                            newFirstFieldValueVN = vnStore->VNApplySelectorsAssignTypeCoerce(storeVal, indType);
                         }
                         else
                         {
-                            // Plain static field.
-                            newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
-                                                                        storeVal, indType);
+                            // Construct the ValueNumber for fldMap[obj/offset]. This (struct)
+                            // map represents the specific field we're looking to store to.
+                            ValueNum firstFieldValueVN = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN,
+                                                                                 firstFieldValueSelectorVN);
+
+                            // Construct the maps updating the rest of the fields in the sequence.
+                            newFirstFieldValueVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, firstFieldValueVN,
+                                                                                   fldSeq->m_next, storeVal, indType);
                         }
 
-                        // It is not strictly necessary to set the lhs value number,
-                        // but the dumps read better with it set to the 'storeVal' that we just computed
-                        lhs->gtVNPair.SetBoth(storeVal);
+                        // Finally, construct the new field map...
+                        ValueNum newFldMapVN =
+                            vnStore->VNForMapStore(fldMapVN, firstFieldValueSelectorVN, newFirstFieldValueVN);
 
-                        // Update the GcHeap value.
-                        recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
+                        // ...and a new value for the heap.
+                        newHeapVN = vnStore->VNForMapStore(fgCurMemoryVN[GcHeap], firstFieldSelectorVN, newFldMapVN);
                     }
+                    else
+                    {
+                        // Plain static field.
+                        newHeapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq,
+                                                                    storeVal, indType);
+                    }
+
+                    // It is not strictly necessary to set the lhs value number,
+                    // but the dumps read better with it set to the 'storeVal' that we just computed
+                    lhs->gtVNPair.SetBoth(storeVal);
+
+                    // Update the GcHeap value.
+                    recordGcHeapStore(tree, newHeapVN DEBUGARG("StoreField"));
                 }
                 else
                 {
@@ -7963,23 +7917,19 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 fgMutateGcHeap(lhs DEBUGARG("GTF_CLS_VAR - store")); // always change fgCurMemoryVN
             }
 
+            FieldSeqNode* fldSeq = lhs->AsClsVar()->gtFieldSeq;
+            assert(fldSeq != nullptr);
+
             // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-            FieldSeqNode* fldSeqForStaticVar = GetFieldSeqStore()->CreateSingleton(lhs->AsClsVar()->gtClsVarHnd);
-            assert(fldSeqForStaticVar != FieldSeqStore::NotAField());
-
-            ValueNum storeVal = rhsVNPair.GetLiberal(); // The value number from the rhs of the assignment
-            storeVal = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeqForStaticVar, storeVal,
-                                                       lhs->TypeGet());
-
-            // It is not strictly necessary to set the lhs value number,
-            // but the dumps read better with it set to the 'storeVal' that we just computed
-            lhs->gtVNPair.SetBoth(storeVal);
+            ValueNum storeVal = rhsVNPair.GetLiberal();
+            ValueNum newHeapVN =
+                vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, storeVal, lhs->TypeGet());
 
             // bbMemoryDef must include GcHeap for any block that mutates the GC heap
             assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
 
             // Update the field map for the fgCurMemoryVN and SSA for the tree
-            recordGcHeapStore(tree, storeVal DEBUGARG("Static Field store"));
+            recordGcHeapStore(tree, newHeapVN DEBUGARG("Static Field store"));
         }
         break;
 
@@ -8181,7 +8131,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         if (srcAddrFuncApp.m_func == VNF_PtrToStatic)
                         {
                             var_types     indType            = lclVarTree->TypeGet();
-                            ValueNum      fieldSeqVN         = srcAddrFuncApp.m_args[0];
+                            ValueNum      fieldSeqVN         = srcAddrFuncApp.m_args[1];
                             FieldSeqNode* fldSeqForStaticVar = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
 #ifdef DEBUG
                             FieldSeqNode* zeroOffsetFldSeq = nullptr;
@@ -8193,6 +8143,8 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 #endif
                             if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                             {
+                                assert(fldSeqForStaticVar != nullptr);
+
                                 // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
                                 ValueNum selectedStaticVar;
                                 size_t   structSize = 0;
@@ -8651,30 +8603,35 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // same.
                     //
 
-                    ValueNumPair clsVarVNPair;
-
-                    // If the static field handle is for a struct type field, then the value of the static
-                    // is a "ref" to the boxed struct -- treat it as the address of the static (we assume that a
-                    // first element offset will be added to get to the actual struct...)
+                    ValueNumPair   clsVarVNPair;
                     GenTreeClsVar* clsVar = tree->AsClsVar();
                     FieldSeqNode*  fldSeq = clsVar->gtFieldSeq;
                     assert(fldSeq != nullptr); // We need to have one.
+                    CORINFO_FIELD_HANDLE fieldHnd = clsVar->gtClsVarHnd;
+                    assert(fieldHnd != NO_FIELD_HANDLE);
                     ValueNum selectedStaticVar = ValueNumStore::NoVN;
-                    if (gtIsStaticFieldPtrToBoxedStruct(clsVar->TypeGet(), fldSeq->m_fieldHnd))
+
+                    if (fldSeq == FieldSeqStore::NotAField())
                     {
-                        clsVarVNPair.SetBoth(
-                            vnStore->VNForFunc(TYP_BYREF, VNF_PtrToStatic, vnStore->VNForFieldSeq(fldSeq)));
+                        // This is the box for a "boxed static" - see "fgMorphField".
+                        assert(gtIsStaticFieldPtrToBoxedStruct(clsVar->TypeGet(), fieldHnd));
+
+                        // We will create an empty field sequence for VNF_PtrToStatic here. We will assume
+                        // the actual sequence will get appended later, when processing the TARGET_POINTER_SIZE
+                        // offset that is always added to this box to get to its payload.
+
+                        ValueNum fieldHndVN = vnStore->VNForHandle(ssize_t(fieldHnd), GTF_ICON_FIELD_HDL);
+                        ValueNum fieldSeqVN = vnStore->VNForFieldSeq(nullptr);
+                        clsVarVNPair.SetBoth(vnStore->VNForFunc(TYP_REF, VNF_PtrToStatic, fieldHndVN, fieldSeqVN));
                     }
                     else
                     {
                         // This is a reference to heap memory.
                         // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
 
-                        FieldSeqNode* fldSeqForStaticVar =
-                            GetFieldSeqStore()->CreateSingleton(tree->AsClsVar()->gtClsVarHnd);
                         size_t structSize = 0;
-                        selectedStaticVar = vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap],
-                                                                      fldSeqForStaticVar, &structSize);
+                        selectedStaticVar =
+                            vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
                         selectedStaticVar =
                             vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
 
@@ -8827,6 +8784,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
 
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
+            // TODO-VNTypes: this code needs to encode the types of the indirections.
             if (tree->gtFlags & GTF_IND_INVARIANT)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
@@ -8849,22 +8807,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 if (!wasNewobj)
                 {
-
                     // Is this invariant indirect expected to always return a non-null value?
+                    // TODO-VNTypes: non-null indirects should only be used for TYP_REFs.
                     if ((tree->gtFlags & GTF_IND_NONNULL) != 0)
                     {
                         assert(tree->gtFlags & GTF_IND_NONFAULTING);
                         tree->gtVNPair = vnStore->VNPairForFunc(tree->TypeGet(), VNF_NonNullIndirect, addrNvnp);
-                        if (addr->IsCnsIntOrI())
-                        {
-                            assert(addrXvnp.BothEqual() &&
-                                   (addrXvnp.GetLiberal() == ValueNumStore::VNForEmptyExcSet()));
-                        }
-                        else
-                        {
-                            assert(false && "it's not expected to be hit at the moment, but can be allowed.");
-                            // tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
-                        }
+                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                     }
                     else
                     {
@@ -8986,12 +8935,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && funcApp.m_func == VNF_PtrToStatic)
                 {
                     var_types indType    = tree->TypeGet();
-                    ValueNum  fieldSeqVN = funcApp.m_args[0];
+                    ValueNum  fieldSeqVN = funcApp.m_args[1];
 
                     FieldSeqNode* fldSeqForStaticVar = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
 
                     if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                     {
+                        assert(fldSeqForStaticVar != nullptr);
+
                         ValueNum selectedStaticVar;
                         // We model statics as indices into the GcHeap (which is a subset of ByrefExposed).
                         size_t structSize = 0;
@@ -9015,72 +8966,45 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else if (addr->IsFieldAddr(this, &obj, &staticOffset, &fldSeq2))
                 {
-                    if (fldSeq2 == FieldSeqStore::NotAField())
+                    assert((fldSeq2 != nullptr) && (fldSeq2 != FieldSeqStore::NotAField()) &&
+                           !fldSeq2->IsPseudoField());
+
+                    // The size of the ultimate value we will select, if it is of a struct type.
+                    size_t structSize = 0;
+
+                    // Get the selector for the first field.
+                    var_types firstFieldType;
+                    ValueNum  firstFieldSelectorVN =
+                        vnStore->VNForFieldSelector(fldSeq2->GetFieldHandle(), &firstFieldType, &structSize);
+
+                    ValueNum fldMapVN =
+                        vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
+
+                    ValueNum firstFieldValueSelectorVN;
+                    if (obj != nullptr)
                     {
-                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                    }
-                    else if (fldSeq2 != nullptr)
-                    {
-                        if (fldSeq2->IsFirstElemFieldSeq())
-                        {
-                            fldSeq2 = fldSeq2->m_next;
-                            assert(fldSeq2 != nullptr);
-                        }
-#ifdef DEBUG
-                        CORINFO_CLASS_HANDLE fldCls = info.compCompHnd->getFieldClass(fldSeq2->m_fieldHnd);
-                        if (obj != nullptr)
-                        {
-                            // Make sure that the class containing it is not a value class (as we are expecting an
-                            // instance field)
-                            assert((info.compCompHnd->getClassAttribs(fldCls) & CORINFO_FLG_VALUECLASS) == 0);
-                            assert(staticOffset == nullptr);
-                        }
-#endif // DEBUG
-
-                        // The size of the ultimate value we will select, if it is of a struct type.
-                        size_t structSize = 0;
-
-                        // Get the selector for the first field.
-                        var_types firstFieldType;
-                        ValueNum  firstFieldSelectorVN =
-                            vnStore->VNForFieldSelector(fldSeq2->GetFieldHandle(), &firstFieldType, &structSize);
-
-                        ValueNum fldMapVN =
-                            vnStore->VNForMapSelect(VNK_Liberal, TYP_MEM, fgCurMemoryVN[GcHeap], firstFieldSelectorVN);
-
-                        ValueNum firstFieldValueSelectorVN;
-                        if (obj != nullptr)
-                        {
-                            firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(obj->gtVNPair);
-                        }
-                        else
-                        {
-                            assert(staticOffset != nullptr);
-                            firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
-                        }
-
-                        // Construct the value number for fldMap[obj/offset].
-                        ValueNum firstFieldValueVN =
-                            vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, firstFieldValueSelectorVN);
-
-                        // Finally, account for the rest of the fields in the sequence.
-                        ValueNum valueVN =
-                            vnStore->VNApplySelectors(VNK_Liberal, firstFieldValueVN, fldSeq2->m_next, &structSize);
-
-                        valueVN = vnStore->VNApplySelectorsTypeCheck(valueVN, tree->TypeGet(), structSize);
-                        tree->gtVNPair.SetLiberal(valueVN);
-
-                        // The conservative value is a new, unique VN.
-                        tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                     }
                     else
                     {
-                        // Occasionally we do an explicit null test on a REF, so we just dereference it with no
-                        // field sequence.  The result is probably unused.
-                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-                        tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
+                        assert(staticOffset != nullptr);
+                        firstFieldValueSelectorVN = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                     }
+
+                    // Construct the value number for fldMap[obj/offset].
+                    ValueNum firstFieldValueVN =
+                        vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, firstFieldValueSelectorVN);
+
+                    // Finally, account for the rest of the fields in the sequence.
+                    ValueNum valueVN =
+                        vnStore->VNApplySelectors(VNK_Liberal, firstFieldValueVN, fldSeq2->m_next, &structSize);
+
+                    valueVN = vnStore->VNApplySelectorsTypeCheck(valueVN, tree->TypeGet(), structSize);
+                    tree->gtVNPair.SetLiberal(valueVN);
+
+                    // The conservative value is a new, unique VN.
+                    tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
                 else // We don't know where the address points, so it is an ByrefExposed load.
                 {
@@ -9232,13 +9156,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
-                    case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-                    case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-                    case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+                    case GT_BOUNDS_CHECK:
                     {
                         ValueNumPair vnpIndex  = tree->AsBoundsChk()->GetIndex()->gtVNPair;
                         ValueNumPair vnpArrLen = tree->AsBoundsChk()->GetArrayLength()->gtVNPair;
@@ -9452,7 +9370,7 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
     }
     else
     {
-        assert(intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType);
+        assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
         intrinsic->gtVNPair =
             vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP), arg0VNPx);
     }
@@ -9472,9 +9390,7 @@ void Compiler::fgValueNumberSimd(GenTreeSIMD* tree)
         excSetPair = ValueNumStore::VNPForEmptyExcSet();
         normalPair = vnStore->VNPairForFunc(tree->TypeGet(), simdFunc);
     }
-    // TODO-List-Cleanup: the "tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN" case is a quirk
-    // to get zero diffs - Vector2(float, float) was imported with lists - remove it.
-    else if ((tree->GetOperandCount() > 2) || (tree->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
+    else if (tree->GetOperandCount() > 2)
     {
         // We have a SIMD node with 3 or more args. To retain the
         // previous behavior, we will generate a unique VN for this case.
@@ -9821,6 +9737,12 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
+        }
+        break;
+
+        case VNF_JitNewMdArr:
+        {
+            generateUniqueVN = true;
         }
         break;
 
@@ -10229,6 +10151,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitNewArr;
             break;
 
+        case CORINFO_HELP_NEW_MDARR:
+            vnf = VNF_JitNewMdArr;
+            break;
+
         case CORINFO_HELP_READYTORUN_NEWARR_1:
             vnf = VNF_JitReadyToRunNewArr;
             break;
@@ -10455,20 +10381,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
     }
     else
     {
-        // TODO-CQ: this is a list of helpers we're going to treat as non-pure,
-        // because they raise complications.  Eventually, we need to handle those complications...
-        bool needsFurtherWork = false;
-        switch (helpFunc)
-        {
-            case CORINFO_HELP_NEW_MDARR:
-                // This is a varargs helper.  We need to represent the array shape in the VN world somehow.
-                needsFurtherWork = true;
-                break;
-            default:
-                break;
-        }
-
-        if (!needsFurtherWork && (pure || isAlloc))
+        if (pure || isAlloc)
         {
             VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
 
@@ -10982,13 +10895,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForDivision(tree);
                 break;
 
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            case GT_ARR_BOUNDS_CHECK:
+            case GT_BOUNDS_CHECK:
                 fgValueNumberAddExceptionSetForBoundsCheck(tree);
                 break;
 

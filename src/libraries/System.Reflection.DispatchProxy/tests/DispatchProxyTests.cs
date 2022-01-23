@@ -628,6 +628,7 @@ namespace DispatchProxyTests
         private static TestType_IHelloService CreateTestHelloProxy() =>
             DispatchProxy.Create<TestType_IHelloService, TestDispatchProxy>();
 
+	[ActiveIssue("https://github.com/dotnet/runtime/issues/62503", TestRuntimes.Mono)]
         [Fact]
         public static void Test_Unloadability()
         {

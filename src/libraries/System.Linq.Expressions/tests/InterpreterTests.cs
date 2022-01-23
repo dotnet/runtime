@@ -101,9 +101,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
-        // but this functionality relies on private reflection and that would not work with AOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         [ActiveIssue ("https://github.com/dotnet/runtime/issues/53599", platforms: TestPlatforms.MacCatalyst, runtimes: TestRuntimes.Mono)]
         public static void ConstructorThrows_StackTrace()
         {
@@ -112,9 +110,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(), "Thrower..ctor");
         }
 
-        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
-        // but this functionality relies on private reflection and that would not work with AOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public static void PropertyGetterThrows_StackTrace()
         {
             Expression<Func<Thrower, int>> e = t => t.Bar;
@@ -122,9 +118,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.get_Bar");
         }
 
-        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
-        // but this functionality relies on private reflection and that would not work with AOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public static void PropertySetterThrows_StackTrace()
         {
             ParameterExpression t = Expression.Parameter(typeof(Thrower), "t");
@@ -133,9 +127,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.set_Bar");
         }
 
-        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
-        // but this functionality relies on private reflection and that would not work with AOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public static void IndexerGetterThrows_StackTrace()
         {
             ParameterExpression t = Expression.Parameter(typeof(Thrower), "t");
@@ -144,9 +136,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.get_Item");
         }
 
-        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
-        // but this functionality relies on private reflection and that would not work with AOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public static void IndexerSetterThrows_StackTrace()
         {
             ParameterExpression t = Expression.Parameter(typeof(Thrower), "t");
@@ -155,9 +145,7 @@ namespace System.Linq.Expressions.Tests
             AssertStackTrace(() => f(new Thrower(error: false)), "Thrower.set_Item");
         }
 
-        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
-        // but this functionality relies on private reflection and that would not work with AOT
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
+        [Fact]
         public static void MethodThrows_StackTrace()
         {
             Expression<Action<Thrower>> e = t => t.Foo();

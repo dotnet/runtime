@@ -184,7 +184,7 @@ namespace System.StubHelpers
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
             int end = SpanHelpers.IndexOf(ref *(byte*)cstr, 0, length);
-            if (end != -1)
+            if (end >= 0)
             {
                 length = end;
             }
@@ -512,7 +512,7 @@ namespace System.StubHelpers
         internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
         {
             int end = SpanHelpers.IndexOf(ref *(char*)nativeHome, '\0', length);
-            if (end != -1)
+            if (end >= 0)
             {
                 length = end;
             }
@@ -750,7 +750,7 @@ namespace System.StubHelpers
         private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
         {
             Type elementType = pManagedHome.GetType().GetElementType()!;
-            VarEnum vt = VarEnum.VT_EMPTY;
+            VarEnum vt;
 
             switch (Type.GetTypeCode(elementType))
             {
@@ -1181,7 +1181,7 @@ namespace System.StubHelpers
         internal static extern IntPtr GetNDirectTarget(IntPtr pMD);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateTarget(Delegate pThis, ref IntPtr pStubArg);
+        internal static extern IntPtr GetDelegateTarget(Delegate pThis);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ClearLastError();
@@ -1348,11 +1348,6 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-#if TARGET_64BIT
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStubContextAddr();
-#endif // TARGET_64BIT
-
 #if FEATURE_ARRAYSTUB_AS_IL
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ArrayTypeCheck(object o, object[] arr);
@@ -1363,6 +1358,7 @@ namespace System.StubHelpers
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
 #endif
 
+        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers
