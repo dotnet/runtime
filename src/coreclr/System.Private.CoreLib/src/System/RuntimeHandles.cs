@@ -1246,7 +1246,7 @@ namespace System
         }
     }
 
-    public unsafe partial struct ModuleHandle
+    public unsafe partial struct ModuleHandle : IEquatable<ModuleHandle>
     {
         #region Public Static Members
         public static readonly ModuleHandle EmptyHandle;
