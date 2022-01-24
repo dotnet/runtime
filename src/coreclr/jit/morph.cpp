@@ -13422,8 +13422,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //    node - HWIntrinsic node to examine
 //
 // Returns:
-//    The original node if no folding happened.
-//    An alternative tree if folding happens.
+//    The original node if no optimization happened.
+//    An alternative tree if an optimization happened.
 //
 // Notes:
 //    Checks for HWIntrinsic nodes: Vector64.Create/Vector128.Create/Vector256.Create,
