@@ -200,6 +200,7 @@ namespace System.IO.MemoryMappedFiles
                 if (fd.IsInvalid)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
 
                     if (errorInfo.Error == Interop.Error.ENOTSUP)
                     {
@@ -252,7 +253,7 @@ namespace System.IO.MemoryMappedFiles
                 {
                     Guid.NewGuid().TryFormat(span, out int charsWritten, "N");
                     Debug.Assert(charsWritten == MaxSharedMemoryObjectNameLength);
-                    "/corefx_map_".CopyTo(span);
+                    "/dotnet_".CopyTo(span);
                 });
             }
         }
