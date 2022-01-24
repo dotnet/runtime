@@ -3,27 +3,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Collections.Immutable
 {
     public readonly partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable, IImmutableList<T>
     {
-        /// <summary>
-        /// Creates a <see cref="ReadOnlySpan{T}"/> over the portion of current <see cref="ImmutableArray{T}"/> based on specified <paramref name="range"/>
-        /// </summary>
-        /// <param name="range">Range in current <see cref="ImmutableArray{T}"/>.</param>
-        /// <returns>The <see cref="ReadOnlySpan{T}"/> representation of the <see cref="ImmutableArray{T}"/></returns>
-        public ReadOnlySpan<T> AsSpan(Range range)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-
-            (int start, int length) = range.GetOffsetAndLength(self.Length);
-            return new ReadOnlySpan<T>(self.array, start, length);
-        }
-
         /// <summary>
         /// Removes the specified values from this list.
         /// </summary>
@@ -59,12 +43,13 @@ namespace System.Collections.Immutable
                 {
                     nullValueCount++;
                 }
+                else if (itemsMultiSet.TryGetValue(item, out int count))
+                {
+                    itemsMultiSet[item] = count + 1;
+                }
                 else
                 {
-#nullable disable
-                    ref int count = ref CollectionsMarshal.GetValueRefOrAddDefault(itemsMultiSet, item, out _);
-#nullable restore
-                    count++;
+                    itemsMultiSet[item] = 1;
                 }
             }
 
@@ -81,23 +66,17 @@ namespace System.Collections.Immutable
                         nullValueCount--;
                     }
                 }
-                else
+                else if (itemsMultiSet.TryGetValue(selfArray[i], out int count))
                 {
-#nullable disable
-                    ref int count = ref CollectionsMarshal.GetValueRefOrNullRef(itemsMultiSet, selfArray[i]);
-#nullable restore
-                    if (!Unsafe.IsNullRef(ref count))
+                    found = true;
+                    if (count == 1)
                     {
-                        found = true;
-                        if (count == 1)
-                        {
-                            itemsMultiSet.Remove(selfArray[i]);
-                        }
-                        else
-                        {
-                            Debug.Assert(count > 1);
-                            count--;
-                        }
+                        itemsMultiSet.Remove(selfArray[i]);
+                    }
+                    else
+                    {
+                        Debug.Assert(count > 1);
+                        itemsMultiSet[selfArray[i]] = count - 1;
                     }
                 }
 
