@@ -396,6 +396,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                     }
                 }
+                DebuggerAttrInfo.ClearInsignificantAttrFlags();
             }
             localScopes = pdbMetadataReader.GetLocalScopes(methodDefHandle);
         }
@@ -490,6 +491,26 @@ namespace Microsoft.WebAssembly.Diagnostics
             public bool HasStepThrough { get; internal set; }
             public bool HasNonUserCode { get; internal set; }
             public bool HasStepperBoundary { get; internal set; }
+
+            internal void ClearInsignificantAttrFlags()
+            {
+                // hierarchy: hidden > stepThrough > nonUserCode > boundary
+                if (HasDebuggerHidden)
+                {
+                    HasStepThrough = false;
+                    HasNonUserCode = false;
+                    HasStepperBoundary = false;
+                }
+                else if (HasStepThrough)
+                {
+                    HasNonUserCode = false;
+                    HasStepperBoundary = false;
+                }
+                else if (HasNonUserCode)
+                {
+                    HasStepperBoundary = false;
+                }
+            }
         }
     }
 
