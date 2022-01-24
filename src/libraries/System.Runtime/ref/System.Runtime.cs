@@ -13452,6 +13452,7 @@ namespace System.Runtime.InteropServices
         Wasm = 4,
         S390x = 5,
         LoongArch64 = 6,
+        Armv6 = 7,
     }
     public enum CharSet
     {
