@@ -862,13 +862,13 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string?> task = ReadLineAsyncInternal(cancellationToken).AsTask();
+            Task<string?> task = ReadLineAsyncInternal(cancellationToken);
             _asyncReadTask = task;
 
             return new ValueTask<string?>(task);
         }
 
-        private async ValueTask<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
+        private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
             if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
             {
