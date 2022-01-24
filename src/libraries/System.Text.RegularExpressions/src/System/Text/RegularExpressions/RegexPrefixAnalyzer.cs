@@ -50,11 +50,11 @@ namespace System.Text.RegularExpressions
             _skipAllChildren = false;
         }
 
-        /// <summary>Computes the leading substring in <paramref name="tree"/>; may be empty.</summary>
-        public static string FindCaseSensitivePrefix(RegexTree tree)
+        /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
+        public static string FindCaseSensitivePrefix(RegexNode node)
         {
             var vsb = new ValueStringBuilder(stackalloc char[64]);
-            Process(tree.Root, ref vsb);
+            Process(node, ref vsb);
             return vsb.ToString();
 
             // Processes the node, adding any prefix text to the builder.
@@ -85,6 +85,59 @@ namespace System.Text.RegularExpressions
                                 }
                             }
                             return !rtl;
+                        }
+
+                    // Alternation: find a string that's a shared prefix of all branches
+                    case RegexNodeKind.Alternate:
+                        {
+                            int childCount = node.ChildCount();
+
+                            // Store the initial branch into the target builder, keeping track
+                            // of how much was appended. Any of this contents that doesn't overlap
+                            // will every other branch will be removed before returning.
+                            int initialLength = vsb.Length;
+                            Process(node.Child(0), ref vsb);
+                            int addedLength = vsb.Length - initialLength;
+
+                            // Then explore the rest of the branches, finding the length
+                            // of prefix they all share in common with the initial branch.
+                            if (addedLength != 0)
+                            {
+                                var alternateSb = new ValueStringBuilder(64);
+
+                                // Process each branch.  If we reach a point where we've proven there's
+                                // no overlap, we can bail early.
+                                for (int i = 1; i < childCount && addedLength != 0; i++)
+                                {
+                                    alternateSb.Length = 0;
+
+                                    // Process the branch into a temporary builder.
+                                    Process(node.Child(i), ref alternateSb);
+
+                                    // Find how much overlap there is between this branch's prefix
+                                    // and the smallest amount of prefix that overlapped with all
+                                    // the previously seen branches.
+                                    addedLength = Math.Min(addedLength, alternateSb.Length);
+                                    for (int j = 0; j < addedLength; j++)
+                                    {
+                                        if (vsb[initialLength + j] != alternateSb[j])
+                                        {
+                                            addedLength = j;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                alternateSb.Dispose();
+
+                                // Then cull back on what was added based on the other branches.
+                                vsb.Length = initialLength + addedLength;
+                            }
+
+                            // Don't explore anything after the alternation.  We could make this work if desirable,
+                            // but it's currently not worth the extra complication.  The entire contents of every
+                            // branch would need to be identical other than zero-width anchors/assertions.
+                            return false;
                         }
 
                     // One character

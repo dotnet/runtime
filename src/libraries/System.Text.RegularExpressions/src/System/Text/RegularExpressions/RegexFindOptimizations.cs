@@ -50,7 +50,7 @@ namespace System.Text.RegularExpressions
             }
 
             // If there's a leading case-sensitive substring, just use IndexOf and inherit all of its optimizations.
-            string caseSensitivePrefix = RegexPrefixAnalyzer.FindCaseSensitivePrefix(tree);
+            string caseSensitivePrefix = RegexPrefixAnalyzer.FindCaseSensitivePrefix(tree.Root);
             if (caseSensitivePrefix.Length > 1)
             {
                 LeadingCaseSensitivePrefix = caseSensitivePrefix;
