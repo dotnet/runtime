@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
         public const string CovariantReturnsOfClasses = nameof(CovariantReturnsOfClasses);
 
         /// <summary>
-        /// Indicates that this version of runtime supports ref fields.
+        /// Represents a runtime feature where types can define ref fields.
         /// </summary>
         public const string ByRefFields = nameof(ByRefFields);
 
