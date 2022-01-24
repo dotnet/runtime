@@ -11717,7 +11717,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 // Notes:
 //    Checks for HWIntrinsic nodes to Vector64.Create/Vector128.Create/Vector256.Create,
 //    and if the call is to one of these, attempt to optimize.
-
+//
 GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
 {
     // Defer folding if not optimizing.
