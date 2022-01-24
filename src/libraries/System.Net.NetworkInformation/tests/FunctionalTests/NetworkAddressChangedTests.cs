@@ -27,15 +27,17 @@ namespace System.Net.NetworkInformation.Tests
             NetworkChange.NetworkAddressChanged -= _addressHandler;
         }
 
-        [PlatformSpecific(TestPlatforms.Linux)]
+        //[PlatformSpecific(TestPlatforms.Linux)]
         //[OuterLoop()] //TODO: add Outer Loop attribute?
-        [ConditionalFact(nameof(SupportsGettingThreadsWithPsCommand))]
-        public void NetworkAddressChanged_AddRemoveMultipleTimes_CheckForLeakingThreads()
+        [ConditionalFact(nameof(SupportsGettingThreadsWithPsCommandOnLinux))]
+        public static void NetworkAddressChanged_AddRemoveMultipleTimes_CheckForLeakingThreads()
         {
+            NetworkAddressChangedEventHandler addressHandler = delegate { };
+
             for (int i = 1; i <= 10; i++)
             {
-                NetworkChange.NetworkAddressChanged += _addressHandler;
-                NetworkChange.NetworkAddressChanged -= _addressHandler;
+                NetworkChange.NetworkAddressChanged += addressHandler;
+                NetworkChange.NetworkAddressChanged -= addressHandler;
             }
 
             Thread.Sleep(2000); //allow some time for threads to exit
@@ -50,6 +52,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(0, numberOfNetworkAddressChangeThreads); //there should be no threads because there are no event subscribers
         }
 
-        private static bool SupportsGettingThreadsWithPsCommand => TestConfiguration.SupportsGettingThreadsWithPsCommand;
+        private static bool SupportsGettingThreadsWithPsCommandOnLinux
+            => OperatingSystem.IsLinux() && TestConfiguration.SupportsGettingThreadsWithPsCommand;
     }
 }
