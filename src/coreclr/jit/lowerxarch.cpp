@@ -162,6 +162,9 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 //------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
+// Recognizes opportunities for using target-independent "combined" nodes
+// Performs containment checks.
+//
 // Arguments:
 //    node - the arithmetic node to lower
 //
@@ -173,10 +176,16 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 #ifdef FEATURE_HW_INTRINSICS
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
     {
-        GenTree* blsrNode = TryLowerAndOpToResetLowestSetBit(binOp);
-        if (blsrNode != nullptr)
+        GenTree* replacementNode = TryLowerAndOpToAndNot(binOp);
+        if (replacementNode != nullptr)
         {
-            return blsrNode->gtNext;
+            return replacementNode->gtNext;
+        }
+
+        replacementNode = TryLowerAndOpToResetLowestSetBit(binOp);
+        if (replacementNode != nullptr)
+        {
+            return replacementNode->gtNext;
         }
     }
 #endif
@@ -3800,6 +3809,68 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     ContainCheckHWIntrinsic(blsrNode);
 
     return blsrNode;
+}
+
+GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
+{
+    assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
+
+    GenTree* opNode  = nullptr;
+    GenTree* notNode = nullptr;
+    if (andNode->gtGetOp1()->OperIs(GT_NOT))
+    {
+        notNode = andNode->gtGetOp1();
+        opNode  = andNode->gtGetOp2();
+    }
+    else if (andNode->gtGetOp2()->OperIs(GT_NOT))
+    {
+        notNode = andNode->gtGetOp2();
+        opNode  = andNode->gtGetOp1();
+    }
+
+    if (opNode == nullptr || !opNode->OperIs(GT_LCL_VAR))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+    if (andNode->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_X64_AndNot;
+    }
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_AndNot;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(andNode, &use))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* andnNode =
+        comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), notNode->AsUnOp()->gtGetOp1(), opNode, intrinsic);
+
+    JITDUMP("Lower: optimize AND(X, NOT(Y)))\n");
+    DISPNODE(andNode);
+    JITDUMP("to:\n");
+    DISPNODE(andnNode);
+
+    use.ReplaceWith(andnNode);
+
+    BlockRange().InsertBefore(andNode, andnNode);
+    BlockRange().Remove(andNode);
+    BlockRange().Remove(notNode);
+
+    ContainCheckHWIntrinsic(andnNode);
+
+    return andnNode;
+    
 }
 
 #endif // FEATURE_HW_INTRINSICS
