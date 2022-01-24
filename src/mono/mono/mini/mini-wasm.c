@@ -535,7 +535,7 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	g_error ("mono_chain_signal");
-	
+
 	return FALSE;
 }
 
@@ -784,7 +784,7 @@ mono_arch_load_function (MonoJitICallId jit_icall_id)
 	return NULL;
 }
 
-MONO_API void 
+MONO_API void
 mono_wasm_enable_debugging (int log_level)
 {
 	mono_wasm_debug_level = log_level;

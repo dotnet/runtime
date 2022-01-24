@@ -903,9 +903,6 @@
   <data name="Argument_CannotCreateTypedReference" xml:space="preserve">
     <value>Cannot use function evaluation to create a TypedReference object.</value>
   </data>
-  <data name="Argument_CannotGetTypeTokenForByRef" xml:space="preserve">
-    <value>Cannot get TypeToken for a ByRef type.</value>
-  </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
   </data>

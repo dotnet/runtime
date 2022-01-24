@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    public struct SessionId
+    public struct SessionId : IEquatable<SessionId>
     {
         public readonly string sessionId;
 
@@ -26,7 +26,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         // hashset treats 0 as unset
         public override int GetHashCode() => sessionId?.GetHashCode() ?? -1;
 
-        public override bool Equals(object obj) => (obj is SessionId) ? ((SessionId)obj).sessionId == sessionId : false;
+        public override bool Equals(object obj) => obj is SessionId other && Equals(other);
+
+        public bool Equals(SessionId other) => other.sessionId == sessionId;
 
         public static bool operator ==(SessionId a, SessionId b) => a.sessionId == b.sessionId;
 
@@ -37,7 +39,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"session-{sessionId}";
     }
 
-    public struct MessageId
+    public struct MessageId : IEquatable<MessageId>
     {
         public readonly string sessionId;
         public readonly int id;
@@ -54,7 +56,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override int GetHashCode() => (sessionId?.GetHashCode() ?? 0) ^ id.GetHashCode();
 
-        public override bool Equals(object obj) => (obj is MessageId) ? ((MessageId)obj).sessionId == sessionId && ((MessageId)obj).id == id : false;
+        public override bool Equals(object obj) => obj is MessageId other && Equals(other);
+
+        public bool Equals(MessageId other) => other.sessionId == sessionId && other.id == id;
     }
 
     internal class DotnetObjectId

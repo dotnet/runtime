@@ -11,7 +11,7 @@ namespace System.Threading
         /// <summary>
         /// Tracks information on the number of threads we want/have in different states in our thread pool.
         /// </summary>
-        private struct ThreadCounts
+        private struct ThreadCounts : IEquatable<ThreadCounts>
         {
             // SOS's ThreadPool command depends on this layout
             private const byte NumProcessingWorkShift = 0;
@@ -126,7 +126,8 @@ namespace System.Threading
             public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._data == rhs._data;
             public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;
 
-            public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && _data == other._data;
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is ThreadCounts other && Equals(other);
+            public bool Equals(ThreadCounts other) => _data == other._data;
             public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
     }

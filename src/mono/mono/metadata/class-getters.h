@@ -1,4 +1,4 @@
-/* 
+/*
  * \file Definitions of getters for the fields of struct _MonoClass
  *
  * Copyright 2018 Microsoft
@@ -8,7 +8,7 @@
 /* No include guards - this file is meant to be included multiple times.
  * Before including the file define the following macros:
  * MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname)
- * 
+ *
  * MONO_CLASS_OFFSET(funcname, argtype, fieldname)
  */
 

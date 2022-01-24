@@ -6,7 +6,7 @@
 
 namespace Microsoft.Extensions.Logging
 {
-    public readonly partial struct EventId
+    public readonly partial struct EventId : System.IEquatable<Microsoft.Extensions.Logging.EventId>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;

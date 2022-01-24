@@ -8,7 +8,7 @@
  *   Dietmar Maurer (dietmar@ximian.com)
  *   Patrik Torstensson
  *   Zalman Stern
- * 
+ *
  * Copyright (C)  2000 Intel Corporation.  All rights reserved.
  * Copyright (C)  2001, 2002 Ximian, Inc.
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
@@ -652,7 +652,7 @@ typedef union {
 
 #define amd64_call_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); *(inst)++ = (unsigned char)0xff; amd64_membase_emit ((inst),2, (basereg),(disp)); } while (0)
 #define amd64_jump_membase_size(inst,basereg,disp,size) do { amd64_emit_rex ((inst),0,0,0,(basereg)); *(inst)++ = (unsigned char)0xff; amd64_membase_emit ((inst), 4, (basereg), (disp)); } while (0)
-    
+
 #define amd64_jump_code_size(inst,target,size) do { \
 	if (amd64_is_imm32 ((gint64)(target) - (gint64)(inst))) {		\
 		x86_jump_code((inst),(target));									\
@@ -777,7 +777,7 @@ typedef union {
 } while (0)
 
 /* specific SSE opcode defines */
- 
+
 #define amd64_sse_xorpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg), 0x66, 0x0f, 0x57)
 
 #define amd64_sse_xorpd_reg_membase(inst,dreg,basereg,disp) emit_sse_reg_membase ((inst),(dreg),(basereg), (disp), 0x66, 0x0f, 0x57)
@@ -1203,7 +1203,7 @@ typedef union {
 //#define amd64_alu_reg_imm_size(inst,opc,reg,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_reg_imm((inst),(opc),((reg)&0x7),(imm)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_mem_imm_size(inst,opc,mem,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_alu_mem_imm((inst),(opc),(mem),(imm)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_membase_imm_size(inst,opc,basereg,disp,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_alu_membase_imm((inst),(opc),((basereg)&0x7),(disp),(imm)); amd64_codegen_post(inst); } while (0)
-#define amd64_alu_membase8_imm_size(inst,opc,basereg,disp,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_alu_membase8_imm((inst),(opc),((basereg)&0x7),(disp),(imm)); amd64_codegen_post(inst); } while (0)	
+#define amd64_alu_membase8_imm_size(inst,opc,basereg,disp,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_alu_membase8_imm((inst),(opc),((basereg)&0x7),(disp),(imm)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_mem_reg_size(inst,opc,mem,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_mem_reg((inst),(opc),(mem),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_membase_reg_size(inst,opc,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_alu_membase_reg((inst),(opc),((basereg)&0x7),(disp),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 //#define amd64_alu_reg_reg_size(inst,opc,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_alu_reg_reg((inst),(opc),((dreg)&0x7),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
@@ -1475,7 +1475,7 @@ typedef union {
 #define amd64_fucomi(inst,index) amd64_fucomi_size(inst,index,8)
 #define amd64_fucomip(inst,index) amd64_fucomip_size(inst,index,8)
 #define amd64_fld(inst,mem,is_double) amd64_fld_size(inst,mem,is_double,8)
-#define amd64_fld_membase(inst,basereg,disp,is_double)  amd64_fld_membase_size(inst,basereg,disp,is_double,8) 
+#define amd64_fld_membase(inst,basereg,disp,is_double)  amd64_fld_membase_size(inst,basereg,disp,is_double,8)
 #define amd64_fld80_mem(inst,mem) amd64_fld80_mem_size(inst,mem,8)
 #define amd64_fld80_membase(inst,basereg,disp) amd64_fld80_membase_size(inst,basereg,disp,8)
 #define amd64_fild(inst,mem,is_long) amd64_fild_size(inst,mem,is_long,8)

@@ -6208,7 +6208,7 @@ void ValueNumStore::vnDumpZeroObj(Compiler* comp, VNFuncApp* zeroObj)
 static UINT8      vnfOpAttribs[VNF_COUNT];
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
-                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND,
+                                                 GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_DYN_BLK,
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
@@ -9297,6 +9297,30 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 break;
 #endif // FEATURE_HW_INTRINSICS
 
+            case GT_STORE_DYN_BLK:
+            {
+                // Conservatively, mutate the heaps - we don't analyze these rare stores.
+                // Likewise, any locals possibly defined by them we mark as address-exposed.
+                fgMutateGcHeap(tree DEBUGARG("dynamic block store"));
+
+                GenTreeStoreDynBlk* store     = tree->AsStoreDynBlk();
+                ValueNumPair        vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+
+                // Propagate the exceptions...
+                vnpExcSet = vnStore->VNPUnionExcSet(store->Addr()->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(store->Data()->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(store->gtDynamicSize->gtVNPair, vnpExcSet);
+
+                // This is a store, it produces no value. Thus we use VNPForVoid().
+                store->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
+
+                // Note that we are only adding the exception for the destination address.
+                // Currently, "Data()" is an explicit indirection in case this is a "cpblk".
+                assert(store->Data()->gtEffectiveVal()->OperIsIndir() || store->OperIsInitBlkOp());
+                fgValueNumberAddExceptionSetForIndirection(store, store->Addr());
+                break;
+            }
+
             case GT_CMPXCHG: // Specialop
             {
                 // For CMPXCHG and other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
@@ -9348,17 +9372,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 fgValueNumberAddExceptionSetForIndirection(arrElem, arrElem->gtArrObj);
             }
             break;
-
-            // DYN_BLK is always an L-value.
-            case GT_DYN_BLK:
-                assert(!tree->CanCSE());
-                tree->gtVNPair = vnStore->VNPForVoid();
-                tree->gtVNPair =
-                    vnStore->VNPWithExc(tree->gtVNPair, vnStore->VNPExceptionSet(tree->AsDynBlk()->Addr()->gtVNPair));
-                tree->gtVNPair =
-                    vnStore->VNPWithExc(tree->gtVNPair,
-                                        vnStore->VNPExceptionSet(tree->AsDynBlk()->gtDynamicSize->gtVNPair));
-                break;
 
             // FIELD_LIST is an R-value that we currently don't model.
             case GT_FIELD_LIST:
@@ -10985,7 +10998,6 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
             case GT_IND:
             case GT_BLK:
             case GT_OBJ:
-            case GT_DYN_BLK:
             case GT_NULLCHECK:
                 fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIndir()->Addr());
                 break;

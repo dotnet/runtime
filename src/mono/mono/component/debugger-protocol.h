@@ -6,7 +6,7 @@
 #define HEADER_LENGTH 11
 #define REPLY_PACKET 0x80
 
-/* 
+/*
  * Wire Protocol definitions
  */
 

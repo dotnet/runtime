@@ -228,12 +228,23 @@
     </ItemGroup>
 
     <!-- ARM Linux cross build options on CI -->
-    <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64')">
+    <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armv6' or '$(TargetArchitecture)' == 'arm64')">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoCMakeArgs Condition="'$(TargetOS)' == 'Linux' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armv6')" Include="-DMONO_ARM_FPU=vfp-hard" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="TARGET_BUILD_ARCH=arm64" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="TARGET_BUILD_ARCH=arm" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'armv6'" Include="TARGET_BUILD_ARCH=armv6" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
+      <_MonoBuildEnv Condition="'$(Platform)' == 'armv6'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/arm-linux-gnueabihf/pkgconfig" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6zk" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mcpu=arm1176jzf-s" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfpu=vfp" />
+      <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfloat-abi=hard" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-march=armv6zk" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mcpu=arm1176jzf-s" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfpu=vfp" />
+      <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'armv6'" Include="-mfloat-abi=hard" />
     </ItemGroup>
 
     <!-- x64 illumos cross build options -->
@@ -514,6 +525,7 @@
       <_LinuxFloatAbi Condition="'$(TargetsAndroid)' != 'true'">hf</_LinuxFloatAbi>
       <_Objcopy>objcopy</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'arm'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
+      <_Objcopy Condition="'$(Platform)' == 'armv6'">arm-linux-$(_LinuxAbi)eabi$(_LinuxFloatAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'arm64'">aarch64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 's390x'">s390x-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>
       <_Objcopy Condition="'$(Platform)' == 'x64'">x86_64-linux-$(_LinuxAbi)-$(_Objcopy)</_Objcopy>

@@ -69,6 +69,15 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [InlineData("MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089", "MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089")]
+        [InlineData("MyAssemblyName, Version=1.0.0.0, PublicKey=00000000000000000400000000000000", "MyAssemblyName, Version=1.0.0.0, PublicKeyToken=b77a5c561934e089")]
+        public void Ctor_String_Public_Key(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName(name);
+            Assert.Equal(expectedName, assemblyName.FullName);
+        }
+
+        [Theory]
         [InlineData(null, typeof(ArgumentNullException))]
         [InlineData("", typeof(ArgumentException))]
         [InlineData("\0", typeof(ArgumentException))]
@@ -76,7 +85,36 @@ namespace System.Reflection.Tests
         [InlineData("/a", typeof(FileLoadException))]
         [InlineData("           ", typeof(FileLoadException))]
         [InlineData("  \t \r \n ", typeof(FileLoadException))]
+        [InlineData("aa, culture=en-en, culture=en-en", typeof(FileLoadException))]
+        [InlineData("MyAssemblyName, PublicKey=00000000000000000400000000000000, PublicKeyToken=b77a5c561934e089", typeof(FileLoadException))]
         public void Ctor_String_Invalid(string assemblyName, Type exceptionType)
+        {
+            Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
+        }
+
+        [Theory]
+        [InlineData("aaaa, language=en-en", "aaaa")]
+        [InlineData("aaaa, foo=bar, foo=baz", "aaaa")]
+        [InlineData("aaaa, foo = bar, foo = bar", "aaaa")]
+        [InlineData("aaaa, custom=10", "aaaa")]
+        [InlineData("aaaa, custom=10, custom=20", "aaaa")]
+        [InlineData("aaaa, custom=lalala", "aaaa")]
+        public void Ctor_String_Valid_Legacy(string name, string expectedName)
+        {
+            AssemblyName assemblyName = new AssemblyName(name);
+            Assert.Equal(expectedName, assemblyName.Name);
+        }
+
+        [Theory]
+        [InlineData("name\\u50; ", typeof(FileLoadException))]
+        [InlineData("aa/name ", typeof(FileLoadException))]
+        [InlineData("aa\\/tname", typeof(FileLoadException))]
+        [InlineData("aaaa, publickey=neutral", typeof(FileLoadException))]
+        [InlineData("aaaa, publickeytoken=neutral", typeof(FileLoadException))]
+        [InlineData("aaaa\0", typeof(FileLoadException))]
+        [InlineData("aaaa\0potato", typeof(FileLoadException))]
+        [InlineData("aaaa, publickeytoken=null\0,culture=en-en", typeof(FileLoadException))]
+        public void Ctor_String_Invalid_Legacy(string assemblyName, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => new AssemblyName(assemblyName));
         }

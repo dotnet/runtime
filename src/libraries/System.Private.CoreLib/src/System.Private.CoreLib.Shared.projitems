@@ -2120,7 +2120,14 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs">
       <Link>Common\System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsAndroid)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Android.cs" Condition="'$(TargetsAndroid)' == 'true'" />
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Logcat.cs" Condition="'$(TargetsAndroid)' == 'true'">
+      <Link>Common\Interop\Android\Interop.Logcat.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs" Condition="'$(TargetsAndroid)' == 'true'">
+      <Link>Common\Interop\Android\Interop.Libraries.cs</Link>
+    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Unix.cs" />
