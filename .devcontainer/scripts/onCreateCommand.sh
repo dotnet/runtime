@@ -7,5 +7,10 @@ set -e
 # restore libs tests so that the project is ready to be loaded by OmniSharp
 ./build.sh libs.tests -restore
 
+# prebuild for WASM, so it is ready for wasm development
+make -C src/mono/wasm provision-wasm
+export EMSDK_PATH=$PWD/src/mono/wasm/emsdk
+./build.sh mono+libs -os Browser -c release
+
 # save the commit hash of the currently built assemblies, so developers know which version was built
 git rev-parse HEAD > ./artifacts/prebuild.sha
