@@ -107,7 +107,7 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
   - each of above does multiple `ccall`s. Buffer copy, handle lookup, unboxing, C# `ToString()`.
 
 
-# Possible improvements 
+# Possible improvements
 
 ## calling from C# to JS
 - A) add `InvokeJSFunctionByName` public API with generic parameters
@@ -132,7 +132,7 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
   - register custom coverters
   - custom coverter with receive pointer to the buffer
   - custom coverter could set size of buffer space?
-- E) bind methods on JSObject via JS method handle, rather than C# name string 
+- E) bind methods on JSObject via JS method handle, rather than C# name string
 - F) handle ES6 imports like Blazor
   - `module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/components/TimeDisplay.js");`
 
@@ -141,7 +141,7 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
   - it's mirror of `GeneratedJsImportAttribute`
     - it would wrap the C# method with callable thunk
     - it would generate the JS code and expose it as member `EXPORTS` next to `BINDING` object for example.
-  - use `stackalloc` in JS to allocate 
+  - use `stackalloc` in JS to allocate
   - call JS side of the marshallers
   - call the C# thunk via `mono_runtime_invoke()`
   - call the C# side of marshallers
