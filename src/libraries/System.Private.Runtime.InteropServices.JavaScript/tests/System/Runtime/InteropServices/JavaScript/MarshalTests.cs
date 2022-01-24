@@ -1024,62 +1024,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        public static void MarshalDateTime()
-        {
-            HelperMarshal._dateTimeValue = default(DateTime);
-            Runtime.InvokeJS(
-                $"var dt = new Date('{ExpectedDateString}');\r\n" +
-                "App.call_test_method ('InvokeDateTime', [ dt ], 'o');"
-            );
-            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
-        }
-
-        [Fact]
-        public static void MarshalDateTimeDefault()
-        {
-            HelperMarshal._dateTimeValue = default(DateTime);
-            Runtime.InvokeJS(
-                $"var dt = new Date('{ExpectedDateString}');\r\n" +
-                "App.call_test_method ('InvokeDateTime', [ dt ]);"
-            );
-            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
-        }
-
-        [Fact]
-        public static void MarshalDateTimeAutomatic()
-        {
-            HelperMarshal._dateTimeValue = default(DateTime);
-            Runtime.InvokeJS(
-                $"var dt = new Date('{ExpectedDateString}');\r\n" +
-                "App.call_test_method ('InvokeDateTime', [ dt ], 'a');"
-            );
-            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
-        }
-
-        [Fact]
-        public static void MarshalDateTimeOffsetAutomatic()
-        {
-            HelperMarshal._dateTimeValue = default(DateTime);
-            Runtime.InvokeJS(
-                $"var dt = new Date('{ExpectedDateString}');\r\n" +
-                "App.call_test_method ('InvokeDateTimeOffset', [ dt ], 'a');"
-            );
-            // FIXME
-            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
-        }
-
-        [Fact]
-        public static void MarshalDateTimeByValueAutomatic()
-        {
-            HelperMarshal._dateTimeValue = default(DateTime);
-            Runtime.InvokeJS(
-                $"var dt = new Date('{ExpectedDateString}');\r\n" +
-                "App.call_test_method ('InvokeDateTimeByValue', [ dt.valueOf() ], 'a');"
-            );
-            Assert.Equal(ExpectedDateTime, HelperMarshal._dateTimeValue);
-        }
-
-        [Fact]
         public static void MarshalUri()
         {
             var expected = new System.Uri("https://www.example.com/");

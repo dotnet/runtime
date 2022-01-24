@@ -107,21 +107,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return obj;
         }
 
-        internal static DateTime _dateTimeValue;
-        private static void InvokeDateTime(object boxed)
-        {
-            _dateTimeValue = (DateTime)boxed;
-        }
-        private static void InvokeDateTimeOffset(DateTimeOffset dto)
-        {
-            // FIXME
-            _dateTimeValue = dto.DateTime;
-        }
-        private static void InvokeDateTimeByValue(DateTime dt)
-        {
-            _dateTimeValue = dt;
-        }
-
         internal static System.Uri _uriValue;
         private static void InvokeUri(System.Uri uri)
         {
