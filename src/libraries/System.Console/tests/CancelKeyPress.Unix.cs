@@ -78,7 +78,7 @@ public partial class CancelKeyPressTests
 
             // Release CancelKeyPress
             mre.Set();
-        }, new RemoteInvokeOptions() { CheckExitCode = false }).Dispose();
+        }, new RemoteInvokeOptions() { ExpectedExitCode = 130 }).Dispose();
     }
 
     private void HandlerInvokedForSignal(int signalOuter, bool redirectStandardInput)

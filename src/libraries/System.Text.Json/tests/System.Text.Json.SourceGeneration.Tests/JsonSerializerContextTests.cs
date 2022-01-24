@@ -56,10 +56,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                         Assert.NotNull(fieldInfo);
                         Assert.Null(fieldInfo.GetValue(optionsInstance));
                     }
-
-                    return 0;
-                },
-                new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
+                }).Dispose();
         }
 
         [Fact]
