@@ -3,7 +3,7 @@
 //!
 //! This is generated file, see src/mono/wasm/runtime/rollup.config.js
 
-//! This is not considered public API with backward compatibility guarantees.
+//! This is not considered public API with backward compatibility guarantees. 
 
 declare interface ManagedPointer {
     __brandManagedPointer: "ManagedPointer";
@@ -256,7 +256,7 @@ declare function setU16(offset: DotnetMemOffset, value: number): void;
 declare function setU32(offset: DotnetMemOffset, value: DotnetMemValue): void;
 declare function setI8(offset: DotnetMemOffset, value: number): void;
 declare function setI16(offset: DotnetMemOffset, value: number): void;
-declare function setI32(offset: DotnetMemOffset, value: number): void;
+declare function setI32(offset: DotnetMemOffset, value: DotnetMemValue): void;
 declare function setI64(offset: DotnetMemOffset, value: number): void;
 declare function setF32(offset: DotnetMemOffset, value: number): void;
 declare function setF64(offset: DotnetMemOffset, value: number): void;

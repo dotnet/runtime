@@ -313,11 +313,11 @@ export function _compile_converter_for_marshal_string(typePtr: MonoType, method:
     return csFuncResult;
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: 0 | null, args_marshal: string, friendly_name: string): Function {
+export function mono_bind_method(method: MonoMethod, unused_nullptr: 0 | null, args_marshal: string, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
 
-    if (this_arg)
+    if (unused_nullptr)
         throw new Error("this_arg must be 0");
 
     // We implement a simple lookup cache here to prevent repeated bind_method calls on the same target

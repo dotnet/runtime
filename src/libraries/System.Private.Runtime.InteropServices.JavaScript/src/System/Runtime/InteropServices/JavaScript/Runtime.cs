@@ -192,77 +192,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return sb.ToString();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        private static unsafe string GetAndEscapeJavascriptLiteralProperty (Type type, string name) {
-            var info = type.GetProperty(
-                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-            );
-
-            var value = info?.GetValue(null) as string;
-            if (value is null)
-                return "null";
-
-            var sb = new StringBuilder();
-            sb.Append('\"');
-            foreach (var ch in value) {
-                switch (ch) {
-                    case '\'':
-                        sb.Append('\'');
-                        continue;
-                    case '"':
-                        sb.Append('\"');
-                        continue;
-                    case '\\':
-                        sb.Append("\\\\");
-                        continue;
-                    case '\n':
-                        sb.Append("\\n");
-                        continue;
-                }
-
-                if (ch < ' ') {
-                    sb.Append("\\u");
-                    sb.Append(((int)ch).ToString("X4"));
-                } else {
-                    sb.Append(ch);
-                }
-            }
-            sb.Append('\"');
-
-            return sb.ToString();
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
-        private static unsafe IntPtr GetMarshalMethodPointer (Type type, string name, out Type? returnType, out Type parameterType, bool hasScratchBuffer) {
-            var info = type.GetMethod(
-                name, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic
-            );
-            if (info is null)
-                throw new WasmInteropException($"{type.Name} must have a static {name} method");
-
-            var p = info.GetParameters();
-            int expectedLength = hasScratchBuffer ? 2 : 1;
-            if ((p.Length != expectedLength) || (p[0].ParameterType is null))
-                throw new WasmInteropException($"Method {type.Name}.{name} must accept exactly {expectedLength} parameter(s)");
-
-            if (hasScratchBuffer) {
-                if ((info.ReturnType != null) && (info.ReturnType != typeof(void)))
-                    throw new WasmInteropException($"Method {type.Name}.{name} must not have a return value");
-                if ((p[1].ParameterType != typeof(Span<byte>)) && (p[1].ParameterType != typeof(ReadOnlySpan<byte>)))
-                    throw new WasmInteropException($"Method {type.Name}.{name}'s second parameter must be of type Span<byte> or ReadOnlySpan<byte>");
-            } else {
-                if (info.ReturnType is null)
-                    throw new WasmInteropException($"Method {type.Name}.{name} must have a return value");
-            }
-
-            parameterType = p[0].ParameterType;
-            returnType = info.ReturnType;
-
-            return info.MethodHandle.Value;
-        }
-
         internal static MarshalType GetMarshalTypeFromType (Type? type) {
             if (type is null)
                 return MarshalType.VOID;
@@ -539,7 +468,7 @@ namespace System.Runtime.InteropServices.JavaScript
             MethodBase? method;
             method = MethodFromPointers(typeHandle, methodHandle);
             if (method == null)
-                throw new Exception("Failed to resolve method");
+                throw new WasmInteropException("Failed to resolve method");
 
             var state = new Codegen.BoundMethodBuilderState((MethodInfo)method) {
                 MarshalString = new MarshalString(signature, method),

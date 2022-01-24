@@ -31,7 +31,7 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    configure_emscripten_startup,
+    configure_emscripten_startup
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -47,7 +47,7 @@ import {
     mono_wasm_get_by_index, mono_wasm_get_global_object, mono_wasm_get_object_property,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property,
+    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";

@@ -60,8 +60,8 @@ export function setI16(offset: DotnetMemOffset, value: number): void {
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32(offset: DotnetMemOffset, value: number): void {
-    Module.HEAP32[<any>offset >>> 2] = value;
+export function setI32(offset: DotnetMemOffset, value: DotnetMemValue): void {
+    Module.HEAP32[<any>offset >>> 2] = <number><any>value;
 }
 
 // NOTE: Accepts a number, not a BigInt, so values over Number.MAX_SAFE_INTEGER will be corrupted

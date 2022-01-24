@@ -9,14 +9,14 @@ import {
 } from "./gc-handles";
 import corebindings from "./corebindings";
 import cwraps from "./cwraps";
-import { mono_wasm_new_root, mono_wasm_release_roots } from "./roots";
+import { mono_wasm_new_root, mono_wasm_release_roots, WasmRoot } from "./roots";
 import { wrap_error } from "./method-calls";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
 import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
-import { Int32Ptr, TypedArray } from "./types/emscripten";
+import { VoidPtr, Int32Ptr, TypedArray } from "./types/emscripten";
 import { find_corlib_type, find_type_in_assembly } from "./class-loader";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types

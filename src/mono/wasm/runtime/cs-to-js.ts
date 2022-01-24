@@ -83,7 +83,7 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
     }
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr) : any {
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr): any {
     if (type >= MarshalError.FIRST)
         throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.get_address()})`);
 
@@ -97,7 +97,7 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot<any>) : any {
+export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
 
