@@ -563,7 +563,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyMetadataAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameHelpers.StrongName.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameLexer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameParser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFormatter.cs" />

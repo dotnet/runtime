@@ -495,9 +495,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowFileLoadException_InvalidAssemblyName(string? name = null)
+        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
         {
-            throw new FileLoadException(SR.InvalidAssemblyName);
+            throw new FileLoadException(SR.InvalidAssemblyName, name);
         }
 
         [DoesNotReturn]
