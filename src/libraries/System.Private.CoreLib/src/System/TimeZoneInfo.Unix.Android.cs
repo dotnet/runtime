@@ -428,15 +428,23 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
-                List<string> nonBackwardsTZIDs = new List<string>();
+                int numTimeZoneIDs = 0;
                 for (int i = 0; i < _ids.Length; i++)
                 {
                     if (!_isBackwards[i])
                     {
-                        nonBackwardsTZIDs.Add(_ids[i]);
+                        numTimeZoneIDs++;
                     }
                 }
-                return nonBackwardsTZIDs.ToArray();
+                string[] nonBackwardsTZIDs = new string[numTimeZoneIDs];
+                for (int i = 0; i < _ids.Length; i++)
+                {
+                    if (!_isBackwards[i])
+                    {
+                        nonBackwardsTZIDs[i] = _ids[i];
+                    }
+                }
+                return nonBackwardsTZIDs;
             }
 
             public string GetTimeZoneDirectory()
