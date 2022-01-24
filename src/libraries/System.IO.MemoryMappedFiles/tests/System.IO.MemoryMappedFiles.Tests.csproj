@@ -15,17 +15,35 @@
     <Compile Include="MemoryMappedViewStream.Tests.cs" />
     <Compile Include="MemoryMappedViewAccessor.Tests.cs" />
     <Compile Include="MemoryMappedFilesTestsBase.cs" />
-    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
-    <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
-    <Compile Include="SafeMemoryMappedViewHandleTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="ProductionCode\Common\Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.MemOptions.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
+  </ItemGroup>
+ <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+   <Compile Include="MemoryMappedFilesTestsBase.Windows.cs" />
+   <Compile Include="SafeMemoryMappedViewHandleTests.Windows.cs" />
+   <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="ProductionCode\Common\Interop\Windows\Interop.BOOL.cs" />
+   <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
+   <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.CreateFileMapping.cs" />
+   <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.MapViewOfFile.cs" />
+   <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.MemOptions.cs" />
+   <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
+ </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+    <Compile Include="MemoryMappedFilesTestsBase.Unix.cs" />
+    <Compile Include="SafeMemoryMappedViewHandleTests.Unix.cs" />
+    <Compile Include="MemoryMappedFile.CreateNew.Tests.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
+             Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs"
+             Link="Common\Interop\Unix\Interop.Permissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ShmOpen.cs"
+             Link="Common\Interop\Unix\Interop.ShmOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs"
+             Link="Common\Interop\Unix\Interop.Unlink.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

@@ -11,7 +11,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedFile.CreateNew.
     /// </summary>
-    public class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
+    public partial class MemoryMappedFileTests_CreateNew : MemoryMappedFilesTestBase
     {
         /// <summary>
         /// Tests invalid arguments to the CreateNew mapName parameter.
