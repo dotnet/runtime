@@ -50,11 +50,11 @@ namespace System.Text.RegularExpressions
             _skipAllChildren = false;
         }
 
-        /// <summary>Computes the leading substring in <paramref name="tree"/>; may be empty.</summary>
-        public static string FindCaseSensitivePrefix(RegexTree tree)
+        /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
+        public static string FindCaseSensitivePrefix(RegexNode node)
         {
             var vsb = new ValueStringBuilder(stackalloc char[64]);
-            Process(tree.Root, ref vsb);
+            Process(node, ref vsb);
             return vsb.ToString();
 
             // Processes the node, adding any prefix text to the builder.
@@ -92,13 +92,15 @@ namespace System.Text.RegularExpressions
                         {
                             int childCount = node.ChildCount();
 
-                            // Store the initial branch into the target builder
+                            // Store the initial branch into the target builder, keeping track
+                            // of how much was appended. Any of this contents that doesn't overlap
+                            // will every other branch will be removed before returning.
                             int initialLength = vsb.Length;
-                            bool keepExploring = Process(node.Child(0), ref vsb);
+                            Process(node.Child(0), ref vsb);
                             int addedLength = vsb.Length - initialLength;
 
                             // Then explore the rest of the branches, finding the length
-                            // a prefix they all share in common with the initial branch.
+                            // of prefix they all share in common with the initial branch.
                             if (addedLength != 0)
                             {
                                 var alternateSb = new ValueStringBuilder(64);
@@ -109,19 +111,18 @@ namespace System.Text.RegularExpressions
                                 {
                                     alternateSb.Length = 0;
 
-                                    // Process the branch.  We want to keep exploring after this alternation,
-                                    // but we can't if either this branch doesn't allow for it or if the prefix
-                                    // supplied by this branch doesn't entirely match all the previous ones.
-                                    keepExploring &= Process(node.Child(i), ref alternateSb);
-                                    keepExploring &= alternateSb.Length == addedLength;
+                                    // Process the branch into a temporary builder.
+                                    Process(node.Child(i), ref alternateSb);
 
+                                    // Find how much overlap there is between this branch's prefix
+                                    // and the smallest amount of prefix that overlapped with all
+                                    // the previously seen branches.
                                     addedLength = Math.Min(addedLength, alternateSb.Length);
                                     for (int j = 0; j < addedLength; j++)
                                     {
                                         if (vsb[initialLength + j] != alternateSb[j])
                                         {
                                             addedLength = j;
-                                            keepExploring = false;
                                             break;
                                         }
                                     }
@@ -133,7 +134,10 @@ namespace System.Text.RegularExpressions
                                 vsb.Length = initialLength + addedLength;
                             }
 
-                            return !rtl && keepExploring;
+                            // Don't explore anything after the alternation.  We could make this work if desirable,
+                            // but it's currently not worth the extra complication.  The entire contents of every
+                            // branch would need to be identical other than zero-width anchors/assertions.
+                            return false;
                         }
 
                     // One character

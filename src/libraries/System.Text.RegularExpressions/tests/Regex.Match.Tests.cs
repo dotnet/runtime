@@ -205,6 +205,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
                 yield return (@"yz(^|a+)bc", " yzaabc", RegexOptions.None, 0, 7, true, "yzaabc");
                 yield return (@"(^a|a$) bc", "a bc", RegexOptions.None, 0, 4, true, "a bc");
+                yield return (@"(abcdefg|abcdef|abc|a)h", "    ah  ", RegexOptions.None, 0, 8, true, "ah");
+                yield return (@"(^abcdefg|abcdef|^abc|a)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
+                yield return (@"(a|^abcdefg|abcdef|^abc)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
+                yield return (@"(abcdefg|abcdef)h", "    abcdefghij  ", RegexOptions.None, 0, 16, true, "abcdefgh");
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
