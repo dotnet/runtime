@@ -53,7 +53,7 @@ namespace System.Reflection
                 ch = _input[_index++];
                 if (ch == '\0')
                 {
-                    throw new FileLoadException();
+                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName();
                 }
             }
             else
@@ -108,7 +108,7 @@ namespace System.Reflection
                     if (quoteChar != 0)
                     {
                         // EOS and unclosed quotes is an error
-                        throw new FileLoadException();
+                        ThrowHelper.ThrowFileLoadException_InvalidAssemblyName();
                     }
                     else
                     {
@@ -127,7 +127,7 @@ namespace System.Reflection
                 }
 
                 if (quoteChar == 0 && (c == '\'' || c == '\"'))
-                    throw new FileLoadException();  // Desktop compat: Unescaped quote illegal unless entire string is quoted.
+                    ThrowHelper.ThrowFileLoadException_InvalidAssemblyName();
 
                 if (c == '\\')
                 {
@@ -152,7 +152,8 @@ namespace System.Reflection
                             sb.Append('\n');
                             break;
                         default:
-                            throw new FileLoadException();  // Unrecognized escape
+                            ThrowHelper.ThrowFileLoadException_InvalidAssemblyName();
+                            return default; //unreachable
                     }
                 }
                 else
