@@ -38,7 +38,7 @@ namespace System.Reflection
             if (pkOriginal != null)
             {
                 pkCopy = new byte[pkOriginal.Length];
-                ((ICollection<byte>)pkOriginal).CopyTo(pkCopy, 0);
+                Array.Copy(pkOriginal, pkCopy, pkOriginal.Length);
             }
 
             return new RuntimeAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, combinedFlags, pkCopy);

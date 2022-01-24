@@ -250,7 +250,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
 
 
 // This uses thread storage to allocate space. Please use Checkpoint and release it.
-HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName)
+void AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pName)
 {
     CONTRACTL
     {
@@ -369,8 +369,6 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
     BaseAssemblySpec::Init(GetName(),&asmInfo,pbPublicKeyOrToken,cbPublicKeyOrToken,dwFlags);
 
     CloneFieldsToStackingAllocator(alloc);
-
-    return S_OK;
 }
 
 void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageInfo)

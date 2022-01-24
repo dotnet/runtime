@@ -64,14 +64,6 @@ namespace System.Reflection
             return ch;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private char PeekNextChar()
-        {
-            return _index < _input.Length ?
-                _input[_index] :
-                '\0';
-        }
-
         //
         // Return the next token in assembly name. If the result is DisplayNameToken.String,
         // sets "tokenString" to the tokenized string.
@@ -79,16 +71,26 @@ namespace System.Reflection
         internal Token GetNext(out string tokenString)
         {
             tokenString = string.Empty;
-            while (IsWhiteSpace(PeekNextChar()))
-                _index++;
+            char c;
 
-            char c = GetNextChar();
-            if (c == 0)
-                return Token.End;
-            if (c == ',')
-                return Token.Comma;
-            if (c == '=')
-                return Token.Equals;
+            while (true)
+            {
+                c = GetNextChar();
+                switch (c)
+                {
+                    case ',':
+                        return Token.Comma;
+                    case '=':
+                        return Token.Equals;
+                    case '\0':
+                        return Token.End;
+                }
+
+                if (!IsWhiteSpace(c))
+                {
+                    break;
+                }
+            }
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
