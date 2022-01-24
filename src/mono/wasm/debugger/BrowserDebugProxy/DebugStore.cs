@@ -496,20 +496,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 // hierarchy: hidden > stepThrough > nonUserCode > boundary
                 if (HasDebuggerHidden)
-                {
-                    HasStepThrough = false;
-                    HasNonUserCode = false;
-                    HasStepperBoundary = false;
-                }
+                    HasStepThrough = HasNonUserCode = HasStepperBoundary = false;
                 else if (HasStepThrough)
-                {
-                    HasNonUserCode = false;
-                    HasStepperBoundary = false;
-                }
+                    HasNonUserCode = HasStepperBoundary = false;
                 else if (HasNonUserCode)
-                {
                     HasStepperBoundary = false;
-                }
             }
         }
     }
