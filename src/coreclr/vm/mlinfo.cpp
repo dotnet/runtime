@@ -2520,7 +2520,7 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
     StackSString errorString(W("Unknown error."));
     errorString.LoadResource(CCompRC::Error, resID);
 
-    COMPlusThrow(kTypeLoadException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
+    COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
         GetFullyQualifiedNameForClassW(pFieldDesc->GetEnclosingMethodTable()),
         ssFieldName.GetUnicode(), errorString.GetUnicode());
 }

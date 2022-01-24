@@ -594,9 +594,9 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int ThrowingCleanUpNativeDataMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(ThrowingCleanUpNativeDataCustomMarshaler))] string str);
 
-        public static void Field_ParentIsStruct_ThrowsTypeLoadException()
+        public static void Field_ParentIsStruct_ThrowsMarshalDirectiveException()
         {
-            Assert.Throws<TypeLoadException>(() => StructWithCustomMarshalerFieldMethod(new StructWithCustomMarshalerField()));
+            Assert.Throws<MarshalDirectiveException>(() => StructWithCustomMarshalerFieldMethod(new StructWithCustomMarshalerField()));
         }
 
         public struct StructWithCustomMarshalerField
@@ -697,7 +697,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_GetInstanceMethodThrows_ThrowsActualException();
                 Parameter_MarshalManagedToNativeThrows_ThrowsActualException();
                 Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
-                Field_ParentIsStruct_ThrowsTypeLoadException();
+                Field_ParentIsStruct_ThrowsMarshalDirectiveException();
                 Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
                 DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
             }
