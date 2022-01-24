@@ -117,116 +117,104 @@ namespace System.SpanTests
             int index = span.IndexOf(value);
             Assert.Equal(-1, index);
         }
-        
+
         public static IEnumerable<object[]> IndexOfSubSeqData()
         {
             // searchSpace, value, expected IndexOf value, expected LastIndexOf value
-            yield return new object[] { "11111", "111", 0, 2 };
-            yield return new object[] { "1111111111", "1x1", -1, -1 };
-            yield return new object[] { "1111111111", "111", 0, 7 };
-            yield return new object[] { "11111111111x12111", "1x121", 10, 10 };
-            yield return new object[] { "11111111111x12111", "11121", -1, -1 };
-            yield return new object[] { "1111111111x121111", "11121", -1, -1 };
-            yield return new object[] { "11111x12111111111", "11121", -1, -1 };
-            yield return new object[] { "11111111111x12111", "1x211", -1, -1 };
-            yield return new object[] { "11111111111x12111", "11211", -1, -1 };
-            yield return new object[] { "1111111111x121111", "11211", -1, -1 };
-            yield return new object[] { "11111x12111111111", "11211", -1, -1 };
-            yield return new object[] { "11111111111x12111", "12111", 12, 12 };
-            yield return new object[] { "1111111111x121111", "12111", 11, 11 };
-            yield return new object[] { "11111x12111111111", "12111", 6, 6 };
-            yield return new object[] { "1111x1211111111111x12", "11121", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "11121", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "111121", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "1111121", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "1111121", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "1111121", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "1211211", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12", "1211111", 5, 5 };
-            yield return new object[] { "1111x1211111111111x12", "1211111", 5, 5 };
-            yield return new object[] { "1111x1211111111111x12", "1211111", 5, 5 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111", 0, 44 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111", 0, 43 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111", 7, 42 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111111", 7, 41 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111111", 7, 11 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111111", 7, 10 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111111111", 7, 9 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111111111", 7, 7 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111111111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1211", 5, 48 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11121", 44, 44 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "121111", 5, 19 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "12111211", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111111", 7, 11 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1121121111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111211111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111111211111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1121111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11122111112111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "1111111211111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "111211111111111111", -1, -1 };
-            yield return new object[] { "1111x1211111111111x12111122131221221211221111112121121", "11111211111121111111", -1, -1 };
-            yield return new object[] { "жжжжжжжжжжжжжж", "жжж", 0, 11 };
-            yield return new object[] { "жжжжжжжжжжжжжжжжжжжжжжжжжжжж", "ж0ж", -1, -1 };
-            yield return new object[] { "жжжжжаааааааааааааааччччс", "ччччс", 20, 20 };
-            yield return new object[] { "жжжжжаааааааааааааааччччсссссссчччч", "чччч", 20, 31 };
-            yield return new object[] { "жжжжжжжжжжжжжжжжжжжжжжжжжжжж", "1112", -1, -1 };
-            yield return new object[] { "0уза0оцущ0оаз0щцуоазщцуо0азщцуоазщоц0узозцуоазуоцз0щауцз0оазцо", "0оаз0", 9, 9 };
-            yield return new object[] { "abababababababababababababababbc", "bb", 29, 29 };
-            yield return new object[] { "abababababababababababababababb", "bb", 29, 29 };
-            yield return new object[] { "abababababababababababababababbc", "bb", 29, 29 };
-            yield return new object[] { "babababababababababababababababc", "bb", -1, -1 };
-            yield return new object[] { "abababababababababababababababbb", "bbb", 29, 29 };
-            yield return new object[] { "abababababababababababababababbbc", "bbb", 29, 29 };
-            yield return new object[] { "bbbbabababababababababababababababc", "bbb", 0, 1 };
-            yield return new object[] { "abababababababababababababababbc", "aa", -1, -1 };
-            yield return new object[] { "abababababababababababababababb", "aa", -1, -1 };
-            yield return new object[] { "abababababababababababababababbc", "aa", -1, -1 };
-            yield return new object[] { "babababababababababababababababc", "aa", -1, -1 };
-            yield return new object[] { "abababababababababababababababbb", "aaa", -1, -1 };
-            yield return new object[] { "abababababababababababababababbbc", "aaa", -1, -1 };
-            yield return new object[] { "bbbbabababababababababababababababc", "aaa", -1, -1 };
-            yield return new object[] { "ababababababababababababababababbc", "abaa", -1, -1 };
-            yield return new object[] { "babbbabababababababababababababababc", "babb", 0, 0 };
-            yield return new object[] { "babbbabababababababababababababababc", "сaсс", -1, -1 };
-            yield return new object[] { "babbbbbbbbbbbbb", "babbbbbbbbbbbb", 0, 0 };
-            yield return new object[] { "babbbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbbbbbbb", 0, 15 };
-            yield return new object[] { "babbbbbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbbbbbbb", 0, 17 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbbbbbbb", 18, 32 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "bbbbbbbbbbbbb", 20, 20 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", 0, 0 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbb", 0, 0 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbbb", -1, -1 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", 0, 0 };
-            yield return new object[] { "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbb", "babbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbb", 0, 0 };
-            yield return new object[] { "xxxxxxxxxxxxxxbabbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbbxxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxx", 60, 60 };
-            yield return new object[] { "xxxxxxxxxxxxxxxbabbbbbbxbbbbbbbbbbabbbbbbbbbbbbbabbbbbbbbbbbbxxxxxxxxxxxxxx", "xxxxxxxxxxxxxxx", 0, 0 };
+            yield return new object[] { new byte[]{0,0,0,0,0},new byte[]{0,0,0}, 0, 2};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0},new byte[]{0,71,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0},new byte[]{0,0,0}, 0, 7};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0},new byte[]{0,71,0,1,0}, 10, 10};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0},new byte[]{0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0},new byte[]{0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0},new byte[]{0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0},new byte[]{0,71,1,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0},new byte[]{0,0,1,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0},new byte[]{0,0,1,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0},new byte[]{0,0,1,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0},new byte[]{0,1,0,0,0}, 12, 12};
+            yield return new object[] { new byte[]{0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0},new byte[]{0,1,0,0,0}, 11, 11};
+            yield return new object[] { new byte[]{0,0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0},new byte[]{0,1,0,0,0}, 6, 6};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,0,0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,0,0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,0,0,0,0,1,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,1,0,0,1,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,1,0,0,0,0,0}, 5, 5};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,1,0,0,0,0,0}, 5, 5};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1},new byte[]{0,1,0,0,0,0,0}, 5, 5};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0}, 0, 44};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0}, 0, 43};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0}, 7, 42};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0}, 7, 41};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0}, 7, 11};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0}, 7, 10};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0}, 7, 9};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0}, 7, 7};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,1,0,0}, 5, 48};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,1,0}, 44, 44};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,1,0,0,0,0}, 5, 19};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,1,0,0,0,1,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0}, 7, 11};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,1,0,0,1,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,1,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,1,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,1,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{0,0,0,0,71,0,1,0,0,0,0,0,0,0,0,0,0,0,71,0,1,0,0,0,0,1,1,0,2,0,1,1,0,1,1,0,1,0,0,1,1,0,0,0,0,0,0,1,0,1,0,0,1,0},new byte[]{0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,0}, -1, -1};
+            yield return new object[] { new byte[]{159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133},new byte[]{159,133,159,133,159,133}, 0, 22};
+            yield return new object[] { new byte[]{159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133},new byte[]{159,133,255,159,133}, -1, -1};
+            yield return new object[] { new byte[]{159,133,159,133,159,133,159,133,159,133,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,160,86,160,86,160,86,160,86,160,80},new byte[]{160,86,160,86,160,86,160,86,160,80}, 40, 40};
+            yield return new object[] { new byte[]{159,133,159,133,159,133,159,133,159,133,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,159,127,160,86,160,86,160,86,160,86,160,80,160,80,160,80,160,80,160,80,160,80,160,80,160,86,160,86,160,86,160,86},new byte[]{160,86,160,86,160,86,160,86}, 40, 62};
+            yield return new object[] { new byte[]{159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133,159,133},new byte[]{0,0,0,1}, -1, -1};
+            yield return new object[] { new byte[]{255,160,82,159,134,159,127,255,159,141,160,85,160,82,160,88,255,159,141,159,127,159,134,255,160,88,160,85,160,82,159,141,159,127,159,134,160,88,160,85,160,82,159,141,255,159,127,159,134,160,88,160,85,160,82,159,141,159,127,159,134,160,88,159,141,160,85,255,160,82,159,134,159,141,159,134,160,85,160,82,159,141,159,127,159,134,160,82,159,141,160,85,159,134,255,160,88,159,127,160,82,160,85,159,134,255,159,141,159,127,159,134,160,85,159,141},new byte[]{255,159,141,159,127,159,134,255}, 16, 16};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,50},new byte[]{49,49}, 29, 29};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49},new byte[]{49,49}, 29, 29};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,50},new byte[]{49,49}, 29, 29};
+            yield return new object[] { new byte[]{49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,50},new byte[]{49,49}, -1, -1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,49},new byte[]{49,49,49}, 29, 29};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,49,50},new byte[]{49,49,49}, 29, 29};
+            yield return new object[] { new byte[]{49,49,49,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,50},new byte[]{49,49,49}, 0, 1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,50},new byte[]{48,48}, -1, -1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49},new byte[]{48,48}, -1, -1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,50},new byte[]{48,48}, -1, -1};
+            yield return new object[] { new byte[]{49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,50},new byte[]{48,48}, -1, -1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,49},new byte[]{48,48,48}, -1, -1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,49,50},new byte[]{48,48,48}, -1, -1};
+            yield return new object[] { new byte[]{49,49,49,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,50},new byte[]{48,48,48}, -1, -1};
+            yield return new object[] { new byte[]{48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,49,50},new byte[]{48,49,48,48}, -1, -1};
+            yield return new object[] { new byte[]{49,48,49,49,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,50},new byte[]{49,48,49,49}, 0, 0};
+            yield return new object[] { new byte[]{49,48,49,49,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,48,49,50},new byte[]{160,80,48,160,80,160,80}, -1, -1};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49}, 0, 0};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49}, 0, 15};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49}, 0, 17};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,49,49,49,49,49,49}, 18, 32};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,49,49,49,49,49,49,49,49,49,49,49,49}, 20, 20};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49}, 0, 0};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49}, 0, 0};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49}, -1, -1};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49}, 0, 0};
+            yield return new object[] { new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49},new byte[]{49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49}, 0, 0};
+            yield return new object[] { new byte[]{71,71,71,71,71,71,71,71,71,71,71,71,71,71,49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,71,71,71,71,71,71,71,71,71,71,71,71,71,71,71},new byte[]{71,71,71,71,71,71,71,71,71,71,71,71,71,71,71}, 60, 60};
+            yield return new object[] { new byte[]{71,71,71,71,71,71,71,71,71,71,71,71,71,71,71,49,48,49,49,49,49,49,49,71,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,49,48,49,49,49,49,49,49,49,49,49,49,49,49,71,71,71,71,71,71,71,71,71,71,71,71,71,71},new byte[]{71,71,71,71,71,71,71,71,71,71,71,71,71,71,71}, 0, 0};
         }
 
         [Theory]
         [MemberData(nameof(IndexOfSubSeqData))]
-        public static void ValueStartsAndEndsWithTheSameChars(string searchSpace, string value, int expectedIndexOfValue, int expectedLastIndexOfValue)
+        public static void ValueStartsAndEndsWithTheSameChars(byte[] searchSpace, byte[] value, int expectedIndexOfValue, int expectedLastIndexOfValue)
         {
-            ReadOnlySpan<char> searchSpaceSpan = searchSpace;
-            ReadOnlySpan<char> valueSpan = value;
-
-            Assert.Equal(expectedIndexOfValue, searchSpaceSpan.IndexOf(valueSpan));
-            Assert.Equal(expectedLastIndexOfValue, searchSpaceSpan.LastIndexOf(valueSpan));
-
-            ReadOnlySpan<byte> byteSearchSpaceSpan = MemoryMarshal.Cast<char, byte>(searchSpaceSpan);
-            ReadOnlySpan<byte> byteValueSpan = MemoryMarshal.Cast<char, byte>(valueSpan);
-
-            int expectedIndexOfValueByte = expectedIndexOfValue == -1 ? -1 : expectedIndexOfValue * 2;
-            int expectedLastIndexOfValueByte = expectedLastIndexOfValue == -1 ? -1 : expectedLastIndexOfValue * 2;
-
-            Assert.Equal(expectedIndexOfValueByte, byteSearchSpaceSpan.IndexOf(byteValueSpan));
-            Assert.Equal(expectedLastIndexOfValueByte, byteSearchSpaceSpan.LastIndexOf(byteValueSpan));
+            Assert.Equal(expectedIndexOfValue, searchSpace.AsSpan().IndexOf(value));
+            Assert.Equal(expectedLastIndexOfValue, searchSpace.AsSpan().LastIndexOf(value));
         }
     }
 }
