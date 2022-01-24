@@ -26,7 +26,9 @@ namespace ILLink.RoslynAnalyzer
 
 		static readonly DiagnosticDescriptor s_requiresAssemblyFilesAttributeMismatch = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFilesAttributeMismatch);
 
-		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule, s_requiresAssemblyFilesAttributeMismatch);
+		static readonly DiagnosticDescriptor s_requiresAssemblyFilesOnStaticCtor = DiagnosticDescriptors.GetDiagnosticDescriptor (DiagnosticId.RequiresAssemblyFilesOnStaticConstructor);
+
+		public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create (s_locationRule, s_getFilesRule, s_requiresAssemblyFilesRule, s_requiresAssemblyFilesAttributeMismatch, s_requiresAssemblyFilesOnStaticCtor);
 
 		private protected override string RequiresAttributeName => RequiresAssemblyFilesAttribute;
 
@@ -37,6 +39,8 @@ namespace ILLink.RoslynAnalyzer
 		private protected override DiagnosticDescriptor RequiresDiagnosticRule => s_requiresAssemblyFilesRule;
 
 		private protected override DiagnosticDescriptor RequiresAttributeMismatch => s_requiresAssemblyFilesAttributeMismatch;
+
+		private protected override DiagnosticDescriptor RequiresOnStaticCtor => s_requiresAssemblyFilesOnStaticCtor;
 
 		protected override bool IsAnalyzerEnabled (AnalyzerOptions options, Compilation compilation)
 		{

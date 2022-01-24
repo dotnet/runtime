@@ -25,6 +25,7 @@ namespace ILLink.RoslynAnalyzer
 		private protected abstract DiagnosticDescriptor RequiresDiagnosticRule { get; }
 
 		private protected abstract DiagnosticDescriptor RequiresAttributeMismatch { get; }
+		private protected abstract DiagnosticDescriptor RequiresOnStaticCtor { get; }
 
 		private protected virtual ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)> ExtraOperationActions { get; } = ImmutableArray<(Action<OperationAnalysisContext> Action, OperationKind[] OperationKind)>.Empty;
 
@@ -43,6 +44,8 @@ namespace ILLink.RoslynAnalyzer
 				var incompatibleMembers = GetSpecialIncompatibleMembers (compilation);
 				context.RegisterSymbolAction (symbolAnalysisContext => {
 					var methodSymbol = (IMethodSymbol) symbolAnalysisContext.Symbol;
+					if (methodSymbol.IsStaticConstructor () && methodSymbol.HasAttribute (RequiresAttributeName))
+						ReportRequiresOnStaticCtorDiagnostic (symbolAnalysisContext, methodSymbol);
 					CheckMatchingAttributesInOverrides (symbolAnalysisContext, methodSymbol);
 					CheckAttributeInstantiation (symbolAnalysisContext, methodSymbol);
 					foreach (var typeParameter in methodSymbol.TypeParameters)
@@ -330,6 +333,14 @@ namespace ILLink.RoslynAnalyzer
 				member.GetDisplayName (),
 				message,
 				url));
+		}
+
+		private void ReportRequiresOnStaticCtorDiagnostic (SymbolAnalysisContext symbolAnalysisContext, IMethodSymbol ctor)
+		{
+			symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (
+				RequiresOnStaticCtor,
+				ctor.Locations[0],
+				ctor.GetDisplayName ()));
 		}
 
 		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false)

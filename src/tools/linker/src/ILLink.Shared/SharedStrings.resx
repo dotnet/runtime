@@ -1113,4 +1113,22 @@
   <data name="InterfaceRequiresMismatchMessage" xml:space="preserve">
     <value>Interface member '{2}' with '{0}' has an implementation member '{1}' without '{0}'</value>
   </data>
+  <data name="RequiresOnBaseClassMessage" xml:space="preserve">
+    <value>Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'. {2}{3}</value>
+  </data>
+  <data name="RequiresOnBaseClassTitle" xml:space="preserve">
+    <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
+  </data>
+  <data name="RequiresDynamicCodeOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresDynamicCodeAttribute' cannot be placed directly on static constructor '{0}'.</value>
+  </data>
+  <data name="RequiresDynamicCodeOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresDynamicCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on static constructor '{0}'.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+  </data>
 </root>
