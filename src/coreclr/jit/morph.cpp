@@ -13416,7 +13416,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 #ifdef FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
-// gtFoldHWIntrinsic: optimize a HW intrinsic node
+// fgOptimizeHWIntrinsic: optimize a HW intrinsic node
 //
 // Arguments:
 //    node - HWIntrinsic node to examine
