@@ -9,6 +9,7 @@ import { _js_to_mono_obj } from "./js-to-cs";
 import { conv_string, js_string_to_mono_string_new } from "./strings";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { MONO, BINDING, INTERNAL } from "./imports";
+import cswraps from "./corebindings";
 import {
     getI32,
     getF32,
@@ -148,8 +149,7 @@ export function _unbox_function_argument_from_heap_for_invoke (
                 throw new UnboxError(InvokeJSResult.InternalError);
             }
         case MarshalType.URI:
-            console.error("Unbox/convert not implemented for URIs");
-            throw new UnboxError(InvokeJSResult.InvalidArgumentType);
+            return cswraps._object_to_string((<WasmRoot<MonoObject>>root).value);
         case MarshalType.VT:
             console.error("Unbox/convert not implemented for structs");
             throw new UnboxError(InvokeJSResult.InvalidArgumentType);

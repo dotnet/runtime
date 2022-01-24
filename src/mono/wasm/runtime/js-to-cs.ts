@@ -21,7 +21,7 @@ import { find_corlib_type, find_type_in_assembly } from "./class-loader";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {
-    throw new Error("js_to_mono_uri is no longer supported");
+    return corebindings.create_uri_from_string_reflective(String(js_obj));
 }
 
 // this is only used from Blazor

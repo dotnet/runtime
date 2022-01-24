@@ -548,5 +548,15 @@ namespace System.Runtime.InteropServices.JavaScript
             Codegen.GenerateBoundMethod(state);
             return state.Output.ToString();
         }
+
+        public static object CreateUriFromStringReflective (string uri) {
+            var type = Type.GetType("System.Uri, System.Private.Uri");
+            if (type == null)
+                throw new WasmInteropException("System.Uri is not available (linked out?)");
+            var ctor = type.GetConstructor(new[] { typeof(string) });
+            if (ctor == null)
+                throw new WasmInteropException("System.Uri's (string) constructor is not available (linked out?)");
+            return ctor.Invoke(new object[] { uri });
+        }
     }
 }

@@ -265,7 +265,10 @@ namespace System.Runtime.InteropServices.JavaScript
                     case MarshalType.VT:
                         throw new Exception($"Cannot marshal struct of type {argType}");
                     case MarshalType.OBJECT:
-                        ch = ArgsMarshalCharacter.JSObj;
+                        if (argType.FullName == "System.Uri")
+                            ch = ArgsMarshalCharacter.Uri;
+                        else
+                            ch = ArgsMarshalCharacter.JSObj;
                         break;
                 }
             } else {

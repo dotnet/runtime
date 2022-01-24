@@ -26,6 +26,7 @@ const fn_signatures: [jsname: string, csname: string, signature: string][] = [
     ["_is_simple_array", "IsSimpleArray", "m"],
 
     ["make_marshal_signature_info", "MakeMarshalSignatureInfo", "ii"],
+    ["create_uri_from_string_reflective", "CreateUriFromStringReflective", "s!"],
 ];
 
 export interface t_CSwraps {
@@ -51,7 +52,7 @@ export interface t_CSwraps {
 
     make_marshal_signature_info(typePtr: MonoType, methodPtr: MonoMethod): string;
 
-    generate_args_marshaler(signature: string, methodPtr: MonoMethod): string;
+    create_uri_from_string_reflective(uri: string): MonoObject;
 }
 
 const wrapped_cs_functions: t_CSwraps = <any>{};
