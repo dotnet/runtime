@@ -150,16 +150,17 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
   - why everything needs to be boxed ?
 
 ## Possible improvements for marshallers
-- J) drop DateTime marshaller, see what happens
-- K) drop Uri and only include it if the generated signature contains it
-- L) drop support for Delegate/method
+- J) drop DateTime, DateTimeOffset marshallers, see what happens
+- K) drop Uri marshaller, see what happens
+- L) add back custom marshallers for Uri, DateTime after we have genertors and only if method signature requires it.
+- M) drop support for Delegate/method
   - so that all methods have known signatures at compile time
   - see that we don't use it internally in runtime
-- M) so that we could drop reflection from runtime
+- N) so that we could drop reflection from runtime
   - only if we could drop or restrict `BINDING.mono_bind_method` API
 
 ## Does the performance matter ?
-- N) measure
+- O) measure
   - add perf counters for allocation
   - add perf counters for `ccall`
   - add perf for `JSObject.call` etc
