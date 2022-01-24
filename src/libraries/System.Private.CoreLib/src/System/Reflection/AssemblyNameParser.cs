@@ -201,11 +201,8 @@ namespace System.Reflection
             {
                 return "";
             }
-            else
-            {
-                CultureInfo culture = CultureInfo.GetCultureInfo(attributeValue); // Force a CultureNotFoundException if not a valid culture.
-                return culture.Name;
-            }
+
+            return attributeValue;
         }
 
         private static byte[] ParsePKT(string attributeValue, bool isToken)
