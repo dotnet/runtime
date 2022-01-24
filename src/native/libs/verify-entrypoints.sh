@@ -18,6 +18,9 @@ for line in $($nmCommand $1); do
       init) ;;
       fini) ;;
       etext) ;;
+      mangle_path) ;;  # for gcc gcov support
+      _gcov_dump) ;;   # for gcc gcov support
+      _gcov_reset) ;;  # for gcc gcov support
       PROCEDURE_LINKAGE_TABLE_) ;;
       *)    dllList+=(${BASH_REMATCH[1]});;
     esac
