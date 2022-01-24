@@ -362,6 +362,14 @@ bool Compiler::fgForwardSub(Statement* stmt)
         return false;
     }
 
+    // If lhs is mulit-reg, rhs must be too.
+    //
+    if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
+    {
+        JITDUMP(" would change multi-reg (assignment)\n");
+        return false;
+    }
+
     // Don't fwd sub overly large trees.
     // Size limit here is ad-hoc. Need to tune.
     //
@@ -577,6 +585,14 @@ bool Compiler::fgForwardSub(Statement* stmt)
         fwdVarDsc->lvIsMultiRegRet = true;
         fwdSubNodeLocal->SetMultiReg();
         fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
+    }
+
+    // If the use is a multi-reg arg, don't forward sub non-locals.
+    //
+    if (fsv.GetNode()->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
+    {
+        JITDUMP(" would change multi-reg (substitution)\n");
+        return false;
     }
 
     // Looks good, forward sub!
