@@ -40,8 +40,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <IlcGenerateStackTraceData Condition="$(IlcGenerateStackTraceData) == ''">true</IlcGenerateStackTraceData>
     <IlcScanReflection Condition="$(IlcScanReflection) == ''">true</IlcScanReflection>
-    <SuppressTrimAnalysisWarnings Condition="$(SuppressTrimAnalysisWarnings) == '' and $([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">true</SuppressTrimAnalysisWarnings>
-    <TrimmerDefaultAction Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">copyused</TrimmerDefaultAction>
   </PropertyGroup>
 
   <!-- Set up default feature switches -->
@@ -132,13 +130,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <ManagedAssemblyToLink Remove="@(ManagedAssemblyToLink)" />
       <ManagedAssemblyToLink Include="@(DefaultFrameworkAssemblies);@(_ManagedResolvedAssembliesToPublish);@(ManagedBinary)" />
     </ItemGroup>
-    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))">
-      <ManagedAssemblyToLink Remove="@(ManagedAssemblyToLink)" />
-      <ManagedAssemblyToLink Include="@(DefaultFrameworkAssemblies)">
-        <IsTrimmable>true</IsTrimmable>
-      </ManagedAssemblyToLink>
-      <ManagedAssemblyToLink Include="@(_ManagedResolvedAssembliesToPublish);@(ManagedBinary)" />
-    </ItemGroup>
   </Target>
 
   <!-- The properties below need to be defined only after we've found the correct runtime package reference -->
@@ -200,35 +191,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       Outputs="%(ManagedBinary.IlcRspFile)"
       DependsOnTargets="$(IlcCompileDependsOn)">
 
-    <!-- Set up default properties that have their defaults in the 6.0 SDK (Can be dropped once we drop 5.0 support) -->
-    <PropertyGroup Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">
-      <TrimmerSingleWarn Condition="'$(TrimmerSingleWarn)' == ''">true</TrimmerSingleWarn>
-    </PropertyGroup>
-
-    <!-- Set up single warn trimming like in the 6.0 SDK (Can be dropped once we drop 5.0 support) -->
-    <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))">
-      <!-- Don't collapse to a single warning for the intermediate assembly.
-           This just sets metadata on the items in ManagedAssemblyToLink that came from IntermediateAssembly. -->
-      <!-- Find ManagedAssemblyToLink _except_ IntermediateAssembly -->
-      <__SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
-      <__SingleWarnIntermediateAssembly Remove="@(IntermediateAssembly)" />
-      <!-- Subtract these from ManagedAssemblyToLink, to get the intersection. -->
-      <_SingleWarnIntermediateAssembly Include="@(ManagedAssemblyToLink)" />
-      <_SingleWarnIntermediateAssembly Remove="@(__SingleWarnIntermediateAssembly)" />
-      <!-- Set metadata on the intersection. -->
-      <_SingleWarnIntermediateAssembly>
-        <TrimmerSingleWarn Condition=" '%(_SingleWarnIntermediateAssembly.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
-      </_SingleWarnIntermediateAssembly>
-      <!-- Replace these items in ManagedAssemblyToLink. -->
-      <ManagedAssemblyToLink Remove="@(_SingleWarnIntermediateAssembly)" />
-      <ManagedAssemblyToLink Include="@(_SingleWarnIntermediateAssembly)" />
-
-      <!-- Don't collapse to a single warning for project references -->
-      <ManagedAssemblyToLink Condition=" '%(ManagedAssemblyToLink.ProjectReferenceOriginalItemSpec)' != '' ">
-        <TrimmerSingleWarn Condition=" '%(ManagedAssemblyToLink.TrimmerSingleWarn)' == '' ">false</TrimmerSingleWarn>
-      </ManagedAssemblyToLink>
-    </ItemGroup>
-
     <ItemGroup>
       <_IlcRootedAssemblies Include="@(TrimmerRootAssembly)" />
       <_IlcRootedAssemblies Include="@(ManagedAssemblyToLink)" Condition="%(ManagedAssemblyToLink.TrimMode) == 'copy'" />
@@ -287,9 +249,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
       <IlcArg Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
-
-      <!-- 6.0 SDK introduces a way to control this through the CustomResourceTypesSupport property, defaulting to false when trimming -->
-      <IlcArg Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0')) and $(CustomResourceTypesSupport) != 'true'" Include="--feature:System.Resources.ResourceManager.AllowCustomResourceTypes=false" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
