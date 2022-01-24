@@ -26,8 +26,8 @@ DEFINE_TEST_GROUP_INIT_H(memory_tests_init);
 DEFINE_TEST_GROUP_INIT_H(enum_tests_init);
 
 const
-static Group test_groups [] = {	
-	{"string",    string_tests_init}, 
+static Group test_groups [] = {
+	{"string",    string_tests_init},
 	{"strutil",   strutil_tests_init},
 	{"ptrarray",  ptrarray_tests_init},
 	{"slist",     slist_tests_init},
@@ -40,7 +40,7 @@ static Group test_groups [] = {
 	{"path",      path_tests_init},
 	{"shell",     shell_tests_init},
 	{"markup",    markup_tests_init},
-#if !DISABLE_PROCESS_TESTS 
+#if !DISABLE_PROCESS_TESTS
 	{"spawn",     spawn_tests_init},
 	{"module",    module_tests_init},
 #endif

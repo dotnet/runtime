@@ -1029,8 +1029,8 @@ namespace ILCompiler.Dataflow
                                                 // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                                 // that the method may have requirements which we can't fullfil -> warn.
                                                 reflectionContext.RecordUnrecognizedPattern(
-                                                    (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                                                    new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
+                                                    (int)DiagnosticId.MakeGenericMethod,
+                                                    new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                             }
 
                                             RequireDynamicallyAccessedMembers(
@@ -1048,8 +1048,8 @@ namespace ILCompiler.Dataflow
                                         // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                         // that the method may have requirements which we can't fullfil -> warn.
                                         reflectionContext.RecordUnrecognizedPattern(
-                                            (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                                            new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
+                                            (int)DiagnosticId.MakeGenericMethod,
+                                            new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                     }
 
                                     RequireDynamicallyAccessedMembers(
@@ -2162,8 +2162,8 @@ namespace ILCompiler.Dataflow
                                     // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                     // that the method may have requirements which we can't fullfil -> warn.
                                     reflectionContext.RecordUnrecognizedPattern(
-                                        (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                                        new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(
+                                        (int)DiagnosticId.MakeGenericMethod,
+                                        new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(
                                             DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                 }
                             }
@@ -3066,8 +3066,8 @@ namespace ILCompiler.Dataflow
             if (!AnalyzeGenericInstantiationTypeArray(genericParametersArray, ref reflectionContext, reflectionMethod, genericMethod.GetMethodDefinition().Instantiation))
             {
                 reflectionContext.RecordUnrecognizedPattern(
-                    (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                    new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(reflectionMethod)));
+                    (int)DiagnosticId.MakeGenericMethod,
+                    new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(reflectionMethod)));
             }
             else
             {

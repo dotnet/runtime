@@ -116,7 +116,7 @@ mono_mach_arch_set_thread_states (thread_port_t thread, thread_state_t state, ma
 		return ret;
 	ret = thread_set_state (thread, x86_FLOAT_STATE32, fpstate, fpcount);
 	return ret;
-#endif	
+#endif
 }
 
 #endif

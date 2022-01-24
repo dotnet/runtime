@@ -39,4 +39,4 @@
 #define MONO_ARCH_LOCALLOC_ALIGNMENT MONO_ARCH_FRAME_ALIGNMENT
 #endif
 
-#endif /* __MONO_MINI_ARCH_H__ */  
+#endif /* __MONO_MINI_ARCH_H__ */

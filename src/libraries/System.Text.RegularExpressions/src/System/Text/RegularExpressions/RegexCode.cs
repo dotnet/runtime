@@ -210,7 +210,8 @@ namespace System.Text.RegularExpressions
                     return 3;
 
                 default:
-                    throw new ArgumentException(SR.Format(SR.UnexpectedOpcode, opcode.ToString()));
+                    Debug.Fail($"Unexpected opcode: {opcode}");
+                    return 0;
             }
         }
 

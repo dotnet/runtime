@@ -317,7 +317,7 @@ mini_jit_info_is_gsharedvt (MonoJitInfo *ji)
 
 /**
  * mini_add_method_trampoline:
- * @m: 
+ * @m:
  * @compiled_method:
  * @add_static_rgctx_tramp: adds a static rgctx trampoline
  * @add_unbox_tramp: adds an unboxing trampoline
@@ -658,7 +658,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		mini_patch_jump_sites (m, mono_get_addr_from_ftnptr (addr));
 
 		/* Patch the got entries pointing to this method */
-		/* 
+		/*
 		 * We do this here instead of in mono_codegen () to cover the case when m
 		 * was loaded from an aot image.
 		 */
@@ -729,7 +729,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				ji = mini_jit_info_table_find (code);
 
 			if (ji && target_ji && generic_shared && ji->has_generic_jit_info && !target_ji->has_generic_jit_info) {
-				/* 
+				/*
 				 * Can't patch the call as the caller is gshared, but the callee is not. Happens when
 				 * generic sharing fails.
 				 * FIXME: Performance problem.
@@ -860,12 +860,12 @@ leave:
 /**
  * mono_aot_trampoline:
  *
- * This trampoline handles calls made from AOT code. We try to bypass the 
+ * This trampoline handles calls made from AOT code. We try to bypass the
  * normal JIT compilation logic to avoid loading the metadata for the method.
  */
 #ifdef MONO_ARCH_AOT_SUPPORTED
 gpointer
-mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
+mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 					 guint8* tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -912,7 +912,7 @@ mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
  *   This trampoline handles calls made from AOT code through the PLT table.
  */
 gpointer
-mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module, 
+mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module,
 						 guint8* tramp)
 {
 	gpointer res;
@@ -1002,8 +1002,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		method = delegate->method;
 
 		/*
-		 * delegate->method_ptr == NULL means the delegate was initialized by 
-		 * mini_delegate_ctor, while != NULL means it is initialized by 
+		 * delegate->method_ptr == NULL means the delegate was initialized by
+		 * mini_delegate_ctor, while != NULL means it is initialized by
 		 * mono_delegate_ctor_with_method (). In both cases, we need to add wrappers
 		 * (ctor_with_method () does this, but it doesn't store the wrapper back into
 		 * delegate->method).
@@ -1082,7 +1082,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			method = mono_object_get_virtual_method_internal (delegate->target, method);
 			enable_caching = FALSE;
 		} else if (delegate->target &&
-			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
+			method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
 			mono_class_is_abstract (method->klass)) {
 			method = mono_object_get_virtual_method_internal (delegate->target, method);
@@ -1098,7 +1098,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			need_rgctx_tramp = TRUE;
 	}
 
-	/* 
+	/*
 	 * If the called address is a trampoline, replace it with the compiled method so
 	 * further calls don't have to go through the trampoline.
 	 */
@@ -1302,7 +1302,7 @@ mono_create_jump_trampoline (MonoMethod *method, gboolean add_sync_wrapper, Mono
 	ji->d.method = method;
 
 	/*
-	 * mono_delegate_ctor needs to find the method metadata from the 
+	 * mono_delegate_ctor needs to find the method metadata from the
 	 * trampoline address, so we save it here.
 	 */
 
@@ -1335,7 +1335,7 @@ mono_create_jit_trampoline (MonoMethod *method, MonoError *error)
 
 		/* Avoid creating trampolines if possible */
 		gpointer code = mono_jit_find_compiled_method (method);
-		
+
 		if (code)
 			return code;
 		if (mono_llvm_only) {
@@ -1363,7 +1363,7 @@ mono_create_jit_trampoline (MonoMethod *method, MonoError *error)
 	jit_mm_unlock (jit_mm);
 
 	return tramp;
-}	
+}
 
 gpointer
 mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
@@ -1382,7 +1382,7 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 	UnlockedIncrement (&jit_trampolines);
 
 	return tramp;
-}	
+}
 
 
 /*

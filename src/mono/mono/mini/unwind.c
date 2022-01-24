@@ -97,7 +97,7 @@ static int map_hw_reg_to_dwarf_reg [ppc_lr + 1] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
  * 0-15 = GR0-15
  * 16-31 = FP0-15 (f0, f2, f4, f6, f1, f3, f5, f7, f8, f10, f12, f14, f9, f11, f13, f15)
  */
-static int map_hw_reg_to_dwarf_reg [] = {  0,  1,  2,  3,  4,  5,  6,  7, 
+static int map_hw_reg_to_dwarf_reg [] = {  0,  1,  2,  3,  4,  5,  6,  7,
 					   8,  9, 10, 11, 12, 13, 14, 15,
 					  16, 20, 17, 21, 18, 22, 19, 23,
 					  24, 28, 25, 29, 26, 30, 27, 31};
@@ -449,7 +449,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 				*p ++ = DW_CFA_advance_loc | (30);
 				loc += 30;
 			}
-		}			
+		}
 
 		switch (op->op) {
 		case DW_CFA_def_cfa:
@@ -502,7 +502,7 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 			break;
 		}
 	}
-	
+
 	g_assert (p - buf < 4096);
 	*out_len = p - buf;
 	res = (guint8 *)g_malloc (p - buf);
@@ -540,8 +540,8 @@ typedef struct {
 } UnwindState;
 
 /*
- * Given the state of the current frame as stored in REGS, execute the unwind 
- * operations in unwind_info until the location counter reaches POS. The result is 
+ * Given the state of the current frame as stored in REGS, execute the unwind
+ * operations in unwind_info until the location counter reaches POS. The result is
  * stored back into REGS. OUT_CFA will receive the value of the CFA.
  * If SAVE_LOCATIONS is non-NULL, it should point to an array of size SAVE_LOCATIONS_LEN.
  * On return, the nth entry will point to the address of the stack slot where register
@@ -552,7 +552,7 @@ typedef struct {
  * It returns FALSE on failure
  */
 gboolean
-mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
+mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
 				   mono_unwind_reg_t *regs, int nregs,
 				   host_mgreg_t **save_locations, int save_locations_len,
@@ -1037,7 +1037,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 	guint8 *buf;
 	gboolean has_fde_augmentation = FALSE;
 
-	/* 
+	/*
 	 * http://refspecs.freestandards.org/LSB_3.0.0/LSB-Core-generic/LSB-Core-generic/ehframechpt.html
 	 */
 
@@ -1105,7 +1105,7 @@ mono_unwind_decode_fde (guint8 *fde, guint32 *out_len, guint32 *code_len, MonoJi
 				break;
 			}
 		}
-			
+
 		p = cie_aug;
 		p += cie_aug_len;
 	}
