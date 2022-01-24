@@ -10,6 +10,8 @@ using System.Reflection.Runtime.CustomAttributes;
 
 using Internal.Reflection.Tracing;
 
+#pragma warning disable CA1067 // override Equals because it implements IEquatable<T>
+
 namespace System.Reflection.Runtime.TypeInfos
 {
     //

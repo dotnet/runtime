@@ -508,6 +508,21 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 	return 0;
 }
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+
+void
+mono_runtime_install_handlers (void)
+{
+}
+
+void
+mono_init_native_crash_info (void)
+{
+	return;
+}
+
+#endif
+
 #ifdef HOST_BROWSER
 
 void
@@ -520,19 +535,8 @@ gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
 	g_error ("mono_chain_signal");
-	
+
 	return FALSE;
-}
-
-void
-mono_runtime_install_handlers (void)
-{
-}
-
-void
-mono_init_native_crash_info (void)
-{
-	return;
 }
 
 gboolean
@@ -780,7 +784,7 @@ mono_arch_load_function (MonoJitICallId jit_icall_id)
 	return NULL;
 }
 
-MONO_API void 
+MONO_API void
 mono_wasm_enable_debugging (int log_level)
 {
 	mono_wasm_debug_level = log_level;

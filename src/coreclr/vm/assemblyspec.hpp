@@ -105,7 +105,7 @@ class AssemblySpec  : public BaseAssemblySpec
     void InitializeSpec(PEAssembly* pPEAssembly);
     HRESULT InitializeSpec(StackingAllocator* alloc,
                         ASSEMBLYNAMEREF* pName,
-                        BOOL fParse = TRUE);
+                        BOOL fParse);
 
     void AssemblyNameInit(ASSEMBLYNAMEREF* pName, PEImage* pImageInfo); //[in,out], [in]
 

@@ -2808,7 +2808,7 @@ regNumber LinearScan::allocateReg(Interval*    currentInterval,
             bool wasAssigned = regSelector->foundUnassignedReg() && (assignedInterval != nullptr) &&
                                (assignedInterval->physReg == foundReg);
             unassignPhysReg(availablePhysRegRecord ARM_ARG(currentInterval->registerType));
-            if (regSelector->isMatchingConstant())
+            if (regSelector->isMatchingConstant() && compiler->opts.OptimizationEnabled())
             {
                 assert(assignedInterval->isConstant);
                 refPosition->treeNode->SetReuseRegVal();
@@ -6415,7 +6415,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
     else
     {
         JITDUMP("at end of " FMT_BB ":\n", block->bbNum);
-        if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_SWITCH)
+        if (block->KindIs(BBJ_COND, BBJ_SWITCH))
         {
             noway_assert(!blockRange.IsEmpty());
 
@@ -6427,7 +6427,7 @@ void LinearScan::insertUpperVectorRestore(GenTree*     tree,
         }
         else
         {
-            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
             blockRange.InsertAtEnd(LIR::SeqTree(compiler, simdNode));
         }
     }
@@ -7291,7 +7291,7 @@ void LinearScan::insertMove(
     {
         // Put the copy at the bottom
         GenTree* lastNode = blockRange.LastNode();
-        if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_SWITCH)
+        if (block->KindIs(BBJ_COND, BBJ_SWITCH))
         {
             noway_assert(!blockRange.IsEmpty());
 
@@ -7359,7 +7359,7 @@ void LinearScan::insertSwap(
     {
         // Put the copy at the bottom
         // If there's a branch, make an embedded statement that executes just prior to the branch
-        if (block->bbJumpKind == BBJ_COND || block->bbJumpKind == BBJ_SWITCH)
+        if (block->KindIs(BBJ_COND, BBJ_SWITCH))
         {
             noway_assert(!blockRange.IsEmpty());
 
@@ -7371,7 +7371,7 @@ void LinearScan::insertSwap(
         }
         else
         {
-            assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+            assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
             blockRange.InsertAtEnd(std::move(swapRange));
         }
     }

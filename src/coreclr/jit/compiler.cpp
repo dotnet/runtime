@@ -2644,15 +2644,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
-    // Optionally suppress dumping some OSR jit requests.
+    // Optionally suppress dumping except for a specific OSR jit request.
     //
-    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
-    {
-        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+    const int dumpAtOSROffset = JitConfig.JitDumpAtOSROffset();
 
-        if (desiredOffset != -1)
+    if (verboseDump && (dumpAtOSROffset != -1))
+    {
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+            verboseDump = (((IL_OFFSET)dumpAtOSROffset) == info.compILEntry);
+        }
+        else
+        {
+            verboseDump = false;
         }
     }
 
@@ -9385,7 +9389,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 FALLTHROUGH;
 
             case GT_BLK:
-            case GT_DYN_BLK:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
@@ -9738,7 +9741,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(TYP_INT);
     block->bbFlags |= BBF_HAS_NULLCHECK;

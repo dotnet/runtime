@@ -292,11 +292,6 @@
         <target state="translated">Carattere \\ non valido alla fine del criterio.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Codice operativo imprevisto nella generazione dell'espressione regolare: {0}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
         <source>Unrecognized control character.</source>
         <target state="translated">Carattere di controllo non riconosciuto.</target>

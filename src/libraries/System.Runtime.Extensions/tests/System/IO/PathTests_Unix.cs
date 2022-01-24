@@ -158,7 +158,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetFullPath_ThrowsOnEmbeddedNulls()
         {
-            Assert.Throws<ArgumentException>(null, () => Path.GetFullPath("/gi\0t", "/foo/bar"));
+            AssertExtensions.Throws<ArgumentException>(null, () => Path.GetFullPath("/gi\0t", "/foo/bar"));
         }
 
         public static TheoryData<string, string> TestData_TrimEndingDirectorySeparator => new TheoryData<string, string>

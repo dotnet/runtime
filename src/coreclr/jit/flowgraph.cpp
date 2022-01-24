@@ -108,23 +108,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
         // the test.
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
-        CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef DEBUG
-        switch (block->bbJumpKind)
-        {
-            case BBJ_RETURN:
-            case BBJ_ALWAYS:
-            case BBJ_COND:
-            case BBJ_SWITCH:
-            case BBJ_NONE:
-            case BBJ_THROW:
-            case BBJ_CALLFINALLY:
-                break;
-            default:
-                assert(!"Unexpected block kind");
-        }
-#endif // DEBUG
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_NONE, BBJ_THROW, BBJ_CALLFINALLY));
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -245,10 +230,9 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
         createdPollBlocks = false;
 
         Statement* newStmt = nullptr;
-        if ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_CALLFINALLY) ||
-            (block->bbJumpKind == BBJ_NONE))
+        if (block->KindIs(BBJ_ALWAYS, BBJ_CALLFINALLY, BBJ_NONE))
         {
-            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE and  we don't need to insert it before the condition.
+            // For BBJ_ALWAYS, BBJ_CALLFINALLY, and BBJ_NONE we don't need to insert it before the condition.
             // Just append it.
             newStmt = fgNewStmtAtEnd(block, call);
         }
@@ -967,7 +951,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     {
         return false;
     }
-    else if (addr->OperIs(GT_CNS_STR))
+    else if (addr->OperIs(GT_CNS_STR, GT_CLS_VAR_ADDR))
     {
         return false;
     }
@@ -1269,7 +1253,7 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // If tree is a relop and we need an 4-byte integer
     //  then we never need to insert a cast
     //
-    if ((tree->OperKind() & GTK_RELOP) && (genActualType(toType) == TYP_INT))
+    if (tree->OperIsCompare() && (genActualType(toType) == TYP_INT))
     {
         return false;
     }
@@ -3920,36 +3904,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 
     /* Is this a leaf/constant node? */
 
-    if (kind & (GTK_CONST | GTK_LEAF))
+    if (kind & GTK_LEAF)
     {
         fgSetTreeSeqFinish(tree, isLIR);
-        return;
-    }
-
-    // Special handling for dynamic block ops.
-    if (tree->OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK))
-    {
-        GenTreeDynBlk* dynBlk    = tree->AsDynBlk();
-        GenTree*       sizeNode  = dynBlk->gtDynamicSize;
-        GenTree*       dstAddr   = dynBlk->Addr();
-        GenTree*       src       = dynBlk->Data();
-        bool           isReverse = dynBlk->IsReverseOp();
-
-        // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
-        // src (the Data to be stored), and isReverse tells us whether to evaluate
-        // that before dstAddr.
-        if (isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(dstAddr, isLIR);
-        if (!isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(sizeNode, isLIR);
-
-        fgSetTreeSeqFinish(dynBlk, isLIR);
         return;
     }
 
@@ -4124,8 +4081,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Addr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Data(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->gtDynamicSize, isLIR);
             break;
 
         default:

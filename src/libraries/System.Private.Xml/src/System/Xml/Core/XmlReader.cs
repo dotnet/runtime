@@ -81,7 +81,9 @@ namespace System.Xml
         internal const int BiggerBufferSize = 8192;
         internal const int MaxStreamLengthForDefaultBufferSize = 64 * 1024; // 64kB
 
-        internal const int AsyncBufferSize = 64 * 1024; //64KB
+        // Chosen to be small enough that the character buffer in XmlTextReader when using Async = true
+        // is not allocated on the Large Object Heap (LOH)
+        internal const int AsyncBufferSize = 32 * 1024;
 
         // Settings
         public virtual XmlReaderSettings? Settings => null;

@@ -2544,7 +2544,7 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 	gchar *key_uq;
 	gchar *retargetable = NULL;
 	gchar *retargetable_uq;
-	gchar *procarch;
+	gchar *procarch = NULL;
 	gchar *procarch_uq;
 	gboolean res;
 	gchar *value, *part_name;
@@ -2590,43 +2590,47 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 
 		if (part_name_len == 7 && !g_ascii_strncasecmp (part_name, "Version", part_name_len)) {
 			*is_version_defined = TRUE;
-			version = value;
-			if (strlen (version) == 0) {
+			if (version != NULL || strlen (value) == 0) {
 				goto cleanup_and_fail;
 			}
+			version = value;
 			tmp++;
 			continue;
 		}
 
 		if (part_name_len == 7 && !g_ascii_strncasecmp (part_name, "Culture", part_name_len)) {
-			culture = value;
-			if (strlen (culture) == 0) {
+			if (culture != NULL || strlen (value) == 0) {
 				goto cleanup_and_fail;
 			}
+			culture = value;
 			tmp++;
 			continue;
 		}
 
 		if (part_name_len == 14 && !g_ascii_strncasecmp (part_name, "PublicKeyToken", part_name_len)) {
 			*is_token_defined = TRUE;
-			token = value;
-			if (strlen (token) == 0) {
+			if (token != NULL || key != NULL || strlen (value) == 0) {
 				goto cleanup_and_fail;
 			}
+			token = value;
 			tmp++;
 			continue;
 		}
 
 		if (part_name_len == 9 && !g_ascii_strncasecmp (part_name, "PublicKey", part_name_len)) {
-			key = value;
-			if (strlen (key) == 0) {
+			if (token != NULL || key != NULL || strlen (value) == 0) {
 				goto cleanup_and_fail;
 			}
+			key = value;
 			tmp++;
 			continue;
 		}
 
 		if (part_name_len == 12 && !g_ascii_strncasecmp (part_name, "Retargetable", part_name_len)) {
+			if (retargetable != NULL) {
+				goto cleanup_and_fail;
+			}
+
 			retargetable = value;
 			retargetable_uq = unquote (retargetable);
 			if (retargetable_uq != NULL)
@@ -2645,6 +2649,10 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 		}
 
 		if (part_name_len == 21 && !g_ascii_strncasecmp (part_name, "ProcessorArchitecture", part_name_len)) {
+			if (procarch != NULL) {
+				goto cleanup_and_fail;
+			}
+
 			procarch = value;
 			procarch_uq = unquote (procarch);
 			if (procarch_uq != NULL)
@@ -2672,7 +2680,8 @@ mono_assembly_name_parse_full (const char *name, MonoAssemblyName *aname, gboole
 			continue;
 		}
 
-		goto cleanup_and_fail;
+		// compat: If we got here, the attribute name is unknown to us. Ignore it.
+		tmp++;
 	}
 
 	/* if retargetable flag is set, then we must have a fully qualified name */

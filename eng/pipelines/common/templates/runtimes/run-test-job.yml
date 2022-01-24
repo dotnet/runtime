@@ -73,7 +73,7 @@ jobs:
         - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
           - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
             - ${{ format('{0}_llvmaot_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-          - ${{ if not(eq(parameters.runtimeVariant, 'llvmfullaot')) }}:
+          - ${{ if ne(parameters.runtimeVariant, 'llvmfullaot') }}:
             - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
@@ -109,7 +109,7 @@ jobs:
     - name: runtimeVariantArg
       value: ''
 
-    - ${{ if not(eq(parameters.runtimeVariant, '')) }}:
+    - ${{ if ne(parameters.runtimeVariant, '') }}:
       - name: runtimeVariantArg
         value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
 
@@ -546,6 +546,7 @@ jobs:
           - jitosr
           - jitosr_stress
           - jitosr_pgo
+          - jitosr_stress_random
           - jitpartialcompilation
           - jitpartialcompilation_osr
           - jitpartialcompilation_osr_pgo
