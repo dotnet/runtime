@@ -683,9 +683,9 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexNodeKind.Concatenate:
-                        // For concatenations, we expect primarily to explore its last child, but we can also skip over
-                        // certain kinds of nodes (e.g. Empty), and thus iterate through its children backward looking for the
-                        // last we shouldn't skip.
+                        // For concatenations, we expect primarily to explore its first (for leading) or last (for trailing) child,
+                        // but we can also skip over certain kinds of nodes (e.g. Empty), and thus iterate through its children backward
+                        // looking for the last we shouldn't skip.
                         {
                             int childCount = node.ChildCount();
                             RegexNode? child = null;

@@ -211,6 +211,10 @@ namespace System.Text.RegularExpressions
         public RegexNodeKind TrailingAnchor { get; }
 
         /// <summary>The maximum possible length an input could be to match the pattern.</summary>
+        /// <remarks>
+        /// This is currently only set when <see cref="TrailingAnchor"/> is found to be an end anchor.
+        /// That can be expanded in the future as needed.
+        /// </remarks>
         public int? MaxPossibleLength { get; }
 
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
