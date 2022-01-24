@@ -159,55 +159,128 @@ namespace System.Text.Json.SourceGeneration.Tests
         public string LastName { get; set; }
     }
 
-    public class CovariantBase
+    public class CovariantBaseNotIgnored
     {
-        [JsonIgnore]
-        public virtual object Id { get; }
+        public virtual object Id { get; } = nameof(CovariantBaseNotIgnored);
     }
 
-    public class CovariantDerived : CovariantBase
+    public class CovariantBaseNotIgnored_CovariantDerivedNotIgnored : CovariantBaseNotIgnored
     {
-        [JsonIgnore]
-        public override string Id { get; }
+        public override string Id { get; } = nameof(CovariantBaseNotIgnored_CovariantDerivedNotIgnored);
     }
 
-    public class CovariantDerivedGeneric<T> : CovariantBase
+    public class CovariantBaseNotIgnored_CovariantDerivedGenericNotIgnored<T> : CovariantBaseNotIgnored
+        where T : class
+    {
+        public override T Id { get; } = (T)(object)nameof(CovariantBaseNotIgnored_CovariantDerivedGenericNotIgnored<T>);
+    }
+
+    public class CovariantBaseNotIgnored_CovariantDerivedIgnored : CovariantBaseNotIgnored
+    {
+        [JsonIgnore]
+        public override string Id { get; } = nameof(CovariantBaseNotIgnored_CovariantDerivedIgnored);
+    }
+
+    public class CovariantBaseNotIgnored_CovariantDerivedGenericIgnored<T> : CovariantBaseNotIgnored
         where T : class
     {
         [JsonIgnore]
-        public override T Id { get; }
+        public override T Id { get; } = (T)(object)nameof(CovariantBaseNotIgnored_CovariantDerivedGenericIgnored<T>);
+    }
+
+    public class CovariantBaseIgnored
+    {
+        [JsonIgnore]
+        public virtual object Id { get; } = nameof(CovariantBaseIgnored);
+    }
+
+    public class CovariantBaseIgnored_CovariantDerivedNotIgnored : CovariantBaseIgnored
+    {
+        public override string Id { get; } = nameof(CovariantBaseIgnored_CovariantDerivedNotIgnored);
+    }
+
+    public class CovariantBaseIgnored_CovariantDerivedGenericNotIgnored<T> : CovariantBaseIgnored
+        where T : class
+    {
+        public override T Id { get; } = (T)(object)nameof(CovariantBaseIgnored_CovariantDerivedGenericNotIgnored<T>);
+    }
+
+    public class CovariantBaseIgnored_CovariantDerivedIgnored : CovariantBaseIgnored
+    {
+        [JsonIgnore]
+        public override string Id { get; } = nameof(CovariantBaseIgnored_CovariantDerivedIgnored);
+    }
+
+    public class CovariantBaseIgnored_CovariantDerivedGenericIgnored<T> : CovariantBaseIgnored
+        where T : class
+    {
+        [JsonIgnore]
+        public override T Id { get; } = (T)(object)nameof(CovariantBaseIgnored_CovariantDerivedGenericIgnored<T>);
     }
 
     public class NotIgnoredPropertyBase
     {
-        public string Id { get; set; }
+        public string Id { get; set; } = nameof(NotIgnoredPropertyBase);
     }
 
     public class NotIgnoredPropertyBase_NotIgnoredPropertyDerived : NotIgnoredPropertyBase
     {
-        public new string Id { get; set; }
+        public new string Id { get; set; } = nameof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived);
     }
 
     public class NotIgnoredPropertyBase_IgnoredPropertyDerived : NotIgnoredPropertyBase
     {
         [JsonIgnore]
-        public new string Id { get; set; }
+        public new string Id { get; set; } = nameof(NotIgnoredPropertyBase_IgnoredPropertyDerived);
     }
 
     public class IgnoredPropertyBase
     {
         [JsonIgnore]
-        public string Id { get; set; }
+        public string Id { get; set; } = nameof(IgnoredPropertyBase);
     }
 
     public class IgnoredPropertyBase_NotIgnoredPropertyDerived : IgnoredPropertyBase
     {
-        public new string Id { get; set; }
+        public new string Id { get; set; } = nameof(IgnoredPropertyBase_NotIgnoredPropertyDerived);
     }
 
     public class IgnoredPropertyBase_IgnoredPropertyDerived : IgnoredPropertyBase
     {
         [JsonIgnore]
-        public new string Id { get; set; }
+        public new string Id { get; set; } = nameof(IgnoredPropertyBase_IgnoredPropertyDerived);
+    }
+
+    public class NotIgnoredVirtualPropertyBase
+    {
+        public virtual string Id { get; set; } = nameof(NotIgnoredVirtualPropertyBase);
+    }
+
+    public class NotIgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived : NotIgnoredVirtualPropertyBase
+    {
+        public override string Id { get; set; } = nameof(NotIgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived);
+    }
+
+    public class NotIgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived : NotIgnoredVirtualPropertyBase
+    {
+        [JsonIgnore]
+        public override string Id { get; set; } = nameof(NotIgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived);
+    }
+
+    public class IgnoredVirtualPropertyBase
+    {
+        [JsonIgnore]
+        public virtual string Id { get; set; } = nameof(IgnoredVirtualPropertyBase);
+    }
+
+    public class IgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived : IgnoredVirtualPropertyBase
+    {
+        public override string Id { get; set; } = nameof(IgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived);
+    }
+
+    public class IgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived : IgnoredVirtualPropertyBase
+    {
+        [JsonIgnore]
+        public override string Id { get; set; } = nameof(IgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived);
     }
 }

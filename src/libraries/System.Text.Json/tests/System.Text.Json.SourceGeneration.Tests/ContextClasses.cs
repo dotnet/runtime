@@ -47,14 +47,26 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
         public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
-        public JsonTypeInfo<CovariantDerived> CovariantDerived { get; }
-        public JsonTypeInfo<CovariantDerivedGeneric<string>> CovariantDerivedGenericString { get; }
+        public JsonTypeInfo<CovariantBaseNotIgnored_CovariantDerivedNotIgnored> CovariantBaseNotIgnored_CovariantDerivedNotIgnored { get; }
+        public JsonTypeInfo<CovariantBaseNotIgnored_CovariantDerivedGenericNotIgnored<string>> CovariantBaseNotIgnored_CovariantDerivedGenericNotIgnoredString { get; }
+        public JsonTypeInfo<CovariantBaseNotIgnored_CovariantDerivedIgnored> CovariantBaseNotIgnored_CovariantDerivedIgnored { get; }
+        public JsonTypeInfo<CovariantBaseNotIgnored_CovariantDerivedGenericIgnored<string>> CovariantBaseNotIgnored_CovariantDerivedGenericIgnoredString { get; }
+        public JsonTypeInfo<CovariantBaseIgnored_CovariantDerivedNotIgnored> CovariantBaseIgnored_CovariantDerivedNotIgnored { get; }
+        public JsonTypeInfo<CovariantBaseIgnored_CovariantDerivedGenericNotIgnored<string>> CovariantBaseIgnored_CovariantDerivedGenericNotIgnoredString { get; }
+        public JsonTypeInfo<CovariantBaseIgnored_CovariantDerivedIgnored> CovariantBaseIgnored_CovariantDerivedIgnored { get; }
+        public JsonTypeInfo<CovariantBaseIgnored_CovariantDerivedGenericIgnored<string>> CovariantBaseIgnored_CovariantDerivedGenericIgnoredString { get; }
         public JsonTypeInfo<IgnoredPropertyBase> IgnoredPropertyBase { get; }
         public JsonTypeInfo<NotIgnoredPropertyBase> NotIgnoredPropertyBase { get; }
         public JsonTypeInfo<IgnoredPropertyBase_NotIgnoredPropertyDerived> IgnoredPropertyBase_NotIgnoredPropertyDerived { get; }
         public JsonTypeInfo<IgnoredPropertyBase_IgnoredPropertyDerived> IgnoredPropertyBase_IgnoredPropertyDerived { get; }
         public JsonTypeInfo<NotIgnoredPropertyBase_NotIgnoredPropertyDerived> NotIgnoredPropertyBase_NotIgnoredPropertyDerived { get; }
         public JsonTypeInfo<NotIgnoredPropertyBase_IgnoredPropertyDerived> NotIgnoredPropertyBase_IgnoredPropertyDerived { get; }
+        public JsonTypeInfo<IgnoredVirtualPropertyBase> IgnoredVirtualPropertyBase { get; }
+        public JsonTypeInfo<NotIgnoredVirtualPropertyBase> NotIgnoredVirtualPropertyBase { get; }
+        public JsonTypeInfo<IgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived> IgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived { get; }
+        public JsonTypeInfo<IgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived> IgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived { get; }
+        public JsonTypeInfo<NotIgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived> NotIgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived { get; }
+        public JsonTypeInfo<NotIgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived> NotIgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

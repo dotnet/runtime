@@ -41,14 +41,26 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
     [JsonSerializable(typeof(PersonStruct?))]
-    [JsonSerializable(typeof(CovariantDerived))]
-    [JsonSerializable(typeof(CovariantDerivedGeneric<string>))]
+    [JsonSerializable(typeof(CovariantBaseNotIgnored_CovariantDerivedNotIgnored))]
+    [JsonSerializable(typeof(CovariantBaseNotIgnored_CovariantDerivedGenericNotIgnored<string>))]
+    [JsonSerializable(typeof(CovariantBaseNotIgnored_CovariantDerivedIgnored))]
+    [JsonSerializable(typeof(CovariantBaseNotIgnored_CovariantDerivedGenericIgnored<string>))]
+    [JsonSerializable(typeof(CovariantBaseIgnored_CovariantDerivedNotIgnored))]
+    [JsonSerializable(typeof(CovariantBaseIgnored_CovariantDerivedGenericNotIgnored<string>))]
+    [JsonSerializable(typeof(CovariantBaseIgnored_CovariantDerivedIgnored))]
+    [JsonSerializable(typeof(CovariantBaseIgnored_CovariantDerivedGenericIgnored<string>))]
     [JsonSerializable(typeof(IgnoredPropertyBase))]
     [JsonSerializable(typeof(NotIgnoredPropertyBase))]
     [JsonSerializable(typeof(IgnoredPropertyBase_NotIgnoredPropertyDerived))]
     [JsonSerializable(typeof(NotIgnoredPropertyBase_IgnoredPropertyDerived))]
     [JsonSerializable(typeof(NotIgnoredPropertyBase_NotIgnoredPropertyDerived))]
     [JsonSerializable(typeof(IgnoredPropertyBase_IgnoredPropertyDerived))]
+    [JsonSerializable(typeof(IgnoredVirtualPropertyBase))]
+    [JsonSerializable(typeof(NotIgnoredVirtualPropertyBase))]
+    [JsonSerializable(typeof(IgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived))]
+    [JsonSerializable(typeof(NotIgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived))]
+    [JsonSerializable(typeof(IgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived))]
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -96,14 +108,26 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
             Assert.Null(MetadataAndSerializationContext.Default.NullablePersonStruct.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.PersonStruct.SerializeHandler);
-            Assert.Null(MetadataAndSerializationContext.Default.CovariantDerived.SerializeHandler);
-            Assert.Null(MetadataAndSerializationContext.Default.CovariantDerivedGenericString.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseNotIgnored_CovariantDerivedNotIgnored.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseNotIgnored_CovariantDerivedGenericNotIgnoredString.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseNotIgnored_CovariantDerivedIgnored.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseNotIgnored_CovariantDerivedGenericIgnoredString.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseIgnored_CovariantDerivedNotIgnored.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseIgnored_CovariantDerivedGenericNotIgnoredString.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseIgnored_CovariantDerivedIgnored.SerializeHandler);
+            Assert.Null(MetadataAndSerializationContext.Default.CovariantBaseIgnored_CovariantDerivedGenericIgnoredString.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredVirtualPropertyBase.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredVirtualPropertyBase.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredVirtualPropertyBase_NotIgnoredOverriddenPropertyDerived.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredVirtualPropertyBase_IgnoredOverriddenPropertyDerived.SerializeHandler);
         }
     }
 }
