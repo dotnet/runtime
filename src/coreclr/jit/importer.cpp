@@ -2646,11 +2646,9 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
     {
         GenTree* tree = verCurrentState.esStack[i].val;
 
-        GenTree* lclVarTree;
-
         if ((tree->gtFlags & spillFlags) != 0 ||
-            (spillGlobEffects &&                        // Only consider the following when  spillGlobEffects == true
-             !impIsAddressInLocal(tree, &lclVarTree) && // No need to spill the GT_ADDR node on a local.
+            (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
+             !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
              gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                            // lvAddrTaken flag.
         {
@@ -14421,12 +14419,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 bool needsTemp = true;
                 if (!opts.compDbgCode)
                 {
-                    GenTree* lcl;
-                    if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero() || op1->IsLocal())
+                    // Duplicate 0 and +0.0
+                    if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
                     {
                         needsTemp = false;
                     }
-                    else if (impIsAddressInLocal(tree, &lcl)) //tree->TypeIs(TYP_BYREF) && tree->OperIs(GT_ADDR) && tree->gtGetOp1()->IsLocal())
+                    // Duplicate locals and addresses of them
+                    else if (op1->IsLocal() || impIsAddressInLocal(op1))
                     {
                         needsTemp = false;
                     }
@@ -19568,7 +19567,10 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 
     if (op->gtOper == GT_LCL_VAR)
     {
-        *lclVarTreeOut = op;
+        if (lclVarTreeOut != nullptr)
+        {
+            *lclVarTreeOut = op;
+        }
         return true;
     }
     else

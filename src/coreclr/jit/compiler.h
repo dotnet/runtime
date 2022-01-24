@@ -4844,7 +4844,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
+    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
