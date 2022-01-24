@@ -13431,7 +13431,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //
 GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    if (opts.OptimizationDisabled())
+    if (opts.OptimizationDisabled() || optValnumCSE_phase)
     {
         return node;
     }
