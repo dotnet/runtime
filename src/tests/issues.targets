@@ -2805,6 +2805,13 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/DisabledRuntimeMarshalling_Disabled_NativeAssemblyEnabled/**">
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
         </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorExp_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
