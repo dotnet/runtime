@@ -139,7 +139,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            return LowerBinaryArithmetic(node->AsOp());
+            return LowerBinaryArithmeticCommon(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -2708,10 +2708,16 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
         if (op2->IsIntegralConst(0) && (op1->gtNext == op2) && (op2->gtNext == cmp) &&
 #ifdef TARGET_XARCH
-            op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+            (op1->OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG)
+#ifdef FEATURE_HW_INTRINSICS
+             || (op1->OperIs(GT_HWINTRINSIC) &&
+                 emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(op1->AsHWIntrinsic())))
+#endif // FEATURE_HW_INTRINSICS
+                 )
 #else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB))
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB)
 #endif
+                )
         {
             op1->gtFlags |= GTF_SET_FLAGS;
             op1->SetUnusedValue();
@@ -5117,7 +5123,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBinaryArithmetic: lowers the given binary arithmetic node.
+// LowerBinaryArithmeticCommon: lowers the given binary arithmetic node.
 //
 // Recognizes opportunities for using target-independent "combined" nodes
 // (currently AND_NOT on ARMArch). Performs containment checks.
@@ -5128,41 +5134,39 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 // Returns:
 //    The next node to lower.
 //
-GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* node)
+GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* binOp)
 {
     // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
     // this logic on the support for the instruction set on XArch.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_ARMARCH
-    if (comp->opts.OptimizationEnabled() && node->OperIs(GT_AND))
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
     {
         GenTree* opNode  = nullptr;
         GenTree* notNode = nullptr;
-        if (node->gtGetOp1()->OperIs(GT_NOT))
+        if (binOp->gtGetOp1()->OperIs(GT_NOT))
         {
-            notNode = node->gtGetOp1();
-            opNode  = node->gtGetOp2();
+            notNode = binOp->gtGetOp1();
+            opNode  = binOp->gtGetOp2();
         }
-        else if (node->gtGetOp2()->OperIs(GT_NOT))
+        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
         {
-            notNode = node->gtGetOp2();
-            opNode  = node->gtGetOp1();
+            notNode = binOp->gtGetOp2();
+            opNode  = binOp->gtGetOp1();
         }
 
         if (notNode != nullptr)
         {
-            node->gtOp1 = opNode;
-            node->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            node->ChangeOper(GT_AND_NOT);
+            binOp->gtOp1 = opNode;
+            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
+            binOp->ChangeOper(GT_AND_NOT);
             BlockRange().Remove(notNode);
         }
     }
-#endif // TARGET_ARMARCH
+#endif
 
-    ContainCheckBinary(node);
-
-    return node->gtNext;
+    return LowerBinaryArithmetic(binOp);
 }
 
 //------------------------------------------------------------------------
