@@ -103,3 +103,55 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
   - `Uri` -> JS `string`
   - `SafeHandle` which is meant to be `JSObject` proxy -> unwrapped original JS object, array, function
   - each of above does multiple `ccall`s. Buffer copy, handle lookup, unboxing, C# `ToString()`.
+
+## Possible improvements calling from C# to JS
+- add `InvokeJSFunctionByName` public API with generic parameters
+  - minimal draft https://github.com/dotnet/runtime/pull/64062
+  - eleminate need for C code
+  - split parameter coversion to C# and JS sides
+  - allocate buffer on stack
+  - dynamic size of the buffer, dynamic length of parameters
+  - multiple end to end thunks by number of the parameters
+  - cover with tests
+  - handle return value
+  - replace Blazor's use-case with it
+- add `[GeneratedJsImportAttribute("globalThis.console.log")]`
+  - see https://github.com/dotnet/runtime/blob/main/docs/design/features/source-generator-pinvokes.md
+  - register custom coverters
+    - custom coverter with receive pointer to the buffer
+    - custom coverter could allocate buffer space?
+  - generate C# code with specific convertors only
+  - C# generate JS side on runtime based on pre-generated metadata
+  - inject generated JS on runtime ?
+- bind methods on JSObject via JS method handle, rather than C# name string 
+- handle ES6 imports like Blazor
+  - `module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/components/TimeDisplay.js");`
+
+## Possible improvements calling from JS to C#
+- add `[GeneratedJsExportAttribute("EXPORTS.myMethod")]`
+  - it would wrap the C# method with callable thunk
+  - it would generate the JS code
+     - use `stackalloc` in JS to allocate 
+     - call JS side of the marshallers
+     - call the C# thunk via `mono_runtime_invoke()`
+     - call the C# side of marshallers
+  - replace `mono_runtime_invoke()` with `mono_marshal_get_thunk_invoke_wrapper()` ?
+    - why everything needs to be boxed ?
+
+## Possible improvements for marshallers
+- drop Uri and only include it if the generated signature contains it
+- so that we could drop reflection from runtime
+  - only if we could drop `BINDING.mono_bind_method` API
+  - drop support for Delegate/method
+    - so that all methods have known signatures at compile time
+
+## Public API notes
+- returning `JSObject` for unmapped JS objects will leak the instance of private type
+  - shall we introduce `IJSObjectReference` like Blazor ?
+
+## Does the performance matter ?
+  - what is good real life benchmark application
+  - measure
+    - add perf counters for allocation
+    - add perf counters for `ccall`
+    - add perf for `JSObject.call` etc
