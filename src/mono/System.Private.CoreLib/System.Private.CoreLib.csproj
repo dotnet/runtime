@@ -290,9 +290,6 @@
       <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\JavaScriptMarshal.Mono.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
-      <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\InteropServices\JavaScript\JavaScriptMarshal.PlatformNotSupported.cs" />
-  </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
