@@ -8524,5 +8524,1457 @@
         }
       ]
     }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Infrastructure-libraries"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Microsoft.Win32"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Diagnostics.EventLog"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Diagnostics.PerformanceCounter"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Diagnostics.TraceSource"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Drawing"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Management"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceProcess"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "isAction",
+                        "parameters": {
+                          "action": "reopened"
+                        }
+                      },
+                      {
+                        "operator": "not",
+                        "operands": [
+                          {
+                            "name": "isInMilestone",
+                            "parameters": {}
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Infrastructure-libraries"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Microsoft.Win32"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.EventLog"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.PerformanceCounter"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.TraceSource"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Drawing"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Management"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceProcess"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+                  "isOrgProject": true,
+                  "columnName": "Triaged"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Carlos / Santi - Issue Triage] Add new issue to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+            "columnName": "Needs Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssueCommentResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Infrastructure-libraries"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Microsoft.Win32"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.EventLog"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.PerformanceCounter"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.TraceSource"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Drawing"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Management"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ServiceProcess"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isCloseAndComment",
+                "parameters": {}
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "activitySenderHasPermissions",
+                "parameters": {
+                  "permissions": "write"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issue_comment"
+      ],
+      "taskName": "[Area Pod: Carlos / Santi - Issue Triage] Needs Further Triage",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+            "columnName": "Needs Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+              "columnName": "Needs Triage",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Infrastructure-libraries"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Microsoft.Win32"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.EventLog"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.PerformanceCounter"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.TraceSource"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Drawing"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Management"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ServiceProcess"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Carlos / Santi - Issue Triage] Remove relabeled issues",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+                  "columnName": "Triaged"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "addedToMilestone",
+                "parameters": {}
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "needs-author-action"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "api-ready-for-review"
+                }
+              },
+              {
+                "name": "isAction",
+                "parameters": {
+                  "action": "closed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Carlos / Santi - Issue Triage] Move to Triaged Column",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Santi - Issue Triage",
+            "columnName": "Triaged",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Infrastructure-libraries"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Microsoft.Win32"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.EventLog"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.PerformanceCounter"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.TraceSource"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Drawing"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Management"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.ServiceProcess"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "Area Pod: Carlos / Santi - PRs",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Carlos / Santi - PRs] Add new PR to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Santi - PRs",
+            "columnName": "Needs Champion",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Carlos / Santi - PRs",
+              "columnName": "Needs Champion",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Infrastructure-libraries"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Microsoft.Win32"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.EventLog"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.PerformanceCounter"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.TraceSource"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Drawing"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Management"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ServiceProcess"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Carlos / Santi - PRs] Remove relabeled PRs",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Carlos / Santi - PRs",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "and",
+                "operands": [
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-Extensions-FileSystem"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Console"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Diagnostics.Process"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.IO"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.IO.Compression"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Linq.Parallel"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.Memory"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "operator": "or",
+                    "operands": [
+                      {
+                        "name": "isAction",
+                        "parameters": {
+                          "action": "reopened"
+                        }
+                      },
+                      {
+                        "operator": "not",
+                        "operands": [
+                          {
+                            "name": "isInMilestone",
+                            "parameters": {}
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "operator": "or",
+                "operands": [
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-Extensions-FileSystem"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Console"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Process"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.IO"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.IO.Compression"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Linq.Parallel"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.Memory"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "isOpen",
+            "parameters": {}
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Adam / David - Issue Triage",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - Issue Triage",
+                  "isOrgProject": true,
+                  "columnName": "Triaged"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Add new issue to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - Issue Triage",
+            "columnName": "Needs Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssueCommentResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-FileSystem"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Console"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.Process"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.IO"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.IO.Compression"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Linq.Parallel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Memory"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isCloseAndComment",
+                "parameters": {}
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "activitySenderHasPermissions",
+                "parameters": {
+                  "permissions": "write"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInProject",
+                    "parameters": {
+                      "projectName": "Area Pod: Adam / David - Issue Triage",
+                      "isOrgProject": true
+                    }
+                  }
+                ]
+              },
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - Issue Triage",
+                  "columnName": "Triaged",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issue_comment"
+      ],
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Needs Further Triage",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - Issue Triage",
+            "columnName": "Needs Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - Issue Triage",
+              "columnName": "Needs Triage",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-FileSystem"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Console"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Process"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO.Compression"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Linq.Parallel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Memory"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Remove relabeled issues",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - Issue Triage",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - Issue Triage",
+                  "columnName": "Triaged"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "addedToMilestone",
+                "parameters": {}
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "needs-author-action"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "api-ready-for-review"
+                }
+              },
+              {
+                "name": "isAction",
+                "parameters": {
+                  "action": "closed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "issue",
+      "eventNames": [
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Move to Triaged Column",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - Issue Triage",
+            "columnName": "Triaged",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-Extensions-FileSystem"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Console"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Diagnostics.Process"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.IO"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.IO.Compression"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Linq.Parallel"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "area-System.Memory"
+                }
+              }
+            ]
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProject",
+                "parameters": {
+                  "projectName": "Area Pod: Adam / David - PRs",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Adam / David - PRs] Add new PR to Board",
+      "actions": [
+        {
+          "name": "addToProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - PRs",
+            "columnName": "Needs Champion",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProjectColumn",
+            "parameters": {
+              "projectName": "Area Pod: Adam / David - PRs",
+              "columnName": "Needs Champion",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-FileSystem"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Console"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Process"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO.Compression"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Linq.Parallel"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Memory"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request",
+        "issues",
+        "project_card"
+      ],
+      "taskName": "[Area Pod: Adam / David - PRs] Remove relabeled PRs",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Adam / David - PRs",
+            "isOrgProject": true
+          }
+        }
+      ]
+    }
   }
 ]
