@@ -23,7 +23,7 @@ namespace System.IO
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase(string tempDirectory = null)
         {
-            tempDirectory ??= PlatformDetection.IsCaseSensitiveOS ? Path.GetTempPath() : "/tmp/";
+            tempDirectory ??= Path.GetTempPath();
 
             // Use a unique test directory per test class.  The test directory lives in the user's temp directory,
             // and includes both the name of the test class and a random string.  The test class name is included
