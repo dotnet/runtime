@@ -313,8 +313,68 @@ bool Compiler::fgForwardSub(Statement* stmt)
         return false;
     }
 
-    // Local seems suitable. See if the next statement
-    // contains the one and only use.
+    // Check the tree to substitute.
+    //
+    // We could just extract the value portion and forward sub that,
+    // but cleanup would be more complicated.
+    //
+    GenTree* const rhsNode    = rootNode->gtGetOp2();
+    GenTree*       fwdSubNode = rhsNode;
+
+    // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
+    // Can't substitute GT_CATCH_ARG.
+    // Can't substitute GT_LCLHEAP.
+    //
+    // Don't substitute a no return call (trips up morph in some cases).
+    //
+    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
+    {
+        JITDUMP(" tree to sub is qmark, catch arg, or lcl heap\n");
+        return false;
+    }
+
+    if (fwdSubNode->IsCall() && fwdSubNode->AsCall()->IsNoReturn())
+    {
+        JITDUMP(" tree to sub is no return call\n");
+        return false;
+    }
+
+    // Bail if sub node has embedded assignment.
+    //
+    if ((fwdSubNode->gtFlags & GTF_ASG) != 0)
+    {
+        JITDUMP(" tree to sub has effects\n");
+        return false;
+    }
+
+    // Bail if sub node has mismatched types.
+    // Might be able to tolerate these by retyping.
+    //
+    if (lhsNode->TypeGet() != fwdSubNode->TypeGet())
+    {
+        JITDUMP(" mismatched types (assignment)\n");
+        return false;
+    }
+
+    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(lhsNode))
+    {
+        JITDUMP(" would change struct handle (assignment)\n");
+        return false;
+    }
+
+    // Don't fwd sub overly large trees.
+    // Size limit here is ad-hoc. Need to tune.
+    //
+    unsigned const nodeLimit = 16;
+
+    if (gtComplexityExceeds(&fwdSubNode, nodeLimit))
+    {
+        JITDUMP(" tree to sub has more than %u nodes\n", nodeLimit);
+        return false;
+    }
+
+    // Local and tree to substitute seem suitable.
+    // See if the next statement contains the one and only use.
     //
     Statement* const nextStmt = stmt->GetNextStmt();
 
@@ -342,38 +402,7 @@ bool Compiler::fgForwardSub(Statement* stmt)
     // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
     //
-    // We could just extract the value portion and forward sub that,
-    // but cleanup would be more complicated.
-    //
-    GenTree* const rhsNode      = rootNode->gtGetOp2();
     GenTree* const nextRootNode = nextStmt->GetRootNode();
-    GenTree*       fwdSubNode   = rhsNode;
-
-    // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
-    // Can't substitute GT_CATCH_ARG.
-    // Can't substitute GT_LCLHEAP.
-    //
-    // Don't substitute a no return call (trips up morph in some cases).
-    //
-    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
-    {
-        JITDUMP(" node to sub is qmark, catch arg, or lcl heap\n");
-        return false;
-    }
-
-    if (fwdSubNode->IsCall() && fwdSubNode->AsCall()->IsNoReturn())
-    {
-        JITDUMP(" node to sub is no return call\n");
-        return false;
-    }
-
-    // Bail if sub node has embedded assignment.
-    //
-    if ((fwdSubNode->gtFlags & GTF_ASG) != 0)
-    {
-        JITDUMP(" node to sub has effects\n");
-        return false;
-    }
 
     // Bail if types disagree.
     // Might be able to tolerate these by retyping.
@@ -381,12 +410,6 @@ bool Compiler::fgForwardSub(Statement* stmt)
     if (fsv.GetNode()->TypeGet() != fwdSubNode->TypeGet())
     {
         JITDUMP(" mismatched types (substitution)\n");
-        return false;
-    }
-
-    if (lhsNode->TypeGet() != fwdSubNode->TypeGet())
-    {
-        JITDUMP(" mismatched types (assignment)\n");
         return false;
     }
 
@@ -468,12 +491,6 @@ bool Compiler::fgForwardSub(Statement* stmt)
     if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(fsv.GetNode()))
     {
         JITDUMP(" would change struct handle (substitution)\n");
-        return false;
-    }
-
-    if (gtGetStructHandleIfPresent(fwdSubNode) != gtGetStructHandleIfPresent(lhsNode))
-    {
-        JITDUMP(" would change struct handle (assignment)\n");
         return false;
     }
 
