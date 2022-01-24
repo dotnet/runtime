@@ -13,13 +13,13 @@ namespace Microsoft.Extensions.Configuration.Json
     {
         private JsonConfigurationFileParser() { }
 
-        private readonly Dictionary<string, string> _data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, string?> _data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
         private readonly Stack<string> _paths = new Stack<string>();
 
-        public static IDictionary<string, string> Parse(Stream input)
+        public static IDictionary<string, string?> Parse(Stream input)
             => new JsonConfigurationFileParser().ParseStream(input);
 
-        private IDictionary<string, string> ParseStream(Stream input)
+        private IDictionary<string, string?> ParseStream(Stream input)
         {
             var jsonDocumentOptions = new JsonDocumentOptions
             {

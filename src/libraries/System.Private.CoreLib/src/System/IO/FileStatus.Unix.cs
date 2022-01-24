@@ -145,14 +145,20 @@ namespace System.IO
             return HasReadOnlyFlag;
         }
 
-        internal bool IsHidden(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
+        internal bool IsFileSystemEntryHidden(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
         {
-            // Avoid disk hit first
+            // Because this is called for FileSystemEntry we can assume the entry exists and
+            // avoid initialization in some cases.
             if (IsNameHidden(fileName))
             {
                 return true;
             }
-            EnsureCachesInitialized(path, continueOnError);
+            if (!Interop.Sys.SupportsHiddenFlag)
+            {
+                return false;
+            }
+
+            EnsureCachesInitialized(path, continueOnError: true);
             return HasHiddenFlag;
         }
 

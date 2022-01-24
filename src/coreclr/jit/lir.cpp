@@ -1636,7 +1636,7 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
     LIR::Range& blockRange = LIR::AsRange(block);
 
     GenTree* insertionPoint = nullptr;
-    if ((block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_SWITCH) || (block->bbJumpKind == BBJ_RETURN))
+    if (block->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
     {
         insertionPoint = blockRange.LastNode();
         assert(insertionPoint != nullptr);

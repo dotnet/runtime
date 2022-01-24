@@ -95,10 +95,27 @@ namespace System.Threading.RateLimiting
                     return new ValueTask<RateLimitLease>(lease);
                 }
 
-                // Don't queue if queue limit reached
-                if (_queueCount + permitCount > _options.QueueLimit)
+                // Avoid integer overflow by using subtraction instead of addition
+                Debug.Assert(_options.QueueLimit >= _queueCount);
+                if (_options.QueueLimit - _queueCount < permitCount)
                 {
-                    return new ValueTask<RateLimitLease>(QueueLimitLease);
+                    if (_options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst && permitCount <= _options.QueueLimit)
+                    {
+                        // remove oldest items from queue until there is space for the newest request
+                        do
+                        {
+                            RequestRegistration oldestRequest = _queue.DequeueHead();
+                            _queueCount -= oldestRequest.Count;
+                            Debug.Assert(_queueCount >= 0);
+                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                        }
+                        while (_options.QueueLimit - _queueCount < permitCount);
+                    }
+                    else
+                    {
+                        // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
+                        return new ValueTask<RateLimitLease>(QueueLimitLease);
+                    }
                 }
 
                 TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);

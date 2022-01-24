@@ -200,6 +200,12 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"((\d{2,3}?)){2}", "1234", RegexOptions.None, 0, 4, true, "1234");
                 yield return (@"(abc\d{2,3}?){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc45");
 
+                // Testing selected FindOptimizations finds the right prefix
+                yield return (@"(^|a+)bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
+                yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
+                yield return (@"yz(^|a+)bc", " yzaabc", RegexOptions.None, 0, 7, true, "yzaabc");
+                yield return (@"(^a|a$) bc", "a bc", RegexOptions.None, 0, 4, true, "a bc");
+
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Back references not support with NonBacktracking
@@ -418,6 +424,38 @@ namespace System.Text.RegularExpressions.Tests
                 }
 
                 // Alternation construct
+                foreach (string input in new[] { "abc", "def" })
+                {
+                    string upper = input.ToUpperInvariant();
+
+                    // Two branches
+                    yield return (@"abc|def", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"abc|def", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"abc|def", upper, RegexOptions.None, 0, input.Length, false, "");
+
+                    // Three branches
+                    yield return (@"abc|agh|def", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"abc|agh|def", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"abc|agh|def", upper, RegexOptions.None, 0, input.Length, false, "");
+
+                    // Four branches
+                    yield return (@"abc|agh|def|aij", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"abc|agh|def|aij", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"abc|agh|def|aij", upper, RegexOptions.None, 0, input.Length, false, "");
+
+                    // Four branches (containing various other constructs)
+                    if (!RegexHelpers.IsNonBacktracking(engine))
+                    {
+                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", input, RegexOptions.None, 0, input.Length, true, input);
+                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                        yield return (@"abc|(agh)|(?=def)def|(?:(?(aij)aij|(?!)))", upper, RegexOptions.None, 0, input.Length, false, "");
+                    }
+
+                    // Sets in various positions in each branch
+                    yield return (@"a\wc|\wgh|de\w", input, RegexOptions.None, 0, input.Length, true, input);
+                    yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, input.Length, true, upper);
+                    yield return (@"a\wc|\wgh|de\w", upper, RegexOptions.None, 0, input.Length, false, "");
+                }
                 yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
@@ -440,7 +478,6 @@ namespace System.Text.RegularExpressions.Tests
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.None, 0, 4, false, string.Empty);
                     yield return ("(?>(?:a|ab|abc|abcd))d", "abcd", RegexOptions.RightToLeft, 0, 4, true, "abcd");
                 }
-                yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
 
                 // No Negation
                 yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
@@ -1018,6 +1055,18 @@ namespace System.Text.RegularExpressions.Tests
                         new CaptureData("d", 0, 1),
                         new CaptureData(string.Empty, 1, 0),
                         new CaptureData(string.Empty, 1, 0)
+                    }
+                };
+                yield return new object[]
+                {
+                    engine,
+                    "(d+?)(e*?)(f+)", "dddeeefff", RegexOptions.None, 0, 9,
+                    new CaptureData[]
+                    {
+                        new CaptureData("dddeeefff", 0, 9),
+                        new CaptureData("ddd", 0, 3),
+                        new CaptureData("eee", 3, 3),
+                        new CaptureData("fff", 6, 3),
                     }
                 };
 
