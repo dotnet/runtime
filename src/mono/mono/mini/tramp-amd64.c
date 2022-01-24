@@ -159,7 +159,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 			gboolean disp_32bit = ((((gint64)addr - (gint64)orig_code)) < (1 << 30)) && ((((gint64)addr - (gint64)orig_code)) > -(1 << 30));
 
 			if ((((guint64)(addr)) >> 32) != 0 && !disp_32bit) {
-				/* 
+				/*
 				 * This might happen with LLVM or when calling AOTed code. Create a thunk.
 				 */
 				guint8 *thunk_start, *thunk_code;
@@ -290,7 +290,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	cfa_offset -= sizeof (target_mgreg_t);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 
-	/* 
+	/*
 	 * Allocate a new stack frame
 	 */
 	amd64_push_reg (code, AMD64_RBP);
@@ -473,7 +473,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, lmf_offset + MONO_STRUCT_OFFSET (MonoLMFTramp, lmf_addr), sizeof (target_mgreg_t));
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RCX, sizeof (target_mgreg_t));
 
-	/* 
+	/*
 	 * Save rax to the stack, after the leave instruction, this will become part of
 	 * the red zone.
 	 */
@@ -482,7 +482,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
-	/* 
+	/*
 	 * Have to call the _force_ variant, since there could be a protected wrapper on the top of the stack.
 	 */
 	if (aot) {
@@ -626,7 +626,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE, mono_get_generic_trampoline_simple_name (tramp_type)));
 
 	return buf;
-}	
+}
 
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
@@ -966,7 +966,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 			amd64_mov_reg_imm (code, AMD64_R11, mono_component_debugger ()->single_step_from_context);
 		else
 			amd64_mov_reg_imm (code, AMD64_R11, mono_component_debugger ()->breakpoint_from_context);
-	}	
+	}
 	amd64_call_reg (code, AMD64_R11);
 
 	/* Restore registers from ctx */

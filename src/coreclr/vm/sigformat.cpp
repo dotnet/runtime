@@ -235,7 +235,7 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
             else
             {
                 char smallbuf[20];
-                sprintf_s(smallbuf, COUNTOF(smallbuf), "!!%d", ix);
+                sprintf_s(smallbuf, ARRAY_SIZE(smallbuf), "!!%d", ix);
                 AddString(smallbuf);
             }
         }
@@ -253,7 +253,7 @@ void SigFormat::AddTypeString(Module* pModule, SigPointer sig, const SigTypeCont
             else
             {
                 char smallbuf[20];
-                sprintf_s(smallbuf, COUNTOF(smallbuf), "!%d", ix);
+                sprintf_s(smallbuf, ARRAY_SIZE(smallbuf), "!%d", ix);
                 AddString(smallbuf);
             }
         }

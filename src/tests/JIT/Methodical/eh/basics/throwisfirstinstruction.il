@@ -9,14 +9,14 @@
   .ver 4:0:0:0
 }
 .assembly extern mscorlib {}
-.assembly extern common {}
+.assembly extern eh_common {}
 .assembly 'throwisfirstinstruction' {}
 .assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
-  .field private static class [common]TestUtil.TestLog testLog
+  .field private static class [eh_common]TestUtil.TestLog testLog
   .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
   {
     .maxstack  2
@@ -32,8 +32,8 @@
     ldstr      "after try"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
-    stsfld     class [common]TestUtil.TestLog test::testLog
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
+    stsfld     class [eh_common]TestUtil.TestLog test::testLog
     ret
   } 
 
@@ -44,8 +44,8 @@
     )
     .entrypoint
 
-      ldsfld     class [common]TestUtil.TestLog test::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
       .try
       {
@@ -64,11 +64,11 @@
       ldstr      "after try"
       call       void [System.Console]System.Console::WriteLine(string)
 
-      ldsfld     class [common]TestUtil.TestLog test::testLog
-      callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+      ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+      callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
-      ldsfld     class [common]TestUtil.TestLog test::testLog
-      callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+      ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+      callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
       
       ret
   }

@@ -104,7 +104,11 @@ namespace System.Runtime.CompilerServices.Tests
                 RuntimeHelpers.PrepareMethod(m.MethodHandle);
 
             Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(default(RuntimeMethodHandle)));
-            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+            }
         }
 
         [Fact]
@@ -124,13 +128,16 @@ namespace System.Runtime.CompilerServices.Tests
             RuntimeHelpers.PrepareMethod(typeof(List<int>).GetMethod("Add").MethodHandle,
                 null);
 
-            // Generic definition without instantiation is invalid
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
-                null));
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Generic definition without instantiation is invalid
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
+                    null));
 
-            // Wrong instantiation
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
-                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+                // Wrong instantiation
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
+                    new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+            }
 
             //
             // Method instantiations
@@ -145,13 +152,16 @@ namespace System.Runtime.CompilerServices.Tests
                     .MakeGenericMethod(new Type[] { typeof(TestStruct) }).MethodHandle,
                 null);
 
-            // Generic definition without instantiation is invalid
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
-                null));
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Generic definition without instantiation is invalid
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                    null));
 
-            // Wrong instantiation
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
-                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+                // Wrong instantiation
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                    new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+            }
         }
 
         [Fact]
@@ -273,6 +283,7 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
         public static void GetUninitalizedObject_DoesNotRunBeforeFieldInitCctors()
         {

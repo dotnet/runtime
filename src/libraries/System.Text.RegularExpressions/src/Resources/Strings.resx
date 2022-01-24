@@ -200,9 +200,6 @@
   <data name="AlternationHasUndefinedReferenceNoPlaceholder" xml:space="preserve">
     <value>Alternation has a reference to undefined group.</value>
   </data>
-  <data name="UnexpectedOpcode" xml:space="preserve">
-    <value>Unexpected opcode in regular expression generation: {0}.</value>
-  </data>
   <data name="UnrecognizedUnicodeProperty" xml:space="preserve">
     <value>Unknown property '{0}'.</value>
   </data>

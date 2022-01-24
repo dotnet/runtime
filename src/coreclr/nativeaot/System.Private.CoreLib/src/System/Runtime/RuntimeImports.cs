@@ -681,18 +681,6 @@ namespace System.Runtime
 
         [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "fabs")]
-        internal static extern double fabs(double x);
-
-        [Intrinsic]
-        internal static float fabsf(float x)
-        {
-            // fabsf is not a real export for some architectures
-            return (float)fabs(x);
-        }
-
-        [Intrinsic]
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "acos")]
         internal static extern double acos(double x);
 

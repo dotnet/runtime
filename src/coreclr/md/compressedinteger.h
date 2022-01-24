@@ -68,7 +68,7 @@ public:
     __success(return)
     static inline BOOL GetEncodingSize(
               UINT32  nValue,
-        __out UINT32 *pcbEncodingSize);
+        _Out_ UINT32 *pcbEncodingSize);
     // Returns TRUE if the value (nValue) fits into 1-byte, 2-bytes or 4-bytes encoding and fills
     // *pcbEncodingSize with 1, 2 or 4 and *pnEncodedValue with the encoded value.
     // Returns FALSE if the value cannot be encoded as compressed integer, doesn't fill *pcbEncodingSize
@@ -76,8 +76,8 @@ public:
     __success(return)
     static inline BOOL Encode(
               UINT32  nValue,
-        __out UINT32 *pnEncodedValue,
-        __out UINT32 *pcbEncodingSize);
+        _Out_ UINT32 *pnEncodedValue,
+        _Out_ UINT32 *pcbEncodingSize);
 
 };  // class CompressedInteger
 

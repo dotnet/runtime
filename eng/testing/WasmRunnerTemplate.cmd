@@ -48,13 +48,13 @@ if /I [%XHARNESS_COMMAND%] == [test] (
         set "JS_ENGINE_ARGS=--engine-arg^=--stack-trace-limit^=1000"
     )
 ) else (
-    if [%BROWSER_PATH%] == [] (
+    if [%BROWSER_PATH%] == [] if not [%HELIX_CORRELATION_PAYLOAD%] == [] (
         set "BROWSER_PATH=--browser-path^=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe"
     )
 )
 
 if [%XHARNESS_ARGS%] == [] (
-    set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS%"
+    set "XHARNESS_ARGS=%JS_ENGINE% %JS_ENGINE_ARGS% %BROWSER_PATH% %MAIN_JS% %WASM_XHARNESS_MONO_ARGS%"
 )
 
 echo EXECUTION_DIR=%EXECUTION_DIR%

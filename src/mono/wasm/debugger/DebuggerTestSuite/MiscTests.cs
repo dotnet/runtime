@@ -83,8 +83,8 @@ namespace DebuggerTests
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    CheckSymbol(locals, "c0", "8364 '€'");
-                    CheckSymbol(locals, "c1", "65 'A'");
+                    await CheckSymbol(locals, "c0", "8364 '€'");
+                    await CheckSymbol(locals, "c1", "65 'A'");
                     await Task.CompletedTask;
                 }
             );
@@ -203,18 +203,18 @@ namespace DebuggerTests
                 use_cfo: use_cfo,
                 test_fn: async (locals) =>
                 {
-                    CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
-                    CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
+                    await CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
+                    await CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
-                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
-                    CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
+                    await CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
+                    await CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
 
                     // Unused locals
-                    CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
-                    CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
+                    await CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
+                    await CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
-                    CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
-                    CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
+                    await CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
+                    await CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
                     await Task.CompletedTask;
                 }
             );
@@ -275,11 +275,11 @@ namespace DebuggerTests
             var vt_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "vt_local");
             Assert.Equal(5, vt_local_props.Count());
 
-            CheckString(vt_local_props, "StringField", "string#0");
-            CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
-            CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
+            await CheckString(vt_local_props, "StringField", "string#0");
+            await CheckValueType(vt_local_props, "SimpleStructField", "DebuggerTests.ValueTypesTest.SimpleStruct");
+            await CheckValueType(vt_local_props, "SimpleStructProperty", "DebuggerTests.ValueTypesTest.SimpleStruct");
             await CheckDateTime(vt_local_props, "DT", new DateTime(2020, 1, 2, 3, 4, 5));
-            CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
+            await CheckEnum(vt_local_props, "RGB", "DebuggerTests.RGB", "Blue");
 
             // Check ss_local's properties
             var ss_local_props = await GetObjectOnFrame(pause_location["callFrames"][0], "ss_local");
@@ -298,8 +298,8 @@ namespace DebuggerTests
 
                 // Check ss_local.gs
                 var gs_props = await GetObjectOnLocals(ss_local_props, "gs");
-                CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
-                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
+                await CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
+                await CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
             }
 
             // Check gs_local's properties
@@ -654,7 +654,6 @@ namespace DebuggerTests
                 var this_props = await GetObjectOnLocals(frame_locals, "this");
                 await CheckProps(this_props, new
                 {
-                    TestEvent = TSymbol("System.EventHandler<string>"),
                     Delegate = TSymbol("System.MulticastDelegate")
                 }, "this_props");
             });
@@ -914,7 +913,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 860, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 924, 8,
                 "CallToEvaluateLocal",
                 wait_for_event_fn: async (pause_location) =>
                 {

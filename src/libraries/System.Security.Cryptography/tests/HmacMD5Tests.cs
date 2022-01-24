@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         protected override int BlockSize => 64;
-        protected override int MacSize => 16;
+        protected override int MacSize => HMACMD5.HashSizeInBytes;
 
         protected override HMAC Create() => new HMACMD5();
         protected override HashAlgorithm CreateHashAlgorithm() => MD5.Create();

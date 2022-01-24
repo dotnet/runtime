@@ -35,7 +35,7 @@ namespace System.Drawing.Drawing2D
 
         public override object Clone()
         {
-            IntPtr clonedBrush = IntPtr.Zero;
+            IntPtr clonedBrush;
             int status = Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out clonedBrush);
             Gdip.CheckStatus(status);
 

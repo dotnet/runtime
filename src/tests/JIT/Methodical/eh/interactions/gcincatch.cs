@@ -40,7 +40,7 @@ namespace test2
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        public static int Main(String[] args)
+        public static int Main()
         {
             int[] ar = new int[] { 1, 2, 3, 4, 5 };
 
@@ -49,13 +49,6 @@ namespace test2
 
             try
             {
-                if (args.Length > 0)
-                {
-                    for (int i = 0; i < ar.Length; i++)
-                    {
-                        Console.WriteLine("ar[" + i + "]=" + ar[i]);
-                    }
-                }
                 Console.WriteLine("In try");
                 GC.Collect();
                 GC.WaitForPendingFinalizers();

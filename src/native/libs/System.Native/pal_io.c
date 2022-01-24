@@ -1553,7 +1553,16 @@ int32_t SystemNative_LChflags(const char* path, uint32_t flags)
 
 int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
 {
-#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS) && defined(HAVE_LCHFLAGS)
+#if defined(HAVE_LCHFLAGS)
+    return SystemNative_CanGetHiddenFlag();
+#else
+    return false;
+#endif
+}
+
+int32_t SystemNative_CanGetHiddenFlag(void)
+{
+#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS)
     return true;
 #else
     return false;

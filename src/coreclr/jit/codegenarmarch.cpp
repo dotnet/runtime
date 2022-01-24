@@ -2840,8 +2840,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // When both addresses are not 16-byte aligned the CopyBlock instruction sequence starts with padding
     // str instruction. For example, when both addresses are 8-byte aligned the instruction sequence looks like
     //
-    // ldr D_simdReg1, [srcReg, #srcOffset]
-    // str D_simdReg1, [dstReg, #dstOffset]
+    // ldr X_intReg1, [srcReg, #srcOffset]
+    // str X_intReg1, [dstReg, #dstOffset]
     // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+8]
     // stp Q_simdReg1, Q_simdReg2, [dstReg, #dstOffset+8]
     // ldp Q_simdReg1, Q_simdReg2, [srcReg, #srcOffset+40]
@@ -2853,7 +2853,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     // be profitable).
 
     const bool canUse16ByteWideInstrs = isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown &&
-                                        (size >= FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
+                                        (size >= 2 * FP_REGSIZE_BYTES) && (srcRegAddrAlignment == dstRegAddrAlignment);
 
     bool shouldUse16ByteWideInstrs = false;
 
@@ -2876,8 +2876,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             // In order to use 16-byte instructions the JIT needs to adjust either srcOffset or dstOffset.
             // The JIT should use 16-byte loads and stores when the resulting sequence (incl. an additional add
-            // instruction)
-            // has fewer number of instructions.
+            // instruction) has fewer number of instructions.
 
             if (helper.InstructionCount(FP_REGSIZE_BYTES) + 1 < helper.InstructionCount(REGSIZE_BYTES))
             {
@@ -2937,51 +2936,31 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
     const unsigned intRegCount = node->AvailableTempRegCount(RBM_ALLINT);
 
-    switch (intRegCount)
+    if (intRegCount >= 2)
     {
-        case 1:
-            intReg1 = node->GetSingleTempReg(RBM_ALLINT);
-            break;
-        case 2:
-            intReg1 = node->ExtractTempReg(RBM_ALLINT);
-            intReg2 = node->GetSingleTempReg(RBM_ALLINT);
-            break;
-        default:
-            break;
+        intReg1 = node->ExtractTempReg(RBM_ALLINT);
+        intReg2 = node->ExtractTempReg(RBM_ALLINT);
     }
-
-    regNumber simdReg1 = REG_NA;
-    regNumber simdReg2 = REG_NA;
-
-    const unsigned simdRegCount = node->AvailableTempRegCount(RBM_ALLFLOAT);
-
-    switch (simdRegCount)
+    else if (intRegCount == 1)
     {
-        case 1:
-            simdReg1 = node->GetSingleTempReg(RBM_ALLFLOAT);
-            break;
-        case 2:
-            simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
-            simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
-            break;
-        default:
-            break;
+        intReg1 = node->GetSingleTempReg(RBM_ALLINT);
+        intReg2 = rsGetRsvdReg();
+    }
+    else
+    {
+        intReg1 = rsGetRsvdReg();
     }
 
     if (shouldUse16ByteWideInstrs)
     {
+        const regNumber simdReg1 = node->ExtractTempReg(RBM_ALLFLOAT);
+        const regNumber simdReg2 = node->GetSingleTempReg(RBM_ALLFLOAT);
+
         helper.Unroll(FP_REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
     }
     else
     {
-        if (intReg2 == REG_NA)
-        {
-            helper.Unroll(REGSIZE_BYTES, intReg1, simdReg1, simdReg2, srcReg, dstReg, GetEmitter());
-        }
-        else
-        {
-            helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
-        }
+        helper.UnrollBaseInstrs(intReg1, intReg2, srcReg, dstReg, GetEmitter());
     }
 #endif // TARGET_ARM64
 

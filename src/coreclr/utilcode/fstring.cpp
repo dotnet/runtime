@@ -23,7 +23,7 @@ namespace FString
 #define MAX_LENGTH 0x1fffff00
 
 
-HRESULT Unicode_Utf8_Length(__in_z LPCWSTR pString, __out bool * pAllAscii, __out DWORD * pLength)
+HRESULT Unicode_Utf8_Length(_In_z_ LPCWSTR pString, _Out_ bool * pAllAscii, _Out_ DWORD * pLength)
 {
     CONTRACTL
     {
@@ -86,7 +86,7 @@ HRESULT Unicode_Utf8_Length(__in_z LPCWSTR pString, __out bool * pAllAscii, __ou
 
 
 // UNICODE to UTF8
-HRESULT Unicode_Utf8(__in_z LPCWSTR pString, bool allAscii, __out_z LPSTR pBuffer, DWORD length)
+HRESULT Unicode_Utf8(_In_z_ LPCWSTR pString, bool allAscii, _Out_writes_bytes_(length) LPSTR pBuffer, DWORD length)
 {
     CONTRACTL
     {
@@ -143,7 +143,7 @@ HRESULT Unicode_Utf8(__in_z LPCWSTR pString, bool allAscii, __out_z LPSTR pBuffe
 }
 
 
-HRESULT Utf8_Unicode_Length(__in_z LPCSTR pString, __out bool * pAllAscii, __out DWORD * pLength)
+HRESULT Utf8_Unicode_Length(_In_z_ LPCSTR pString, _Out_ bool * pAllAscii, _Out_ DWORD * pLength)
 {
     CONTRACTL
     {
@@ -207,7 +207,7 @@ HRESULT Utf8_Unicode_Length(__in_z LPCSTR pString, __out bool * pAllAscii, __out
 
 // UTF8 to Unicode
 
-HRESULT Utf8_Unicode(__in_z LPCSTR pString, bool allAscii, __out_z LPWSTR pBuffer, DWORD length)
+HRESULT Utf8_Unicode(_In_z_ LPCSTR pString, bool allAscii, _Out_writes_bytes_(length) LPWSTR pBuffer, DWORD length)
 {
     CONTRACTL
     {
@@ -264,7 +264,7 @@ HRESULT Utf8_Unicode(__in_z LPCSTR pString, bool allAscii, __out_z LPWSTR pBuffe
 }
 
 
-HRESULT ConvertUnicode_Utf8(__in_z LPCWSTR pString, __out_z LPSTR * pBuffer)
+HRESULT ConvertUnicode_Utf8(_In_z_ LPCWSTR pString, _Outptr_result_z_ LPSTR * pBuffer)
 {
     bool  allAscii;
     DWORD length;
@@ -289,7 +289,7 @@ HRESULT ConvertUnicode_Utf8(__in_z LPCWSTR pString, __out_z LPSTR * pBuffer)
 }
 
 
-HRESULT ConvertUtf8_Unicode(__in_z LPCSTR pString, __out_z LPWSTR * pBuffer)
+HRESULT ConvertUtf8_Unicode(_In_z_ LPCSTR pString, _Outptr_result_z_ LPWSTR * pBuffer)
 {
     bool  allAscii;
     DWORD length;

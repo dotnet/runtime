@@ -283,9 +283,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compHWIntrinsicDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
-    if (strcmp(methodName, "get_IsSupported") == 0)
+    if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
     {
         return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
                               : NI_IsSupported_False;
@@ -555,7 +555,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
+    return compHWIntrinsicDependsOn(isa) && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
            (
 #ifdef DEBUG
                JitConfig.EnableIncompleteISAClass() ||
@@ -593,12 +593,6 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 {
     if (baseJitType == CORINFO_TYPE_UNDEF)
     {
-        return false;
-    }
-
-    if ((baseJitType == CORINFO_TYPE_NATIVEINT) || (baseJitType == CORINFO_TYPE_NATIVEUINT))
-    {
-        // We don't want to support the general purpose helpers for nint/nuint until after they go through API review.
         return false;
     }
 
@@ -1013,6 +1007,41 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, intrinsic)
                                    : gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+
+#if defined(TARGET_XARCH)
+                switch (intrinsic)
+                {
+                    case NI_SSE41_ConvertToVector128Int16:
+                    case NI_SSE41_ConvertToVector128Int32:
+                    case NI_SSE41_ConvertToVector128Int64:
+                    case NI_AVX2_BroadcastScalarToVector128:
+                    case NI_AVX2_BroadcastScalarToVector256:
+                    case NI_AVX2_ConvertToVector256Int16:
+                    case NI_AVX2_ConvertToVector256Int32:
+                    case NI_AVX2_ConvertToVector256Int64:
+                    {
+                        // These intrinsics have both pointer and vector overloads
+                        // We want to be able to differentiate between them so lets
+                        // just track the aux type as a ptr or undefined, depending
+
+                        CorInfoType auxiliaryType = CORINFO_TYPE_UNDEF;
+
+                        if (!varTypeIsSIMD(op1->TypeGet()))
+                        {
+                            auxiliaryType = CORINFO_TYPE_PTR;
+                        }
+
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(auxiliaryType);
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+#endif // TARGET_XARCH
+
                 break;
 
             case 2:

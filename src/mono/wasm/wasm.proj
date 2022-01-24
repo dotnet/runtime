@@ -192,8 +192,7 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(ICULibFiles);
-                       @(ICULibNativeFiles);
-                       runtime/package.json;"
+                       @(ICULibNativeFiles);"
           DestinationFolder="$(NativeBinDir)"
           SkipUnchangedFiles="true" />
 
@@ -253,7 +252,6 @@
     <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
   </Target>
 
-
   <ItemGroup>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/*.ts"/>
     <_RollupInputs Include="$(MonoProjectRoot)wasm/runtime/types/*.ts"/>
@@ -272,6 +270,14 @@
     <!-- compile typescript -->
     <RunWithEmSdkEnv Command="npm run rollup -- --environment Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion)" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
+    <Copy SourceFiles="runtime/package.json;"
+          DestinationFolder="$(NativeBinDir)"
+          SkipUnchangedFiles="true" />
+
+    <!-- set version -->
+    <RunWithEmSdkEnv Command="npm version $(PackageVersion)" EmSdkPath="$(EMSDK_PATH)" WorkingDirectory="$(NativeBinDir)"/>
+
     <Touch Files="$(NativeBinDir).rollup-stamp" AlwaysCreate="true" />
   </Target>
+
 </Project>

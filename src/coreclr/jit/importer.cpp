@@ -1864,7 +1864,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
@@ -3879,19 +3878,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) ||
-         (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray)) &&
-        IsTargetAbi(CORINFO_CORERT_ABI))
+    switch (ni)
     {
         // CreateSpan must be expanded for NativeAOT
-        mustExpand = true;
-    }
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
+            break;
 
-    if ((ni == NI_System_ByReference_ctor) || (ni == NI_System_ByReference_get_Value) ||
-        (ni == NI_System_Activator_AllocatorOf) || (ni == NI_System_Activator_DefaultConstructorOf) ||
-        (ni == NI_System_Object_MethodTableOf) || (ni == NI_System_EETypePtr_EETypePtrOf))
-    {
-        mustExpand = true;
+        case NI_System_ByReference_ctor:
+        case NI_System_ByReference_get_Value:
+        case NI_System_Activator_AllocatorOf:
+        case NI_System_Activator_DefaultConstructorOf:
+        case NI_System_Object_MethodTableOf:
+        case NI_System_EETypePtr_EETypePtrOf:
+            mustExpand = true;
+            break;
+
+        default:
+            break;
     }
 
     GenTree* retNode = nullptr;
@@ -3935,29 +3940,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_String_get_Length:
             {
                 GenTree* op1 = impPopStack().val;
-                if (opts.OptimizationEnabled())
+                if (op1->OperIs(GT_CNS_STR))
                 {
-                    if (op1->OperIs(GT_CNS_STR))
+                    // Optimize `ldstr + String::get_Length()` to CNS_INT
+                    // e.g. "Hello".Length => 5
+                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                    if (iconNode != nullptr)
                     {
-                        // Optimize `ldstr + String::get_Length()` to CNS_INT
-                        // e.g. "Hello".Length => 5
-                        GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
-                        if (iconNode != nullptr)
-                        {
-                            retNode = iconNode;
-                            break;
-                        }
+                        retNode = iconNode;
+                        break;
                     }
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
-                    op1                   = arrLen;
                 }
-                else
-                {
-                    /* Create the expression "*(str_addr + stringLengthOffset)" */
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
-                }
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                op1                   = arrLen;
 
                 // Getting the length of a null string should throw
                 op1->gtFlags |= GTF_EXCEPT;
@@ -4004,6 +3999,26 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
             {
                 retNode = impInitializeArrayIntrinsic(sig);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+            {
+                GenTree* op1 = impPopStack().val;
+                if (op1->OperIsConst())
+                {
+                    // op1 is a known constant, replace with 'true'.
+                    retNode = gtNewIconNode(1);
+                    JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
+                    // We can also consider FTN_ADDR and typeof(T) here
+                }
+                else
+                {
+                    // op1 is not a known constant, we'll do the expansion in morph
+                    retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, ni, method);
+                    JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
+                    DISPTREE(retNode);
+                }
                 break;
             }
 
@@ -4283,7 +4298,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
-                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
+                if (impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
                     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
@@ -4306,7 +4321,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                if (opts.OptimizationEnabled() && compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
@@ -5352,6 +5367,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
         }
+        else if (strcmp(methodName, "IsKnownConstant") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+        }
     }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
@@ -5398,7 +5417,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
         if (result == NI_Illegal)
         {
-            if (strcmp(methodName, "get_IsSupported") == 0)
+            if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
             {
                 // This allows the relevant code paths to be dropped as dead code even
                 // on platforms where FEATURE_HW_INTRINSICS is not supported.
@@ -8130,6 +8149,23 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                                               CORINFO_FIELD_INFO*     pFieldInfo,
                                               var_types               lclTyp)
 {
+    // Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
+    // mapped to the same ".data" declaration). That said, such mappings only appear to be
+    // possible with ILASM, and in ILASM-produced (ILONLY) images, RVA statics are always
+    // read-only (using "stsfld" on them is UB). In mixed-mode assemblies, RVA statics can
+    // be mutable, but the only current producer of such images, the C++/CLI compiler, does
+    // not appear to support mapping different fields to the same address. So we will say
+    // that "mutable overlapping RVA statics" are UB as well. If this ever changes, code in
+    // morph and value numbering will need to be updated to respect "gtFldMayOverlap" and
+    // "NotAField FldSeq".
+
+    // For statics that are not "boxed", the initial address tree will contain the field sequence.
+    // For those that are, we will attach it later, when adding the indirection for the box, since
+    // that tree will represent the true address.
+    bool          isBoxedStatic = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
+    FieldSeqNode* innerFldSeq =
+        !isBoxedStatic ? GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField) : FieldSeqStore::NotAField();
+
     GenTree* op1;
 
     switch (pFieldInfo->fieldAccessor)
@@ -8161,10 +8197,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             }
 
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, gtNewCallArgs(op1));
-
-            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-            op1              = gtNewOperNode(GT_ADD, type, op1,
-                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
         }
         break;
 
@@ -8191,11 +8224,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper);
             }
 
-            {
-                FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-                op1              = gtNewOperNode(GT_ADD, op1->TypeGet(), op1,
-                                    new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
-            }
+            op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
             break;
         }
 
@@ -8222,9 +8251,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             op1->gtFlags |= callFlags;
 
             op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
-            FieldSeqNode* fs = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-            op1              = gtNewOperNode(GT_ADD, type, op1,
-                                new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, pFieldInfo->offset, fs));
+            op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
 #else
             unreached();
 #endif // FEATURE_READYTORUN
@@ -8243,20 +8270,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 // We should always be able to access this static's address directly.
                 assert(pFldAddr == nullptr);
 
-                GenTreeFlags handleKind;
-                if ((pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0)
-                {
-                    handleKind = GTF_ICON_STATIC_BOX_PTR;
-                }
-                else
-                {
-                    handleKind = GTF_ICON_STATIC_HDL;
-                }
-
-                FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
-
                 // Create the address node.
-                op1 = gtNewIconHandleNode((size_t)fldAddr, handleKind, fldSeq);
+                GenTreeFlags handleKind = isBoxedStatic ? GTF_ICON_STATIC_BOX_PTR : GTF_ICON_STATIC_HDL;
+                op1                     = gtNewIconHandleNode((size_t)fldAddr, handleKind, innerFldSeq);
 #ifdef DEBUG
                 op1->AsIntCon()->gtTargetHandle = op1->AsIntCon()->gtIconVal;
 #endif
@@ -8276,14 +8292,12 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     op1->gtFlags |= GTF_FLD_INITCLASS;
                 }
 
-                if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+                if (isBoxedStatic)
                 {
-                    op1->gtType = TYP_REF; // points at boxed object
-                    FieldSeqNode* firstElemFldSeq =
-                        GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        new (this, GT_CNS_INT)
-                                            GenTreeIntCon(TYP_I_IMPL, TARGET_POINTER_SIZE, firstElemFldSeq));
+                    FieldSeqNode* outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
+                    op1->ChangeType(TYP_REF); // points at boxed object
+                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
 
                     if (varTypeIsStruct(lclTyp))
                     {
@@ -8304,15 +8318,14 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
     }
 
-    if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
+    if (isBoxedStatic)
     {
+        FieldSeqNode* outerFldSeq = GetFieldSeqStore()->CreateSingleton(pResolvedToken->hField);
+
         op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
         op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
 
-        FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
-
-        op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                            new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, TARGET_POINTER_SIZE, fldSeq));
+        op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
     }
 
     if (!(access & CORINFO_ACCESS_ADDRESS))
@@ -9766,52 +9779,6 @@ DONE:
         }
     }
 
-    // A tail recursive call is a potential loop from the current block to the start of the method.
-    if ((tailCallFlags != 0) && canTailCall)
-    {
-        // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
-        // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
-        // instrumentation.
-        //
-        if (!compIsForInlining() && (compCurBB->bbJumpKind != BBJ_RETURN))
-        {
-            BasicBlock* const successor = compCurBB->GetUniqueSucc();
-            assert(successor->bbJumpKind == BBJ_RETURN);
-            successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
-            optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
-        }
-
-        if (gtIsRecursiveCall(methHnd))
-        {
-            assert(verCurrentState.esStackDepth == 0);
-            BasicBlock* loopHead = nullptr;
-            if (opts.IsOSR())
-            {
-                // We might not have been planning on importing the method
-                // entry block, but now we must.
-
-                // We should have remembered the real method entry block.
-                assert(fgEntryBB != nullptr);
-
-                JITDUMP("\nOSR: found tail recursive call in the method, scheduling " FMT_BB " for importation\n",
-                        fgEntryBB->bbNum);
-                impImportBlockPending(fgEntryBB);
-                loopHead = fgEntryBB;
-            }
-            else
-            {
-                // For normal jitting we'll branch back to the firstBB; this
-                // should already be imported.
-                loopHead = fgFirstBB;
-            }
-
-            JITDUMP("\nFound tail recursive call in the method. Mark " FMT_BB " to " FMT_BB
-                    " as having a backward branch.\n",
-                    loopHead->bbNum, compCurBB->bbNum);
-            fgMarkBackwardJump(loopHead, compCurBB);
-        }
-    }
-
     // Note: we assume that small return types are already normalized by the managed callee
     // or by the pinvoke stub for calls to unmanaged code.
 
@@ -9845,6 +9812,86 @@ DONE:
 
         // Is it an inline candidate?
         impMarkInlineCandidate(call, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo);
+    }
+
+    // Extra checks for tail calls and tail recursion.
+    //
+    // A tail recursive call is a potential loop from the current block to the start of the root method.
+    // If we see a tail recursive call, mark the blocks from the call site back to the entry as potentially
+    // being in a loop.
+    //
+    // Note: if we're importing an inlinee we don't mark the right set of blocks, but by then it's too
+    // late. Currently this doesn't lead to problems. See GitHub issue 33529.
+    //
+    // OSR also needs to handle tail calls specially:
+    // * block profiling in OSR methods needs to ensure probes happen before tail calls, not after.
+    // * the root method entry must be imported if there's a recursive tail call or a potentially
+    //   inlineable tail call.
+    //
+    if ((tailCallFlags != 0) && canTailCall)
+    {
+        if (gtIsRecursiveCall(methHnd))
+        {
+            assert(verCurrentState.esStackDepth == 0);
+            BasicBlock* loopHead = nullptr;
+            if (!compIsForInlining() && opts.IsOSR())
+            {
+                // For root method OSR we may branch back to the actual method entry,
+                // which is not fgFirstBB, and which we will need to import.
+                assert(fgEntryBB != nullptr);
+                loopHead = fgEntryBB;
+            }
+            else
+            {
+                // For normal jitting we may branch back to the firstBB; this
+                // should already be imported.
+                loopHead = fgFirstBB;
+            }
+
+            JITDUMP("\nTail recursive call [%06u] in the method. Mark " FMT_BB " to " FMT_BB
+                    " as having a backward branch.\n",
+                    dspTreeID(call), loopHead->bbNum, compCurBB->bbNum);
+            fgMarkBackwardJump(loopHead, compCurBB);
+        }
+
+        // We only do these OSR checks in the root method because:
+        // * If we fail to import the root method entry when importing the root method, we can't go back
+        //    and import it during inlining. So instead of checking jsut for recursive tail calls we also
+        //    have to check for anything that might introduce a recursive tail call.
+        // * We only instrument root method blocks in OSR methods,
+        //
+        if (opts.IsOSR() && !compIsForInlining())
+        {
+            // If a root method tail call candidate block is not a BBJ_RETURN, it should have a unique
+            // BBJ_RETURN successor. Mark that successor so we can handle it specially during profile
+            // instrumentation.
+            //
+            if (compCurBB->bbJumpKind != BBJ_RETURN)
+            {
+                BasicBlock* const successor = compCurBB->GetUniqueSucc();
+                assert(successor->bbJumpKind == BBJ_RETURN);
+                successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
+                optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
+            }
+
+            // If this call might eventually turn into a loop back to method entry, make sure we
+            // import the method entry.
+            //
+            assert(call->IsCall());
+            GenTreeCall* const actualCall           = call->AsCall();
+            const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
+                                              actualCall->IsGuardedDevirtualizationCandidate();
+
+            // Only schedule importation if we're not currently importing.
+            //
+            if (mustImportEntryBlock && (compCurBB != fgEntryBB))
+            {
+                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
+                        " for importation\n",
+                        dspTreeID(call), fgEntryBB->bbNum);
+                impImportBlockPending(fgEntryBB);
+            }
+        }
     }
 
     if ((sig->flags & CORINFO_SIGFLAG_FAT_CALL) != 0)
@@ -9950,6 +9997,22 @@ DONE_CALL:
             }
             else
             {
+                // If the call is virtual, and has a generics context, and is not going to have a class probe,
+                // record the context for possible use during late devirt.
+                //
+                // If we ever want to devirt at Tier0, and/or see issues where OSR methods under PGO lose
+                // important devirtualizations, we'll want to allow both a class probe and a captured context.
+                //
+                if (origCall->IsVirtual() && (origCall->gtCallType != CT_INDIRECT) && (exactContextHnd != nullptr) &&
+                    (origCall->gtClassProfileCandidateInfo == nullptr))
+                {
+                    JITDUMP("\nSaving context %p for call [%06u]\n", exactContextHnd, dspTreeID(origCall));
+                    origCall->gtCallMoreFlags |= GTF_CALL_M_LATE_DEVIRT;
+                    LateDevirtualizationInfo* const info = new (this, CMK_Inlining) LateDevirtualizationInfo;
+                    info->exactContextHnd                = exactContextHnd;
+                    origCall->gtLateDevirtualizationInfo = info;
+                }
+
                 if (isFatPointerCandidate)
                 {
                     // fatPointer candidates should be in statements of the form call() or var = call().
@@ -10722,7 +10785,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                  * scope */
                 exitBlock = fgNewBBinRegion(BBJ_EHCATCHRET, 0, XTnum + 1, step);
 
-                assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
+                assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
                 step->bbJumpDest = exitBlock; // the previous step (maybe a call to a nested finally, or a nested catch
                                               // exit) returns to this block
                 step->bbJumpDest->bbRefs++;
@@ -10830,7 +10893,7 @@ void Compiler::impImportLeave(BasicBlock* block)
                 // never returns to the call-to-finally call, and the finally-protected 'try' region doesn't appear on
                 // stack walks.)
 
-                assert(step->bbJumpKind == BBJ_ALWAYS || step->bbJumpKind == BBJ_EHCATCHRET);
+                assert(step->KindIs(BBJ_ALWAYS, BBJ_EHCATCHRET));
 
 #if FEATURE_EH_CALLFINALLY_THUNKS
                 if (step->bbJumpKind == BBJ_EHCATCHRET)
@@ -11742,28 +11805,30 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    // Are there any places in the method where we might add a patchpoint?
+    // Is OSR enabled?
     //
-    if (compHasBackwardJump)
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
     {
-        // Is OSR enabled?
+        // We don't inline at Tier0, if we do, we may need rethink our approach.
+        // Could probably support inlines that don't introduce flow.
         //
-        if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+        assert(!compIsForInlining());
+
+        // OSR is not yet supported for methods with explicit tail calls.
+        //
+        // But we also do not have to switch these methods to be optimized as we should be
+        // able to avoid getting trapped in Tier0 code by normal call counting.
+        // So instead, just suppress adding patchpoints.
+        //
+        if (!compTailPrefixSeen)
         {
-            // OSR is not yet supported for methods with explicit tail calls.
+            assert(compCanHavePatchpoints());
+
+            // The normaly policy is only to add patchpoints to the targets of lexically
+            // backwards branches.
             //
-            // But we also may not switch methods to be optimized as we should be
-            // able to avoid getting trapped in Tier0 code by normal call counting.
-            // So instead, just suppress adding patchpoints.
-            //
-            if (!compTailPrefixSeen)
+            if (compHasBackwardJump)
             {
-                assert(compCanHavePatchpoints());
-
-                // We don't inline at Tier0, if we do, we may need rethink our approach.
-                // Could probably support inlines that don't introduce flow.
-                assert(!compIsForInlining());
-
                 // Is the start of this block a suitable patchpoint?
                 //
                 if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
@@ -11776,12 +11841,64 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     setMethodHasPatchpoint();
                 }
             }
+            else
+            {
+                // Should not see backward branch targets w/o backwards branches
+                assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+            }
         }
-    }
-    else
-    {
-        // Should not see backward branch targets w/o backwards branches
-        assert((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) == 0);
+
+#ifdef DEBUG
+        // As a stress test, we can place patchpoints at the start of any block
+        // that is a stack empty point and is not within a handler.
+        //
+        // Todo: enable for mid-block stack empty points too.
+        //
+        const int  offsetOSR    = JitConfig.JitOffsetOnStackReplacement();
+        const int  randomOSR    = JitConfig.JitRandomOnStackReplacement();
+        const bool tryOffsetOSR = offsetOSR >= 0;
+        const bool tryRandomOSR = randomOSR > 0;
+
+        if ((tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
+            ((block->bbFlags & BBF_PATCHPOINT) == 0))
+        {
+            // Block start can have a patchpoint. See if we should add one.
+            //
+            bool addPatchpoint = false;
+
+            // Specific offset?
+            //
+            if (tryOffsetOSR)
+            {
+                if (impCurOpcOffs == (unsigned)offsetOSR)
+                {
+                    addPatchpoint = true;
+                }
+            }
+            // Random?
+            //
+            else
+            {
+                // Reuse the random inliner's random state.
+                // Note m_inlineStrategy is always created, even if we're not inlining.
+                //
+                CLRRandom* const random      = impInlineRoot()->m_inlineStrategy->GetRandom(randomOSR);
+                const int        randomValue = (int)random->Next(100);
+
+                addPatchpoint = (randomValue < randomOSR);
+            }
+
+            if (addPatchpoint)
+            {
+                block->bbFlags |= BBF_PATCHPOINT;
+                setMethodHasPatchpoint();
+            }
+
+            JITDUMP("\n** %s patchpoint%s added to " FMT_BB " (il offset %u)\n", tryOffsetOSR ? "offset" : "random",
+                    addPatchpoint ? "" : " not", block->bbNum, impCurOpcOffs);
+        }
+
+#endif // DEBUG
     }
 
     // Mark stack-empty rare blocks to be considered for partial compilation.
@@ -16952,19 +17069,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op3 = impPopStack().val; // Size
                 op2 = impPopStack().val; // Value
-                op1 = impPopStack().val; // Dest
+                op1 = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
                     size = (unsigned)op3->AsIntConCommon()->IconValue();
                     op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
                 }
                 else
                 {
-                    op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
+                    if (!op2->IsIntegralConst(0))
+                    {
+                        op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                    }
+
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
                     size = 0;
+
+                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    {
+                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                    }
                 }
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
 
                 goto SPILL_APPEND;
 
@@ -16975,19 +17102,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     Verify(false, "bad opcode");
                 }
                 op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Src
-                op1 = impPopStack().val; // Dest
+                op2 = impPopStack().val; // Src addr
+                op1 = impPopStack().val; // Dst addr
 
-                if (op3->IsCnsIntOrI())
-                {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
-                }
-                else
-                {
-                    op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
-                    size = 0;
-                }
                 if (op2->OperGet() == GT_ADDR)
                 {
                     op2 = op2->AsOp()->gtOp1;
@@ -16997,7 +17114,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
                 }
 
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                if (op3->IsCnsIntOrI())
+                {
+                    size = (unsigned)op3->AsIntConCommon()->IconValue();
+                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                }
+                else
+                {
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
+                    size = 0;
+
+                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    {
+                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                    }
+                }
+
                 goto SPILL_APPEND;
 
             case CEE_CPOBJ:
@@ -19925,7 +20058,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 pInfo->guardedClassHandle              = nullptr;
                 pInfo->guardedMethodHandle             = nullptr;
                 pInfo->guardedMethodUnboxedEntryHandle = nullptr;
-                pInfo->stubAddr                        = nullptr;
                 pInfo->likelihood                      = 0;
                 pInfo->requiresInstMethodTableArg      = false;
             }
@@ -20936,15 +21068,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             dspTreeID(call));
 
     call->ClearGuardedDevirtualizationCandidate();
-
-    // If we have a stub address, restore it back into the union that it shares
-    // with the candidate info.
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
-        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
-    }
 }
 
 //------------------------------------------------------------------------
@@ -21432,14 +21555,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
             // Record some info needed for the class profiling probe.
             //
-            pInfo->ilOffset   = ilOffset;
-            pInfo->probeIndex = info.compClassProbeCount++;
-            pInfo->stubAddr   = call->gtStubCallStubAddr;
-
-            // note this overwrites gtCallStubAddr, so it needs to be undone
-            // during the instrumentation phase, or we won't generate proper
-            // code for vsd calls.
-            //
+            pInfo->ilOffset                   = ilOffset;
+            pInfo->probeIndex                 = info.compClassProbeCount++;
             call->gtClassProfileCandidateInfo = pInfo;
 
             // Flag block as needing scrutiny
@@ -22557,18 +22674,6 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
             pInfo->guardedMethodUnboxedEntryHandle = unboxedEntryMethodHandle;
             pInfo->requiresInstMethodTableArg      = requiresInstMethodTableArg;
         }
-    }
-
-    // Save off the stub address since it shares a union with the candidate info.
-    //
-    if (call->IsVirtualStub())
-    {
-        JITDUMP("Saving stub addr %p in candidate info\n", dspPtr(call->gtStubCallStubAddr));
-        pInfo->stubAddr = call->gtStubCallStubAddr;
-    }
-    else
-    {
-        pInfo->stubAddr = nullptr;
     }
 
     call->gtGuardedDevirtualizationCandidateInfo = pInfo;

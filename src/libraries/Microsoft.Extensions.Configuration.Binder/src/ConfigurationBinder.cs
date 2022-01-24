@@ -248,17 +248,19 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
+            object? propertyValue = property.GetValue(instance);
             bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
-            if (!hasSetter)
+            if (propertyValue == null && !hasSetter)
             {
-                // The property cannot be set so there is no point going further
+                // Property doesn't have a value and we cannot set it so there is no
+                // point in going further down the graph
                 return;
             }
 
-            object? propertyValue = GetPropertyValue(property, instance, config, options);
+            propertyValue = GetPropertyValue(property, instance, config, options);
 
-            if (propertyValue != null)
+            if (propertyValue != null && hasSetter)
             {
                 property.SetValue(instance, propertyValue);
             }
@@ -459,23 +461,29 @@ namespace Microsoft.Extensions.Configuration
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
-                object? item = BindInstance(
-                    type: valueType,
-                    instance: null,
-                    config: child,
-                    options: options);
-                if (item != null)
+                try
                 {
-                    if (keyType == typeof(string))
+                    object? item = BindInstance(
+                        type: valueType,
+                        instance: null,
+                        config: child,
+                        options: options);
+                    if (item != null)
                     {
-                        string key = child.Key;
-                        setter.SetValue(dictionary, item, new object[] { key });
+                        if (keyType == typeof(string))
+                        {
+                            string key = child.Key;
+                            setter.SetValue(dictionary, item, new object[] { key });
+                        }
+                        else if (keyTypeIsEnum)
+                        {
+                            object key = Enum.Parse(keyType, child.Key);
+                            setter.SetValue(dictionary, item, new object[] { key });
+                        }
                     }
-                    else if (keyTypeIsEnum)
-                    {
-                        object key = Enum.Parse(keyType, child.Key);
-                        setter.SetValue(dictionary, item, new object[] { key });
-                    }
+                }
+                catch
+                {
                 }
             }
         }

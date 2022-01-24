@@ -587,7 +587,7 @@ namespace System.Xml.Serialization
 
             XmlSerializerImplementation? contract = null;
             Assembly? assembly = type == null ? null : TempAssembly.LoadGeneratedAssembly(type, null, out contract);
-            TempAssembly? tempAssembly = null;
+            TempAssembly? tempAssembly;
             if (assembly == null)
             {
                 if (Mode == SerializationMode.PreGenOnly)

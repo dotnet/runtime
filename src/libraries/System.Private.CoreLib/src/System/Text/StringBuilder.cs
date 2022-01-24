@@ -2063,13 +2063,16 @@ namespace System.Text
                 {
                     int curInChunk = Math.Max(startIndexInChunk, 0);
                     int endInChunk = Math.Min(chunk.m_ChunkLength, endIndexInChunk);
-                    while (curInChunk < endInChunk)
+
+                    Span<char> span = chunk.m_ChunkChars.AsSpan(curInChunk, endInChunk - curInChunk);
+                    int i;
+                    while ((i = span.IndexOf(oldChar)) >= 0)
                     {
-                        if (chunk.m_ChunkChars[curInChunk] == oldChar)
-                            chunk.m_ChunkChars[curInChunk] = newChar;
-                        curInChunk++;
+                        span[i] = newChar;
+                        span = span.Slice(i + 1);
                     }
                 }
+
                 if (startIndexInChunk >= 0)
                 {
                     break;

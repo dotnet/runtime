@@ -22,7 +22,6 @@ namespace ILCompiler
         protected MethodImportationErrorProvider _methodImportationErrorProvider = new MethodImportationErrorProvider();
         protected IInliningPolicy _inliningPolicy;
         protected bool _methodBodyFolding;
-        protected bool _singleThreaded;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
 
@@ -89,12 +88,6 @@ namespace ILCompiler
         public CompilationBuilder UseMethodBodyFolding(bool enable)
         {
             _methodBodyFolding = enable;
-            return this;
-        }
-
-        public CompilationBuilder UseSingleThread(bool enable)
-        {
-            _singleThreaded = enable;
             return this;
         }
 

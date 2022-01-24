@@ -337,7 +337,7 @@ namespace System.Threading
             }
 
             SpinWait spinner = default;
-            long newPhase = 0;
+            long newPhase;
             while (true)
             {
                 int currentTotal = _currentTotalCount;

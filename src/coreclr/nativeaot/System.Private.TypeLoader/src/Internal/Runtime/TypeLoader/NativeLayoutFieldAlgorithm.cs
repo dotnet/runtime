@@ -234,8 +234,7 @@ namespace Internal.Runtime.TypeLoader
             // Look up the universal template for this type.  Only the universal template has field layout
             // information, so we have to use it to parse the field layout.
             NativeLayoutInfoLoadContext universalLayoutLoadContext;
-            NativeLayoutInfo universalLayoutInfo;
-            NativeParser typeInfoParser = type.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out universalLayoutLoadContext, out universalLayoutInfo);
+            NativeParser typeInfoParser = type.GetOrCreateTypeBuilderState().GetParserForUniversalNativeLayoutInfo(out universalLayoutLoadContext, out _);
 
             if (typeInfoParser.IsNull)
                 throw new TypeBuilder.MissingTemplateException();

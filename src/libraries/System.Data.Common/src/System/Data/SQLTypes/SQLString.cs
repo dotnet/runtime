@@ -409,7 +409,7 @@ namespace System.Data.SqlTypes
 
             int iCmpResult = StringCompare(x, y);
 
-            bool fResult = false;
+            bool fResult;
 
             switch (ecExpectedResult)
             {
