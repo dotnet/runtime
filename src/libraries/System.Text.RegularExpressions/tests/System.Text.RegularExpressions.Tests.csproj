@@ -49,7 +49,6 @@
     <Compile Include="MatchCollectionTests2.cs" />
     <Compile Include="PrecompiledRegexScenarioTest.cs" />
     <Compile Include="RegexCompilationInfoTests.cs" />
-    <Compile Include="RegexGeneratorAttributeTests.cs" />
     <Compile Include="RegexGroupNameTests.cs" />
     <Compile Include="RegexExperiment.cs" />
     <Compile Include="RegexGeneratorHelper.netcoreapp.cs" />
