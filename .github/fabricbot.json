@@ -13,8 +13,7 @@
           ],
           "mentionees": [
             "dotnet/area-system-security",
-            "vcsjones",
-            "krwq"
+            "vcsjones"
           ]
         },
         {
@@ -33,8 +32,7 @@
             "area-System.Linq.Parallel"
           ],
           "mentionees": [
-            "dotnet/area-system-linq-parallel",
-            "tarekgh"
+            "dotnet/area-system-linq-parallel"
           ]
         },
         {
@@ -42,8 +40,7 @@
             "area-System.Text.Encoding"
           ],
           "mentionees": [
-            "dotnet/area-system-text-encoding",
-            "tarekgh"
+            "dotnet/area-system-text-encoding"
           ]
         },
         {
@@ -51,8 +48,7 @@
             "area-System.Text.Encodings.Web"
           ],
           "mentionees": [
-            "dotnet/area-system-text-encodings-web",
-            "tarekgh"
+            "dotnet/area-system-text-encodings-web"
           ]
         },
         {
@@ -175,8 +171,7 @@
             "area-System.Buffers"
           ],
           "mentionees": [
-            "dotnet/area-system-buffers",
-            "GrabYourPitchforks"
+            "dotnet/area-system-buffers"
           ]
         },
         {
@@ -377,8 +372,7 @@
             "area-Extensions-FileSystem"
           ],
           "mentionees": [
-            "dotnet/area-extensions-filesystem",
-            "maryamariyan"
+            "dotnet/area-extensions-filesystem"
           ]
         },
         {
@@ -776,8 +770,7 @@
             "area-System.Resources"
           ],
           "mentionees": [
-            "dotnet/area-system-resources",
-            "tarekgh"
+            "dotnet/area-system-resources"
           ]
         },
         {
