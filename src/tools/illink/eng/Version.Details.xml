@@ -12,9 +12,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>511824f9ad21a8bc070b4bad2a95acd119c4afa0</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="7.0.0-alpha.1.22066.4">
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="7.0.0-alpha.1.22073.5">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>ae2f60c950cc021921fce83c796cbcb5ff96c658</Sha>
+      <Sha>09ff1acdad2e7789908b5db9bb89896144c13042</Sha>
       <!--
       This would introduce a cyclic dependency, so it's explictly not enabled for now
       <SourceBuild RepoName="runtime" />
