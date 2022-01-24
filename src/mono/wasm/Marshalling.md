@@ -1,4 +1,6 @@
-# State of method binding and parameter marshalling as of 2022-01-17
+# Current state of method binding and parameter marshalling
+(as of 2022-01-17)
+
 This is not 100% exhaustive. This is not intended as guide to exernal usage, rather as inventory before cleanup.
 
 ## Calling from JS to C
@@ -104,54 +106,61 @@ This is not 100% exhaustive. This is not intended as guide to exernal usage, rat
   - `SafeHandle` which is meant to be `JSObject` proxy -> unwrapped original JS object, array, function
   - each of above does multiple `ccall`s. Buffer copy, handle lookup, unboxing, C# `ToString()`.
 
-## Possible improvements calling from C# to JS
-- add `InvokeJSFunctionByName` public API with generic parameters
+
+# Possible improvements 
+
+## calling from C# to JS
+- A) add `InvokeJSFunctionByName` public API with generic parameters
   - minimal draft https://github.com/dotnet/runtime/pull/64062
+  - handle return value
+    - should return value live of the same buffer ?
+  - Introduce `IJSObjectReference` for private `JSObject` ?
+  - replace Blazor's use-case with it
+  - cover with tests
+- B) optimize `InvokeJSFunctionByName`
   - eleminate need for C code
-  - split parameter coversion to C# and JS sides
-  - allocate buffer on stack
+  - split parameter coversion to C# and JS sides. So that we don't cross the C#/JS boundary for each marshalled paramater.
   - dynamic size of the buffer, dynamic length of parameters
   - multiple end to end thunks by number of the parameters
-  - cover with tests
-  - handle return value
-  - replace Blazor's use-case with it
-- add `[GeneratedJsImportAttribute("globalThis.console.log")]`
+- C) add `[GeneratedJsImportAttribute("globalThis.console.log")]`
   - see https://github.com/dotnet/runtime/blob/main/docs/design/features/source-generator-pinvokes.md
-  - register custom coverters
-    - custom coverter with receive pointer to the buffer
-    - custom coverter could allocate buffer space?
   - generate C# code with specific convertors only
-  - C# generate JS side on runtime based on pre-generated metadata
-  - inject generated JS on runtime ?
-- bind methods on JSObject via JS method handle, rather than C# name string 
-- handle ES6 imports like Blazor
+  - generate JS with C# code
+    - generate on runtime from pre-generated signature data ? Because unrolled JS code would be too large.
+    - for code paths in runtime, generate on dev machine and store in git. Include in rollup+emcc pipeline.
+- D) custom coverters for `[GeneratedJsImportAttribute]`
+  - register custom coverters
+  - custom coverter with receive pointer to the buffer
+  - custom coverter could set size of buffer space?
+- E) bind methods on JSObject via JS method handle, rather than C# name string 
+- F) handle ES6 imports like Blazor
   - `module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/components/TimeDisplay.js");`
 
 ## Possible improvements calling from JS to C#
-- add `[GeneratedJsExportAttribute("EXPORTS.myMethod")]`
-  - it would wrap the C# method with callable thunk
-  - it would generate the JS code
-     - use `stackalloc` in JS to allocate 
-     - call JS side of the marshallers
-     - call the C# thunk via `mono_runtime_invoke()`
-     - call the C# side of marshallers
-  - replace `mono_runtime_invoke()` with `mono_marshal_get_thunk_invoke_wrapper()` ?
-    - why everything needs to be boxed ?
+- G) add `[GeneratedJsExportAttribute("EXPORTS.myMethod")]`
+  - it's mirror of `GeneratedJsImportAttribute`
+    - it would wrap the C# method with callable thunk
+    - it would generate the JS code and expose it as member `EXPORTS` next to `BINDING` object for example.
+  - use `stackalloc` in JS to allocate 
+  - call JS side of the marshallers
+  - call the C# thunk via `mono_runtime_invoke()`
+  - call the C# side of marshallers
+- H) restrict `BINDING.mono_bind_method` to only bind to methods annotated with `GeneratedJsExportAttribute`
+- I) replace `mono_runtime_invoke()` with `mono_marshal_get_thunk_invoke_wrapper()` ?
+  - why everything needs to be boxed ?
 
 ## Possible improvements for marshallers
-- drop Uri and only include it if the generated signature contains it
-- so that we could drop reflection from runtime
-  - only if we could drop `BINDING.mono_bind_method` API
-  - drop support for Delegate/method
-    - so that all methods have known signatures at compile time
-
-## Public API notes
-- returning `JSObject` for unmapped JS objects will leak the instance of private type
-  - shall we introduce `IJSObjectReference` like Blazor ?
+- J) drop DateTime marshaller, see what happens
+- K) drop Uri and only include it if the generated signature contains it
+- L) drop support for Delegate/method
+  - so that all methods have known signatures at compile time
+  - see that we don't use it internally in runtime
+- M) so that we could drop reflection from runtime
+  - only if we could drop or restrict `BINDING.mono_bind_method` API
 
 ## Does the performance matter ?
-  - what is good real life benchmark application
-  - measure
-    - add perf counters for allocation
-    - add perf counters for `ccall`
-    - add perf for `JSObject.call` etc
+- N) measure
+  - add perf counters for allocation
+  - add perf counters for `ccall`
+  - add perf for `JSObject.call` etc
+- what is good real life benchmark application
