@@ -104,7 +104,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.IgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase_NotIgnoredPropertyDerived.SerializeHandler);
             Assert.NotNull(MetadataAndSerializationContext.Default.NotIgnoredPropertyBase_IgnoredPropertyDerived.SerializeHandler);
-
         }
     }
 }

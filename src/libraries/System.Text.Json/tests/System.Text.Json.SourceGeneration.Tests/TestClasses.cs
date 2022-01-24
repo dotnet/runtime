@@ -178,18 +178,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         public override T Id { get; }
     }
 
-    public class IgnoredPropertyBase
-    {
-        [JsonIgnore]
-        public string Id { get; set; }
-    }
-
     public class NotIgnoredPropertyBase
     {
         public string Id { get; set; }
     }
 
-    public class IgnoredPropertyBase_NotIgnoredPropertyDerived : IgnoredPropertyBase
+    public class NotIgnoredPropertyBase_NotIgnoredPropertyDerived : NotIgnoredPropertyBase
     {
         public new string Id { get; set; }
     }
@@ -200,7 +194,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         public new string Id { get; set; }
     }
 
-    public class NotIgnoredPropertyBase_NotIgnoredPropertyDerived : NotIgnoredPropertyBase
+    public class IgnoredPropertyBase
+    {
+        [JsonIgnore]
+        public string Id { get; set; }
+    }
+
+    public class IgnoredPropertyBase_NotIgnoredPropertyDerived : IgnoredPropertyBase
     {
         public new string Id { get; set; }
     }
