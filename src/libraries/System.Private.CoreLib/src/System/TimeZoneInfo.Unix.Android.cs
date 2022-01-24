@@ -437,11 +437,13 @@ namespace System
                     }
                 }
                 string[] nonBackwardsTZIDs = new string[numTimeZoneIDs];
+                var index = 0;
                 for (int i = 0; i < _ids.Length; i++)
                 {
                     if (!_isBackwards[i])
                     {
-                        nonBackwardsTZIDs[i] = _ids[i];
+                        nonBackwardsTZIDs[index] = _ids[i];
+                        index++;
                     }
                 }
                 return nonBackwardsTZIDs;
