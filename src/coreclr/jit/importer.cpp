@@ -14419,13 +14419,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // If the expression to dup is simple, just clone it.
                 // Otherwise spill it to a temp, and reload the temp twice.
                 bool needsTemp = true;
-                if (opts.OptimizationEnabled())
+                if (!opts.compDbgCode)
                 {
-                    if (op1->IsIntegralConst(0) || op1->IsFPZero() || op1->IsLocal())
+                    GenTree* lcl;
+                    if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero() || op1->IsLocal())
                     {
                         needsTemp = false;
                     }
-                    else if (tree->TypeIs(TYP_BYREF) && tree->OperIs(GT_ADDR) && tree->gtGetOp1()->IsLocal())
+                    else if (impIsAddressInLocal(tree, &lcl)) //tree->TypeIs(TYP_BYREF) && tree->OperIs(GT_ADDR) && tree->gtGetOp1()->IsLocal())
                     {
                         needsTemp = false;
                     }
