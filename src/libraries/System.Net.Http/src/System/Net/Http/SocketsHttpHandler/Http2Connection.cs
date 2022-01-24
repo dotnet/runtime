@@ -1348,7 +1348,8 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, request);
 
-                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
+                KnownHeader? knownHeader = header.Key.KnownHeader;
+                if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -1392,7 +1393,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(headerName, headerValues, valueEncoding, ref headerBuffer);
+                    WriteLiteralHeader(header.Key.Name, headerValues, valueEncoding, ref headerBuffer);
                 }
             }
         }

@@ -632,7 +632,8 @@ namespace System.Net.Http
 
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
-                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
+                KnownHeader? knownHeader = header.Key.KnownHeader;
+                if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP/3 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -676,7 +677,7 @@ namespace System.Net.Http
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    BufferLiteralHeaderWithoutNameReference(headerName, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
+                    BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
         }

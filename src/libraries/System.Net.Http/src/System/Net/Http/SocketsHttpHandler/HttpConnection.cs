@@ -264,13 +264,13 @@ namespace System.Net.Http
                 {
                     HeaderEntry header = entries[i];
 
-                    if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
+                    if (header.Key.KnownHeader is KnownHeader knownHeader)
                     {
                         await WriteBytesAsync(knownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
                     }
                     else
                     {
-                        await WriteAsciiStringAsync(headerName, async).ConfigureAwait(false);
+                        await WriteAsciiStringAsync(header.Key.Name, async).ConfigureAwait(false);
                         await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
                     }
 

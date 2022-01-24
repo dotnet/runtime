@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Unicode;
 
@@ -33,53 +32,26 @@ namespace System.Net.Http.Headers
             _descriptor = headerName;
         }
 
-        public string Name
-        {
-            get
-            {
-                object descriptor = _descriptor;
-                return descriptor.GetType() == typeof(KnownHeader) ?
-                    Unsafe.As<KnownHeader>(descriptor).Name :
-                    Unsafe.As<string>(descriptor);
-            }
-        }
-
-        public bool IsKnownHeader([NotNullWhen(true)] out KnownHeader? knownHeader, [NotNullWhen(false)] out string? headerName)
-        {
-            object descriptor = _descriptor;
-            if (descriptor.GetType() == typeof(KnownHeader))
-            {
-                knownHeader = Unsafe.As<KnownHeader>(descriptor);
-                Unsafe.SkipInit(out headerName);
-                return true;
-            }
-            else
-            {
-                Unsafe.SkipInit(out knownHeader);
-                headerName = Unsafe.As<string>(descriptor);
-                return false;
-            }
-        }
-
+        public string Name => _descriptor is KnownHeader header ? header.Name : (_descriptor as string)!;
         public HttpHeaderParser? Parser => (_descriptor as KnownHeader)?.Parser;
         public HttpHeaderType HeaderType => _descriptor is KnownHeader knownHeader ? knownHeader.HeaderType : HttpHeaderType.Custom;
+        public KnownHeader? KnownHeader => _descriptor as KnownHeader;
 
         public bool Equals(KnownHeader other) => ReferenceEquals(_descriptor, other);
 
         public bool Equals(HeaderDescriptor other)
         {
-            object descriptor = _descriptor;
-            if (descriptor.GetType() == typeof(string))
+            if (_descriptor is string headerName)
             {
-                return string.Equals(Unsafe.As<string>(descriptor), other._descriptor as string, StringComparison.OrdinalIgnoreCase);
+                return string.Equals(headerName, other._descriptor as string, StringComparison.OrdinalIgnoreCase);
             }
             else
             {
-                return ReferenceEquals(descriptor, other._descriptor);
+                return ReferenceEquals(_descriptor, other._descriptor);
             }
         }
 
-        public override int GetHashCode() => _descriptor is KnownHeader knownHeader ? knownHeader.GetHashCode() : StringComparer.OrdinalIgnoreCase.GetHashCode((string)_descriptor);
+        public override int GetHashCode() => _descriptor is KnownHeader knownHeader ? knownHeader.GetHashCode() : StringComparer.OrdinalIgnoreCase.GetHashCode(_descriptor);
 
         public override bool Equals(object? obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
 

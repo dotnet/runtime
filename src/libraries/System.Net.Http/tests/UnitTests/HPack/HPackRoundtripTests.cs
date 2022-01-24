@@ -66,7 +66,8 @@ namespace System.Net.Http.Unit.Tests.HPack
                 Assert.InRange(headerValuesCount, 0, int.MaxValue);
                 ReadOnlySpan<string> headerValuesSpan = headerValues.AsSpan(0, headerValuesCount);
 
-                if (header.Key.IsKnownHeader(out KnownHeader? knownHeader, out string? headerName))
+                KnownHeader knownHeader = header.Key.KnownHeader;
+                if (knownHeader != null)
                 {
                     // For all other known headers, send them via their pre-encoded name and the associated value.
                     WriteBytes(knownHeader.Http2EncodedName);
@@ -89,7 +90,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    WriteLiteralHeader(headerName, headerValuesSpan);
+                    WriteLiteralHeader(header.Key.Name, headerValuesSpan);
                 }
             }
 
