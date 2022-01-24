@@ -409,7 +409,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (jsonPropertyInfo.IsIgnored)
             {
-                (ignoredMembers ??= new Dictionary<string, JsonPropertyInfo>()).TryAdd(memberName, jsonPropertyInfo);
+                (ignoredMembers ??= new()).TryAdd(memberName, jsonPropertyInfo);
             }
         }
 
