@@ -179,10 +179,12 @@ namespace ILLink.Shared
 		AvoidAssemblyGetFilesInSingleFile = 3001,
 		RequiresAssemblyFiles = 3002,
 		RequiresAssemblyFilesAttributeMismatch = 3003,
+		RequiresAssemblyFilesOnStaticConstructor = 3004,
 
 		// Dynamic code diagnostic ids.
 		RequiresDynamicCode = 3050,
-		RequiresDynamicCodeAttributeMismatch = 3051
+		RequiresDynamicCodeAttributeMismatch = 3051,
+		RequiresDynamicCodeOnStaticConstructor = 3052
 	}
 
 	public static class DiagnosticIdExtensions

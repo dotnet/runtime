@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StaticCtor
 		{
-			[ExpectedWarning ("IL2116", "StaticCtor..cctor()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2116", "StaticCtor..cctor()")]
 			[RequiresUnreferencedCode ("Message for --TestStaticCtor--")]
 			static StaticCtor ()
 			{
@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StaticCtorTriggeredByFieldAccess
 		{
-			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByFieldAccess..cctor()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByFieldAccess..cctor()")]
 			[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByFieldAccess.Cctor--")]
 			static StaticCtorTriggeredByFieldAccess ()
 			{
@@ -59,9 +59,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		struct StaticCCtorForFieldAccess
 		{
-			// TODO: Analyzer still allows RUC/RAF on static constructor with no warning
-			// https://github.com/dotnet/linker/issues/2347
-			[ExpectedWarning ("IL2116", "StaticCCtorForFieldAccess..cctor()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2116", "StaticCCtorForFieldAccess..cctor()")]
 			[RequiresUnreferencedCode ("Message for --StaticCCtorForFieldAccess.cctor--")]
 			static StaticCCtorForFieldAccess () { }
 
@@ -75,9 +73,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StaticCtorTriggeredByMethodCall
 		{
-			// TODO: Analyzer still allows RUC/RAF on static constructor with no warning
-			// https://github.com/dotnet/linker/issues/2347
-			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByMethodCall..cctor()")]
+			[ExpectedWarning ("IL3004", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3052", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			[RequiresAssemblyFiles ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			[RequiresDynamicCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
