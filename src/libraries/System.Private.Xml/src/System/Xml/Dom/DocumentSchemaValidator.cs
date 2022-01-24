@@ -340,7 +340,7 @@ namespace System.Xml
             Debug.Assert(elementNode != null);
 
             XmlAttributeCollection attributes = elementNode.Attributes;
-            XmlAttribute? attr = null;
+            XmlAttribute? attr;
 
             //Find Xsi attributes that need to be processed before validating the element
             string? xsiNil = null;
@@ -401,7 +401,7 @@ namespace System.Xml
         private void ValidateAttributes(XmlElement elementNode)
         {
             XmlAttributeCollection attributes = elementNode.Attributes;
-            XmlAttribute? attr = null;
+            XmlAttribute? attr;
 
             for (int i = 0; i < attributes.Count; i++)
             {
@@ -431,7 +431,6 @@ namespace System.Xml
                 }
                 _validator!.GetUnspecifiedDefaultAttributes(_defaultAttributes);
                 XmlQualifiedName attrQName;
-                attr = null;
                 for (int i = 0; i < _defaultAttributes.Count; i++)
                 {
                     XmlSchemaAttribute schemaAttribute = (_defaultAttributes[i] as XmlSchemaAttribute)!;
@@ -507,7 +506,7 @@ namespace System.Xml
 
             //Create nodelist to navigate down again
             XmlNode currentNode = elementToValidate;
-            IXmlSchemaInfo? parentSchemaInfo = null;
+            IXmlSchemaInfo? parentSchemaInfo;
             int nodeIndex = 0;
 
             //Check common case of parent node first
@@ -633,7 +632,7 @@ namespace System.Xml
             //validate element whose type is needed,
             ValidateSingleElement(elementToValidate, false, _schemaInfo);
 
-            XmlSchemaObject? schemaInfoFound = null;
+            XmlSchemaObject? schemaInfoFound;
             if (_schemaInfo.SchemaElement != null)
             {
                 schemaInfoFound = _schemaInfo.SchemaElement;
@@ -678,7 +677,7 @@ namespace System.Xml
             }
 
             XmlSchemaElement? schemaElement = schemaObject as XmlSchemaElement;
-            XmlSchemaComplexType? complexType = null;
+            XmlSchemaComplexType? complexType;
             if (schemaElement != null)
             {
                 complexType = schemaElement.ElementSchemaType as XmlSchemaComplexType;
@@ -697,7 +696,7 @@ namespace System.Xml
             Debug.Assert(elementNode != null);
 
             XmlAttributeCollection attributes = elementNode.Attributes;
-            XmlAttribute? attr = null;
+            XmlAttribute? attr;
 
             //Find Xsi attributes that need to be processed before validating the element
             string? xsiNil = null;

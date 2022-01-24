@@ -154,12 +154,12 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</target>
+        <target state="translated">Obiekt RegexGenerator nie może wygenerować pełnej implementacji źródła dla określonego wyrażenia regularnego z powodu nieobsługiwanych opcji lub zbyt złożonego wyrażenia regularnego.  Implementacja będzie interpretować wyrażenie regularne w czasie wykonywania.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
         <source>RegexGenerator limitation reached.</source>
-        <target state="new">RegexGenerator limitation reached.</target>
+        <target state="translated">Osiągnięto ograniczenie RegexGenerator.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -290,11 +290,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">Niedozwolony znak \\ na końcu wzorca.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Nieoczekiwany kod operacji podczas generowania wyrażenia regularnego: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

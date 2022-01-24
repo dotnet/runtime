@@ -15,6 +15,7 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Metadata;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILLink.Shared;
 
 using FlowAnnotations = ILCompiler.Dataflow.FlowAnnotations;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
@@ -973,7 +974,7 @@ namespace ILCompiler
             }
         }
 
-        private class LinkAttributesReader : ProcessLinkerXmlBase
+        private class LinkAttributesReader : ProcessXmlBase
         {
             private readonly HashSet<TypeDesc> _removedAttributes;
 

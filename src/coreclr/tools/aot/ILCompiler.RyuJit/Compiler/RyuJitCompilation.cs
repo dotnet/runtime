@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
+using ILLink.Shared;
 
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -92,6 +93,9 @@ namespace ILCompiler
             NodeFactory.SetMarkingComplete();
 
             ObjectWritingOptions options = default;
+            if ((_compilationOptions & RyuJitCompilationOptions.UseDwarf5) != 0)
+                options |= ObjectWritingOptions.UseDwarf5;
+            
             if (_debugInformationProvider is not NullDebugInformationProvider)
                 options |= ObjectWritingOptions.GenerateDebugInfo;
 
@@ -242,5 +246,6 @@ namespace ILCompiler
     {
         MethodBodyFolding = 0x1,
         ControlFlowGuardAnnotations = 0x2,
+        UseDwarf5 = 0x4,
     }
 }

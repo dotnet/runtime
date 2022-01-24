@@ -53,7 +53,14 @@ namespace System.Runtime.InteropServices
                     if (s_registrations.Count == 0 &&
                         !Interop.Kernel32.SetConsoleCtrlHandler(&HandlerRoutine, Add: false))
                     {
-                        throw Win32Marshal.GetExceptionForLastWin32Error();
+                        // Ignore errors due to the handler no longer being registered; this can happen, for example, with
+                        // direct use of Alloc/Attach/FreeConsole which result in the table of control handlers being reset.
+                        // Throw for everything else.
+                        int error = Marshal.GetLastWin32Error();
+                        if (error != Interop.Errors.ERROR_INVALID_PARAMETER)
+                        {
+                            throw Win32Marshal.GetExceptionForWin32Error(error);
+                        }
                     }
                 }
             }

@@ -100,7 +100,7 @@ namespace ILCompiler
             }
         }
 
-        private class SubstitutionsReader : ProcessLinkerXmlBase
+        private class SubstitutionsReader : ProcessXmlBase
         {
             private readonly HashSet<string> _substitutions = new HashSet<string>();
 

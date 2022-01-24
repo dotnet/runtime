@@ -7,22 +7,23 @@
 const DotnetSupportLib = {
     $DOTNET: {},
     // this line will be placed early on emscripten runtime creation, passing import and export objects into __dotnet_runtime IFFE
+    // Emscripten uses require function for nodeJS even in ES6 module. We need https://nodejs.org/api/module.html#modulecreaterequirefilename
+    // We use dynamic import because there is no "module" module in the browser. 
+    // This is async init of it, note it would become available only after first tick.
+    // Also fix of scriptDirectory would be delayed
+    // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
+    // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacements = {scriptDirectory, readAsync, fetch: globalThis.fetch, require};
-let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
-    { isES6:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_ }, 
-    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
-    __dotnet_replacements);
-
-// here we replace things which are not exposed in another way
-scriptDirectory = __dotnet_replacements.scriptDirectory;
-readAsync = __dotnet_replacements.readAsync;
-var fetch = __dotnet_replacements.fetch;
-
-// here we replace things which are broken on NodeJS for ES6
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
 if (ENVIRONMENT_IS_NODE) {
-    __dirname = __dotnet_replacements.scriptDirectory;
-    require = __dotnet_replacements.require;
+    __dotnet_replacements.requirePromise = import('module').then(mod => {
+        const require = mod.createRequire(import.meta.url);
+        const path = require('path');
+        const url = require('url');
+        __dotnet_replacements.require = require;
+        __dirname = scriptDirectory = path.dirname(url.fileURLToPath(import.meta.url)) + '/';
+        return require;
+    });
     getBinaryPromise = async () => {
         if (!wasmBinary) {
             try {
@@ -46,7 +47,15 @@ if (ENVIRONMENT_IS_NODE) {
         }
         return getBinary(wasmBinaryFile);
     }
-}`,
+}
+let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
+    { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, requirePromise:__dotnet_replacements.requirePromise }, 
+    { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
+    __dotnet_replacements);
+readAsync = __dotnet_replacements.readAsync;
+var fetch = __dotnet_replacements.fetch;
+require = __dotnet_replacements.requireOut;
+`,
 };
 
 // the methods would be visible to EMCC linker

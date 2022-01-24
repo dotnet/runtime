@@ -49,9 +49,9 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
-        private const int ILogB_NaN = 0x7fffffff;
+        private const int ILogB_NaN = 0x7FFFFFFF;
 
-        private const int ILogB_Zero = (-1 - 0x7fffffff);
+        private const int ILogB_Zero = (-1 - 0x7FFFFFFF);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
@@ -131,6 +131,26 @@ namespace System
         public static decimal Abs(decimal value)
         {
             return decimal.Abs(value);
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Abs(double value)
+        {
+            const ulong mask = 0x7FFFFFFFFFFFFFFF;
+            ulong raw = BitConverter.DoubleToUInt64Bits(value);
+
+            return BitConverter.UInt64BitsToDouble(raw & mask);
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Abs(float value)
+        {
+            const uint mask = 0x7FFFFFFF;
+            uint raw = BitConverter.SingleToUInt32Bits(value);
+
+            return BitConverter.UInt32BitsToSingle(raw & mask);
         }
 
         [DoesNotReturn]

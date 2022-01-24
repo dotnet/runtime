@@ -33,9 +33,10 @@
 // Image base: 0x000000001AB30000
 
 
+.namespace Test_generics2 {
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public abstract auto ansi beforefieldinit Test_generics2.Base`1<K>
+.class public abstract auto ansi beforefieldinit Base`1<K>
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -175,7 +176,7 @@
 
 } // end of class Test.Base`1
 
-.class public auto ansi beforefieldinit Test_generics2.Child`1<K>
+.class public auto ansi beforefieldinit Child`1<K>
        extends class Test_generics2.Base`1<!K>
 {
   .method public hidebysig virtual final 
@@ -394,7 +395,7 @@
 
 } // end of class Test.Child`1
 
-.class public auto ansi beforefieldinit Test_generics2.GrandChild`1<K>
+.class public auto ansi beforefieldinit GrandChild`1<K>
        extends class Test_generics2.Child`1<!K>
 {
   .method public hidebysig virtual final 
@@ -601,7 +602,7 @@
 
 } // end of class Test.GrandChild`1
 
-.class public auto ansi sealed beforefieldinit Test_generics2.SealedGrandChild`1<K>
+.class public auto ansi sealed beforefieldinit SealedGrandChild`1<K>
        extends class Test_generics2.GrandChild`1<!K>
 {
   .method public hidebysig specialname rtspecialname 
@@ -616,7 +617,7 @@
 
 } // end of class Test.SealedGrandChild`1
 
-.class public abstract auto ansi sealed beforefieldinit Test_generics2.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallSealedGrandChild() cil managed
@@ -777,7 +778,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_generics2.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -838,9 +839,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-// =============================================================
-
-// *********** DISASSEMBLY COMPLETE ***********************
-// WARNING: Created Win32 resource file nonvirtualcalls_generics2.res
+}

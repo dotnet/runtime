@@ -12,7 +12,6 @@ namespace System.Net.Mail
     {
         internal bool disposed;
         private readonly MimePart _part = new MimePart();
-        private static readonly char[] s_contentCIDInvalidChars = new char[] { '<', '>' };
 
         internal AttachmentBase()
         {
@@ -248,7 +247,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    if (value.IndexOfAny(s_contentCIDInvalidChars) != -1)
+                    if (value.AsSpan().IndexOfAny('<', '>') >= 0) // invalid chars
                     {
                         throw new ArgumentException(SR.MailHeaderInvalidCID, nameof(value));
                     }

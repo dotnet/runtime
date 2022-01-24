@@ -61,6 +61,7 @@ namespace ILCompiler
         private string _instructionSet;
         private string _guard;
         private int _maxGenericCycle = CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint;
+        private bool _useDwarf5;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -178,6 +179,7 @@ namespace ILCompiler
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOptionList("m|mibc", ref _mibcFilePaths, "Mibc file(s) for profile guided optimization"); ;
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
+                syntax.DefineOption("gdwarf-5", ref _useDwarf5, "Generate source-level debug information with dwarf version 5");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -420,13 +422,14 @@ namespace ILCompiler
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
 
-                // If AVX was enabled, we can opportunistically enable FMA/BMI
+                // If AVX was enabled, we can opportunistically enable FMA/BMI/VNNI
                 Debug.Assert(InstructionSet.X64_AVX == InstructionSet.X86_AVX);
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                 }
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
@@ -704,7 +707,7 @@ namespace ILCompiler
                     _trimmedAssemblies);
 
             InteropStateManager interopStateManager = new InteropStateManager(typeSystemContext.GeneratedAssembly);
-            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy);
+            InteropStubManager interopStubManager = new UsageBasedInteropStubManager(interopStateManager, pinvokePolicy, logger);
 
             // Unless explicitly opted in at the command line, we enable scanner for retail builds by default.
             // We also don't do this for multifile because scanner doesn't simulate inlining (this would be
@@ -768,7 +771,8 @@ namespace ILCompiler
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
                 .UseSecurityMitigationOptions(securityMitigationOptions)
-                .UseDebugInfoProvider(debugInfoProvider);
+                .UseDebugInfoProvider(debugInfoProvider)
+                .UseDwarf5(_useDwarf5);
 
             if (scanResults != null)
             {

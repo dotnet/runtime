@@ -78,9 +78,7 @@ namespace System.Net.Http
         /// <returns>true if the next line was read successfully, or false if all characters have been read.</returns>
         public bool ReadLine()
         {
-            int startIndex;
-            int length;
-            return ReadLine(out startIndex, out length);
+            return ReadLine(out _, out _);
         }
 
         /// <summary>

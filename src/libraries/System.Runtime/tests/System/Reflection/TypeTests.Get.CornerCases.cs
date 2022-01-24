@@ -282,6 +282,7 @@ namespace System.Reflection.Tests
             Assert.Equal(0, properties.Length);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/865", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
         public static void HideDetectionHappensAfterPrivateInBaseClassChecks()
         {

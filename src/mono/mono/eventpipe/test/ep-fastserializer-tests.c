@@ -80,7 +80,7 @@ test_fast_serializer_object_fast_serialize (void)
 	ep_raise_error_if_nok (provider != NULL);
 
 	test_location = 3;
-	
+
 	ep_event = ep_event_alloc (provider, 1, 1, 1, EP_EVENT_LEVEL_VERBOSE, false, NULL, 0);
 	ep_raise_error_if_nok (ep_event != NULL);
 

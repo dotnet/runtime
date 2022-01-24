@@ -175,7 +175,7 @@ coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32
 	return res;
 }
 
-/* 
+/*
  * actually, we might want to queue the finalize requests in a separate thread,
  * but we need to be careful about the execution domain of the thread...
  */
@@ -253,7 +253,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		 * These can't be finalized during unloading/shutdown, since that would
 		 * free the native code which can still be referenced by other
 		 * finalizers.
-		 * FIXME: This is not perfect, objects dying at the same time as 
+		 * FIXME: This is not perfect, objects dying at the same time as
 		 * dynamic methods can still reference them even when !shutdown.
 		 */
 		return;
@@ -293,7 +293,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		return;
 	}
 
-	/* 
+	/*
 	 * To avoid the locking plus the other overhead of mono_runtime_invoke_checked (),
 	 * create and precompile a wrapper which calls the finalize method using
 	 * a CALLVIRT.
@@ -356,7 +356,7 @@ unhandled_error:
  * (because of the GetHashCode hack), but we need to pass the real address to register_finalizer.
  * This also means that in the callback we need to adjust the pointer to get back the real
  * MonoObject*.
- * We also need to be consistent in the use of the GC_debug* variants of malloc and register_finalizer, 
+ * We also need to be consistent in the use of the GC_debug* variants of malloc and register_finalizer,
  * since that, too, can cause the underlying pointer to be offset.
  */
 static void
@@ -386,7 +386,7 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
  *
  * Records that object \p obj has a finalizer, this will call the
  * Finalize method when the garbage collector disposes the object.
- * 
+ *
  */
 void
 mono_object_register_finalizer_handle (MonoObjectHandle obj)
@@ -420,7 +420,7 @@ mono_object_register_finalizer (MonoObject *obj)
  * \returns TRUE if succeeded, FALSE if there was a timeout
  */
 gboolean
-mono_domain_finalize (MonoDomain *domain, guint32 timeout) 
+mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 {
 	DomainFinalizationReq *req;
 	MonoInternalThread *thread = mono_thread_internal_current ();
@@ -432,11 +432,11 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		/* We are called from inside a finalizer, not much we can do here */
 		return FALSE;
 
-	/* 
+	/*
 	 * No need to create another thread 'cause the finalizer thread
 	 * is still working and will take care of running the finalizers
-	 */ 
-	
+	 */
+
 	if (gc_disabled)
 		return TRUE;
 
@@ -453,7 +453,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 
 	if (domain == mono_get_root_domain ())
 		finalizing_root_domain = TRUE;
-	
+
 	mono_finalizer_lock ();
 
 	domains_to_finalize = g_slist_append (domains_to_finalize, req);
@@ -702,7 +702,9 @@ mono_gc_finalize_notify (void)
 	if (mono_gc_is_null ())
 		return;
 
-#ifdef HOST_WASM
+#if defined(HOST_WASI)
+	// TODO: Schedule the background job on WASI. Threads aren't yet supported in this build.
+#elif defined(HOST_WASM)
 	mono_threads_schedule_background_job (mono_runtime_do_background_work);
 #else
 	mono_coop_sem_post (&finalizer_sem);
@@ -787,7 +789,7 @@ finalize_domain_objects (void)
 	while (g_hash_table_size (finalizable_objects_hash) > 0) {
 		int i;
 		GPtrArray *objs;
-		/* 
+		/*
 		 * Since the domain is unloading, nobody is allowed to put
 		 * new entries into the hash table. But finalize_object might
 		 * remove entries from the hash table, so we make a copy.
@@ -811,7 +813,7 @@ finalize_domain_objects (void)
 
 	/* cleanup the reference queue */
 	reference_queue_clear_for_domain (domain);
-	
+
 	/* printf ("DONE.\n"); */
 	mono_coop_sem_post (&req->done);
 
@@ -1000,7 +1002,7 @@ mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread)
  * In Mono objects are finalized asynchronously on a separate thread.
  * This routine tests whether the \p thread argument represents the
  * finalization thread.
- * 
+ *
  * \returns TRUE if \p thread is the finalization thread.
  */
 gboolean
