@@ -7,7 +7,6 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <WasmMainJSPath>main.mjs</WasmMainJSPath>
     <OutputType>Exe</OutputType>
-    <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
     <WasmEnableES6>yes</WasmEnableES6>
   </PropertyGroup>
 
