@@ -9002,9 +9002,6 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
     FieldDesc* field = (FieldDesc*) fieldHnd;
     CorElementType type   = field->GetFieldType();
 
-    // <REVISIT_TODO>TODO should not burn the time to do this for anything but Value Classes</REVISIT_TODO>
-    _ASSERTE(type != ELEMENT_TYPE_BYREF);
-
     if (type == ELEMENT_TYPE_I)
     {
         PTR_MethodTable enclosingMethodTable = field->GetApproxEnclosingMethodTable();

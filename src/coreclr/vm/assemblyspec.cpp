@@ -271,6 +271,11 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         WCHAR* pString;
         int    iString;
         ((STRINGREF) (*pName)->GetSimpleName())->RefInterpretGetStringValuesDangerousForGC(&pString, &iString);
+
+        // we will not parse names that contain nulls
+        if (fParse && (wcslen(pString) != (size_t)iString))
+            ThrowHR(FUSION_E_INVALID_NAME);
+
         DWORD lgth = WszWideCharToMultiByte(CP_UTF8, 0, pString, iString, NULL, 0, NULL, NULL);
         if (lgth + 1 < lgth)
             ThrowHR(E_INVALIDARG);
@@ -290,7 +295,8 @@ HRESULT AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* 
         SetName(lpName);
     }
 
-    if (fParse) {
+    if (fParse)
+    {
         HRESULT hr = ParseName();
         // Sometimes Fusion flags invalid characters in the name, sometimes it doesn't
         // depending on where the invalid characters are

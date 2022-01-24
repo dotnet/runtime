@@ -122,6 +122,9 @@
   <data name="Arg_MustBeIdentityReferenceType" xml:space="preserve">
     <value>Type must be an IdentityReference, such as NTAccount or SecurityIdentifier.</value>
   </data>
+  <data name="Argument_InvalidAppendMode" xml:space="preserve">
+    <value>Append access can be requested only in write-only mode.</value>
+  </data>
   <data name="Argument_InvalidEnumValue" xml:space="preserve">
     <value>The value '{0}' is not valid for this usage of the type {1}.</value>
   </data>

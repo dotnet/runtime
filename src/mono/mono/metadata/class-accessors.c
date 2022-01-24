@@ -26,8 +26,8 @@ typedef enum {
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
 	PROP_WEAK_BITMAP = 9,
 	PROP_DIM_CONFLICTS = 10, /* GSList of MonoMethod* */
-	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/ 
-	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/ 
+	PROP_FIELD_DEF_VALUES_2BYTESWIZZLE = 11, /* MonoFieldDefaultValue* with default values swizzled at 2 byte boundaries*/
+	PROP_FIELD_DEF_VALUES_4BYTESWIZZLE = 12, /* MonoFieldDefaultValue* with default values swizzled at 4 byte boundaries*/
 	PROP_FIELD_DEF_VALUES_8BYTESWIZZLE = 13, /* MonoFieldDefaultValue* with default values swizzled at 8 byte boundaries*/
 	PROP_METADATA_UPDATE_INFO = 14, /* MonoClassMetadataUpdateInfo* */
 }  InfrequentDataKind;

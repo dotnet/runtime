@@ -247,6 +247,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcMultiModule) == 'true'" Include="--multifile" />
       <IlcArg Condition="$(Optimize) == 'true'" Include="-O" />
       <IlcArg Condition="$(NativeDebugSymbols) == 'true'" Include="-g" />
+      <IlcArg Condition="$(IlcDwarfVersion) == '5'" Include="--gdwarf-5" />
       <IlcArg Condition="$(IlcGenerateMapFile) == 'true'" Include="--map:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).map.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--dgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).codegen.dgml.xml" />
       <IlcArg Condition="$(IlcGenerateDgmlFile) == 'true'" Include="--scandgmllog:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).scan.dgml.xml" />

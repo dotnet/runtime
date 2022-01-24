@@ -193,7 +193,7 @@ bool IsDstDstSrcAVXInstruction(instruction ins);
 bool IsDstSrcSrcAVXInstruction(instruction ins);
 bool HasRegularWideForm(instruction ins);
 bool HasRegularWideImmediateForm(instruction ins);
-bool DoesWriteZeroFlag(instruction ins);
+static bool DoesWriteZeroFlag(instruction ins);
 bool DoesWriteSignFlag(instruction ins);
 bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);

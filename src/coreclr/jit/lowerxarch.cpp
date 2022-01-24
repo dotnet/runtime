@@ -160,6 +160,33 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// LowerBinaryArithmetic: lowers the given binary arithmetic node.
+//
+// Arguments:
+//    node - the arithmetic node to lower
+//
+// Returns:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && varTypeIsIntegral(binOp))
+    {
+        GenTree* blsrNode = TryLowerAndOpToResetLowestSetBit(binOp);
+        if (blsrNode != nullptr)
+        {
+            return blsrNode->gtNext;
+        }
+    }
+#endif
+
+    ContainCheckBinary(binOp);
+
+    return binOp->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //
 // Arguments:
@@ -3047,8 +3074,6 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     if (simdSize == 32)
     {
-        assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
-
         switch (simdBaseType)
         {
             case TYP_SHORT:
@@ -3056,6 +3081,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             case TYP_INT:
             case TYP_UINT:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
                 multiply      = NI_AVX2_MultiplyLow;
                 horizontalAdd = NI_AVX2_HorizontalAdd;
                 add           = NI_AVX2_Add;
@@ -3064,6 +3091,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             case TYP_FLOAT:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+
                 // We will be constructing the following parts:
                 //   idx  =    CNS_INT       int    0xF1
                 //          /--*  op1  simd16
@@ -3127,6 +3156,8 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
             case TYP_DOUBLE:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+
                 multiply      = NI_AVX_Multiply;
                 horizontalAdd = NI_AVX_HorizontalAdd;
                 add           = NI_AVX_Add;
@@ -3693,6 +3724,84 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
         LowerNode(cast);
     }
 }
+
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1) to HWIntrinsic::ResetLowestSetBit
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
+{
+    assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
+
+    GenTree* op1 = andNode->gtGetOp1();
+    if (!op1->OperIs(GT_LCL_VAR) || comp->lvaGetDesc(op1->AsLclVar())->IsAddressExposed())
+    {
+        return nullptr;
+    }
+
+    GenTree* op2 = andNode->gtGetOp2();
+    if (!op2->OperIs(GT_ADD))
+    {
+        return nullptr;
+    }
+
+    GenTree* addOp2 = op2->gtGetOp2();
+    if (!addOp2->IsIntegralConst(-1))
+    {
+        return nullptr;
+    }
+
+    GenTree* addOp1 = op2->gtGetOp1();
+    if (!addOp1->OperIs(GT_LCL_VAR) || (addOp1->AsLclVar()->GetLclNum() != op1->AsLclVar()->GetLclNum()))
+    {
+        return nullptr;
+    }
+
+    NamedIntrinsic intrinsic;
+    if (op1->TypeIs(TYP_LONG) && comp->compOpportunisticallyDependsOn(InstructionSet_BMI1_X64))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_X64_ResetLowestSetBit;
+    }
+    else if (comp->compOpportunisticallyDependsOn(InstructionSet_BMI1))
+    {
+        intrinsic = NamedIntrinsic::NI_BMI1_ResetLowestSetBit;
+    }
+    else
+    {
+        return nullptr;
+    }
+
+    LIR::Use use;
+    if (!BlockRange().TryGetUse(andNode, &use))
+    {
+        return nullptr;
+    }
+
+    GenTreeHWIntrinsic* blsrNode = comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), op1, intrinsic);
+
+    JITDUMP("Lower: optimize AND(X, ADD(X, -1))\n");
+    DISPNODE(andNode);
+    JITDUMP("to:\n");
+    DISPNODE(blsrNode);
+
+    use.ReplaceWith(blsrNode);
+
+    BlockRange().InsertBefore(andNode, blsrNode);
+    BlockRange().Remove(andNode);
+    BlockRange().Remove(op2);
+    BlockRange().Remove(addOp1);
+    BlockRange().Remove(addOp2);
+
+    ContainCheckHWIntrinsic(blsrNode);
+
+    return blsrNode;
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------

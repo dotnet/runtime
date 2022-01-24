@@ -292,11 +292,6 @@
         <target state="translated">Desenin sonunda geçersiz \\.</target>
         <note />
       </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Normal ifade oluşturmada beklenmeyen işlem kodu: {0}.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
         <source>Unrecognized control character.</source>
         <target state="translated">Tanınmayan denetim karakteri.</target>

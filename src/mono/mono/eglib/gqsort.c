@@ -73,85 +73,85 @@ g_qsort_with_data (gpointer base, size_t nmemb, size_t size, GCompareDataFunc co
 	size_t n, n1, n2;
 	char *lo, *hi;
 	int swaplong;
-	
+
 	if (nmemb <= 1)
 		return;
-	
+
 	SWAP_INIT ();
-	
+
 	/* initialize our stack */
 	sp = stack;
 	QSORT_PUSH (sp, base, nmemb);
-	
+
 	do {
 		QSORT_POP (sp, lo, n);
-		
+
 		hi = lo + (n - 1) * size;
-		
+
 		if (n < MAX_THRESHOLD) {
 			/* switch to insertion sort */
 			for (i = lo + size; i <= hi; i += size)
 				for (k = i; k > lo && compare (k - size, k, user_data) > 0; k -= size)
 					SWAP (k - size, k);
-			
+
 			continue;
 		}
-		
+
 		/* calculate the middle element */
 		mid = lo + (n / 2) * size;
-		
+
 		/* once we re-order the lo, mid, and hi elements to be in
 		 * ascending order, we'll use mid as our pivot. */
 		if (compare (mid, lo, user_data) < 0) {
 			SWAP (mid, lo);
 		}
-		
+
 		if (compare (hi, mid, user_data) < 0) {
 			SWAP (mid, hi);
 			if (compare (mid, lo, user_data) < 0) {
 				SWAP (mid, lo);
 			}
 		}
-		
+
 		/* since we've already guaranteed that lo <= mid and mid <= hi,
 		 * we can skip comparing them again */
 		i = lo + size;
 		k = hi - size;
-		
+
 		do {
 			/* find the first element with a value > pivot value */
 			while (i < k && compare (i, mid, user_data) <= 0)
 				i += size;
-			
+
 			/* find the last element with a value <= pivot value */
 			while (k >= i && compare (mid, k, user_data) < 0)
 				k -= size;
-			
+
 			if (k <= i)
 				break;
-			
+
 			SWAP (i, k);
-			
+
 			/* make sure we keep track of our pivot element */
 			if (mid == i) {
 				mid = k;
 			} else if (mid == k) {
 				mid = i;
 			}
-			
+
 			i += size;
 			k -= size;
 		} while (1);
-		
+
 		if (k != mid) {
 			/* swap the pivot with the last element in the first partition */
 			SWAP (mid, k);
 		}
-		
+
 		/* calculate segment sizes */
 		n2 = (hi - k) / size;
 		n1 = (k - lo) / size;
-		
+
 		/* push our partitions onto the stack, largest first
 		 * (to make sure we don't run out of stack space) */
 		if (n2 > n1) {

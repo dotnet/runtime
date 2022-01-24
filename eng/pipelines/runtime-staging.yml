@@ -274,6 +274,180 @@ jobs:
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
+# Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmbuildtestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
+    jobParameters:
+      isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: WasmBuildTests
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
+      timeoutInMinutes: 180
+      condition: >-
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - buildwasmapps
+        condition: >-
+            eq(variables['wasmbuildtestsContainsChange'], true)
+
+#
+# Build Browser_wasm, on windows, run console and browser tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: LibraryTests
+      buildArgs: -subset mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=windows
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Windows_wasm_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=windows
+        scenarios:
+        - normal
+        - wasmtestonbrowser
+        condition: >-
+          or(
+            eq(variables['librariesContainsChange'], true),
+            eq(variables['monoContainsChange'], true),
+            eq(variables['isRollingBuild'], true))
+
+#
+# Build for Browser/wasm with RunAOTCompilation=true
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      isExtraPlatforms: ${{ variables.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: LibraryTests_AOT
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true /p:BrowserHost=$(_hostedOs)
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_AOT_$(_BuildConfig)_$(_hostedOs)
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg) /p:BrowserHost=$(_hostedOs)
+        scenarios:
+        - normal
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true))
+
+# Wasm debugger tests - windows
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm_win
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmdebuggertestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Mono_DebuggerTests
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=windows
+      timeoutInMinutes: 180
+      condition: >-
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=windows
+        scenarios:
+        - wasmdebuggertests
+
+# Wasm debugger tests
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: wasmdebuggertestsContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: Mono_DebuggerTests
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      condition: >-
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmdebuggertests.containsChange'], true)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        scenarios:
+        - wasmdebuggertests
+
+#
 # Build the whole product using Mono for Android and run runtime tests with Android devices
 #
 - template: /eng/pipelines/common/platform-matrix.yml
