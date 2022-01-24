@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void EnsureEnvironmentExitDoesntHang()
         {
-            // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on NetFramework
+            // SIGTERM is only handled on net6.0+, so the workaround to "clobber" the exit code is still in place on .NET Framework
             int expectedExitCode = PlatformDetection.IsNetFramework ? 0 : 125;
 
             using var remoteHandle = RemoteExecutor.Invoke(async () =>
