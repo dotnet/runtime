@@ -13736,6 +13736,65 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
     return cmp;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
+// gtFoldHWIntrinsic: optimize a HW intrinsic node
+//
+// Arguments:
+//    node - HWIntrinsic node to examine
+//
+// Returns:
+//    The original node if no folding happened.
+//    An alternative tree if folding happens.
+//
+// Notes:
+//    Checks for HWIntrinsic nodes: Vector64.Create/Vector128.Create/Vector256.Create,
+//    and if the call is one of these, attempt to optimize.
+//
+GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
+{
+    if (opts.OptimizationDisabled())
+    {
+        return node;
+    }
+
+    switch (node->GetHWIntrinsicId())
+    {
+        case NI_Vector128_Create:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Create:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_Create:
+#endif
+        {
+            bool hwAllArgsAreConstZero = true;
+            for (GenTree* arg : node->Operands())
+            {
+                if (!arg->IsIntegralConst(0) && !arg->IsFloatPositiveZero())
+                {
+                    hwAllArgsAreConstZero = false;
+                    break;
+                }
+            }
+
+            if (hwAllArgsAreConstZero)
+            {
+                return gtNewSimdZeroNode(node->gtType, node->GetSimdBaseJitType(), node->GetSimdSize(),
+                                         node->IsSimdAsHWIntrinsic());
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return node;
+}
+
+#endif
+
 //------------------------------------------------------------------------
 // fgPropagateCommaThrow: propagate a "comma throw" up the tree.
 //
@@ -14285,16 +14344,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 #ifdef FEATURE_HW_INTRINSICS
     if (multiOp->OperIsHWIntrinsic())
     {
-        GenTreeHWIntrinsic* hw = multiOp->AsHWIntrinsic();
-
-        // See if this is foldable
-        GenTree* optTree = gtFoldHWIntrinsic(hw);
-
-        // If we optimized, morph the result
-        if (optTree != hw)
-        {
-            return fgMorphTree(optTree);
-        }
+        return fgOptimizeHWIntrinsic(multiOp->AsHWIntrinsic());
     }
 #endif
 

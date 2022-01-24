@@ -11702,66 +11702,6 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     return call;
 }
 
-#ifdef FEATURE_HW_INTRINSICS
-
-//------------------------------------------------------------------------
-// gtFoldHWIntrinsic: see if a HWIntrinsic is foldable
-//
-// Arguments:
-//    node - HWIntrinsic node to examine
-//
-// Returns:
-//    The original node if no folding happened.
-//    An alternative tree if folding happens.
-//
-// Notes:
-//    Checks for HWIntrinsic nodes to Vector64.Create/Vector128.Create/Vector256.Create,
-//    and if the call is to one of these, attempt to optimize.
-//
-GenTree* Compiler::gtFoldHWIntrinsic(GenTreeHWIntrinsic* node)
-{
-    // Defer folding if not optimizing.
-    if (opts.OptimizationDisabled())
-    {
-        return node;
-    }
-
-    switch (node->GetHWIntrinsicId())
-    {
-        case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_Create:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_Create:
-#endif
-        {
-            bool hwAllArgsAreConstZero = true;
-            for (GenTree* arg : node->Operands())
-            {
-                if (!arg->IsIntegralConst(0) && !arg->IsFloatPositiveZero())
-                {
-                    hwAllArgsAreConstZero = false;
-                    break;
-                }
-            }
-
-            if (hwAllArgsAreConstZero)
-            {
-                return gtNewSimdZeroNode(node->gtType, node->GetSimdBaseJitType(), node->GetSimdSize(),
-                                         node->IsSimdAsHWIntrinsic());
-            }
-            break;
-        }
-
-        default:
-            break;
-    }
-
-    return node;
-}
-
-#endif
-
 //------------------------------------------------------------------------
 // gtFoldTypeEqualityCall: see if a (potential) type equality call is foldable
 //
