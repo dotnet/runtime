@@ -961,7 +961,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string function_name = frame["functionName"]?.Value<string>();
                 string url = frame["url"]?.Value<string>();
                 if (!(function_name.StartsWith("wasm-function", StringComparison.Ordinal) ||
-                        url.StartsWith("wasm://wasm/", StringComparison.Ordinal) || function_name == "_mono_wasm_fire_debugger_agent_message"))
+                        url.StartsWith("wasm://wasm/", StringComparison.Ordinal) ||
+                        url.EndsWith(".wasm", StringComparison.Ordinal) ||
+                        function_name == "_mono_wasm_fire_debugger_agent_message"))
                 {
                     callFrames.Add(frame);
                 }
