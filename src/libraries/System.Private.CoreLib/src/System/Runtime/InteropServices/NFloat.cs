@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices
         /// <param name="right">The value to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if <paramref name="left" /> is less than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [NonVersionable]
-        public static bool operator <=(NFloat left, NFloat right) => left._value >= right._value;
+        public static bool operator <=(NFloat left, NFloat right) => left._value <= right._value;
 
         /// <summary>Compares two values to determine which is greater.</summary>
         /// <param name="left">The value to compare with <paramref name="right" />.</param>
@@ -213,7 +213,7 @@ namespace System.Runtime.InteropServices
         /// <param name="right">The value to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if <paramref name="left" /> is greater than or equal to <paramref name="right" />; otherwise, <c>false</c>.</returns>
         [NonVersionable]
-        public static bool operator >=(NFloat left, NFloat right) => left._value <= right._value;
+        public static bool operator >=(NFloat left, NFloat right) => left._value >= right._value;
 
         //
         // Explicit Convert To NFloat
