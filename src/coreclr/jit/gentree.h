@@ -7669,7 +7669,6 @@ inline bool GenTree::IsVectorZero() const
     if (gtOper == GT_HWINTRINSIC)
     {
         const GenTreeHWIntrinsic* node         = AsHWIntrinsic();
-        const var_types           simdBaseType = node->GetSimdBaseType();
         const NamedIntrinsic      intrinsicId  = node->GetHWIntrinsicId();
 
         if (node->GetOperandCount() == 0)
