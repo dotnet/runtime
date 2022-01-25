@@ -213,7 +213,7 @@ namespace ILCompiler
                 }
                 else
                 {
-                    Logger.LogWarning($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
+                    Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
                 }
             }
         }

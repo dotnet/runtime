@@ -128,6 +128,26 @@ namespace ILCompiler
             LogWarning(_origin, id, args);
         }
 
+        public void LogError(string text, int code, string subcategory = MessageSubCategory.None, MessageOrigin? origin = null)
+        {
+            MessageContainer? error = MessageContainer.CreateErrorMessage(text, code, subcategory, origin);
+            if (error.HasValue)
+                Writer.WriteLine(error.Value.ToMSBuildString());
+        }
+
+        public void LogError(MessageOrigin? origin, DiagnosticId id, params string[] args)
+        {
+            MessageContainer? error = MessageContainer.CreateErrorMessage(origin, id, args);
+            if (error.HasValue)
+                Writer.WriteLine(error.Value.ToMSBuildString());
+        }
+
+        public void LogError(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
+            LogError(text, code, subcategory, new MessageOrigin(origin));
+
+        public void LogError(TypeSystemEntity origin, DiagnosticId id, params string[] args) =>
+            LogError(new MessageOrigin(origin), id, args);
+
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {
             // This is causing too much noise
