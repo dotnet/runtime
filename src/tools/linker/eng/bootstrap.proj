@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.DotNet.Arcade.Sdk">
+
+    <Target Name="Build">
+        <MSBuild Projects="../src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj"
+                 Targets="Restore" />
+        <MSBuild Projects="../src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj"
+                 Properties="OutDir=$(ArtifactsDir)/bootstrap"
+                 Targets="Build" />
+    </Target>
+</Project>
