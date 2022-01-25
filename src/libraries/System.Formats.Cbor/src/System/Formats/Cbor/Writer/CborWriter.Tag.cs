@@ -190,7 +190,7 @@ namespace System.Formats.Cbor
                         case 4: return mantissa * 10000m;
                         default:
                             Debug.Fail("Unreachable code in decimal exponentiation logic");
-                            throw new UnreachableException();
+                            throw new Exception();
                     }
                 }
                 else if (exponent >= -ExponentUpperBound)
