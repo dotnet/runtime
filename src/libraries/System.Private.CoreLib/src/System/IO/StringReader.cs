@@ -229,7 +229,7 @@ namespace System.IO
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
-        /// parameter contains the next line from the string reader, or is <c>null</c> if all of the characters have been read.</returns>
+        /// parameter contains the next line from the string reader, or is <see langword="null" /> if all of the characters have been read.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="ObjectDisposedException">The string reader has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
@@ -244,8 +244,8 @@ namespace System.IO
         /// stringToRead.AppendLine("and the end");
         ///
         /// string readText;
-        /// using var tokenSource = new CancellationTokenSource();
-        /// using var reader = new StringReader(stringToRead.ToString());
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StringReader reader = new (stringToRead.ToString());
         /// while ((readText = await reader.ReadLineAsync(tokenSource.Token)) is not null)
         /// {
         ///     Console.WriteLine(readText);
@@ -281,8 +281,8 @@ namespace System.IO
         /// stringToRead.AppendLine("and 2nd line");
         /// stringToRead.AppendLine("and the end");
         ///
-        /// using var tokenSource = new CancellationTokenSource();
-        /// using var reader = new StringReader(stringToRead.ToString());
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StringReader reader = new (stringToRead.ToString());
         /// var readText = await reader.ReadToEndAsync(tokenSource.Token);
         /// Console.WriteLine(readText);
         /// </code>

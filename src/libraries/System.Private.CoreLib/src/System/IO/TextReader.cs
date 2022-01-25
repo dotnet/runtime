@@ -210,7 +210,7 @@ namespace System.IO
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
-        /// parameter contains the next line from the text reader, or is <c>null</c> if all of the characters have been read.</returns>
+        /// parameter contains the next line from the text reader, or is <see langword="null" /> if all of the characters have been read.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="ObjectDisposedException">The text reader has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
@@ -219,7 +219,7 @@ namespace System.IO
         /// your code. For an example of using the <see cref="ReadLineAsync(CancellationToken)"/> method, see the
         /// <see cref="StreamReader.ReadLineAsync(CancellationToken)"/> method.</para>
         /// <para>If the current <see cref="TextReader"/> represents the standard input stream returned by
-        /// the <c>Console.In</c> property, the <see cref="ReadLineAsync(CancellationToken)"/> method
+        /// the <see cref="Console.In" /> property, the <see cref="ReadLineAsync(CancellationToken)"/> method
         /// executes synchronously rather than asynchronously.</para>
         /// </remarks>
         public virtual ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
