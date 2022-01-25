@@ -595,6 +595,16 @@ bool Compiler::fgForwardSub(Statement* stmt)
         return false;
     }
 
+    // If we're substituting a call into a call arg use, we may run afoul of
+    // call operand reordering in morph, where a call can move past an
+    // (unmarked) aliased local ref.
+    //
+    if (fwdSubNode->IsCall() && fsv.IsCallArg())
+    {
+        JITDUMP(" tree to sub is call, use is call arg\n");
+        return false;
+    }
+
     // Looks good, forward sub!
     //
     GenTree** use = fsv.GetUse();
