@@ -372,6 +372,10 @@ internal static partial class Interop
 
         internal static SecurityStatusPalErrorCode DoSslHandshake(SafeSslHandle context, ReadOnlySpan<byte> input, out byte[]? sendBuf, out int sendCount)
         {
+#if DEBUG
+            ulong assertNoError = Crypto.ErrPeekError();
+            Debug.Assert(assertNoError == 0, $"OpenSsl error queue is not empty, run: 'openssl errstr {assertNoError:X}' for original error.");
+#endif
             sendBuf = null;
             sendCount = 0;
             Exception? handshakeException = null;
@@ -385,24 +389,30 @@ internal static partial class Interop
                 }
             }
 
-            int retVal = Ssl.SslDoHandshake(context);
-            if (retVal != 1)
+            Exception? innerError = null;
+            try
             {
-                Exception? innerError;
-                Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
-
-                if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
+                int retVal = Ssl.SslDoHandshake(context);
+                if (retVal != 1)
                 {
-                    return SecurityStatusPalErrorCode.CredentialsNeeded;
-                }
+                    Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
 
-                if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
-                {
-                    // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
-                    // To handle that we will fall-through the block below to pull it out, and we will fail after.
-                    handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
-                    Crypto.ErrClearError();
+                    if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
+                    {
+                        return SecurityStatusPalErrorCode.CredentialsNeeded;
+                    }
+
+                    if ((retVal != -1) || (error != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))
+                    {
+                        // Handshake failed, but even if the handshake does not need to read, there may be an Alert going out.
+                        // To handle that we will fall-through the block below to pull it out, and we will fail after.
+                        handshakeException = new SslException(SR.Format(SR.net_ssl_handshake_failed_error, error), innerError);
+                    }
                 }
+            }
+            finally
+            {
+                Crypto.ErrClearError();
             }
 
             sendCount = Crypto.BioCtrlPending(context.OutputBio!);
