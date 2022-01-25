@@ -46,7 +46,7 @@ namespace System.IO.Tests
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
             // even if the full path is over 260.
-            var length = OperatingSystem.IsWindows() ? 250 : 1010;
+            var length = OperatingSystem.IsWindows() ? 250 : 258;
             string directory = IOServices.GetPath(GetTestFilePath(), length);
             Assert.Equal(length, directory.Length);
             Assert.True(Directory.CreateDirectory(directory).Exists);
