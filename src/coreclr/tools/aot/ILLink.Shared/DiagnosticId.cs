@@ -183,10 +183,9 @@ namespace ILLink.Shared
         // Dynamic code diagnostic ids.
         RequiresDynamicCode = 3050,
         RequiresDynamicCodeAttributeMismatch = 3051,
-        // TODO: these are all unique to NativeAOT - mono/linker repo is not aware these error codes usage.
-        // IL3052 - COM
-        // IL3053 - AOT analysis warnings
-        // IL3054 - Generic cycle
+        COMInteropNotSupportedInFullAOT = 3052,
+        AssemblyProducedAOTWarnings = 3053,
+        GenericRecursionCycle = 3054,
         CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
     }
 
@@ -210,6 +209,8 @@ namespace ILLink.Shared
                 2106 => MessageSubCategory.TrimAnalysis,
                 2107 => MessageSubCategory.TrimAnalysis,
                 var x when x >= 2109 && x <= 2116 => MessageSubCategory.TrimAnalysis,
+                var x when x >= 3050 && x <= 3052 => MessageSubCategory.AotAnalysis,
+                var x when x >= 3054 && x <= 3055 => MessageSubCategory.AotAnalysis,
                 _ => MessageSubCategory.None,
             };
     }

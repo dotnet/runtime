@@ -209,7 +209,7 @@ namespace ILCompiler
                     && method.OwningType is MetadataType mdOwningType
                     && mdOwningType.HasCustomAttribute("System.Runtime.InteropServices", "ClassInterfaceAttribute"))
                 {
-                    Logger.LogWarning("COM interop is not supported with full ahead of time compilation", 3052, method, MessageSubCategory.AotAnalysis);
+                    Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
                 else
                 {

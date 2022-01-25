@@ -55,10 +55,25 @@ namespace ILCompiler
                 Writer.WriteLine(warning.Value.ToMSBuildString());
         }
 
+        public void LogWarning(MessageOrigin origin, DiagnosticId id, params string[] args)
+        {
+            MessageContainer? warning = MessageContainer.CreateWarningMessage(this, origin, id, args);
+            if (warning.HasValue)
+                Writer.WriteLine(warning.Value.ToMSBuildString());
+        }
+
         public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None)
         {
             MessageOrigin messageOrigin = new MessageOrigin(origin);
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, messageOrigin, subcategory);
+            if (warning.HasValue)
+                Writer.WriteLine(warning.Value.ToMSBuildString());
+        }
+
+        public void LogWarning(TypeSystemEntity origin, DiagnosticId id, params string[] args)
+        {
+            MessageOrigin messageOrigin = new MessageOrigin(origin);
+            MessageContainer? warning = MessageContainer.CreateWarningMessage(this, messageOrigin, id, args);
             if (warning.HasValue)
                 Writer.WriteLine(warning.Value.ToMSBuildString());
         }
@@ -87,10 +102,40 @@ namespace ILCompiler
             LogWarning(text, code, messageOrigin, subcategory);
         }
 
+        public void LogWarning(MethodIL origin, int ilOffset, DiagnosticId id, params string[] args)
+        {
+            string document = null;
+            int? lineNumber = null;
+
+            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
+            if (sequencePoints != null)
+            {
+                foreach (var sequencePoint in sequencePoints)
+                {
+                    if (sequencePoint.Offset <= ilOffset)
+                    {
+                        document = sequencePoint.Document;
+                        lineNumber = sequencePoint.LineNumber;
+                    }
+                }
+            }
+
+            MethodDesc warnedMethod = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(origin.OwningMethod) ?? origin.OwningMethod;
+
+            MessageOrigin messageOrigin = new MessageOrigin(warnedMethod, document, lineNumber, null);
+            LogWarning(messageOrigin, id, args);
+        }
+
         public void LogWarning(string text, int code, string origin, string subcategory = MessageSubCategory.None)
         {
             MessageOrigin _origin = new MessageOrigin(origin);
             LogWarning(text, code, _origin, subcategory);
+        }
+
+        public void LogWarning(string origin, DiagnosticId id, params string[] args)
+        {
+            MessageOrigin _origin = new MessageOrigin(origin);
+            LogWarning(_origin, id, args);
         }
 
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
@@ -168,7 +213,7 @@ namespace ILCompiler
                     {
                         if (_trimWarnedAssemblies.Add(assemblyName))
                         {
-                            LogWarning($"Assembly '{assemblyName}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries", 2104, GetModuleFileName(owningModule));
+                            LogWarning(GetModuleFileName(owningModule), DiagnosticId.AssemblyProducedTrimWarnings, assemblyName);
                         }
                     }
                 }
@@ -178,12 +223,12 @@ namespace ILCompiler
                     {
                         if (_aotWarnedAssemblies.Add(assemblyName))
                         {
-                            LogWarning($"Assembly '{assemblyName}' produced AOT analysis warnings.", 3053, GetModuleFileName(owningModule));
+                            LogWarning(GetModuleFileName(owningModule), DiagnosticId.AssemblyProducedAOTWarnings, assemblyName);
                         }
                     }
                 }
             }
-            
+
             return result;
         }
 
