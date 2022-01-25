@@ -7699,12 +7699,6 @@ namespace System
         public bool IsTerminating { get { throw null; } }
     }
     public delegate void UnhandledExceptionEventHandler(object sender, System.UnhandledExceptionEventArgs e);
-    public sealed partial class UnreachableException : System.SystemException
-    {
-        public UnreachableException() { }
-        public UnreachableException(string? message) { }
-        public UnreachableException(string? message, System.Exception? innerException) { }
-    }
     public partial class Uri : System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
@@ -9041,6 +9035,12 @@ namespace System.Diagnostics
         public void Start() { }
         public static System.Diagnostics.Stopwatch StartNew() { throw null; }
         public void Stop() { }
+    }
+    public sealed partial class UnreachableException : System.Exception
+    {
+        public UnreachableException() { }
+        public UnreachableException(string? message) { }
+        public UnreachableException(string? message, System.Exception? innerException) { }
     }
 }
 namespace System.Diagnostics.CodeAnalysis

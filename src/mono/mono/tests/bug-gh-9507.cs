@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using type_with_special_array_cast = System.UInt64; // MonoClass<ulong[]>::cast_class = long
 using other_type = System.Double;
 

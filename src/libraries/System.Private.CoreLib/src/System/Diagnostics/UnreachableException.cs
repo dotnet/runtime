@@ -1,7 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System
+namespace System.Diagnostics
 {
     /// <summary>
     /// Exception thrown when the program executes an instruction that was thought to be unreachable.

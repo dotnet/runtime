@@ -1039,7 +1039,7 @@ namespace ILCompiler
             }
             catch (CodeGenerationFailedException ex) when (DumpReproArguments(ex))
             {
-                throw new UnreachableException();
+                throw new NotSupportedException(); // Unreachable
             }
 #else
             try
