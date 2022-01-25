@@ -48,7 +48,6 @@
 	"portsAttributes": {
 		"8000": {
 			"label": "mono wasm samples (8000)",
-			"onAutoForward": "notify"
 		}
 	}
 }
