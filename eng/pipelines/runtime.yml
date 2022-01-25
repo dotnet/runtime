@@ -1110,8 +1110,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
-    # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
-    #- Linux_arm64
+    - Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
