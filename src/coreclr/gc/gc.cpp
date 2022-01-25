@@ -11605,6 +11605,7 @@ void gc_heap::decommit_heap_segment (heap_segment* seg)
     page_start += OS_PAGE_SIZE;
 #endif //BACKGROUND_GC && !USE_REGIONS
 
+    assert (heap_segment_committed (seg) >= page_start);
     size_t size = heap_segment_committed (seg) - page_start;
     bool decommit_succeeded_p = virtual_decommit (page_start, size, heap_segment_oh (seg), heap_number);
 
