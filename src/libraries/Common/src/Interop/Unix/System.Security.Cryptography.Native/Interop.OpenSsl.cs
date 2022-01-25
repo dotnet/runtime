@@ -389,12 +389,12 @@ internal static partial class Interop
                 }
             }
 
-            Exception? innerError = null;
             try
             {
                 int retVal = Ssl.SslDoHandshake(context);
                 if (retVal != 1)
                 {
+                    Exception? innerError = null;
                     Ssl.SslErrorCode error = GetSslError(context, retVal, out innerError);
 
                     if (error == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
