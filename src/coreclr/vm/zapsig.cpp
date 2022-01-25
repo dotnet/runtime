@@ -307,10 +307,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
 {
     CONTRACT(BOOL)
     {
-        NOTHROW;
-        GC_NOTRIGGER;
         MODE_ANY;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pZapSigContext));
         PRECONDITION(CheckPointer(pZapSigContext->pModuleContext));
@@ -343,7 +340,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         {
             DWORD ix = CorSigUncompressData(pSig);
             CONTRACT_VIOLATION(ThrowsViolation|GCViolation);
-            pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndexIfLoaded(ix);
+            pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix);
             if (pModule == NULL)
                 RETURN FALSE;
             else
