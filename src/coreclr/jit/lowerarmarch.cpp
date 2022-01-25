@@ -1014,9 +1014,14 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         if (VectorConstantIsBroadcastedI64(vecCns, simdSize / 8))
         {
             // If we are a single constant or if all parts are the same, we might be able to optimize
-            // this even further for certain values, such as AllBitsSet.
+            // this even further for certain values, such as Zero or AllBitsSet.
 
-            if (vecCns.i64[0] == -1)
+            if (vecCns.i64[0] == 0)
+            {
+                node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_get_Zero : NI_Vector128_get_Zero);
+                return;
+            }
+            else if (vecCns.i64[0] == -1)
             {
                 node->ResetHWIntrinsicId((simdSize == 8) ? NI_Vector64_get_AllBitsSet : NI_Vector128_get_AllBitsSet);
                 return;
