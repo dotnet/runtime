@@ -1039,6 +1039,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnMono("Nullability attributes trimmed on Mono")]
         public void TestDeeplyNestedGenericInheritance()
         {
             var copyToMethodInfo = nullabilityContext.Create(
