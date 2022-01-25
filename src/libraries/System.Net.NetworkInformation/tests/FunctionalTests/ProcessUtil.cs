@@ -51,7 +51,6 @@ namespace System.Net.NetworkInformation.Tests
                 }
 
                 using StringReader sr = new StringReader(output);
-                List<string> lstThreads = new List<string>();
 
                 while (true)
                 {
@@ -61,10 +60,8 @@ namespace System.Net.NetworkInformation.Tests
                         break;
                     }
 
-                    lstThreads.Add(line);
+                    yield return line;
                 }
-
-                return lstThreads;
             }
             finally
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Linq;
 
 namespace System.Net.NetworkInformation.Tests
 {
@@ -19,7 +20,7 @@ namespace System.Net.NetworkInformation.Tests
             // On other platforms we will try it.
             try
             {
-                _ = ProcessUtil.GetProcessThreadsWithPsCommand(Process.GetCurrentProcess().Id);
+                _ = ProcessUtil.GetProcessThreadsWithPsCommand(Process.GetCurrentProcess().Id).ToArray();
                 return true;
             }
             catch { return false; }
