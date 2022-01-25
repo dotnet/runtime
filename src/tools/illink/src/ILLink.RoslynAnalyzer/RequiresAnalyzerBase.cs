@@ -175,10 +175,10 @@ namespace ILLink.RoslynAnalyzer
 					for (int i = 0; i < typeParams.Length; i++) {
 						var typeParam = typeParams[i];
 						var typeArg = typeArgs[i];
-						if (!typeParam.HasConstructorConstraint)
+						if (!typeParam.HasConstructorConstraint ||
+							typeArg is not INamedTypeSymbol { InstanceConstructors: { } typeArgCtors })
 							continue;
 
-						var typeArgCtors = ((INamedTypeSymbol) typeArg).InstanceConstructors;
 						foreach (var instanceCtor in typeArgCtors) {
 							if (instanceCtor.Arity > 0)
 								continue;
