@@ -16275,7 +16275,48 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_140C;
             break;
         }
-
+        case INS_sha1msg1:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_2C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+        case INS_sha1msg2:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+        }
+        case INS_sha1nexte:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+        case INS_sha1rnds4:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_7C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
+        case INS_sha256msg1:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_5C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            break;
+        }
+        case INS_sha256msg2:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_6C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_4C;
+            break;
+        }
+        case INS_sha256rnds2:
+        {
+            result.insLatency    = PERFSCORE_LATENCY_8C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
         default:
             // unhandled instruction insFmt combination
             perfScoreUnhandledInstruction(id, &result);
