@@ -32,6 +32,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexNodeKind.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexOptions.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParseException.cs" />

@@ -75,7 +75,7 @@ MONO_API MonoBitSet* mono_bitset_new          (guint32 max_size, guint32 flags);
 
 MONO_API MonoBitSet* mono_bitset_mem_new      (gpointer mem, guint32 max_size, guint32 flags);
 
-MONO_API void        mono_bitset_free         (MonoBitSet *set); 
+MONO_API void        mono_bitset_free         (MonoBitSet *set);
 
 MONO_API void        mono_bitset_set          (MonoBitSet *set, guint32 pos);
 

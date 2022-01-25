@@ -87,34 +87,8 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Please make sure that you have the libgdiplus dependency installed.
-        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
-        public static bool IsDrawingSupported
-        {
-            get
-            {
-#if NETCOREAPP
-                if (!IsWindows)
-                {
-                    if (IsMobile)
-                    {
-                        return false;
-                    }
-                    else if (IsOSX)
-                    {
-                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                    }
-                    else
-                    {
-                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
-                    }
-                }
-#endif
-
-                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-
-            }
-        }
+        // Drawing is not supported on non windows platforms in .NET 7.0+.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 

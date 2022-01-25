@@ -64,6 +64,12 @@ mono_valloc_granule (void)
 static int
 prot_from_flags (int flags)
 {
+#if HOST_WASI
+	// The mmap in wasi-sdk rejects PROT_NONE, but otherwise disregards the flags
+	// We just need to pass an acceptable value
+	return PROT_READ;
+#endif
+
 	int prot = PROT_NONE;
 	/* translate the protection bits */
 	if (flags & MONO_MMAP_READ)
@@ -72,6 +78,7 @@ prot_from_flags (int flags)
 		prot |= PROT_WRITE;
 	if (flags & MONO_MMAP_EXEC)
 		prot |= PROT_EXEC;
+
 	return prot;
 }
 
