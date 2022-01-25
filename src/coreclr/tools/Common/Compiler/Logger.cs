@@ -62,21 +62,11 @@ namespace ILCompiler
                 Writer.WriteLine(warning.Value.ToMSBuildString());
         }
 
-        public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None)
-        {
-            MessageOrigin messageOrigin = new MessageOrigin(origin);
-            MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, messageOrigin, subcategory);
-            if (warning.HasValue)
-                Writer.WriteLine(warning.Value.ToMSBuildString());
-        }
+        public void LogWarning(string text, int code, TypeSystemEntity origin, string subcategory = MessageSubCategory.None) =>
+            LogWarning(text, code, new MessageOrigin(origin), subcategory);
 
-        public void LogWarning(TypeSystemEntity origin, DiagnosticId id, params string[] args)
-        {
-            MessageOrigin messageOrigin = new MessageOrigin(origin);
-            MessageContainer? warning = MessageContainer.CreateWarningMessage(this, messageOrigin, id, args);
-            if (warning.HasValue)
-                Writer.WriteLine(warning.Value.ToMSBuildString());
-        }
+        public void LogWarning(TypeSystemEntity origin, DiagnosticId id, params string[] args) =>
+            LogWarning(new MessageOrigin(origin), id, args);
 
         public void LogWarning(string text, int code, MethodIL origin, int ilOffset, string subcategory = MessageSubCategory.None)
         {
