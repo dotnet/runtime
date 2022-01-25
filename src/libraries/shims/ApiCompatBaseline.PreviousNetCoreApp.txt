@@ -27,6 +27,10 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.RSASignaturePadding' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.SignatureDescription' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start(System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart(System.Object)' in the contract but not the implementation.
 Compat issues with assembly netstandard:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MaxWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
@@ -75,6 +79,10 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.RSASignaturePadding' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.SignatureDescription' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start(System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart(System.Object)' in the contract but not the implementation.
 Compat issues with assembly System:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MaxWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
@@ -138,4 +146,9 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.RSASignaturePadding' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.SignatureDescription' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
-Total Issues: 132
+Compat issues with assembly System.Threading.Thread:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.Start(System.Object)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart()' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Threading.Thread.UnsafeStart(System.Object)' in the contract but not the implementation.
+Total Issues: 144

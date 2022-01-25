@@ -89,16 +89,16 @@ namespace System.Threading
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public static void SpinWait(int iterations) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Start(object? parameter) { }
         [System.ObsoleteAttribute("Thread.Suspend has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void UnsafeStart() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        //[System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void UnsafeStart(object? parameter) { }
         public static byte VolatileRead(ref byte address) { throw null; }
         public static double VolatileRead(ref double address) { throw null; }
