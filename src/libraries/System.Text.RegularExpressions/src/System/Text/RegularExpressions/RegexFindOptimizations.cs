@@ -10,7 +10,8 @@ namespace System.Text.RegularExpressions
     /// <summary>Contains state and provides operations related to finding the next location a match could possibly begin.</summary>
     internal sealed class RegexFindOptimizations
     {
-        /// <summary>The minimum required length an input need be to match the pattern.  May be 0.</summary>
+        /// <summary>The minimum required length an input need be to match the pattern.</summary>
+        /// <remarks>0 is a valid minimum length.  This value may also be the max (and hence fixed) length of the expression.</remarks>
         private readonly int _minRequiredLength;
         /// <summary>True if the input should be processed right-to-left rather than left-to-right.</summary>
         private readonly bool _rightToLeft;
@@ -27,26 +28,46 @@ namespace System.Text.RegularExpressions
 
             // Compute any anchor starting the expression.  If there is one, we won't need to search for anything,
             // as we can just match at that single location.
-            LeadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(tree);
-            if (_rightToLeft)
+            LeadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(tree.Root);
+            if (_rightToLeft && LeadingAnchor == RegexNodeKind.Bol)
             {
                 // Filter out Bol for RightToLeft, as we don't currently optimize for it.
-                LeadingAnchor &= ~RegexPrefixAnalyzer.Bol;
+                LeadingAnchor = RegexNodeKind.Unknown;
             }
-            if ((LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)) != 0)
+            if (LeadingAnchor is RegexNodeKind.Beginning or RegexNodeKind.Start or RegexNodeKind.EndZ or RegexNodeKind.End)
             {
                 FindMode = (LeadingAnchor, _rightToLeft) switch
                 {
-                    (RegexPrefixAnalyzer.Beginning, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning,
-                    (RegexPrefixAnalyzer.Beginning, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning,
-                    (RegexPrefixAnalyzer.Start, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start,
-                    (RegexPrefixAnalyzer.Start, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start,
-                    (RegexPrefixAnalyzer.End, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End,
-                    (RegexPrefixAnalyzer.End, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End,
+                    (RegexNodeKind.Beginning, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning,
+                    (RegexNodeKind.Beginning, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning,
+                    (RegexNodeKind.Start, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start,
+                    (RegexNodeKind.Start, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start,
+                    (RegexNodeKind.End, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End,
+                    (RegexNodeKind.End, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End,
                     (_, false) => FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ,
                     (_, true) => FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ,
                 };
                 return;
+            }
+
+            // Compute any anchor trailing the expression.  If there is one, and we can also compute a fixed length
+            // for the whole expression, we can use that to quickly jump to the right location in the input.
+            if (!_rightToLeft) // haven't added FindNextStartingPositionMode support for RTL
+            {
+                TrailingAnchor = RegexPrefixAnalyzer.FindTrailingAnchor(tree.Root);
+                if (TrailingAnchor is RegexNodeKind.End or RegexNodeKind.EndZ &&
+                    tree.Root.ComputeMaxLength() is int maxLength)
+                {
+                    Debug.Assert(maxLength >= _minRequiredLength, $"{maxLength} should have been greater than {_minRequiredLength} minimum");
+                    MaxPossibleLength = maxLength;
+                    if (_minRequiredLength == maxLength)
+                    {
+                        FindMode = TrailingAnchor == RegexNodeKind.End ?
+                            FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End :
+                            FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ;
+                        return;
+                    }
+                }
             }
 
             // If there's a leading case-sensitive substring, just use IndexOf and inherit all of its optimizations.
@@ -183,8 +204,18 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPosition"/> operation</summary>
         public FindNextStartingPositionMode FindMode { get; } = FindNextStartingPositionMode.NoSearch;
 
-        /// <summary>Gets the leading anchor, if one exists (RegexPrefixAnalyzer.Bol, etc).</summary>
-        public int LeadingAnchor { get; }
+        /// <summary>Gets the leading anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
+        public RegexNodeKind LeadingAnchor { get; }
+
+        /// <summary>Gets the trailing anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
+        public RegexNodeKind TrailingAnchor { get; }
+
+        /// <summary>The maximum possible length an input could be to match the pattern.</summary>
+        /// <remarks>
+        /// This is currently only set when <see cref="TrailingAnchor"/> is found to be an end anchor.
+        /// That can be expanded in the future as needed.
+        /// </remarks>
+        public int? MaxPossibleLength { get; }
 
         /// <summary>Gets the leading prefix.  May be an empty string.</summary>
         public string LeadingCaseSensitivePrefix { get; } = string.Empty;
@@ -230,7 +261,7 @@ namespace System.Text.RegularExpressions
             // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
             // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
             // to boost our position to the next line, and then continue normally with any searches.
-            if (LeadingAnchor == RegexPrefixAnalyzer.Bol)
+            if (LeadingAnchor == RegexNodeKind.Bol)
             {
                 // If we're not currently positioned at the beginning of a line (either
                 // the beginning of the string or just after a line feed), find the next
@@ -312,6 +343,20 @@ namespace System.Text.RegularExpressions
                     {
                         pos = beginning;
                         return false;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                    if (pos < end - _minRequiredLength - 1)
+                    {
+                        pos = end - _minRequiredLength - 1;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                    if (pos < end - _minRequiredLength)
+                    {
+                        pos = end - _minRequiredLength;
                     }
                     return true;
 
@@ -697,6 +742,11 @@ namespace System.Text.RegularExpressions
         LeadingAnchor_RightToLeft_EndZ,
         /// <summary>An "end" anchor at the beginning of the right-to-left pattern.  This is rare.</summary>
         LeadingAnchor_RightToLeft_End,
+
+        /// <summary>An "end" anchor at the end of the pattern, with the pattern always matching a fixed-length expression.</summary>
+        TrailingAnchor_FixedLength_LeftToRight_End,
+        /// <summary>An "endz" anchor at the end of the pattern, with the pattern always matching a fixed-length expression.</summary>
+        TrailingAnchor_FixedLength_LeftToRight_EndZ,
 
         /// <summary>A case-sensitive multi-character substring at the beginning of the pattern.</summary>
         LeadingPrefix_LeftToRight_CaseSensitive,

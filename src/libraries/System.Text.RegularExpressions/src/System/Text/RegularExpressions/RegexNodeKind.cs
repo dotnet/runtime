@@ -1,17 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Threading;
-
 namespace System.Text.RegularExpressions
 {
     /// <summary>Specifies the kind of a <see cref="RegexNode"/>.</summary>
     internal enum RegexNodeKind
     {
+        /// <summary>Unknown node type.</summary>
+        /// <remarks>This should never occur on an actual node, and instead is used as a sentinel.</remarks>
+        Unknown = 0,
+
         // The following are leaves (no children) and correspond to primitive operations in the regular expression.
 
         /// <summary>A specific character, e.g. `a`.</summary>

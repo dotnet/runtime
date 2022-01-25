@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -16,16 +15,6 @@ namespace System.Text.RegularExpressions
         private const int StackBufferSize = 32;
         private const RegexNodeKind BeforeChild = (RegexNodeKind)64;
         private const RegexNodeKind AfterChild = (RegexNodeKind)128;
-
-        // where the regex can be pegged
-        public const int Beginning = 0x0001;
-        public const int Bol = 0x0002;
-        public const int Start = 0x0004;
-        public const int Eol = 0x0008;
-        public const int EndZ = 0x0010;
-        public const int End = 0x0020;
-        public const int Boundary = 0x0040;
-        public const int ECMABoundary = 0x0080;
 
         private readonly List<RegexFC> _fcStack;
         private ValueListBuilder<int> _intStack;    // must not be readonly
@@ -654,93 +643,115 @@ namespace System.Text.RegularExpressions
             return null;
         }
 
-        /// <summary>Takes a RegexTree and computes the leading anchor that it encounters.</summary>
-        public static int FindLeadingAnchor(RegexTree tree)
+        /// <summary>Computes the leading anchor of a node.</summary>
+        public static RegexNodeKind FindLeadingAnchor(RegexNode node) =>
+            FindLeadingOrTrailingAnchor(node, leading: true);
+
+        /// <summary>Computes the leading anchor of a node.</summary>
+        public static RegexNodeKind FindTrailingAnchor(RegexNode node) =>
+            FindLeadingOrTrailingAnchor(node, leading: false);
+
+        /// <summary>Computes the leading or trailing anchor of a node.</summary>
+        private static RegexNodeKind FindLeadingOrTrailingAnchor(RegexNode node, bool leading)
         {
-            RegexNode curNode = tree.Root;
-            RegexNode? concatNode = null;
-            int nextChild = 0;
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // We only recur for alternations, but with a really deep nesting of alternations we could potentially overflow.
+                // In such a case, simply stop searching for an anchor.
+                return RegexNodeKind.Unknown;
+            }
 
             while (true)
             {
-                switch (curNode.Kind)
+                switch (node.Kind)
                 {
                     case RegexNodeKind.Bol:
-                        return Bol;
-
                     case RegexNodeKind.Eol:
-                        return Eol;
-
-                    case RegexNodeKind.Boundary:
-                        return Boundary;
-
-                    case RegexNodeKind.ECMABoundary:
-                        return ECMABoundary;
-
                     case RegexNodeKind.Beginning:
-                        return Beginning;
-
                     case RegexNodeKind.Start:
-                        return Start;
-
                     case RegexNodeKind.EndZ:
-                        return EndZ;
-
                     case RegexNodeKind.End:
-                        return End;
-
-                    case RegexNodeKind.Concatenate:
-                        if (curNode.ChildCount() > 0)
-                        {
-                            concatNode = curNode;
-                            nextChild = 0;
-                        }
-                        break;
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.ECMABoundary:
+                        // Return any anchor found.
+                        return node.Kind;
 
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Capture:
-                        curNode = curNode.Child(0);
-                        concatNode = null;
+                        // For groups, continue exploring the sole child.
+                        node = node.Child(0);
                         continue;
 
-                    case RegexNodeKind.Empty:
-                    case RegexNodeKind.PositiveLookaround:
-                    case RegexNodeKind.NegativeLookaround:
-                        break;
+                    case RegexNodeKind.Concatenate:
+                        // For concatenations, we expect primarily to explore its first (for leading) or last (for trailing) child,
+                        // but we can also skip over certain kinds of nodes (e.g. Empty), and thus iterate through its children backward
+                        // looking for the last we shouldn't skip.
+                        {
+                            int childCount = node.ChildCount();
+                            RegexNode? child = null;
+                            if (leading)
+                            {
+                                for (int i = 0; i < childCount; i++)
+                                {
+                                    if (node.Child(i).Kind is not (RegexNodeKind.Empty or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround))
+                                    {
+                                        child = node.Child(i);
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int i = childCount - 1; i >= 0; i--)
+                                {
+                                    if (node.Child(i).Kind is not (RegexNodeKind.Empty or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround))
+                                    {
+                                        child = node.Child(i);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (child is not null)
+                            {
+                                node = child;
+                                continue;
+                            }
+
+                            goto default;
+                        }
+
+                    case RegexNodeKind.Alternate:
+                        // For alternations, every branch needs to lead or trail with the same anchor.
+                        {
+                            // Get the leading/trailing anchor of the first branch.  If there isn't one, bail.
+                            RegexNodeKind anchor = FindLeadingOrTrailingAnchor(node.Child(0), leading);
+                            if (anchor == RegexNodeKind.Unknown)
+                            {
+                                return RegexNodeKind.Unknown;
+                            }
+
+                            // Look at each subsequent branch and validate it has the same leading or trailing
+                            // anchor.  If any doesn't, bail.
+                            int childCount = node.ChildCount();
+                            for (int i = 1; i < childCount; i++)
+                            {
+                                if (FindLeadingOrTrailingAnchor(node.Child(i), leading) != anchor)
+                                {
+                                    return RegexNodeKind.Unknown;
+                                }
+                            }
+
+                            // All branches have the same leading/trailing anchor.  Return it.
+                            return anchor;
+                        }
 
                     default:
-                        return 0;
+                        // For everything else, we couldn't find an anchor.
+                        return RegexNodeKind.Unknown;
                 }
-
-                if (concatNode == null || nextChild >= concatNode.ChildCount())
-                {
-                    return 0;
-                }
-
-                curNode = concatNode.Child(nextChild++);
             }
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage]
-        public static string AnchorDescription(int anchors)
-        {
-            var sb = new StringBuilder();
-
-            if ((anchors & Beginning) != 0) sb.Append(", Beginning");
-            if ((anchors & Start) != 0) sb.Append(", Start");
-            if ((anchors & Bol) != 0) sb.Append(", Bol");
-            if ((anchors & Boundary) != 0) sb.Append(", Boundary");
-            if ((anchors & ECMABoundary) != 0) sb.Append(", ECMABoundary");
-            if ((anchors & Eol) != 0) sb.Append(", Eol");
-            if ((anchors & End) != 0) sb.Append(", End");
-            if ((anchors & EndZ) != 0) sb.Append(", EndZ");
-
-            return sb.Length >= 2 ?
-                sb.ToString(2, sb.Length - 2) :
-                "None";
-        }
-#endif
 
         /// <summary>
         /// To avoid recursion, we use a simple integer stack.
