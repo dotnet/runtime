@@ -132,6 +132,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public async Task ReadToEndAsync_WithCancellation()
         {
             string path = GetTestFilePath();

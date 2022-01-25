@@ -853,25 +853,27 @@ namespace System.IO
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
-        /// parameter contains the next line from the stream, or is <c>null</c> if all of the characters have been read.</returns>
+        /// parameter contains the next line from the stream, or is <see langword="null" /> if all of the characters have been read.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="ObjectDisposedException">The stream reader has been disposed.</exception>
         /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
         /// <example>
-        /// The following example shows how to read the first line of a file by using the <see cref="ReadLineAsync(CancellationToken)"/> method.
+        /// The following example shows how to read and print all lines from the file until the end of the file is reached or the operation timed out.
         /// <code lang="C#">
-        /// using var tokenSource = new CancellationTokenSource();
-        /// using var reader = File.OpenText("existingfile.txt");
-        /// Console.WriteLine("Opened file.");
-        ///
-        /// var result = await reader.ReadLineAsync(tokenSource.Token);
-        /// Console.WriteLine("First line contains: " + result);
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StreamReader reader = File.OpenText("existingfile.txt");
+        /// 
+        /// string line;
+        /// while ((line = await reader.ReadLineAsync(tokenSource.Token)) is not null)
+        /// {
+        ///     Console.WriteLine(line);
+        /// }
         /// </code>
         /// </example>
         /// <remarks>
-        /// <para>If this method is canceled via <paramref name="cancellationToken"/>, some data
+        /// If this method is canceled via <paramref name="cancellationToken"/>, some data
         /// that has been read from the current <see cref="Stream"/> but not stored (by the
-        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.</para>
+        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.
         /// </remarks>
         public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
         {
@@ -968,18 +970,16 @@ namespace System.IO
         /// <example>
         /// The following example shows how to read the contents of a file by using the <see cref="ReadToEndAsync(CancellationToken)"/> method.
         /// <code lang="C#">
-        /// using var tokenSource = new CancellationTokenSource();
-        /// using var reader = File.OpenText("existingfile.txt");
-        /// Console.WriteLine("Opened file.");
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StreamReader reader = File.OpenText("existingfile.txt");
         ///
-        /// var result = await reader.ReadToEndAsync(tokenSource.Token);
-        /// Console.WriteLine("Contains: " + result);
+        /// Console.WriteLine(await reader.ReadToEndAsync(tokenSource.Token));
         /// </code>
         /// </example>
         /// <remarks>
-        /// <para>If this method is canceled via <paramref name="cancellationToken"/>, some data
+        /// If this method is canceled via <paramref name="cancellationToken"/>, some data
         /// that has been read from the current <see cref="Stream"/> but not stored (by the
-        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.</para>
+        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.
         /// </remarks>
         public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {
