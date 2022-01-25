@@ -14426,8 +14426,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         cloneExpr = true;
                     }
                     // Duplicate locals and addresses of them
-                    else if (op1->IsLocal() ||
-                             (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal()))
+                    else if (op1->IsLocal())
+                    {
+                        cloneExpr = true;
+                    }
+                    else if (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal() &&
+                             (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
                     {
                         cloneExpr = true;
                     }
