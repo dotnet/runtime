@@ -143,8 +143,9 @@ namespace ILCompiler
             {
                 // Use the typical field definition in case this is an instantiated generic type
                 field = field.GetTypicalFieldDefinition();
+                int fieldTypePack = (field.FieldType as MetadataType)?.GetClassLayout().PackingSize ?? 1;
                 return NodeFactory.ReadOnlyDataBlob(NameMangler.GetMangledFieldName(field),
-                    ((EcmaField)field).GetFieldRvaData(), NodeFactory.Target.PointerSize);
+                    ((EcmaField)field).GetFieldRvaData(), Math.Max(NodeFactory.Target.PointerSize, fieldTypePack));
             }
         }
 

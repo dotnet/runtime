@@ -20423,23 +20423,33 @@ void gc_heap::gc1()
 
     if (n < max_generation)
     {
-        compute_promoted_allocation (1 + n);
+        int highest_gen_number = 
+#ifdef USE_REGIONS
+            max_generation;
+#else //USE_REGIONS
+            1 + n;
+#endif //USE_REGIONS
 
-        dynamic_data* dd = dynamic_data_of (1 + n);
-        size_t new_fragmentation = generation_free_list_space (generation_of (1 + n)) +
-                                   generation_free_obj_space (generation_of (1 + n));
+        for (int older_gen_idx = (1 + n); older_gen_idx <= highest_gen_number; older_gen_idx++)
+        {
+            compute_promoted_allocation (older_gen_idx);
+
+            dynamic_data* dd = dynamic_data_of (older_gen_idx);
+            size_t new_fragmentation = generation_free_list_space (generation_of (older_gen_idx)) +
+                                       generation_free_obj_space (generation_of (older_gen_idx));
 
 #ifdef BACKGROUND_GC
-        if (current_c_gc_state != c_gc_state_planning)
+            if (current_c_gc_state != c_gc_state_planning)
 #endif //BACKGROUND_GC
-        {
-            if (settings.promotion)
             {
-                dd_fragmentation (dd) = new_fragmentation;
-            }
-            else
-            {
-                //assert (dd_fragmentation (dd) == new_fragmentation);
+                if (settings.promotion)
+                {
+                    dd_fragmentation (dd) = new_fragmentation;
+                }
+                else
+                {
+                    //assert (dd_fragmentation (dd) == new_fragmentation);
+                }
             }
         }
     }
@@ -30125,6 +30135,11 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     heap_segment_saved_allocated (region) = heap_segment_allocated (region);
     heap_segment_allocated (region) = last_marked_obj_end;
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
+
+    int plan_gen_num = heap_segment_plan_gen_num (region);
+    generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
+    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num, 
+        generation_allocation_size (generation_of (plan_gen_num))));
 }
 
 inline
@@ -44081,12 +44096,8 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
 
     CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
-
 #ifdef USE_REGIONS
-    if (!IsHeapPointer (newAlloc))
-    {
-        GCToOSInterface::DebugBreak();
-    }
+    assert (IsHeapPointer (newAlloc));
 #endif //USE_REGIONS
 
     return newAlloc;

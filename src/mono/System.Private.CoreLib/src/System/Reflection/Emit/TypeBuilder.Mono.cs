@@ -74,6 +74,7 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private TypeInfo? created;
+        private bool is_byreflike_set;
 
         private int state;
 #endregion
@@ -273,8 +274,7 @@ namespace System.Reflection.Emit
         {
             if (interfaceType == null)
                 throw new ArgumentNullException(nameof(interfaceType));
-            if (interfaceType.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+
             check_not_created();
 
             if (interfaces != null)
@@ -838,7 +838,7 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsByRef)
-                    throw new ArgumentException();
+                    throw new NotSupportedException();
                 if (IsInterface)
                     throw new TypeLoadException();
             }
@@ -874,17 +874,6 @@ namespace System.Reflection.Emit
                         throw new TypeLoadException();
                     if (iface is TypeBuilder builder && !builder.is_created)
                         throw new TypeLoadException();
-                }
-            }
-
-            if (fields != null)
-            {
-                foreach (FieldBuilder fb in fields)
-                {
-                    if (fb == null)
-                        continue;
-                    if (fb.FieldType.IsByRef)
-                        throw new COMException();
                 }
             }
 
@@ -1544,6 +1533,10 @@ namespace System.Reflection.Emit
             {
                 attrs |= TypeAttributes.HasSecurity;
             }
+            else if (attrname == "System.Runtime.CompilerServices.IsByRefLikeAttribute")
+            {
+                is_byreflike_set = true;
+            }
 
             if (cattrs != null)
             {
@@ -1571,8 +1564,7 @@ namespace System.Reflection.Emit
             if (eventtype == null)
                 throw new ArgumentNullException(nameof(eventtype));
             check_not_created();
-            if (eventtype.IsByRef)
-                throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
             if (events != null)
             {

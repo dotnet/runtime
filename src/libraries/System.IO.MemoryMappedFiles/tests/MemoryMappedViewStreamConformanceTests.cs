@@ -45,7 +45,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/63240", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsNotMonoRuntime))]
     public class AnonymousMemoryMappedViewStreamConformanceTests : MemoryMappedViewStreamConformanceTests
     {
         protected override MemoryMappedFile CreateFile(int length) =>

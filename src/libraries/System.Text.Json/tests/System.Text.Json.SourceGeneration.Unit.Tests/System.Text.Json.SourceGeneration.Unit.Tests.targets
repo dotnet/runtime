@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
@@ -15,10 +15,6 @@
     <Compile Include="JsonSourceGeneratorDiagnosticsTests.cs" />
     <Compile Include="JsonSourceGeneratorTests.cs" />
     <Compile Include="TypeWrapperTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <Reference Include="System" />
   </ItemGroup>
 
   <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">

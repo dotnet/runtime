@@ -232,7 +232,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Setloopatomic:
                     case RegexNodeKind.Start:
                     case RegexNodeKind.UpdateBumpalong:
-                        Debug.Assert(childCount == 0, $"Expected zero children for {node.TypeName}, got {childCount}.");
+                        Debug.Assert(childCount == 0, $"Expected zero children for {node.Kind}, got {childCount}.");
                         break;
 
                     case RegexNodeKind.Atomic:
@@ -241,20 +241,20 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Loop:
                     case RegexNodeKind.NegativeLookaround:
                     case RegexNodeKind.PositiveLookaround:
-                        Debug.Assert(childCount == 1, $"Expected one and only one child for {node.TypeName}, got {childCount}.");
+                        Debug.Assert(childCount == 1, $"Expected one and only one child for {node.Kind}, got {childCount}.");
                         break;
 
                     case RegexNodeKind.BackreferenceConditional:
-                        Debug.Assert(childCount == 2, $"Expected two children for {node.TypeName}, got {childCount}");
+                        Debug.Assert(childCount == 2, $"Expected two children for {node.Kind}, got {childCount}");
                         break;
 
                     case RegexNodeKind.ExpressionConditional:
-                        Debug.Assert(childCount == 3, $"Expected three children for {node.TypeName}, got {childCount}");
+                        Debug.Assert(childCount == 3, $"Expected three children for {node.Kind}, got {childCount}");
                         break;
 
                     case RegexNodeKind.Concatenate:
                     case RegexNodeKind.Alternate:
-                        Debug.Assert(childCount >= 2, $"Expected at least two children for {node.TypeName}, got {childCount}.");
+                        Debug.Assert(childCount >= 2, $"Expected at least two children for {node.Kind}, got {childCount}.");
                         break;
 
                     default:
@@ -274,11 +274,11 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Setloop:
                     case RegexNodeKind.Setloopatomic:
                     case RegexNodeKind.Setlazy:
-                        Debug.Assert(!string.IsNullOrEmpty(node.Str), $"Expected non-null, non-empty string for {node.TypeName}.");
+                        Debug.Assert(!string.IsNullOrEmpty(node.Str), $"Expected non-null, non-empty string for {node.Kind}.");
                         break;
 
                     default:
-                        Debug.Assert(node.Str is null, $"Expected null string for {node.TypeName}, got \"{node.Str}\".");
+                        Debug.Assert(node.Str is null, $"Expected null string for {node.Kind}, got \"{node.Str}\".");
                         break;
                 }
             }
@@ -2125,7 +2125,7 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Lazyloop:
                 case RegexNodeKind.Loop:
                     // A node graph repeated at least M times.
-                    return (int)Math.Min(int.MaxValue, (long)M * Child(0).ComputeMinLength());
+                    return (int)Math.Min(int.MaxValue - 1, (long)M * Child(0).ComputeMinLength());
 
                 case RegexNodeKind.Alternate:
                     // The minimum required length for any of the alternation's branches.
@@ -2157,7 +2157,7 @@ namespace System.Text.RegularExpressions
                         {
                             sum += Child(i).ComputeMinLength();
                         }
-                        return (int)Math.Min(int.MaxValue, sum);
+                        return (int)Math.Min(int.MaxValue - 1, sum);
                     }
 
                 case RegexNodeKind.Atomic:
@@ -2170,9 +2170,9 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Empty:
                 case RegexNodeKind.Nothing:
                 case RegexNodeKind.UpdateBumpalong:
-                // Nothing to match. In the future, we could potentially use Nothing to say that the min length
-                // is infinite, but that would require a different structure, as that would only apply if the
-                // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
+                    // Nothing to match. In the future, we could potentially use Nothing to say that the min length
+                    // is infinite, but that would require a different structure, as that would only apply if the
+                    // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                 case RegexNodeKind.Beginning:
                 case RegexNodeKind.Bol:
                 case RegexNodeKind.Boundary:
@@ -2183,20 +2183,154 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.NonBoundary:
                 case RegexNodeKind.NonECMABoundary:
                 case RegexNodeKind.Start:
-                // Difficult to glean anything meaningful from boundaries or results only known at run time.
                 case RegexNodeKind.NegativeLookaround:
                 case RegexNodeKind.PositiveLookaround:
-                // Lookaheads/behinds could potentially be included in the future, but that will require
-                // a different structure, as they can't be added as part of a concatenation, since they overlap
-                // with what comes after.
+                    // Zero-width
                 case RegexNodeKind.Backreference:
-                    // Constructs requiring data at runtime from the matching pattern can't influence min length.
+                    // Requires matching data available only at run-time.  In the future, we could choose to find
+                    // and follow the capture group this aligns with, while being careful not to end up in an
+                    // infinite cycle.
                     return 0;
 
                 default:
-#if DEBUG
-                    Debug.Fail($"Unknown node: {TypeName}");
-#endif
+                    Debug.Fail($"Unknown node: {Kind}");
+                    goto case RegexNodeKind.Empty;
+            }
+        }
+
+        /// <summary>Computes a maximum length of any string that could possibly match.</summary>
+        /// <returns>The maximum length of any string that could possibly match, or null if the length may not always be the same.</returns>
+        /// <remarks>
+        /// e.g. abc[def](gh|ijklmnop) => 12
+        /// </remarks>
+        public int? ComputeMaxLength()
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // If we can't recur further, assume there's no minimum we can enforce.
+                return null;
+            }
+
+            switch (Kind)
+            {
+                case RegexNodeKind.One:
+                case RegexNodeKind.Notone:
+                case RegexNodeKind.Set:
+                    // Single character.
+                    return 1;
+
+                case RegexNodeKind.Multi:
+                    // Every character in the string needs to match.
+                    return Str!.Length;
+
+                case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or
+                     RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or
+                     RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
+                    // Return the max number of iterations if there's an upper bound, or null if it's infinite
+                    return N == int.MaxValue ? null : N;
+
+                case RegexNodeKind.Loop or RegexNodeKind.Lazyloop:
+                    if (N != int.MaxValue)
+                    {
+                        // A node graph repeated a fixed number of times
+                        if (Child(0).ComputeMaxLength() is int childMaxLength)
+                        {
+                            long maxLength = (long)N * childMaxLength;
+                            if (maxLength < int.MaxValue)
+                            {
+                                return (int)maxLength;
+                            }
+                        }
+                    }
+                    return null;
+
+                case RegexNodeKind.Alternate:
+                    // The maximum length of any child branch, as long as they all have one.
+                    {
+                        int childCount = ChildCount();
+                        Debug.Assert(childCount >= 2);
+                        if (Child(0).ComputeMaxLength() is not int maxLength)
+                        {
+                            return null;
+                        }
+
+                        for (int i = 1; i < childCount; i++)
+                        {
+                            if (Child(i).ComputeMaxLength() is not int next)
+                            {
+                                return null;
+                            }
+
+                            maxLength = Math.Max(maxLength, next);
+                        }
+
+                        return maxLength;
+                    }
+
+                case RegexNodeKind.BackreferenceConditional:
+                case RegexNodeKind.ExpressionConditional:
+                    // The maximum length of either child branch, as long as they both have one.. The condition for an expression conditional is a zero-width assertion.
+                    {
+                        int i = Kind == RegexNodeKind.BackreferenceConditional ? 0 : 1;
+                        return Child(i).ComputeMaxLength() is int yes && Child(i + 1).ComputeMaxLength() is int no ?
+                            Math.Max(yes, no) :
+                            null;
+                    }
+
+                case RegexNodeKind.Concatenate:
+                    // The sum of all of the concatenation's children's max lengths, as long as they all have one.
+                    {
+                        long sum = 0;
+                        int childCount = ChildCount();
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            if (Child(i).ComputeMaxLength() is not int length)
+                            {
+                                return null;
+                            }
+                            sum += length;
+                        }
+
+                        if (sum < int.MaxValue)
+                        {
+                            return (int)sum;
+                        }
+
+                        return null;
+                    }
+
+                case RegexNodeKind.Atomic:
+                case RegexNodeKind.Capture:
+                    // For groups, we just delegate to the sole child.
+                    Debug.Assert(ChildCount() == 1);
+                    return Child(0).ComputeMaxLength();
+
+                case RegexNodeKind.Empty:
+                case RegexNodeKind.Nothing:
+                case RegexNodeKind.UpdateBumpalong:
+                case RegexNodeKind.Beginning:
+                case RegexNodeKind.Bol:
+                case RegexNodeKind.Boundary:
+                case RegexNodeKind.ECMABoundary:
+                case RegexNodeKind.End:
+                case RegexNodeKind.EndZ:
+                case RegexNodeKind.Eol:
+                case RegexNodeKind.NonBoundary:
+                case RegexNodeKind.NonECMABoundary:
+                case RegexNodeKind.Start:
+                case RegexNodeKind.PositiveLookaround:
+                case RegexNodeKind.NegativeLookaround:
+                    // Zero-width
+                    return 0;
+
+                case RegexNodeKind.Backreference:
+                    // Requires matching data available only at run-time.  In the future, we could choose to find
+                    // and follow the capture group this aligns with, while being careful not to end up in an
+                    // infinite cycle.
+                    return null;
+
+                default:
+                    Debug.Fail($"Unknown node: {Kind}");
                     goto case RegexNodeKind.Empty;
             }
         }
@@ -2416,12 +2550,10 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        private string TypeName => Kind.ToString();
-
         [ExcludeFromCodeCoverage]
         public string Description()
         {
-            var sb = new StringBuilder(TypeName);
+            var sb = new StringBuilder(Kind.ToString());
 
             if ((Options & RegexOptions.ExplicitCapture) != 0) sb.Append("-C");
             if ((Options & RegexOptions.IgnoreCase) != 0) sb.Append("-I");
