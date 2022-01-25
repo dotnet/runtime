@@ -29,7 +29,7 @@ clean:
 	rm -rf bin $(TOP)/artifacts/obj/mono/$(PROJECT_NAME:%.csproj=%)
 
 run-browser:
-	if ! $(DOTNET) tool list --global | grep dotnet-serve; then \
+	if ! $(DOTNET) tool list --global | grep dotnet-serve && ! which dotnet-serve ; then \
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
