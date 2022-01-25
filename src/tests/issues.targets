@@ -2061,6 +2061,142 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/**">
             <Issue>https://github.com/dotnet/runtime/issues/64127</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/IJW/FixupCallsHostWhenLoaded/FixupCallsHostWhenLoaded/*">
+            <Issue>C++/CLI, IJW not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/IJW/CopyConstructorMarshaler/CopyConstructorMarshaler/*">
+            <Issue>C++/CLI, IJW not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/IJW/ManagedCallingNative/ManagedCallingNative/*">
+            <Issue>C++/CLI, IJW not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/IJW/NativeCallingManaged/NativeCallingManaged/*">
+            <Issue>C++/CLI, IJW not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Interop/IJW/NativeVarargs/NativeVarargsTest/*">
+            <Issue>C++/CLI, IJW not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
+            <Issue>Requires COM support, disabled on all Mono platforms.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/ExecInDefAppDom/ExecInDefAppDom/*">
+            <Issue>CLR Runtime Host API not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/IUnknown/IUnknownTest/*">
+            <Issue>Requires COM support, disabled on all Mono platforms</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/IUnknown/IUnknownTestInALC/*">
+            <Issue>Requires COM support, disabled on all Mono platforms</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/*">
+            <Issue>TODO: Can be fixed by adding support for MonoError in mono-dl.h</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Varargs/VarargsTest/*">
+            <Issue>PInvoke Varargs/ArgIterator marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/LCID/LCIDTest/*">
+            <Issue>PInvoke LCIDConversionAttribute not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/Default/DefaultTest/*">
+            <Issue>Requires COM support, disabled on all Mono platforms</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/Default/DefaultTestInALC/*">
+            <Issue>PInvoke object marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/AssemblyWithoutComVisible/AssemblyWithoutComVisibleTest/*">
+            <Issue>PInvoke object marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/NativeCallManagedComVisible/AssemblyTrue/AssemblyTrueTest/*">
+            <Issue>PInvoke object marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTest/*">
+            <Issue>PInvoke object marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTestBuiltInComDisabled/*">
+            <Issue>PInvoke object marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Variant/VariantTestComWrappers/*">
+            <Issue>Requires COM support, disabled on all Mono platforms</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/IEnumerator/IEnumeratorTest/*">
+            <Issue>PInvoke IEnumerator/IEnumarable marshalling not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/DelegatePInvoke/DelegatePInvokeTest/*">
+            <Issue>TODO: Marshaling struct using explicit layout including string type fails on Mono (struc marshals as blitable type)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalExpStruct/ReversePInvokeManaged/ReversePInvokeTest/*">
+            <Issue>TODO: Marshaling struct using explicit layout including string type fails on Mono (struct marshals as blitable type)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/*">
+            <Issue>TODO: Test depends on runtime exception handling implemented using SEH, only working on Windows using CoreCLR. Disable parts of test not working on Mono)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/WinRT/WinRT/*">
+            <Issue>WinRT not supported on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_22583/GitHub_22583/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/CustomMarshalers/CustomMarshalersTest/*">
+            <Issue>Requires COM support, disabled on all Mono platforms</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
+            <Issue>Fails on Windows Mono, test doesn't execute on none Windows platforms</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
+    <!-- Known failures for mono runtime on Windows -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetsWindows)' == 'true'" >
+        <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
+            <Issue>TODO: Needs more investigation</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetWindows/*">
+            <Issue>TODO: Can be fixed by adding support for SEH exceptions in Windows exception handler</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/*">
+            <Issue>TODO: VBByRefStr not implemented for Unicode CharSet on Mono</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/CdeclMemberFunction/CdeclMemberFunctionTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/StdCallMemberFunction/StdCallMemberFunctionTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/callconv/ThisCall/ThisCallTest/*">
+            <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg_TargetWindows/*">
+            <Issue>https://github.com/dotnet/runtime/issues/10478</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/pinvoke/calli_excep/*">
+            <Issue>TODO: Needs support for SEH exceptions in Mono Windows runtime exception handler (AddVectoredExceptionHandler)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i37/*">
+            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i57/*">
+            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i67/*">
+            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i77/*">
+            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i87/*">
+            <Issue>TODO: Issues with tailcall, jump in GetSum2 have used stack for all converted parameters and will collapse frame, meaning that it will have pointers to stack garbage when calling native method. Probably OK on Unix since valuetype abi works differently)</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_do/*">
+            <Issue>TODO: Finally block OP_START_HANDLER adjust RSP based on param_area (32 byte on Windows, 0 on Unix), brancing back to finally block will incorrectly decrement RSP on each iteration</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/eh/finallyexec/loopinfinally_ro/*">
+            <Issue>TODO: Finally block OP_START_HANDLER adjust RSP based on param_area (32 byte on Windows, 0 on Unix), brancing back to finally block will incorrectly decrement RSP on each iteration</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in interpreter runtime mode -->
