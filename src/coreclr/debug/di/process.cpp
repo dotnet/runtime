@@ -14874,12 +14874,6 @@ HRESULT CordbProcess::IsReadyForDetach()
         pAppDomain = m_appDomains.FindNext(&foundAppDomain);
     }
 
-    // If we're using the shim, this is the best place to early-out if the OS doesn't support detach
-    // so that the user can continue to debug in that case.
-    // Ideally we'd just rely on the failure from DebugActiveProcessStop, but by then it's too late
-    // to recover.  This function is our only chance to distinguish between graceful detach failures
-    // and hard detach failures (after which the process object is neutered).
-
     return S_OK;
 }
 
