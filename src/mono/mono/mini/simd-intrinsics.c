@@ -2330,6 +2330,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Sse41", MONO_CPU_X86_SSE41, sse41_methods, sizeof (sse41_methods) },
 	{ "Sse42", MONO_CPU_X86_SSE42, sse42_methods, sizeof (sse42_methods) },
 	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
+	{ "Sha", 0, unsupported, sizeof (unsupported) },
 	{ "X86Base", 0, x86base_methods, sizeof (x86base_methods) },
 };
 
