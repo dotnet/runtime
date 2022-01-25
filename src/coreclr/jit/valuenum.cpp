@@ -10992,7 +10992,8 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 break;
 
             case GT_INTRINSIC:
-                // ToDo: model the exceptions for Intrinsics
+                assert(tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType);
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIntrinsic()->gtGetOp1());
                 break;
 
             case GT_IND:

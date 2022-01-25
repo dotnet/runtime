@@ -5226,7 +5226,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
 // Return Value:
 //    True if the given node contains an implicit indirection
 //
-// Note that for the GT_HWINTRINSIC node we have to examine the
+// Note that for the [HW]INTRINSIC nodes we have to examine the
 // details of the node to determine its result.
 //
 
@@ -5250,6 +5250,8 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_ARR_ELEM:
         case GT_ARR_OFFSET:
             return true;
+        case GT_INTRINSIC:
+            return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
 #ifdef FEATURE_SIMD
         case GT_SIMD:
         {
@@ -5306,18 +5308,8 @@ bool GenTree::OperMayThrow(Compiler* comp)
 
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
-            // Report it as may throw.
-            // Note: Some of the rest of the existing intrinsics could potentially throw an exception (for example
-            //       the array and string element access ones). They are handled differently than the GetType intrinsic
-            //       and are not marked with GTF_EXCEPT. If these are revisited at some point to be marked as
-            //       GTF_EXCEPT,
-            //       the code below might need to be specialized to handle them properly.
-            if ((this->gtFlags & GTF_EXCEPT) != 0)
-            {
-                return true;
-            }
-
-            break;
+            // Currently, this is the only intrinsic that can throw an exception.
+            return AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType;
 
         case GT_CALL:
 
