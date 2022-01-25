@@ -9804,6 +9804,13 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
             m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
             return S_OK;
         }
+
+        // In V3, the client is required to pass a non-zero value to OpenVirtualProcess.
+        // In V2 mode we should be setting target CLR up front but return an error
+        // if we haven't.
+        _ASSERTE(m_pShim != NULL);
+        return E_UNEXPECTED;
+
     }
 
     // We've (now) got a valid CLR instance id
