@@ -10,6 +10,13 @@ CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
+# if we're in a devcontainer, don't try to open the browser
+ifneq ("$(wildcard $(TOP)/artifacts/prebuild.sha)", "")
+  OPEN_BROWSER=
+else
+  OPEN_BROWSER=-o
+endif
+
 all: publish
 
 build:
@@ -26,7 +33,7 @@ run-browser:
 		echo "The tool dotnet-serve could not be found. Install with: $(DOTNET) tool install --global dotnet-serve"; \
 		exit 1; \
 	else  \
-		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle -o -p:8000; \
+		$(DOTNET) serve -d:bin/$(CONFIG)/AppBundle $(OPEN_BROWSER) -p:8000; \
 	fi
 
 run-console:
