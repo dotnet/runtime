@@ -6391,30 +6391,23 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 
     if (compiler->opts.IsOSR())
     {
+        PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
         if (reportArg)
         {
             // OSR method will use Tier0 slot to report context arg.
             //
+            assert(ppInfo->HasGenericContextArgOffset());
             JITDUMP("OSR method will use Tier0 frame slot for generics context arg.\n");
-            return;
         }
-
-        if (compiler->lvaKeepAliveAndReportThis())
+        else if (compiler->lvaKeepAliveAndReportThis())
         {
-            PatchpointInfo* ppInfo = compiler->info.compPatchpointInfo;
-            if (ppInfo->HasKeptAliveThis())
-            {
-                // OSR method will use Tier0 slot to report `this` as context.
-                //
-                JITDUMP("OSR method will use Tier0 frame slot for generic context `this`.\n");
-                return;
-            }
-
-            // OSR method will use OSR frame slot to report `this` as context,
-            // and must initialize the slot.
+            // OSR method will use Tier0 slot to report `this` as context.
             //
-            JITDUMP("OSR method will report `this` generics context on its frame.\n");
+            assert(ppInfo->HasKeptAliveThis());
+            JITDUMP("OSR method will use Tier0 frame slot for generics context `this`.\n");
         }
+
+        return;
     }
 
     // We should report either generic context arg or "this" when used so.
