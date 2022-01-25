@@ -649,7 +649,7 @@ namespace System.IO
                 cancellationToken.ThrowIfCancellationRequested();
                 string? line;
                 List<string> lines = new List<string>();
-                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                while ((line = await sr.ReadLineAsync(cancellationToken).ConfigureAwait(false)) != null)
                 {
                     lines.Add(line);
                     cancellationToken.ThrowIfCancellationRequested();
