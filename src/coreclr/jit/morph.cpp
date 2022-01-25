@@ -13432,7 +13432,9 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //
 GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    if (opts.OptimizationDisabled() || optValnumCSE_phase)
+    assert(!optValnumCSE_phase);
+
+    if (opts.OptimizationDisabled())
     {
         return node;
     }
@@ -14399,7 +14401,7 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
 #endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
 
 #ifdef FEATURE_HW_INTRINSICS
-    if (multiOp->OperIsHWIntrinsic())
+    if (multiOp->OperIsHWIntrinsic() && !optValnumCSE_phase)
     {
         return fgOptimizeHWIntrinsic(multiOp->AsHWIntrinsic());
     }
