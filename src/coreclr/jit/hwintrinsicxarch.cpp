@@ -113,6 +113,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_SSE42;
         }
+        if (strcmp(className, "Sha") == 0)
+        {
+            return InstructionSet_SHA;
+        }
     }
     else if (className[0] == 'B')
     {
