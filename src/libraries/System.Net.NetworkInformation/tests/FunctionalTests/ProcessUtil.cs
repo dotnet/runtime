@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation.Tests
             }
             catch (Exception ex)
             {
-                throw new Exception($"Exception while trying to run 'ps' command for user '{Environment.UserName}'", ex);
+                throw new Exception($"Exception while trying to run 'ps' command", ex);
             }
 
             if (process == null)
@@ -51,6 +51,7 @@ namespace System.Net.NetworkInformation.Tests
                 }
 
                 using StringReader sr = new StringReader(output);
+                List<string> lstThreads = new List<string>();
 
                 while (true)
                 {
@@ -60,8 +61,10 @@ namespace System.Net.NetworkInformation.Tests
                         break;
                     }
 
-                    yield return line;
+                    lstThreads.Add(line);
                 }
+
+                return lstThreads;
             }
             finally
             {
