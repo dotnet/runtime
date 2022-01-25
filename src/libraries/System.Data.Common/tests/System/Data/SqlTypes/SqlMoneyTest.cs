@@ -131,7 +131,9 @@ namespace System.Data.Tests.SqlTypes
         public void EqualsMethods()
         {
             Assert.False(_test1.Equals(_test2));
+            Assert.False(_test1.Equals((object)_test2));
             Assert.True(_test2.Equals(_test3));
+            Assert.True(_test2.Equals((object)_test3));
             Assert.False(SqlMoney.Equals(_test1, _test2).Value);
             Assert.True(SqlMoney.Equals(_test3, _test2).Value);
         }

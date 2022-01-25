@@ -52,6 +52,31 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux armv6
+- ${{ if or(containsValue(parameters.platforms, 'Linux_armv6'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      archType: armv6
+      targetRid: linux-armv6
+      platform: Linux_armv6
+      container:
+        image: ubuntu-20.04-cross-armv6-raspbian-10-20211208135931-e6e3ac4
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
+        crossrootfsDir: '/crossrootfs/armv6'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:

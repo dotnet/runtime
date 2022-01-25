@@ -1329,7 +1329,7 @@
         <!-- Static virtual methods -->
         <ExcludeList Include="$(XunitTestBinBase)/Loader\classloader\StaticVirtualMethods\**" />
     </ItemGroup>
-  
+
     <!-- run.proj finds all the *.cmd/*.sh scripts in a test folder and creates corresponding test methods.
          Exclude these scripts to avoid creating such methods for the superpmicollect dependent test projects
          and running them separately from superpmicollect test. These should be excluded regardless of RuntimeFlavor/os/arch-->
@@ -2589,6 +2589,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/explicitlayout/NestedStructs/case05/**">
             <Issue>expected failure: overlapped structs fail at AOT compile time, not runtime</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/RefFields/Validate/**">
+            <Issue>expected failure: unsupported type with ref field fails at AOT compile time, not runtime</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/57361</Issue>
         </ExcludeList>
@@ -2801,6 +2804,13 @@
 
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DisabledRuntimeMarshalling/DisabledRuntimeMarshalling_Disabled_NativeAssemblyEnabled/**">
             <Issue>This test includes an intentionally-invalid UnmanagedCallersOnly method. Invalid UnmanagedCallersOnly methods cause failures at AOT-time.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/ArmBase/Yield_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorExp_*/**">
+            <Issue>https://github.com/dotnet/runtime/issues/64179</Issue>
         </ExcludeList>
     </ItemGroup>
 

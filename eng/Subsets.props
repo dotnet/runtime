@@ -27,7 +27,7 @@
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
-    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x'">Mono</PrimaryRuntimeFlavor>
+    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">Mono</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup>

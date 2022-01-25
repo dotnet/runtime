@@ -465,134 +465,173 @@ namespace System.Text.RegularExpressions
             // searching is required; otherwise, false.
             bool GenerateAnchors()
             {
-                // Generate anchor checks.
-                if ((_code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
+                Label label;
+
+                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
+                switch (_code.FindOptimizations.FindMode)
                 {
-                    switch (_code.FindOptimizations.LeadingAnchor)
-                    {
-                        case RegexPrefixAnalyzer.Beginning:
-                            {
-                                Label l1 = DefineLabel();
-                                Ldloc(pos);
-                                Ldthisfld(s_runtextbegField);
-                                Ble(l1);
-                                Br(returnFalse);
-                                MarkLabel(l1);
-                            }
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldthisfld(s_runtextbegField);
+                        Ble(label);
+                        Br(returnFalse);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldthisfld(s_runtextstartField);
+                        Ble(label);
+                        Br(returnFalse);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldloc(end);
+                        Ldc(1);
+                        Sub();
+                        Bge(label);
+                        Ldthis();
+                        Ldloc(end);
+                        Ldc(1);
+                        Sub();
+                        Stfld(s_runtextposField);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldloc(end);
+                        Bge(label);
+                        Ldthis();
+                        Ldloc(end);
+                        Stfld(s_runtextposField);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                        // Jump to the end, minus the min required length, which in this case is actually the fixed length.
+                        {
+                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            label = DefineLabel();
+                            Ldloc(pos);
+                            Ldloc(end);
+                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Sub();
+                            Bge(label);
+                            Ldthis();
+                            Ldloc(end);
+                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Sub();
+                            Stfld(s_runtextposField);
+                            MarkLabel(label);
                             Ldc(1);
                             Ret();
                             return true;
+                        }
+                }
 
-                        case RegexPrefixAnalyzer.Start:
-                            {
-                                Label l1 = DefineLabel();
-                                Ldloc(pos);
-                                Ldthisfld(s_runtextstartField);
-                                Ble(l1);
-                                Br(returnFalse);
-                                MarkLabel(l1);
-                            }
+                // Now handle anchors that boost the position but don't determine immediate success or failure.
+
+                switch (_code.FindOptimizations.LeadingAnchor)
+                {
+                    case RegexNodeKind.Bol:
+                        {
+                            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+                            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+                            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+                            // to boost our position to the next line, and then continue normally with any prefix or char class searches.
+
+                            label = DefineLabel();
+
+                            // if (pos > runtextbeg...
+                            Ldloc(pos!);
+                            Ldthisfld(s_runtextbegField);
+                            Ble(label);
+
+                            // ... && inputSpan[pos - 1] != '\n') { ... }
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
                             Ldc(1);
-                            Ret();
-                            return true;
+                            Sub();
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
+                            Ldc('\n');
+                            Beq(label);
 
-                        case RegexPrefixAnalyzer.EndZ:
+                            // int tmp = inputSpan.Slice(pos).IndexOf('\n');
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
+                            Call(s_spanSliceIntMethod);
+                            Ldc('\n');
+                            Call(s_spanIndexOfChar);
+                            using (RentedLocalBuilder newlinePos = RentInt32Local())
                             {
-                                Label l1 = DefineLabel();
+                                Stloc(newlinePos);
+
+                                // if (newlinePos < 0 || newlinePos + pos + 1 > end)
+                                // {
+                                //     base.runtextpos = end;
+                                //     return false;
+                                // }
+                                Ldloc(newlinePos);
+                                Ldc(0);
+                                Blt(returnFalse);
+                                Ldloc(newlinePos);
                                 Ldloc(pos);
-                                Ldloc(end);
+                                Add();
                                 Ldc(1);
-                                Sub();
-                                Bge(l1);
-                                Ldthis();
+                                Add();
                                 Ldloc(end);
+                                Bgt(returnFalse);
+
+                                // pos += newlinePos + 1;
+                                Ldloc(pos);
+                                Ldloc(newlinePos);
+                                Add();
                                 Ldc(1);
-                                Sub();
-                                Stfld(s_runtextposField);
-                                MarkLabel(l1);
+                                Add();
+                                Stloc(pos);
                             }
-                            Ldc(1);
-                            Ret();
-                            return true;
 
-                        case RegexPrefixAnalyzer.End:
-                            {
-                                Label l1 = DefineLabel();
-                                Ldloc(pos);
-                                Ldloc(end);
-                                Bge(l1);
-                                Ldthis();
-                                Ldloc(end);
-                                Stfld(s_runtextposField);
-                                MarkLabel(l1);
-                            }
-                            Ldc(1);
-                            Ret();
-                            return true;
+                            MarkLabel(label);
+                        }
+                        break;
+                }
 
-                        case RegexPrefixAnalyzer.Bol:
-                            {
-                                // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
-                                // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-                                // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-                                // to boost our position to the next line, and then continue normally with any prefix or char class searches.
-
-                                Label atBeginningOfLine = DefineLabel();
-
-                                // if (pos > runtextbeg...
-                                Ldloc(pos!);
-                                Ldthisfld(s_runtextbegField);
-                                Ble(atBeginningOfLine);
-
-                                // ... && inputSpan[pos - 1] != '\n') { ... }
-                                Ldloca(inputSpan);
-                                Ldloc(pos);
-                                Ldc(1);
-                                Sub();
-                                Call(s_spanGetItemMethod);
-                                LdindU2();
-                                Ldc('\n');
-                                Beq(atBeginningOfLine);
-
-                                // int tmp = inputSpan.Slice(pos).IndexOf('\n');
-                                Ldloca(inputSpan);
-                                Ldloc(pos);
-                                Call(s_spanSliceIntMethod);
-                                Ldc('\n');
-                                Call(s_spanIndexOfChar);
-                                using (RentedLocalBuilder newlinePos = RentInt32Local())
-                                {
-                                    Stloc(newlinePos);
-
-                                    // if (newlinePos < 0 || newlinePos + pos + 1 > end)
-                                    // {
-                                    //     base.runtextpos = end;
-                                    //     return false;
-                                    // }
-                                    Ldloc(newlinePos);
-                                    Ldc(0);
-                                    Blt(returnFalse);
-                                    Ldloc(newlinePos);
-                                    Ldloc(pos);
-                                    Add();
-                                    Ldc(1);
-                                    Add();
-                                    Ldloc(end);
-                                    Bgt(returnFalse);
-
-                                    // pos += newlinePos + 1;
-                                    Ldloc(pos);
-                                    Ldloc(newlinePos);
-                                    Add();
-                                    Ldc(1);
-                                    Add();
-                                    Stloc(pos);
-                                }
-
-                                MarkLabel(atBeginningOfLine);
-                            }
+                switch (_code.FindOptimizations.TrailingAnchor)
+                {
+                    case RegexNodeKind.End or RegexNodeKind.EndZ when _code.FindOptimizations.MaxPossibleLength is int maxLength:
+                        // Jump to the end, minus the max allowed length.
+                        {
+                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            label = DefineLabel();
+                            Ldloc(pos);
+                            Ldloc(end);
+                            Ldc(maxLength + extraNewlineBump);
+                            Sub();
+                            Bge(label);
+                            Ldloc(end);
+                            Ldc(maxLength + extraNewlineBump);
+                            Sub();
+                            Stloc(pos);
+                            MarkLabel(label);
                             break;
-                    }
+                        }
                 }
 
                 return false;

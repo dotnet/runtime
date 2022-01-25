@@ -10,6 +10,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.Logging;
+using ILLink.Shared;
 
 using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
@@ -197,12 +198,5 @@ namespace ILCompiler
             }
             return assemblyName;
         }
-    }
-
-    public static class MessageSubCategory
-    {
-        public const string None = "";
-        public const string TrimAnalysis = "Trim analysis";
-        public const string AotAnalysis = "AOT analysis";
     }
 }

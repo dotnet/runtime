@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>ilc</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -121,10 +121,6 @@
        On Linux renaming the library makes it difficult to debug it. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Content Remove="$(RuntimeBinDir)$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
-    <Content Include="$(RuntimeBinDir)$(LibPrefix)clrjit$(LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)"
-      />
+    <Content Include="$(RuntimeBinDir)$(LibPrefix)clrjit$(LibSuffix)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="$(LibPrefix)clrjit_$(TargetSpec)$(LibSuffix)" />
   </ItemGroup>
 </Project>
