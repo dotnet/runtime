@@ -13422,12 +13422,13 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //    node - HWIntrinsic node to examine
 //
 // Returns:
-//    The original node if no optimization happened.
+//    The original node if no optimization happened or if tree bashing occured.
 //    An alternative tree if an optimization happened.
 //
 // Notes:
 //    Checks for HWIntrinsic nodes: Vector64.Create/Vector128.Create/Vector256.Create,
 //    and if the call is one of these, attempt to optimize.
+//    This is post-order, meaning that it will not morph the children.
 //
 GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 {
@@ -13457,8 +13458,29 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (hwAllArgsAreConstZero)
             {
-                return gtNewSimdZeroNode(node->gtType, node->GetSimdBaseJitType(), node->GetSimdSize(),
-                                         node->IsSimdAsHWIntrinsic());
+                switch (node->GetHWIntrinsicId())
+                {
+                    case NI_Vector128_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
+                        break;
+                    }
+#if defined(TARGET_XARCH)
+                    case NI_Vector256_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
+                        break;
+                    }
+#elif defined(TARGET_ARM64)
+                    case NI_Vector64_Create:
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
+                        break;
+                    }
+#endif
+                    default:
+                        unreached();
+                }
             }
             break;
         }
