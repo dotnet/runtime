@@ -384,6 +384,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE41_X64:
         case InstructionSet_SSE42:
         case InstructionSet_SSE42_X64:
+        case InstructionSet_SHA:
+        case InstructionSet_SHA_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
         case InstructionSet_X86Base:
