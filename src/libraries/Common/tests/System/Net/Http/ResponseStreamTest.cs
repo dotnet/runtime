@@ -264,6 +264,37 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingCancel()
+        {
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var size = 1500 * 1024 * 1024;
+            var req = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.RemoteSecureHttp11Server.BaseUri + "large.ashx?size=" + size);
+
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteSecureHttp11Server))
+            // we need to switch off Response buffering of default ResponseContentRead option
+            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+            {
+                Assert.Equal(typeof(StreamContent), response.Content.GetType());
+
+                Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);
+                Assert.True(size == response.Content.Headers.ContentLength, "ContentLength");
+
+                var stream = await response.Content.ReadAsStreamAsync();
+                Assert.Equal("ReadOnlyStream", stream.GetType().Name);
+                var buffer = new byte[1024 * 1024];
+
+                // with WebAssemblyEnableStreamingResponse option set, we will be using https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader/read
+                await stream.ReadAsync(buffer, 0, buffer.Length);
+
+                // dispose before end of the stream
+            }
+        }
+
         [Theory]
         [InlineData(TransferType.ContentLength, TransferError.ContentLengthTooLarge)]
         [InlineData(TransferType.Chunked, TransferError.MissingChunkTerminator)]

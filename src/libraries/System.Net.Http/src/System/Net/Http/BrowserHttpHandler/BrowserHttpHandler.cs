@@ -231,7 +231,7 @@ namespace System.Net.Http
                 CancellationTokenSource abortCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 CancellationTokenRegistration abortRegistration = abortCts.Token.Register((Action)(() =>
                 {
-                    if (abortController.JSHandle != -1)
+                    if (!abortController.IsDisposed)
                     {
                         abortController.Invoke("abort");
                         abortController?.Dispose();
@@ -387,6 +387,10 @@ namespace System.Net.Http
                 _abortRegistration.Dispose();
 
                 _fetchResponse?.Dispose();
+                if (_abortController != null && !_abortController.IsDisposed)
+                {
+                    _abortController.Invoke("abort");
+                }
                 _abortController?.Dispose();
             }
         }
@@ -568,7 +572,12 @@ namespace System.Net.Http
 
             protected override void Dispose(bool disposing)
             {
-                _reader?.Dispose();
+                if (_reader != null && !_reader.IsDisposed)
+                {
+                    _reader.Invoke("cancel");
+                    _reader.Dispose();
+                    _reader = null;
+                }
                 _status?.Dispose();
             }
 
