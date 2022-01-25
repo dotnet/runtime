@@ -3456,7 +3456,7 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                     //   e6, e7, e4, e5 | e2, e3, e0, e1
                     //   e7, e6, e5, e4 | e3, e2, e1, e0
 
-                    shuffleConst = 0x4D;
+                    shuffleConst = 0x4E;
                     break;
                 }
 

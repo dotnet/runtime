@@ -205,6 +205,10 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(^|($|a+))bc", " aabc", RegexOptions.None, 0, 5, true, "aabc");
                 yield return (@"yz(^|a+)bc", " yzaabc", RegexOptions.None, 0, 7, true, "yzaabc");
                 yield return (@"(^a|a$) bc", "a bc", RegexOptions.None, 0, 4, true, "a bc");
+                yield return (@"(abcdefg|abcdef|abc|a)h", "    ah  ", RegexOptions.None, 0, 8, true, "ah");
+                yield return (@"(^abcdefg|abcdef|^abc|a)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
+                yield return (@"(a|^abcdefg|abcdef|^abc)h", "    abcdefh  ", RegexOptions.None, 0, 13, true, "abcdefh");
+                yield return (@"(abcdefg|abcdef)h", "    abcdefghij  ", RegexOptions.None, 0, 16, true, "abcdefgh");
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
@@ -280,8 +284,42 @@ namespace System.Text.RegularExpressions.Tests
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty);
 
+                // Anchors
+                foreach (RegexOptions anchorOptions in new[] { RegexOptions.None, RegexOptions.Multiline })
+                {
+                    yield return (@"^abc", "abc", anchorOptions, 0, 3, true, "abc");
+                    yield return (@"^abc", " abc", anchorOptions, 0, 4, false, "");
+                    yield return (@"^abc|^def", "def", anchorOptions, 0, 3, true, "def");
+                    yield return (@"^abc|^def", " abc", anchorOptions, 0, 4, false, "");
+                    yield return (@"^abc|^def", " def", anchorOptions, 0, 4, false, "");
+                    yield return (@"abc|^def", " abc", anchorOptions, 0, 4, true, "abc");
+                    yield return (@"abc|^def|^efg", " abc", anchorOptions, 0, 4, true, "abc");
+                    yield return (@"^abc|def|^efg", " def", anchorOptions, 0, 4, true, "def");
+                    yield return (@"^abc|def", " def", anchorOptions, 0, 4, true, "def");
+                    yield return (@"abcd$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
+                    yield return (@"abc{1,4}d$", "1234567890abcd", anchorOptions, 0, 14, true, "abcd");
+                    yield return (@"abc{1,4}d$", "1234567890abccccd", anchorOptions, 0, 17, true, "abccccd");
+                }
+                if (!RegexHelpers.IsNonBacktracking(engine))
+                {
+                    yield return (@"\Gabc", "abc", RegexOptions.None, 0, 3, true, "abc");
+                    yield return (@"\Gabc", " abc", RegexOptions.None, 0, 4, false, "");
+                    yield return (@"\Gabc", " abc", RegexOptions.None, 1, 3, true, "abc");
+                    yield return (@"\Gabc|\Gdef", "def", RegexOptions.None, 0, 3, true, "def");
+                    yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 0, 4, false, "");
+                    yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 0, 4, false, "");
+                    yield return (@"\Gabc|\Gdef", " abc", RegexOptions.None, 1, 3, true, "abc");
+                    yield return (@"\Gabc|\Gdef", " def", RegexOptions.None, 1, 3, true, "def");
+                    yield return (@"abc|\Gdef", " abc", RegexOptions.None, 0, 4, true, "abc");
+                    yield return (@"\Gabc|def", " def", RegexOptions.None, 0, 4, true, "def");
+                }
+
                 // Anchors and multiline
-                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty);
+                yield return (@"^A$", "A\n", RegexOptions.Multiline, 0, 2, true, "A");
+                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 4, false, string.Empty);
+                yield return (@"^A$", "123\nA", RegexOptions.Multiline, 0, 5, true, "A");
+                yield return (@"^A$", "123\nA\n456", RegexOptions.Multiline, 0, 9, true, "A");
+                yield return (@"^A$|^B$", "123\nB\n456", RegexOptions.Multiline, 0, 9, true, "B");
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
                 yield return (@"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3");
@@ -901,7 +939,7 @@ namespace System.Text.RegularExpressions.Tests
             }
             string input = new string(chars);
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}$", RegexOptions.None, TimeSpan.FromMilliseconds(10));
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"a.{20}^", RegexOptions.None, TimeSpan.FromMilliseconds(10));
             Assert.Throws<RegexMatchTimeoutException>(() => { re.Match(input); });
         }
 

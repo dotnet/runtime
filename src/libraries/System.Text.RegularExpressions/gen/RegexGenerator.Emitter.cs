@@ -392,68 +392,111 @@ namespace System.Text.RegularExpressions.Generator
             // searching is required; otherwise, false.
             bool EmitAnchors()
             {
-                // Generate anchor checks.
-                if ((code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
+                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
+                switch (code.FindOptimizations.FindMode)
                 {
-                    switch (code.FindOptimizations.LeadingAnchor)
-                    {
-                        case RegexPrefixAnalyzer.Beginning:
-                            writer.WriteLine("// Beginning \\A anchor");
-                            additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                            using (EmitBlock(writer, "if (pos > beginning)"))
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        writer.WriteLine("// Beginning \\A anchor");
+                        additionalDeclarations.Add("int beginning = base.runtextbeg;");
+                        using (EmitBlock(writer, "if (pos > beginning)"))
+                        {
+                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                        writer.WriteLine("// Start \\G anchor");
+                        using (EmitBlock(writer, "if (pos > base.runtextstart)"))
+                        {
+                            writer.WriteLine($"goto {NoStartingPositionFound};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                        writer.WriteLine("// Leading end \\Z anchor");
+                        using (EmitBlock(writer, "if (pos < end - 1)"))
+                        {
+                            writer.WriteLine("base.runtextpos = end - 1;");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                        writer.WriteLine("// Leading end \\z anchor");
+                        using (EmitBlock(writer, "if (pos < end)"))
+                        {
+                            writer.WriteLine("base.runtextpos = end;");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                        // Jump to the end, minus the min required length, which in this case is actually the fixed length, minus 1 (for a possible ending \n).
+                        writer.WriteLine("// Trailing end \\Z anchor with fixed-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {code.Tree.MinRequiredLength + 1})"))
+                        {
+                            writer.WriteLine($"base.runtextpos = end - {code.Tree.MinRequiredLength + 1};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                        // Jump to the end, minus the min required length, which in this case is actually the fixed length.
+                        writer.WriteLine("// Trailing end \\z anchor with fixed-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {code.Tree.MinRequiredLength})"))
+                        {
+                            writer.WriteLine($"base.runtextpos = end - {code.Tree.MinRequiredLength};");
+                        }
+                        writer.WriteLine("return true;");
+                        return true;
+                }
+
+                // Now handle anchors that boost the position but may not determine immediate success or failure.
+
+                switch (code.FindOptimizations.LeadingAnchor)
+                {
+                    case RegexNodeKind.Bol:
+                        // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+                        // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+                        // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+                        // to boost our position to the next line, and then continue normally with any searches.
+                        writer.WriteLine("// Beginning-of-line anchor");
+                        additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
+                        additionalDeclarations.Add("int beginning = base.runtextbeg;");
+                        using (EmitBlock(writer, "if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
+                        {
+                            writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
+                            using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
                             {
                                 writer.WriteLine($"goto {NoStartingPositionFound};");
                             }
-                            writer.WriteLine("return true;");
-                            return true;
+                            writer.WriteLine("pos = newlinePos + pos + 1;");
+                        }
+                        writer.WriteLine();
+                        break;
+                }
 
-                        case RegexPrefixAnalyzer.Start:
-                            writer.WriteLine("// Start \\G anchor");
-                            using (EmitBlock(writer, "if (pos > base.runtextstart)"))
-                            {
-                                writer.WriteLine($"goto {NoStartingPositionFound};");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
+                switch (code.FindOptimizations.TrailingAnchor)
+                {
+                    case RegexNodeKind.End when code.FindOptimizations.MaxPossibleLength is int maxLength:
+                        writer.WriteLine("// End \\z anchor with maximum-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {maxLength})"))
+                        {
+                            writer.WriteLine($"pos = end - {maxLength};");
+                        }
+                        writer.WriteLine();
+                        break;
 
-                        case RegexPrefixAnalyzer.EndZ:
-                            writer.WriteLine("// End \\Z anchor");
-                            using (EmitBlock(writer, "if (pos < end - 1)"))
-                            {
-                                writer.WriteLine("base.runtextpos = end - 1;");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
-
-                        case RegexPrefixAnalyzer.End:
-                            writer.WriteLine("// End \\z anchor");
-                            using (EmitBlock(writer, "if (pos < end)"))
-                            {
-                                writer.WriteLine("base.runtextpos = end;");
-                            }
-                            writer.WriteLine("return true;");
-                            return true;
-
-                        case RegexPrefixAnalyzer.Bol:
-                            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
-                            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-                            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-                            // to boost our position to the next line, and then continue normally with any searches.
-                            writer.WriteLine("// Beginning-of-line anchor");
-                            additionalDeclarations.Add("global::System.ReadOnlySpan<char> inputSpan = base.runtext;");
-                            additionalDeclarations.Add("int beginning = base.runtextbeg;");
-                            using (EmitBlock(writer, "if (pos > beginning && inputSpan[pos - 1] != '\\n')"))
-                            {
-                                writer.WriteLine("int newlinePos = global::System.MemoryExtensions.IndexOf(inputSpan.Slice(pos), '\\n');");
-                                using (EmitBlock(writer, "if (newlinePos < 0 || newlinePos + pos + 1 > end)"))
-                                {
-                                    writer.WriteLine($"goto {NoStartingPositionFound};");
-                                }
-                                writer.WriteLine("pos = newlinePos + pos + 1;");
-                            }
-                            writer.WriteLine();
-                            break;
-                    }
+                    case RegexNodeKind.EndZ when code.FindOptimizations.MaxPossibleLength is int maxLength:
+                        writer.WriteLine("// End \\Z anchor with maximum-length match");
+                        using (EmitBlock(writer, $"if (pos < end - {maxLength + 1})"))
+                        {
+                            writer.WriteLine($"pos = end - {maxLength + 1};");
+                        }
+                        writer.WriteLine();
+                        break;
                 }
 
                 return false;

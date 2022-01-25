@@ -33,6 +33,11 @@ jobs:
         - (Debian.10.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7-20210304164340-6616c63
         - (Debian.11.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7-20210304164347-5a7c380
 
+    # Linux armv6
+    - ${{ if eq(parameters.platform, 'Linux_armv6') }}:
+#      - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
+      - (Raspbian.10.Armv6.Open)Raspbian.9.Arm32.IoT.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:raspbian-10-helix-arm32v6-20211215185610-60748cc
+
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
