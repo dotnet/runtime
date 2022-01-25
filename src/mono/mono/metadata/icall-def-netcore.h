@@ -176,8 +176,6 @@ HANDLES(ASSEM_7, "InternalLoad", ves_icall_System_Reflection_Assembly_InternalLo
 
 ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_0)
 NOHANDLES(ICALL(ASSEMN_0, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName))
-NOHANDLES(ICALL(ASSEMN_3, "ParseAssemblyName", ves_icall_System_Reflection_AssemblyName_ParseAssemblyName))
-NOHANDLES(ICALL(ASSEMN_2, "get_public_token", mono_digest_get_public_token))
 
 ICALL_TYPE(MCATTR, "System.Reflection.CustomAttribute", MCATTR_1)
 HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal, MonoArray, 1, (MonoObject))

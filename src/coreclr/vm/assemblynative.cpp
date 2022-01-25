@@ -86,9 +86,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
     }
 
     // Initialize spec
-    spec.InitializeSpec(pStackingAllocator,
-                        &assemblyNameRef,
-                        FALSE);
+    spec.InitializeSpec(pStackingAllocator, &assemblyNameRef);
+
     GCPROTECT_END();
 
     spec.SetCodeBase(NULL);

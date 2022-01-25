@@ -5379,21 +5379,6 @@ gint32 ves_icall_AssemblyExtensions_ApplyUpdateEnabled (gint32 just_component_ch
 	return mono_metadata_update_available () && (just_component_check || mono_metadata_update_enabled (NULL));
 }
 
-MonoBoolean
-ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)
-{
-	gboolean is_version_defined = FALSE;
-	gboolean is_token_defined = FALSE;
-	gboolean result = FALSE;
-
-	result = mono_assembly_name_parse_full (name, aname, TRUE, &is_version_defined, &is_token_defined);
-
-	*is_version_defined_arg = (MonoBoolean)is_version_defined;
-	*is_token_defined_arg = (MonoBoolean)is_token_defined;
-
-	return result;
-}
-
 MonoReflectionTypeHandle
 ves_icall_System_Reflection_RuntimeModule_GetGlobalType (MonoImage *image, MonoError *error)
 {
