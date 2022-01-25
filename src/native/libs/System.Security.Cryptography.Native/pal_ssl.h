@@ -147,6 +147,11 @@ It will unset callback if set is zero.
 */
 PALEXPORT void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set);
 
+/*
+Requests that client sends Post-Handshake Authentication extension in ClientHello.
+*/
+PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
+
 /*=======
 Sets session caching. 0 is disabled.
 */
@@ -222,9 +227,9 @@ when an error is encountered.
 PALEXPORT int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error);
 
 /*
-Shims the SSL_renegotiate method.
+Shims the SSL_renegotiate method (up to TLS 1.2), or SSL_verify_client_post_handshake (TLS 1.3)
 
-Returns 1 when renegotiation started; 0 on error.
+Returns 1 when renegotiation/post-handshake authentication started; 0 on error.
 */
 PALEXPORT int32_t CryptoNative_SslRenegotiate(SSL* ssl, int32_t* error);
 
