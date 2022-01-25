@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64300", TestPlatforms.Browser)]
     public class RegexReductionTests
     {
         // These tests depend on using reflection to access internals of Regex in order to validate
