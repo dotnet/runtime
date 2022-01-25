@@ -97,8 +97,8 @@ namespace ILCompiler.Logging
         /// <returns>New MessageContainer of 'Warning' category</returns>
         internal static MessageContainer? CreateWarningMessage(Logger context, string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
         {
-            //if (!(code > 2000 && code <= 6000))
-            //    throw new ArgumentOutOfRangeException(nameof(code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+            if (!(code > 2000 && code <= 6000))
+                throw new ArgumentOutOfRangeException(nameof(code), $"The provided code '{code}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
 
             return CreateWarningMessageContainer(context, text, code, origin, subcategory);
         }
@@ -114,8 +114,8 @@ namespace ILCompiler.Logging
         /// <returns>New MessageContainer of 'Warning' category</returns>
         internal static MessageContainer? CreateWarningMessage(Logger context, MessageOrigin origin, DiagnosticId id, params string[] args)
         {
-            //if (!((int)id > 2000 && (int)id <= 6000))
-            //    throw new ArgumentOutOfRangeException(nameof(id), $"The provided code '{(int)id}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
+            if (!((int)id > 2000 && (int)id <= 6000))
+                throw new ArgumentOutOfRangeException(nameof(id), $"The provided code '{(int)id}' does not fall into the warning category, which is in the range of 2001 to 6000 (inclusive).");
 
             return CreateWarningMessageContainer(context, origin, id, id.GetDiagnosticSubcategory(), args);
         }
