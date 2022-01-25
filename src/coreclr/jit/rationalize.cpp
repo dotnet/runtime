@@ -416,13 +416,10 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 }
                 GenTreeSIMD* simdTree =
                     comp->gtNewSIMDNode(simdType, initVal, SIMDIntrinsicInit, simdBaseJitType, genTypeSize(simdType));
-                assignment->AsOp()->gtOp2 = simdTree;
-                value                     = simdTree;
-                initVal->gtNext           = simdTree;
-                simdTree->gtPrev          = initVal;
+                assignment->gtOp2 = simdTree;
+                value             = simdTree;
 
-                simdTree->gtNext = location;
-                location->gtPrev = simdTree;
+                BlockRange().InsertAfter(initVal, simdTree);
             }
         }
 #endif // FEATURE_SIMD
@@ -468,7 +465,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
         case GT_BLK:
         case GT_OBJ:
-        case GT_DYN_BLK:
         {
             assert(varTypeIsStruct(location));
             GenTreeBlk* storeBlk = location->AsBlk();
@@ -480,9 +476,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     break;
                 case GT_OBJ:
                     storeOper = GT_STORE_OBJ;
-                    break;
-                case GT_DYN_BLK:
-                    storeOper = GT_STORE_DYN_BLK;
                     break;
                 default:
                     unreached();

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -89,6 +89,11 @@ async function mono_wasm_pre_init(): Promise<void> {
     const moduleExt = Module as DotnetModule;
 
     Module.addRunDependency("mono_wasm_pre_init");
+
+    // wait for locateFile setup on NodeJs
+    if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
+        await requirePromise;
+    }
 
     if (moduleExt.configSrc) {
         try {

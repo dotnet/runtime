@@ -98,7 +98,7 @@ namespace System.Runtime.InteropServices
     {
         public AllowReversePInvokeCallsAttribute() { }
     }
-    public readonly partial struct ArrayWithOffset
+    public readonly partial struct ArrayWithOffset : System.IEquatable<System.Runtime.InteropServices.ArrayWithOffset>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;

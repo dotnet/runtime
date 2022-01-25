@@ -139,7 +139,7 @@ gboolean
 mono_lls_insert (MonoLinkedListSet *list, MonoThreadHazardPointers *hp, MonoLinkedListSetNode *value)
 {
 	MonoLinkedListSetNode *cur, **prev;
-	/*We must do a store barrier before inserting 
+	/*We must do a store barrier before inserting
 	to make sure all values in @node are globally visible.*/
 	mono_memory_barrier ();
 

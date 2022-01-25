@@ -1,7 +1,7 @@
 /**
  * \file
  * Copyright 2011 Novell, Inc.
- * 
+ *
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
@@ -57,7 +57,7 @@ MONO_BEGIN_DECLS
 enum {
 	SGEN_BRIDGE_VERSION = 5
 };
-	
+
 typedef enum {
 	/* Instances of this class should be scanned when computing the transitive dependency among bridges. E.g. List<object>*/
 	GC_BRIDGE_TRANSPARENT_CLASS,

@@ -3760,6 +3760,14 @@
     "any",
     "base"
   ],
+  "linux-armv6": [
+    "linux-armv6",
+    "linux",
+    "unix-armv6",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-mips64": [
     "linux-mips64",
     "linux",
@@ -4323,6 +4331,26 @@
     "maccatalyst",
     "ios-x64",
     "ios",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "manjaro": [
+    "manjaro",
+    "arch",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "manjaro-x64": [
+    "manjaro-x64",
+    "manjaro",
+    "arch-x64",
+    "arch",
+    "linux-x64",
+    "linux",
     "unix-x64",
     "unix",
     "any",
@@ -8224,6 +8252,12 @@
   ],
   "unix-loongarch64": [
     "unix-loongarch64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "unix-armv6": [
+    "unix-armv6",
     "unix",
     "any",
     "base"

@@ -1721,12 +1721,23 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // jitting on PGO. If we ever implement a broader pattern of deferral -- say deferring
     // based on static PGO -- we will need to reconsider.
     //
+    // Under OSR stress we may add patchpoints even without backedges. So we also
+    // need to change the PGO instrumetation approach if OSR stress is enabled.
+    //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+#if defined(DEBUG)
+    const bool mayHaveStressPatchpoints =
+        (JitConfig.JitOffsetOnStackReplacement() >= 0) || (JitConfig.JitRandomOnStackReplacement() > 0);
+#else
+    const bool mayHaveStressPatchpoints = false;
+#endif
+
+    const bool mayHavePatchpoints =
+        (JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                      (JitConfig.TC_OnStackReplacement() > 0) && compHasBackwardJump;
-    const bool osrMethod       = opts.IsOSR();
+    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
+    const bool osrMethod            = opts.IsOSR();
     const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
 
     if (useEdgeProfiles)
@@ -3417,7 +3428,7 @@ weight_t Compiler::fgComputeMissingBlockWeights()
             // Sum up the weights of all of the return blocks and throw blocks
             // This is used when we have a back-edge into block 1
             //
-            if (bDst->hasProfileWeight() && ((bDst->bbJumpKind == BBJ_RETURN) || (bDst->bbJumpKind == BBJ_THROW)))
+            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
             {
                 returnWeight += bDst->bbWeight;
             }
@@ -3988,7 +3999,7 @@ void Compiler::fgDebugCheckProfileData()
 
         // Exit blocks
         //
-        if ((block->bbJumpKind == BBJ_RETURN) || (block->bbJumpKind == BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
         {
             exitWeight += blockWeight;
             exitProfiled   = true;
@@ -4157,7 +4168,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
 
     // We won't check finally or filter returns (for now).
     //
-    if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET))
+    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }

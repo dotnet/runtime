@@ -683,6 +683,18 @@ namespace System
         // Determines whether two Strings match.
         public static bool Equals(string? a, string? b)
         {
+            // Transform 'str == ""' to 'str != null && str.Length == 0' if either a or b are jit-time
+            // constants. Otherwise, these two blocks are eliminated
+            if (RuntimeHelpers.IsKnownConstant(a) && a != null && a.Length == 0)
+            {
+                return b != null && b.Length == 0;
+            }
+
+            if (RuntimeHelpers.IsKnownConstant(b) && b != null && b.Length == 0)
+            {
+                return a != null && a.Length == 0;
+            }
+
             if (object.ReferenceEquals(a, b))
             {
                 return true;
@@ -1013,7 +1025,14 @@ namespace System
             return referenceCulture.CompareInfo.IsPrefix(this, value, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
-        public bool StartsWith(char value) => Length != 0 && _firstChar == value;
+        public bool StartsWith(char value)
+        {
+            if (RuntimeHelpers.IsKnownConstant(value) && value != '\0')
+            {
+                return _firstChar == value;
+            }
+            return Length != 0 && _firstChar == value;
+        }
 
         internal static void CheckStringComparison(StringComparison comparisonType)
         {

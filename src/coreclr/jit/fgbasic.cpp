@@ -321,7 +321,7 @@ bool Compiler::fgFirstBBisScratch()
         // Normally, the first scratch block is a fall-through block. However, if the block after it was an empty
         // BBJ_ALWAYS block, it might get removed, and the code that removes it will make the first scratch block
         // a BBJ_ALWAYS block.
-        assert((fgFirstBBScratch->bbJumpKind == BBJ_NONE) || (fgFirstBBScratch->bbJumpKind == BBJ_ALWAYS));
+        assert(fgFirstBBScratch->KindIs(BBJ_NONE, BBJ_ALWAYS));
 
         return true;
     }
@@ -1113,12 +1113,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 {
                     ni = lookupNamedIntrinsic(methodHnd);
 
-                    bool foldableIntrinsc = false;
+                    bool foldableIntrinsic = false;
 
                     if (IsMathIntrinsic(ni))
                     {
                         // Most Math(F) intrinsics have single arguments
-                        foldableIntrinsc = FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo);
+                        foldableIntrinsic = FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo);
                     }
                     else
                     {
@@ -1131,7 +1131,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_System_GC_KeepAlive:
                             {
                                 pushedStack.PushUnknown();
-                                foldableIntrinsc = true;
+                                foldableIntrinsic = true;
                                 break;
                             }
 
@@ -1144,6 +1144,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 }
                                 break;
                             }
+
+                            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                                if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
+                                {
+                                    compInlineResult->Note(InlineObservation::CALLEE_CONST_ARG_FEEDS_ISCONST);
+                                }
+                                else
+                                {
+                                    compInlineResult->Note(InlineObservation::CALLEE_ARG_FEEDS_ISCONST);
+                                }
+                                // RuntimeHelpers.IsKnownConstant is always folded into a const
+                                pushedStack.PushConstant();
+                                foldableIntrinsic = true;
+                                break;
 
                             // These are foldable if the first argument is a constant
                             case NI_System_Type_get_IsValueType:
@@ -1159,10 +1173,10 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector128_Create:
 #endif
                             {
-                                // Top() in order to keep it as is in case of foldableIntrinsc
+                                // Top() in order to keep it as is in case of foldableIntrinsic
                                 if (FgStack::IsConstantOrConstArg(pushedStack.Top(), impInlineInfo))
                                 {
-                                    foldableIntrinsc = true;
+                                    foldableIntrinsic = true;
                                 }
                                 break;
                             }
@@ -1177,7 +1191,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 if (FgStack::IsConstantOrConstArg(pushedStack.Top(0), impInlineInfo) &&
                                     FgStack::IsConstantOrConstArg(pushedStack.Top(1), impInlineInfo))
                                 {
-                                    foldableIntrinsc = true;
+                                    foldableIntrinsic = true;
                                     pushedStack.PushConstant();
                                 }
                                 break;
@@ -1186,31 +1200,31 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_IsSupported_True:
                             case NI_IsSupported_False:
                             {
-                                foldableIntrinsc = true;
+                                foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 break;
                             }
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                             case NI_Vector128_get_Count:
                             case NI_Vector256_get_Count:
-                                foldableIntrinsc = true;
+                                foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 // TODO: check if it's a loop condition - we unroll such loops.
                                 break;
                             case NI_Vector256_get_Zero:
                             case NI_Vector256_get_AllBitsSet:
-                                foldableIntrinsc = true;
+                                foldableIntrinsic = true;
                                 pushedStack.PushUnknown();
                                 break;
 #elif defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
                             case NI_Vector64_get_Count:
                             case NI_Vector128_get_Count:
-                                foldableIntrinsc = true;
+                                foldableIntrinsic = true;
                                 pushedStack.PushConstant();
                                 break;
                             case NI_Vector128_get_Zero:
                             case NI_Vector128_get_AllBitsSet:
-                                foldableIntrinsc = true;
+                                foldableIntrinsic = true;
                                 pushedStack.PushUnknown();
                                 break;
 #endif
@@ -1222,7 +1236,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         }
                     }
 
-                    if (foldableIntrinsc)
+                    if (foldableIntrinsic)
                     {
                         compInlineResult->Note(InlineObservation::CALLSITE_FOLDABLE_INTRINSIC);
                         handled = true;
@@ -2407,7 +2421,7 @@ void Compiler::fgLinkBasicBlocks()
 
                 /* Is the next block reachable? */
 
-                if (curBBdesc->bbJumpKind == BBJ_ALWAYS || curBBdesc->bbJumpKind == BBJ_LEAVE)
+                if (curBBdesc->KindIs(BBJ_ALWAYS, BBJ_LEAVE))
                 {
                     break;
                 }
@@ -4369,7 +4383,7 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
 
 BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
 {
-    assert(curr->bbJumpKind == BBJ_COND || curr->bbJumpKind == BBJ_SWITCH || curr->bbJumpKind == BBJ_ALWAYS);
+    assert(curr->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_ALWAYS));
 
     if (fgComputePredsDone)
     {
@@ -4670,7 +4684,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         }
 #endif // DEBUG
 
-        noway_assert(block->bbJumpKind == BBJ_NONE || block->bbJumpKind == BBJ_ALWAYS);
+        noway_assert(block->KindIs(BBJ_NONE, BBJ_ALWAYS));
 
         /* Who is the "real" successor of this block? */
 
@@ -5182,7 +5196,7 @@ bool Compiler::fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc /* = NULL *
 {
     bool result = false;
 
-    if ((bJump->bbJumpKind == BBJ_COND) || (bJump->bbJumpKind == BBJ_ALWAYS))
+    if (bJump->KindIs(BBJ_COND, BBJ_ALWAYS))
     {
         BasicBlock* bDest = bJump->bbJumpDest;
         BasicBlock* bTemp = (bSrc == nullptr) ? bJump : bSrc;
@@ -5799,7 +5813,7 @@ bool Compiler::fgIsBetterFallThrough(BasicBlock* bCur, BasicBlock* bAlt)
     noway_assert(bAlt != nullptr);
 
     // We only handle the cases when bAlt is a BBJ_ALWAYS or a BBJ_COND
-    if ((bAlt->bbJumpKind != BBJ_ALWAYS) && (bAlt->bbJumpKind != BBJ_COND))
+    if (!bAlt->KindIs(BBJ_ALWAYS, BBJ_COND))
     {
         return false;
     }

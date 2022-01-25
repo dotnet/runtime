@@ -302,7 +302,7 @@ void Compiler::optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
         }
 
         // We only consider back-edges that are BBJ_COND or BBJ_ALWAYS for loops.
-        if ((predBlock->bbJumpKind != BBJ_COND) && (predBlock->bbJumpKind != BBJ_ALWAYS))
+        if (!predBlock->KindIs(BBJ_COND, BBJ_ALWAYS))
         {
             continue;
         }
@@ -580,12 +580,12 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                                              //
-        ((block->bbJumpKind == BBJ_ALWAYS) || (block->bbJumpKind == BBJ_COND)) && //
-        block->bbJumpDest->isLoopHead() &&                                        //
-        (block->bbJumpDest->bbNum <= block->bbNum) &&                             //
-        fgDomsComputed &&                                                         //
-        (fgCurBBEpochSize == fgDomBBcount + 1) &&                                 //
+    if ((skipUnmarkLoop == false) &&                  //
+        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        //
+        block->bbJumpDest->isLoopHead() &&            //
+        (block->bbJumpDest->bbNum <= block->bbNum) && //
+        fgDomsComputed &&                             //
+        (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
         fgReachable(block->bbJumpDest, block))
     {
         optUnmarkLoopBlocks(block->bbJumpDest, block);
@@ -847,7 +847,7 @@ bool Compiler::optCheckIterInLoopTest(
         relop = test->gtGetOp2();
     }
 
-    noway_assert(relop->OperKind() & GTK_RELOP);
+    noway_assert(relop->OperIsCompare());
 
     GenTree* opr1 = relop->AsOp()->gtOp1;
     GenTree* opr2 = relop->AsOp()->gtOp2;
@@ -1685,9 +1685,7 @@ public:
             return false;
         }
 
-        if ((bottom->bbJumpKind == BBJ_EHFINALLYRET) || (bottom->bbJumpKind == BBJ_EHFILTERRET) ||
-            (bottom->bbJumpKind == BBJ_EHCATCHRET) || (bottom->bbJumpKind == BBJ_CALLFINALLY) ||
-            (bottom->bbJumpKind == BBJ_SWITCH))
+        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY, BBJ_SWITCH))
         {
             // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
@@ -1829,7 +1827,7 @@ private:
             }
         }
         // Can we fall through into the loop?
-        else if (head->bbJumpKind == BBJ_NONE || head->bbJumpKind == BBJ_COND)
+        else if (head->KindIs(BBJ_NONE, BBJ_COND))
         {
             // The ENTRY is at the TOP (a do-while loop)
             return top;
@@ -2139,7 +2137,7 @@ private:
             return nullptr;
         }
 
-        if ((newMoveAfter->bbJumpKind == BBJ_ALWAYS) || (newMoveAfter->bbJumpKind == BBJ_COND))
+        if (newMoveAfter->KindIs(BBJ_ALWAYS, BBJ_COND))
         {
             unsigned int destNum = newMoveAfter->bbJumpDest->bbNum;
             if ((destNum >= top->bbNum) && (destNum <= bottom->bbNum) && !loopBlocks.IsMember(destNum))
@@ -2329,8 +2327,8 @@ private:
         }
 
         // Make sure we don't leave around a goto-next unless it's marked KEEP_BBJ_ALWAYS.
-        assert(((block->bbJumpKind != BBJ_COND) && (block->bbJumpKind != BBJ_ALWAYS)) ||
-               (block->bbJumpDest != newNext) || ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
+        assert(!block->KindIs(BBJ_COND, BBJ_ALWAYS) || (block->bbJumpDest != newNext) ||
+               ((block->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0));
         return newBlock;
     }
 
@@ -7574,6 +7572,8 @@ void Compiler::fgCreateLoopPreHeader(unsigned lnum)
                         fgAddRefPred(preHead, predBlock);
                     }
                 } while (++jumpTab, --jumpCnt);
+
+                UpdateSwitchTableTarget(predBlock, entry, preHead);
                 break;
 
             default:
@@ -7850,24 +7850,16 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     }
                     else
                     {
-                        // We are only interested in IsFieldAddr()'s fldSeq out parameter.
-                        //
-                        GenTree*      obj          = nullptr; // unused
-                        GenTree*      staticOffset = nullptr; // unused
-                        FieldSeqNode* fldSeq       = nullptr;
-
-                        if (arg->IsFieldAddr(this, &obj, &staticOffset, &fldSeq) &&
-                            (fldSeq != FieldSeqStore::NotAField()))
+                        GenTree*      baseAddr = nullptr;
+                        FieldSeqNode* fldSeq   = nullptr;
+                        if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
                         {
-                            // Get the first (object) field from field seq.  GcHeap[field] will yield the "field map".
-                            assert(fldSeq != nullptr);
-                            if (fldSeq->IsFirstElemFieldSeq())
-                            {
-                                fldSeq = fldSeq->m_next;
-                                assert(fldSeq != nullptr);
-                            }
+                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) &&
+                                   !fldSeq->IsPseudoField());
 
-                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->m_fieldHnd);
+                            FieldKindForVN fieldKind =
+                                (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;
+                            AddModifiedFieldAllContainingLoops(mostNestedLoop, fldSeq->GetFieldHandle(), fieldKind);
                             // Conservatively assume byrefs may alias this object.
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
@@ -7893,7 +7885,8 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 }
                 else if (lhs->OperGet() == GT_CLS_VAR)
                 {
-                    AddModifiedFieldAllContainingLoops(mostNestedLoop, lhs->AsClsVar()->gtClsVarHnd);
+                    AddModifiedFieldAllContainingLoops(mostNestedLoop, lhs->AsClsVar()->gtClsVarHnd,
+                                                       FieldKindForVN::SimpleStatic);
                     // Conservatively assume byrefs may alias this static field
                     memoryHavoc |= memoryKindSet(ByrefExposed);
                 }
@@ -7972,6 +7965,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     case GT_XCHG:
                     case GT_CMPXCHG:
                     case GT_MEMORYBARRIER:
+                    case GT_STORE_DYN_BLK:
                     {
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                     }
@@ -8073,12 +8067,12 @@ void Compiler::AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* 
 }
 
 // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
-void Compiler::AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd)
+void Compiler::AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
     assert(0 <= lnum && lnum < optLoopCount);
     while (lnum != BasicBlock::NOT_IN_LOOP)
     {
-        optLoopTable[lnum].AddModifiedField(this, fldHnd);
+        optLoopTable[lnum].AddModifiedField(this, fldHnd, fieldKind);
         lnum = optLoopTable[lnum].lpParent;
     }
 }

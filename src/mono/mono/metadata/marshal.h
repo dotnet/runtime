@@ -1,7 +1,7 @@
 /**
  * \file
  * Routines for marshaling complex types in P/Invoke methods.
- * 
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -50,6 +50,7 @@ typedef struct {
 	MonoClass *retobj_class;
 	MonoMethodSignature *csig; /* Might need to be changed due to MarshalAs directives */
 	MonoImage *image; /* The image to use for looking up custom marshallers */
+	gboolean runtime_marshalling_enabled;
 } EmitMarshalContext;
 
 typedef enum {
@@ -77,7 +78,7 @@ typedef enum {
 	/*
 	 * The result from the unmanaged call is at the top of the stack when
 	 * this action is invoked.    The result should be stored in the
-	 * third local variable slot. 
+	 * third local variable slot.
 	 */
 	MARSHAL_ACTION_CONV_RESULT,
 
@@ -295,12 +296,13 @@ typedef enum {
 	EMIT_NATIVE_WRAPPER_CHECK_EXCEPTIONS = 0x02,
 	EMIT_NATIVE_WRAPPER_FUNC_PARAM = 0x04,
 	EMIT_NATIVE_WRAPPER_FUNC_PARAM_UNBOXED = 0x08,
-	EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS=0x10,
+	EMIT_NATIVE_WRAPPER_SKIP_GC_TRANS = 0x10,
+	EMIT_NATIVE_WRAPPER_RUNTIME_MARSHALLING_ENABLED = 0x20,
 } MonoNativeWrapperFlags;
 
 G_ENUM_FUNCTIONS(MonoNativeWrapperFlags);
 
-#define MONO_MARSHAL_CALLBACKS_VERSION 5
+#define MONO_MARSHAL_CALLBACKS_VERSION 6
 
 typedef struct {
 	int version;
@@ -347,6 +349,7 @@ typedef struct {
 	void (*mb_emit_exception) (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg);
 	void (*mb_emit_exception_for_error) (MonoMethodBuilder *mb, const MonoError *emitted_error);
 	void (*mb_emit_byte) (MonoMethodBuilder *mb, guint8 op);
+	void (*emit_marshal_directive_exception) (EmitMarshalContext *m, int argnum, const char* msg);
 } MonoMarshalCallbacks;
 
 /*type of the function pointer of methods returned by mono_marshal_get_runtime_invoke*/
@@ -375,7 +378,7 @@ gint32
 mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 			gboolean as_field, gboolean unicode);
 
-int            
+int
 mono_type_native_stack_size (MonoType *type, guint32 *alignment);
 
 mono_bstr
@@ -539,18 +542,18 @@ mono_marshal_unlock_internal (void);
 
 /* marshaling internal calls */
 
-void * 
+void *
 mono_marshal_alloc (gsize size, MonoError *error);
 
 ICALL_EXPORT
-void 
+void
 mono_marshal_free (gpointer ptr);
 
 ICALL_EXPORT
 void
 mono_marshal_free_array (gpointer *ptr, int size);
 
-gboolean 
+gboolean
 mono_marshal_free_ccw (MonoObject* obj);
 
 MONO_API void *
@@ -561,12 +564,12 @@ void
 mono_marshal_set_last_error_windows (int error);
 
 ICALL_EXPORT
-void 
+void
 mono_struct_delete_old (MonoClass *klass, char *ptr);
 
 int
-mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
-	      MonoMarshalSpec *spec, int conv_arg, 
+mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
+	      MonoMarshalSpec *spec, int conv_arg,
 	      MonoType **conv_arg_type, MarshalAction action);
 
 ICALL_EXPORT
