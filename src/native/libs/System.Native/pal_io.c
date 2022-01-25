@@ -61,12 +61,15 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
-// The portable build is performed on RHEL7 which doesn't define FICLONE yet.
-// Ensure FICLONE is defined for all Linux builds.
 #ifdef __linux__
+
+// Ensure FICLONE is defined for all Linux builds.
 #ifndef FICLONE
 #define FICLONE _IOW(0x94, 9, int)
 #endif
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 // Ensure __NR_copy_file_range is defined for portable builds.
 #include <sys/syscall.h> // __NR_copy_file_range
 # if !defined(__NR_copy_file_range)
@@ -82,6 +85,8 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #   error Unknown architecture
 #  endif
 # endif
+#pragma clang diagnostic pop
+
 #endif
 
 #if HAVE_STAT64
@@ -1169,7 +1174,9 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 
 int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength, int32_t tryCopyFileRange)
 {
-    (void)sourceLength; // unused on some platforms.
+    // unused on some platforms.
+    (void)sourceLength;
+    (void)tryCopyFileRange;
 
     int inFd = ToFileDescriptor(sourceFd);
     int outFd = ToFileDescriptor(destinationFd);
