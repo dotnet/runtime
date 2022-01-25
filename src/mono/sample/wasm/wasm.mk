@@ -13,8 +13,10 @@ WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Confi
 # if we're in a devcontainer, don't try to open the browser
 ifneq ("$(wildcard $(TOP)/artifacts/prebuild.sha)", "")
   OPEN_BROWSER=
+  V8_PATH=v8
 else
   OPEN_BROWSER=-o
+  V8_PATH=~/.jsvu/v8
 endif
 
 all: publish
@@ -37,7 +39,7 @@ run-browser:
 	fi
 
 run-console:
-	cd bin/$(CONFIG)/AppBundle && ~/.jsvu/v8 --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)
+	cd bin/$(CONFIG)/AppBundle && $(V8_PATH) --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)
 
 run-console-node:
 	cd bin/$(CONFIG)/AppBundle && node --stack-trace-limit=1000 --single-threaded --expose_wasm $(MAIN_JS) -- $(DOTNET_MONO_LOG_LEVEL) --run $(CONSOLE_DLL) $(ARGS)
