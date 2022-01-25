@@ -107,10 +107,10 @@ jobs:
 
     # Build CoreCLR JIT
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(compilerArg) -component alljits -component spmi
         displayName: Build CoreCLR JIT
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -component alljits -component spmi
         displayName: Build CoreCLR JIT
 
     - ${{ if eq(parameters.uploadAs, 'azureBlob') }}:

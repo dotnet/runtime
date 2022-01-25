@@ -49,14 +49,15 @@ namespace System.Runtime.InteropServices.JavaScript
             internal IntPtr ptr;
 
             [FieldOffset(0)]
-            internal RuntimeMethodHandle handle;
+            internal RuntimeMethodHandle methodHandle;
 
             [FieldOffset(0)]
             internal RuntimeTypeHandle typeHandle;
         }
 
         // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
-        public enum MarshalType : int {
+        public enum MarshalType : int
+        {
             NULL = 0,
             INT = 1,
             FP64 = 2,
@@ -90,7 +91,8 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // see src/mono/wasm/driver.c MARSHAL_ERROR_xxx
-        public enum MarshalError : int {
+        public enum MarshalError : int
+        {
             BUFFER_TOO_SMALL = 512,
             NULL_CLASS_POINTER = 513,
             NULL_TYPE_POINTER = 514,
@@ -98,13 +100,12 @@ namespace System.Runtime.InteropServices.JavaScript
             FIRST = BUFFER_TOO_SMALL
         }
 
-        public static string GetCallSignature(IntPtr methodHandle, object objForRuntimeType)
+        public static string GetCallSignature(IntPtr _methodHandle, object? objForRuntimeType)
         {
-            IntPtrAndHandle tmp = default(IntPtrAndHandle);
-            tmp.ptr = methodHandle;
+            var methodHandle = GetMethodHandleFromIntPtr(_methodHandle);
 
-            MethodBase? mb = objForRuntimeType == null ? MethodBase.GetMethodFromHandle(tmp.handle) : MethodBase.GetMethodFromHandle(tmp.handle, Type.GetTypeHandle(objForRuntimeType));
-            if (mb == null)
+            MethodBase? mb = objForRuntimeType is null ? MethodBase.GetMethodFromHandle(methodHandle) : MethodBase.GetMethodFromHandle(methodHandle, Type.GetTypeHandle(objForRuntimeType));
+            if (mb is null)
                 return string.Empty;
 
             ParameterInfo[] parms = mb.GetParameters();
@@ -112,66 +113,163 @@ namespace System.Runtime.InteropServices.JavaScript
             if (parmsLength == 0)
                 return string.Empty;
 
-            char[] res = new char[parmsLength];
-
-            for (int c = 0; c < parmsLength; c++)
+            var result = new char[parmsLength];
+            for (int i = 0; i < parmsLength; i++)
             {
-                Type t = parms[c].ParameterType;
-                switch (Type.GetTypeCode(t))
+                Type t = parms[i].ParameterType;
+                var mt = GetMarshalTypeFromType(t);
+                result[i] = GetCallSignatureCharacterForMarshalType(mt, null);
+            }
+
+            return new string(result);
+        }
+
+        private static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
+        {
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.methodHandle;
+        }
+
+        private static RuntimeTypeHandle GetTypeHandleFromIntPtr(IntPtr ptr)
+        {
+            var temp = new IntPtrAndHandle { ptr = ptr };
+            return temp.typeHandle;
+        }
+
+        internal static MarshalType GetMarshalTypeFromType(Type? type)
+        {
+            if (type is null)
+                return MarshalType.VOID;
+
+            var typeCode = Type.GetTypeCode(type);
+            if (type.IsEnum)
+            {
+                switch (typeCode)
                 {
-                    case TypeCode.Byte:
-                    case TypeCode.SByte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
                     case TypeCode.Int32:
                     case TypeCode.UInt32:
-                    case TypeCode.Boolean:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'j';
-                        else
-                            res[c] = 'i';
-                        break;
+                        return MarshalType.ENUM;
                     case TypeCode.Int64:
                     case TypeCode.UInt64:
-                        // Enums types have the same code as their underlying numeric types
-                        if (t.IsEnum)
-                            res[c] = 'k';
-                        else
-                            res[c] = 'l';
-                        break;
-                    case TypeCode.Single:
-                        res[c] = 'f';
-                        break;
-                    case TypeCode.Double:
-                        res[c] = 'd';
-                        break;
-                    case TypeCode.String:
-                        res[c] = 's';
-                        break;
+                        return MarshalType.ENUM64;
                     default:
-                        if (t == typeof(IntPtr))
-                        {
-                            res[c] = 'i';
-                        }
-                        else if (t == typeof(Uri))
-                        {
-                            res[c] = 'u';
-                        }
-                        else if (t == typeof(SafeHandle))
-                        {
-                            res[c] = 'h';
-                        }
-                        else
-                        {
-                            if (t.IsValueType)
-                                throw new NotSupportedException(SR.ValueTypeNotSupported);
-                            res[c] = 'o';
-                        }
-                        break;
+                        throw new JSException($"Unsupported enum underlying type {typeCode}");
                 }
             }
-            return new string(res);
+
+            switch (typeCode)
+            {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                    return MarshalType.INT;
+                case TypeCode.UInt32:
+                    return MarshalType.UINT32;
+                case TypeCode.Boolean:
+                    return MarshalType.BOOL;
+                case TypeCode.Int64:
+                    return MarshalType.INT64;
+                case TypeCode.UInt64:
+                    return MarshalType.UINT64;
+                case TypeCode.Single:
+                    return MarshalType.FP32;
+                case TypeCode.Double:
+                    return MarshalType.FP64;
+                case TypeCode.String:
+                    return MarshalType.STRING;
+                case TypeCode.Char:
+                    return MarshalType.CHAR;
+            }
+
+            if (type.IsArray)
+            {
+                if (!type.IsSZArray)
+                    throw new JSException("Only single-dimensional arrays with a zero lower bound can be marshaled to JS");
+
+                var elementType = type.GetElementType();
+                switch (Type.GetTypeCode(elementType))
+                {
+                    case TypeCode.Byte:
+                        return MarshalType.ARRAY_UBYTE;
+                    case TypeCode.SByte:
+                        return MarshalType.ARRAY_BYTE;
+                    case TypeCode.Int16:
+                        return MarshalType.ARRAY_SHORT;
+                    case TypeCode.UInt16:
+                        return MarshalType.ARRAY_USHORT;
+                    case TypeCode.Int32:
+                        return MarshalType.ARRAY_INT;
+                    case TypeCode.UInt32:
+                        return MarshalType.ARRAY_UINT;
+                    case TypeCode.Single:
+                        return MarshalType.ARRAY_FLOAT;
+                    case TypeCode.Double:
+                        return MarshalType.ARRAY_DOUBLE;
+                    default:
+                        throw new JSException($"Unsupported array element type {elementType}");
+                }
+            }
+            else if (type == typeof(IntPtr))
+                return MarshalType.POINTER;
+            else if (type == typeof(UIntPtr))
+                return MarshalType.POINTER;
+            else if (type == typeof(SafeHandle))
+                return MarshalType.SAFEHANDLE;
+            else if (typeof(Delegate).IsAssignableFrom(type))
+                return MarshalType.DELEGATE;
+            else if ((type == typeof(Task)) || typeof(Task).IsAssignableFrom(type))
+                return MarshalType.TASK;
+            else if (typeof(Uri) == type)
+                return MarshalType.URI;
+            else if (type.IsPointer)
+                return MarshalType.POINTER;
+
+            if (type.IsValueType)
+                return MarshalType.VT;
+            else
+                return MarshalType.OBJECT;
+        }
+
+        internal static char GetCallSignatureCharacterForMarshalType(MarshalType t, char? defaultValue)
+        {
+            switch (t)
+            {
+                case MarshalType.BOOL:
+                case MarshalType.INT:
+                case MarshalType.UINT32:
+                case MarshalType.POINTER:
+                    return 'i';
+                case MarshalType.UINT64:
+                case MarshalType.INT64:
+                    return 'l';
+                case MarshalType.FP32:
+                    return 'f';
+                case MarshalType.FP64:
+                    return 'd';
+                case MarshalType.STRING:
+                    return 's';
+                case MarshalType.URI:
+                    return 'u';
+                case MarshalType.SAFEHANDLE:
+                    return 'h';
+                case MarshalType.ENUM:
+                    return 'j';
+                case MarshalType.ENUM64:
+                    return 'k';
+                case MarshalType.TASK:
+                case MarshalType.DELEGATE:
+                case MarshalType.OBJECT:
+                    return 'o';
+                case MarshalType.VT:
+                    return 'a';
+                default:
+                    if (defaultValue.HasValue)
+                        return defaultValue.Value;
+                    else
+                        throw new JSException($"Unsupported marshal type {t}");
+            }
         }
 
         /// <summary>

@@ -293,7 +293,7 @@ sgen_get_nursery_end (void)
 #define SGEN_LOAD_VTABLE(obj)		((GCVTable)(SGEN_POINTER_UNTAG_ALL (SGEN_LOAD_VTABLE_UNCHECKED ((GCObject *)(obj)))))
 
 /*
-List of what each bit on of the vtable gc bits means. 
+List of what each bit on of the vtable gc bits means.
 */
 enum {
 	// When the Java bridge has determined an object is "bridged", it uses these two bits to cache that information.
@@ -1038,7 +1038,7 @@ sgen_major_is_object_alive (GCObject *object)
 
 
 /*
- * If the object has been forwarded it means it's still referenced from a root. 
+ * If the object has been forwarded it means it's still referenced from a root.
  * If it is pinned it's still alive as well.
  * A LOS object is only alive if we have pinned it.
  * Return TRUE if @obj is ready to be finalized.
@@ -1190,7 +1190,7 @@ gint64 sgen_timestamp (void);
  * - CANARY_SIZE must be multiple of word size in bytes
  * - Canary space is not included on checks against SGEN_MAX_SMALL_OBJ_SIZE
  */
- 
+
 gboolean sgen_nursery_canaries_enabled (void);
 
 #define CANARY_SIZE 8

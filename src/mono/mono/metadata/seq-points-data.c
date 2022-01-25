@@ -405,7 +405,7 @@ mono_seq_point_data_read (SeqPointData *data, char *path)
 		fclose (f);
 		return FALSE;
 	}
-	
+
 	fseek(f, 0, SEEK_SET);
 
 	buffer_orig = buffer = (guint8 *)g_malloc (fsize + 1);

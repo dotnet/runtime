@@ -226,7 +226,7 @@ namespace System.Formats.Cbor.Tests
         {
             var reader = new CborReader(hexEncoding.HexToByteArray(), mode);
             reader.ReadStartMap();
-            foreach (object key in keySequence.SkipLast(1))
+            foreach (object key in keySequence.Take(keySequence.Length - 1))
             {
                 Helpers.VerifyValue(reader, key); // verify key
                 reader.ReadInt32(); // value is always an integer

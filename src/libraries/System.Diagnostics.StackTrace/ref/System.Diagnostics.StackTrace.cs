@@ -170,7 +170,7 @@ namespace System.Diagnostics.SymbolStore
         BitField = 9,
         NativeSectionOffset = 10,
     }
-    public readonly partial struct SymbolToken
+    public readonly partial struct SymbolToken : System.IEquatable<System.Diagnostics.SymbolStore.SymbolToken>
     {
         private readonly int _dummyPrimitive;
         public SymbolToken(int val) { throw null; }

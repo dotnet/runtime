@@ -61,6 +61,7 @@ namespace ILCompiler
         private string _instructionSet;
         private string _guard;
         private int _maxGenericCycle = CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint;
+        private bool _useDwarf5;
 
         private string _singleMethodTypeName;
         private string _singleMethodName;
@@ -178,6 +179,7 @@ namespace ILCompiler
                 syntax.DefineOption("Ot", ref optimizeTime, "Enable optimizations, favor code speed");
                 syntax.DefineOptionList("m|mibc", ref _mibcFilePaths, "Mibc file(s) for profile guided optimization"); ;
                 syntax.DefineOption("g", ref _enableDebugInfo, "Emit debugging information");
+                syntax.DefineOption("gdwarf-5", ref _useDwarf5, "Generate source-level debug information with dwarf version 5");
                 syntax.DefineOption("nativelib", ref _nativeLib, "Compile as static or shared library");
                 syntax.DefineOption("exportsfile", ref _exportsFile, "File to write exported method definitions");
                 syntax.DefineOption("dgmllog", ref _dgmlLogFileName, "Save result of dependency analysis as DGML");
@@ -769,7 +771,8 @@ namespace ILCompiler
                 .UseCompilationRoots(compilationRoots)
                 .UseOptimizationMode(_optimizationMode)
                 .UseSecurityMitigationOptions(securityMitigationOptions)
-                .UseDebugInfoProvider(debugInfoProvider);
+                .UseDebugInfoProvider(debugInfoProvider)
+                .UseDwarf5(_useDwarf5);
 
             if (scanResults != null)
             {

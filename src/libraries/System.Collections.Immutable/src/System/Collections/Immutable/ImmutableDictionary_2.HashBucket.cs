@@ -15,7 +15,9 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Contains all the key/values in the collection that hash to the same value.
         /// </summary>
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
         internal readonly struct HashBucket : IEnumerable<KeyValuePair<TKey, TValue>>
+#pragma warning restore CA1066
         {
             /// <summary>
             /// One of the values in this bucket.

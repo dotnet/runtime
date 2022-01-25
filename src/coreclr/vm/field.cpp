@@ -61,6 +61,8 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
         FieldType == ELEMENT_TYPE_R8 ||
         FieldType == ELEMENT_TYPE_CLASS ||
         FieldType == ELEMENT_TYPE_VALUETYPE ||
+        FieldType == ELEMENT_TYPE_BYREF ||
+        FieldType == ELEMENT_TYPE_TYPEDBYREF ||
         FieldType == ELEMENT_TYPE_PTR ||
         FieldType == ELEMENT_TYPE_FNPTR
         );
@@ -70,7 +72,8 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     m_requiresFullMbValue = 0;
     SetMemberDef(mb);
 
-    m_type = FieldType;
+    // A TypedByRef should be treated like a regular value type.
+    m_type = FieldType != ELEMENT_TYPE_TYPEDBYREF ? FieldType : ELEMENT_TYPE_VALUETYPE;
     m_prot = fdFieldAccessMask & dwMemberAttrs;
     m_isStatic = fIsStatic != 0;
     m_isRVA = fIsRVA != 0;
@@ -81,7 +84,7 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
 #endif
 
     _ASSERTE(GetMemberDef() == mb);                 // no truncation
-    _ASSERTE(GetFieldType() == FieldType);
+    _ASSERTE(GetFieldType() == FieldType || (FieldType == ELEMENT_TYPE_TYPEDBYREF && m_type == ELEMENT_TYPE_VALUETYPE));
     _ASSERTE(GetFieldProtection() == (fdFieldAccessMask & dwMemberAttrs));
     _ASSERTE((BOOL) IsStatic() == (fIsStatic != 0));
 }
@@ -152,6 +155,7 @@ TypeHandle FieldDesc::LookupFieldTypeHandle(ClassLoadLevel level, BOOL dropGener
     _ASSERTE(type == ELEMENT_TYPE_CLASS ||
              type == ELEMENT_TYPE_VALUETYPE ||
              type == ELEMENT_TYPE_STRING ||
+             type == ELEMENT_TYPE_TYPEDBYREF ||
              type == ELEMENT_TYPE_SZARRAY ||
              type == ELEMENT_TYPE_VAR
              );

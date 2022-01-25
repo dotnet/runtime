@@ -95,7 +95,7 @@ sgen_card_table_wbarrier_arrayref_copy (gpointer dest_ptr, gconstpointer src_ptr
 				sgen_card_table_mark_address ((mword)dest);
 			sgen_dummy_use (value);
 		}
-	}	
+	}
 }
 
 static void
@@ -130,7 +130,7 @@ sgen_card_table_wbarrier_object_copy (GCObject* obj, GCObject *src)
 static void
 sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 {
-	sgen_card_table_mark_address ((mword)ptr);	
+	sgen_card_table_mark_address ((mword)ptr);
 }
 
 static void

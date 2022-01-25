@@ -1864,7 +1864,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
@@ -3879,19 +3878,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return new (this, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     }
 
-    if (((ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan) ||
-         (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray)) &&
-        IsTargetAbi(CORINFO_CORERT_ABI))
+    switch (ni)
     {
         // CreateSpan must be expanded for NativeAOT
-        mustExpand = true;
-    }
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+        case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
+            mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
+            break;
 
-    if ((ni == NI_System_ByReference_ctor) || (ni == NI_System_ByReference_get_Value) ||
-        (ni == NI_System_Activator_AllocatorOf) || (ni == NI_System_Activator_DefaultConstructorOf) ||
-        (ni == NI_System_Object_MethodTableOf) || (ni == NI_System_EETypePtr_EETypePtrOf))
-    {
-        mustExpand = true;
+        case NI_System_ByReference_ctor:
+        case NI_System_ByReference_get_Value:
+        case NI_System_Activator_AllocatorOf:
+        case NI_System_Activator_DefaultConstructorOf:
+        case NI_System_Object_MethodTableOf:
+        case NI_System_EETypePtr_EETypePtrOf:
+            mustExpand = true;
+            break;
+
+        default:
+            break;
     }
 
     GenTree* retNode = nullptr;
@@ -3935,29 +3940,19 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_String_get_Length:
             {
                 GenTree* op1 = impPopStack().val;
-                if (opts.OptimizationEnabled())
+                if (op1->OperIs(GT_CNS_STR))
                 {
-                    if (op1->OperIs(GT_CNS_STR))
+                    // Optimize `ldstr + String::get_Length()` to CNS_INT
+                    // e.g. "Hello".Length => 5
+                    GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
+                    if (iconNode != nullptr)
                     {
-                        // Optimize `ldstr + String::get_Length()` to CNS_INT
-                        // e.g. "Hello".Length => 5
-                        GenTreeIntCon* iconNode = gtNewStringLiteralLength(op1->AsStrCon());
-                        if (iconNode != nullptr)
-                        {
-                            retNode = iconNode;
-                            break;
-                        }
+                        retNode = iconNode;
+                        break;
                     }
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
-                    op1                   = arrLen;
                 }
-                else
-                {
-                    /* Create the expression "*(str_addr + stringLengthOffset)" */
-                    op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
-                                        gtNewIconNode(OFFSETOF__CORINFO_String__stringLen, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
-                }
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
+                op1                   = arrLen;
 
                 // Getting the length of a null string should throw
                 op1->gtFlags |= GTF_EXCEPT;
@@ -4004,6 +3999,26 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
             {
                 retNode = impInitializeArrayIntrinsic(sig);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+            {
+                GenTree* op1 = impPopStack().val;
+                if (op1->OperIsConst())
+                {
+                    // op1 is a known constant, replace with 'true'.
+                    retNode = gtNewIconNode(1);
+                    JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to true early\n");
+                    // We can also consider FTN_ADDR and typeof(T) here
+                }
+                else
+                {
+                    // op1 is not a known constant, we'll do the expansion in morph
+                    retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(TYP_INT, op1, ni, method);
+                    JITDUMP("\nConverting RuntimeHelpers.IsKnownConstant to:\n");
+                    DISPTREE(retNode);
+                }
                 break;
             }
 
@@ -4283,7 +4298,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             case NI_System_Threading_Thread_get_ManagedThreadId:
             {
-                if (opts.OptimizationEnabled() && impStackTop().val->OperIs(GT_RET_EXPR))
+                if (impStackTop().val->OperIs(GT_RET_EXPR))
                 {
                     GenTreeCall* call = impStackTop().val->AsRetExpr()->gtInlineCandidate->AsCall();
                     if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
@@ -4306,7 +4321,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_Or:
             case NI_System_Threading_Interlocked_And:
             {
-                if (opts.OptimizationEnabled() && compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                if (compOpportunisticallyDependsOn(InstructionSet_Atomics))
                 {
                     assert(sig->numArgs == 2);
                     GenTree*   op2 = impPopStack().val;
@@ -5351,6 +5366,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         else if (strcmp(methodName, "InitializeArray") == 0)
         {
             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+        }
+        else if (strcmp(methodName, "IsKnownConstant") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
         }
     }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
@@ -17050,19 +17069,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op3 = impPopStack().val; // Size
                 op2 = impPopStack().val; // Value
-                op1 = impPopStack().val; // Dest
+                op1 = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
                     size = (unsigned)op3->AsIntConCommon()->IconValue();
                     op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
                 }
                 else
                 {
-                    op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
+                    if (!op2->IsIntegralConst(0))
+                    {
+                        op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                    }
+
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
                     size = 0;
+
+                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    {
+                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                    }
                 }
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
 
                 goto SPILL_APPEND;
 
@@ -17073,19 +17102,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     Verify(false, "bad opcode");
                 }
                 op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Src
-                op1 = impPopStack().val; // Dest
+                op2 = impPopStack().val; // Src addr
+                op1 = impPopStack().val; // Dst addr
 
-                if (op3->IsCnsIntOrI())
-                {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
-                }
-                else
-                {
-                    op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
-                    size = 0;
-                }
                 if (op2->OperGet() == GT_ADDR)
                 {
                     op2 = op2->AsOp()->gtOp1;
@@ -17095,7 +17114,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
                 }
 
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                if (op3->IsCnsIntOrI())
+                {
+                    size = (unsigned)op3->AsIntConCommon()->IconValue();
+                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                }
+                else
+                {
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
+                    size = 0;
+
+                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    {
+                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                    }
+                }
+
                 goto SPILL_APPEND;
 
             case CEE_CPOBJ:

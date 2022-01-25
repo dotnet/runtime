@@ -499,6 +499,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.applyUpdates":
+                    {
+                        if (await ApplyUpdates(id, args, token))
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                        else
+                            SendResponse(id, Result.Err("ApplyUpdate failed."), token);
+                        return true;
+                    }
                 case "DotnetDebugger.addSymbolServerUrl":
                     {
                         string url = args["url"]?.Value<string>();
@@ -593,6 +601,19 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return false;
         }
+
+        private async Task<bool> ApplyUpdates(MessageId id, JObject args, CancellationToken token)
+        {
+            var context = GetContext(id);
+            string moduleGUID = args["moduleGUID"]?.Value<string>();
+            string dmeta = args["dmeta"]?.Value<string>();
+            string dil = args["dil"]?.Value<string>();
+            string dpdb = args["dpdb"]?.Value<string>();
+            var moduleId = await context.SdbAgent.GetModuleId(moduleGUID, token);
+            var applyUpdates =  await context.SdbAgent.ApplyUpdates(moduleId, dmeta, dil, dpdb, token);
+            return applyUpdates;
+        }
+
         private void SetJustMyCode(MessageId id, JObject args, CancellationToken token)
         {
             var isEnabled = args["enabled"]?.Value<bool>();
@@ -853,28 +874,35 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (shouldReturn)
                     return true;
 
-                if (j == 0 && (method?.Info.HasStepThroughAttribute == true || method?.Info.IsHiddenFromDebugger == true))
+                if (j == 0 &&
+                    (method?.Info.DebuggerAttrInfo.HasStepThrough == true ||
+                    method?.Info.DebuggerAttrInfo.HasDebuggerHidden == true ||
+                    method?.Info.DebuggerAttrInfo.HasStepperBoundary == true ||
+                    (method?.Info.DebuggerAttrInfo.HasNonUserCode == true && JustMyCode)))
                 {
-                    if (method.Info.IsHiddenFromDebugger)
+                    if (method.Info.DebuggerAttrInfo.HasDebuggerHidden ||
+                        (method.Info.DebuggerAttrInfo.HasStepperBoundary && event_kind == EventKind.Step))
                     {
                         if (event_kind == EventKind.Step)
                             context.IsSkippingHiddenMethod = true;
                         if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
                             return true;
                     }
-
-                    if (event_kind == EventKind.Step ||
-                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                    if (!method.Info.DebuggerAttrInfo.HasStepperBoundary)
                     {
-                        if (context.IsResumedAfterBp)
-                            context.IsResumedAfterBp = false;
-                        else if (event_kind != EventKind.UserBreak)
-                            context.IsSteppingThroughMethod = true;
-                        if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
-                            return true;
+                        if (event_kind == EventKind.Step ||
+                        (JustMyCode && (event_kind == EventKind.Breakpoint || event_kind == EventKind.UserBreak)))
+                        {
+                            if (context.IsResumedAfterBp)
+                                context.IsResumedAfterBp = false;
+                            else if (event_kind != EventKind.UserBreak)
+                                context.IsSteppingThroughMethod = true;
+                            if (await SkipMethod(isSkippable: true, shouldBeSkipped: true, StepKind.Out))
+                                return true;
+                        }
+                        if (event_kind == EventKind.Breakpoint)
+                            context.IsResumedAfterBp = true;
                     }
-                    if (event_kind == EventKind.Breakpoint)
-                        context.IsResumedAfterBp = true;
                 }
 
                 SourceLocation location = method?.Info.GetLocationByIl(il_pos);
@@ -1443,7 +1471,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 SourceLocation loc = sourceId.First();
                 req.Method = loc.IlLocation.Method;
-                if (req.Method.IsHiddenFromDebugger)
+                if (req.Method.DebuggerAttrInfo.HasDebuggerHidden)
                     continue;
 
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);

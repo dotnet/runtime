@@ -7012,6 +7012,29 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_assemblyid (buf, mono_get_root_domain (), assembly);
 		break;
 	}
+	case MDBGPROT_CMD_GET_MODULE_BY_GUID: {
+		int len = 0;
+		uint8_t* guid = m_dbgprot_decode_byte_array (p, &p, end, &len);
+		MonoAssembly *assembly = NULL;
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		for (int i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
+			if (!memcmp(assemblyOnALC->image->heap_guid.data, guid, len)) {
+				assembly = assemblyOnALC;
+				break;
+			}
+		}
+		g_ptr_array_free (assemblies, TRUE);
+		if (!assembly) {
+			PRINT_DEBUG_MSG (1, "Could not resolve guid\n");
+			g_free (guid);
+			buffer_add_int (buf, -1);
+			break;
+		}
+		g_free (guid);
+		buffer_add_moduleid (buf, mono_get_root_domain (), assembly->image);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}

@@ -1768,7 +1768,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 #ifndef DISABLE_JIT
 	return_native_struct =
 #endif
-		sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke;
+		sig->ret->type == MONO_TYPE_VALUETYPE && sig->pinvoke && !sig->marshalling_disabled;
 
 	/* Create the signature for the wrapper */
 	csig = g_malloc0 (MONO_SIZEOF_METHOD_SIGNATURE + (sig->param_count * sizeof (MonoType*)));

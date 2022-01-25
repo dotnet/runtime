@@ -4347,20 +4347,9 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
         }
 
-        case GT_DYN_BLK:
-        {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
-            return;
-        }
-
         case GT_STORE_DYN_BLK:
         {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
             if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
             {
                 return;
@@ -4516,11 +4505,12 @@ inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
     return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
-/*****************************************************************************
- * This node should not be referenced by anyone now. Set its values to garbage
- * to catch extra references
- */
-
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of tree to garbage to catch extra references
+//
+// Arguments:
+//    tree: This node should not be referenced by anyone now
+//
 inline void DEBUG_DESTROY_NODE(GenTree* tree)
 {
 #ifdef DEBUG
@@ -4539,6 +4529,19 @@ inline void DEBUG_DESTROY_NODE(GenTree* tree)
     // Don't call SetOper, because GT_COUNT is not a valid value
     tree->gtOper = GT_COUNT;
 #endif
+}
+
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of trees to garbage to catch extra references
+//
+// Arguments:
+//    tree, ...rest: These nodes should not be referenced by anyone now
+//
+template <typename... T>
+void DEBUG_DESTROY_NODE(GenTree* tree, T... rest)
+{
+    DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(rest...);
 }
 
 //------------------------------------------------------------------------------

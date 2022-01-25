@@ -8965,9 +8965,8 @@ void emitter::emitDispIns(
     }
     else
     {
-        attr = emitGetMemOpSize(id);
-
-        sstr = codeGen->genSizeStr(attr);
+        attr = id->idOpSize();
+        sstr = codeGen->genSizeStr(emitGetMemOpSize(id));
 
         if (ins == INS_lea)
         {
@@ -11742,17 +11741,6 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
 #ifdef DEBUG
         int byteSize = EA_SIZE_IN_BYTES(emitGetMemOpSize(id));
-
-        // this instruction has a fixed size (4) src.
-        if (ins == INS_cvttss2si || ins == INS_cvtss2sd || ins == INS_vbroadcastss)
-        {
-            byteSize = 4;
-        }
-        // This has a fixed size (8) source.
-        if (ins == INS_vbroadcastsd)
-        {
-            byteSize = 8;
-        }
 
         // Check that the offset is properly aligned (i.e. the ddd in [ddd])
         // When SMALL_CODE is set, we only expect 4-byte alignment, otherwise
