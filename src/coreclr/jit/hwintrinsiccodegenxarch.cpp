@@ -252,7 +252,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         genHWIntrinsicJumpTableFallback(intrinsicId, op2Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
-                else if (node->TypeGet() == TYP_VOID)
+                else if ((node->TypeGet() == TYP_VOID) || (isa == InstructionSet_SHA))
                 {
                     genHWIntrinsic_R_RM(node, ins, simdSize, op1Reg, op2);
                 }

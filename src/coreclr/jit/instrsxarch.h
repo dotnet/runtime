@@ -468,6 +468,16 @@ INST3(aesenc,           "aesenc",           IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(aesenclast,       "aesenclast",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xDD),                             INS_Flags_IsDstDstSrcAVXInstruction)   // Perform last round of an AES encryption flow
 INST3(aesimc,           "aesimc",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xDB),                             INS_FLAGS_None)   // Perform the AES InvMixColumn Transformation
 INST3(aeskeygenassist,  "aeskeygenassist",  IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0xDF),                             INS_FLAGS_None)   // AES Round Key Generation Assist
+
+// SHA instructions
+INST3(sha1rnds4,        "sha1rnds4",       IUM_WR, BAD_CODE,     BAD_CODE,  SSE3A(0xCC), INS_FLAGS_None)
+INST3(sha1nexte,        "sha1nexte",       IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xC8), INS_FLAGS_None)
+INST3(sha1msg1,         "sha1msg1",        IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xC9), INS_FLAGS_None)
+INST3(sha1msg2,         "sha1msg2",        IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCA), INS_FLAGS_None)
+INST3(sha256rnds2,      "sha256rnds2",     IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCB), INS_FLAGS_None)
+INST3(sha256msg1,       "sha256msg1",      IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCC), INS_FLAGS_None)
+INST3(sha256msg2,       "sha256msg2",      IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCD), INS_FLAGS_None)
+
 INST3(LAST_SSE_INSTRUCTION, "LAST_SSE_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
 INST3(FIRST_AVX_INSTRUCTION, "FIRST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
@@ -620,15 +630,6 @@ INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF )
-
-// SHA
-INST3(sha1rnds4,        "sha1rnds4",       IUM_WR, BAD_CODE,     BAD_CODE,  SSE3A(0xCC), INS_FLAGS_None)
-INST3(sha1nexte,        "sha1nexte",       IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xC8), INS_FLAGS_None)
-INST3(sha1msg1,         "sha1msg1",        IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xC9), INS_FLAGS_None)
-INST3(sha1msg2,         "sha1msg2",        IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCA), INS_FLAGS_None)
-INST3(sha256rnds2,      "sha256rnds2",     IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCB), INS_FLAGS_None)
-INST3(sha256msg1,       "sha256msg1",      IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCC), INS_FLAGS_None)
-INST3(sha256msg2,       "sha256msg2",      IUM_WR, BAD_CODE,     BAD_CODE,  SSE38(0xCD), INS_FLAGS_None)
 
 //    id                nm                  um      mr            mi                                                     flags
 INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,                                              INS_FLAGS_None )
