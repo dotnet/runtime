@@ -32,8 +32,9 @@
 
 	// Add the locally installed dotnet to the path to ensure that it is activated
 	// This allows developers to just use 'dotnet build' on the command-line, and the local dotnet version will be used.
+    // Add the global tools dir to the PATH so that globally installed tools will work
 	"remoteEnv": {
-		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerEnv:PATH}",
+		"PATH": "${containerWorkspaceFolder}/.dotnet:${containerEnv:PATH}:${containerEnv:HOME}/.dotnet/tools",
 		"DOTNET_MULTILEVEL_LOOKUP": "0",
         // Path to provisioned Emscripten SDK, for rebuilding the wasm runtime
         "EMSDK_PATH": "${containerWorkspaceFolder}/src/mono/wasm/emsdk",
