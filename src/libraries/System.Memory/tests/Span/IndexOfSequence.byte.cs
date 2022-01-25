@@ -210,7 +210,7 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(IndexOfSubSeqData))]
+        [MemberData(nameof(IndexOfSubSeqData_Byte))]
         public static void ValueStartsAndEndsWithTheSameBytes(byte[] searchSpace, byte[] value, int expectedIndexOfValue, int expectedLastIndexOfValue)
         {
             Assert.Equal(expectedIndexOfValue, searchSpace.AsSpan().IndexOf(value));
