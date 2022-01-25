@@ -219,7 +219,7 @@ namespace System.IO
         /// your code. For an example of using the <see cref="ReadLineAsync(CancellationToken)"/> method, see the
         /// <see cref="StreamReader.ReadLineAsync(CancellationToken)"/> method.</para>
         /// <para>If the current <see cref="TextReader"/> represents the standard input stream returned by
-        /// the <see cref="Console.In" /> property, the <see cref="ReadLineAsync(CancellationToken)"/> method
+        /// the <c>Console.In</c> property, the <see cref="ReadLineAsync(CancellationToken)"/> method
         /// executes synchronously rather than asynchronously.</para>
         /// </remarks>
         public virtual ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>

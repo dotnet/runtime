@@ -862,7 +862,7 @@ namespace System.IO
         /// <code lang="C#">
         /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
         /// using StreamReader reader = File.OpenText("existingfile.txt");
-        /// 
+        ///
         /// string line;
         /// while ((line = await reader.ReadLineAsync(tokenSource.Token)) is not null)
         /// {
