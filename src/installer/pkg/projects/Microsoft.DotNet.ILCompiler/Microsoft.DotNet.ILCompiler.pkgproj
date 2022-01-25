@@ -6,38 +6,20 @@
     <PackageDescription>Provides a native AOT compiler and runtime for .NET</PackageDescription>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- For now, send symbols package into a dummy directory to avoid conflicts with dotnet/runtime and
-         to avoid issues with objwriter not having the rigth ELF version resource -->
-    <SymbolPackageOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'Ignored'))</SymbolPackageOutputPath>
-  </PropertyGroup>
-
   <Target Name="GetIlcCompilerFiles"
           DependsOnTargets="ResolveLibrariesFromLocalBuild"
           BeforeTargets="GetPackageFiles">
 
     <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-      <File Include="@(LibrariesRuntimeFiles)">
-        <TargetPath>framework</TargetPath>
-      </File>
-      <File Include="$(CoreCLRILCompilerDir)*">
-        <TargetPath>tools</TargetPath>
-      </File>
-      <File Include="$(CoreCLRAotSdkDir)*">
-        <TargetPath>sdk</TargetPath>
-      </File>
-      <File Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc">
-        <TargetPath>mibc</TargetPath>
-      </File>
+      <File Include="@(LibrariesRuntimeFiles)" TargetPath="framework" />
+      <File Include="$(CoreCLRILCompilerDir)*" TargetPath="tools" />
+      <File Include="$(CoreCLRAotSdkDir)*" TargetPath="sdk" />
+      <File Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" TargetPath="mibc" />
     </ItemGroup>
 
     <ItemGroup>
-      <File Include="$(CoreCLRBuildIntegrationDir)*">
-        <TargetPath>build</TargetPath>
-      </File>
-      <File Include="$(CoreCLRILCompilerDir)netstandard\*">
-        <TargetPath>tools/netstandard</TargetPath>
-      </File>
+      <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
+      <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
     </ItemGroup>
   </Target>
 
