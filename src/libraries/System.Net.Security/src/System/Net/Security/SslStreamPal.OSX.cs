@@ -277,10 +277,9 @@ namespace System.Net.Security
                 if (status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
                     X509Certificate2? clientCertificate = secureChannel.SelectClientCertificate(out _);
-                    if (clientCertificate != null && clientCertificate.HasPrivateKey)
+                    if (clientCertificate != null)
                     {
                         sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(clientCertificate);
-
                         SafeDeleteSslContext.SetCertificate(sslContext.SslContext, sslAuthenticationOptions.CertificateContext);
                     }
 
