@@ -16,10 +16,8 @@ namespace System.Net.Security.Tests
 
     public class SslStreamCredentialCacheTest
     {
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SslStream_SameCertUsedForClientAndServer_Ok(bool clientCertificateRequired)
+        [Fact]
+        public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, true, AllowAnyCertificate))
@@ -30,7 +28,7 @@ namespace System.Net.Security.Tests
                 X509Certificate2Collection clientCertificateCollection =
                     new X509Certificate2Collection(certificate);
 
-                Task t1 = server.AuthenticateAsServerAsync(certificate, clientCertificateRequired, false);
+                Task t1 = server.AuthenticateAsServerAsync(certificate, true, false);
                 Task t2 = client.AuthenticateAsClientAsync(
                                             certificate.GetNameInfo(X509NameType.SimpleName, false),
                                             clientCertificateCollection, false);
@@ -49,18 +47,8 @@ namespace System.Net.Security.Tests
                     // by the server using certificates from the Trusted Root Authorities certificate store.
                     // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
 
-                    if (clientCertificateRequired)
-                    {
-                        Assert.True(client.IsMutuallyAuthenticated);
-                        Assert.True(server.IsMutuallyAuthenticated);
-                    }
-                    else
-                    {
-                        // Even though the certificate was provided, it was not requested by the server and thus the client
-                        // was not authenticated.
-                        Assert.False(client.IsMutuallyAuthenticated);
-                        Assert.False(server.IsMutuallyAuthenticated);
-                    }
+                    Assert.True(client.IsMutuallyAuthenticated);
+                    Assert.True(server.IsMutuallyAuthenticated);
                 }
             }
         }
