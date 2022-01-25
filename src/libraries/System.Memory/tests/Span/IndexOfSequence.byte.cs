@@ -118,7 +118,7 @@ namespace System.SpanTests
             Assert.Equal(-1, index);
         }
 
-        public static IEnumerable<object[]> IndexOfSubSeqData()
+        public static IEnumerable<object[]> IndexOfSubSeqData_Byte()
         {
             // searchSpace, value, expected IndexOf value, expected LastIndexOf value
             yield return new object[] { new byte[]{0,0,0,0,0},new byte[]{0,0,0}, 0, 2};
@@ -211,7 +211,7 @@ namespace System.SpanTests
 
         [Theory]
         [MemberData(nameof(IndexOfSubSeqData))]
-        public static void ValueStartsAndEndsWithTheSameChars(byte[] searchSpace, byte[] value, int expectedIndexOfValue, int expectedLastIndexOfValue)
+        public static void ValueStartsAndEndsWithTheSameBytes(byte[] searchSpace, byte[] value, int expectedIndexOfValue, int expectedLastIndexOfValue)
         {
             Assert.Equal(expectedIndexOfValue, searchSpace.AsSpan().IndexOf(value));
             Assert.Equal(expectedLastIndexOfValue, searchSpace.AsSpan().LastIndexOf(value));

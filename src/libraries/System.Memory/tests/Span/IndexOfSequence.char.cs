@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.SpanTests
 {
@@ -116,7 +118,7 @@ namespace System.SpanTests
             Assert.Equal(-1, index);
         }
 
-        public static IEnumerable<object[]> IndexOfSubSeqData()
+        public static IEnumerable<object[]> IndexOfSubSeqData_Char()
         {
             // searchSpace, value, expected IndexOf value, expected LastIndexOf value
             yield return new object[] { "11111", "111", 0, 2 };
@@ -208,7 +210,7 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(IndexOfSubSeqData))]
+        [MemberData(nameof(IndexOfSubSeqData_Char))]
         public static void ValueStartsAndEndsWithTheSameChars(string searchSpace, string value, int expectedIndexOfValue, int expectedLastIndexOfValue)
         {
             Assert.Equal(expectedIndexOfValue, searchSpace.AsSpan().IndexOf(value));
