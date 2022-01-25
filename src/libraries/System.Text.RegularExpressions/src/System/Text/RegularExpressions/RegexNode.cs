@@ -1378,9 +1378,11 @@ namespace System.Text.RegularExpressions
             return Kind == RegexNodeKind.One ? Ch : Str![0];
         }
 
-        /// <summary>Finds the guaranteed beginning character of the node, or null if none exists.</summary>
-        public (char Char, string? String)? FindStartingCharacterOrString()
+        /// <summary>Finds the guaranteed beginning literal(s) of the node, or null if none exists.</summary>
+        public (char Char, string? String, string? SetChars)? FindStartingLiteral(int maxSetCharacters = 5) // 5 is max optimized by IndexOfAny today
         {
+            Debug.Assert(maxSetCharacters >= 0 && maxSetCharacters <= 128, $"{nameof(maxSetCharacters)} == {maxSetCharacters} should be small enough to be stack allocated.");
+
             RegexNode? node = this;
             while (true)
             {
@@ -1392,14 +1394,29 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when node.M > 0:
                             if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(node.Ch))
                             {
-                                return (node.Ch, null);
+                                return (node.Ch, null, null);
                             }
                             break;
 
                         case RegexNodeKind.Multi:
                             if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(node.Str.AsSpan()))
                             {
-                                return ('\0', node.Str);
+                                return ('\0', node.Str, null);
+                            }
+                            break;
+
+                        case RegexNodeKind.Set:
+                        case RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy when node.M > 0:
+                            Span<char> setChars = stackalloc char[maxSetCharacters];
+                            int numChars;
+                            if (!RegexCharClass.IsNegated(node.Str!) &&
+                                (numChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
+                            {
+                                setChars = setChars.Slice(0, numChars);
+                                if ((node.Options & RegexOptions.IgnoreCase) == 0 || !RegexCharClass.ParticipatesInCaseConversion(setChars))
+                                {
+                                    return ('\0', null, setChars.ToString());
+                                }
                             }
                             break;
 

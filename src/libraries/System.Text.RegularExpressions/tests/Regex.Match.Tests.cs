@@ -242,17 +242,61 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(\d{2,3}?)+?", "1234", RegexOptions.None, 0, 4, true, "12");
                 yield return (@"(\d{2,3}?)*?", "123456", RegexOptions.None, 0, 4, true, "");
 
-                foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
+                foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline })
                 {
                     yield return (@".*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@".*", "abc", lineOption, 2, 1, true, "c");
 
+                    yield return (@"a.*[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bcde]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
+                    yield return (@"a.*[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
+
                     yield return (@".*?", "abc", lineOption, 1, 2, true, "");
                     yield return (@".*?c", "abc", lineOption, 1, 2, true, "bc");
                     yield return (@"b.*?", "abc", lineOption, 1, 2, true, "b");
                     yield return (@".*?", "abc", lineOption, 2, 1, true, "");
+
+                    yield return (@"a.*?[bc]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bc]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bc]", "xyza12345d6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*?[bcd]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bcd]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bcd]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*?[bcd]", "xyza12345e6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*?[bcde]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bcde]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bcde]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*?[bcde]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*?[bcde]", "xyza12345f6789", lineOption, 0, 14, false, "");
+
+                    yield return (@"a.*?[bcdef]", "xyza12345b6789", lineOption, 0, 14, true, "a12345b");
+                    yield return (@"a.*?[bcdef]", "xyza12345c6789", lineOption, 0, 14, true, "a12345c");
+                    yield return (@"a.*?[bcdef]", "xyza12345d6789", lineOption, 0, 14, true, "a12345d");
+                    yield return (@"a.*?[bcdef]", "xyza12345e6789", lineOption, 0, 14, true, "a12345e");
+                    yield return (@"a.*?[bcdef]", "xyza12345f6789", lineOption, 0, 14, true, "a12345f");
+                    yield return (@"a.*?[bcdef]", "xyza12345g6789", lineOption, 0, 14, false, "");
                 }
 
                 // Nested loops
