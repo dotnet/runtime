@@ -13,7 +13,7 @@ export EMSDK_PATH=$PWD/src/mono/wasm/emsdk
 ./build.sh mono+libs -os Browser -c release
 
 # install dotnet-serve for running wasm samples
-./dotnet.sh tool install --global dotnet-serve
+./dotnet.sh tool install dotnet-serve --tool-path ./.dotnet-tools-global
 
 # save the commit hash of the currently built assemblies, so developers know which version was built
 git rev-parse HEAD > ./artifacts/prebuild.sha
