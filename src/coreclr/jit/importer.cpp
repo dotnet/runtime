@@ -14416,22 +14416,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // If the expression to dup is simple, just clone it.
                 // Otherwise spill it to a temp, and reload the temp twice.
-                bool needsTemp = true;
+                bool cloneExpr = false;
+
                 if (!opts.compDbgCode)
                 {
                     // Duplicate 0 and +0.0
                     if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
                     {
-                        needsTemp = false;
+                        cloneExpr = true;
                     }
                     // Duplicate locals and addresses of them
-                    else if (op1->IsLocal() || impIsAddressInLocal(op1))
+                    else if (op1->IsLocal() ||
+                             (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal()))
                     {
-                        needsTemp = false;
+                        cloneExpr = true;
                     }
                 }
+                else
+                {
+                    // Always clone for debug mode
+                    cloneExpr = true;
+                }
 
-                if (needsTemp)
+                if (!cloneExpr)
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
                     impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
