@@ -324,6 +324,12 @@ int32_t SystemNative_Unlink(const char* path)
 
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
+#if defined(SHM_NAME_MAX) // macOS
+    assert(strlen(name) <= SHM_NAME_MAX);
+#elif defined(PATH_MAX) // other Unixes
+    assert(strlen(name) <= PATH_MAX);
+#endif
+
 #if HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
     flags = ConvertOpenFlags(flags);
     if (flags == -1)
