@@ -7,7 +7,7 @@
     <UseMonoRuntime>true</UseMonoRuntime>
     <WasmMainJSPath>main.mjs</WasmMainJSPath>
     <OutputType>Exe</OutputType>
-    <WasmEnableES6>yes</WasmEnableES6>
+    <WasmEnableES6>true</WasmEnableES6>
   </PropertyGroup>
 
   <ItemGroup>
