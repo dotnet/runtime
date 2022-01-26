@@ -33,7 +33,8 @@ namespace ILLink.RoslynAnalyzer
 
 		public override void Initialize (AnalysisContext context)
 		{
-			context.EnableConcurrentExecution ();
+			if (!System.Diagnostics.Debugger.IsAttached)
+				context.EnableConcurrentExecution ();
 			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
 			context.RegisterCompilationStartAction (context => {
 				var compilation = context.Compilation;
@@ -368,13 +369,12 @@ namespace ILLink.RoslynAnalyzer
 			if (member == null)
 				return false;
 
-			foreach (var _attribute in member.GetAttributes ()) {
-				if (_attribute.AttributeClass is { } attrClass &&
-					attrClass.HasName (RequiresAttributeFullyQualifiedName) &&
-					VerifyAttributeArguments (_attribute)) {
-					requiresAttribute = _attribute;
-					return true;
-				}
+			if (!member.TryGetAttribute (RequiresAttributeName, out var _attribute))
+				return false;
+
+			if (VerifyAttributeArguments (_attribute)) {
+				requiresAttribute = _attribute;
+				return true;
 			}
 
 			return false;

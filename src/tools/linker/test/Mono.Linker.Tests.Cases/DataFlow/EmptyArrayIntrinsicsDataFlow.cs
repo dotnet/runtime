@@ -8,8 +8,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
 	// Note: this test's goal is to validate that the product correctly reports unrecognized patterns
-	//   - so the main validation is done by the UnrecognizedReflectionAccessPattern attributes.
+	//   - so the main validation is done by the ExpectedWarning attributes.
 	[SkipKeptItemsValidation]
+	[ExpectedNoWarnings]
 	class EmptyArrayIntrinsicsDataFlow
 	{
 		static void Main ()
@@ -20,27 +21,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestGetConstructorOverloads ();
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) }, messageCode: "IL2080")]
+		[ExpectedWarning ("IL2080", nameof (Type.GetMethod))]
 		static void TestGetPublicParameterlessConstructorWithEmptyTypes ()
 		{
 			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (Type.EmptyTypes);
 			s_typeWithKeptPublicParameterlessConstructor.GetMethod ("Foo");
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) }, messageCode: "IL2080")]
+		[ExpectedWarning ("IL2080", nameof (Type.GetMethod))]
 		static void TestGetPublicParameterlessConstructorWithArrayEmpty ()
 		{
 			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (Array.Empty<Type> ());
 			s_typeWithKeptPublicParameterlessConstructor.GetMethod ("Foo");
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetConstructor), new Type[] { typeof (Type[]) }, messageCode: "IL2080")]
+		[ExpectedWarning ("IL2080", nameof (Type.GetConstructor))]
 		static void TestGetPublicParameterlessConstructorWithUnknownArray ()
 		{
 			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (s_localEmptyArrayInvisibleToAnalysis);
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetMethod), new Type[] { typeof (string) }, messageCode: "IL2080")]
+		[ExpectedWarning ("IL2080", nameof (Type.GetMethod))]
 		static void TestGetConstructorOverloads ()
 		{
 			s_typeWithKeptPublicParameterlessConstructor.GetConstructor (BindingFlags.Public, null, Type.EmptyTypes, null);

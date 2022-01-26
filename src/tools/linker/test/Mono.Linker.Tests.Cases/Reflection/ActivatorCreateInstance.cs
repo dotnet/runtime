@@ -8,6 +8,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
+	[ExpectedNoWarnings]
 	[KeptMember (".ctor()")]
 	public class ActivatorCreateInstance
 	{
@@ -165,8 +166,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public FromParameterOnStaticMethodTypeB (int arg) { }
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (object[]) }, messageCode: "IL2067")]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) }, messageCode: "IL2067")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance), nameof (CultureInfo))]
 		[Kept]
 		private void FromParameterOnInstanceMethod (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -188,8 +189,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public FromParameterOnInstanceMethodType (int arg, int arg2) { }
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type) }, messageCode: "IL2067")]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (object[]) }, messageCode: "IL2067")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type)")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])")]
 		[Kept]
 		private static void FromParameterWithNonPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -212,7 +213,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			private FromParameterWithNonPublicConstructorsType (int arg, int arg2) { }
 		}
 
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (Type), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo) }, messageCode: "IL2067")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance))]
 		[Kept]
 		private static void FromParameterWithPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
@@ -319,16 +320,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string) },
-			messageCode: "IL2032", message: new string[] { "assemblyName" })]
+		[ExpectedWarning ("IL2032", nameof (Activator) + "." + nameof (Activator.CreateInstance), "assemblyName")]
 		private static void WithNullAssemblyName ()
 		{
 			Activator.CreateInstance (null, "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string) },
-			messageCode: "IL2061", message: new string[] { "NonExistingAssembly" })]
+		[ExpectedWarning ("IL2061", nameof (Activator) + "." + nameof (Activator.CreateInstance), "NonExistingAssembly")]
 		private static void WithNonExistingAssemblyName ()
 		{
 			Activator.CreateInstance ("NonExistingAssembly", "Mono.Linker.Tests.Cases.Reflection.ActivatorCreateInstance+WithAssemblyNameParameterless1");
@@ -338,15 +337,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		private static string _typeNameField;
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Activator), nameof (Activator.CreateInstance), new Type[] { typeof (string), typeof (string), typeof (object[]) },
-			messageCode: "IL2032", message: new string[] { "typeName" })]
+		[ExpectedWarning ("IL2032", nameof (Activator) + "." + nameof (Activator.CreateInstance), "typeName")]
 		private static void WithAssemblyAndUnknownTypeName ()
 		{
 			Activator.CreateInstance ("test", _typeNameField, new object[] { });
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void WithAssemblyAndNonExistingTypeName ()
 		{
 			Activator.CreateInstance ("test", "NonExistingType", new object[] { });
@@ -381,7 +378,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void AppDomainCreateInstance ()
 		{
 			// Just a basic test that these are all recognized, we're not testing that it marks correctly as it has the exact same implementation
@@ -404,9 +400,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type[] { typeof (string) }, messageCode: "IL2058")]
-		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type[] { typeof (string), typeof (bool) }, messageCode: "IL2058")]
-		[UnrecognizedReflectionAccessPattern (typeof (Assembly), nameof (Assembly.CreateInstance), new Type[] { typeof (string), typeof (bool), typeof (BindingFlags), typeof (Binder), typeof (object[]), typeof (CultureInfo), typeof (object[]) }, messageCode: "IL2058")]
+		[ExpectedWarning ("IL2058", nameof (Assembly) + "." + nameof (Assembly.CreateInstance) + "(String)")]
+		[ExpectedWarning ("IL2058", nameof (Assembly) + "." + nameof (Assembly.CreateInstance) + "(String, Boolean)")]
+		[ExpectedWarning ("IL2058", nameof (Assembly) + "." + nameof (Assembly.CreateInstance), nameof (BindingFlags))]
 		private static void UnsupportedCreateInstance ()
 		{
 			typeof (ActivatorCreateInstance).Assembly.CreateInstance ("NonExistent");
@@ -428,7 +424,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestCreateInstanceOfTWithConcreteType ()
 		{
 			Activator.CreateInstance<TestCreateInstanceOfTWithConcreteTypeType> ();
@@ -448,7 +443,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestCreateInstanceOfTWithNewConstraint<T> () where T : new()
 		{
 			Activator.CreateInstance<T> ();
@@ -467,6 +461,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL2091", nameof (Activator), nameof (Activator.CreateInstance) + "<T>")]
 		[ExpectedWarning ("IL2091", nameof (Activator), nameof (Activator.CreateInstance) + "<T>")]
 		// Warnings are currently duplicated in NETCORE (annotation and intrinsics) - but they're not identical in this case.
 		// See https://github.com/dotnet/linker/issues/1483
@@ -489,7 +484,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestCreateInstanceOfTWithDataflow<
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
 			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] T> ()
@@ -507,14 +501,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestNullArgsOnKnownType ()
 		{
 			Activator.CreateInstance (typeof (TestNullArgsType), null);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		private static void TestNullArgsOnAnnotatedType (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor),
 			KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))] Type type)
