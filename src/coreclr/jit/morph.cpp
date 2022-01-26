@@ -12675,6 +12675,12 @@ DONE_MORPHING_CHILDREN:
                 return tree;
             }
 
+            if (op1->IsCnsIntOrI() && op1->IsIconHandle(GTF_ICON_FTN_ADDR))
+            {
+                // IND(FTN_ADDR) is invariant, nonnull and won't fault
+                tree->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL;
+            }
+
             break;
         }
 
