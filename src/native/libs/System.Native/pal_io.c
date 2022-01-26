@@ -61,7 +61,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
-#ifdef __linux__
+#ifdef TARGET_LINUX
 #include <sys/utsname.h>
 
 // Ensure FICLONE is defined for all Linux builds.
@@ -1189,19 +1189,22 @@ static bool SupportsCopyFileRange()
     {
         isSupported = -1;
 
+#ifdef TARGET_LINUX
         // Avoid known issues with copy_file_range that are fixed in Linux 5.3+ (https://lwn.net/Articles/789527/).
         struct utsname name;
         if (uname(&name) == 0)
         {
-            if (name.release[1] != '.' ||
-                name.release[0] > '5'  ||
-                (name.release[0] == '5' &&
-                    (name.release[3] != '.' ||
-                     name.release[2] >= '3')))
+            if (name.release[0] && name.release[1] &&
+                (name.release[1] != '.' ||
+                 name.release[0] > '5'  ||
+                 (name.release[0] == '5' && name.release[2] && name.release[3] &&
+                     (name.release[3] != '.' ||
+                      name.release[2] >= '3'))))
             {
                 isSupported = CopyFileRange(-1, -1, 0) == -1 && errno != ENOSYS ? 1 : -1;
             }
         }
+#endif
 
         s_isSupported = isSupported;
     }
