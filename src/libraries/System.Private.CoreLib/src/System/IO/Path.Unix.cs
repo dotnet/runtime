@@ -16,13 +16,27 @@ namespace System.IO
         // Checks if the given path is available for use.
         public static bool Exists([NotNullWhen(true)] string? path)
         {
-            if (path == null)
+            try
             {
-                return false;
+                if (path == null)
+                {
+                    return false;
+                }
+
+                if (path.Length == 0)
+                {
+                    return false;
+                }
+
+                ReadOnlySpan<char> fullPath = GetFullPath(path).AsSpan();
+                return Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus _) > 0;
             }
 
-            ReadOnlySpan<char> fullPath = GetFullPath(path).AsSpan();
-            return Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus _) > 0;
+            catch (ArgumentException) { }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+
+            return false;
         }
 
         // Expands the given path to a fully qualified path.

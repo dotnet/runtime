@@ -30,14 +30,28 @@ namespace System.IO
         //Checks if the given path is available for use.
         public static bool Exists([NotNullWhen(true)] string? path)
         {
-            if (path == null)
+            try
             {
-                return false;
+                if (path == null)
+                {
+                    return false;
+                }
+
+                if (path.Length == 0)
+                {
+                    return false;
+                }
+
+                string fullPath = GetFullPath(path);
+                Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+                return FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true) == 0;
             }
 
-            var fullPath = GetFullPath(path);
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            return FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true) == 0;
+            catch (ArgumentException) { }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+
+            return false;
         }
 
         // Expands the given path to a fully qualified path.
