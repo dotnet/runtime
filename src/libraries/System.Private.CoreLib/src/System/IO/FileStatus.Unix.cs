@@ -19,22 +19,22 @@ namespace System.IO
         // < 0 : initialized succesfully. Value is InitializedNotExists, InitializedExistsFile or InitializedExistsDir.
         //   0 : uninitialized.
         // > 0 : initialized with error. Value is raw errno.
-        private int _initialized;
+        private int _state;
 
         // The last cached lstat information about the file.
         // Must only be used after calling EnsureCachesInitialized and checking EntryExists is true.
         private Interop.Sys.FileStatus _fileCache;
 
-        private bool EntryExists => _initialized <= InitializedExistsFile;
+        private bool EntryExists => _state <= InitializedExistsFile;
 
-        private bool IsDir => _initialized == InitializedExistsDir;
+        private bool IsDir => _state == InitializedExistsDir;
 
         // Check if the main path (without following symlinks) has the hidden attribute set.
         private bool HasHiddenFlag
         {
             get
             {
-                Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
+                Debug.Assert(_state != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
                 return EntryExists && (_fileCache.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN;
             }
@@ -45,7 +45,7 @@ namespace System.IO
         {
             get
             {
-                Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
+                Debug.Assert(_state != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
                 if (!EntryExists)
                 {
@@ -128,7 +128,7 @@ namespace System.IO
         {
             get
             {
-                Debug.Assert(_initialized != Uninitialized); // Use this after EnsureCachesInitialized has been called.
+                Debug.Assert(_state != Uninitialized); // Use this after EnsureCachesInitialized has been called.
 
                 return EntryExists && (_fileCache.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK;
             }
@@ -137,7 +137,7 @@ namespace System.IO
         // Sets the cache initialization flags to 0, which means the caches are now uninitialized
         internal void InvalidateCaches()
         {
-            _initialized = Uninitialized;
+            _state = Uninitialized;
         }
 
         internal bool IsReadOnly(ReadOnlySpan<char> path, bool continueOnError = false)
@@ -417,12 +417,12 @@ namespace System.IO
                 if (errorInfo.Error == Interop.Error.ENOENT || // A component of the path does not exist, or path is an empty string
                     errorInfo.Error == Interop.Error.ENOTDIR)  // A component of the path prefix of path is not a directory
                 {
-                    _initialized = InitializedNotExists;
+                    _state = InitializedNotExists;
                 }
                 else
                 {
                     Debug.Assert(errorInfo.RawErrno > 0); // Expect a positive integer
-                    _initialized = errorInfo.RawErrno; // Initialized with error.
+                    _state = errorInfo.RawErrno; // Initialized with error.
                 }
 
                 return;
@@ -435,14 +435,14 @@ namespace System.IO
                                 && Interop.Sys.Stat(path, out Interop.Sys.FileStatus target) == 0
                                 && (target.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
 
-            _initialized = isDirectory ? InitializedExistsDir : InitializedExistsFile;
+            _state = isDirectory ? InitializedExistsDir : InitializedExistsFile;
         }
 
         // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
         internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
         {
-            if (_initialized == Uninitialized)
+            if (_state == Uninitialized)
             {
                 RefreshCaches(path);
             }
@@ -457,7 +457,7 @@ namespace System.IO
         private void ThrowOnCacheInitializationError(ReadOnlySpan<char> path)
         {
             // Lstat should always be initialized by Refresh
-            int errno = _initialized;
+            int errno = _state;
             if (errno > 0)
             {
                 InvalidateCaches();
