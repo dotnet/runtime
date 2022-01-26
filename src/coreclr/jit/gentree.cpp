@@ -22025,7 +22025,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 bool GenTree::IsInvariant() const
 {
     GenTree* lclVarTree = nullptr;
-    return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree) || OperIs(GT_FTN_ADDR);
+    return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree); // || OperIs(GT_FTN_ADDR);
 }
 
 //------------------------------------------------------------------------
