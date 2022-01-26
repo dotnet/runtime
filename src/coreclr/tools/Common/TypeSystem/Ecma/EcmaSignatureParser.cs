@@ -255,10 +255,9 @@ namespace Internal.TypeSystem.Ecma
                         return _tsc.GetFunctionPointerType(sig);
                     else
                         return null;
-                case SignatureTypeCode.Sentinel:
-                    throw new TypeSystemException.BadImageFormatException();
                 default:
-                    throw new BadImageFormatException();
+                    ThrowHelper.ThrowBadImageFormatException();
+                    break;
             }
         }
 
