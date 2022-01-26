@@ -17,10 +17,8 @@
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
     <DefineConstants>$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
     <IsPackable>true</IsPackable>
-    <!-- Disable package on release/6.0-maui branch, revert before merging back into release/6.0
     <ServicingVersion>1</ServicingVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    -->
     <PackageDescription>Exposes new experimental APIs from System.Runtime</PackageDescription>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <!-- TODO: Remove when the package shipped with NET6. -->
