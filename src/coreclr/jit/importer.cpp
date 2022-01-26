@@ -11839,13 +11839,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         //
         if (!compTailPrefixSeen)
         {
-            assert(compCanHavePatchpoints());
-
             // The normaly policy is only to add patchpoints to the targets of lexically
             // backwards branches.
             //
             if (compHasBackwardJump)
             {
+                assert(compCanHavePatchpoints());
+
                 // Is the start of this block a suitable patchpoint?
                 //
                 if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
@@ -11876,8 +11876,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryOffsetOSR = offsetOSR >= 0;
         const bool tryRandomOSR = randomOSR > 0;
 
-        if ((tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
-            ((block->bbFlags & BBF_PATCHPOINT) == 0))
+        if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) &&
+            !block->hasHndIndex() && ((block->bbFlags & BBF_PATCHPOINT) == 0))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
