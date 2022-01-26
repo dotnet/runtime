@@ -501,12 +501,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // Protocol extensions
                 case "DotnetDebugger.setNextIP":
                     {
-                        if (await OnSetNextIP(id, args["location"]?["scriptId"]?.Value<string>(), args["location"]["lineNumber"].Value<int>(), args["location"]["columnNumber"].Value<int>(), token))
-                        {
+                        if (!SourceId.TryParse(args["location"]?["scriptId"]?.Value<string>(), out SourceId sourceId))
+                            return false;
+                        var ret = await OnSetNextIP(id, sourceId, args["location"]["lineNumber"].Value<int>(), args["location"]["columnNumber"].Value<int>(), token);
+                        if (ret == true)
                             SendResponse(id, Result.OkFromObject(new { }), token);
-                            return true;
-                        }
-                        break;
+                        else
+                            SendResponse(id, Result.Err("Set next instruction pointer failed."), token);
+                        return true;
                     }
                 case "DotnetDebugger.applyUpdates":
                     {
@@ -1529,11 +1531,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
-        private async Task<bool> OnSetNextIP(MessageId sessionId, string script_id, int lineNumber, int columnNumber, CancellationToken token)
+        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceId id, int lineNumber, int columnNumber, CancellationToken token)
         {
-            if (!SourceId.TryParse(script_id, out SourceId id))
-                return false;
-
             DebugStore store = await RuntimeReady(sessionId, token);
             ExecutionContext context = GetContext(sessionId);
             Frame scope = context.CallStack.First<Frame>();
@@ -1542,13 +1541,20 @@ namespace Microsoft.WebAssembly.Diagnostics
             var sourceLocation = new SourceLocation(id, lineNumber, columnNumber == 0 ? -1 : columnNumber);
 
             store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, scope.Method.Info);
+            if (res.Count == 0)
+                return false;
+
             var ilOffset = res.First().IlLocation;
 
             var ret = await context.SdbAgent.SetNextIP(scope.Method, context.ThreadId, ilOffset, token);
+
+            if (!ret)
+                return false;
+
             var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
             context.BreakpointToDisable = breakpointId;
             await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-            return ret;
+            return true;
         }
 
         private async Task<bool> OnGetScriptSource(MessageId msg_id, string script_id, CancellationToken token)
