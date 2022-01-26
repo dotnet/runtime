@@ -19,7 +19,7 @@ namespace System.IO
     // There are methods on the Stream class for reading bytes.
     public abstract partial class TextReader : MarshalByRefObject, IDisposable
     {
-        public static readonly TextReader Null = new NullTextReader();
+        public static readonly TextReader Null = StreamReader.Null;
 
         protected TextReader() { }
 
@@ -337,47 +337,6 @@ namespace System.IO
             return n;
         }
         #endregion
-
-        private sealed class NullTextReader : TextReader
-        {
-            public NullTextReader() { }
-
-            public override int Peek() => -1;
-
-            public override int Read() => -1;
-
-            public override int Read(char[] buffer, int index, int count) => 0;
-
-            public override int Read(Span<char> buffer) => 0;
-
-            public override Task<int> ReadAsync(char[] buffer, int index, int count) => Task.FromResult(0);
-
-            public override ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
-
-            public override int ReadBlock(char[] buffer, int index, int count) => 0;
-
-            public override int ReadBlock(Span<char> buffer) => 0;
-
-            public override Task<int> ReadBlockAsync(char[] buffer, int index, int count) => Task.FromResult(0);
-
-            public override ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
-
-            public override string? ReadLine() => null;
-
-            public override Task<string?> ReadLineAsync() => Task.FromResult<string?>(null);
-
-            public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<string?>(cancellationToken) : default;
-
-            public override string ReadToEnd() => "";
-
-            public override Task<string> ReadToEndAsync() => Task.FromResult("");
-
-            public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult("");
-        }
 
         public static TextReader Synchronized(TextReader reader)
         {

@@ -1431,6 +1431,9 @@ namespace System.IO
             public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
                 cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult("");
 
+            internal override ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken) =>
+                cancellationToken.IsCancellationRequested ? ValueTask.FromCanceled<int>(cancellationToken) : default;
+
             internal override int ReadBuffer() => 0;
         }
     }
