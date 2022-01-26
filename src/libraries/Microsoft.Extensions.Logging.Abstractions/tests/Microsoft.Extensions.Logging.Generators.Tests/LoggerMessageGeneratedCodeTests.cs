@@ -341,6 +341,20 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Warning, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
             Assert.Equal(11, logger.LastEventId.Id);
+
+            logger.Reset();
+            LevelTestExtensions.M12(logger, LogLevel.Trace);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M12 Trace", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M13(logger, LogLevel.Trace);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M13 Microsoft.Extensions.Logging.Generators.Tests.MockLogger", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
@@ -359,6 +373,13 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             ExceptionTestExtensions.M1(new ArgumentException("Foo"), logger, new ArgumentException("Bar"));
             Assert.Equal("Foo", logger.LastException!.Message);
             Assert.Equal("M1 System.ArgumentException: Bar", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            ExceptionTestExtensions.M2(logger, "One", new ArgumentException("Foo"));
+            Assert.Equal("Foo", logger.LastException!.Message);
+            Assert.Equal("M2 One: System.ArgumentException: Foo", logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
         }
