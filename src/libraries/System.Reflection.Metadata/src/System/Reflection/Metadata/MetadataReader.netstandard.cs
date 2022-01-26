@@ -44,6 +44,9 @@ namespace System.Reflection.Metadata
 
         internal static unsafe AssemblyName GetAssemblyName(string assemblyFile)
         {
+            if (assemblyFile == null)
+                throw new ArgumentNullException(nameof(assemblyFile));
+
             FileStream? fileStream = null;
             MemoryMappedFile? mappedFile = null;
             MemoryMappedViewAccessor? accessor = null;

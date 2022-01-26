@@ -191,9 +191,6 @@ namespace System.Reflection
          */
         public static AssemblyName GetAssemblyName(string assemblyFile)
         {
-            if (assemblyFile == null)
-                throw new ArgumentNullException(nameof(assemblyFile));
-
             return (s_getAssemblyName ?? InitGetAssemblyName())(assemblyFile);
         }
 
