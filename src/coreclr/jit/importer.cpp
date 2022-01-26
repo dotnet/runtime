@@ -9543,6 +9543,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                 // Take care to pass raw IL offset here as the 'debug info' might be different for
                                 // inlinees.
                                 rawILOffset);
+
+            // Devirtualization may change which method gets invoked. Update our local cache.
+            //
+            methHnd = callInfo->hMethod;
         }
 
         if (impIsThis(obj))
@@ -11806,9 +11810,40 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    // Is OSR enabled?
+    bool enablePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+
+#ifdef DEBUG
+
+    // Optionally suppress patchpoints by method hash
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+    static ConfigMethodRange JitEnablePatchpointRange;
+    JitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange());
+    const unsigned hash = impInlineRoot()->info.compMethodHash();
+    const bool     bbbb = JitEnablePatchpointRange.Contains(hash);
+
+    static bool firstYes = true;
+    if (enablePatchpoints && bbbb && firstYes)
+    {
+        printf("!!! PATCHPOINT RANGE\n");
+        JitEnablePatchpointRange.Dump();
+        printf("!!! ALLOW %s (hash 0x%08x)\n", info.compFullName, hash);
+        firstYes = false;
+    }
+
+    static bool firstNo = true;
+    if (enablePatchpoints && !bbbb && firstNo)
+    {
+        printf("!!! PATCHPOINT RANGE\n");
+        JitEnablePatchpointRange.Dump();
+        printf("!!! DENY %s (hash 0x%08x)\n", info.compFullName, hash);
+        firstNo = false;
+    }
+
+    enablePatchpoints &= bbbb;
+
+#endif // DEBUG
+
+    if (enablePatchpoints)
     {
         // We don't inline at Tier0, if we do, we may need rethink our approach.
         // Could probably support inlines that don't introduce flow.
