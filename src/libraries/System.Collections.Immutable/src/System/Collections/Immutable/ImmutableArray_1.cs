@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.Versioning;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Immutable
 {
@@ -854,6 +856,100 @@ namespace System.Collections.Immutable
             }
 
             return self.InsertSpanRangeInternal(index, items);
+        }
+
+        /// <summary>
+        /// Removes the specified values from this list.
+        /// </summary>
+        /// <param name="items">The items to remove if matches are found in this list.</param>
+        /// <param name="equalityComparer">
+        /// The equality comparer to use in the search.
+        /// </param>
+        /// <returns>
+        /// A new list with the elements removed.
+        /// </returns>
+        public ImmutableArray<T> RemoveRange(ReadOnlySpan<T> items, IEqualityComparer<T>? equalityComparer = null)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+
+            if (items.IsEmpty || self.IsEmpty)
+            {
+                return self;
+            }
+
+            if (items.Length == 1)
+            {
+                return self.Remove(items[0], equalityComparer);
+            }
+
+#nullable disable
+            var itemsMultiSet = new Dictionary<T, int>(equalityComparer);
+#nullable restore
+            int nullValueCount = 0;
+            foreach (ref readonly T item in items)
+            {
+                if (item == null)
+                {
+                    nullValueCount++;
+                }
+                else
+                {
+#if NET6_0_OR_GREATER
+#nullable disable
+                    ref int count = ref CollectionsMarshal.GetValueRefOrAddDefault(itemsMultiSet, item, out _);
+#nullable restore
+                    count++;
+#else
+                    if (itemsMultiSet.TryGetValue(item, out int count))
+                    {
+                        itemsMultiSet[item] = count + 1;
+                    }
+                    else
+                    {
+                        itemsMultiSet[item] = 1;
+                    }
+#endif
+                }
+            }
+
+            List<int>? indicesToRemove = null;
+            T[] selfArray = self.array!;
+            for (int i = 0; i < selfArray.Length; i++)
+            {
+                if (selfArray[i] == null)
+                {
+                    if (nullValueCount == 0)
+                    {
+                        continue;
+                    }
+                    nullValueCount--;
+                }
+                else
+                {
+#if NET6_0_OR_GREATER
+#nullable disable
+                    ref int count = ref CollectionsMarshal.GetValueRefOrNullRef(itemsMultiSet, selfArray[i]);
+#nullable restore
+                    if (Unsafe.IsNullRef(ref count) || count == 0)
+                    {
+                        continue;
+                    }
+                    count--;
+#else
+                    if (!itemsMultiSet.TryGetValue(selfArray[i], out int count) || count == 0)
+                    {
+                        continue;
+                    }
+                    itemsMultiSet[selfArray[i]] = count - 1;
+#endif
+                }
+
+                indicesToRemove ??= new();
+                indicesToRemove.Add(i);
+            }
+
+            return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
