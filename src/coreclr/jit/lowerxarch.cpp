@@ -3735,7 +3735,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 }
 
 //----------------------------------------------------------------------------------------------
-// Lowering::TryLowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1) to HWIntrinsic::ResetLowestSetBit
+// Lowering::TryLowerAndOpToResetLowestSetBit: Lowers a tree AND(X, ADD(X, -1)) to HWIntrinsic::ResetLowestSetBit
 //
 // Arguments:
 //    andNode - GT_AND node of integral type
@@ -3743,6 +3743,8 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 // Return Value:
 //    Returns the replacement node if one is created else nullptr indicating no replacement
 //
+// Notes:
+//    Performs containment checks on the replacement node if one is created
 GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
 {
     assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
@@ -3811,6 +3813,17 @@ GenTree* Lowering::TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode)
     return blsrNode;
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::TryLowerAndOpToAndNot: Lowers a tree AND(X, NOT(Y)) to HWIntrinsic::AndNot
+//
+// Arguments:
+//    andNode - GT_AND node of integral type
+//
+// Return Value:
+//    Returns the replacement node if one is created else nullptr indicating no replacement
+//
+// Notes:
+//    Performs containment checks on the replacement node if one is created
 GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 {
     assert(andNode->OperIs(GT_AND) && varTypeIsIntegral(andNode));
@@ -3853,6 +3866,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
         return nullptr;
     }
 
+    // note that parameter order for andn is ~y, x so these are purposefully reversed when creating the node
     GenTreeHWIntrinsic* andnNode =
         comp->gtNewScalarHWIntrinsicNode(andNode->TypeGet(), notNode->AsUnOp()->gtGetOp1(), opNode, intrinsic);
 
@@ -3870,7 +3884,6 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     ContainCheckHWIntrinsic(andnNode);
 
     return andnNode;
-    
 }
 
 #endif // FEATURE_HW_INTRINSICS

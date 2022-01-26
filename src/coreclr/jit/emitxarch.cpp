@@ -423,6 +423,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps tr
         case IF_RWR:
         case IF_RRD:
         case IF_RRW:
+        case IF_RWR_RRD_RRD:
             break;
         default:
             return false;
