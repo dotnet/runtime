@@ -156,8 +156,11 @@ namespace DebuggerTests
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
                     CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
 
-                    var not_wasm_frame = pause_location["callFrames"][2];
-                    Assert.Contains("dotnet.js", not_wasm_frame["url"].Value<string>());
+                    foreach (var frame in pause_location["callFrames"])
+                    {
+                        Assert.Equal(false, frame["url"].Value<string>().Contains(".wasm"));
+                        Assert.Equal(false, frame["url"].Value<string>().Contains("wasm://"));
+                    }
                     return Task.CompletedTask;
                 }
             );
