@@ -285,7 +285,24 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
-    if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
+    bool isHardwareAccelerated = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    if (isHardwareAccelerated)
+    {
+        // Special case: Some of Vector128/256 APIs are hardware accelerated with Sse1 and Avx1,
+        // but we want IsHardwareAccelerated to return true only all of them are (there are still
+        // can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's not
+        // important enought to bump the minimal Sse version here)
+        if (strcmp(className, "Vector128") == 0)
+        {
+            isa = InstructionSet_SSE2;
+        }
+        else if (strcmp(className, "Vector256") == 0)
+        {
+            isa = InstructionSet_AVX2;
+        }
+    }
+
+    if ((strcmp(methodName, "get_IsSupported") == 0) || isHardwareAccelerated)
     {
         return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
                               : NI_IsSupported_False;
