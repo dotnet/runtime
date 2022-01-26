@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 
 using Xunit;
@@ -30,9 +31,8 @@ namespace System.Net.Security.Tests
         public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, bool useClientSelectionCallback)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
-            using (var client = new SslStream(stream1, true, AllowAnyCertificate))
-            using (var server = new SslStream(stream2, true, AllowAnyCertificate))
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            using (var client = new SslStream(stream1, false, AllowAnyCertificate))
+            using (var server = new SslStream(stream2, false, AllowAnyCertificate))
             {
                 Task t2 = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                 {
@@ -48,17 +48,28 @@ namespace System.Net.Security.Tests
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                if (clientCertificateRequired)
+                if (Capability.IsTrustedRootCertificateInstalled())
                 {
-                    Assert.True(client.IsMutuallyAuthenticated);
-                    Assert.True(server.IsMutuallyAuthenticated);
-                }
-                else
-                {
-                    // Even though the certificate was provided, it was not requested by the server and thus the client
-                    // was not authenticated.
-                    Assert.False(client.IsMutuallyAuthenticated);
-                    Assert.False(server.IsMutuallyAuthenticated);
+                    // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
+                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
+                    // The behavior to send the Trusted Issuers List by default is off.
+                    //
+                    // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
+                    // by the server using certificates from the Trusted Root Authorities certificate store.
+                    // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
+
+                    if (clientCertificateRequired)
+                    {
+                        Assert.True(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
+                        Assert.True(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
+                    }
+                    else
+                    {
+                        // Even though the certificate was provided, it was not requested by the server and thus the client
+                        // was not authenticated.
+                        Assert.False(client.IsMutuallyAuthenticated, "client.IsMutuallyAuthenticated");
+                        Assert.False(server.IsMutuallyAuthenticated, "server.IsMutuallyAuthenticated");
+                    }
                 }
             }
         }
