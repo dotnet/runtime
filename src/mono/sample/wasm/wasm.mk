@@ -11,7 +11,7 @@ CONFIG?=Release
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
 # if we're in a devcontainer, don't try to open the browser
-ifneq ("$(wildcard $(TOP)/artifacts/prebuild.sha)", "")
+ifeq ("$(CODESPACES)", "true")
   OPEN_BROWSER=
   V8_PATH=v8
 else
