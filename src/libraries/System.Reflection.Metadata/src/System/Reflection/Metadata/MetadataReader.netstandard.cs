@@ -48,35 +48,39 @@ namespace System.Reflection.Metadata
             MemoryMappedFile? mappedFile = null;
             MemoryMappedViewAccessor? accessor = null;
             PEReader? peReader = null;
+
             try
             {
-                // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false);
-                if (fileStream.Length == 0)
+                try
                 {
-                    throw new BadImageFormatException(SR.PEImageDoesNotHaveMetadata, assemblyFile);
+                    // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
+                    fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false);
+                    if (fileStream.Length == 0)
+                    {
+                        throw new BadImageFormatException(SR.PEImageDoesNotHaveMetadata, assemblyFile);
+                    }
+
+                    mappedFile = MemoryMappedFile.CreateFromFile(
+                        fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+                    accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+
+                    SafeMemoryMappedViewHandle? safeBuffer = accessor.SafeMemoryMappedViewHandle;
+                    peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
+                    MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
+                    AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
+                    return assemblyName;
                 }
-
-                mappedFile = MemoryMappedFile.CreateFromFile(
-                    fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
-                accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
-
-                SafeMemoryMappedViewHandle? safeBuffer = accessor.SafeMemoryMappedViewHandle;
-                peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
-                MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
-                AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
-                return assemblyName;
+                finally
+                {
+                    peReader?.Dispose();
+                    accessor?.Dispose();
+                    mappedFile?.Dispose();
+                    fileStream?.Dispose();
+                }
             }
             catch (InvalidOperationException ex)
             {
                 throw new BadImageFormatException(ex.Message);
-            }
-            finally
-            {
-                peReader?.Dispose();
-                accessor?.Dispose();
-                mappedFile?.Dispose();
-                fileStream?.Dispose();
             }
         }
 
