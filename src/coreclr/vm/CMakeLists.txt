@@ -289,7 +289,6 @@ set(GC_HEADERS_DAC
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
-    assemblyname.cpp
     assemblynative.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
