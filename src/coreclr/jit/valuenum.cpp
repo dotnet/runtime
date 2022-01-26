@@ -8755,38 +8755,42 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // Usually the ADDR and IND just cancel out...
                 // except when this GT_ADDR has a valid zero-offset field sequence
                 //
+
+                ValueNumPair  addrVNP            = ValueNumPair();
                 FieldSeqNode* zeroOffsetFieldSeq = nullptr;
                 if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFieldSeq) &&
                     (zeroOffsetFieldSeq != FieldSeqStore::NotAField()))
                 {
-                    ValueNum addrExtended = vnStore->ExtendPtrVN(arg->AsOp()->gtOp1, zeroOffsetFieldSeq);
+                    ValueNum addrExtended = vnStore->ExtendPtrVN(arg->AsIndir()->Addr(), zeroOffsetFieldSeq);
                     if (addrExtended != ValueNumStore::NoVN)
                     {
-                        tree->gtVNPair.SetBoth(addrExtended); // We don't care about lib/cons differences for addresses.
+                        // We don't care about lib/cons differences for addresses.
+                        addrVNP.SetBoth(addrExtended);
                     }
                     else
                     {
-                        // ExtendPtrVN returned a failure result
-                        // So give this address a new unique value
-                        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_BYREF));
+                        // ExtendPtrVN returned a failure result - give this address a new unique value.
+                        addrVNP.SetBoth(vnStore->VNForExpr(compCurBB, TYP_BYREF));
                     }
                 }
                 else
                 {
                     // They just cancel, so fetch the ValueNumber from the op1 of the GT_IND node.
                     //
-                    GenTree* addr  = arg->AsIndir()->Addr();
-                    tree->gtVNPair = addr->gtVNPair;
+                    GenTree* addr = arg->AsIndir()->Addr();
+                    addrVNP       = addr->gtVNPair;
 
                     // For the CSE phase mark the address as GTF_DONT_CSE
                     // because it will end up with the same value number as tree (the GT_ADDR).
                     addr->gtFlags |= GTF_DONT_CSE;
                 }
+
+                tree->gtVNPair = vnStore->VNPWithExc(addrVNP, vnStore->VNPExceptionSet(arg->gtVNPair));
             }
             else
             {
                 // May be more cases to do here!  But we'll punt for now.
-                tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_BYREF));
+                tree->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(arg->gtVNPair));
             }
         }
         else if ((oper == GT_IND) || GenTree::OperIsBlk(oper))
