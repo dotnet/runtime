@@ -174,12 +174,9 @@ namespace ILCompiler
             }
             finally
             {
-                if (accessor != null)
-                    accessor.Dispose();
-                if (mappedFile != null)
-                    mappedFile.Dispose();
-                if (fileStream != null)
-                    fileStream.Dispose();
+                accessor?.Dispose();
+                mappedFile?.Dispose();
+                fileStream?.Dispose();
             }
         }
 
