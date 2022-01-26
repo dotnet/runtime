@@ -61,7 +61,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
-#ifdef TARGET_LINUX
+#if defined(TARGET_LINUX) && !defined(TARGET_WASM)
 #include <sys/utsname.h>
 
 // Ensure FICLONE is defined for all Linux builds.
