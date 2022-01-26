@@ -19,7 +19,8 @@ namespace System.IO
     // There are methods on the Stream class for reading bytes.
     public abstract partial class TextReader : MarshalByRefObject, IDisposable
     {
-        public static readonly TextReader Null = StreamReader.Null;
+        // Create our own instance to avoid static field initialization order problems on Mono.
+        public static readonly TextReader Null = new StreamReader.NullStreamReader();
 
         protected TextReader() { }
 

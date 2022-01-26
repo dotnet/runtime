@@ -1386,7 +1386,7 @@ namespace System.IO
 
         // No data, class doesn't need to be serializable.
         // Note this class is threadsafe.
-        private sealed class NullStreamReader : StreamReader
+        internal sealed class NullStreamReader : StreamReader
         {
             public override Encoding CurrentEncoding => Encoding.Unicode;
 
