@@ -1763,6 +1763,7 @@
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCng.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCng.Derive.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCng.Key.cs" />
+    <Compile Include="System\Security\Cryptography\ECDiffieHellmanCng.Xml.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanCngPublicKey.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellmanWrapper.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />

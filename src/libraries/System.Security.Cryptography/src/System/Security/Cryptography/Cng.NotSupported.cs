@@ -258,6 +258,8 @@ namespace System.Security.Cryptography
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey) => null!;
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey) => null!;
         public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey) => null!;
+        public void FromXmlString(string xml, ECKeyXmlFormat format) { }
+        public string ToXmlString(ECKeyXmlFormat format) => null!;
         public override ECDiffieHellmanPublicKey PublicKey => null!;
     }
     public sealed partial class ECDiffieHellmanCngPublicKey : ECDiffieHellmanPublicKey
