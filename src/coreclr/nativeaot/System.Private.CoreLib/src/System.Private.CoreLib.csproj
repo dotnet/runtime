@@ -129,7 +129,6 @@
     <Compile Include="System\Reflection\AssemblyRuntimeNameHelpers.cs" />
     <Compile Include="System\Reflection\Attribute.CoreRT.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
-    <Compile Include="System\Reflection\AssemblyName.CoreRT.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
