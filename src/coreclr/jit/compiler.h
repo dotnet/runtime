@@ -8082,7 +8082,6 @@ public:
                        CORINFO_RESOLVED_TOKEN* pConstrainedToken,
                        CORINFO_CALLINFO_FLAGS  flags,
                        CORINFO_CALL_INFO*      pResult);
-    inline CORINFO_CALLINFO_FLAGS addVerifyFlag(CORINFO_CALLINFO_FLAGS flags);
 
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
