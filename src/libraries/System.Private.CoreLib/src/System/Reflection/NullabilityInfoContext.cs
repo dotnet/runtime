@@ -28,7 +28,7 @@ namespace System.Reflection
             Internal = 0x2 // internal members not annotated
         }
 
-        private NullabilityState GetNullableContext(MemberInfo? memberInfo)
+        private NullabilityState? GetNullableContext(MemberInfo? memberInfo)
         {
             while (memberInfo != null)
             {
@@ -52,7 +52,7 @@ namespace System.Reflection
                 memberInfo = memberInfo.DeclaringType;
             }
 
-            return NullabilityState.Unknown;
+            return null;
         }
 
         /// <summary>
@@ -361,13 +361,17 @@ namespace System.Reflection
                     state = NullabilityState.NotNull;
                 }
 
-                if (underlyingType.IsGenericType) { ++index; }
+                if (underlyingType.IsGenericType)
+                {
+                    ++index;
+                }
             }
             else
             {
-                if (!parser.ParseNullableState(index++, ref state))
+                if (!parser.ParseNullableState(index++, ref state)
+                    && GetNullableContext(memberInfo) is { } contextState)
                 {
-                    state = GetNullableContext(memberInfo);
+                    state = contextState;
                 }
 
                 if (type.IsArray)
@@ -458,7 +462,7 @@ namespace System.Reflection
             {
                 if (nullability.ReadState == NullabilityState.NotNull)
                 {
-                    UpdateGenericParameterNullability(nullability, metaType, reflectedType);
+                    TryUpdateGenericParameterNullability(nullability, metaType, reflectedType);
                 }
             }
             else if (metaType.ContainsGenericParameters)
@@ -479,7 +483,7 @@ namespace System.Reflection
             }
         }
 
-        private void UpdateGenericParameterNullability(NullabilityInfo nullability, Type genericParameter, Type? reflectedType)
+        private bool TryUpdateGenericParameterNullability(NullabilityInfo nullability, Type genericParameter, Type? reflectedType)
         {
             Debug.Assert(genericParameter.IsGenericParameter);
 
@@ -487,7 +491,7 @@ namespace System.Reflection
                 && !genericParameter.IsGenericMethodParameter
                 && TryUpdateGenericTypeParameterNullabilityFromReflectedType(nullability, genericParameter, reflectedType, reflectedType))
             {
-                return;
+                return true;
             }
 
             var state = NullabilityState.Unknown;
@@ -495,8 +499,17 @@ namespace System.Reflection
             {
                 nullability.ReadState = state;
                 nullability.WriteState = state;
-                return;
+                return true;
             }
+
+            if (GetNullableContext(genericParameter) is { } contextState)
+            {
+                nullability.ReadState = contextState;
+                nullability.WriteState = contextState;
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryUpdateGenericTypeParameterNullabilityFromReflectedType(NullabilityInfo nullability, Type genericParameter, Type context, Type reflectedType)
@@ -525,8 +538,7 @@ namespace System.Reflection
             Type genericArgument = genericArguments[genericParameter.GenericParameterPosition];
             if (genericArgument.IsGenericParameter)
             {
-                UpdateGenericParameterNullability(nullability, genericArgument, reflectedType);
-                return true;
+                return TryUpdateGenericParameterNullability(nullability, genericArgument, reflectedType);
             }
 
             NullableAttributeStateParser parser = CreateParser(contextTypeDefinition.GetCustomAttributesData());
@@ -548,6 +560,10 @@ namespace System.Reflection
                         count += CountNullabilityStates(genericArgument);
                     }
                     return count;
+                }
+                if (underlyingType.IsArray)
+                {
+                    return 1 + CountNullabilityStates(underlyingType.GetElementType()!);
                 }
 
                 return type.IsValueType ? 0 : 1;
