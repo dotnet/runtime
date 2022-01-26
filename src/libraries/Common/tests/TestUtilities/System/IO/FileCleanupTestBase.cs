@@ -142,9 +142,14 @@ namespace System.IO
                 return @"LOCAL\" + Guid.NewGuid().ToString("N");
             }
 
-            if (PlatformDetection.IsWindows || !PlatformDetection.IsCaseSensitiveOS)
+            if (PlatformDetection.IsWindows)
             {
                 return Guid.NewGuid().ToString("N");
+            }
+
+            if (!PlatformDetection.IsCaseSensitiveOS)
+            {
+                return $"/tmp/{Guid.NewGuid().ToString("N")}";
             }
 
             const int MinUdsPathLength = 104; // required min is 92, but every platform we currently target is at least 104
