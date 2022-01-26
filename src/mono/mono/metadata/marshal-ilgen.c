@@ -6279,7 +6279,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 static gboolean
 emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSpec** mspecs, MonoError* error)
 {
-	if (mspecs && error) {
+	if (mspecs) {
 		for (int i = 0; i < sig->param_count; i ++) {
 			if (mspecs [i + 1] && mspecs [i + 1]->native == MONO_NATIVE_CUSTOM) {
 				if (!mspecs [i + 1]->data.custom_data.custom_name || strlen (mspecs [i + 1]->data.custom_data.custom_name) == 0) {

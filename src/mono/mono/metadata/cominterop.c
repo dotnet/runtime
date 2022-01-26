@@ -2104,12 +2104,16 @@ cominterop_get_ccw_method (MonoClass *iface, MonoMethod *method, MonoError *erro
 	cominterop_setup_marshal_context (&m, adjust_method);
 	m.mb = mb;
 	m.runtime_marshalling_enabled = TRUE;
-	mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0, NULL);
-	mono_cominterop_lock ();
-	wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
-	mono_cominterop_unlock ();
+	mono_marshal_emit_managed_wrapper (mb, sig_adjusted, mspecs, &m, adjust_method, 0, error);
 
-	gpointer ret = mono_compile_method_checked (wrapper_method, error);
+	gpointer ret = NULL;
+	if (is_ok (error)) {
+		mono_cominterop_lock ();
+		wrapper_method = mono_mb_create_method (mb, m.csig, m.csig->param_count + 16);
+		mono_cominterop_unlock ();
+
+		ret = mono_compile_method_checked (wrapper_method, error);
+	}
 
 	mono_mb_free (mb);
 	for (param_index = sig_adjusted->param_count; param_index >= 0; param_index--)
