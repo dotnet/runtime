@@ -28,7 +28,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Linux)]
-        //[OuterLoop()] //TODO: add Outer Loop attribute?
+        [OuterLoop("May take several seconds")]
         [ConditionalFact(nameof(SupportsGettingThreadsWithPsCommand))]
         public void NetworkAddressChanged_AddRemoveMultipleTimes_CheckForLeakingThreads()
         {
