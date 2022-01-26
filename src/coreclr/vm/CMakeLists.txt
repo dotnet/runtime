@@ -391,7 +391,6 @@ set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
     appdomainnative.hpp
-    assemblyname.hpp
     assemblynative.hpp
     assemblyspec.hpp
     assemblyspecbase.h
