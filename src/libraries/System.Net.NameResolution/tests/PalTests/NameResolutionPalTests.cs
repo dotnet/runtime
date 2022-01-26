@@ -25,7 +25,6 @@ namespace System.Net.NameResolution.PalTests
             {
                 // Equivalent of `Get-DnsClientNrptRule -Name .ip6.arpa`
                 using RegistryKey? key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Dnscache\Parameters\DnsPolicyConfig");
-
                 if (key != null)
                 {
                     // Also filtering out anything not written by MSFTVPN
