@@ -27,6 +27,19 @@ namespace System.IO
             (char)31
         };
 
+        //Checks if the given path is available for use.
+        public static bool Exists([NotNullWhen(true)] string? path)
+        {
+            if (path == null)
+            {
+                return false;
+            }
+
+            var fullPath = GetFullPath(path);
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            return FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true) == 0;
+        }
+
         // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
