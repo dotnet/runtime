@@ -453,7 +453,7 @@ namespace System.Net.Security
             if (_lastFrame.Header.Length < 0)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
-                throw new IOException(SR.net_frame_read_size);
+                throw new AuthenticationException(SR.net_frame_read_size);
             }
 
             // Header length is content only so we must add header size as well.
