@@ -270,7 +270,7 @@ namespace System.Text.RegularExpressions
                             Emit(RegexOpcode.Setjump);
                             _intStack.Append(_emitted.Length);
                             Emit(RegexOpcode.Lazybranch, 0);
-                            Emit(RegexOpcode.Testref, RegexParser.MapCaptureNumber(node.M, _caps));
+                            Emit(RegexOpcode.TestBackreference, RegexParser.MapCaptureNumber(node.M, _caps));
                             Emit(RegexOpcode.Forejump);
                             break;
                     }

@@ -110,8 +110,8 @@ namespace System.Text.RegularExpressions
                 case RegexOpcode.One:
                 case RegexOpcode.Notone:
                 case RegexOpcode.Multi:
-                case RegexOpcode.Ref:
-                case RegexOpcode.Testref:
+                case RegexOpcode.Backreference:
+                case RegexOpcode.TestBackreference:
                 case RegexOpcode.Goto:
                 case RegexOpcode.Nullcount:
                 case RegexOpcode.Setcount:
@@ -206,8 +206,8 @@ namespace System.Text.RegularExpressions
                     sb.Append(Indent()).Append('"').Append(Strings[Codes[opcodeOffset + 1]]).Append('"');
                     break;
 
-                case RegexOpcode.Ref:
-                case RegexOpcode.Testref:
+                case RegexOpcode.Backreference:
+                case RegexOpcode.TestBackreference:
                     sb.Append(Indent()).Append("index = ").Append(Codes[opcodeOffset + 1]);
                     break;
 

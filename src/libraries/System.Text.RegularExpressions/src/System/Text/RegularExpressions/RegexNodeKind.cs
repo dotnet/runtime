@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A backreference, e.g. `\1`.</summary>
         /// <remarks>The capture group number referenced is stored in <see cref="RegexNode.M"/>.</remarks>
-        Backreference = RegexOpcode.Ref,
+        Backreference = RegexOpcode.Backreference,
 
         /// <summary>A beginning-of-line anchor, e.g. `^` in <see cref="RegexOptions.Multiline"/> mode.</summary>
         Bol = RegexOpcode.Bol,
@@ -128,7 +128,7 @@ namespace System.Text.RegularExpressions
         /// One and only one child, the expression in the loop. The minimum number of iterations is in <see cref="RegexNode.M"/>,
         /// and the maximum number of iterations is in <see cref="RegexNode.N"/>.
         /// </remarks>
-        Loop = 26,                                   // m,x      * + ? {,}
+        Loop = 26,
         /// <summary>A lazy loop around an arbitrary <see cref="RegexNode"/>, e.g. `(ab|cd)*?`.</summary>
         /// <remarks>
         /// One and only one child, the expression in the loop. The minimum number of iterations is in <see cref="RegexNode.M"/>,

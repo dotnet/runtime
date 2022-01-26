@@ -363,7 +363,7 @@ namespace System.Text.RegularExpressions
                         Goto(Operand(0));
                         continue;
 
-                    case RegexOpcode.Testref:
+                    case RegexOpcode.TestBackreference:
                         if (!IsMatched(Operand(0)))
                         {
                             break;
@@ -814,7 +814,7 @@ namespace System.Text.RegularExpressions
                         advance = 1;
                         continue;
 
-                    case RegexOpcode.Ref:
+                    case RegexOpcode.Backreference:
                         {
                             int capnum = Operand(0);
                             if (IsMatched(capnum))

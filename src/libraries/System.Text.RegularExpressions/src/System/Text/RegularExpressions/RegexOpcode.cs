@@ -70,7 +70,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Backreference to a capture group.</summary>
         /// <remarks>Operand 0 is the capture group number.</remarks>
-        Ref = 13,
+        Backreference = 13,
 
         /// <summary>Beginning-of-line anchor (^ with RegexOptions.Multiline).</summary>
         Bol = 14,
@@ -92,7 +92,7 @@ namespace System.Text.RegularExpressions
         Nothing = 22,
         /// <summary>Word boundary (\b with RegexOptions.ECMAScript).</summary>
         ECMABoundary = 41,
-        /// <summary>Word boundary (\B with RegexOptions.ECMAScript).</summary>
+        /// <summary>Word non-boundary (\B with RegexOptions.ECMAScript).</summary>
         NonECMABoundary = 42,
 
         /// <summary>Atomic loop of the specified character.</summary>
@@ -140,7 +140,7 @@ namespace System.Text.RegularExpressions
         /// <summary>zap backtracking state.</summary>
         Forejump = 36,
         /// <summary>Backtrack if ref undefined.</summary>
-        Testref = 37,
+        TestBackreference = 37,
         /// <summary>jump            just go.</summary>
         Goto = 38,
         /// <summary>done!</summary>
