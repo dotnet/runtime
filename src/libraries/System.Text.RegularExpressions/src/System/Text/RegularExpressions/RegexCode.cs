@@ -401,7 +401,7 @@ namespace System.Text.RegularExpressions
             var sb = new StringBuilder();
 
             sb.AppendLine($"Direction:  {(RightToLeft ? "right-to-left" : "left-to-right")}");
-            sb.AppendLine($"Anchor:     {RegexPrefixAnalyzer.AnchorDescription(FindOptimizations.LeadingAnchor)}");
+            sb.AppendLine($"Anchor:     {FindOptimizations.LeadingAnchor}");
             sb.AppendLine();
             for (int i = 0; i < Codes.Length; i += OpcodeSize(Codes[i]))
             {

@@ -20,7 +20,7 @@
  * \param path Unused
  * \param userData Unused
  * Open access to Android logcat (no-op)
- */   
+ */
 void
 mono_log_open_logcat (const char *path, void *userData)
 {

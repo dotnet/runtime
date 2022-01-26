@@ -461,23 +461,29 @@ namespace Microsoft.Extensions.Configuration
             PropertyInfo setter = dictionaryType.GetProperty("Item", DeclaredOnlyLookup)!;
             foreach (IConfigurationSection child in config.GetChildren())
             {
-                object? item = BindInstance(
-                    type: valueType,
-                    instance: null,
-                    config: child,
-                    options: options);
-                if (item != null)
+                try
                 {
-                    if (keyType == typeof(string))
+                    object? item = BindInstance(
+                        type: valueType,
+                        instance: null,
+                        config: child,
+                        options: options);
+                    if (item != null)
                     {
-                        string key = child.Key;
-                        setter.SetValue(dictionary, item, new object[] { key });
+                        if (keyType == typeof(string))
+                        {
+                            string key = child.Key;
+                            setter.SetValue(dictionary, item, new object[] { key });
+                        }
+                        else if (keyTypeIsEnum)
+                        {
+                            object key = Enum.Parse(keyType, child.Key);
+                            setter.SetValue(dictionary, item, new object[] { key });
+                        }
                     }
-                    else if (keyTypeIsEnum)
-                    {
-                        object key = Enum.Parse(keyType, child.Key);
-                        setter.SetValue(dictionary, item, new object[] { key });
-                    }
+                }
+                catch
+                {
                 }
             }
         }

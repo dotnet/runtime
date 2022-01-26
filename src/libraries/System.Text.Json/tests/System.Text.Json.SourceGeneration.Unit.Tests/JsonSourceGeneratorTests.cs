@@ -450,7 +450,6 @@ namespace System.Text.Json.Serialization
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public void Record()
         {
             // Compile the referenced assembly first.
@@ -512,7 +511,6 @@ namespace System.Text.Json.Serialization
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public void RecordInExternalAssembly()
         {
             // Compile the referenced assembly first.

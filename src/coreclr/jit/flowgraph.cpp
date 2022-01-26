@@ -3910,33 +3910,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
         return;
     }
 
-    // Special handling for dynamic block ops.
-    if (tree->OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK))
-    {
-        GenTreeDynBlk* dynBlk    = tree->AsDynBlk();
-        GenTree*       sizeNode  = dynBlk->gtDynamicSize;
-        GenTree*       dstAddr   = dynBlk->Addr();
-        GenTree*       src       = dynBlk->Data();
-        bool           isReverse = dynBlk->IsReverseOp();
-
-        // We either have a DYN_BLK or a STORE_DYN_BLK. If the latter, we have a
-        // src (the Data to be stored), and isReverse tells us whether to evaluate
-        // that before dstAddr.
-        if (isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(dstAddr, isLIR);
-        if (!isReverse && (src != nullptr))
-        {
-            fgSetTreeSeqHelper(src, isLIR);
-        }
-        fgSetTreeSeqHelper(sizeNode, isLIR);
-
-        fgSetTreeSeqFinish(dynBlk, isLIR);
-        return;
-    }
-
     /* Is it a 'simple' unary/binary operator? */
 
     if (kind & GTK_SMPOP)
@@ -4108,8 +4081,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Addr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Data(), isLIR);
+            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->gtDynamicSize, isLIR);
             break;
 
         default:
