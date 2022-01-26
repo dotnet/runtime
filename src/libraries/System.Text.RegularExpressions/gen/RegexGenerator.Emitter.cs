@@ -2391,12 +2391,18 @@ namespace System.Text.RegularExpressions.Generator
                 EmitStackPop(endingPos, startingPos);
                 writer.WriteLine();
 
-                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
+                if (subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
-                    using (EmitBlock(writer, literal.Item2 is not null ?
-                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}), {Literal(literal.Item2)})) < 0)" :
-                        $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item1)})) < 0)"))
+                    using (EmitBlock(writer,
+                        literal.Item2 is not null ? $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, global::System.Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}), {Literal(literal.Item2)})) < 0)" :
+                        literal.Item3 is null ? $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOf(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item1)})) < 0)" :
+                        literal.Item3.Length switch
+                        {
+                            2 => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])})) < 0)",
+                            3 => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])}, {Literal(literal.Item3[2])})) < 0)",
+                            _ => $"    ({endingPos} = global::System.MemoryExtensions.LastIndexOfAny(inputSpan.Slice({startingPos}, {endingPos} - {startingPos}), {Literal(literal.Item3)})) < 0)",
+                        }))
                     {
                         writer.WriteLine($"goto {doneLabel};");
                     }
@@ -2516,14 +2522,21 @@ namespace System.Text.RegularExpressions.Generator
                 if (iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
                     !IsCaseInsensitive(node) &&
-                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal &&
-                    (literal.Item2?[0] ?? literal.Item1) != node.Ch)
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
                 {
                     // e.g. "<[^>]*?>"
                     // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
                     // We can implement it to search for either that char or the literal, whichever comes first.
                     // If it ends up being that node.Ch, the loop fails (we're only here if we're backtracking).
-                    writer.WriteLine($"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item2?[0] ?? literal.Item1)});");
+                    writer.WriteLine(
+                        literal.Item2 is not null ? $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item2[0])});" :
+                        literal.Item3 is null ? $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item1)});" :
+                        literal.Item3.Length switch
+                        {
+                            2 => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch)}, {Literal(literal.Item3[0])}, {Literal(literal.Item3[1])});",
+                            _ => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(node.Ch + literal.Item3)});",
+                        });
                     using (EmitBlock(writer, $"if ((uint){startingPos} >= (uint){sliceSpan}.Length || {sliceSpan}[{startingPos}] == {Literal(node.Ch)})"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
@@ -2534,12 +2547,20 @@ namespace System.Text.RegularExpressions.Generator
                 else if (iterationCount is null &&
                     node.Kind is RegexNodeKind.Setlazy &&
                     node.Str == RegexCharClass.AnyClass &&
-                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal2)
+                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
                 {
                     // e.g. ".*?string" with RegexOptions.Singleline
                     // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
                     // isn't found, the loop fails. We can implement it to just search for that literal.
-                    writer.WriteLine($"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {(literal2.Item2 is not null ? Literal(literal2.Item2) : Literal(literal2.Item1))});");
+                    writer.WriteLine(
+                        literal2.Item2 is not null ? $"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {Literal(literal2.Item2)});" :
+                        literal2.Item3 is null ? $"{startingPos} = global::System.MemoryExtensions.IndexOf({sliceSpan}, {Literal(literal2.Item1)});" :
+                        literal2.Item3.Length switch
+                        {
+                            2 => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])});",
+                            3 => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])}, {Literal(literal2.Item3[2])});",
+                            _ => $"{startingPos} = global::System.MemoryExtensions.IndexOfAny({sliceSpan}, {Literal(literal2.Item3)});",
+                        });
                     using (EmitBlock(writer, $"if ({startingPos} < 0)"))
                     {
                         writer.WriteLine($"goto {doneLabel};");
