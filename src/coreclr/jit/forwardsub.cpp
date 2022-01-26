@@ -83,7 +83,8 @@ bool Compiler::fgForwardSub(BasicBlock* block)
 //------------------------------------------------------------------------
 // ForwardSubVisitor: tree visitor to locate uses of a local in a tree
 //
-// Also computes the set of side effects that happen "before" the use.
+// Also computes the set of side effects that happen "before" the use,
+// and counts the size of the tree.
 //
 class ForwardSubVisitor final : public GenTreeVisitor<ForwardSubVisitor>
 {
@@ -101,14 +102,16 @@ public:
         , m_node(nullptr)
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
-        , m_count(0)
+        , m_useCount(0)
         , m_useFlags(0)
         , m_accumulatedFlags(0)
+        , m_treeSize(0)
     {
     }
 
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
+        m_treeSize++;
         GenTree* const node = *use;
 
         if (node->OperIs(GT_LCL_VAR))
@@ -117,7 +120,7 @@ public:
 
             if (lclNum == m_lclNum)
             {
-                m_count++;
+                m_useCount++;
 
                 // Screen out contextual "uses"
                 //
@@ -161,34 +164,39 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    int GetCount()
+    unsigned GetUseCount() const
     {
-        return m_count;
+        return m_useCount;
     }
 
-    GenTree* GetNode()
+    GenTree* GetNode() const
     {
         return m_node;
     }
 
-    GenTree** GetUse()
+    GenTree** GetUse() const
     {
         return m_use;
     }
 
-    GenTree* GetParentNode()
+    GenTree* GetParentNode() const
     {
         return m_parentNode;
     }
 
-    unsigned GetFlags()
+    unsigned GetFlags() const
     {
         return m_useFlags;
     }
 
-    bool IsCallArg()
+    bool IsCallArg() const
     {
         return m_parentNode->IsCall();
+    }
+
+    unsigned GetComplexity() const
+    {
+        return m_treeSize;
     }
 
 private:
@@ -196,9 +204,10 @@ private:
     GenTree*  m_node;
     GenTree*  m_parentNode;
     unsigned  m_lclNum;
-    int       m_count;
+    unsigned  m_useCount;
     unsigned  m_useFlags;
     unsigned  m_accumulatedFlags;
+    unsigned  m_treeSize;
 };
 
 //------------------------------------------------------------------------
@@ -373,6 +382,8 @@ bool Compiler::fgForwardSub(Statement* stmt)
     // Don't fwd sub overly large trees.
     // Size limit here is ad-hoc. Need to tune.
     //
+    // Consider instead using the height of the fwdSubNode.
+    //
     unsigned const nodeLimit = 16;
 
     if (gtComplexityExceeds(&fwdSubNode, nodeLimit))
@@ -397,15 +408,31 @@ bool Compiler::fgForwardSub(Statement* stmt)
     ForwardSubVisitor fsv(this, lclNum);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-    assert(fsv.GetCount() <= 1);
+    // LclMorph (via RCS_Early) said there was just one use.
+    // It had better have gotten this right.
+    //
+    assert(fsv.GetUseCount() <= 1);
 
-    if ((fsv.GetCount() == 0) || (fsv.GetNode() == nullptr))
+    if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
     {
         JITDUMP(" no next stmt use\n");
         return false;
     }
 
     JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
+
+    // If next statement already has a large tree, hold off
+    // on making it even larger.
+    //
+    // We use total node count. Consider instead using the depth of the use and the
+    // height of the fwdSubNode.
+    //
+    unsigned const nextTreeLimit = 200;
+    if ((fsv.GetComplexity() > nextTreeLimit) && gtComplexityExceeds(&fwdSubNode, 1))
+    {
+        JITDUMP(" next stmt tree is too large (%u)\n", fsv.GetComplexity());
+        return false;
+    }
 
     // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
