@@ -1426,10 +1426,10 @@ namespace System.IO
 
             public override string ReadToEnd() => "";
 
-            public override Task<string> ReadToEndAsync() => TaskCache.s_emptyStringTask;
+            public override Task<string> ReadToEndAsync() => Task.FromResult("");
 
             public override Task<string> ReadToEndAsync(CancellationToken cancellationToken) =>
-                cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : TaskCache.s_emptyStringTask;
+                cancellationToken.IsCancellationRequested ? Task.FromCanceled<string>(cancellationToken) : Task.FromResult("");
 
             internal override int ReadBuffer() => 0;
         }
