@@ -73,8 +73,11 @@ namespace System.Security.Cryptography
             out int bytesWritten) =>
             _wrapped.TryExportEncryptedPkcs8PrivateKey(password, pbeParameters, destination, out bytesWritten);
 
-        public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten) =>
-            _wrapped.TryExportPkcs8PrivateKey(destination, out bytesWritten);
+        // Do not wrap ExportPkcs8PrivateKey, let it fall back to reconstructing it from parameters
+        // so that the ECDiffieHellman.Create()-returned object uses the same set of attributes on all platforms.
+        // (CNG adds the key usage attribute to distinguish ECDSA from ECDH)
+        //public override bool TryExportPkcs8PrivateKey(Span<byte> destination, out int bytesWritten) =>
+        //    _wrapped.TryExportPkcs8PrivateKey(destination, out bytesWritten);
 
         public override bool TryExportSubjectPublicKeyInfo(Span<byte> destination, out int bytesWritten) =>
             _wrapped.TryExportSubjectPublicKeyInfo(destination, out bytesWritten);
@@ -139,7 +142,10 @@ namespace System.Security.Cryptography
             PbeParameters pbeParameters) =>
             _wrapped.ExportEncryptedPkcs8PrivateKey(password, pbeParameters);
 
-        public override byte[] ExportPkcs8PrivateKey() => _wrapped.ExportPkcs8PrivateKey();
+        // Do not wrap ExportPkcs8PrivateKey, let it fall back to reconstructing it from parameters
+        // so that the ECDiffieHellman.Create()-returned object uses the same set of attributes on all platforms.
+        // (CNG adds the key usage attribute to distinguish ECDSA from ECDH)
+        //public override byte[] ExportPkcs8PrivateKey() => _wrapped.ExportPkcs8PrivateKey();
 
         public override byte[] ExportSubjectPublicKeyInfo() => _wrapped.ExportSubjectPublicKeyInfo();
 
