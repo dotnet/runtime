@@ -123,6 +123,17 @@ namespace System.IO.Tests
             Assert.Equal(0, source.Position);
         }
 
+
+        [Theory]
+        [MemberData(nameof(NullReaders))]
+        public static void TestNullTextReaderDispose(TextReader input)
+        {
+            // dispose should be a no-op
+            input.Dispose();
+            input.Dispose();
+            Assert.Equal("", input.ReadToEnd());
+        }
+
         [Theory]
         [MemberData(nameof(NullReaders))]
         public static void TestNullTextReader(TextReader input)
@@ -132,14 +143,11 @@ namespace System.IO.Tests
             if (sr != null)
                 Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
             Assert.Null(input.ReadLine());
-            input.Dispose();
-
-            input.ReadLine();
             if (sr != null)
                 Assert.True(sr.EndOfStream, "EndOfStream property didn't return true");
+
             Assert.Equal(-1, input.Read());
             Assert.Equal(-1, input.Peek());
-
             var chars = new char[2];
             Assert.Equal(0, input.Read(chars, 0, chars.Length));
             Assert.Equal(0, input.Read(chars.AsSpan()));
@@ -169,7 +177,7 @@ namespace System.IO.Tests
         [MemberData(nameof(NullReaders))]
         public static async Task TestCanceledNullTextReaderAsync(TextReader input)
         {
-            using var tokenSource = new CancellationTokenSource();
+            using CancellationTokenSource tokenSource = new CancellationTokenSource();
             tokenSource.Cancel();
             var token = tokenSource.Token;
             var chars = new char[2];
