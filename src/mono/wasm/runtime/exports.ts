@@ -24,6 +24,7 @@ import {
     mono_wasm_debugger_log,
     mono_wasm_trace_logger,
     mono_wasm_add_dbg_command_received,
+    mono_wasm_change_debugger_log_level,
 } from "./debug";
 import { runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
@@ -332,6 +333,7 @@ const INTERNAL: any = {
     mono_wasm_debugger_resume,
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
+    mono_wasm_change_debugger_log_level,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 };
 
