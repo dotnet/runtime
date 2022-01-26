@@ -11818,28 +11818,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     //
     static ConfigMethodRange JitEnablePatchpointRange;
     JitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange());
-    const unsigned hash = impInlineRoot()->info.compMethodHash();
-    const bool     bbbb = JitEnablePatchpointRange.Contains(hash);
-
-    static bool firstYes = true;
-    if (enablePatchpoints && bbbb && firstYes)
-    {
-        printf("!!! PATCHPOINT RANGE\n");
-        JitEnablePatchpointRange.Dump();
-        printf("!!! ALLOW %s (hash 0x%08x)\n", info.compFullName, hash);
-        firstYes = false;
-    }
-
-    static bool firstNo = true;
-    if (enablePatchpoints && !bbbb && firstNo)
-    {
-        printf("!!! PATCHPOINT RANGE\n");
-        JitEnablePatchpointRange.Dump();
-        printf("!!! DENY %s (hash 0x%08x)\n", info.compFullName, hash);
-        firstNo = false;
-    }
-
-    enablePatchpoints &= bbbb;
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitEnablePatchpointRange.Contains(hash);
+    enablePatchpoints &= inRange;
 
 #endif // DEBUG
 
