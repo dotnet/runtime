@@ -27,6 +27,7 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileDataManager;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly int _parallelism;
+        private readonly bool _ignoreUnresolved;
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
@@ -43,7 +44,8 @@ namespace ILCompiler
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
             RyuJitCompilationOptions options,
-            int parallelism)
+            int parallelism,
+            bool ignoreUnresolved)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -64,6 +66,8 @@ namespace ILCompiler
             _methodImportationErrorProvider = errorProvider;
 
             _parallelism = parallelism;
+
+            _ignoreUnresolved = ignoreUnresolved;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -199,8 +203,6 @@ namespace ILCompiler
 
             if (exception != null)
             {
-                // TODO: fail compilation if a switch was passed
-
                 // Try to compile the method again, but with a throwing method body this time.
                 MethodIL throwingIL = TypeSystemThrowingILEmitter.EmitIL(method, exception);
                 corInfo.CompileMethod(methodCodeNodeNeedingCode, throwingIL);
@@ -211,10 +213,10 @@ namespace ILCompiler
                 {
                     Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
+                if (_ignoreUnresolved)
+                    Logger.LogMessage($"Ignoring unresolved method {method}, because: {exception.Message}");
                 else
-                {
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
-                }
             }
         }
 

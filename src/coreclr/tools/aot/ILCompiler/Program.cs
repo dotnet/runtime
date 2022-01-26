@@ -85,6 +85,8 @@ namespace ILCompiler
 
         private IReadOnlyList<string> _directPInvokeLists = Array.Empty<string>();
 
+        private bool _ignoreUnresolved = true;
+
         private IReadOnlyList<string> _rootedAssemblies = Array.Empty<string>();
         private IReadOnlyList<string> _conditionallyRootedAssemblies = Array.Empty<string>();
         private IReadOnlyList<string> _trimmedAssemblies = Array.Empty<string>();
@@ -190,6 +192,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref _systemModuleName, "System module name (default: System.Private.CoreLib)");
                 syntax.DefineOption("multifile", ref _multiFile, "Compile only input files (do not compile referenced assemblies)");
                 syntax.DefineOption("waitfordebugger", ref waitForDebugger, "Pause to give opportunity to attach debugger");
+                syntax.DefineOption("skip-unresolved", ref _ignoreUnresolved, "Ignore unresolved types, methods, and assemblies. Defaults to true");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
@@ -801,7 +804,7 @@ namespace ILCompiler
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
             }
 
-            ICompilation compilation = builder.ToCompilation();
+            ICompilation compilation = builder.ToCompilation(_ignoreUnresolved);
 
             ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
 

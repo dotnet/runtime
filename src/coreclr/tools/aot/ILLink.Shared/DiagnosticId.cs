@@ -77,7 +77,7 @@ namespace ILLink.Shared
         _unused_RearrangedXmlWarning2 = 2021,
         XmlCouldNotFindMatchingConstructorForCustomAttribute = 2022,
         XmlMoreThanOneReturnElementForMethod = 2023,
-        XmlMoreThanOneValyForParameterOfMethod = 2024,
+        XmlMoreThanOneValueForParameterOfMethod = 2024,
         XmlDuplicatePreserveMember = 2025,
         RequiresUnreferencedCode = 2026,
         AttributeShouldOnlyBeUsedOnceOnMember = 2027,

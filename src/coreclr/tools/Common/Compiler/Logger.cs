@@ -48,6 +48,13 @@ namespace ILCompiler
         {
         }
 
+        public void LogMessage(string message)
+        {
+            MessageContainer? messageContainer = MessageContainer.CreateInfoMessage(message);
+            if(messageContainer.HasValue)
+                Writer.WriteLine(messageContainer.Value.ToMSBuildString());
+        }
+
         public void LogWarning(string text, int code, MessageOrigin origin, string subcategory = MessageSubCategory.None)
         {
             MessageContainer? warning = MessageContainer.CreateWarningMessage(this, text, code, origin, subcategory);
