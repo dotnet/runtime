@@ -11046,6 +11046,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_IND:
             if (op1->OperIs(GT_FTN_ADDR))
             {
+                assert(op1->AsFptrVal()->gtFptrMethod != nullptr);
+
                 // IND(FTN_ADDR) is invariant, nonnull and won't fault
                 tree->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL;
             }
