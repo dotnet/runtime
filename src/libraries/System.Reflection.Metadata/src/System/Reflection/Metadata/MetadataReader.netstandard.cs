@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Reflection.PortableExecutable;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Reflection.Metadata
 {
@@ -40,22 +42,46 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-        internal static AssemblyName GetAssemblyName(string assemblyFile)
+        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile)
         {
-            AssemblyName assemblyName;
+            FileStream? fileStream = null;
+            MemoryMappedFile? mappedFile = null;
+            MemoryMappedViewAccessor? accessor = null;
+            PEReader? peReader = null;
             try
             {
-                using FileStream fs = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-                using PEReader peReader = new PEReader(fs, PEStreamOptions.PrefetchMetadata);
+                // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
+                fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                if (fileStream.Length == 0)
+                {
+                    throw new BadImageFormatException(SR.PEImageDoesNotHaveMetadata, assemblyFile);
+                }
+
+                mappedFile = MemoryMappedFile.CreateFromFile(
+                    fileStream, null, fileStream.Length, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
+                accessor = mappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
+
+                SafeMemoryMappedViewHandle? safeBuffer = accessor.SafeMemoryMappedViewHandle;
+                peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
                 MetadataReader mdReader = peReader.GetMetadataReader(MetadataReaderOptions.None);
-                assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
+                AssemblyName assemblyName = mdReader.GetAssemblyDefinition().GetAssemblyName();
+                return assemblyName;
             }
             catch (InvalidOperationException ex)
             {
                 throw new BadImageFormatException(ex.Message);
             }
-
-            return assemblyName;
+            finally
+            {
+                if (peReader != null)
+                    peReader.Dispose();
+                if (accessor != null)
+                    accessor.Dispose();
+                if (mappedFile != null)
+                    mappedFile.Dispose();
+                if (fileStream != null)
+                    fileStream.Dispose();
+            }
         }
 
         private AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
