@@ -285,8 +285,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
     bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
-    bool isHardwareAccelerated = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
-    if (isHardwareAccelerated)
+    bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+#ifdef TARGET_XARCH
+    if (isHardwareAcceleratedProp)
     {
         // Special case: Some of Vector128/256 APIs are hardware accelerated with Sse1 and Avx1,
         // but we want IsHardwareAccelerated to return true only when all of them are (there are
@@ -301,8 +302,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             isa = InstructionSet_AVX2;
         }
     }
+#endif
 
-    if ((strcmp(methodName, "get_IsSupported") == 0) || isHardwareAccelerated)
+    if ((strcmp(methodName, "get_IsSupported") == 0) || isHardwareAcceleratedProp)
     {
         return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
                               : NI_IsSupported_False;
