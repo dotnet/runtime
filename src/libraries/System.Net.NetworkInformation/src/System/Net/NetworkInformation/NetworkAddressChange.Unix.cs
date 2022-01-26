@@ -11,7 +11,7 @@ namespace System.Net.NetworkInformation
     // Linux implementation of NetworkChange
     public partial class NetworkChange
     {
-        private static volatile SocketWrapper s_socket = SocketWrapper.NotSet;
+        private static volatile SocketWrapper? s_socket;
         // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
         private static readonly object s_gate = new object();
 
@@ -33,7 +33,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == SocketWrapper.NotSet)
+                        if (s_socket == null)
                         {
                             CreateSocket();
                         }
@@ -50,8 +50,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == SocketWrapper.NotSet,
-                                "s_socket is set, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(s_socket == null,
+                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -73,7 +73,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == SocketWrapper.NotSet)
+                        if (s_socket == null)
                         {
                             CreateSocket();
                         }
@@ -112,8 +112,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == SocketWrapper.NotSet,
-                                "s_socket is set, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(s_socket == null,
+                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -139,7 +139,7 @@ namespace System.Net.NetworkInformation
 
         private static unsafe void CreateSocket()
         {
-            Debug.Assert(s_socket == SocketWrapper.NotSet, "s_socket is set, must close existing socket before opening another.");
+            Debug.Assert(s_socket == null, "s_socket is not null, must close existing socket before opening another.");
             int newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
@@ -159,15 +159,15 @@ namespace System.Net.NetworkInformation
 
         private static void CloseSocket()
         {
-            Debug.Assert(s_socket != SocketWrapper.NotSet, "s_socket was not set when CloseSocket was called.");
-            Interop.Error result = Interop.Sys.CloseNetworkChangeListenerSocket(s_socket.Socket);
+            Debug.Assert(s_socket != null, "s_socket was null when CloseSocket was called.");
+            Interop.Error result = Interop.Sys.CloseNetworkChangeListenerSocket(s_socket != null ? s_socket.Socket : -1);
             if (result != Interop.Error.SUCCESS)
             {
                 string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
                 throw new NetworkInformationException(message);
             }
 
-            s_socket = SocketWrapper.NotSet;
+            s_socket = null;
         }
 
         private static unsafe void LoopReadSocket(SocketWrapper initiallyCreatedSocket)
@@ -186,7 +186,7 @@ namespace System.Net.NetworkInformation
             {
                 lock (s_gate)
                 {
-                    if (socket == s_socket.Socket)
+                    if (s_socket != null && socket == s_socket.Socket)
                     {
                         OnSocketEvent(kind);
                     }
@@ -304,8 +304,6 @@ namespace System.Net.NetworkInformation
             }
 
             public int Socket { get; }
-
-            public static readonly SocketWrapper NotSet = new SocketWrapper(0);
         }
     }
 }
