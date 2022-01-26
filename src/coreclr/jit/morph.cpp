@@ -11043,6 +11043,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_INDEX:
             return fgMorphArrayIndex(tree);
 
+        case GT_IND:
+            if (op1->OperIs(GT_FTN_ADDR))
+            {
+                // IND(FTN_ADDR) is invariant, nonnull and won't fault
+                tree->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL;
+            }
+            break;
+
         case GT_CAST:
         {
             GenTree* morphedCast = fgMorphExpandCast(tree->AsCast());
@@ -12673,12 +12681,6 @@ DONE_MORPHING_CHILDREN:
                 commaNode->AsOp()->gtOp2 = op1;
                 commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
                 return tree;
-            }
-
-            if (op1->IsCnsIntOrI() && op1->IsIconHandle(GTF_ICON_FTN_ADDR))
-            {
-                // IND(FTN_ADDR) is invariant, nonnull and won't fault
-                tree->gtFlags |= GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL;
             }
 
             break;
