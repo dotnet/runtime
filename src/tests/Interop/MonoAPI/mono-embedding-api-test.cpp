@@ -9,8 +9,7 @@
 #include <math.h>
 #include <setjmp.h>
 #include <signal.h>
-#include "../utils/mono-errno.h"
-#include "../utils/mono-compiler.h"
+#include "mono/utils/mono-compiler.h"
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -1281,7 +1280,7 @@ mono_test_marshal_stringbuilder_utf16_tolower (short *s, int n)
 * C/C++ standard and the runtime.
 */
 typedef struct {
-#if !defined(__GNUC__) || defined(TARGET_WIN32)
+#if !defined(__GNUC__) || defined(TARGET_WIN32) || defined(__cplusplus)
     char a;
 #endif
 } EmptyStruct;
@@ -1799,7 +1798,7 @@ mono_test_last_error (int err)
 	char value[] = "Dummy";
 	strncpy (buffer, value, STRING_LENGTH (value));
 #else
-	mono_set_errno (err);
+	errno = err;
 #endif
 }
 
@@ -8115,7 +8114,7 @@ LIBTEST_API void STDCALL
 mono_test_MerpCrashDladdr (void)
 {
 #ifndef HOST_WIN32
-	dlopen (GINT_TO_POINTER(-1), -1);
+	dlopen ((const char*) GINT_TO_POINTER(-1), -1);
 #endif
 }
 
@@ -8355,7 +8354,7 @@ mono_test_ccw_class_type_auto_dispatch (IDispatch *disp)
 	IBanana *banana;
 	int hr, retval;
 
-#ifdef __cplusplus
+#if defined (HOST_WIN32) && defined (__cplusplus)
 	hr = disp->QueryInterface (IID_IBanana, (void **)&banana);
 #else
 	hr = disp->lpVtbl->QueryInterface (disp, &IID_IBanana, (void **)&banana);
@@ -8482,7 +8481,7 @@ mono_test_attach_invoke_foreign_thread (const char *assm_name, const char *name_
 		return 0;
 	} else {
 		pthread_t t;
-		int res = pthread_create (&t, NULL, invoke_foreign_delegate, del);
+		int res = pthread_create (&t, NULL, invoke_foreign_delegate, (void*)del);
 		g_assert (res == 0);
 		pthread_join (t, NULL);
 		return 0;
@@ -8530,7 +8529,7 @@ LIBTEST_API mono_bool STDCALL
 mono_test_attach_invoke_block_foreign_thread (const char *assm_name, const char *name_space, const char *name, const char *meth_name, VoidVoidCallback del)
 {
 #ifndef HOST_WIN32
-	struct names_and_mutex *nm = malloc (sizeof (struct names_and_mutex));
+	struct names_and_mutex *nm = (struct names_and_mutex *)malloc (sizeof (struct names_and_mutex));
 	nm->del = del;
 	if (!del) {
 		struct invoke_names *names = make_invoke_names (assm_name, name_space, name, meth_name);
@@ -8584,14 +8583,14 @@ mono_test_ccw_query_interface (IUnknown *iface)
 	IUnknown *drupe;
 	int hr;
 
-#ifdef __cplusplus
+#if defined (HOST_WIN32) && defined (__cplusplus)
 	hr = iface->QueryInterface (IID_IDrupe, (void **)&drupe);
 #else
 	hr = iface->lpVtbl->QueryInterface (iface, &IID_IDrupe, (void **)&drupe);
 #endif
 	if (hr != 0)
 		return 1;
-#ifdef __cplusplus
+#if defined (HOST_WIN32) && defined (__cplusplus)
 	drupe->Release();
 #else
 	drupe->lpVtbl->Release(drupe);
