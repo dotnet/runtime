@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
             try
             {
                 // Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
-                fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
+                fileStream = new FileStream(assemblyFile, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false);
                 if (fileStream.Length == 0)
                 {
                     throw new BadImageFormatException(SR.PEImageDoesNotHaveMetadata, assemblyFile);
