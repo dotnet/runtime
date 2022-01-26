@@ -3841,7 +3841,14 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
         opNode  = andNode->gtGetOp1();
     }
 
-    if (opNode == nullptr || !opNode->OperIs(GT_LCL_VAR))
+    if (opNode == nullptr)
+    {
+        return nullptr;
+    }
+
+    // We will avoid using "andn" when one of the operands is (likely to be) in memory:
+    // "and"'s RMW form provides for a shorter instruction sequence in that case.
+    if (!opNode->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
