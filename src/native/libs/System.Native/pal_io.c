@@ -62,6 +62,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 
 #ifdef __linux__
+#include <sys/utsname.h>
 
 // Ensure FICLONE is defined for all Linux builds.
 #ifndef FICLONE
@@ -1172,11 +1173,46 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 }
 #endif // !HAVE_FCOPYFILE
 
-int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength, int32_t tryCopyFileRange)
+
+#ifdef __NR_copy_file_range
+static ssize_t CopyFileRange(int inFd, int outFd, size_t len)
+{
+    return syscall(__NR_copy_file_range, inFd, NULL, outFd, NULL, len, 0);
+}
+
+static bool SupportsCopyFileRange()
+{
+    static volatile int s_isSupported = 0;
+
+    int isSupported = s_isSupported;
+    if (isSupported == 0)
+    {
+        isSupported = -1;
+
+        // Avoid known issues with copy_file_range that are fixed in Linux 5.3+ (https://lwn.net/Articles/789527/).
+        struct utsname name;
+        if (uname(&name) == 0)
+        {
+            if (name.release[1] != '.' ||
+                name.release[0] > '5'  ||
+                (name.release[0] == '5' &&
+                    (name.release[3] != '.' ||
+                     name.release[2] >= '3')))
+            {
+                isSupported = CopyFileRange(-1, -1, 0) == -1 && errno != ENOSYS ? 1 : -1;
+            }
+        }
+
+        s_isSupported = isSupported;
+    }
+    return isSupported == 1;
+}
+#endif
+
+int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
 {
     // unused on some platforms.
     (void)sourceLength;
-    (void)tryCopyFileRange;
 
     int inFd = ToFileDescriptor(sourceFd);
     int outFd = ToFileDescriptor(destinationFd);
@@ -1203,17 +1239,16 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     }
 #endif
 #ifdef __NR_copy_file_range
-    if (tryCopyFileRange && !copied && sourceLength != 0)
+    if (SupportsCopyFileRange() && !copied && sourceLength != 0)
     {
         do
         {
             size_t copyLength = (sourceLength >= SSIZE_MAX ? SSIZE_MAX : (size_t)sourceLength);
-            ssize_t sent = syscall(__NR_copy_file_range, inFd, NULL, outFd, NULL, copyLength, 0);
+            ssize_t sent = CopyFileRange(inFd, outFd, copyLength);
             if (sent <= 0)
             {
-                // sendfile will likely encounter the same error, only use it
-                // when the error indicates copy_file_range is not supported.
-                trySendFile = sent < 0 && errno == ENOSYS;
+                // sendfile will likely encounter the same error, don't try it.
+                trySendFile = false;
                 break; // Fall through.
             }
             else
