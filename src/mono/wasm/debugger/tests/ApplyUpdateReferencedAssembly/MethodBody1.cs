@@ -38,4 +38,15 @@ namespace ApplyUpdateReferencedAssembly
         public static void StaticMethod4 () {
         }
     }
+
+
+
+
+
+
+    public class MethodBody5 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("original");
+        }
+    }
 }
