@@ -120,13 +120,6 @@ namespace System.Security.Cryptography
         public override ECDiffieHellmanPublicKey PublicKey => null!;
         public override ECParameters ExportParameters(bool includePrivateParameters) => default;
         public override void ImportParameters(ECParameters parameters) { }
-
-        //public override byte[] DeriveKeyFromHash(ECDiffieHellmanPublicKey otherPartyPublicKey, HashAlgorithmName hashAlgorithm, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
-        //public override byte[] DeriveKeyFromHmac(ECDiffieHellmanPublicKey otherPartyPublicKey, HashAlgorithmName hashAlgorithm, byte[]? hmacKey, byte[]? secretPrepend, byte[]? secretAppend) { throw null; }
-        //public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey) { throw null; }
-        //public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed) { throw null; }
-        //public override ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
-        //public override void GenerateKey(ECCurve curve) { }
     }
     public sealed class ECDsaOpenSsl : ECDsa
     {

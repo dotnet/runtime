@@ -162,7 +162,7 @@ namespace Internal.Cryptography
             return a1.AsSpan().SequenceEqual(a2);
         }
 
-        public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
+        internal static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
         {
             try
             {
