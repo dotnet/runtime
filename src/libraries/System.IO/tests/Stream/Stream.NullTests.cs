@@ -242,15 +242,10 @@ namespace System.IO.Tests
             Stream.Null.Write(new byte[42]); // still usable
         }
 
-        public static IEnumerable<object[]> NullReaders
-        {
-            get
-            {
-                yield return new object[] { TextReader.Null };
-                yield return new object[] { StreamReader.Null };
-                yield return new object[] { StringReader.Null };
-            }
-        }
+        public static IEnumerable<object[]> NullReaders =>
+            new[] { TextReader.Null, StreamReader.Null, StringReader.Null }
+                .Distinct()
+                .Select(x => new object[] { x });
 
         public static IEnumerable<object[]> NullWriters
         {
