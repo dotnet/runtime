@@ -6160,7 +6160,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
 #endif // DEBUG
 
-    impCanReimport = (compStressCompile(STRESS_CHK_REIMPORT, 15));
+    impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
     /* Initialize set a bunch of global values */
 
