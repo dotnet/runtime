@@ -71,8 +71,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				Type type = new TestType ().GetType ();
 				if (p == 0) {
 					type = typeWithAll;
-					type.GetInterface ("ITestInterface").RequiresInterfaces ();
 				}
+
+				type.GetInterface ("ITestInterface").RequiresInterfaces ();
 			}
 
 			public static void Test ()
