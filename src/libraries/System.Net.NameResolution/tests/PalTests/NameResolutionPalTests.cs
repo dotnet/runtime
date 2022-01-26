@@ -19,7 +19,7 @@ namespace System.Net.NameResolution.PalTests
 
         private static Lazy<bool> s_ipv6LocalHostNameLookupBrokenByNrpRule = new Lazy<bool>(() =>
         {
-            // On some machines using Microsoft corporate VPN, group policy installs an DNS Name Resolution Policy rule
+            // On some machines using Microsoft corporate VPN, something sometimes installs an DNS Name Resolution Policy rule
             // that breaks reverse lookup of ipv6 localhost names.
             if (PlatformDetection.IsWindows)
             {
