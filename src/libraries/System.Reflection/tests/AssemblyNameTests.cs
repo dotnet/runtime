@@ -309,7 +309,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34492", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [SkipOnPlatform(TestPlatforms.Browser, "File locking is not respected")]
         public static void GetAssemblyName_LockedFile()
         {
             using (var tempFile = new TempFile(Path.GetTempFileName(), 100))
