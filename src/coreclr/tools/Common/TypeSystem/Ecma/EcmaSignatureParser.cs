@@ -257,7 +257,7 @@ namespace Internal.TypeSystem.Ecma
                         return null;
                 default:
                     ThrowHelper.ThrowBadImageFormatException();
-                    break;
+                    return null;
             }
         }
 
