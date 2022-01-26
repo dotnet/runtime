@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     new[] { typeof(ILogger).Assembly, typeof(LoggerMessageAttribute).Assembly },
                     new[] { testSourceCode }).ConfigureAwait(false);
 
-                Assert.Empty(d);
+                Assert.True(src.Contains("WithDiagnostics") ? !d.IsEmpty : d.IsEmpty);
                 Assert.Single(r);
             }
         }
