@@ -27448,7 +27448,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         _sort (&mark_list[0], mark_list_index - 1, 0);
 #endif //USE_VXSORT
 
-        dprintf (3, ("using mark list at GC #%d", (size_t)settings.gc_index));
+        dprintf (3, ("using mark list at GC #%Id", (size_t)settings.gc_index));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
