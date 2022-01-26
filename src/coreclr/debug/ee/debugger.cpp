@@ -14727,12 +14727,6 @@ HRESULT Debugger::IterateAppDomainsForPdbs()
 
             if (pDomainAssembly->ShouldNotifyDebugger())
             {
-                Module* pRuntimeModule = pDomainAssembly->GetModule();
-                CopyModulePdb(pRuntimeModule);
-            }
-
-            if (pDomainAssembly->ShouldNotifyDebugger())
-            {
                 CopyModulePdb(pDomainAssembly->GetModule());
             }
         }

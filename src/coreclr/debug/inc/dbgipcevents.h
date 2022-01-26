@@ -854,8 +854,6 @@ typedef VMPTR_Base<DT_CONTEXT, void > VMPTR_CONTEXT;
 DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Module,          PTR_Module,         VMPTR_Module);
 
-// DomainAssembly derives from DomainAssembly and represents a manifest module.
-DEFINE_VMPTR(class DomainAssembly,  PTR_DomainAssembly, VMPTR_DomainAssembly);
 DEFINE_VMPTR(class Assembly,        PTR_Assembly,       VMPTR_Assembly);
 
 DEFINE_VMPTR(class PEAssembly,      PTR_PEAssembly,     VMPTR_PEAssembly);
@@ -1679,7 +1677,7 @@ struct MSLAYOUT DebuggerIPCE_FuncEvalInfo
     DebuggerIPCE_FuncEvalType  funcEvalType;
     mdMethodDef                funcMetadataToken;
     mdTypeDef                  funcClassMetadataToken;
-    VMPTR_DomainAssembly           vmDomainAssembly;
+    VMPTR_DomainAssembly       vmDomainAssembly;
     RSPTR_CORDBEVAL            funcEvalKey;
     bool                       evalDuringException;
 

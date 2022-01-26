@@ -2910,14 +2910,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     RETURN result;
 } // AppDomain::LoadDomainAssembly
 
-
-struct LoadFileArgs
-{
-    FileLoadLock *pLock;
-    FileLoadLevel targetLevel;
-    DomainAssembly *result;
-};
-
 DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
     CONTRACT(DomainAssembly *)

@@ -773,7 +773,7 @@ class FileLoadLock : public ListLockEntry
 {
 private:
     FileLoadLevel           m_level;
-    DomainAssembly              *m_pDomainAssembly;
+    DomainAssembly          *m_pDomainAssembly;
     HRESULT                 m_cachedHR;
 
 public:

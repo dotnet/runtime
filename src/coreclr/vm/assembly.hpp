@@ -56,16 +56,8 @@ struct CreateDynamicAssemblyArgs : CreateDynamicAssemblyArgsGC
     StackCrawlMark* stackMark;
 };
 
-// An assembly is the unit of deployment for managed code.  Typically Assemblies are one to one with files
-// (Modules), however this is not necessary, as an assembly can contain serveral files (typically you only
-// do this so that you can resource-only modules that are national language specific)
-//
-// Conceptually Assemblies are loaded into code:AppDomain
-//
-// So in general an assemly is a list of code:Module, where a code:Module is 1-1 with a DLL or EXE file.
-//
-// One of the modules the code:Assembly.m_pModule is special in that it knows about all the other
-// modules in an assembly (often it is the only one).
+// An assembly is the unit of deployment for managed code.
+// Assemblies are one to one with files since coreclr does not support multimodule assemblies.
 //
 class Assembly
 {
