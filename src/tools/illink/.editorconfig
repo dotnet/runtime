@@ -135,6 +135,9 @@ dotnet_diagnostic.RS2008.severity = none
 # Exception type is not sufficiently specific
 dotnet_diagnostic.CA2201.severity = none
 
+# xUnit1004: Test methods should not be skipped
+dotnet_diagnostic.xUnit1004.severity = none
+
 [src/linker/ref/**/*.cs]
 
 # CA1822: Mark members as static

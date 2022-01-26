@@ -28,14 +28,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestGetEvents ()
 		{
 			var events = typeof (Foo).GetEvents ();
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		// The event will not be kept as it's internal and the behavior of Type.GetEvents() is to only return public events
 		// But we don't mark it as unrecognized access pattern - we did recognize it fully, just didn't find the event being asked for
 		// The behavior of the code will not change by linking it:
@@ -47,14 +45,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestBindingFlags ()
 		{
 			var events = typeof (Bar).GetEvents (BindingFlags.NonPublic);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestUnknownBindingFlags (BindingFlags bindingFlags)
 		{
 			// Since the binding flags are not known linker should mark all events on the type
@@ -62,7 +58,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestNullType ()
 		{
 			Type type = null;
@@ -76,8 +71,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetEvents), new Type[] { typeof (BindingFlags) },
-			messageCode: "IL2075", message: new string[] { "FindType", "GetEvents" })]
+		[ExpectedWarning ("IL2075", "FindType", "GetEvents")]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -85,14 +79,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestDataFlowWithAnnotation ([KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))][DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicEvents)] Type type)
 		{
 			var events = type.GetEvents (BindingFlags.Public | BindingFlags.Static);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -105,14 +97,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestIgnoreCaseBindingFlags ()
 		{
 			var events = typeof (IgnoreCaseBindingFlagsClass).GetEvents (BindingFlags.IgnoreCase | BindingFlags.Public);
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern]
 		static void TestUnsupportedBindingFlags ()
 		{
 			var events = typeof (PutRefDispPropertyBindingFlagsClass).GetEvents (BindingFlags.PutRefDispProperty);

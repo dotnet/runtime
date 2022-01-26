@@ -6,6 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[SetupCSharpCompilerToUse ("csc")]
+	[ExpectedNoWarnings]
 	public class EventUsedViaReflection
 	{
 		public static void Main ()
@@ -31,9 +32,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			typeof (Foo), nameof (Foo.Event), (Type[]) null)]
 		static void TestByName ()
 		{
 			var eventInfo = typeof (Foo).GetEvent ("Event");
@@ -111,8 +109,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[UnrecognizedReflectionAccessPattern (typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			messageCode: "IL2075", message: new string[] { "FindType", "GetEvent" })]
+		[ExpectedWarning ("IL2075", "FindType", "GetEvent")]
 		static void TestDataFlowType ()
 		{
 			Type type = FindType ();
@@ -120,15 +117,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			typeof (IfClass), nameof (IfClass.IfEvent), (Type[]) null)]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			typeof (IfClass), nameof (IfClass.ElseEvent), (Type[]) null)]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			typeof (ElseClass), nameof (ElseClass.IfEvent), (Type[]) null)]
 		static void TestIfElse (int i)
 		{
 			Type myType;
@@ -147,9 +135,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string) },
-			typeof (BaseClass), nameof (BaseClass.PublicEventOnBase), (Type[]) null)]
 		static void TestEventInBaseType ()
 		{
 			typeof (DerivedClass).GetEvent ("ProtectedEventOnBase"); // Will not mark anything as it only works on public events
@@ -157,9 +142,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetEvent), new Type[] { typeof (string), typeof (BindingFlags) },
-			typeof (IgnoreCaseBindingFlagsClass), nameof (IgnoreCaseBindingFlagsClass.PublicEvent), (Type[]) null)]
 		static void TestIgnoreCaseBindingFlags ()
 		{
 			typeof (IgnoreCaseBindingFlagsClass).GetEvent ("publicevent", BindingFlags.IgnoreCase | BindingFlags.Public);

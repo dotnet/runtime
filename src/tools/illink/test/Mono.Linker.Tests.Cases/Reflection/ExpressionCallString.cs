@@ -118,13 +118,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		class TestUnknownType
 		{
 			[Kept]
-			[UnrecognizedReflectionAccessPattern (typeof (Expression), nameof (Expression.Call),
-				new Type[] { typeof (Type), typeof (string), typeof (Type[]), typeof (Expression[]) }, messageCode: "IL2072")]
+			[ExpectedWarning ("IL2072", nameof (Expression) + "." + nameof (Expression.Call))]
 			public static void Test ()
 			{
 				// Keep all methods of the type that made the call
 				Expression.Call (GetUnknownType (), "This string will not be reached", Type.EmptyTypes);
-				// UnrecognizedReflectionAccessPattern
+				// IL2072
 				Expression.Call (TriggerUnrecognizedPattern (), "This string will not be reached", Type.EmptyTypes);
 			}
 
