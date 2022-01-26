@@ -475,17 +475,18 @@ namespace DebuggerTests
                 locals_fn: locals_fn);
         }
 
-        internal async Task<JObject> ContinueExecutionToAndCheck(string script_id, string script_loc, int line, int column, string function_name,
+        internal async Task<JObject> SetNextIPAndCheck(string script_id, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Func<JToken, Task> locals_fn = null)
         {
-            var continueExecutionArgs = JObject.FromObject(new
+            var setNextIPArgs = JObject.FromObject(new
                 {
                     scriptId = script_id,
-                    lineNumber = line
+                    lineNumber = line,
+                    columnNumber = column
                 });
 
             return await SendCommandAndCheck(
-                JObject.FromObject(new { location = continueExecutionArgs }), "Debugger.continueToLocation", script_loc, line, column, function_name,
+                JObject.FromObject(new { location = setNextIPArgs }), "DotnetDebugger.setNextIP", script_loc, line, column, function_name,
                 wait_for_event_fn: wait_for_event_fn,
                 locals_fn: locals_fn);
         }

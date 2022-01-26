@@ -499,6 +499,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
 
                 // Protocol extensions
+                case "DotnetDebugger.setNextIP":
+                    {
+                        if (await OnSetNextIP(id, args["location"]?["scriptId"]?.Value<string>(), args["location"]["lineNumber"].Value<int>(), args["location"]["columnNumber"].Value<int>(), token))
+                        {
+                            SendResponse(id, Result.OkFromObject(new { }), token);
+                            return true;
+                        }
+                        break;
+                    }
                 case "DotnetDebugger.applyUpdates":
                     {
                         if (await ApplyUpdates(id, args, token))
@@ -581,15 +590,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 token);
                             return true;
                         }
-                    }
-                case "Debugger.continueToLocation":
-                    {
-                        if (await OnContinueToLocation(id, args["location"]?["scriptId"]?.Value<string>(), args["location"]["lineNumber"].Value<int>(), token))
-                        {
-                            SendResponse(id, Result.OkFromObject(new { }), token);
-                            return true;
-                        }
-                        break;
                     }
                 case "DotnetDebugger.justMyCode":
                     {
@@ -1529,17 +1529,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
-        private async Task<bool> OnContinueToLocation(MessageId sessionId, string script_id, int lineNumber, CancellationToken token)
+        private async Task<bool> OnSetNextIP(MessageId sessionId, string script_id, int lineNumber, int columnNumber, CancellationToken token)
         {
-            DebugStore store = await RuntimeReady(sessionId, token);
-            ExecutionContext context = GetContext(sessionId);
-            Frame scope = context.CallStack.First<Frame>();
             if (!SourceId.TryParse(script_id, out SourceId id))
                 return false;
 
-            var res = new List<SourceLocation>();
+            DebugStore store = await RuntimeReady(sessionId, token);
+            ExecutionContext context = GetContext(sessionId);
+            Frame scope = context.CallStack.First<Frame>();
 
-            var sourceLocation = new SourceLocation(id, lineNumber, -1);
+            var res = new List<SourceLocation>();
+            var sourceLocation = new SourceLocation(id, lineNumber, columnNumber == 0 ? -1 : columnNumber);
 
             store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, scope.Method.Info);
             var ilOffset = res.First().IlLocation;

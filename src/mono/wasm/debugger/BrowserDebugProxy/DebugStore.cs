@@ -334,6 +334,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int IsAsync { get; set; }
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }
+        public bool HasSequencePoints { get => !DebugInformation.SequencePointsBlob.IsNil; }
 
         public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
         {
@@ -348,7 +349,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.pdbMetadataReader = pdbMetadataReader;
             this.IsEnCMethod = false;
             this.TypeInfo = type;
-            if (!DebugInformation.SequencePointsBlob.IsNil)
+            if (HasSequencePoints)
             {
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
@@ -405,7 +406,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.DebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(MetadataTokens.MethodDebugInformationHandle(method_idx));
             this.pdbMetadataReader = pdbMetadataReaderParm;
             this.IsEnCMethod = true;
-            if (!DebugInformation.SequencePointsBlob.IsNil)
+            if (HasSequencePoints)
             {
                 var sps = DebugInformation.GetSequencePoints();
                 SequencePoint start = sps.First();
@@ -433,7 +434,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceLocation GetLocationByIl(int pos)
         {
             SequencePoint? prev = null;
-            if (!DebugInformation.SequencePointsBlob.IsNil) {
+            if (HasSequencePoints) {
                 foreach (SequencePoint sp in DebugInformation.GetSequencePoints())
                 {
                     if (sp.Offset > pos)
@@ -1200,13 +1201,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public void AddPossibleBreakpointsInMethodToList(SourceLocation start, SourceLocation end, List<SourceLocation> res, MethodInfo method)
         {
-            if (!method.DebugInformation.SequencePointsBlob.IsNil)
+            if (!method.HasSequencePoints)
+                return;
+            foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
             {
-                foreach (SequencePoint sequencePoint in method.DebugInformation.GetSequencePoints())
-                {
-                    if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
-                        res.Add(new SourceLocation(method, sequencePoint));
-                }
+                if (!sequencePoint.IsHidden && Match(sequencePoint, start, end))
+                    res.Add(new SourceLocation(method, sequencePoint));
             }
         }
 

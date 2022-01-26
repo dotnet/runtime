@@ -1141,7 +1141,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task ContinueExecutionToLocation()
+        public async Task SetNextIP()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 9, 8);
 
@@ -1163,7 +1163,7 @@ namespace DebuggerTests
                 }
             );
             var top_frame = pause_location["callFrames"][0]["functionLocation"];
-            await ContinueExecutionToAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
+            await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "c", 0);
@@ -1181,7 +1181,7 @@ namespace DebuggerTests
                     await CheckBool(locals, "f", true);
                     await Task.CompletedTask;
                 });
-            await ContinueExecutionToAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 9, 8, "IntAdd",
+            await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 9, 8, "IntAdd",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "c", 0);
@@ -1199,7 +1199,7 @@ namespace DebuggerTests
                     await CheckBool(locals, "f", true);
                     await Task.CompletedTask;
                 });
-            await ContinueExecutionToAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 11, 8, "IntAdd",
+            await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 11, 8, "IntAdd",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "c", 30);
