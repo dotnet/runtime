@@ -6,7 +6,8 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/64300", TestPlatforms.Browser)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
+    [SkipOnPlatform(TestPlatforms.Browser, "Internal members accessed via reflection may have been trimmed away")]
     public class RegexReductionTests
     {
         // These tests depend on using reflection to access internals of Regex in order to validate
@@ -25,9 +26,9 @@ namespace System.Text.RegularExpressions.Tests
 
         static RegexReductionTests()
         {
-            if (PlatformDetection.IsNetFramework)
+            if (PlatformDetection.IsNetFramework || PlatformDetection.IsBrowser)
             {
-                // These members may not exist, and the tests won't run.
+                // These members may not exist or may have been trimmed away, and the tests won't run.
                 return;
             }
 
@@ -95,7 +96,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
         // Two greedy one loops
         [InlineData("a*a*", "a*")]
         [InlineData("(a*a*)", "(a*)")]
@@ -475,7 +475,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Many of these optimizations don't exist in .NET Framework.")]
         // Not coalescing loops
         [InlineData("aa", "a{2}")]
         [InlineData("a[^a]", "a{2}")]
@@ -557,7 +556,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not computed in netfx")]
         [InlineData(@"a", RegexOptions.None, 1, 1)]
         [InlineData(@"[^a]", RegexOptions.None, 1, 1)]
         [InlineData(@"[abcdefg]", RegexOptions.None, 1, 1)]
@@ -637,7 +635,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not computed in netfx")]
         public void MinMaxLengthIsCorrect_HugeDepth()
         {
             const int Depth = 10_000;
