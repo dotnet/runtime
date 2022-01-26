@@ -9037,6 +9037,12 @@ namespace System.Diagnostics
         public static System.Diagnostics.Stopwatch StartNew() { throw null; }
         public void Stop() { }
     }
+    public sealed partial class UnreachableException : System.Exception
+    {
+        public UnreachableException() { }
+        public UnreachableException(string? message) { }
+        public UnreachableException(string? message, System.Exception? innerException) { }
+    }
 }
 namespace System.Diagnostics.CodeAnalysis
 {
