@@ -289,9 +289,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     if (isHardwareAccelerated)
     {
         // Special case: Some of Vector128/256 APIs are hardware accelerated with Sse1 and Avx1,
-        // but we want IsHardwareAccelerated to return true only all of them are (there are still
-        // can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's not
-        // important enought to bump the minimal Sse version here)
+        // but we want IsHardwareAccelerated to return true only when all of them are (there are
+        // still can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's
+        // not important enough to bump the minimal Sse version here)
         if (strcmp(className, "Vector128") == 0)
         {
             isa = InstructionSet_SSE2;
