@@ -14646,10 +14646,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
                                   // this is how impImportCall invokes getCallInfo
-                                  addVerifyFlag(
-                                      combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
-                                              (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT
-                                                                       : CORINFO_CALLINFO_NONE)),
+                                  combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
+                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT
+                                                                  : CORINFO_CALLINFO_NONE),
                                   &callInfo);
                 }
                 else
