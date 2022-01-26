@@ -1627,7 +1627,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                    subsequent uses of the arg would have worked with the bashed value */
                 if (argInfo.argIsInvariant)
                 {
-                    assert(argNode->OperIsConst() || argNode->gtOper == GT_ADDR);
+                    assert(argNode->IsInvariant());
                 }
                 noway_assert((argInfo.argIsLclVar == 0) ==
                              (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
