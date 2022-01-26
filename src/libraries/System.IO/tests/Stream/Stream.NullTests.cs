@@ -123,7 +123,6 @@ namespace System.IO.Tests
             Assert.Equal(0, source.Position);
         }
 
-
         [Theory]
         [MemberData(nameof(NullReaders))]
         public static void TestNullTextReaderDispose(TextReader input)
