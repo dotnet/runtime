@@ -45,6 +45,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestPlatforms.tvOS)]
         public void ShouldSucceed()
         {
             var rb = new RegistrationBuilder();
@@ -174,6 +175,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ClassExportingInterface<T> : IGenericInterface<T> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestPlatforms.tvOS)]
         public void GenericInterfaceExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingInterface<>));
@@ -187,6 +189,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ClassExportingBaseClass<T> : GenericBaseClass<T> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestPlatforms.tvOS)]
         public void GenericBaseClassExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingBaseClass<>));
@@ -209,6 +212,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ExplicitGenericClass<T> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestPlatforms.tvOS)]
         public void ExplicitGenericExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<>));
@@ -220,6 +224,7 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ExplicitGenericClass<T, U> { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestPlatforms.tvOS)]
         public void ExplicitGenericArity2ExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<,>));
