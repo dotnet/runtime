@@ -9180,8 +9180,8 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
-    [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
-    public sealed class SetsRequiredMembersAttribute : Attribute
+    [System.AttributeUsage(System.AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
+    public sealed class SetsRequiredMembersAttribute : System.Attribute
     {
         public SetsRequiredMembersAttribute() { }
     }
@@ -13199,8 +13199,8 @@ namespace System.Runtime.CompilerServices
     {
         public PreserveBaseOverridesAttribute() { }
     }
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
-    public sealed class RequiredMemberAttribute : Attribute
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    public sealed class RequiredMemberAttribute : System.Attribute
     {
         public RequiredMemberAttribute() { }
     }
