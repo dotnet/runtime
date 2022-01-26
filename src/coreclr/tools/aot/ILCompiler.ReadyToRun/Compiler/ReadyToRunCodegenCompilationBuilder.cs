@@ -205,7 +205,7 @@ namespace ILCompiler
             return this;
         }
 
-        public override ICompilation ToCompilation()
+        public override ICompilation ToCompilation(bool ignoreUnresolved)
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
             IEnumerable<EcmaModule> inputModules = _compilationGroup.CompilationModuleSet;

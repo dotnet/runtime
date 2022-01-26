@@ -755,7 +755,7 @@ namespace ILCompiler
                     if (_commandLineOptions.PrintReproInstructions)
                         builder.UsePrintReproInstructions(CreateReproArgumentString);
 
-                    compilation = builder.ToCompilation();
+                    compilation = builder.ToCompilation(true);
 
                 }
                 compilation.Compile(outFile);
