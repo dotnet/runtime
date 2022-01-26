@@ -72,40 +72,28 @@ namespace System.Collections.Immutable
             T[] selfArray = self.array!;
             for (int i = 0; i < selfArray.Length; i++)
             {
-                bool found = false;
                 if (selfArray[i] == null)
                 {
-                    if (nullValueCount > 0)
+                    if (nullValueCount == 0)
                     {
-                        found = true;
-                        nullValueCount--;
+                        continue;
                     }
+                    nullValueCount--;
                 }
                 else
                 {
 #nullable disable
                     ref int count = ref CollectionsMarshal.GetValueRefOrNullRef(itemsMultiSet, selfArray[i]);
 #nullable restore
-                    if (!Unsafe.IsNullRef(ref count))
+                    if (Unsafe.IsNullRef(ref count) || count == 0)
                     {
-                        found = true;
-                        if (count == 1)
-                        {
-                            itemsMultiSet.Remove(selfArray[i]);
-                        }
-                        else
-                        {
-                            Debug.Assert(count > 1);
-                            count--;
-                        }
+                        continue;
                     }
+                    count--;
                 }
 
-                if (found)
-                {
-                    indicesToRemove ??= new();
-                    indicesToRemove.Add(i);
-                }
+                indicesToRemove ??= new();
+                indicesToRemove.Add(i);
             }
 
             return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);

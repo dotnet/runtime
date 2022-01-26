@@ -57,34 +57,25 @@ namespace System.Collections.Immutable
             T[] selfArray = self.array!;
             for (int i = 0; i < selfArray.Length; i++)
             {
-                bool found = false;
                 if (selfArray[i] == null)
                 {
-                    if (nullValueCount > 0)
+                    if (nullValueCount == 0)
                     {
-                        found = true;
-                        nullValueCount--;
+                        continue;
                     }
+                    nullValueCount--;
                 }
-                else if (itemsMultiSet.TryGetValue(selfArray[i], out int count))
+                else
                 {
-                    found = true;
-                    if (count == 1)
+                    if (!itemsMultiSet.TryGetValue(selfArray[i], out int count) || count == 0)
                     {
-                        itemsMultiSet.Remove(selfArray[i]);
+                        continue;
                     }
-                    else
-                    {
-                        Debug.Assert(count > 1);
-                        itemsMultiSet[selfArray[i]] = count - 1;
-                    }
+                    itemsMultiSet[selfArray[i]] = count - 1;
                 }
 
-                if (found)
-                {
-                    indicesToRemove ??= new();
-                    indicesToRemove.Add(i);
-                }
+                indicesToRemove ??= new();
+                indicesToRemove.Add(i);
             }
 
             return indicesToRemove == null ? self : self.RemoveAtRange(indicesToRemove);
