@@ -10,8 +10,8 @@ CONFIG?=Release
 
 WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
 
-# if we're in a devcontainer, don't try to open the browser
-ifeq ("$(CODESPACES)", "true")
+# if we're in a container, don't try to open the browser
+ifneq ("$(wildcard /.dockerenv)", "")
   OPEN_BROWSER=
   V8_PATH=v8
 else
