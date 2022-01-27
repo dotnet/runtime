@@ -3846,8 +3846,8 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
         return nullptr;
     }
 
-    // We will avoid using "andn" when one of the operands is (likely to be) in memory:
-    // "and"'s RMW form provides for a shorter instruction sequence in that case.
+    // We want to avoid using "andn" when one of the operands is both a source and the destination and is also coming
+    // from memory. In this scenario, we will get smaller and likely faster code by using the RMW encoding of `and`
     if (IsBinOpInRMWStoreInd(andNode))
     {
         return nullptr;
