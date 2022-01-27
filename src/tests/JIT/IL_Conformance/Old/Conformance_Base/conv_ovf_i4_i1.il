@@ -208,4 +208,4 @@ END:
 
 
 
-.assembly conv_ovf_i4_i1.exe{}
+.assembly conv_ovf_i4_i1{}

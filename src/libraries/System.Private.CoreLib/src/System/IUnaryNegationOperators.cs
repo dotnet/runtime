@@ -12,7 +12,7 @@ namespace System
     /// <summary>Defines a mechanism for computing the unary negation of a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TResult">The type that contains the result of negating <typeparamref name="TSelf" />.</typeparam>
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public interface IUnaryNegationOperators<TSelf, TResult>
         where TSelf : IUnaryNegationOperators<TSelf, TResult>
     {

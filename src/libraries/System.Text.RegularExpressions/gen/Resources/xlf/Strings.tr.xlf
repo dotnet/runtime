@@ -110,7 +110,7 @@
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
         <target state="translated">ScanRegex iç hatası.</target>
-        <note />
+        <note>{Locked="ScanRegex"}</note>
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
         <source>Argument {0} cannot be zero-length.</source>
@@ -135,12 +135,12 @@
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
         <target state="translated">RegexGeneratorAttribute hatalı biçimlendirilmiş</target>
-        <note />
+        <note>{Locked="RegexGeneratorAttribute"}</note>
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
         <target state="translated">Geçersiz RegexGenerator kullanımı</target>
-        <note />
+        <note>{Locked="RegexGenerator"}</note>
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
@@ -150,6 +150,16 @@
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
         <target state="translated">Uzunluk sıfırdan küçük olamaz ve giriş uzunluğunu aşamaz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationMessage">
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
+        <target state="translated">RegexGenerator, desteklenmeyen bir seçenek veya çok karmaşık bir normal ifade nedeniyle belirtilen normal ifade için tam kaynak uygulaması oluşturamadı. Uygulama, normal ifadeyi çalışma zamanında yorumlar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LimitedSourceGenerationTitle">
+        <source>RegexGenerator limitation reached.</source>
+        <target state="translated">RegexGenerator sınırına ulaşıldı.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -192,6 +202,11 @@
         <target state="translated">Sonuç, başarısız Eşleştirmede çağrılamaz.</target>
         <note />
       </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="translated">Grup değiştirmeleri içeren normal ifade değiştirmeleri RegexOptions.NonBacktracking ile desteklenmez.</target>
+        <note>{Locked="RegexOptions.NonBacktracking"}</note>
+      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Koleksiyon salt okunur.</target>
@@ -215,7 +230,7 @@
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
         <target state="translated">Yakalama grubu numaraları Int32.MaxValue değerine eşit veya bundan küçük olmalıdır.</target>
-        <note />
+        <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
@@ -275,11 +290,6 @@
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
         <target state="translated">Desenin sonunda geçersiz \\.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="UnexpectedOpcode">
-        <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="translated">Normal ifade oluşturmada beklenmeyen işlem kodu: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">

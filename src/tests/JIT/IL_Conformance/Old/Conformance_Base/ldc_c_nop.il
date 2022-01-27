@@ -91,6 +91,6 @@ END:
 }
 
 
-.assembly ldc_c_nop.exe {}
+.assembly ldc_c_nop {}
 
 

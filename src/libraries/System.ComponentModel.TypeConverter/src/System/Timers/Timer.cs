@@ -121,10 +121,7 @@ namespace System.Timers
                         _enabled = value;
                         if (_timer == null)
                         {
-                            if (_disposed)
-                            {
-                                throw new ObjectDisposedException(GetType().Name);
-                            }
+                            ObjectDisposedException.ThrowIf(_disposed, this);
 
                             int i = (int)Math.Ceiling(_interval);
                             _cookie = new object();

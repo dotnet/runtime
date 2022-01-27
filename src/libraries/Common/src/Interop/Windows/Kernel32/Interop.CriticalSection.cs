@@ -19,16 +19,16 @@ internal static partial class Interop
             private UIntPtr SpinCount;
         }
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial void LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection);
 
-        [DllImport(Libraries.Kernel32, ExactSpelling = true)]
-        internal static extern unsafe void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true)]
+        internal static unsafe partial void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection);
     }
 }

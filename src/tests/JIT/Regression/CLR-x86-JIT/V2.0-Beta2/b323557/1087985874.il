@@ -7,7 +7,8 @@
   .ver 4:0:0:0
 }
 
-.assembly Test1 {}
+.assembly '1087985874' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 .class FullProof {
 
@@ -40,6 +41,9 @@ IL_57:   shr.un         //  2 1 0 0 1
 
   .method public static int32  Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 3
         ldc.r4 1

@@ -283,9 +283,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compHWIntrinsicDependsOn(isa) && comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
-    if (strcmp(methodName, "get_IsSupported") == 0)
+    if ((strcmp(methodName, "get_IsSupported") == 0) || (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
     {
         return isIsaSupported ? (comp->compExactlyDependsOn(isa) ? NI_IsSupported_True : NI_IsSupported_Dynamic)
                               : NI_IsSupported_False;
@@ -364,92 +364,6 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
     assert((simdSize > 0) && (simdBaseJitType != CORINFO_TYPE_UNDEF));
     return simdSize;
-}
-
-//------------------------------------------------------------------------
-// lookupNumArgs: Gets the number of args for a given HWIntrinsic node
-//
-// Arguments:
-//    node -- The HWIntrinsic node to get the number of args for
-//
-// Return Value:
-//    The number of args for the HWIntrinsic associated with node
-int HWIntrinsicInfo::lookupNumArgs(const GenTreeHWIntrinsic* node)
-{
-    assert(node != nullptr);
-
-    NamedIntrinsic id      = node->gtHWIntrinsicId;
-    int            numArgs = lookupNumArgs(id);
-
-    if (numArgs >= 0)
-    {
-        return numArgs;
-    }
-
-    assert(numArgs == -1);
-
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1 == nullptr)
-    {
-        return 0;
-    }
-
-    if (op1->OperIsList())
-    {
-        GenTreeArgList* list = op1->AsArgList();
-        numArgs              = 0;
-
-        do
-        {
-            numArgs++;
-            list = list->Rest();
-        } while (list != nullptr);
-
-        return numArgs;
-    }
-
-    GenTree* op2 = node->gtGetOp2();
-
-    return (op2 == nullptr) ? 1 : 2;
-}
-
-//------------------------------------------------------------------------
-// lookupLastOp: Gets the last operand for a given HWIntrinsic node
-//
-// Arguments:
-//    node   -- The HWIntrinsic node to get the last operand for
-//
-// Return Value:
-//     The last operand for node
-GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
-{
-    assert(node != nullptr);
-
-    GenTree* op1 = node->gtGetOp1();
-
-    if (op1 == nullptr)
-    {
-        return nullptr;
-    }
-
-    if (op1->OperIsList())
-    {
-        GenTreeArgList* list = op1->AsArgList();
-        GenTree*        last;
-
-        do
-        {
-            last = list->Current();
-            list = list->Rest();
-        } while (list != nullptr);
-
-        return last;
-    }
-
-    GenTree* op2 = node->gtGetOp2();
-
-    return (op2 == nullptr) ? op1 : op2;
 }
 
 //------------------------------------------------------------------------
@@ -548,7 +462,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 }
 
 //------------------------------------------------------------------------
-// addRangeCheckIfNeeded: add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic
+// addRangeCheckIfNeeded: add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic
 //
 // Arguments:
 //    intrinsic     -- intrinsic ID
@@ -558,7 +472,7 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 //    immUpperBound -- upper incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
 // Return Value:
-//     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
+//     add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
 GenTree* Compiler::addRangeCheckIfNeeded(
@@ -587,7 +501,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 }
 
 //------------------------------------------------------------------------
-// addRangeCheckForHWIntrinsic: add a GT_HW_INTRINSIC_CHK node for an intrinsic
+// addRangeCheckForHWIntrinsic: add a GT_BOUNDS_CHECK node for an intrinsic
 //
 // Arguments:
 //    immOp         -- the immediate operand of the intrinsic
@@ -595,7 +509,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(
 //    immUpperBound -- upper incl. bound for a value of the immediate operand (for a non-full-range imm-intrinsic)
 //
 // Return Value:
-//     add a GT_HW_INTRINSIC_CHK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
+//     add a GT_BOUNDS_CHECK node for non-full-range imm-intrinsic, which would throw ArgumentOutOfRangeException
 //     when the imm-argument is not in the valid range
 //
 GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound, int immUpperBound)
@@ -625,8 +539,8 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
         immOpDup = gtNewOperNode(GT_SUB, TYP_INT, immOpDup, gtNewIconNode(immLowerBound, TYP_INT));
     }
 
-    GenTreeBoundsChk* hwIntrinsicChk = new (this, GT_HW_INTRINSIC_CHK)
-        GenTreeBoundsChk(GT_HW_INTRINSIC_CHK, TYP_VOID, immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
+    GenTreeBoundsChk* hwIntrinsicChk =
+        new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(immOpDup, adjustedUpperBoundNode, SCK_ARG_RNG_EXCPN);
 
     return gtNewOperNode(GT_COMMA, immOp->TypeGet(), hwIntrinsicChk, immOp);
 }
@@ -641,7 +555,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
 bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 {
-    return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
+    return compHWIntrinsicDependsOn(isa) && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
            (
 #ifdef DEBUG
                JitConfig.EnableIncompleteISAClass() ||
@@ -679,12 +593,6 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 {
     if (baseJitType == CORINFO_TYPE_UNDEF)
     {
-        return false;
-    }
-
-    if ((baseJitType == CORINFO_TYPE_NATIVEINT) || (baseJitType == CORINFO_TYPE_NATIVEUINT))
-    {
-        // We don't want to support the general purpose helpers for nint/nuint until after they go through API review.
         return false;
     }
 
@@ -833,10 +741,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
 {
-    HWIntrinsicCategory category        = HWIntrinsicInfo::lookupCategory(intrinsic);
-    int                 numArgs         = sig->numArgs;
-    var_types           retType         = JITtype2varType(sig->retType);
-    CorInfoType         simdBaseJitType = CORINFO_TYPE_UNDEF;
+    HWIntrinsicCategory    category        = HWIntrinsicInfo::lookupCategory(intrinsic);
+    CORINFO_InstructionSet isa             = HWIntrinsicInfo::lookupIsa(intrinsic);
+    int                    numArgs         = sig->numArgs;
+    var_types              retType         = JITtype2varType(sig->retType);
+    CorInfoType            simdBaseJitType = CORINFO_TYPE_UNDEF;
 
     if ((retType == TYP_STRUCT) && featureSIMD)
     {
@@ -857,20 +766,27 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (simdBaseJitType == CORINFO_TYPE_UNDEF)
     {
-        if (category != HW_Category_Scalar)
+        if ((category == HW_Category_Scalar) || HWIntrinsicInfo::isScalarIsa(isa))
         {
-            unsigned int sizeBytes;
-            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
-            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
+            simdBaseJitType = sig->retType;
+
+            if (simdBaseJitType == CORINFO_TYPE_VOID)
+            {
+                simdBaseJitType = CORINFO_TYPE_UNDEF;
+            }
         }
         else
         {
-            simdBaseJitType = sig->retType;
+            assert(featureSIMD);
+            unsigned int sizeBytes;
+
+            simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &sizeBytes);
+            assert((category == HW_Category_Special) || (category == HW_Category_Helper) || (sizeBytes != 0));
         }
     }
 
     // Immediately return if the category is other than scalar/special and this is not a supported base type.
-    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) &&
+    if ((category != HW_Category_Special) && (category != HW_Category_Scalar) && !HWIntrinsicInfo::isScalarIsa(isa) &&
         !isSupportedBaseType(intrinsic, simdBaseJitType))
     {
         return nullptr;
@@ -1091,6 +1007,41 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = isScalar ? gtNewScalarHWIntrinsicNode(retType, op1, intrinsic)
                                    : gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+
+#if defined(TARGET_XARCH)
+                switch (intrinsic)
+                {
+                    case NI_SSE41_ConvertToVector128Int16:
+                    case NI_SSE41_ConvertToVector128Int32:
+                    case NI_SSE41_ConvertToVector128Int64:
+                    case NI_AVX2_BroadcastScalarToVector128:
+                    case NI_AVX2_BroadcastScalarToVector256:
+                    case NI_AVX2_ConvertToVector256Int16:
+                    case NI_AVX2_ConvertToVector256Int32:
+                    case NI_AVX2_ConvertToVector256Int64:
+                    {
+                        // These intrinsics have both pointer and vector overloads
+                        // We want to be able to differentiate between them so lets
+                        // just track the aux type as a ptr or undefined, depending
+
+                        CorInfoType auxiliaryType = CORINFO_TYPE_UNDEF;
+
+                        if (!varTypeIsSIMD(op1->TypeGet()))
+                        {
+                            auxiliaryType = CORINFO_TYPE_PTR;
+                        }
+
+                        retNode->AsHWIntrinsic()->SetAuxiliaryJitType(auxiliaryType);
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+#endif // TARGET_XARCH
+
                 break;
 
             case 2:

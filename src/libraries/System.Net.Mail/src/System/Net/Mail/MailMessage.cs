@@ -288,10 +288,7 @@ namespace System.Net.Mail
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _attachments ??= new AttachmentCollection();
             }
@@ -300,10 +297,7 @@ namespace System.Net.Mail
         {
             get
             {
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 return _views ??= new AlternateViewCollection();
             }
@@ -383,7 +377,7 @@ namespace System.Net.Mail
             {
                 // we should not unnecessarily use Multipart/Mixed
                 // When there is no attachement and all the alternative views are of "Alternative" types.
-                MimeMultiPart? part = null;
+                MimeMultiPart? part;
                 MimeMultiPart viewsPart = new MimeMultiPart(MimeMultiPartType.Alternative);
 
                 if (!string.IsNullOrEmpty(_body))

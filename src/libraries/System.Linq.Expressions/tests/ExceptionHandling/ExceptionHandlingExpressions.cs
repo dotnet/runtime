@@ -240,9 +240,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, func());
         }
 
-#if FEATURE_COMPILE
-
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ClassData(typeof(CompilationTypes))]
         public void CatchFromExternallyThrownString(bool useInterpreter)
         {
             foreach (bool assemblyWraps in new []{false, true})
@@ -274,7 +273,6 @@ namespace System.Linq.Expressions.Tests
                 Assert.Equal("An Exceptional Exception!", func());
             }
         }
-#endif
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
@@ -1006,11 +1004,14 @@ namespace System.Linq.Expressions.Tests
                 )
             );
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(tryExp);
-#if FEATURE_COMPILE
-            Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
-#else
-            lambda.Compile(true);
-#endif
+            if (PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly)
+            {
+                Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
+            }
+            else
+            {
+                lambda.Compile(true);
+            }
         }
 
         [Theory, InlineData(true)]
@@ -1401,7 +1402,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CatchesMustReturnVoidWithVoidBody()
         {
-            Assert.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
                 Expression.TryCatch(
                     Expression.Empty(),
                     Expression.Catch(typeof(InvocationExpression), Expression.Constant("hello")),

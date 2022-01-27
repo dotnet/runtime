@@ -126,7 +126,7 @@ gboolean mono_use_llvm = FALSE;
 
 gboolean mono_use_fast_math = FALSE;
 
-// Lists of allowlisted and blocklisted CPU features 
+// Lists of allowlisted and blocklisted CPU features
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
 
 #ifdef DISABLE_SIMD
@@ -160,6 +160,7 @@ static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 static void mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data);
+static gboolean mini_interp_sufficient_stack (gsize size);
 
 gboolean
 mono_running_on_valgrind (void)
@@ -1075,7 +1076,8 @@ mono_print_ji (const MonoJumpInfo *ji)
 	}
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHODCONST:
-	case MONO_PATCH_INFO_METHOD_FTNDESC: {
+	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		char *s = mono_method_get_full_name (ji->data.method);
 		printf ("[%s %s]", type, s);
 		g_free (s);
@@ -1215,6 +1217,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
 	case MONO_PATCH_INFO_METHOD_FTNDESC:
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY:
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
@@ -1416,6 +1419,11 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		return_val_if_nok (error, NULL);
 		break;
 	}
+	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
+		target = mini_get_interp_callbacks ()->create_method_pointer_llvmonly (patch_info->data.method, FALSE, error);
+		mono_error_assert_ok (error);
+		break;
+	}
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		gpointer code_slot;
 
@@ -1498,7 +1506,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (patch_info->data.field), error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
@@ -2013,7 +2021,7 @@ mono_enable_jit_dump (void)
 {
 	if (perf_dump_pid == 0)
 		perf_dump_pid = getpid();
-	
+
 	if (!perf_dump_file) {
 		char name [64];
 		FileHeader header;
@@ -2021,18 +2029,18 @@ mono_enable_jit_dump (void)
 
 		mono_os_mutex_init (&perf_dump_mutex);
 		mono_os_mutex_lock (&perf_dump_mutex);
-		
+
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
 		unlink (name);
 		perf_dump_file = fopen (name, "w");
-		
+
 		add_file_header_info (&header);
 		if (perf_dump_file) {
 			fwrite (&header, sizeof (header), 1, perf_dump_file);
 			//This informs perf of the presence of the jitdump file and support for the feature.
 			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
 		}
-		
+
 		mono_os_mutex_unlock (&perf_dump_mutex);
 	}
 }
@@ -2054,12 +2062,12 @@ void
 mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 {
 	static uint64_t code_index;
-	
+
 	if (perf_dump_file) {
 		JitCodeLoadRecord record;
 		size_t nameLen = strlen (jinfo->d.method->name);
 		memset (&record, 0, sizeof (record));
-		
+
 		add_basic_JitCodeLoadRecord_info (&record);
 		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
 		record.vma = (guint64)jinfo->code_start;
@@ -2067,13 +2075,13 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		record.code_size = (guint64)jinfo->code_size;
 
 		mono_os_mutex_lock (&perf_dump_mutex);
-		
+
 		record.code_index = ++code_index;
-		
+
 		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
-		
+
 		record.header.timestamp = mono_clock_get_time_ns (clock_id);
-		
+
 		fwrite (&record, sizeof (record), 1, perf_dump_file);
 		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
 		fwrite (code, jinfo->code_size, 1, perf_dump_file);
@@ -2804,7 +2812,7 @@ mono_jit_free_method (MonoMethod *method)
 
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
-	
+
 	//seq_points are always on get_default_jit_mm
 	jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
@@ -3039,7 +3047,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+			if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 				supported = FALSE;
 		}
 
@@ -3186,7 +3194,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (sig->hasthis)
 		args [pindex ++] = &obj;
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (info->ret_box_class && !sig->ret->byref &&
+		if (info->ret_box_class && !m_type_is_byref (sig->ret) &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
 			// if the return type is a struct, allocate enough stack space to hold it
@@ -3219,7 +3227,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 			params [i] = nullable_buf;
 		}
 
-		if (!t->byref && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
+		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
 		}
@@ -3234,7 +3242,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
-	if (sig->ret->byref) {
+	if (m_type_is_byref (sig->ret)) {
 		if (*(gpointer*)retval == NULL) {
 			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
 			MonoObject *ex = mono_object_new_checked (klass, error);
@@ -3246,14 +3254,14 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (info->ret_box_class) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return ret;
 			}
 		} else {
-			if (sig->ret->byref)
+			if (m_type_is_byref (sig->ret))
 				return **(MonoObject***)retval;
 			else
 				return *(MonoObject**)retval;
@@ -3417,7 +3425,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		guint8 *retval = NULL;
 
 		/* if the return type is a struct and it's too big, allocate more space for it */
-		if (info->ret_box_class && !sig->ret->byref &&
+		if (info->ret_box_class && !m_type_is_byref (sig->ret) &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
 			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
@@ -3438,7 +3446,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				args [pindex ++] = &params [i];
 			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
 				args [pindex ++] = &params [i];
@@ -3464,7 +3472,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			return NULL;
 		}
 
-		if (sig->ret->byref) {
+		if (m_type_is_byref (sig->ret)) {
 			if (*(gpointer*)retval == NULL) {
 				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
 				MonoObject *ex = mono_object_new_checked (klass, error);
@@ -3475,14 +3483,14 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (info->ret_box_class) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *boxed_ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return boxed_ret;
 			}
 		} else {
-			if (sig->ret->byref)
+			if (m_type_is_byref (sig->ret))
 				return **(MonoObject***)retval;
 			else
 				return *(MonoObject**)retval;
@@ -3847,6 +3855,16 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 {
 	MonoDelegate *del = MONO_HANDLE_RAW (delegate);
 
+	if (!method && !addr) {
+		// Multicast delegate init
+		if (!mono_llvm_only) {
+			MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
+		} else {
+			mini_llvmonly_init_delegate (del, NULL);
+		}
+		return;
+	}
+
 	if (!method) {
 		MonoJitInfo *ji;
 		gpointer lookup_addr = MINI_FTNPTR_TO_ADDR (addr);
@@ -3873,15 +3891,17 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	MONO_HANDLE_SET (delegate, target, target);
 	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
 
+	MonoDelegateTrampInfo *info = NULL;
+
 	if (mono_use_interpreter) {
-		mini_get_interp_callbacks ()->init_delegate (del, error);
+		mini_get_interp_callbacks ()->init_delegate (del, &info, error);
 		return_if_nok (error);
 	}
 
 	if (mono_llvm_only) {
 		g_assert (del->method);
-		/* del->method_ptr might already be set to no_llvmonly_interp_method_pointer if the delegate was created from the interpreter */
-		del->method_ptr = mini_llvmonly_load_method_delegate (del->method, FALSE, FALSE, &del->extra_arg, error);
+		mini_llvmonly_init_delegate (del, info);
+		//del->method_ptr = mini_llvmonly_load_method_delegate (del->method, FALSE, FALSE, &del->extra_arg, error);
 	} else if (!del->method_ptr) {
 		del->method_ptr = create_delegate_method_ptr (del->method, error);
 		return_if_nok (error);
@@ -4382,7 +4402,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 	mono_components_init ();
-	
+
 	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
@@ -4445,6 +4465,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
+	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
 	callbacks.init_mem_manager = init_jit_mem_manager;
 	callbacks.free_mem_manager = free_jit_mem_manager;
 
@@ -4501,7 +4522,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
 
-	mono_component_debugger ()->init (&mono_defaults);
+	mono_component_debugger ()->init ();
 
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	mono_set_generic_sharing_supported (TRUE);
@@ -4708,6 +4729,7 @@ register_icalls (void)
 #if !defined(MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS) || defined(MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS)
 	register_opcode_emulation (OP_LMUL_OVF_UN, __emul_lmul_ovf_un, mono_icall_sig_long_long_long, mono_llmult_ovf_un, FALSE);
 	register_opcode_emulation (OP_LMUL_OVF, __emul_lmul_ovf, mono_icall_sig_long_long_long, mono_llmult_ovf, FALSE);
+	register_opcode_emulation (OP_LMUL_OVF_UN_OOM, __emul_lmul_ovf_un_oom, mono_icall_sig_long_long_long, mono_llmult_ovf_un_oom, FALSE);
 #endif
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS
@@ -4730,6 +4752,7 @@ register_icalls (void)
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_EMULATE_MUL_OVF)
 	register_opcode_emulation (OP_IMUL_OVF, __emul_op_imul_ovf, mono_icall_sig_int32_int32_int32, mono_imul_ovf, FALSE);
 	register_opcode_emulation (OP_IMUL_OVF_UN, __emul_op_imul_ovf_un, mono_icall_sig_int32_int32_int32, mono_imul_ovf_un, FALSE);
+	register_opcode_emulation (OP_IMUL_OVF_UN_OOM, __emul_op_imul_ovf_un_oom, mono_icall_sig_int32_int32_int32, mono_imul_ovf_un_oom, FALSE);
 #endif
 
 #if defined(MONO_ARCH_EMULATE_MUL_DIV) || defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
@@ -4878,16 +4901,17 @@ register_icalls (void)
 	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_ptr_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
+	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt_fast, mono_icall_sig_ptr_object_int);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_call, mono_icall_sig_ptr_ptr_int_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_iface_call, mono_icall_sig_ptr_ptr_int_ptr);
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mini_llvmonly_init_vtable_slot, mono_icall_sig_ptr_ptr_int, FALSE);
-	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object, TRUE);
+	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object_ptr, TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_pop_lmf, mono_icall_sig_void_ptr, TRUE);
-	register_icall (mini_llvmonly_get_interp_entry, mono_icall_sig_ptr_ptr, TRUE);
+	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
 	register_icall (mono_get_assembly_object, mono_icall_sig_object_ptr, TRUE);
 	register_icall (mono_get_method_object, mono_icall_sig_object_ptr, TRUE);
@@ -4897,6 +4921,7 @@ register_icalls (void)
 	register_icall (mono_throw_platform_not_supported, mono_icall_sig_void, FALSE);
 	register_icall (mono_throw_invalid_program, mono_icall_sig_void_ptr, FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, mono_icall_sig_void);
+	//register_icall_no_wrapper (mono_dummy_jit_icall_val, mono_icall_sig_void_ptr);
 
 	register_icall_with_wrapper (mono_monitor_enter_internal, mono_icall_sig_int32_obj);
 	register_icall_with_wrapper (mono_monitor_enter_v4_internal, mono_icall_sig_void_obj_ptr);
@@ -4950,7 +4975,7 @@ mono_runtime_print_stats (void)
 
 		g_print ("\nInitialized classes:    %" G_GINT32_FORMAT "\n", mono_stats.generic_class_count);
 		g_print ("Inflated types:         %" G_GINT32_FORMAT "\n", mono_stats.inflated_type_count);
-		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
+		g_print ("Generics virtual invokes: %" G_GINT32_FORMAT "\n", mono_jit_stats.generic_virtual_invocations);
 
 		g_print ("Sharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_sharable_methods);
 		g_print ("Unsharable generic methods: %" G_GINT32_FORMAT "\n", mono_stats.generics_unsharable_methods);
@@ -5213,6 +5238,12 @@ static void
 mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data)
 {
 	mini_get_interp_callbacks ()->jit_info_foreach (func, user_data);
+}
+
+static gboolean
+mini_interp_sufficient_stack (gsize size)
+{
+	return mini_get_interp_callbacks ()->sufficient_stack (size);
 }
 
 /*

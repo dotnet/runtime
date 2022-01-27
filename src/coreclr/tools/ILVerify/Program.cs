@@ -96,7 +96,7 @@ namespace ILVerify
             string[] includePatterns = options.Include;
             if (options.IncludeFile != null)
             {
-                if (options.Include.Length != 0)
+                if (options.Include != null && options.Include.Length != 0)
                     WriteLine("[Warning] --include-file takes precedence over --include");
                 includePatterns = File.ReadAllLines(options.IncludeFile.FullName);
             }
@@ -105,7 +105,7 @@ namespace ILVerify
             string[] excludePatterns = options.Exclude;
             if (options.ExcludeFile != null)
             {
-                if (options.Exclude.Length != 0)
+                if (options.Exclude != null && options.Exclude.Length != 0)
                     WriteLine("[Warning] --exclude-file takes precedence over --exclude");
                 excludePatterns = File.ReadAllLines(options.ExcludeFile.FullName);
             }
@@ -114,7 +114,7 @@ namespace ILVerify
             string[] ignoreErrorPatterns = options.IgnoreError;
             if (options.IgnoreErrorFile != null)
             {
-                if (options.IgnoreError.Length != 0)
+                if (options.IgnoreError != null && options.IgnoreError.Length != 0)
                     WriteLine("[Warning] --ignore-error-file takes precedence over --ignore-error");
                 ignoreErrorPatterns = File.ReadAllLines(options.IgnoreErrorFile.FullName);
             }

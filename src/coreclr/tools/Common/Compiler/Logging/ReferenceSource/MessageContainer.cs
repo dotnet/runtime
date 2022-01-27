@@ -1,9 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using Mono.Cecil;
@@ -41,7 +41,7 @@ namespace Mono.Linker
 		/// Create an error message.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the error</param>
-		/// <param name="code">Unique error ID. Please see https://github.com/mono/linker/blob/main/docs/error-codes.md
+		/// <param name="code">Unique error ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of errors and possibly add a new one</param>
 		/// <param name="subcategory">Optionally, further categorize this error</param>
 		/// <param name="origin">Filename, line, and column where the error was found</param>
@@ -81,7 +81,7 @@ namespace Mono.Linker
 		/// </summary>
 		/// <param name="context">Context with the relevant warning suppression info.</param>
 		/// <param name="text">Humanly readable message describing the warning</param>
-		/// <param name="code">Unique warning ID. Please see https://github.com/mono/linker/blob/main/docs/error-codes.md
+		/// <param name="code">Unique warning ID. Please see https://github.com/dotnet/linker/blob/main/docs/error-codes.md
 		/// for the list of warnings and possibly add a new one</param>
 		/// /// <param name="origin">Filename or member where the warning is coming from</param>
 		/// <param name="subcategory">Optionally, further categorize this warning</param>
@@ -141,14 +141,31 @@ namespace Mono.Linker
 			return new MessageContainer (MessageCategory.Warning, text, code, subcategory, origin);
 		}
 
+		public bool IsWarningMessage ([NotNullWhen (true)] out int? code)
+		{
+			code = null;
+
+			if (Category is MessageCategory.Warning or MessageCategory.WarningAsError) {
+				// Warning messages always have a code.
+				code = Code!;
+				return true;
+			}
+
+			return false;
+		}
+
 		static bool TryLogSingleWarning (LinkContext context, int code, MessageOrigin origin, string subcategory)
 		{
 			if (subcategory != MessageSubCategory.TrimAnalysis)
 				return false;
 
-			Debug.Assert (origin.MemberDefinition != null);
-			var declaringType = origin.MemberDefinition?.DeclaringType ?? (origin.MemberDefinition as TypeDefinition);
-			var assembly = declaringType.Module.Assembly;
+			Debug.Assert (origin.Provider != null);
+			var assembly = origin.Provider switch {
+				AssemblyDefinition asm => asm,
+				TypeDefinition type => type.Module.Assembly,
+				IMemberDefinition member => member.DeclaringType.Module.Assembly,
+				_ => throw new NotSupportedException ()
+			};
 
 			Debug.Assert (assembly != null);
 			if (assembly == null)
@@ -229,17 +246,22 @@ namespace Mono.Linker
 				sb.Append (" ")
 					.Append (cat)
 					.Append (" IL")
-					.Append (Code.Value.ToString ("D4"))
+					// Warning and error messages always have a code.
+					.Append (Code!.Value.ToString ("D4"))
 					.Append (": ");
 			} else {
 				sb.Append (" ");
 			}
 
-			if (Origin?.MemberDefinition != null) {
-				if (Origin?.MemberDefinition is MethodDefinition method)
+			if (Origin?.Provider != null) {
+				if (Origin?.Provider is MethodDefinition method)
 					sb.Append (method.GetDisplayName ());
+				else if (Origin?.Provider is IMemberDefinition member)
+					sb.Append (member.FullName);
+				else if (Origin?.Provider is AssemblyDefinition assembly)
+					sb.Append (assembly.Name.Name);
 				else
-					sb.Append (Origin?.MemberDefinition.FullName);
+					throw new NotSupportedException ();
 
 				sb.Append (": ");
 			}

@@ -9,13 +9,13 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern IntPtr WSASocketW(
-                                                [In] AddressFamily addressFamily,
-                                                [In] SocketType socketType,
-                                                [In] ProtocolType protocolType,
-                                                [In] IntPtr protocolInfo,
-                                                [In] uint group,
-                                                [In] SocketConstructorFlags flags);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial IntPtr WSASocketW(
+            AddressFamily addressFamily,
+            SocketType socketType,
+            ProtocolType protocolType,
+            IntPtr protocolInfo,
+            uint group,
+            SocketConstructorFlags flags);
     }
 }

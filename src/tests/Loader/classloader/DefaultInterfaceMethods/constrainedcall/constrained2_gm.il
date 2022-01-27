@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly constrained2_gm { }
 
 .class interface private abstract auto ansi IAdder`1<T>
@@ -82,6 +83,9 @@
 
 .method public hidebysig static int32 Main()
 {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
 
     .locals init (

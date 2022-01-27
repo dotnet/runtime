@@ -6,7 +6,7 @@ using System.Security;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace PInvokeTests
 {

@@ -1,5 +1,6 @@
 <Project>
-  <Target Name="SetupCoverageFilter">
+  <Target Name="SetupCoverageFilter"
+          DependsOnTargets="ResolveReferences">
     <!--
       We need to filter the data to only the assembly being tested. Otherwise we will gather tons of data about other assemblies.
       If the code being tested is part of the runtime itself, it requires special treatment.
@@ -18,6 +19,8 @@
       <CoverageInclude Include="System.Private.CoreLib" Condition="'$(TestRuntime)' == 'true'" />
       <CoverageInclude Include="@(AssembliesBeingTested)" />
       <CoverageInclude Include="$(CoverageAssemblies)" Condition="'$(CoverageAssemblies)' != ''" />
+      <!-- Include analyzer assemblies which are referenced via the P2P protocol. -->
+      <CoverageInclude Include="@(ReferencePath->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->Metadata('Filename'))" />
     </ItemGroup>
 
     <PropertyGroup>

@@ -203,6 +203,8 @@ namespace System.Net.Http
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
+                if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
 
                 // null out requestStream to avoid disposing in finally block. It is now in charge of disposing itself.

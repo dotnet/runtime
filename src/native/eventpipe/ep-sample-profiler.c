@@ -13,7 +13,6 @@
 #define NUM_NANOSECONDS_IN_1_MS 1000000
 
 static volatile uint32_t _profiling_enabled = (uint32_t)false;
-static ep_rt_thread_handle_t _sampling_thread = NULL;
 static EventPipeProvider *_sampling_provider = NULL;
 static EventPipeEvent *_thread_time_event = NULL;
 static ep_rt_wait_event_handle_t _thread_shutdown_event;

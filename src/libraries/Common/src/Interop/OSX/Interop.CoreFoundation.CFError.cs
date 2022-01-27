@@ -14,11 +14,11 @@ internal static partial class Interop
 {
     internal static partial class CoreFoundation
     {
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern CFIndex CFErrorGetCode(SafeCFErrorHandle cfError);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial CFIndex CFErrorGetCode(SafeCFErrorHandle cfError);
 
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern SafeCFStringHandle CFErrorCopyDescription(SafeCFErrorHandle cfError);
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial SafeCFStringHandle CFErrorCopyDescription(SafeCFErrorHandle cfError);
 
         internal static int GetErrorCode(SafeCFErrorHandle cfError)
         {

@@ -18,7 +18,6 @@
 
 class BaseBind;
 class AssemblySpec;
-class PEFile;
 class PEAssembly;
 
 enum StackTraceElementFlags
@@ -179,7 +178,7 @@ public:
         HandlerState(Thread * pThread, NonNullThread dummy);
 
         void CleanupTry();
-        void SetupCatch(INDEBUG_COMMA(__in_z const char * szFile) int lineNum);
+        void SetupCatch(INDEBUG_COMMA(_In_z_ const char * szFile) int lineNum);
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();
 #endif
@@ -678,7 +677,7 @@ class EEFileLoadException : public EEException
 
     static RuntimeExceptionKind GetFileLoadKind(HRESULT hr);
     static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, Exception *pInnerException = NULL);
-    static void DECLSPEC_NORETURN Throw(PEFile *pFile, HRESULT hr, Exception *pInnerException = NULL);
+    static void DECLSPEC_NORETURN Throw(PEAssembly *pPEAssembly, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(LPCWSTR path, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *parent, const void *memory, COUNT_T size, HRESULT hr, Exception *pInnerException = NULL);
     static BOOL CheckType(Exception* ex); // typeof(EEFileLoadException)

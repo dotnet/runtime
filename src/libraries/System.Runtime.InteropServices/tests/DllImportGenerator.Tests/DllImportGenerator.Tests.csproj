@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+    <LangVersion>Preview</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
+    <IncludeDllImportGeneratorSources>false</IncludeDllImportGeneratorSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="$(CoverletCollectorVersion)">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
+    <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
+    <ProjectReference Include="..\TestAssets\SharedTypes\SharedTypes.csproj" />
+  </ItemGroup>
+
+</Project>

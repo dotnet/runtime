@@ -7,11 +7,13 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Signatures](#signatures)
 - [Heap sizes](#heap-sizes)
 - [Metadata merging](#metadata-merging)
+- [Metadata logical format](#metadata-logical-format)
 - [Module Initializer](#module-initializer)
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
 - [Covariant Return Types](#covariant-return-types)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
+- [Rules for IL rewriters](#rules-for-il-rewriters)
 
 ## Signatures
 
@@ -361,6 +363,14 @@ This text should be deleted, and the _metadata merging_ entry should be removed 
 >
 > * ~~If there are duplicates and two or more have an accessibility other than
 >   **compilercontrolled**, an error has occurred.~~
+
+## Metadata logical format
+
+The requirement to sort InterfaceImpl table using the Interface column as a secondary key in § II.22 _Metadata logical format: tables_ is a spec bug. The interface declaration order affects resolution and a requirement to sort it would make it impossible to emit certain sequences of interfaces (e.g. not possible to have an interface list I1, I2, while also having interface list I2, I1 elsewhere in the module).
+
+The text should be deleted:
+
+> Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the GenericParam table is sorted using the Number column as a secondary key.
 
 ## Module Initializer
 
@@ -939,3 +949,12 @@ Conversions from floating-point numbers to integral values truncate the number t
 on the top of the stack is reinterpreted as an unsigned value before the conversion.
 Note that integer values of less than 4 bytes are extended to int32 (not native int) on the
 evaluation stack.
+
+## Rules for IL Rewriters
+
+There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
+
+1. That the RVA be aligned when the PE file is constructed. This may be achieved by whatever means is most convenient for the compiler.
+2. That in the presence of IL rewriters that the RVA remains aligned. This section descibes metadata which will be processed by IL rewriters in order to maintain the required alignment.
+
+In order to maintain alignment, if the field needs alignment to be preserved, the field must be of a type locally defined within the module which has a Pack (§II.10.7) value of the desired alignment. Unlike other uses of the .pack directive, in this circumstance the .pack specifies a minimum alignment.

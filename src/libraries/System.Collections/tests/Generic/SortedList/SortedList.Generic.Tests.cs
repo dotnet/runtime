@@ -259,6 +259,59 @@ namespace System.Collections.Tests
 
         #endregion
 
+        #region GetKeyAtIndex
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_GetKeyAtIndex_EveryIndex(int count)
+        {
+            SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+            Assert.All(Enumerable.Range(0, count), index =>
+            {
+                Assert.Equal(index, dictionary.IndexOfKey(dictionary.GetKeyAtIndex(index)));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_GetKeyAtIndex_OutOfRangeIndicies(int count)
+        {
+            SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetKeyAtIndex(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetKeyAtIndex(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetKeyAtIndex(count));
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetKeyAtIndex(count + 1));
+        }
+
+        #endregion
+
+        #region GetValueAtIndex
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_GetValueAtIndex_EveryIndex(int count)
+        {
+            // Assumes no duplicate elements contained in the dictionary returned by GenericIDictionaryFactory
+            SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+            Assert.All(Enumerable.Range(0, count), index =>
+            {
+                Assert.Equal(index, dictionary.IndexOfValue(dictionary.GetValueAtIndex(index)));
+            });
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_GetValueAtIndex_OutOfRangeIndicies(int count)
+        {
+            SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetValueAtIndex(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetValueAtIndex(int.MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetValueAtIndex(count));
+            Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.GetValueAtIndex(count + 1));
+        }
+
+        #endregion
+
         #region IndexOfKey
 
         [Theory]
@@ -373,6 +426,73 @@ namespace System.Collections.Tests
             {
                 Assert.Equal(index, dictionary.IndexOfValue(dictionary[keys[index]]));
             });
+        }
+
+        #endregion
+
+        #region SetValueAtIndex
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_SetValueAtIndex_OnReadOnlySortedList_ThrowsNotSupportedException(int count)
+        {
+            if (IsReadOnly)
+            {
+                SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+                Assert.Throws<NotSupportedException>(() => dictionary.SetValueAtIndex(0, CreateTValue(34543)));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_SetValueAtIndex_NonDefaultValueContainedInCollection(int count)
+        {
+            if (!IsReadOnly)
+            {
+                int seed = count * 251;
+                SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+                KeyValuePair<TKey, TValue> pair = CreateT(seed++);
+                if (!dictionary.ContainsKey(pair.Key))
+                {
+                    dictionary.Add(pair.Key, pair.Value);
+                    count++;
+                }
+                TValue newValue = CreateTValue(seed++);
+                dictionary.SetValueAtIndex(dictionary.IndexOfKey(pair.Key), newValue);
+                Assert.Equal(newValue, dictionary[pair.Key]);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_SetValueAtIndex_EveryIndex(int count)
+        {
+            if (!IsReadOnly)
+            {
+                int seed = count * 193;
+                SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+                TValue newValue = CreateTValue(seed++);
+                Assert.All(Enumerable.Range(0, count), index =>
+                {
+                    Assert.NotEqual(newValue, dictionary.GetValueAtIndex(index));
+                    dictionary.SetValueAtIndex(index, newValue);
+                    Assert.Equal(newValue, dictionary.GetValueAtIndex(index));
+                });
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedList_Generic_SetValueAtIndex_OutOfRangeIndicies(int count)
+        {
+            if (!IsReadOnly)
+            {
+                SortedList<TKey, TValue> dictionary = (SortedList<TKey, TValue>)GenericIDictionaryFactory(count);
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.SetValueAtIndex(-1, default));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.SetValueAtIndex(int.MinValue, default));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.SetValueAtIndex(count, default));
+                Assert.Throws<ArgumentOutOfRangeException>(() => dictionary.SetValueAtIndex(count + 1, default));
+            }
         }
 
         #endregion

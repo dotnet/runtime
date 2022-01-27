@@ -256,7 +256,8 @@ namespace Internal.TypeSystem.Ecma
                     else
                         return null;
                 default:
-                    throw new BadImageFormatException();
+                    ThrowHelper.ThrowBadImageFormatException();
+                    return null;
             }
         }
 

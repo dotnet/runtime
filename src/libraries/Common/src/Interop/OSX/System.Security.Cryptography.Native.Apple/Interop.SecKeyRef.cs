@@ -23,8 +23,8 @@ internal static partial class Interop
             RSA = 2,
         }
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
 
         private delegate int SecKeyTransform(ReadOnlySpan<byte> source, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle);
 
@@ -154,8 +154,8 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static unsafe extern int AppleCryptoNative_SecKeyCreateWithData(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static unsafe partial int AppleCryptoNative_SecKeyCreateWithData(
             byte* pKey,
             int cbKey,
             PAL_KeyAlgorithm keyAlgorithm,
@@ -163,14 +163,14 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pDataKey,
             out SafeCFErrorHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static unsafe extern int AppleCryptoNative_SecKeyCopyExternalRepresentation(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static unsafe partial int AppleCryptoNative_SecKeyCopyExternalRepresentation(
             SafeSecKeyRefHandle key,
             out SafeCFDataHandle pDataOut,
             out SafeCFErrorHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeyCopyPublicKey")]
-        internal static unsafe extern SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SecKeyCopyPublicKey")]
+        internal static unsafe partial SafeSecKeyRefHandle CopyPublicKey(SafeSecKeyRefHandle privateKey);
     }
 }
 

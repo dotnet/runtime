@@ -11,6 +11,7 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
 
 struct _EventPipeProviderConfigurationNative {
@@ -287,7 +288,6 @@ MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
 	if (!_event_pipe_component_inited) {
-		extern void ep_rt_mono_component_init (void);
 		ep_rt_mono_component_init ();
 		_event_pipe_component_inited = true;
 	}

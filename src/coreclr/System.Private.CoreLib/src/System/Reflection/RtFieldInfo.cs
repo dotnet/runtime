@@ -17,26 +17,26 @@ namespace System.Reflection
         // lazy caching
         private string? m_name;
         private RuntimeType? m_fieldType;
-        private INVOCATION_FLAGS m_invocationFlags;
+        private InvocationFlags m_invocationFlags;
 
-        internal INVOCATION_FLAGS InvocationFlags
+        internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (m_invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) != 0 ?
+            get => (m_invocationFlags & InvocationFlags.Initialized) != 0 ?
                     m_invocationFlags : InitializeInvocationFlags();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private INVOCATION_FLAGS InitializeInvocationFlags()
+        private InvocationFlags InitializeInvocationFlags()
         {
             Type? declaringType = DeclaringType;
 
-            INVOCATION_FLAGS invocationFlags = 0;
+            InvocationFlags invocationFlags = 0;
 
             // first take care of all the NO_INVOKE cases
             if (declaringType != null && declaringType.ContainsGenericParameters)
             {
-                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                invocationFlags |= InvocationFlags.NoInvoke;
             }
 
             // If the invocationFlags are still 0, then
@@ -44,19 +44,19 @@ namespace System.Reflection
             if (invocationFlags == 0)
             {
                 if ((m_fieldAttributes & FieldAttributes.InitOnly) != (FieldAttributes)0)
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
+                    invocationFlags |= InvocationFlags.SpecialField;
 
                 if ((m_fieldAttributes & FieldAttributes.HasFieldRVA) != (FieldAttributes)0)
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD;
+                    invocationFlags |= InvocationFlags.SpecialField;
 
                 // find out if the field type is one of the following: Primitive, Enum or Pointer
                 Type fieldType = FieldType;
                 if (fieldType.IsPointer || fieldType.IsEnum || fieldType.IsPrimitive)
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_FIELD_SPECIAL_CAST;
+                    invocationFlags |= InvocationFlags.FieldSpecialCast;
             }
 
             // must be last to avoid threading problems
-            return m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+            return m_invocationFlags = invocationFlags | InvocationFlags.Initialized;
         }
         #endregion
 
@@ -124,10 +124,10 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? GetValue(object? obj)
         {
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
+            InvocationFlags invocationFlags = InvocationFlags;
             RuntimeType? declaringType = DeclaringType as RuntimeType;
 
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
+            if ((invocationFlags & InvocationFlags.NoInvoke) != 0)
             {
                 if (declaringType != null && DeclaringType!.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);
@@ -170,10 +170,10 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
+            InvocationFlags invocationFlags = InvocationFlags;
             RuntimeType? declaringType = DeclaringType as RuntimeType;
 
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
+            if ((invocationFlags & InvocationFlags.NoInvoke) != 0)
             {
                 if (declaringType != null && declaringType.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);

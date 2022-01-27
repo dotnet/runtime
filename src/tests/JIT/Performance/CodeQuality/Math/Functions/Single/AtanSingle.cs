@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float atanSingleDelta = 0.0004f;
         private const float atanSingleExpectedResult = 0.841940999f;
-
-        [Benchmark(InnerIterationCount = AtanSingleIterations)]
-        public static void AtanSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        AtanSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void AtanSingleTest()
         {

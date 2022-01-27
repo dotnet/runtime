@@ -590,4 +590,4 @@ END:
 }
 }
 
-.assembly Conv_I8.exe{}
+.assembly Conv_I8{}

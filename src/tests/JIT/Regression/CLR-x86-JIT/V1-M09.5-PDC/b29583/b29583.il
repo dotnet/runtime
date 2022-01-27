@@ -7,7 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'box' { }
+.assembly 'b29583' { }
+.assembly extern xunit.core {}
 
 .namespace BoxTest
 {
@@ -15,6 +16,9 @@
   {
     .method private static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  3
 		.locals (class [mscorlib]System.Object obj, float64 F)

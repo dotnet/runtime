@@ -446,7 +446,7 @@ namespace SerializationTestTypes
                     _primitiveTypeList.Add(typeof(EmptyDC));
                     _primitiveTypeList.Add(typeof(Base));
                     _primitiveTypeList.Add(typeof(Derived));
-                    _primitiveTypeList.Add(typeof(list));
+                    _primitiveTypeList.Add(typeof(List));
                     _primitiveTypeList.Add(typeof(Arrays));
                     _primitiveTypeList.Add(typeof(Array3));
                     _primitiveTypeList.Add(typeof(Properties));

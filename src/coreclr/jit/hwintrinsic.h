@@ -309,8 +309,6 @@ struct HWIntrinsicInfo
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
-    static int lookupNumArgs(const GenTreeHWIntrinsic* node);
-    static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
 
 #if defined(TARGET_XARCH)
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);
@@ -579,6 +577,25 @@ struct HWIntrinsicInfo
         return lookup(id).ins[type - TYP_BYTE];
     }
 
+    static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)
+    {
+        assert(intrinsicNode != nullptr);
+
+        NamedIntrinsic intrinsic = intrinsicNode->GetHWIntrinsicId();
+        var_types      type      = TYP_UNKNOWN;
+
+        if (lookupCategory(intrinsic) == HW_Category_Scalar)
+        {
+            type = intrinsicNode->TypeGet();
+        }
+        else
+        {
+            type = intrinsicNode->GetSimdBaseType();
+        }
+
+        return lookupIns(intrinsic, type);
+    }
+
     static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {
         return lookup(id).category;
@@ -725,7 +742,7 @@ struct HWIntrinsic final
     {
         assert(node != nullptr);
 
-        id       = node->gtHWIntrinsicId;
+        id       = node->GetHWIntrinsicId();
         category = HWIntrinsicInfo::lookupCategory(id);
 
         assert(HWIntrinsicInfo::RequiresCodegen(id));
@@ -749,53 +766,34 @@ struct HWIntrinsic final
     GenTree*            op2;
     GenTree*            op3;
     GenTree*            op4;
-    int                 numOperands;
+    size_t              numOperands;
     var_types           baseType;
 
 private:
     void InitializeOperands(const GenTreeHWIntrinsic* node)
     {
-        op1 = node->gtGetOp1();
-        op2 = node->gtGetOp2();
+        numOperands = node->GetOperandCount();
 
-        if (op1 == nullptr)
+        switch (numOperands)
         {
-            numOperands = 0;
-        }
-        else if (op1->OperIsList())
-        {
-            assert(op2 == nullptr);
+            case 4:
+                op4 = node->Op(4);
+                FALLTHROUGH;
+            case 3:
+                op3 = node->Op(3);
+                FALLTHROUGH;
+            case 2:
+                op2 = node->Op(2);
+                FALLTHROUGH;
+            case 1:
+                op1 = node->Op(1);
+                FALLTHROUGH;
+            case 0:
+                break;
 
-            GenTreeArgList* list = op1->AsArgList();
-            op1                  = list->Current();
-            list                 = list->Rest();
-            op2                  = list->Current();
-            list                 = list->Rest();
-            op3                  = list->Current();
-            list                 = list->Rest();
-
-            if (list != nullptr)
-            {
-                op4 = list->Current();
-                assert(list->Rest() == nullptr);
-
-                numOperands = 4;
-            }
-            else
-            {
-                numOperands = 3;
-            }
+            default:
+                unreached();
         }
-        else if (op2 != nullptr)
-        {
-            numOperands = 2;
-        }
-        else
-        {
-            numOperands = 1;
-        }
-
-        assert(HWIntrinsicInfo::lookupNumArgs(id) == numOperands);
     }
 
     void InitializeBaseType(const GenTreeHWIntrinsic* node)
@@ -804,7 +802,7 @@ private:
 
         if (baseType == TYP_UNKNOWN)
         {
-            assert(category == HW_Category_Scalar);
+            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
 
             if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
             {

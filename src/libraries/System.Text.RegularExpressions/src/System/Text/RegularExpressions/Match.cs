@@ -61,9 +61,6 @@ namespace System.Text.RegularExpressions
             _textend = begpos + len;
             _textstart = startpos;
             _balancing = false;
-
-            Debug.Assert(!(_textbeg < 0 || _textstart < _textbeg || _textend < _textstart || Text.Length < _textend),
-                "The parameters are out of range.");
         }
 
         /// <summary>Returns an empty Match object.</summary>
@@ -121,7 +118,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
-            RegexReplacement repl = RegexReplacement.GetOrCreate(regex._replref!, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
+            RegexReplacement repl = RegexReplacement.GetOrCreate(regex.RegexReplacementWeakReference, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
             SegmentStringBuilder segments = SegmentStringBuilder.Create();
             repl.ReplacementImpl(ref segments, this);
             return segments.ToString();

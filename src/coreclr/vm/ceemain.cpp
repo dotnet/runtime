@@ -185,7 +185,6 @@
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
-#include "notifyexternals.h"
 #include "mngstdinterfaces.h"
 #include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
@@ -221,7 +220,7 @@
 
 #include "genanalysis.h"
 
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 
@@ -808,14 +807,16 @@ void EEStartupHelper()
 
         StubManager::InitializeStubManagers();
 
-#ifndef TARGET_UNIX
+#ifdef TARGET_UNIX
+        ExecutableAllocator::InitPreferredRange();
+#else
         {
-            // Record mscorwks geometry
+            // Record coreclr.dll geometry
             PEDecoder pe(GetClrModuleBase());
 
             g_runtimeLoadedBaseAddress = (SIZE_T)pe.GetBase();
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
-            ExecutableAllocator::InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
+            ExecutableAllocator::InitLazyPreferredRange(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
         }
 #endif // !TARGET_UNIX
 
@@ -848,7 +849,6 @@ void EEStartupHelper()
         // Setup the domains. Threads are started in a default domain.
 
         // Static initialization
-        PEAssembly::Attach();
         BaseDomain::Attach();
         SystemDomain::Attach();
 
@@ -948,7 +948,7 @@ void EEStartupHelper()
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
-        // and after its OK to switch GC modes and syncronize for sending events to the debugger.
+        // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
         LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
              SystemDomain::System()->DefaultDomain()));
@@ -2135,7 +2135,7 @@ INT32 GetLatchedExitCode (void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // Return an int uniquely describing which language this thread is using for ui.
 // ---------------------------------------------------------------------------
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
+static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
 {
     CONTRACTL{
         NOTHROW;

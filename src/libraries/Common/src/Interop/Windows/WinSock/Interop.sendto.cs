@@ -9,13 +9,13 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern unsafe int sendto(
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static unsafe partial int sendto(
             SafeSocketHandle socketHandle,
-            [In] byte* pinnedBuffer,
-            [In] int len,
-            [In] SocketFlags socketFlags,
-            [In] byte[] socketAddress,
-            [In] int socketAddressSize);
+            byte* pinnedBuffer,
+            int len,
+            SocketFlags socketFlags,
+            byte[] socketAddress,
+            int socketAddressSize);
     }
 }

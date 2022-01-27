@@ -26,4 +26,4 @@ FAIL:
 	ret
 }
 }
-.assembly ldnull_ref.exe{}
+.assembly ldnull_ref{}

@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly field017{}
-.module field017.exe
+.assembly 'nullref'{}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit MyTest
        extends [mscorlib]System.Object
@@ -50,6 +50,9 @@
 
   .method public hidebysig static void Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .locals init (int32 V_0,
              class MyClass V_1,
              int32 V_2,

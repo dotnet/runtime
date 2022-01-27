@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <GenerateRunScript>false</GenerateRunScript>
+    <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType />

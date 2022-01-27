@@ -18,7 +18,7 @@ public class Dummy
     }
 }
 
-public class Test
+public class Test_Target
 {
     public static int[] array;
     public static Object[] obj;
@@ -100,7 +100,7 @@ public class Test
     {
         bool passed1, passed2;
 
-        Test t = new Test();
+        Test_Target t = new Test_Target();
 
         passed1 = t.GetTargetTest();
         passed2 = t.SetTargetTest();

@@ -9,6 +9,7 @@
 
 .assembly extern mscorlib { }
 .assembly 'typedref' { }
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class auto ansi Test extends [mscorlib]System.Object
@@ -148,6 +149,9 @@ equal_types:
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals ([0] int32 V_0,

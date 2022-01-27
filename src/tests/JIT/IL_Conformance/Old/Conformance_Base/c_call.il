@@ -28,6 +28,6 @@ FAIL:
 }
 
 
-.assembly c_call.exe{}
+.assembly c_call{}
 
 

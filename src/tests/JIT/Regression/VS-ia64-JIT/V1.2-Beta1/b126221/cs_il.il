@@ -7,14 +7,14 @@
 .assembly extern legacy library mscorlib
 {
 }
-.assembly legacy library cs_test_01
+.assembly legacy library 'cs_il'
 {
 
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module cs_test_01.exe
+.assembly extern xunit.core {}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -32,12 +32,15 @@
   .field public int32 dummy
 } 
 
-.class private auto ansi beforefieldinit Test
+.class private auto ansi beforefieldinit Test_cs_il
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals (valuetype big V_0,

@@ -5,6 +5,7 @@ using System;
 using Internal.IL;
 using Debug = System.Diagnostics.Debug;
 using Internal.IL.Stubs;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -75,6 +76,7 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                 case MarshallerKind.Struct:
                 case MarshallerKind.LayoutClass:
+                    Debug.Assert(interopStateManager is not null, "An InteropStateManager is required to look up the native representation of a non-blittable struct or class with layout.");
                     return interopStateManager.GetStructMarshallingNativeType((MetadataType)type);
 #endif
 
@@ -92,6 +94,9 @@ namespace Internal.TypeSystem.Interop
 
                 case MarshallerKind.OleDateTime:
                     return context.GetWellKnownType(WellKnownType.Double);
+
+                case MarshallerKind.FailedTypeLoad:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 
                 case MarshallerKind.SafeHandle:
                 case MarshallerKind.CriticalHandle:
@@ -454,7 +459,7 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.Array:
                         {
                             if (isField)
-                                return MarshallerKind.Invalid;
+                                return MarshallerKind.FailedTypeLoad;
 
                             var arrayType = (ArrayType)type;
 
@@ -521,7 +526,7 @@ namespace Internal.TypeSystem.Interop
                 else
                     return MarshallerKind.Invalid;
             }
-            else if (type.IsDelegate)
+            else if (type.IsDelegate || InteropTypes.IsSystemDelegate(context, type) || InteropTypes.IsSystemMulticastDelegate(context, type))
             {
                 if (type.HasInstantiation)
                 {
@@ -581,6 +586,8 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsObject)
             {
+                if (nativeType == NativeTypeKind.AsAny && isField)
+                    return MarshallerKind.FailedTypeLoad;
                 if (nativeType == NativeTypeKind.AsAny)
                     return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
                 else
@@ -844,6 +851,37 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        internal static MarshallerKind GetDisabledMarshallerKind(
+            TypeDesc type)
+        {
+            if (type.Category == TypeFlags.Void)
+            {
+                return MarshallerKind.VoidReturn;
+            }
+            else if (type.IsByRef)
+            {
+                // Managed refs are not supported when runtime marshalling is disabled.
+                return MarshallerKind.Invalid;
+            }
+            else if (type.IsPrimitive)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (type.IsPointer || type.IsFunctionPointer)
+            {
+                return MarshallerKind.BlittableValue;
+            }
+            else if (type.IsValueType)
+            {
+                var defType = (DefType)type;
+                if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
+                {
+                    return MarshallerKind.BlittableValue;
+                }
+            }
+            return MarshallerKind.Invalid;
+        }
+
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
             if (!target.IsOSX)
@@ -860,6 +898,11 @@ namespace Internal.TypeSystem.Interop
             //   objc_msgSendSuper_stret
             return metadata.Module.Equals(ObjectiveCLibrary)
                 && metadata.Name.StartsWith(ObjectiveCMsgSend);
+        }
+
+        public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
+        {
+            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
     }
 }

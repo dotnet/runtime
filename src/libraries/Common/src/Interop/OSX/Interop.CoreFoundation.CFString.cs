@@ -15,13 +15,13 @@ internal static partial class Interop
         /// Returns the interior pointer of the cfString if it has the specified encoding.
         /// If it has the wrong encoding, or if the interior pointer isn't being shared for some reason, returns NULL
         /// </summary>
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern IntPtr CFStringGetCStringPtr(
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial IntPtr CFStringGetCStringPtr(
             SafeCFStringHandle cfString,
             CFStringBuiltInEncodings encoding);
 
-        [DllImport(Libraries.CoreFoundationLibrary)]
-        private static extern SafeCFDataHandle CFStringCreateExternalRepresentation(
+        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        private static partial SafeCFDataHandle CFStringCreateExternalRepresentation(
             IntPtr alloc,
             SafeCFStringHandle theString,
             CFStringBuiltInEncodings encoding,

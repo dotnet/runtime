@@ -6,7 +6,7 @@
 A .cctor has only one chance to run in any appdomain. 
 If it fails, the 2nd time we try to access a static field we check if .cctor has been run. And it has, but failed so we fail again.
 
-Test throws an exception inside .cctor.
+Test_CctorThrowInlinedStatic throws an exception inside .cctor.
 Try to access a static method twice for inlined and not inlined methods.
 Expected: Should return the same exception.
 
@@ -105,7 +105,7 @@ public class InlinedVal
 	}
 }
 
-public class Test
+public class Test_CctorThrowInlinedStatic
 {
 
 

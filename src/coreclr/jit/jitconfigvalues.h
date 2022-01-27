@@ -67,6 +67,11 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
                W("JitAlignLoopAdaptive"),
                1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
+CONFIG_INTEGER(JitHideAlignBehindJmp,
+               W("JitHideAlignBehindJmp"),
+               1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
+                  // that is present before the loop start.
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 
@@ -125,7 +130,13 @@ CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldCla
 CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
+
+// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump/NgenDump where
+// it's always set.
+CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
+// Prints a tree of inlinees for a specific method (use '*' for all methods)
 CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
+
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), 0) // 1 enable in dumps, 2 assert if issues found
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
@@ -165,12 +176,13 @@ CONFIG_INTEGER(TreesBeforeAfterMorph, W("JitDumpBeforeAfterMorph"), 0) // If 1, 
 
 CONFIG_METHODSET(JitBreak, W("JitBreak")) // Stops in the importer when compiling a specified method
 CONFIG_METHODSET(JitDebugBreak, W("JitDebugBreak"))
-CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Dumps disassembly for specified method
-CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies")) // Only show JitDisasm and related info for methods
-                                                             // from this semicolon-delimited list of assemblies.
-CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)     // Dump interleaved GC Info for any method disassembled.
-CONFIG_METHODSET(JitDump, W("JitDump"))                      // Dumps trees for specified method
-CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)           // Dump tier0 requests
+CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                     // Dumps disassembly for specified method
+CONFIG_STRING(JitDisasmAssemblies, W("JitDisasmAssemblies"))    // Only show JitDisasm and related info for methods
+                                                                // from this semicolon-delimited list of assemblies.
+CONFIG_INTEGER(JitDisasmWithGC, W("JitDisasmWithGC"), 0)        // Dump interleaved GC Info for any method disassembled.
+CONFIG_METHODSET(JitDump, W("JitDump"))                         // Dumps trees for specified method
+CONFIG_INTEGER(JitDumpTier0, W("JitDumpTier0"), 1)              // Dump tier0 requests
+CONFIG_INTEGER(JitDumpAtOSROffset, W("JitDumpAtOSROffset"), -1) // Only dump OSR requests for this offset
 CONFIG_INTEGER(JitDumpInlinePhases, W("JitDumpInlinePhases"), 1) // Dump inline compiler phases
 CONFIG_METHODSET(JitEHDump, W("JitEHDump")) // Dump the EH table for the method, as reported to the VM
 CONFIG_METHODSET(JitExclude, W("JitExclude"))
@@ -219,6 +231,11 @@ CONFIG_INTEGER(JitDumpFgConstrained, W("JitDumpFgConstrained"), 1) // 0 == don't
                                                                    // linear layout
 CONFIG_INTEGER(JitDumpFgBlockID, W("JitDumpFgBlockID"), 0) // 0 == display block with bbNum; 1 == display with both
                                                            // bbNum and bbID
+CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't display block flags; 1 == display flags
+CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
+
+CONFIG_STRING(JitDumpPreciseDebugInfoFile, W("JitDumpPreciseDebugInfoFile"))
+CONFIG_INTEGER(JitDisasmWithDebugInfo, W("JitDisasmWithDebugInfo"), 0)
 
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
@@ -262,69 +279,11 @@ CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 0) // Controls the Alt
 #else                                                        // !defined(TARGET_ARM64) && !defined(TARGET_X86)
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
 #endif                                                       // defined(TARGET_ARM64) || defined(TARGET_X86)
-///
-/// JIT Hardware Intrinsics
-///
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-CONFIG_INTEGER(EnableSSE3_4, W("EnableSSE3_4"), 1) // Enable SSE3, SSSE3, SSE 4.1 and 4.2 instruction set as default
-#endif
-
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-// Enable AVX instruction set for wide operations as default. When both AVX and SSE3_4 are set, we will use the most
-// capable instruction set available which will prefer AVX over SSE3/4.
-CONFIG_INTEGER(EnableHWIntrinsic, W("EnableHWIntrinsic"), 1) // Enable Base
-CONFIG_INTEGER(EnableSSE, W("EnableSSE"), 1)                 // Enable SSE
-CONFIG_INTEGER(EnableSSE2, W("EnableSSE2"), 1)               // Enable SSE2
-CONFIG_INTEGER(EnableSSE3, W("EnableSSE3"), 1)               // Enable SSE3
-CONFIG_INTEGER(EnableSSSE3, W("EnableSSSE3"), 1)             // Enable SSSE3
-CONFIG_INTEGER(EnableSSE41, W("EnableSSE41"), 1)             // Enable SSE41
-CONFIG_INTEGER(EnableSSE42, W("EnableSSE42"), 1)             // Enable SSE42
-CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 1)                 // Enable AVX
-CONFIG_INTEGER(EnableAVX2, W("EnableAVX2"), 1)               // Enable AVX2
-CONFIG_INTEGER(EnableAVXVNNI, W("EnableAVXVNNI"), 1)         // Enable AVXVNNI
-CONFIG_INTEGER(EnableFMA, W("EnableFMA"), 1)                 // Enable FMA
-CONFIG_INTEGER(EnableAES, W("EnableAES"), 1)                 // Enable AES
-CONFIG_INTEGER(EnableBMI1, W("EnableBMI1"), 1)               // Enable BMI1
-CONFIG_INTEGER(EnableBMI2, W("EnableBMI2"), 1)               // Enable BMI2
-CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)             // Enable AES
-CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1)     // Enable PCLMULQDQ
-CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
-#else                                                        // !defined(TARGET_AMD64) && !defined(TARGET_X86)
-// Enable AVX instruction set for wide operations as default
-CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
-#endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
 CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the register allocator to support EH-write thru:
                                                              // partial enregistration of vars exposed on EH boundaries
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
-
-// clang-format off
-
-#if defined(TARGET_ARM64)
-CONFIG_INTEGER(EnableHWIntrinsic,       W("EnableHWIntrinsic"), 1)
-CONFIG_INTEGER(EnableArm64Aes,          W("EnableArm64Aes"), 1)
-CONFIG_INTEGER(EnableArm64Atomics,      W("EnableArm64Atomics"), 1)
-CONFIG_INTEGER(EnableArm64Crc32,        W("EnableArm64Crc32"), 1)
-CONFIG_INTEGER(EnableArm64Dcpop,        W("EnableArm64Dcpop"), 1)
-CONFIG_INTEGER(EnableArm64Dp,           W("EnableArm64Dp"), 1)
-CONFIG_INTEGER(EnableArm64Fcma,         W("EnableArm64Fcma"), 1)
-CONFIG_INTEGER(EnableArm64Fp,           W("EnableArm64Fp"), 1)
-CONFIG_INTEGER(EnableArm64Fp16,         W("EnableArm64Fp16"), 1)
-CONFIG_INTEGER(EnableArm64Jscvt,        W("EnableArm64Jscvt"), 1)
-CONFIG_INTEGER(EnableArm64Lrcpc,        W("EnableArm64Lrcpc"), 1)
-CONFIG_INTEGER(EnableArm64Pmull,        W("EnableArm64Pmull"), 1)
-CONFIG_INTEGER(EnableArm64Sha1,         W("EnableArm64Sha1"), 1)
-CONFIG_INTEGER(EnableArm64Sha256,       W("EnableArm64Sha256"), 1)
-CONFIG_INTEGER(EnableArm64Sha512,       W("EnableArm64Sha512"), 1)
-CONFIG_INTEGER(EnableArm64Sha3,         W("EnableArm64Sha3"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd,      W("EnableArm64AdvSimd"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd_v81,  W("EnableArm64AdvSimd_v81"), 1)
-CONFIG_INTEGER(EnableArm64AdvSimd_Fp16, W("EnableArm64AdvSimd_Fp16"), 1)
-CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
-CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
-CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
-#endif // defined(TARGET_ARM64)
 
 // clang-format on
 
@@ -502,6 +461,18 @@ CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualiza
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)
 // Initial patchpoint counter value used by jitted code
 CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, W("TC_OnStackReplacement_InitialCounter"), 1000)
+// Enable partial compilation for Tier0 methods
+CONFIG_INTEGER(TC_PartialCompilation, W("TC_PartialCompilation"), 0)
+#if defined(DEBUG)
+// Randomly sprinkle patchpoints. Value is the likelyhood any given stack-empty point becomes a patchpoint.
+CONFIG_INTEGER(JitRandomOnStackReplacement, W("JitRandomOnStackReplacement"), 0)
+// Place patchpoint at the specified IL offset, if possible. Overrides random placement.
+CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1)
+#endif // debug
+
+#if defined(DEBUG)
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
+#endif                                                   // debug
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

@@ -8,6 +8,7 @@
   .ver 4:0:0:0
 }
 .assembly b32613 { }
+.assembly extern xunit.core {}
 .class ILGEN_0x59749830 {
 
 .field static	int8[] field_0x0
@@ -133,6 +134,9 @@ End_Orphan_64:
 ret
 }
 .method static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	20
 .try {

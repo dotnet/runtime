@@ -93,7 +93,8 @@ namespace Microsoft.Extensions.FileProviders.Composite
             Assert.Empty(files);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetDirectoryContents_ReturnsCombinaisionOFFiles()
         {
             // Arrange
@@ -121,7 +122,8 @@ namespace Microsoft.Extensions.FileProviders.Composite
                 file => Assert.Same(file3, file));
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GetDirectoryContents_ReturnsCombinaitionOFFiles_WhenSomeFileProviderRetunsNoContent()
         {
             // Arrange

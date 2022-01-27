@@ -318,7 +318,7 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        PEFile *pManifestFile = pAssembly->GetManifestFile();
+        PEAssembly *pManifestFile = pAssembly->GetManifestFile();
         PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
@@ -526,7 +526,7 @@ namespace
             SString::CIterator it = libName.Begin();
             if (libName.Find(it, PLATFORM_SHARED_LIB_SUFFIX_W))
             {
-                it += COUNTOF(PLATFORM_SHARED_LIB_SUFFIX_W);
+                it += ARRAY_SIZE(PLATFORM_SHARED_LIB_SUFFIX_W);
                 containsSuffix = it == libName.End() || *it == (WCHAR)'.';
             }
 
@@ -610,7 +610,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
         // Try to go straight to System32 for Windows API sets. This is replicating quick check from
         // the OS implementation of api sets.
         if (IsWindowsAPISet(wszLibName))
@@ -621,7 +621,7 @@ namespace
                 return hmod;
             }
         }
-#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
         if (g_hostpolicy_embedded)
         {
@@ -648,7 +648,7 @@ namespace
         // (both of these are typically done to smooth over cross-platform differences).
         // We try to dlopen with such variations on the original.
         const WCHAR* prefixSuffixCombinations[MaxVariationCount] = {};
-        int numberOfVariations = COUNTOF(prefixSuffixCombinations);
+        int numberOfVariations = ARRAY_SIZE(prefixSuffixCombinations);
         DetermineLibNameVariations(prefixSuffixCombinations, &numberOfVariations, wszLibName, libNameIsRelativePath);
         for (int i = 0; i < numberOfVariations; i++)
         {

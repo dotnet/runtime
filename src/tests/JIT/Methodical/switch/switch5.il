@@ -11,8 +11,8 @@
 
 
 }
+.assembly extern xunit.core {}
 
-.module 'switch5.exe'
 
 .class public auto ansi TestStack
        extends ['mscorlib']System.Object
@@ -136,11 +136,14 @@
 
 }
 
-.class public auto ansi Test
+.class public auto ansi Test_switch5
        extends ['mscorlib']System.Object
 {
   .method public hidebysig static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals (class TestStack V_0)

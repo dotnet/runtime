@@ -527,7 +527,7 @@ namespace System.Xml.Serialization
                     ns = ((XmlSchema)tmp).TargetNamespace;
                 }
             }
-            string? item = null;
+            string? item;
             if (o is XmlSchemaNotation)
             {
                 item = SR.Format(SR.XmlSchemaNamedItem, ns, "notation", ((XmlSchemaNotation)o).Name, details);
@@ -614,8 +614,7 @@ namespace System.Xml.Serialization
         private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string? ns)
         {
             string err = SR.Format(SR.XmlSerializableMergeItem, ns, GetSchemaItem(src, ns, null));
-            err += "\r\n" + Dump(src);
-            err += "\r\n" + Dump(dest);
+            err += $"{Environment.NewLine}{Dump(src)}{Environment.NewLine}{Dump(dest)}";
             return err;
         }
 

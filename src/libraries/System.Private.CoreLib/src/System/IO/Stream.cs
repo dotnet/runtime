@@ -332,11 +332,17 @@ namespace System.IO
             }
         }
 
+#if CORERT // TODO: https://github.com/dotnet/corert/issues/3251
+        private bool HasOverriddenBeginEndRead() => true;
+
+        private bool HasOverriddenBeginEndWrite() => true;
+#else
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndWrite();
+#endif
 
         private Task<int> BeginEndReadAsync(byte[] buffer, int offset, int count)
         {

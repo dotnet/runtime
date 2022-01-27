@@ -97,7 +97,7 @@ public struct InlinedVal
 }
 
 
-public class Test
+public class Test_GenMethInlined
 {
 	public static int Main()
 	{

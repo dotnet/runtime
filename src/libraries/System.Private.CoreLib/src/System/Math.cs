@@ -49,6 +49,10 @@ namespace System
 
         private const double SCALEB_C3 = 9007199254740992; // 0x1p53
 
+        private const int ILogB_NaN = 0x7FFFFFFF;
+
+        private const int ILogB_Zero = (-1 - 0x7FFFFFFF);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static short Abs(short value)
         {
@@ -127,6 +131,26 @@ namespace System
         public static decimal Abs(decimal value)
         {
             return decimal.Abs(value);
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Abs(double value)
+        {
+            const ulong mask = 0x7FFFFFFFFFFFFFFF;
+            ulong raw = BitConverter.DoubleToUInt64Bits(value);
+
+            return BitConverter.UInt64BitsToDouble(raw & mask);
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Abs(float value)
+        {
+            const uint mask = 0x7FFFFFFF;
+            uint raw = BitConverter.SingleToUInt32Bits(value);
+
+            return BitConverter.UInt32BitsToSingle(raw & mask);
         }
 
         [DoesNotReturn]
@@ -786,6 +810,38 @@ namespace System
             {
                 return regularMod;
             }
+        }
+
+        public static int ILogB(double x)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogb.c
+
+            if (double.IsNaN(x))
+            {
+                return ILogB_NaN;
+            }
+
+            ulong i = BitConverter.DoubleToUInt64Bits(x);
+            int e = (int)((i >> 52) & 0x7FF);
+
+            if (e == 0)
+            {
+                i <<= 12;
+                if (i == 0)
+                {
+                    return ILogB_Zero;
+                }
+
+                for (e = -0x3FF; (i >> 63) == 0; e--, i <<= 1) ;
+                return e;
+            }
+
+            if (e == 0x7FF)
+            {
+                return (i << 12) != 0 ? ILogB_Zero : int.MaxValue;
+            }
+
+            return e - 0x3FF;
         }
 
         public static double Log(double a, double newBase)

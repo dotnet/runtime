@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -12,18 +12,16 @@ TEST_DEST=$4
 TEST_INST_TYPE=$5
 
 INST_TYPE="DefaultArgument";
-if [ "$TEST_INST_TYPE" != "" ]; then
+if [ -n "$TEST_INST_TYPE" ]; then
 	INST_TYPE="$TEST_INST_TYPE";
 fi
-
-
 
 TEST_NAME=${TEST_VALIDITY}_${TEST_NAME}
 TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 $SED -e "s/INIT/${TEST_INIT}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TARGET_CONSTRAINT/${TEST_DEST}/g" -e "s/SOURCE_CONSTRAINT/${TEST_SRC}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -42,33 +40,33 @@ $SED -e "s/INIT/${TEST_INIT}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TARGET_
 
 .class interface public auto ansi abstract IfaceA
 {
-} 
+}
 
 .class interface public auto ansi abstract IfaceB
 {
-} 
+}
 
 .class public auto ansi Class extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed
 	{
 	    .maxstack 8
-		ldarg.0 
+		ldarg.0
 	    call instance void object::'.ctor'()
-	    ret 
+	    ret
 	}
-} 
+}
 
 .class public auto ansi DefaultArgument	extends Class implements IfaceA, IfaceB
 {
-	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed
 	{
 	    .maxstack 8
-		ldarg.0 
+		ldarg.0
 	    call instance void Class::'.ctor'()
-	    ret 
+	    ret
 	}
-} 
+}
 
 
 
@@ -76,12 +74,12 @@ $SED -e "s/INIT/${TEST_INIT}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TARGET_
         extends [mscorlib]System.Object
 {
 
-	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void '.ctor' ()  cil managed
 	{
 	    .maxstack 8
-		ldarg.0 
+		ldarg.0
 	    call instance void object::'.ctor'()
-	    ret 
+	    ret
 	}
 
 	.method public static void Method< SOURCE_CONSTRAINT T> ()
@@ -110,7 +108,7 @@ $SED -e "s/INIT/${TEST_INIT}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TARGET_
 	call void class Test2< $INST_TYPE >::Method()
 
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

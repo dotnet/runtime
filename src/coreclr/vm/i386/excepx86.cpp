@@ -113,17 +113,6 @@ static void RtlUnwindCallback()
     _ASSERTE(!"Should never get here");
 }
 
-BOOL NExportSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ((LPVOID)pEHR->Handler == (LPVOID)UMThunkPrestubHandler)
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 BOOL FastNExportSEH(EXCEPTION_REGISTRATION_RECORD* pEHR)
 {
     LIMITED_METHOD_CONTRACT;
@@ -156,9 +145,8 @@ BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD *pEstablisherF
     //
     // ComPlusFrameSEH() is for COMPlusFrameHandler & COMPlusNestedExceptionHandler.
     // FastNExportSEH() is for FastNExportExceptHandler.
-    // NExportSEH() is for UMThunkPrestubHandler.
     //
-    return (ComPlusFrameSEH(pEstablisherFrame) || FastNExportSEH(pEstablisherFrame) || NExportSEH(pEstablisherFrame) || ReverseCOMSEH(pEstablisherFrame));
+    return (ComPlusFrameSEH(pEstablisherFrame) || FastNExportSEH(pEstablisherFrame) || ReverseCOMSEH(pEstablisherFrame));
 }
 
 Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
@@ -166,10 +154,7 @@ Frame *GetCurrFrame(EXCEPTION_REGISTRATION_RECORD *pEstablisherFrame)
     Frame *pFrame;
     WRAPPER_NO_CONTRACT;
     _ASSERTE(IsUnmanagedToManagedSEHHandler(pEstablisherFrame));
-    if (NExportSEH(pEstablisherFrame))
-        pFrame = ((ComToManagedExRecord *)pEstablisherFrame)->GetCurrFrame();
-    else
-        pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
+    pFrame = ((FrameHandlerExRecord *)pEstablisherFrame)->GetCurrFrame();
 
     // Assert that the exception frame is on the thread or that the exception frame is the top frame.
     _ASSERTE(GetThreadNULLOk() == NULL || GetThread()->GetFrame() == (Frame*)-1 || GetThread()->GetFrame() <= pFrame);
@@ -3380,52 +3365,6 @@ EXCEPTION_HANDLER_IMPL(FastNExportExceptHandler)
         SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags), pEstablisherFrame);
     }
 #endif // _DEBUG
-
-    return retval;
-}
-
-
-// Just like a regular NExport handler -- except it pops an extra frame on unwind.  A handler
-// like this is needed by the COMMethodStubProlog code.  It first pushes a frame -- and then
-// pushes a handler.  When we unwind, we need to pop the extra frame to avoid corrupting the
-// frame chain in the event of an unmanaged catcher.
-//
-EXCEPTION_HANDLER_IMPL(UMThunkPrestubHandler)
-{
-    // @todo: we'd like to have a dynamic contract here, but there's a problem. (Bug 129180) Enter on the CRST used
-    // in HandleManagedFault leaves the no-trigger count incremented. The destructor of this contract will restore
-    // it to zero, then when we leave the CRST in LinkFrameAndThrow, we assert because we're trying to decrement the
-    // gc-trigger count down past zero. The solution is to fix what we're doing with this CRST. </TODO>
-    STATIC_CONTRACT_THROWS; // COMPlusFrameHandler throws
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_ANY;
-
-    EXCEPTION_DISPOSITION retval = ExceptionContinueSearch;
-
-    // We must forward to the COMPlusFrameHandler. This will unwind the Frame Chain up to here, and also leave the
-    // preemptive GC mode set correctly.
-    retval = EXCEPTION_HANDLER_FWD(COMPlusFrameHandler);
-
-#ifdef _DEBUG
-    // If the exception is escaping the last CLR personality routine on the stack,
-    // then state a flag on the thread to indicate so.
-    if (retval == ExceptionContinueSearch)
-    {
-        SetReversePInvokeEscapingUnhandledExceptionStatus(IS_UNWINDING(pExceptionRecord->ExceptionFlags), pEstablisherFrame);
-    }
-#endif // _DEBUG
-
-    if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        // Pops an extra frame on unwind.
-
-        GCX_COOP();     // Must be cooperative to modify frame chain.
-
-        Thread *pThread = GetThread();
-        Frame *pFrame = pThread->GetFrame();
-        pFrame->ExceptionUnwind();
-        pFrame->Pop(pThread);
-    }
 
     return retval;
 }

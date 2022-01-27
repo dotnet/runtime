@@ -199,7 +199,7 @@ namespace System.Net.Http.Headers
             {
                 if (input[current] == '"')
                 {
-                    int quotedStringLength = 0;
+                    int quotedStringLength;
                     if (HttpRuleParser.GetQuotedStringLength(input, current, out quotedStringLength) !=
                         HttpParseResult.Parsed)
                     {
@@ -241,8 +241,7 @@ namespace System.Net.Http.Headers
             {
                 current++; // skip ',' delimiter
 
-                bool separatorFound = false; // ignore value returned by GetNextNonEmptyOrWhitespaceIndex()
-                current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out separatorFound);
+                current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(input, current, true, out _);
                 if (current == input.Length)
                 {
                     return true;

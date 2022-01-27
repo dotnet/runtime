@@ -42,11 +42,11 @@ internal static partial class Interop
             None = 0,
         }
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFree")]
-        internal static extern void CryptorFree(IntPtr handle);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFree")]
+        internal static partial void CryptorFree(IntPtr handle);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorCreate")]
-        internal static extern unsafe int CryptorCreate(
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorCreate")]
+        internal static unsafe partial int CryptorCreate(
             PAL_SymmetricOperation operation,
             PAL_SymmetricAlgorithm algorithm,
             PAL_ChainingMode chainingMode,
@@ -58,8 +58,8 @@ internal static partial class Interop
             out SafeAppleCryptorHandle cryptor,
             out int ccStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorUpdate")]
-        internal static extern unsafe int CryptorUpdate(
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorUpdate")]
+        internal static unsafe partial int CryptorUpdate(
             SafeAppleCryptorHandle cryptor,
             byte* pbData,
             int cbData,
@@ -68,16 +68,16 @@ internal static partial class Interop
             out int cbWritten,
             out int ccStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFinal")]
-        internal static extern unsafe int CryptorFinal(
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorFinal")]
+        internal static unsafe partial int CryptorFinal(
             SafeAppleCryptorHandle cryptor,
             byte* pbOutput,
             int cbOutput,
             out int cbWritten,
             out int ccStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
-        internal static extern unsafe int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_CryptorReset")]
+        internal static unsafe partial int CryptorReset(SafeAppleCryptorHandle cryptor, byte* pbIv, out int ccStatus);
     }
 }
 

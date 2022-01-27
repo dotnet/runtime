@@ -846,7 +846,7 @@ typedef RSLock::RSInverseLockHolder RSInverseLockHolder;
  * ------------------------------------------------------------------------- */
 
 // This serves as glue for exceptions. Eventually, we shouldn't have unrecoverable
-// error, and instead, errors should just propogate up.
+// error, and instead, errors should just propagate up.
 #define SetUnrecoverableIfFailed(__p, __hr) \
     if (FAILED(__hr)) \
     { \
@@ -2211,7 +2211,7 @@ public:
     COM_METHOD SetManagedHandler(ICorDebugManagedCallback *pCallback);
     COM_METHOD SetUnmanagedHandler(ICorDebugUnmanagedCallback *pCallback);
     COM_METHOD CreateProcess(LPCWSTR lpApplicationName,
-                             __in_z LPWSTR lpCommandLine,
+                             _In_z_ LPWSTR lpCommandLine,
                              LPSECURITY_ATTRIBUTES lpProcessAttributes,
                              LPSECURITY_ATTRIBUTES lpThreadAttributes,
                              BOOL bInheritHandles,
@@ -2243,7 +2243,7 @@ public:
 
     COM_METHOD CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
                                LPCWSTR lpApplicationName,
-                               __in_z LPWSTR lpCommandLine,
+                               _In_z_ LPWSTR lpCommandLine,
                                LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                BOOL bInheritHandles,
@@ -2267,7 +2267,7 @@ public:
 
     HRESULT CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
                                 LPCWSTR lpApplicationName,
-                                __in_z LPWSTR lpCommandLine,
+                                _In_z_ LPWSTR lpCommandLine,
                                 LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                 LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                 BOOL bInheritHandles,
@@ -2324,9 +2324,7 @@ public:
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
 
-#ifdef FEATURE_CORESYSTEM
     HMODULE GetTargetCLR() { return m_targetCLR; }
-#endif
 
 private:
     bool IsCreateProcessSupported();
@@ -2347,11 +2345,7 @@ private:
     // Store information about the process to be debugged
     ProcessDescriptor m_pd;
 
-//Note - this code could be useful outside coresystem, but keeping the change localized
-// because we are late in the win8 release
-#ifdef FEATURE_CORESYSTEM
     HMODULE m_targetCLR;
-#endif
 };
 
 
@@ -2463,7 +2457,7 @@ public:
     // Returns the friendly name of the AppDomain
     COM_METHOD GetName(ULONG32   cchName,
                        ULONG32 * pcchName,
-                       __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                       _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
     /*
      * GetObject returns the runtime app domain object.
@@ -2646,12 +2640,12 @@ public:
      */
     COM_METHOD GetCodeBase(ULONG32   cchName,
                            ULONG32 * pcchName,
-                           __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                           _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
     // returns the filename of the assembly, or "<unknown>" for in-memory assemblies
     COM_METHOD GetName(ULONG32   cchName,
                        ULONG32 * pcchName,
-                       __out_ecount_part_opt(cchName, *pcchName) WCHAR     szName[]);
+                       _Out_writes_to_opt_(cchName, *pcchName) WCHAR     szName[]);
 
 
     //-----------------------------------------------------------
@@ -2975,10 +2969,10 @@ public:
     //-----------------------------------------------------------
     // IMetaDataLookup
     // -----------------------------------------------------------
-    IMDInternalImport * LookupMetaData(VMPTR_PEFile vmPEFile, bool &isILMetaDataForNGENImage);
+    IMDInternalImport * LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage);
 
     // Helper functions for LookupMetaData implementation
-    IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEFile vmPEFile,
+    IMDInternalImport * LookupMetaDataFromDebugger(VMPTR_PEAssembly vmPEAssembly,
                                                    bool &isILMetaDataForNGENImage,
                                                    CordbModule * pModule);
 
@@ -3079,7 +3073,7 @@ public:
     /*
      * ModifyLogSwitch modifies the specified switch's severity level.
      */
-    COM_METHOD ModifyLogSwitch(__in_z WCHAR *pLogSwitchName, LONG lLevel);
+    COM_METHOD ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLevel);
 
     COM_METHOD EnumerateAppDomains(ICorDebugAppDomainEnum **ppAppDomains);
     COM_METHOD GetObject(ICorDebugValue **ppObject);
@@ -3389,7 +3383,7 @@ public:
 
     bool IsWin32EventThread();
 
-    void HandleSyncCompleteRecieved();
+    void HandleSyncCompleteReceived();
 
     // Send a truly asynchronous IPC event.
     void SendAsyncIPCEvent(DebuggerIPCEventType t);
@@ -3839,7 +3833,7 @@ private:
     // m_syncCompleteReceived tells us if the runtime is _actually_ sychronized. It goes
     // high once we get a SyncComplete, and it goes low once we actually send the continue.
     // This is always set by the thread that receives the sync-complete. In interop, that's the w32et.
-    // Thus this is the most accurate indication of wether the Debuggee is _actually_ synchronized or not.
+    // Thus this is the most accurate indication of whether the Debuggee is _actually_ synchronized or not.
     bool                  m_syncCompleteReceived;
 
 
@@ -4180,7 +4174,7 @@ public:
     COM_METHOD GetProcess(ICorDebugProcess **ppProcess);
     COM_METHOD GetBaseAddress(CORDB_ADDRESS *pAddress);
     COM_METHOD GetAssembly(ICorDebugAssembly **ppAssembly);
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
     COM_METHOD EnableJITDebugging(BOOL bTrackJITInfo, BOOL bAllowJitOpts);
     COM_METHOD EnableClassLoadCallbacks(BOOL bClassLoadCallbacks);
 
@@ -4252,7 +4246,7 @@ public:
 #endif // _DEBUG
 
     // Internal help to get the "name" (filename or pretty name) of the module.
-    HRESULT GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    HRESULT GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Marks that the module's metadata has become invalid and needs to be refetched.
     void RefreshMetaData();
@@ -4368,7 +4362,7 @@ public:
     IDacDbiInterface::SymbolFormat GetInMemorySymbolStream(IStream ** ppStream);
 
     // accessor for PE file
-    VMPTR_PEFile GetPEFile();
+    VMPTR_PEAssembly GetPEFile();
 
 
     IMetaDataImport * GetMetaDataImporter();
@@ -4419,9 +4413,9 @@ private:
     // "Global" class for this module. Global functions + vars exist in this class.
     RSSmartPtr<CordbClass> m_pClass;
 
-    // Handle to PEFile, useful for metadata lookups.
+    // Handle to PEAssembly, useful for metadata lookups.
     // this should always be non-null.
-    VMPTR_PEFile    m_vmPEFile;
+    VMPTR_PEAssembly    m_vmPEFile;
 
 
     // Public metadata importer. This is lazily initialized and accessed from code:GetMetaDataImporter
@@ -4484,15 +4478,15 @@ public:
     // Get the string for the type of the MDA. Never empty.
     // This is a convenient performant alternative to getting the XML stream and extracting
     // the type from that based off the schema.
-    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetName(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Get a string description of the MDA. This may be empty (0-length).
-    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetDescription(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     // Get the full associated XML for the MDA. This may be empty.
     // This could be a potentially expensive operation if the xml stream is large.
     // See the MDA documentation for the schema for this XML stream.
-    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+    COM_METHOD GetXML(ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     COM_METHOD GetFlags(CorDebugMDAFlags * pFlags);
 
@@ -6266,10 +6260,6 @@ public:
    BOOL ConvertFrameForILMethodWithoutMetadata(ICorDebugFrame *           pFrame,
                                                ICorDebugInternalFrame2 ** ppInternalFrame2);
 
-    // Gets/sets m_fCreationEventQueued
-    bool CreateEventWasQueued();
-    void SetCreateEventQueued();
-
     //-----------------------------------------------------------
     // Data members
     //-----------------------------------------------------------
@@ -6326,11 +6316,6 @@ private:
     // and a debugger may normally just skip the first one knowing it can stop on the 2nd once.
     // Both events will set this bit high. Be careful not to reset this bit inbetween them.
     bool                  m_fException;
-
-    // True if a creation event has been queued for this thread
-    // The event may or may not have been dispatched yet
-    // Bugfix DevDiv2\DevDiv 77523 - this is only being set from ShimProcess::QueueFakeThreadAttachEventsNativeOrder
-    bool                  m_fCreationEventQueued;
 
     // Object handle for Exception object in debuggee.
     VMPTR_OBJECTHANDLE    m_vmExcepObjHandle;
@@ -9151,7 +9136,7 @@ public:
 
     RefValueHome             m_valueHome;
 
-    // Indicates when we last syncronized our stored data (m_info) from the left side
+    // Indicates when we last synchronized our stored data (m_info) from the left side
     UINT                     m_continueCounterLastSync;
 };
 
@@ -9292,7 +9277,7 @@ public:
     COM_METHOD GetLength(ULONG32 * pcchString);
     COM_METHOD GetString(ULONG32   cchString,
                          ULONG32 * ppcchStrin,
-                         __out_ecount_opt(cchString) WCHAR     szString[]);
+                         _Out_writes_bytes_opt_(cchString) WCHAR     szString[]);
 
     //-----------------------------------------------------------
     // ICorDebugExceptionObjectValue
@@ -10120,7 +10105,7 @@ public:
 
     HRESULT SendCreateProcessEvent(MachineInfo machineInfo,
                                    LPCWSTR programName,
-                                   __in_z LPWSTR  programArgs,
+                                   _In_z_ LPWSTR  programArgs,
                                    LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                    LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                    BOOL bInheritHandles,
@@ -10507,7 +10492,7 @@ public:
 
     HRESULT LoadTLSArrayPtr();
 
-    // Hijacks this thread to a hijack worker function which recieves the current
+    // Hijacks this thread to a hijack worker function which receives the current
     // context and the provided exception record. The reason determines what code
     // the hijack worker executes
     HRESULT SetupFirstChanceHijack(EHijackReason::EHijackReason reason, const EXCEPTION_RECORD * pExceptionRecord);
@@ -10811,7 +10796,7 @@ public:
      */
     COM_METHOD GetDisplayName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     CorpubProcess   *GetNextProcess () { return m_pNext;}
     void SetNext (CorpubProcess *pNext) { m_pNext = pNext;}
@@ -10838,7 +10823,7 @@ private:
 class CorpubAppDomain  : public CordbCommonBase, public ICorPublishAppDomain
 {
 public:
-    CorpubAppDomain (__in LPWSTR szAppDomainName, ULONG Id);
+    CorpubAppDomain (_In_ LPWSTR szAppDomainName, ULONG Id);
     virtual ~CorpubAppDomain();
 
 #ifdef _DEBUG
@@ -10873,7 +10858,7 @@ public:
      */
     COM_METHOD GetName (ULONG32 cchName,
                         ULONG32 *pcchName,
-                        __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+                        _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
     CorpubAppDomain *GetNextAppDomain () { return m_pNext;}
     void SetNext (CorpubAppDomain *pNext) { m_pNext = pNext;}
@@ -11142,7 +11127,7 @@ private:
 void CheckAgainstDAC(CordbFunction * pFunc, void * pIP, mdMethodDef mdExpected);
 #endif
 
-HRESULT CopyOutString(const WCHAR * pInputString, ULONG32 cchName, ULONG32 * pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[]);
+HRESULT CopyOutString(const WCHAR * pInputString, ULONG32 cchName, ULONG32 * pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[]);
 
 
 

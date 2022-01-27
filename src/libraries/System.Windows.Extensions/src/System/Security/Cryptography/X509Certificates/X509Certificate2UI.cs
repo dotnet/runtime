@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -30,12 +31,12 @@ namespace System.Security.Cryptography.X509Certificates
             DisplayX509Certificate(certificate, hwndParent);
         }
 
-        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string title, string message, X509SelectionFlag selectionFlag)
+        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string? title, string? message, X509SelectionFlag selectionFlag)
         {
             return SelectFromCollectionHelper(certificates, title, message, selectionFlag, IntPtr.Zero);
         }
 
-        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string title, string message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
+        public static X509Certificate2Collection SelectFromCollection(X509Certificate2Collection certificates, string? title, string? message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
         {
             return SelectFromCollectionHelper(certificates, title, message, selectionFlag, hwndParent);
         }
@@ -81,7 +82,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static X509Certificate2Collection SelectFromCollectionHelper(X509Certificate2Collection certificates, string title, string message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
+        private static X509Certificate2Collection SelectFromCollectionHelper(X509Certificate2Collection certificates, string? title, string? message, X509SelectionFlag selectionFlag, IntPtr hwndParent)
         {
             if (certificates == null)
                 throw new ArgumentNullException(nameof(certificates));
@@ -95,7 +96,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static unsafe SafeCertStoreHandle SelectFromStore(SafeCertStoreHandle safeSourceStoreHandle, string title, string message, X509SelectionFlag selectionFlags, IntPtr hwndParent)
+        private static unsafe SafeCertStoreHandle SelectFromStore(SafeCertStoreHandle safeSourceStoreHandle, string? title, string? message, X509SelectionFlag selectionFlags, IntPtr hwndParent)
         {
             int dwErrorCode = ERROR_SUCCESS;
 
@@ -104,7 +105,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Interop.Crypt32.X509_ASN_ENCODING | Interop.Crypt32.PKCS_7_ASN_ENCODING,
                 IntPtr.Zero,
                 0,
-                null);
+                IntPtr.Zero);
 
             if (safeCertStoreHandle == null || safeCertStoreHandle.IsInvalid)
                 throw new CryptographicException(Marshal.GetLastWin32Error());

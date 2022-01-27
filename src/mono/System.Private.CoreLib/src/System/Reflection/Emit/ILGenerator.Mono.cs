@@ -754,7 +754,6 @@ namespace System.Reflection.Emit
             int token = token_gen.GetToken(meth, true);
             make_room(6);
             ll_emit(opcode);
-            Type? declaringType = meth.DeclaringType;
             emit_int(token);
             if (meth.ReturnType != typeof(void))
                 cur_stack++;
@@ -820,9 +819,6 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Type cls)
         {
-            if (cls != null && cls.IsByRef)
-                throw new ArgumentException("Cannot get TypeToken for a ByRef type.");
-
             make_room(6);
             ll_emit(opcode);
             int token = token_gen.GetToken(cls!, opcode != OpCodes.Ldtoken);

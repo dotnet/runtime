@@ -97,7 +97,7 @@ namespace MS.Internal.Xml.Cache
                 }
                 else
                 {
-                    return string.Concat(Prefix, ":", LocalName);
+                    return $"{Prefix}:{LocalName}";
                 }
             }
         }

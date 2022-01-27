@@ -572,7 +572,7 @@ void DoAssertOnType(DebuggerIPCEventType event, int count)
         if (g_iDbgRuntimeCounter[event & 0x00ff] == count)
         {
             char        tmpStr[256];
-            _snprintf_s(tmpStr, _countof(tmpStr), _TRUNCATE, "%s == %d, break now!",
+            _snprintf_s(tmpStr, ARRAY_SIZE(tmpStr), _TRUNCATE, "%s == %d, break now!",
                         IPCENames::GetName(event), count);
 
             // fire the assertion
@@ -586,7 +586,7 @@ void DoAssertOnType(DebuggerIPCEventType event, int count)
         if (g_iDbgDebuggerCounter[event & 0x00ff] == count)
         {
             char        tmpStr[256];
-            _snprintf_s(tmpStr, _countof(tmpStr), _TRUNCATE, "%s == %d, break now!",
+            _snprintf_s(tmpStr, ARRAY_SIZE(tmpStr), _TRUNCATE, "%s == %d, break now!",
                         IPCENames::GetName(event), count);
 
             // fire the assertion
@@ -1660,7 +1660,7 @@ void Debugger::SendRawEvent(const DebuggerIPCEvent * pManagedEvent)
     EX_TRY
     {
         const DWORD dwFlags = 0; // continuable (eg, Debugger can continue GH)
-        RaiseException(CLRDBG_NOTIFICATION_EXCEPTION_CODE, dwFlags, NumItems(rgData), rgData);
+        RaiseException(CLRDBG_NOTIFICATION_EXCEPTION_CODE, dwFlags, ARRAY_SIZE(rgData), rgData);
 
         // If debugger continues "GH" (DBG_CONTINUE), then we land here.
         // This is the expected path for a well-behaved ICorDebug debugger.
@@ -1841,7 +1841,7 @@ HRESULT Debugger::Startup(void)
         {
             for (i = 0; i < dwRegVal; i++)
             {
-                int iProc = GetRandomInt(NumItems(g_pStressProcs));
+                int iProc = GetRandomInt(ARRAY_SIZE(g_pStressProcs));
                 LPTHREAD_START_ROUTINE pStartRoutine = g_pStressProcs[iProc];
                 ::CreateThread(NULL, 0, pStartRoutine, NULL, 0, &dwId);
                 LOG((LF_CORDB, LL_INFO1000, "Created random thread (%d) with tid=0x%x\n", i, dwId));
@@ -4360,7 +4360,7 @@ SIZE_T GetSetFrameHelper::GetValueClassSize(MetaSig* pSig)
     // - but we don't care if it's shared (since it will be the same size either way)
     _ASSERTE(!vcType.IsNull() && vcType.IsValueType());
 
-    return (vcType.GetMethodTable()->GetAlignedNumInstanceFieldBytes());
+    return (vcType.GetMethodTable()->GetNumInstanceFieldBytes());
 }
 
 //
@@ -7655,7 +7655,7 @@ void Debugger::SendExceptionEventsWorker(
 //
 // Returns:
 //    S_OK on success (common case by far).
-//    propogates other errors.
+//    propagates other errors.
 //
 HRESULT Debugger::SendException(Thread *pThread,
                                 bool fFirstChance,
@@ -9537,21 +9537,6 @@ void Debugger::LoadModule(Module* pRuntimeModule,
 
     SENDIPCEVENT_END;
 
-    // need to update pdb stream for SQL passed in pdb stream
-    // regardless attach or not.
-    //
-    if (pRuntimeModule->IsIStream())
-    {
-        // Just ignore failures. Caller was just sending a debug event and we don't
-        // want that to interop non-debugging functionality.
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            SendUpdateModuleSymsEventAndBlock(pRuntimeModule, pAppDomain);
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-
     // Now that we're done with the load module event, can no longer change Jit flags.
     module->SetCanChangeJitFlags(false);
 }
@@ -9710,7 +9695,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
-            pRuntimeModule, pRuntimeModule->GetDomainFile(), pRuntimeModule->IsIStream(),
+            pRuntimeModule, pRuntimeModule->GetDomainFile(), false,
             module, module->GetRuntimeModule(), module->GetDomainFile());
 
         // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
@@ -10495,7 +10480,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             }
             else
             {
-                // not synchornized. We get debugger lock upon the function entry
+                // not synchronized. We get debugger lock upon the function entry
                 _ASSERTE(ThreadHoldsLock());
 
                 // Simply trap all Runtime threads if we're not already trying to.
@@ -14356,8 +14341,8 @@ void Debugger::SendRawLogMessage(
 // the creation/modification of a LogSwitch
 void Debugger::SendLogSwitchSetting(int iLevel,
                                     int iReason,
-                                    __in_z LPCWSTR pLogSwitchName,
-                                    __in_z LPCWSTR pParentSwitchName)
+                                    _In_z_ LPCWSTR pLogSwitchName,
+                                    _In_z_ LPCWSTR pParentSwitchName)
 {
     CONTRACTL
     {
@@ -15869,7 +15854,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread, CONTEXT *pCtx)
 
 
 // notification when a SQL connection begins
-void Debugger::CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName)
+void Debugger::CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName)
 {
     CONTRACTL
     {

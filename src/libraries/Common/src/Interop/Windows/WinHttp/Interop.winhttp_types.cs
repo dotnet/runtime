@@ -168,6 +168,7 @@ internal static partial class Interop
 
         public const uint WINHTTP_OPTION_TCP_KEEPALIVE = 152;
         public const uint WINHTTP_OPTION_STREAM_ERROR_CODE = 159;
+        public const uint WINHTTP_OPTION_REQUIRE_STREAM_END = 160;
 
         public enum WINHTTP_WEB_SOCKET_BUFFER_TYPE
         {
@@ -259,8 +260,7 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct WINHTTP_CURRENT_USER_IE_PROXY_CONFIG
         {
-            [MarshalAs(UnmanagedType.Bool)]
-            public bool AutoDetect;
+            public int AutoDetect;
             public IntPtr AutoConfigUrl;
             public IntPtr Proxy;
             public IntPtr ProxyBypass;

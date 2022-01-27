@@ -37,7 +37,7 @@ public class GenTest
 	{
 		InternalTest();
 	}
-	public bool Test()
+	public bool Test_Positive009()
 	{
 		try
 		{
@@ -53,7 +53,7 @@ public class GenTest
 	}
 }
 
-public class Test
+public class Test_Positive009
 {
 	public static int counter = 0;
 	public static bool result = true;
@@ -71,7 +71,7 @@ public class Test
 	public static int Main()
 	{
 
-		Eval(new GenTest().Test());
+		Eval(new GenTest().Test_Positive009());
 		
 		if (result)
 		{

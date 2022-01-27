@@ -874,7 +874,7 @@ public:
     //Creates a key with both the namespace and name converted to lowercase and
     //made into a proper namespace-path.
     VOID CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszName,
-                                      __out LPUTF8 *ppszOutNameSpace, __out LPUTF8 *ppszOutName);
+                                      _Out_ LPUTF8 *ppszOutNameSpace, _Out_ LPUTF8 *ppszOutName);
 
     static HRESULT FindTypeDefByExportedType(IMDInternalImport *pCTImport,
                                              mdExportedType mdCurrent,
@@ -899,21 +899,13 @@ private:
                                                   ClassLoadLevel level = CLASS_LOADED,
                                                   const InstantiationContext *pInstContext = NULL);
 
-    static TypeHandle LookupTypeKeyUnderLock(TypeKey *pKey,
-                                             EETypeHashTable *pTable,
-                                             CrstBase *pLock);
+    static TypeHandle LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable);
 
-    static TypeHandle LookupTypeKey(TypeKey *pKey,
-                                    EETypeHashTable *pTable,
-                                    CrstBase *pLock,
-                                    BOOL fCheckUnderLock);
-
-    static TypeHandle LookupInLoaderModule(TypeKey* pKey, BOOL fCheckUnderLock);
+    static TypeHandle LookupInLoaderModule(TypeKey* pKey);
 
     // Lookup a handle in the appropriate table
     // (declaring module for TypeDef or loader-module for constructed types)
     static TypeHandle LookupTypeHandleForTypeKey(TypeKey *pTypeKey);
-    static TypeHandle LookupTypeHandleForTypeKeyInner(TypeKey *pTypeKey, BOOL fCheckUnderLock);
 
     static void DECLSPEC_NORETURN  ThrowTypeLoadException(TypeKey *pKey, UINT resIDWhy);
 

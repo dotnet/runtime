@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 internal struct QQ
 {
@@ -66,6 +67,12 @@ internal struct AA
         _zero = new AA(0);
         BB.f_init = new AA(100);
         BB.f_zero = new AA(0);
+    }
+
+    [Fact]
+    public static int TestEntrypoint()
+    {
+        return TestApp.RunAllTests();
     }
 }
 

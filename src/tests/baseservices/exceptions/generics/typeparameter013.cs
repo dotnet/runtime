@@ -26,17 +26,17 @@ public class Gen
 		}
 		catch(Ex E)
 		{
-			Test.Eval(Object.ReferenceEquals(e,E));
+			Test_typeparameter013.Eval(Object.ReferenceEquals(e,E));
 		}
 		catch
 		{
 			Console.WriteLine("Caught Wrong Exception");
-			Test.Eval(false);
+			Test_typeparameter013.Eval(false);
 		}
 	}
 }
 
-public class Test
+public class Test_typeparameter013
 {
 	public static int counter = 0;
 	public static bool result = true;

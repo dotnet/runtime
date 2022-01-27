@@ -6,6 +6,10 @@ endif()
 
 project(mono)
 
+include(../../eng/native/configurepaths.cmake)
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
+
+set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
@@ -243,6 +247,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
   set(DISABLE_COMPONENTS 1)
+
+  set(WASI_DRIVER_SOURCES
+    wasi/mono-wasi-driver/driver.c
+    wasi/mono-wasi-driver/stubs.c
+    wasi/mono-wasi-driver/synthetic-pthread.c
+  )
+  add_library(mono-wasi-driver STATIC ${WASI_DRIVER_SOURCES})
+  target_compile_options(mono-wasi-driver PRIVATE -Wno-missing-prototypes -Wno-strict-prototypes)
+  install(TARGETS mono-wasi-driver LIBRARY)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -254,6 +267,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   add_compile_options(/W3)   # set warning level 3
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
+  add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(/Oi)   # enable intrinsics
     add_compile_options(/GF)   # enable string pooling
@@ -407,8 +421,13 @@ elseif(TARGET_ARCH STREQUAL "arm64")
 elseif(TARGET_ARCH MATCHES "arm")
   set(TARGET_ARM 1)
   set(MONO_ARCHITECTURE "\"arm\"")
-  # FIXME:
-  add_definitions("-DARM_FPU_VFP=1")
+  if(MONO_ARM_FPU STREQUAL "none")
+    add_definitions("-DARM_FPU_NONE=1")
+  elseif(MONO_ARM_FPU STREQUAL "vfp-hard")
+    add_definitions("-DARM_FPU_VFP_HARD=1")
+  else()
+    add_definitions("-DARM_FPU_VFP=1")
+  endif()
   set(TARGET_SIZEOF_VOID_P 4)
   set(SIZEOF_REGISTER 4)
   # fixme: use separate defines for host/target
@@ -436,6 +455,19 @@ if(ENABLE_MONOTOUCH)
   add_definitions(-DMONOTOUCH=1)
 endif()
 
+# Decide if we need zlib, and if so whether we want the system zlib or the in-tree copy.
+if(NOT DISABLE_EMBEDDED_PDB OR NOT DISABLE_LOG_PROFILER_GZ)
+  if(INTERNAL_ZLIB)
+    # defines ZLIB_SOURCES
+    include(${CLR_SRC_NATIVE_DIR}/external/zlib.cmake)
+  else()
+    # if we're not on a platform where we use the in-tree zlib, require system zlib
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
+    set(Z_LIBS)
+    append_extra_compression_libs(Z_LIBS)
+  endif()
+endif()
+
 ######################################
 # HEADER/FUNCTION CHECKS
 ######################################
@@ -446,8 +478,13 @@ include(configure)
 ######################################
 
 if(GCC)
-  # We require C99 with some GNU extensions, e.g. `linux` macro
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  if(HOST_WASI)
+    # WASI SDK only includes some required definitions if the C version is at least this new
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+  else()
+    # We require C99 with some GNU extensions, e.g. `linux` macro
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+  endif()
   # The runtime code does not respect ANSI C strict aliasing rules
   append("-fno-strict-aliasing" CMAKE_C_FLAGS CMAKE_CXX_FLAGS)
   # We rely on signed overflow to behave
@@ -586,7 +623,7 @@ endif()
 ######################################
 # ICU CHECKS
 ######################################
-set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
+set(ICU_SHIM_PATH "${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
 elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
@@ -613,6 +650,9 @@ elseif(HOST_ANDROID)
   set(HAVE_SYS_ICU 1)
 elseif(HOST_LINUX)
   include(FindPkgConfig)
+  if(CROSS_ROOTFS)
+    set(ENV{PKG_CONFIG_ICU_UC_INCLUDEDIR} "${CROSS_ROOTFS}/usr/include")
+  endif(CROSS_ROOTFS)
   pkg_check_modules(ICU icu-uc)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
   set(HAVE_SYS_ICU 1)
@@ -751,20 +791,18 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
+  if(NOT EXISTS "${VERSION_HEADER_PATH}")
+    file(WRITE "${VERSION_HEADER_PATH}" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
   endif()
 else()
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/version.c")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version.c" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  if(NOT EXISTS "${VERSION_FILE_PATH}")
+    file(WRITE "${VERSION_FILE_PATH}" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
   endif()
 endif()
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc" "\n")
-endif()
-if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+if (NOT EXISTS "${RUNTIME_VERSION_HEADER_PATH}")
+  file(WRITE "${RUNTIME_VERSION_HEADER_PATH}"
 "#define RuntimeFileMajorVersion 42\n"
 "#define RuntimeFileMinorVersion 42\n"
 "#define RuntimeFileBuildVersion 42\n"
@@ -776,16 +814,16 @@ if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
 endif()
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
+  file(STRINGS "${VERSION_HEADER_PATH}" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
 else()
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/version.c" product_version_string_line REGEX "sccsid")
+  file(STRINGS "${VERSION_FILE_PATH}" product_version_string_line REGEX "sccsid")
   string(REGEX REPLACE ".*Version *(.*)\";" "\"\\1\"" product_version_string ${product_version_string_line})
 endif()
 
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_minor_line REGEX "RuntimeProductMinorVersion ")
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_patch_line REGEX "RuntimeProductPatchVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_minor_line REGEX "RuntimeProductMinorVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_patch_line REGEX "RuntimeProductPatchVersion ")
 string(REGEX REPLACE ".*RuntimeProductMajorVersion *([0-9]+)" "\\1" runtime_version_major ${runtime_version_major_line})
 string(REGEX REPLACE ".*RuntimeProductMinorVersion *([0-9]+)" "\\1" runtime_version_minor ${runtime_version_minor_line})
 string(REGEX REPLACE ".*RuntimeProductPatchVersion *([0-9]+)" "\\1" runtime_version_patch ${runtime_version_patch_line})
@@ -809,6 +847,7 @@ if (TARGET_BROWSER)
 endif()
 ### End of OS specific checks
 
+include_directories("${CLR_SRC_NATIVE_DIR}")
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)

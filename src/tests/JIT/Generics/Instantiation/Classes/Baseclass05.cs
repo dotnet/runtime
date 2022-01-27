@@ -70,7 +70,7 @@ public class Gen<T, U, V> : GenBase<T, U, V>
         return base.InstVerify(t1, t2, t3);
     }
 }
-public class Test
+public class Test_Baseclass05
 {
     public static int counter = 0;
     public static bool result = true;

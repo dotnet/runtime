@@ -32,24 +32,27 @@ namespace Internal.Cryptography.Pal.Windows
         }
 
         // Used for binary blobs without internal pointers.
-        public static byte[] GetMsgParamAsByteArray(this SafeCryptMsgHandle hCryptMsg, CryptMsgParamType paramType, int index = 0)
+        public static unsafe byte[] GetMsgParamAsByteArray(this SafeCryptMsgHandle hCryptMsg, CryptMsgParamType paramType, int index = 0)
         {
             int cbData = 0;
-            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, null, ref cbData))
+            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, IntPtr.Zero, ref cbData))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-            byte[] pvData = new byte[cbData];
-            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, pvData, ref cbData))
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+            byte[] data = new byte[cbData];
+            fixed (byte* pvData = data)
+            {
+                if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, pvData, ref cbData))
+                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+            }
 
-            return pvData.Resize(cbData);
+            return data.Resize(cbData);
         }
 
         // Used for binary blobs with internal pointers.
         public static SafeHandle GetMsgParamAsMemory(this SafeCryptMsgHandle hCryptMsg, CryptMsgParamType paramType, int index = 0)
         {
             int cbData = 0;
-            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, null, ref cbData))
+            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, paramType, index, IntPtr.Zero, ref cbData))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             SafeHandle pvData = SafeHeapAllocHandle.Alloc(cbData);
@@ -116,7 +119,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         public static X509Certificate2Collection GetOriginatorCerts(this SafeCryptMsgHandle hCryptMsg)
         {
-            int numCertificates = 0;
+            int numCertificates;
             int cbNumCertificates = sizeof(int);
             if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_CERT_COUNT_PARAM, 0, out numCertificates, ref cbNumCertificates))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
@@ -330,7 +333,7 @@ namespace Internal.Cryptography.Pal.Windows
             // For some reason, you can't ask how many attributes there are - you have to ask for the attributes and
             // get a CRYPT_E_ATTRIBUTES_MISSING failure if the count is 0.
             int cbUnprotectedAttr = 0;
-            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_UNPROTECTED_ATTR_PARAM, 0, null, ref cbUnprotectedAttr))
+            if (!Interop.Crypt32.CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_UNPROTECTED_ATTR_PARAM, 0, IntPtr.Zero, ref cbUnprotectedAttr))
             {
                 int lastError = Marshal.GetLastWin32Error();
                 if (lastError == (int)ErrorCode.CRYPT_E_ATTRIBUTES_MISSING)

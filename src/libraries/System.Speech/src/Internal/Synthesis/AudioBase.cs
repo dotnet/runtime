@@ -234,10 +234,10 @@ namespace System.Speech.Internal.Synthesis
             BLOCKHDR block = new(0);
             DATAHDR dataHdr = new(0);
 
-            int cRiff = Marshal.SizeOf(riff);
-            int cBlock = Marshal.SizeOf(block);
+            int cRiff = Marshal.SizeOf<RIFFHDR>();
+            int cBlock = Marshal.SizeOf<BLOCKHDR>();
             int cWaveEx = waveEx.Length;// Marshal.SizeOf (waveEx); // The CLR automatically pad the waveEx structure to dword boundary. Force 16.
-            int cDataHdr = Marshal.SizeOf(dataHdr);
+            int cDataHdr = Marshal.SizeOf<DATAHDR>();
 
             int total = cRiff + cBlock + cWaveEx + cDataHdr;
 

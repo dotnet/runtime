@@ -8,9 +8,15 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "SetNamedSecurityInfoW", CallingConvention = CallingConvention.Winapi,
-            SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
-        internal static extern /*DWORD*/ uint SetSecurityInfoByName(string name, /*DWORD*/ uint objectType, /*DWORD*/ uint securityInformation,
-            byte[]? owner, byte[]? group, byte[]? dacl, byte[]? sacl);
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "SetNamedSecurityInfoW",
+            CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial uint SetSecurityInfoByName(
+            string name,
+            /*DWORD*/ uint objectType,
+            /*DWORD*/ uint securityInformation,
+            byte[]? owner,
+            byte[]? group,
+            byte[]? dacl,
+            byte[]? sacl);
     }
 }

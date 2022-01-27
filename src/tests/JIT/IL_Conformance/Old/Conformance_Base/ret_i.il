@@ -47,4 +47,4 @@ END:
 
 
 
-.assembly ret_i.exe{}
+.assembly ret_i{}

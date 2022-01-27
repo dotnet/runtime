@@ -113,4 +113,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_u4.exe{}
+.assembly cgt_u4{}

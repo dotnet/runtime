@@ -10,15 +10,15 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
-        [DllImport(Libraries.WebSocket)]
-        internal static extern int WebSocketGetAction(
-            [In] SafeHandle webSocketHandle,
-            [In] ActionQueue actionQueue,
-            [In, Out] Buffer[] dataBuffers,
-            [In, Out] ref uint dataBufferCount,
-            [Out] out System.Net.WebSockets.WebSocketProtocolComponent.Action action,
-            [Out] out BufferType bufferType,
-            [Out] out IntPtr applicationContext,
-            [Out] out IntPtr actionContext);
+        [GeneratedDllImport(Libraries.WebSocket)]
+        internal static partial int WebSocketGetAction(
+            SafeHandle webSocketHandle,
+            ActionQueue actionQueue,
+            Buffer[] dataBuffers,
+            ref uint dataBufferCount,
+            out System.Net.WebSockets.WebSocketProtocolComponent.Action action,
+            out BufferType bufferType,
+            out IntPtr applicationContext,
+            out IntPtr actionContext);
     }
 }

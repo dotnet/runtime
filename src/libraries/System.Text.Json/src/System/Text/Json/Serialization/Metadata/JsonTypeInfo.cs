@@ -124,24 +124,12 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool IsObjectWithParameterizedCtor => PropertyInfoForTypeInfo.ConverterBase.ConstructorIsParameterized;
 
-        private GenericMethodHolder? _genericMethods;
 
         /// <summary>
-        /// Returns a helper class used when generic methods need to be invoked on Type.
+        /// Returns a helper class used for computing the default value.
         /// </summary>
-        internal GenericMethodHolder GenericMethods
-        {
-            get
-            {
-                if (_genericMethods == null)
-                {
-                    Type runtimePropertyClass = typeof(GenericMethodHolder<>).MakeGenericType(new Type[] { Type })!;
-                    _genericMethods = (GenericMethodHolder)Activator.CreateInstance(runtimePropertyClass)!;
-                }
-
-                return _genericMethods;
-            }
-        }
+        internal DefaultValueHolder DefaultValueHolder => _defaultValueHolder ??= DefaultValueHolder.CreateHolder(Type);
+        private DefaultValueHolder? _defaultValueHolder;
 
         internal JsonNumberHandling? NumberHandling { get; set; }
 
@@ -454,7 +442,7 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
-        private void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters)
+        private void InitializeConstructorParameters(JsonParameterInfoValues[] jsonParameters, bool sourceGenMode = false)
         {
             var parameterCache = new JsonPropertyDictionary<JsonParameterInfo>(Options.PropertyNameCaseInsensitive, jsonParameters.Length);
 
@@ -500,7 +488,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                     Debug.Assert(matchingEntry.JsonPropertyInfo != null);
                     JsonPropertyInfo jsonPropertyInfo = matchingEntry.JsonPropertyInfo;
-                    JsonParameterInfo jsonParameterInfo = CreateConstructorParameter(parameterInfo, jsonPropertyInfo, Options);
+                    JsonParameterInfo jsonParameterInfo = CreateConstructorParameter(parameterInfo, jsonPropertyInfo, sourceGenMode, Options);
                     parameterCache.Add(jsonPropertyInfo.NameAsString, jsonParameterInfo);
                 }
                 // It is invalid for the extension data property to bind with a constructor argument.
@@ -530,7 +518,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ParameterType = reflectionInfo.ParameterType,
                     Position = reflectionInfo.Position,
                     HasDefaultValue = reflectionInfo.HasDefaultValue,
-                    DefaultValue = reflectionInfo.DefaultValue
+                    DefaultValue = reflectionInfo.GetDefaultValue()
                 };
 
                 jsonParameters[i] = jsonInfo;
@@ -580,11 +568,12 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonParameterInfo CreateConstructorParameter(
             JsonParameterInfoValues parameterInfo,
             JsonPropertyInfo jsonPropertyInfo,
+            bool sourceGenMode,
             JsonSerializerOptions options)
         {
             if (jsonPropertyInfo.IsIgnored)
             {
-                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(parameterInfo, jsonPropertyInfo);
+                return JsonParameterInfo.CreateIgnoredParameterPlaceholder(parameterInfo, jsonPropertyInfo, sourceGenMode);
             }
 
             JsonConverter converter = jsonPropertyInfo.ConverterBase;

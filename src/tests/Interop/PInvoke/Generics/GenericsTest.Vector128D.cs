@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -44,14 +44,14 @@ unsafe partial class GenericsTest
 
         Vector128<double> value2;
         GenericsNative.GetVector128DOut(1.0, 2.0, &value2);
-        Assert.AreEqual(value2.GetElement(0), 1.0);
-        Assert.AreEqual(value2.GetElement(1), 2.0);
+        Assert.Equal(value2.GetElement(0), 1.0);
+        Assert.Equal(value2.GetElement(1), 2.0);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128DOut(1.0, 2.0, out Vector128<double> value3));
 
         Vector128<double>* value4 = GenericsNative.GetVector128DPtr(1.0, 2.0);
-        Assert.AreEqual(value4->GetElement(0), 1.0);
-        Assert.AreEqual(value4->GetElement(1), 2.0);
+        Assert.Equal(value4->GetElement(0), 1.0);
+        Assert.Equal(value4->GetElement(1), 2.0);
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetVector128DRef(1.0, 2.0));
 

@@ -13,6 +13,7 @@ using System.Runtime.Loader;
 using System.Security;
 using System.Text;
 using System.Threading;
+using Xunit;
 
 namespace TestLibrary
 {
@@ -205,7 +206,7 @@ namespace TestLibrary
                 return 0;
             }
 
-            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            Assert.Equal(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
             return osvi.dwMajorVersion;
         }
         internal static uint GetWindowsMinorVersion()
@@ -215,7 +216,7 @@ namespace TestLibrary
                 return 0;
             }
 
-            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            Assert.Equal(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
             return osvi.dwMinorVersion;
         }
         internal static uint GetWindowsBuildNumber()
@@ -225,7 +226,7 @@ namespace TestLibrary
                 return 0;
             }
 
-            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            Assert.Equal(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
             return osvi.dwBuildNumber;
         }
 

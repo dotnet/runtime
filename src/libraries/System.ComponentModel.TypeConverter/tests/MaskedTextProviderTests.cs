@@ -553,9 +553,11 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void DateTimeMaskTest()
         {
-            var maskedTextProvider = new MaskedTextProvider(TestComplexDateTimeMask, new CultureInfo("en-US"));
+            CultureInfo cultureInfo = CultureInfo.GetCultureInfo("en-US");
+            string expectedSeparator = cultureInfo.DateTimeFormat.DateSeparator;
+            var maskedTextProvider = new MaskedTextProvider(TestComplexDateTimeMask, cultureInfo);
             maskedTextProvider.Set("01012000101010");
-            Assert.Equal("01/01/2000 10:10:10", maskedTextProvider.ToString());
+            Assert.Equal($"01{expectedSeparator}01{expectedSeparator}2000 10:10:10", maskedTextProvider.ToString());
         }
 
         [Fact]

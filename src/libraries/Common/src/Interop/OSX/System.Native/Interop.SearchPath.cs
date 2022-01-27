@@ -8,8 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SearchPath")]
-        internal static extern string? SearchPath(NSSearchPathDirectory folderId);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SearchPath", CharSet = CharSet.Ansi)]
+        internal static partial string? SearchPath(NSSearchPathDirectory folderId);
 
         internal enum NSSearchPathDirectory
         {

@@ -305,4 +305,44 @@ namespace DebuggerTests
             new Point { X = 90, Y = -4, Id = "point#Id", Color = RGB.Green }.GenericInstanceMethod(sc);
         }
     }
+    public class MultiDimensionalArray
+    {
+        public static void run()
+        {
+            var int_arr_1 = new int[2];
+            int_arr_1[0] = 0;
+            int_arr_1[1] = 1;
+
+            var int_arr_2 = new int[2, 3];
+            int_arr_2[0, 0] = 0;
+            int_arr_2[0, 1] = 1;
+            int_arr_2[0, 2] = 2;
+            int_arr_2[1, 0] = 10;
+            int_arr_2[1, 1] = 11;
+            int_arr_2[1, 2] = 12;
+
+            var int_arr_3 = new int[2, 3, 3];
+            int_arr_3[0, 0, 0] = 0;
+            int_arr_3[0, 0, 1] = 1;
+            int_arr_3[0, 0, 2] = 2;
+            int_arr_3[0, 1, 0] = 10;
+            int_arr_3[0, 1, 1] = 11;
+            int_arr_3[0, 1, 2] = 12;
+            int_arr_3[0, 2, 0] = 20;
+            int_arr_3[0, 2, 1] = 21;
+            int_arr_3[0, 2, 2] = 22;
+            int_arr_3[1, 0, 0] = 100;
+            int_arr_3[1, 0, 1] = 101;
+            int_arr_3[1, 0, 2] = 102;
+            int_arr_3[1, 1, 0] = 110;
+            int_arr_3[1, 1, 1] = 111;
+            int_arr_3[1, 1, 2] = 112;
+            int_arr_3[1, 2, 0] = 120;
+            int_arr_3[1, 2, 1] = 121;
+            int_arr_3[1, 2, 2] = 122;
+
+            System.Diagnostics.Debugger.Break();
+            Console.WriteLine($"int_arr: {int_arr_3.Length}");
+        }
+    }
 }

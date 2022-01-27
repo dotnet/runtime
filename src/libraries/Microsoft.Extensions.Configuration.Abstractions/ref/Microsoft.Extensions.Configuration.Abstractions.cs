@@ -33,6 +33,15 @@ namespace Microsoft.Extensions.Configuration
     public static partial class ConfigurationRootExtensions
     {
         public static string GetDebugView(this Microsoft.Extensions.Configuration.IConfigurationRoot root) { throw null; }
+        public static string GetDebugView(this IConfigurationRoot root, System.Func<ConfigurationDebugViewContext, string>? processValue) { throw null; }
+    }
+    public readonly partial struct ConfigurationDebugViewContext
+    {
+        public ConfigurationDebugViewContext(string path, string key, string? value, IConfigurationProvider configurationProvider) { throw null; }
+        public string Path { get; }
+        public string Key { get; }
+        public string? Value { get; }
+        public IConfigurationProvider ConfigurationProvider { get; }
     }
     public partial interface IConfiguration
     {

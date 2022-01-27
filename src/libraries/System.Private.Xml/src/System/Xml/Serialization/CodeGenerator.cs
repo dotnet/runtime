@@ -109,7 +109,7 @@ namespace System.Xml.Serialization
             MarkLabel(_methodEndLabel);
             Ret();
 
-            MethodBuilder? retVal = null;
+            MethodBuilder? retVal;
             retVal = _methodBuilder;
             _methodBuilder = null;
             _ilGen = null;
@@ -161,7 +161,7 @@ namespace System.Xml.Serialization
             LocalBuilder? localTmp;
             if (!_tmpLocals.TryGetValue(type, out localTmp))
             {
-                localTmp = DeclareLocal(type, "_tmp" + _tmpLocals.Count);
+                localTmp = DeclareLocal(type, $"_tmp{_tmpLocals.Count}");
                 _tmpLocals.Add(type, localTmp);
             }
             return localTmp;
@@ -528,7 +528,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMember(MemberInfo memberInfo)
         {
-            Type? memberType = null;
+            Type? memberType;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
@@ -567,7 +567,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
-            Type? memberType = null;
+            Type? memberType;
             if (memberInfo is FieldInfo)
             {
                 FieldInfo fieldInfo = (FieldInfo)memberInfo;
@@ -936,7 +936,7 @@ namespace System.Xml.Serialization
 
         internal void Stloc(Type type, string name)
         {
-            LocalBuilder? local = null;
+            LocalBuilder? local;
             if (!_currentScope!.TryGetValue(name, out local))
             {
                 local = DeclareLocal(type, name);
@@ -1270,7 +1270,7 @@ namespace System.Xml.Serialization
             Type[] interfaces)
         {
             // parent is nullable if no base class
-            return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
+            return moduleBuilder.DefineType($"{TempAssembly.GeneratedAssemblyNamespace}.{name}",
                 attributes, parent, interfaces);
         }
 

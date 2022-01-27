@@ -284,8 +284,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(Expression.New(typeof(PropertyAndFields)), binding));
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GlobalMethod()
         {
             ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
@@ -296,7 +295,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("propertyAccessor", () => Expression.Bind(globalMethodInfo, Expression.Constant(2)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GlobalField()
         {
             ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
@@ -305,6 +304,5 @@ namespace System.Linq.Expressions.Tests
             FieldInfo globalField = module.GetField(fieldBuilder.Name);
             AssertExtensions.Throws<ArgumentException>("member", () => Expression.Bind(globalField, Expression.Default(globalField.FieldType)));
         }
-#endif
     }
 }

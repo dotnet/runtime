@@ -266,4 +266,4 @@ FAIL:
 	ret
 }
 }
-.assembly div_u8.exe{}
+.assembly div_u8{}

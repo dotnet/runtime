@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class RSA : AsymmetricAlgorithm
     {
-        public static new RSA Create() => new RSAImplementation.RSAOpenSsl();
+        public static new partial RSA Create() => new RSAImplementation.RSAOpenSsl();
     }
 
     internal static partial class RSAImplementation
@@ -762,7 +762,7 @@ namespace System.Security.Cryptography
                 Span<byte>.Empty,
                 hashAlgorithm, padding,
                 true,
-                out int bytesWritten,
+                out _,
                 out byte[]? signature))
             {
                 Debug.Fail("TrySignHash should not return false in allocation mode");

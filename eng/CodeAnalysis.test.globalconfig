@@ -384,6 +384,12 @@ dotnet_diagnostic.CA1847.severity = none
 # CA1848: Use the LoggerMessage delegates
 dotnet_diagnostic.CA1848.severity = none
 
+# CA1849: Call async methods when in an async method
+dotnet_diagnostic.CA1849.severity = none
+
+# CA1850: Prefer static 'HashData' method over 'ComputeHash'
+dotnet_diagnostic.CA1850.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -1675,7 +1681,7 @@ dotnet_diagnostic.xUnit2012.severity = warning
 dotnet_diagnostic.xUnit2013.severity = none
 
 # xUnit2014: Do not use throws check to check for asynchronously thrown exception
-dotnet_diagnostic.xUnit2014.severity = warning
+dotnet_diagnostic.xUnit2014.severity = none
 
 # xUnit2015: Do not use typeof expression to check the exception type
 dotnet_diagnostic.xUnit2015.severity = warning

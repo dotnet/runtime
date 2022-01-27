@@ -16,7 +16,7 @@
 {
   .ver 0:0:0:0
 }
-.assembly test
+.assembly 'repro'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -25,7 +25,7 @@
 
   .ver 0:0:0:0
 }
-.module convovf_i8_u.exe
+.assembly extern xunit.core {}
 // MVID: {8F1AC63C-507C-42CD-B9EC-7E585802DBD0}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -35,12 +35,15 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi Test
+.class private auto ansi Test_repro
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       1283 (0x503)
     .maxstack  5

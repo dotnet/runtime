@@ -295,4 +295,4 @@ FAIL:
 	ret
 }
 }
-.assembly cgt_i4.exe{}
+.assembly cgt_i4{}

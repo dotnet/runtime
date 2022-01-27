@@ -8,11 +8,20 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class GetGroupNamesTests
     {
-        [Theory]
-        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", new string[] { "0", "first_name", "last_name" })]
-        public void GetGroupNames(string pattern, string[] expectedGroupNames)
+        public static IEnumerable<object[]> GetGroupNames_MemberData()
         {
-            Regex regex = new Regex(pattern);
+            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", RegexOptions.None, new string[] { "0", "first_name", "last_name" } };
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", RegexHelpers.RegexOptionNonBacktracking, new string[] { "0" } };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetGroupNames_MemberData))]
+        public void GetGroupNames(string pattern, RegexOptions options, string[] expectedGroupNames)
+        {
+            Regex regex = new Regex(pattern, options);
             Assert.Equal(expectedGroupNames, regex.GetGroupNames());
         }
 
@@ -113,13 +122,34 @@ namespace System.Text.RegularExpressions.Tests
                 new int[] { 0, 15 },
                 new string[] { "Ryan Byington", "Byington" }
             };
+
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return new object[]
+                {
+                    "(?'15'\\S+)\\s(?'15'\\S+)", "Ryan Byington",
+                    new string[] { "0" },
+                    new int[] { 0 },
+                    new string[] { "Ryan Byington" },
+                    RegexHelpers.RegexOptionNonBacktracking
+                };
+
+                yield return new object[]
+                {
+                    "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "Ryan Byington",
+                    new string[] { "0" },
+                    new int[] { 0 },
+                    new string[] { "Ryan Byington" },
+                    RegexHelpers.RegexOptionNonBacktracking
+                };
+            }
         }
 
         [Theory]
         [MemberData(nameof(GroupNamesAndNumbers_TestData))]
-        public void GroupNamesAndNumbers(string pattern, string input, string[] expectedNames, int[] expectedNumbers, string[] expectedGroups)
+        public void GroupNamesAndNumbers(string pattern, string input, string[] expectedNames, int[] expectedNumbers, string[] expectedGroups, RegexOptions options = RegexOptions.None)
         {
-            Regex regex = new Regex(pattern);
+            Regex regex = new Regex(pattern, options);
             Match match = regex.Match(input);
             Assert.True(match.Success);
 
@@ -143,25 +173,49 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [Theory]
-        [InlineData("foo", 1)]
-        [InlineData("foo", -1)]
-        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", -1)]
-        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", 3)]
-        [InlineData(@"((?<256>abc)\d+)?(?<16>xyz)(.*)", -1)]
-        public void GroupNameFromNumber_InvalidIndex_ReturnsEmptyString(string pattern, int index)
+        public static IEnumerable<object[]> GroupNameFromNumber_InvalidIndex_ReturnsEmptyString_MemberData()
         {
-            Assert.Same(string.Empty, new Regex(pattern).GroupNameFromNumber(index));
+            yield return new object[] { "foo", 1 };
+            yield return new object[] { "foo", -1 };
+            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", -1 };
+            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", 3 };
+            yield return new object[] { @"((?<256>abc)\d+)?(?<16>xyz)(.*)", -1 };
+
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { "(f)(oo)", 1, RegexHelpers.RegexOptionNonBacktracking };
+                yield return new object[] { "(f)(oo)", -1, RegexHelpers.RegexOptionNonBacktracking };
+                yield return new object[] { "(f)(oo)", 2, RegexHelpers.RegexOptionNonBacktracking };
+            }
         }
 
         [Theory]
-        [InlineData("foo", "no-such-name")]
-        [InlineData("foo", "1")]
-        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", "no-such-name")]
-        [InlineData("(?<first_name>\\S+)\\s(?<last_name>\\S+)", "FIRST_NAME")]
-        public void GroupNumberFromName_InvalidName_ReturnsMinusOne(string pattern, string name)
+        [MemberData(nameof(GroupNameFromNumber_InvalidIndex_ReturnsEmptyString_MemberData))]
+        public void GroupNameFromNumber_InvalidIndex_ReturnsEmptyString(string pattern, int index, RegexOptions options = RegexOptions.None)
         {
-            Assert.Equal(-1, new Regex(pattern).GroupNumberFromName(name));
+            Assert.Same(string.Empty, new Regex(pattern, options).GroupNameFromNumber(index));
+        }
+
+        public static IEnumerable<object[]> GroupNumberFromName_InvalidName_ReturnsMinusOne_MemberData()
+        {
+            yield return new object[] { "foo", "no-such-name" };
+            yield return new object[] { "foo", "1" };
+            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "no-such-name" };
+            yield return new object[] { "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "FIRST_NAME" };
+
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { "(f)(oo)", "no-such-name", RegexHelpers.RegexOptionNonBacktracking };
+                yield return new object[] { "(f)(oo)", "1", RegexHelpers.RegexOptionNonBacktracking };
+                yield return new object[] { "(f)(oo)", "2", RegexHelpers.RegexOptionNonBacktracking };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GroupNumberFromName_InvalidName_ReturnsMinusOne_MemberData))]
+        public void GroupNumberFromName_InvalidName_ReturnsMinusOne(string pattern, string name, RegexOptions options = RegexOptions.None)
+        {
+            Assert.Equal(-1, new Regex(pattern, options).GroupNumberFromName(name));
         }
 
         [Fact]

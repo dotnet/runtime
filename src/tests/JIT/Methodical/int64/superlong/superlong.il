@@ -16,7 +16,7 @@
 .assembly 'superlong'// as "superlong"
 {
 }
-.module 'superlong.exe'
+.assembly extern xunit.core {}
 // MVID: {571950B7-63D3-4968-948F-25114244E0B8}
 .namespace JitTest
 {
@@ -100,6 +100,9 @@
     .method private hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       305 (0x131)
       .maxstack  2

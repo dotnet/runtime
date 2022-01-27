@@ -43,4 +43,4 @@ FAIL:
 	ret
 }
 }
-.assembly blt_u.exe{}
+.assembly blt_u{}

@@ -978,7 +978,7 @@ step_timer (gint64 *timer)
 {
 	gint64 curtime, diff;
 
-	SGEN_TV_GETTIME (curtime); 
+	SGEN_TV_GETTIME (curtime);
 	diff = SGEN_TV_ELAPSED (*timer, curtime);
 	*timer = curtime;
 	return diff;

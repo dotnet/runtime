@@ -27,7 +27,7 @@ ARM is closer to the native ABI:
 */
 
 .assembly extern legacy library mscorlib {}
-.assembly arglist.exe{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
+.assembly 'arglist'{ //This byte field requests that this assembly not be verified at run time and corresponds to this C# declaration:
   //[assembly:System.Security.Permissions.SecurityPermissionAttribute( [mscorlib]System.Security.Permissions.SecurityAction.RequestMinimum, Flags=System.Security.Permissions.SecurityPermissionFlag.SkipVerification )]
                         }
 

@@ -25,7 +25,7 @@ namespace System.Data.OleDb
                 if (OleDbHResult.DB_E_NOLOCALE == hr)
                 {
                     Marshal.ReleaseComObject(errorInfo);
-                    lcid = SafeNativeMethods.GetUserDefaultLCID();
+                    lcid = Interop.Kernel32.GetUserDefaultLCID();
                     errorInfo = errorRecords.GetErrorInfo(index, lcid);
 
                     if (null != errorInfo)
@@ -44,7 +44,7 @@ namespace System.Data.OleDb
                     if (OleDbHResult.DB_E_NOLOCALE == hr)
                     {
                         Marshal.ReleaseComObject(errorInfo);
-                        lcid = SafeNativeMethods.GetUserDefaultLCID();
+                        lcid = Interop.Kernel32.GetUserDefaultLCID();
                         errorInfo = errorRecords.GetErrorInfo(index, lcid);
 
                         if (null != errorInfo)
@@ -61,7 +61,7 @@ namespace System.Data.OleDb
             }
 
             UnsafeNativeMethods.ISQLErrorInfo sqlErrorInfo;
-            hr = errorRecords.GetCustomErrorObject(index, ref ODB.IID_ISQLErrorInfo, out sqlErrorInfo);
+            errorRecords.GetCustomErrorObject(index, ref ODB.IID_ISQLErrorInfo, out sqlErrorInfo);
 
             if (null != sqlErrorInfo)
             {

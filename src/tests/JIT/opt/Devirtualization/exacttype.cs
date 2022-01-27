@@ -26,7 +26,7 @@ public class Derived : Base
 // lost the more precise type or lost the fact that the type was
 // exact.
 
-public class Test
+public class Test_exacttype
 {
     public static Base M()
     {

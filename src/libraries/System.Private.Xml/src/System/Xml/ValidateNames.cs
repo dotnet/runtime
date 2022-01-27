@@ -603,7 +603,7 @@ namespace System.Xml
         /// </summary>
         private static string CreateName(string prefix, string localName)
         {
-            return (prefix.Length != 0) ? prefix + ":" + localName : localName;
+            return (prefix.Length != 0) ? $"{prefix}:{localName}" : localName;
         }
 
         /// <summary>

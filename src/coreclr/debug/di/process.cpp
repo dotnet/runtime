@@ -290,10 +290,10 @@ static inline DWORD CordbGetWaitTimeout()
 
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
-// lookup Internal Metadata Importer keyed by PEFile
+// lookup Internal Metadata Importer keyed by PEAssembly
 // isILMetaDataForNGENImage is true iff the IMDInternalImport returned represents a pointer to
 // metadata from an IL image when the module was an ngen'ed image.
-IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &isILMetaDataForNGENImage)
+IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage)
 {
     INTERNAL_DAC_CALLBACK(this);
 
@@ -312,7 +312,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
              pModule != NULL;
              pModule = pAppDomain->m_modules.FindNext(&hashFindModule))
         {
-            if (pModule->GetPEFile() == vmPEFile)
+            if (pModule->GetPEFile() == vmPEAssembly)
             {
                 pMDII = NULL;
                 ALLOW_DATATARGET_MISSING_MEMORY(
@@ -341,7 +341,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
              pModule != NULL;
              pModule = pAppDomain->m_modules.FindNext(&hashFindModule))
         {
-            if (pModule->GetPEFile() == vmPEFile)
+            if (pModule->GetPEFile() == vmPEAssembly)
             {
                 pMDII = NULL;
                 ALLOW_DATATARGET_MISSING_MEMORY(
@@ -354,7 +354,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEFile, isILMetaDataForNGENImage, pModule);
+                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, isILMetaDataForNGENImage, pModule);
                 }
                 return pMDII;
             }
@@ -366,7 +366,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
 
 
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
-    VMPTR_PEFile vmPEFile,
+    VMPTR_PEAssembly vmPEAssembly,
     bool &isILMetaDataForNGENImage,
     CordbModule * pModule)
 {
@@ -377,7 +377,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     IMDInternalImport * pMDII = NULL;
 
     // First, see if the debugger can locate the exact metadata we want.
-    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEFile, dwImageTimeStamp, dwImageSize, isNGEN, &filePath))
+    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, isNGEN, &filePath))
     {
         _ASSERTE(filePath.IsSet());
 
@@ -408,13 +408,12 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
         filePath.Clear();
         if ((pMDII == NULL) &&
             (isNGEN) &&
-            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEFile, dwImageTimeStamp, dwImageSize, &filePath)))
+            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath)))
         {
             _ASSERTE(filePath.IsSet());
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
-#if defined(FEATURE_CORESYSTEM)
             size_t pathLen = wcslen(mutableFilePath);
 
             const WCHAR *nidll = W(".ni.dll");
@@ -429,7 +428,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             {
                 wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
             }
-#endif//FEATURE_CORESYSTEM
 
             ALLOW_DATATARGET_MISSING_MEMORY(
                 pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, mutableFilePath, dwImageTimeStamp, dwImageSize);
@@ -496,7 +494,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
         if (SUCCEEDED(hr))
         {
             // While we're successfully returning a metadata reader, remember that there's
-            // absolutely no guarantee this metadata is an exact match for the vmPEFile.
+            // absolutely no guarantee this metadata is an exact match for the vmPEAssembly.
             // The debugger could literally send us back a path to any managed file with
             // metadata content that is readable and we'll 'succeed'.
             // For now, this is by-design.  A debugger should be allowed to decide if it wants
@@ -1111,7 +1109,7 @@ HRESULT ShimProcess::CreateProcess(
       Cordb * pCordb,
       ICorDebugRemoteTarget * pRemoteTarget,
       LPCWSTR szProgramName,
-      __in_z LPWSTR  szProgramArgs,
+      _In_z_ LPWSTR  szProgramArgs,
       LPSECURITY_ATTRIBUTES lpProcessAttributes,
       LPSECURITY_ATTRIBUTES lpThreadAttributes,
       BOOL fInheritHandles,
@@ -2709,15 +2707,15 @@ HRESULT CordbRefEnum::Next(ULONG celt, COR_GC_REFERENCE refs[], ULONG *pceltFetc
         if (SUCCEEDED(hr))
         {
             DacGcReference dacRefs[32];
-            ULONG toFetch = _countof(dacRefs);
+            ULONG toFetch = ARRAY_SIZE(dacRefs);
             ULONG total = 0;
 
-            for (ULONG c = 0; SUCCEEDED(hr) && c < (celt/_countof(dacRefs) + 1); ++c)
+            for (ULONG c = 0; SUCCEEDED(hr) && c < (celt/ARRAY_SIZE(dacRefs) + 1); ++c)
             {
                 // Fetch 32 references at a time, the last time, only fetch the remainder (that is, if
                 // the user didn't fetch a multiple of 32).
-                if (c == celt/_countof(dacRefs))
-                    toFetch = celt % _countof(dacRefs);
+                if (c == celt/ARRAY_SIZE(dacRefs))
+                    toFetch = celt % ARRAY_SIZE(dacRefs);
 
                 ULONG fetched = 0;
                 hr = process->GetDAC()->WalkRefs(mRefHandle, toFetch, dacRefs, &fetched);
@@ -4591,7 +4589,7 @@ void CordbProcess::DispatchRCEvent()
 
     CONTRACTL
     {
-        // This is happening on the RCET thread, so there's no place to propogate an error back up.
+        // This is happening on the RCET thread, so there's no place to propagate an error back up.
         NOTHROW;
     }
     CONTRACTL_END;
@@ -4777,7 +4775,7 @@ void CordbProcess::DbgAssertAppDomainDeleted(VMPTR_AppDomain vmAppDomainDeleted)
 //    Errors could occur because:
 //    - the event is corrupted (exceptional case)
 //    - the RS is corrupted / OOM (exceptional case)
-//    Exception errors here will propogate back to the Filter() call, and there's not really anything
+//    Exception errors here will propagate back to the Filter() call, and there's not really anything
 //    a debugger can do about an error here (perhaps report it to the user).
 //    Errors must leave IcorDebug in a consistent state.
 //
@@ -7626,27 +7624,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
 
     {
-#if !defined FEATURE_CORESYSTEM
-        // kernel32!OpenThread does not exist on all platforms (missing on Win98).
-        // So we need to delay load it.
-        typedef HANDLE (WINAPI *FPOPENTHREAD)(DWORD dwDesiredAccess,
-                                              BOOL bInheritHandle,
-                                              DWORD dwThreadId);
-
-
-
-        HMODULE mod = WszGetModuleHandle(W("kernel32.dll"));
-
-        _ASSERTE(mod != NULL); // can't fail since Kernel32.dll is already loaded.
-
-        const FPOPENTHREAD pfnOpenThread = (FPOPENTHREAD)GetProcAddress(mod, "OpenThread");
-
-        if (pfnOpenThread != NULL)
-        {
-            m_hHelperThread = pfnOpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
-            CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
-        }
-#elif TARGET_UNIX
+#if TARGET_UNIX
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
         m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
@@ -7673,8 +7651,6 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_excepNotForRuntimeBPAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   0x%p\n",
          m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_raiseException=                 0x%p\n",
-         m_runtimeOffsets.m_raiseExceptionAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -7739,7 +7715,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
             m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr,
         };
 
-        const int NumFlares = NumItems(flares);
+        const int NumFlares = ARRAY_SIZE(flares);
 
         // Ensure that all of the flares are unique.
         for(int i = 0; i < NumFlares; i++)
@@ -8518,7 +8494,7 @@ void CordbProcess::UnrecoverableError(HRESULT errorHR,
     {
         // @dbgtodo - , shim: Once everything is hoisted, we can remove
         // this code.
-        // In the v3 case, we should never get an unrecoverable error. Instead, the HR should be propogated
+        // In the v3 case, we should never get an unrecoverable error. Instead, the HR should be propagated
         // and returned at the top-level public API.
         _ASSERTE(!"Unrecoverable error dispatched in V3 case.");
     }
@@ -8624,7 +8600,7 @@ HRESULT CordbProcess::EnableLogMessages(BOOL fOnOff)
 /*
  * ModifyLogSwitch modifies the specified switch's severity level.
  */
-COM_METHOD CordbProcess::ModifyLogSwitch(__in_z WCHAR *pLogSwitchName, LONG lLevel)
+COM_METHOD CordbProcess::ModifyLogSwitch(_In_z_ WCHAR *pLogSwitchName, LONG lLevel)
 {
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -9819,27 +9795,22 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
     // If we didn't expect a specific CLR, then attempt to attach to any.
     if (m_clrInstanceId == 0)
     {
-
-#ifdef FEATURE_CORESYSTEM
+        // The only case in which we were allowed to request the "default" CLR instance
+        // ID is when we're running in V2 mode.  In V3, the client is required to pass
+        // a non-zero value to OpenVirtualProcess. Since V2 is no longer supported we
+        // no longer attempt to find it.
         if(m_cordb->GetTargetCLR() != 0)
         {
             m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
             return S_OK;
         }
-#endif
 
-        // The only case in which we're allowed to request the "default" CLR instance
-        // ID is when we're running in V2 mode.  In V3, the client is required to pass
-        // a non-zero value to OpenVirtualProcess.
+        // In V3, the client is required to pass a non-zero value to OpenVirtualProcess.
+        // In V2 mode we should be setting target CLR up front but return an error
+        // if we haven't.
         _ASSERTE(m_pShim != NULL);
+        return E_UNEXPECTED;
 
-        HRESULT hr = m_pShim->FindLoadedCLR(&m_clrInstanceId);
-        if (FAILED(hr))
-        {
-            // Couldn't find a loaded clr - no CLR instance ID yet
-            _ASSERTE(m_clrInstanceId == 0);
-            return hr;
-        }
     }
 
     // We've (now) got a valid CLR instance id
@@ -10135,7 +10106,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // Note that in case of a tie (multiple handles signaled), WaitForMultipleObjects gives
             // priority to the handle earlier in the array.
             HANDLE waitSet[] = { process->GetEventChannel()->GetRightSideEventAckHandle(), hLSProcess, hHelperThread};
-            DWORD cWaitSet = NumItems(waitSet);
+            DWORD cWaitSet = ARRAY_SIZE(waitSet);
             if (hHelperThread == NULL)
             {
                 cWaitSet--;
@@ -10257,7 +10228,7 @@ void CordbRCEventThread::FlushQueuedEvents(CordbProcess* process)
 {
     CONTRACTL
     {
-        NOTHROW; // This is happening on the RCET thread, so there's no place to propogate an error back up.
+        NOTHROW; // This is happening on the RCET thread, so there's no place to propagate an error back up.
     }
     CONTRACTL_END;
 
@@ -11160,7 +11131,7 @@ void CordbProcess::FilterClrNotification(
             // Case 2: Sync Complete
             //
 
-            HandleSyncCompleteRecieved();
+            HandleSyncCompleteReceived();
         }
         else
         {
@@ -11679,7 +11650,7 @@ bool CordbProcess::IsWin32EventThread()
 //    managed event-queue, and coordinating with the dispatch thread (RCET).
 //
 //    @dbgtodo - this should eventually get hoisted into the shim.
-void CordbProcess::HandleSyncCompleteRecieved()
+void CordbProcess::HandleSyncCompleteReceived()
 {
     _ASSERTE(ThreadHoldsProcessLock());
 
@@ -11847,7 +11818,7 @@ Reaction CordbProcess::TriageSyncComplete()
     // we should put that to good use here.
     this->SuspendUnmanagedThreads();
 
-    this->HandleSyncCompleteRecieved();
+    this->HandleSyncCompleteReceived();
 
     // Let the process run free.
     return REACTION(cIgnore);
@@ -12831,7 +12802,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     CordbWin32EventThread * pW32EventThread = this->m_pShim->GetWin32EventThread();
     _ASSERTE(pW32EventThread != NULL);
 
-    // if we were waiting for a retriggered exception but recieved any other event then turn
+    // if we were waiting for a retriggered exception but received any other event then turn
     // off the single stepping and dequeue the IB event. Right now we only use the SS flag internally
     // for stepping during possible retrigger.
     if(reaction.GetType() != Reaction::cInbandExceptionRetrigger && pUnmanagedThread->IsSSFlagNeeded())
@@ -13674,7 +13645,7 @@ void CordbWin32EventThread::ForceDbgContinue(CordbProcess *pProcess, CordbUnmana
 HRESULT CordbWin32EventThread::SendCreateProcessEvent(
                                   MachineInfo machineInfo,
                                   LPCWSTR programName,
-                                  __in_z LPWSTR  programArgs,
+                                  _In_z_ LPWSTR  programArgs,
                                   LPSECURITY_ATTRIBUTES lpProcessAttributes,
                                   LPSECURITY_ATTRIBUTES lpThreadAttributes,
                                   BOOL bInheritHandles,
@@ -14908,26 +14879,6 @@ HRESULT CordbProcess::IsReadyForDetach()
 
 
         pAppDomain = m_appDomains.FindNext(&foundAppDomain);
-    }
-
-    // If we're using the shim, give a chance to early-out if the OS doesn't support detach
-    // so that the user can continue to debug in that case.
-    // Ideally we'd just rely on the failure from DebugActiveProcessStop, but by then it's too late
-    // to recover.  This function is our only chance to distinguish between graceful detach failures
-    // and hard detach failures (after which the process object is neutered).
-    if (m_pShim != NULL)
-    {
-#if !defined(FEATURE_CORESYSTEM) // CORESYSTEM TODO
-        HModuleHolder hKernel32;
-        hKernel32 = WszLoadLibrary(W("kernel32"));
-        if (hKernel32 == NULL)
-            return HRESULT_FROM_GetLastError();
-        typedef BOOL (*DebugActiveProcessStopSig) (DWORD);
-        DebugActiveProcessStopSig pDebugActiveProcessStop =
-            reinterpret_cast<DebugActiveProcessStopSig>(GetProcAddress(hKernel32, "DebugActiveProcessStop"));
-        if (pDebugActiveProcessStop == NULL)
-            return COR_E_PLATFORMNOTSUPPORTED;
-#endif
     }
 
     return S_OK;

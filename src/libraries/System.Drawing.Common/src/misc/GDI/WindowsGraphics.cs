@@ -61,6 +61,7 @@ namespace System.Drawing.Internal
             {
                 Region? clip = null;
 
+#if NETCOREAPP3_1_OR_GREATER
                 if (properties.HasFlag(ApplyGraphicsProperties.Clipping))
                 {
                     g.GetContextInfo(out offset, out clip);
@@ -69,6 +70,21 @@ namespace System.Drawing.Internal
                 {
                     g.GetContextInfo(out offset);
                 }
+#else
+                Matrix? worldTransf = null;
+                if (g.GetContextInfo() is object[] data && data.Length == 2)
+                {
+                    if (properties.HasFlag(ApplyGraphicsProperties.Clipping))
+                    {
+                        clip = data[0] as Region;
+                    }
+                    worldTransf = data[1] as Matrix;
+                    if (worldTransf != null)
+                    {
+                        offset = worldTransf.Offset;
+                    }
+                }
+#endif
 
                 if (clip is not null)
                 {

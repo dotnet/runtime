@@ -196,8 +196,16 @@ namespace System.Threading.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.TryEnter(obj, -2));
             Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.TryEnter(obj, -2, ref lockTaken));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2), ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2), ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1), ref lockTaken));
 
             lockTaken = true;
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, ref lockTaken));
@@ -397,7 +405,12 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, 1));
             Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, TimeSpan.Zero));
             Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, -2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.Wait(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

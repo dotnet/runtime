@@ -19,10 +19,6 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Threading;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -33,7 +29,7 @@ namespace BenchmarksGame
         public Thread ReverseThread;
     }
 
-    public static class ReverseComplement_6
+    public class ReverseComplement_6
     {
         const int READER_BUFFER_SIZE = 1024 * 1024;
         const byte LF = 10, GT = (byte)'>', SP = 32;
@@ -246,24 +242,6 @@ namespace BenchmarksGame
                 return -1;
             }
             return 100;
-        }
-
-        [Benchmark(InnerIterationCount = 33)]
-        public static void RunBench()
-        {
-            var helpers = new TestHarnessHelpers(bigInput: true);
-            var outBytes = new byte[helpers.FileLength];
-
-            Benchmark.Iterate(() =>
-            {
-                using (var inputStream = helpers.GetInputStream())
-                using (var outputStream = new MemoryStream(outBytes))
-                {
-                    Bench(inputStream, outputStream);
-                }
-            });
-
-            Assert.True(MatchesChecksum(outBytes, helpers.CheckSum));
         }
 
         static bool MatchesChecksum(byte[] bytes, string checksum)

@@ -13,7 +13,8 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
-.assembly Program
+.assembly extern xunit.core {}
+.assembly 'generics_override1'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -25,7 +26,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module Program.exe
 // MVID: {C6C266E9-7949-4242-B429-F9011402D996}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -1013,6 +1013,9 @@
 
   .method private hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       174 (0xae)
     .maxstack  3

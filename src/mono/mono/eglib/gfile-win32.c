@@ -94,14 +94,14 @@ g_file_test (const gchar *filename, GFileTest test)
 {
 	gunichar2* utf16_filename = NULL;
 	DWORD attr;
-	
+
 	if (filename == NULL || test == 0)
 		return FALSE;
 
 	utf16_filename = u8to16 (filename);
 	attr = GetFileAttributesW (utf16_filename);
 	g_free (utf16_filename);
-	
+
 	if (attr == INVALID_FILE_ATTRIBUTES)
 		return FALSE;
 

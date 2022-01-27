@@ -5,6 +5,7 @@ namespace Dynamic
 {
     using System;
     using TestLibrary;
+    using Xunit;
 
     class Program
     {

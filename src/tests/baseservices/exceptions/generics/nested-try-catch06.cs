@@ -37,12 +37,12 @@ public class Gen<T>
 				}
 				if (throwException)
 				{
-					Test.Eval(false);
+					Test_nested_try_catch06.Eval(false);
 				}
 			}
 			catch(GenException<T>)
 			{
-				Test.Eval(throwException);
+				Test_nested_try_catch06.Eval(throwException);
 				throw;
 			}
 		}
@@ -58,18 +58,18 @@ public class Gen<T>
 		{
 			hitFinally = false;
 			InternalExceptionTest(throwException);
-			Test.Eval(!throwException);
+			Test_nested_try_catch06.Eval(!throwException);
 		}
 		catch
 		{
-			Test.Eval(throwException);
+			Test_nested_try_catch06.Eval(throwException);
 		}
-		Test.Eval(hitFinally);
+		Test_nested_try_catch06.Eval(hitFinally);
 	}	
 	
 }
 
-public class Test
+public class Test_nested_try_catch06
 {
 	public static int counter = 0;
 	public static bool result = true;

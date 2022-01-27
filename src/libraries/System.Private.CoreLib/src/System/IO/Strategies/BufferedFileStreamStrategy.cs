@@ -21,7 +21,7 @@ namespace System.IO.Strategies
         private int _readPos;
         private int _readLen;
         // The last successful Task returned from ReadAsync (perf optimization for successive reads of the same size)
-        private Task<int>? _lastSyncCompletedReadTask;
+        private CachedCompletedInt32Task _lastSyncCompletedReadTask;
 
         internal BufferedFileStreamStrategy(FileStreamStrategy strategy, int bufferSize)
         {
@@ -310,21 +310,8 @@ namespace System.IO.Strategies
             ValueTask<int> readResult = ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken);
 
             return readResult.IsCompletedSuccessfully
-                ? LastSyncCompletedReadTask(readResult.Result)
+                ? _lastSyncCompletedReadTask.GetTask(readResult.Result)
                 : readResult.AsTask();
-
-            Task<int> LastSyncCompletedReadTask(int val)
-            {
-                Task<int>? t = _lastSyncCompletedReadTask;
-                Debug.Assert(t == null || t.IsCompletedSuccessfully);
-
-                if (t != null && t.Result == val)
-                    return t;
-
-                t = Task.FromResult<int>(val);
-                _lastSyncCompletedReadTask = t;
-                return t;
-            }
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -974,11 +961,12 @@ namespace System.IO.Strategies
             // Otherwise we will throw away the buffer. This can only happen on read, as we flushed write data above.
 
             // The offset of the new/updated seek pointer within _buffer:
-            _readPos = (int)(newPos - (oldPos - _readPos));
+            long readPos = (newPos - (oldPos - _readPos));
 
             // If the offset of the updated seek pointer in the buffer is still legal, then we can keep using the buffer:
-            if (0 <= _readPos && _readPos < _readLen)
+            if (0 <= readPos && readPos < _readLen)
             {
+                _readPos = (int)readPos;
                 // Adjust the seek pointer of the underlying stream to reflect the amount of useful bytes in the read buffer:
                 _strategy.Seek(_readLen - _readPos, SeekOrigin.Current);
             }

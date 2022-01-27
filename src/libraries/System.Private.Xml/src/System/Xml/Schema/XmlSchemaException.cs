@@ -145,7 +145,7 @@ namespace System.Xml.Schema
             }
             catch (MissingManifestResourceException)
             {
-                return "UNKNOWN(" + res + ")";
+                return $"UNKNOWN({res})";
             }
         }
 

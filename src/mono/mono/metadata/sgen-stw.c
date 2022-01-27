@@ -171,7 +171,7 @@ static
 void
 sgen_client_stop_world_thread_restarted_callback (THREAD_INFO_TYPE *info)
 {
-	sgen_binary_protocol_thread_restart ((gpointer) mono_thread_info_get_tid (info));
+	sgen_binary_protocol_thread_restart ((gpointer)(gsize) mono_thread_info_get_tid (info));
 }
 
 /* LOCKING: assumes the GC lock is held */

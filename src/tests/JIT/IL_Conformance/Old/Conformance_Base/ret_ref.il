@@ -77,4 +77,4 @@ END:
 
 
 
-.assembly ret_ref.exe{}
+.assembly ret_ref{}

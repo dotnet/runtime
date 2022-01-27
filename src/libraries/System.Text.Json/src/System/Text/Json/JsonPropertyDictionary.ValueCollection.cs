@@ -36,9 +36,9 @@ namespace System.Text.Json
                 }
             }
 
-            public void Add(T? jsonNode) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            public void Add(T? jsonNode) => ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
 
-            public void Clear() => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            public void Clear() => ThrowHelper.ThrowNotSupportedException_NodeCollectionIsReadOnly();
 
             public bool Contains(T? jsonNode) => _parent.ContainsValue(jsonNode);
 
@@ -68,7 +68,7 @@ namespace System.Text.Json
                 }
             }
 
-            bool ICollection<T?>.Remove(T? node) => throw ThrowHelper.NotSupportedException_NodeCollectionIsReadOnly();
+            bool ICollection<T?>.Remove(T? node) => throw ThrowHelper.GetNotSupportedException_NodeCollectionIsReadOnly();
         }
     }
 }

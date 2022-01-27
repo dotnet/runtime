@@ -2742,5 +2742,112 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, obj.Abstract_Property);
             Assert.Equal(4, obj.Virtual_Property);
         }
+
+        [Fact]
+        public async Task SerializationMetadataNotComputedWhenMemberIgnored()
+        {
+            string janePayload = @"{""Name"":""Jane Doe""}";
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+            // Without [JsonIgnore], serializer throws exceptions due to runtime-reflection-based property metadata inspection.
+            await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_RefStringProp()));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_RefStringProp>("{}"));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_PropWith_BadConverter()));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_PropWith_BadConverter>("{}"));
+#else
+            // Ref returns supported in source-gen mode
+            string expected = @"{""NameRef"":""John Doe"",""Name"":""John Doe""}";
+            JsonTestHelper.AssertJsonEqual(expected, await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_RefStringProp()));
+
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_RefStringProp>(janePayload);
+            Assert.Equal("Jane Doe", obj.Name);
+            Assert.Equal("Jane Doe", obj.NameRef);
+
+            var obj2 = new TypeWith_PropWith_BadConverter();
+            obj2.Property = "Hello";
+
+            // Invalid converter specified, fallback to built-in converter. This should be corrected.
+            // https://github.com/dotnet/runtime/issues/60020.
+
+            Assert.Equal(@"{""Property"":""Hello""}", await JsonSerializerWrapperForString.SerializeWrapper(obj2));
+
+            obj2 = await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_PropWith_BadConverter>(@"{""Property"":""World""}");
+            Assert.Equal("World", obj2.Property);
+#endif
+
+            // With [JsonIgnore], serializer skips property metadata inspection
+            Assert.Equal(@"{""Name"":""John Doe""}", await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_IgnoredRefStringProp()));
+            Assert.Equal("Jane Doe", (await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_IgnoredRefStringProp>(janePayload)).Name);
+
+            Assert.Equal("{}", await JsonSerializerWrapperForString.SerializeWrapper(new TypeWith_IgnoredPropWith_BadConverter()));
+            Assert.Null((await JsonSerializerWrapperForString.DeserializeWrapper<TypeWith_IgnoredPropWith_BadConverter>("{}")).Property);
+        }
+
+        internal class TypeWith_RefStringProp
+        {
+            public ref string NameRef => ref Name;
+
+            [JsonInclude] // This is a field.
+            public string Name = "John Doe";
+        }
+
+        internal class TypeWith_IgnoredRefStringProp
+        {
+            [JsonIgnore]
+            public ref string NameRef => ref Name;
+
+            [JsonInclude] // This is a field.
+            public string Name = "John Doe";
+        }
+
+        public class TypeWith_PropWith_BadConverter
+        {
+            [JsonConverter(typeof(BadConverter))]
+            public string? Property { get; set; }
+        }
+
+        public class TypeWith_IgnoredPropWith_BadConverter
+        {
+            [JsonIgnore]
+            [JsonConverter(typeof(BadConverter))]
+            public string? Property { get; set; }
+        }
+
+        public class BadConverter
+        {
+        }
+
+        [Fact]
+        public async Task TestClassWithIgnoredCallbacks()
+        {
+            Assert.Equal("{}", await JsonSerializerWrapperForString.SerializeWrapper(new ClassWithIgnoredCallbacks()));
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredCallbacks>(@"{""Func"":"""",""Action"":""""}");
+            Assert.False(obj.Func(""));
+            Assert.Null(obj.Action);
+        }
+
+        [Fact]
+        public async Task TestClassWithCallbacks()
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new ClassWithCallbacks()));
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithCallbacks>(@"{""Func"":{},""Action"":{}"));
+        }
+
+        public class ClassWithIgnoredCallbacks
+        {
+            [JsonIgnore]
+            public Func<string, bool> Func { get; set; } = (val) => false;
+
+            [JsonIgnore]
+            public Action<bool> Action { get; set; }
+        }
+
+        public class ClassWithCallbacks
+        {
+            public Func<string, bool> Func { get; set; }
+
+            public Action<bool> Action { get; set; } = (val) => Console.WriteLine();
+        }
     }
 }

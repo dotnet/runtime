@@ -127,10 +127,15 @@ namespace Internal.Cryptography
         {
             if (_reusable && !_running)
                 return;
+
             DestroyHash();
 
+            BCryptCreateHashFlags flags = _reusable ?
+                BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG :
+                BCryptCreateHashFlags.None;
+
             SafeBCryptHashHandle hHash;
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, _key, _key == null ? 0 : _key.Length, BCryptCreateHashFlags.None);
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, _key, _key == null ? 0 : _key.Length, flags);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
 

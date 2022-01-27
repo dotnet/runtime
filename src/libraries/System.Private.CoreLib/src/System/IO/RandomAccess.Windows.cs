@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Strategies;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -17,19 +18,25 @@ namespace System.IO
     {
         private static readonly IOCompletionCallback s_callback = AllocateCallback();
 
-        // TODO: Use SystemPageSize directly when #57442 is fixed.
-        private static readonly int s_cachedPageSize = Environment.SystemPageSize;
-
-        internal static unsafe long GetFileLength(SafeFileHandle handle)
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length)
         {
-            Interop.Kernel32.FILE_STANDARD_INFO info;
-
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(handle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+            var eofInfo = new Interop.Kernel32.FILE_END_OF_FILE_INFO
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
-            }
+                EndOfFile = length
+            };
 
-            return info.EndOfFile;
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                handle,
+                Interop.Kernel32.FileEndOfFileInfo,
+                &eofInfo,
+                (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
+            {
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                throw errorCode == Interop.Errors.ERROR_INVALID_PARAMETER
+                    ? new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_FileLengthTooBig)
+                    : Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+            }
         }
 
         internal static unsafe int ReadAtOffset(SafeFileHandle handle, Span<byte> buffer, long fileOffset)
@@ -55,8 +62,8 @@ namespace System.IO
                         // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
                         // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
                         return numBytesRead;
-                    case Interop.Errors.ERROR_BROKEN_PIPE:
-                        // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                    case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                    case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
                         return 0;
                     default:
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
@@ -73,7 +80,7 @@ namespace System.IO
 
             try
             {
-                overlapped = GetNativeOverlappedForAsyncHandle(handle.ThreadPoolBinding!, fileOffset, resetEvent);
+                overlapped = GetNativeOverlappedForAsyncHandle(handle, fileOffset, resetEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -102,6 +109,7 @@ namespace System.IO
                     {
                         case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
@@ -171,7 +179,7 @@ namespace System.IO
 
             try
             {
-                overlapped = GetNativeOverlappedForAsyncHandle(handle.ThreadPoolBinding!, fileOffset, resetEvent);
+                overlapped = GetNativeOverlappedForAsyncHandle(handle, fileOffset, resetEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -274,6 +282,7 @@ namespace System.IO
 
                         case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
                         case Interop.Errors.ERROR_BROKEN_PIPE:
+                        case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
                             // EOF on a pipe. Callback will not be called.
                             // We clear the overlapped status bit for this special case (failure
                             // to do so looks like we are freeing a pending overlapped later).
@@ -437,23 +446,21 @@ namespace System.IO
         // The pinned MemoryHandles and the pointer to the segments must be cleaned-up
         // with the CleanupScatterGatherBuffers method.
         private static unsafe bool TryPrepareScatterGatherBuffers<T, THandler>(IReadOnlyList<T> buffers,
-            THandler handler, out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
-            where THandler: struct, IMemoryHandler<T>
+            THandler handler, [NotNullWhen(true)] out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes)
+            where THandler : struct, IMemoryHandler<T>
         {
-            int pageSize = s_cachedPageSize;
+            int pageSize = Environment.SystemPageSize;
             Debug.Assert(BitOperations.IsPow2(pageSize), "Page size is not a power of two.");
             // We take advantage of the fact that the page size is
             // a power of two to avoid an expensive modulo operation.
             long alignedAtPageSizeMask = pageSize - 1;
 
             int buffersCount = buffers.Count;
-            handlesToDispose = new MemoryHandle[buffersCount];
+            handlesToDispose = null;
             segmentsPtr = IntPtr.Zero;
             totalBytes = 0;
 
-            // "The array must contain enough elements to store nNumberOfBytesToWrite bytes of data, and one element for the terminating NULL. "
-            long* segments = (long*) NativeMemory.Alloc((nuint)(buffersCount + 1), sizeof(long));
-            segments[buffersCount] = 0;
+            long* segments = null;
 
             bool success = false;
             try
@@ -469,36 +476,55 @@ namespace System.IO
                         return false;
                     }
 
-                    MemoryHandle handle = handlesToDispose[i] = handler.Pin(in buffer);
-                    long ptr = segments[i] = (long)handle.Pointer;
+                    MemoryHandle handle = handler.Pin(in buffer);
+                    long ptr = (long)handle.Pointer;
                     if ((ptr & alignedAtPageSizeMask) != 0)
                     {
+                        handle.Dispose();
                         return false;
                     }
+
+                    // We avoid allocations if there are no
+                    // buffers or the first one is unacceptable.
+                    (handlesToDispose ??= new MemoryHandle[buffersCount])[i] = handle;
+                    if (segments == null)
+                    {
+                        // "The array must contain enough elements to store nNumberOfBytesToWrite
+                        // bytes of data, and one element for the terminating NULL."
+                        segments = (long*)NativeMemory.Alloc((nuint)buffersCount + 1, sizeof(long));
+                        segments[buffersCount] = 0;
+                    }
+                    segments[i] = ptr;
                 }
 
                 segmentsPtr = (IntPtr)segments;
                 totalBytes = (int)totalBytes64;
                 success = true;
-                return true;
+                return handlesToDispose != null;
             }
             finally
             {
                 if (!success)
                 {
-                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr) segments);
+                    CleanupScatterGatherBuffers(handlesToDispose, (IntPtr)segments);
                 }
             }
         }
 
-        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[] handlesToDispose, IntPtr segmentsPtr)
+        private static unsafe void CleanupScatterGatherBuffers(MemoryHandle[]? handlesToDispose, IntPtr segmentsPtr)
         {
-            foreach (MemoryHandle handle in handlesToDispose)
+            if (handlesToDispose != null)
             {
-                handle.Dispose();
+                foreach (MemoryHandle handle in handlesToDispose)
+                {
+                    handle.Dispose();
+                }
             }
 
-            NativeMemory.Free((void*) segmentsPtr);
+            if (segmentsPtr != IntPtr.Zero)
+            {
+                NativeMemory.Free((void*)segmentsPtr);
+            }
         }
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
@@ -510,7 +536,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(MemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return ReadScatterAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -607,7 +633,7 @@ namespace System.IO
             }
 
             if (CanUseScatterGatherWindowsAPIs(handle)
-                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[] handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
+                && TryPrepareScatterGatherBuffers(buffers, default(ReadOnlyMemoryHandler), out MemoryHandle[]? handlesToDispose, out IntPtr segmentsPtr, out int totalBytes))
             {
                 return WriteGatherAtOffsetSingleSyscallAsync(handle, handlesToDispose, segmentsPtr, fileOffset, totalBytes, cancellationToken);
             }
@@ -671,25 +697,26 @@ namespace System.IO
 
         private static async ValueTask WriteGatherAtOffsetMultipleSyscallsAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset, CancellationToken cancellationToken)
         {
-            long bytesWritten = 0;
             int buffersCount = buffers.Count;
             for (int i = 0; i < buffersCount; i++)
             {
                 ReadOnlyMemory<byte> rom = buffers[i];
-                await WriteAtOffsetAsync(handle, rom, fileOffset + bytesWritten, cancellationToken).ConfigureAwait(false);
-                bytesWritten += rom.Length;
+                await WriteAtOffsetAsync(handle, rom, fileOffset, cancellationToken).ConfigureAwait(false);
+                fileOffset += rom.Length;
             }
         }
 
-        private static unsafe NativeOverlapped* GetNativeOverlappedForAsyncHandle(ThreadPoolBoundHandle threadPoolBinding, long fileOffset, CallbackResetEvent resetEvent)
+        private static unsafe NativeOverlapped* GetNativeOverlappedForAsyncHandle(SafeFileHandle handle, long fileOffset, CallbackResetEvent resetEvent)
         {
             // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
             // to allocate a native overlapped and provide a valid callback.
-            NativeOverlapped* result = threadPoolBinding.AllocateNativeOverlapped(s_callback, resetEvent, null);
+            NativeOverlapped* result = handle.ThreadPoolBinding!.AllocateNativeOverlapped(s_callback, resetEvent, null);
 
-            // For pipes the offsets are ignored by the OS
-            result->OffsetLow = unchecked((int)fileOffset);
-            result->OffsetHigh = (int)(fileOffset >> 32);
+            if (handle.CanSeek)
+            {
+                result->OffsetLow = unchecked((int)fileOffset);
+                result->OffsetHigh = (int)(fileOffset >> 32);
+            }
 
             // From https://docs.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
             // "If the hEvent member of the OVERLAPPED structure is NULL, the system uses the state of the hFile handle to signal when the operation has been completed.
@@ -726,6 +753,18 @@ namespace System.IO
                 state.FreeNativeOverlapped(pOverlapped);
             }
         }
+
+        // From https://docs.microsoft.com/en-us/windows/win32/fileio/file-buffering:
+        // "File access sizes, including the optional file offset in the OVERLAPPED structure,
+        // if specified, must be for a number of bytes that is an integer multiple of the volume sector size."
+        // So if buffer and physical sector size is 4096 and the file size is 4097:
+        // the read from offset=0 reads 4096 bytes
+        // the read from offset=4096 reads 1 byte
+        // the read from offset=4097 fails with ERROR_INVALID_PARAMETER (the offset is not a multiple of sector size)
+        // Based on feedback received from customers (https://github.com/dotnet/runtime/issues/62851),
+        // it was decided to not throw, but just return 0.
+        private static bool IsEndOfFileForNoBuffering(SafeFileHandle fileHandle, long fileOffset)
+            => fileHandle.IsNoBuffering && fileHandle.CanSeek && fileOffset >= fileHandle.GetFileLength();
 
         // We need to store the reference count (see the comment in FreeNativeOverlappedIfItIsSafe) and an EventHandle to signal the completion.
         // We could keep these two things separate, but since ManualResetEvent is sealed and we want to avoid any extra allocations, this type has been created.

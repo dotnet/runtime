@@ -52,7 +52,7 @@ emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoType *int_type = mono_get_int_type ();
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			*conv_arg_type = int_type;
 		else
 			*conv_arg_type = mono_marshal_boolean_conv_in_get_local_type (spec, NULL);
@@ -60,7 +60,7 @@ emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		MonoClass* conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
 		else
 			*conv_arg_type = m_class_get_byval_arg (conv_arg_class);
@@ -199,7 +199,7 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 		}
 	}
 
-	if (!sig->ret->byref) {
+	if (!m_type_is_byref (sig->ret)) {
 		switch (sig->ret->type) {
 		case MONO_TYPE_STRING:
 			csig->ret = int_type;
@@ -243,6 +243,11 @@ mb_set_dynamic_noilgen (MonoMethodBuilder *mb)
 
 static void
 mb_emit_exception_noilgen (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
+{
+}
+
+static void
+emit_marshal_directive_exception_noilgen (EmitMarshalContext *m, int argnum, const char* msg)
 {
 }
 
@@ -404,6 +409,7 @@ mono_marshal_noilgen_init (void)
 	cb.mb_set_dynamic = mb_set_dynamic_noilgen;
 	cb.mb_emit_exception = mb_emit_exception_noilgen;
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_noilgen;
+	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_noilgen;
 	cb.mb_emit_byte = mb_emit_byte_noilgen;
 	mono_install_marshal_callbacks (&cb);
 }

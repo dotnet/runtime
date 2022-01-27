@@ -3,12 +3,20 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkDir", SetLastError = true)]
-        internal static extern int MkDir(string path, int mode);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_MkDir", SetLastError = true)]
+        private static partial int MkDir(ref byte path, int mode);
+
+        internal static int MkDir(ReadOnlySpan<char> path, int mode)
+        {
+            using ValueUtf8Converter converter = new(stackalloc byte[DefaultPathBufferSize]);
+            int result = MkDir(ref MemoryMarshal.GetReference(converter.ConvertAndTerminateString(path)), mode);
+            return result;
+        }
     }
 }

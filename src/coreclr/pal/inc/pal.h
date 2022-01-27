@@ -345,6 +345,7 @@ typedef __int64 time_t;
 #define PAL_INITIALIZE_DEBUGGER_EXCEPTIONS          0x10
 #define PAL_INITIALIZE_ENSURE_STACK_SIZE            0x20
 #define PAL_INITIALIZE_REGISTER_SIGNALS             0x40
+#define PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL   0x80
 
 // PAL_Initialize() flags
 #define PAL_INITIALIZE                 (PAL_INITIALIZE_SYNC_THREAD | \
@@ -359,7 +360,8 @@ typedef __int64 time_t;
                                         PAL_INITIALIZE_REGISTER_SIGTERM_HANDLER | \
                                         PAL_INITIALIZE_DEBUGGER_EXCEPTIONS | \
                                         PAL_INITIALIZE_ENSURE_STACK_SIZE | \
-                                        PAL_INITIALIZE_REGISTER_SIGNALS)
+                                        PAL_INITIALIZE_REGISTER_SIGNALS | \
+                                        PAL_INITIALIZE_REGISTER_ACTIVATION_SIGNAL)
 
 typedef DWORD (PALAPI_NOEXPORT *PTHREAD_START_ROUTINE)(LPVOID lpThreadParameter);
 typedef PTHREAD_START_ROUTINE LPTHREAD_START_ROUTINE;
@@ -432,13 +434,22 @@ PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
 
+// Must be the same as the copy in excep.h and the WriteDumpFlags enum in the diagnostics repo
+enum
+{
+    GenerateDumpFlagsNone = 0x00,
+    GenerateDumpFlagsLoggingEnabled = 0x01,
+    GenerateDumpFlagsVerboseLoggingEnabled = 0x02,
+    GenerateDumpFlagsCrashReportEnabled = 0x04
+};
+
 PALIMPORT
 BOOL
 PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN BOOL diag);
+    IN ULONG32 flags);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
@@ -2731,6 +2742,11 @@ PALAPI
 PAL_GetSymbolModuleBase(PVOID symbol);
 
 PALIMPORT
+int
+PALAPI
+PAL_CopyModuleData(PVOID moduleBase, PVOID destinationBufferStart, PVOID destinationBufferEnd);;
+
+PALIMPORT
 LPCSTR
 PALAPI
 PAL_GetLoadLibraryError();
@@ -2742,6 +2758,13 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
     IN SIZE_T dwSize);
+
+PALIMPORT
+void
+PALAPI
+PAL_GetExecutableMemoryAllocatorPreferredRange(
+    OUT PVOID *start,
+    OUT PVOID *end);
 
 PALIMPORT
 LPVOID
@@ -2820,24 +2843,6 @@ VirtualQuery(
 #define CopyMemory memcpy
 #define FillMemory(Destination,Length,Fill) memset((Destination),(Fill),(Length))
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#define LMEM_FIXED          0x0000
-#define LMEM_MOVEABLE       0x0002
-#define LMEM_ZEROINIT       0x0040
-#define LPTR                (LMEM_FIXED | LMEM_ZEROINIT)
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalAlloc(
-       IN UINT uFlags,
-       IN SIZE_T uBytes);
-
-PALIMPORT
-HLOCAL
-PALAPI
-LocalFree(
-      IN HLOCAL hMem);
 
 PALIMPORT
 BOOL
@@ -3234,6 +3239,54 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
     __sync_synchronize();
 #endif // HOST_ARM64
+}
+
+/*++
+Function:
+InterlockedAdd
+
+The InterlockedAdd function adds the value of the specified variable
+with another specified value. The function prevents more than one thread
+from using the same variable simultaneously.
+
+Parameters
+
+lpAddend
+[in/out] Pointer to the variable to add.
+
+lpAddend
+[in] The value to add.
+
+Return Values
+
+The return value is the resulting added value.
+--*/
+EXTERN_C
+PALIMPORT
+inline
+LONG
+PALAPI
+InterlockedAdd(
+    IN OUT LONG volatile *lpAddend,
+    IN LONG value)
+{
+    LONG result = __sync_add_and_fetch(lpAddend, value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
+}
+
+EXTERN_C
+PALIMPORT
+inline
+LONGLONG
+PALAPI
+InterlockedAdd64(
+    IN OUT LONGLONG volatile *lpAddend,
+    IN LONGLONG value)
+{
+    LONGLONG result = __sync_add_and_fetch(lpAddend, value);
+    PAL_ArmInterlockedOperationBarrier();
+    return result;
 }
 
 /*++
@@ -3865,8 +3918,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define wcspbrk       PAL_wcspbrk
 #define wcscmp        PAL_wcscmp
 #define wcsncpy       PAL_wcsncpy
-#define wcstok        PAL_wcstok
-#define wcscspn       PAL_wcscspn
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4056,8 +4107,6 @@ PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcschr(const WCHAR *, WCHAR);
 PALIMPORT DLLEXPORT const WCHAR * __cdecl PAL_wcsrchr(const WCHAR *, WCHAR);
 PALIMPORT WCHAR _WConst_return * __cdecl PAL_wcspbrk(const WCHAR *, const WCHAR *);
 PALIMPORT DLLEXPORT WCHAR _WConst_return * __cdecl PAL_wcsstr(const WCHAR *, const WCHAR *);
-PALIMPORT WCHAR * __cdecl PAL_wcstok(WCHAR *, const WCHAR *);
-PALIMPORT DLLEXPORT size_t __cdecl PAL_wcscspn(const WCHAR *, const WCHAR *);
 PALIMPORT int __cdecl PAL_swprintf(WCHAR *, const WCHAR *, ...);
 PALIMPORT int __cdecl PAL_vswprintf(WCHAR *, const WCHAR *, va_list);
 PALIMPORT int __cdecl PAL_swscanf(const WCHAR *, const WCHAR *, ...);

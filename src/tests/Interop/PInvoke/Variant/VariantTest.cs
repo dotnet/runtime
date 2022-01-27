@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 using static VariantNative;
 
 // Class used to validate the IClassX generation path doesn't fail.
@@ -20,7 +20,7 @@ public class GenerateIClassX
     public DateTime FieldValueType;
 }
 
-partial class Test
+partial class Test_VariantTest
 {
     private const byte NumericValue = 15;
 
@@ -34,33 +34,33 @@ partial class Test
 
     private unsafe static void TestByValue(bool hasComSupport)
     {
-        Assert.IsTrue(Marshal_ByValue_Byte((byte)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_SByte((sbyte)NumericValue, (sbyte)NumericValue));
-        Assert.IsTrue(Marshal_ByValue_Int16((short)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_UInt16((ushort)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_Int32((int)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_UInt32((uint)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_Int64((long)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_UInt64((ulong)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_Single((float)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_Double((double)NumericValue, NumericValue));
-        Assert.IsTrue(Marshal_ByValue_String(StringValue, StringValue));
-        Assert.IsTrue(Marshal_ByValue_String(new BStrWrapper(null), null));
-        Assert.IsTrue(Marshal_ByValue_Char(CharValue, CharValue));
-        Assert.IsTrue(Marshal_ByValue_Boolean(true, true));
-        Assert.IsTrue(Marshal_ByValue_DateTime(DateValue, DateValue));
-        Assert.IsTrue(Marshal_ByValue_Decimal(DecimalValue, DecimalValue));
-        Assert.IsTrue(Marshal_ByValue_Currency(new CurrencyWrapper(DecimalValue), DecimalValue));
-        Assert.IsTrue(Marshal_ByValue_Null(DBNull.Value));
-        Assert.IsTrue(Marshal_ByValue_Missing(System.Reflection.Missing.Value));
-        Assert.IsTrue(Marshal_ByValue_Empty(null));
+        Assert.True(Marshal_ByValue_Byte((byte)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_SByte((sbyte)NumericValue, (sbyte)NumericValue));
+        Assert.True(Marshal_ByValue_Int16((short)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_UInt16((ushort)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_Int32((int)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_UInt32((uint)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_Int64((long)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_UInt64((ulong)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_Single((float)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_Double((double)NumericValue, NumericValue));
+        Assert.True(Marshal_ByValue_String(StringValue, StringValue));
+        Assert.True(Marshal_ByValue_String(new BStrWrapper(null), null));
+        Assert.True(Marshal_ByValue_Char(CharValue, CharValue));
+        Assert.True(Marshal_ByValue_Boolean(true, true));
+        Assert.True(Marshal_ByValue_DateTime(DateValue, DateValue));
+        Assert.True(Marshal_ByValue_Decimal(DecimalValue, DecimalValue));
+        Assert.True(Marshal_ByValue_Currency(new CurrencyWrapper(DecimalValue), DecimalValue));
+        Assert.True(Marshal_ByValue_Null(DBNull.Value));
+        Assert.True(Marshal_ByValue_Missing(System.Reflection.Missing.Value));
+        Assert.True(Marshal_ByValue_Empty(null));
 
         if (hasComSupport)
         {
-            Assert.IsTrue(Marshal_ByValue_Object(new object()));
-            Assert.IsTrue(Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new object())));
-            Assert.IsTrue(Marshal_ByValue_Object(new GenerateIClassX()));
-            Assert.IsTrue(Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new GenerateIClassX())));
+            Assert.True(Marshal_ByValue_Object(new object()));
+            Assert.True(Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new object())));
+            Assert.True(Marshal_ByValue_Object(new GenerateIClassX()));
+            Assert.True(Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new GenerateIClassX())));
         }
         else
         {
@@ -68,14 +68,12 @@ partial class Test
                     () =>
                     {
                         Marshal_ByValue_Object(new object());
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                    });
             Assert.Throws<NotSupportedException>(
                     () =>
                     {
                         Marshal_ByValue_Object_IUnknown(new UnknownWrapper(new object()));
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                    });
         }
 
         Assert.Throws<ArgumentException>(() => Marshal_ByValue_Invalid(TimeSpan.Zero));
@@ -88,78 +86,78 @@ partial class Test
         object obj;
 
         obj = (byte)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_Byte(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_Byte(ref obj, NumericValue));
 
         obj = (sbyte)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_SByte(ref obj, (sbyte)NumericValue));
+        Assert.True(Marshal_ByRef_SByte(ref obj, (sbyte)NumericValue));
 
         obj = (short)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_Int16(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_Int16(ref obj, NumericValue));
 
         obj = (ushort)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_UInt16(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_UInt16(ref obj, NumericValue));
 
         obj = (int)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_Int32(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_Int32(ref obj, NumericValue));
 
         obj = (uint)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_UInt32(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_UInt32(ref obj, NumericValue));
 
         obj = (long)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_Int64(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_Int64(ref obj, NumericValue));
 
         obj = (ulong)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_UInt64(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_UInt64(ref obj, NumericValue));
 
         obj = (float)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_Single(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_Single(ref obj, NumericValue));
 
         obj = (double)NumericValue;
-        Assert.IsTrue(Marshal_ByRef_Double(ref obj, NumericValue));
+        Assert.True(Marshal_ByRef_Double(ref obj, NumericValue));
 
         obj = StringValue;
-        Assert.IsTrue(Marshal_ByRef_String(ref obj, StringValue));
+        Assert.True(Marshal_ByRef_String(ref obj, StringValue));
 
         obj = new BStrWrapper(null);
-        Assert.IsTrue(Marshal_ByRef_String(ref obj, null));
+        Assert.True(Marshal_ByRef_String(ref obj, null));
 
         obj = CharValue;
-        Assert.IsTrue(Marshal_ByRef_Char(ref obj, CharValue));
+        Assert.True(Marshal_ByRef_Char(ref obj, CharValue));
 
         obj = true;
-        Assert.IsTrue(Marshal_ByRef_Boolean(ref obj, true));
+        Assert.True(Marshal_ByRef_Boolean(ref obj, true));
 
         obj = DateValue;
-        Assert.IsTrue(Marshal_ByRef_DateTime(ref obj, DateValue));
+        Assert.True(Marshal_ByRef_DateTime(ref obj, DateValue));
 
         obj = DecimalValue;
-        Assert.IsTrue(Marshal_ByRef_Decimal(ref obj, DecimalValue));
+        Assert.True(Marshal_ByRef_Decimal(ref obj, DecimalValue));
 
         obj = new CurrencyWrapper(DecimalValue);
-        Assert.IsTrue(Marshal_ByRef_Currency(ref obj, DecimalValue));
+        Assert.True(Marshal_ByRef_Currency(ref obj, DecimalValue));
 
         obj = DBNull.Value;
-        Assert.IsTrue(Marshal_ByRef_Null(ref obj));
+        Assert.True(Marshal_ByRef_Null(ref obj));
 
         obj = System.Reflection.Missing.Value;
-        Assert.IsTrue(Marshal_ByRef_Missing(ref obj));
+        Assert.True(Marshal_ByRef_Missing(ref obj));
 
         obj = null;
-        Assert.IsTrue(Marshal_ByRef_Empty(ref obj));
+        Assert.True(Marshal_ByRef_Empty(ref obj));
 
         if (hasComSupport)
         {
             obj = new object();
-            Assert.IsTrue(Marshal_ByRef_Object(ref obj));
+            Assert.True(Marshal_ByRef_Object(ref obj));
 
             obj = new UnknownWrapper(new object());
-            Assert.IsTrue(Marshal_ByRef_Object_IUnknown(ref obj));
+            Assert.True(Marshal_ByRef_Object_IUnknown(ref obj));
 
             obj = new GenerateIClassX();
-            Assert.IsTrue(Marshal_ByRef_Object(ref obj));
+            Assert.True(Marshal_ByRef_Object(ref obj));
 
             obj = new UnknownWrapper(new GenerateIClassX());
-            Assert.IsTrue(Marshal_ByRef_Object_IUnknown(ref obj));
+            Assert.True(Marshal_ByRef_Object_IUnknown(ref obj));
         }
         else
         {
@@ -168,28 +166,26 @@ partial class Test
                     {
                         obj = new object();
                         Marshal_ByRef_Object(ref obj);
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                    });
             Assert.Throws<NotSupportedException>(
                     () =>
                     {
                         obj = new UnknownWrapper(new object());
                         Marshal_ByRef_Object_IUnknown(ref obj);
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                    });
         }
 
         obj = DecimalValue;
-        Assert.IsTrue(Marshal_ChangeVariantType(ref obj, NumericValue));
-        Assert.IsTrue(obj is int);
-        Assert.AreEqual(NumericValue, (int)obj);
+        Assert.True(Marshal_ChangeVariantType(ref obj, NumericValue));
+        Assert.True(obj is int);
+        Assert.Equal(NumericValue, (int)obj);
     }
 
     private unsafe static void TestOut()
     {
-        Assert.IsTrue(Marshal_Out(out object obj, NumericValue));
-        Assert.IsTrue(obj is int);
-        Assert.AreEqual(NumericValue, (int)obj);
+        Assert.True(Marshal_Out(out object obj, NumericValue));
+        Assert.True(obj is int);
+        Assert.Equal(NumericValue, (int)obj);
     }
 
     private unsafe static void TestFieldByValue(bool hasComSupport)
@@ -197,78 +193,78 @@ partial class Test
         ObjectWrapper wrapper = new ObjectWrapper();
 
         wrapper.value = (byte)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Byte(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_Byte(wrapper, NumericValue));
 
         wrapper.value = (sbyte)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_SByte(wrapper, (sbyte)NumericValue));
+        Assert.True(Marshal_Struct_ByValue_SByte(wrapper, (sbyte)NumericValue));
 
         wrapper.value = (short)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Int16(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_Int16(wrapper, NumericValue));
 
         wrapper.value = (ushort)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_UInt16(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_UInt16(wrapper, NumericValue));
 
         wrapper.value = (int)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Int32(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_Int32(wrapper, NumericValue));
 
         wrapper.value = (uint)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_UInt32(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_UInt32(wrapper, NumericValue));
 
         wrapper.value = (long)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Int64(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_Int64(wrapper, NumericValue));
 
         wrapper.value = (ulong)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_UInt64(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_UInt64(wrapper, NumericValue));
 
         wrapper.value = (float)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Single(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_Single(wrapper, NumericValue));
 
         wrapper.value = (double)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Double(wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByValue_Double(wrapper, NumericValue));
 
         wrapper.value = StringValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_String(wrapper, StringValue));
+        Assert.True(Marshal_Struct_ByValue_String(wrapper, StringValue));
 
         wrapper.value = new BStrWrapper(null);
-        Assert.IsTrue(Marshal_Struct_ByValue_String(wrapper, null));
+        Assert.True(Marshal_Struct_ByValue_String(wrapper, null));
 
         wrapper.value = CharValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Char(wrapper, CharValue));
+        Assert.True(Marshal_Struct_ByValue_Char(wrapper, CharValue));
 
         wrapper.value = true;
-        Assert.IsTrue(Marshal_Struct_ByValue_Boolean(wrapper, true));
+        Assert.True(Marshal_Struct_ByValue_Boolean(wrapper, true));
 
         wrapper.value = DateValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_DateTime(wrapper, DateValue));
+        Assert.True(Marshal_Struct_ByValue_DateTime(wrapper, DateValue));
 
         wrapper.value = DecimalValue;
-        Assert.IsTrue(Marshal_Struct_ByValue_Decimal(wrapper, DecimalValue));
+        Assert.True(Marshal_Struct_ByValue_Decimal(wrapper, DecimalValue));
 
         wrapper.value = new CurrencyWrapper(DecimalValue);
-        Assert.IsTrue(Marshal_Struct_ByValue_Currency(wrapper, DecimalValue));
+        Assert.True(Marshal_Struct_ByValue_Currency(wrapper, DecimalValue));
 
         wrapper.value = DBNull.Value;
-        Assert.IsTrue(Marshal_Struct_ByValue_Null(wrapper));
+        Assert.True(Marshal_Struct_ByValue_Null(wrapper));
 
         wrapper.value = System.Reflection.Missing.Value;
-        Assert.IsTrue(Marshal_Struct_ByValue_Missing(wrapper));
+        Assert.True(Marshal_Struct_ByValue_Missing(wrapper));
 
         wrapper.value = null;
-        Assert.IsTrue(Marshal_Struct_ByValue_Empty(wrapper));
+        Assert.True(Marshal_Struct_ByValue_Empty(wrapper));
 
         if (hasComSupport)
         {
             wrapper.value = new object();
-            Assert.IsTrue(Marshal_Struct_ByValue_Object(wrapper));
+            Assert.True(Marshal_Struct_ByValue_Object(wrapper));
 
             wrapper.value = new UnknownWrapper(new object());
-            Assert.IsTrue(Marshal_Struct_ByValue_Object_IUnknown(wrapper));
+            Assert.True(Marshal_Struct_ByValue_Object_IUnknown(wrapper));
 
             wrapper.value = new GenerateIClassX();
-            Assert.IsTrue(Marshal_Struct_ByValue_Object(wrapper));
+            Assert.True(Marshal_Struct_ByValue_Object(wrapper));
 
             wrapper.value = new UnknownWrapper(new GenerateIClassX());
-            Assert.IsTrue(Marshal_Struct_ByValue_Object_IUnknown(wrapper));
+            Assert.True(Marshal_Struct_ByValue_Object_IUnknown(wrapper));
         }
         else
         {
@@ -277,15 +273,13 @@ partial class Test
                 {
                     wrapper.value = new object();
                     Marshal_Struct_ByValue_Object(wrapper);
-                },
-                "Built-in COM has been disabled via a feature switch");
+                });
             Assert.Throws<NotSupportedException>(
                 () =>
                 {
                     wrapper.value = new UnknownWrapper(new object());
                     Marshal_Struct_ByValue_Object_IUnknown(wrapper);
-                },
-                "Built-in COM has been disabled via a feature switch");
+                });
         }
     }
 
@@ -294,78 +288,78 @@ partial class Test
         ObjectWrapper wrapper = new ObjectWrapper();
 
         wrapper.value = (byte)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Byte(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_Byte(ref wrapper, NumericValue));
 
         wrapper.value = (sbyte)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_SByte(ref wrapper, (sbyte)NumericValue));
+        Assert.True(Marshal_Struct_ByRef_SByte(ref wrapper, (sbyte)NumericValue));
 
         wrapper.value = (short)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Int16(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_Int16(ref wrapper, NumericValue));
 
         wrapper.value = (ushort)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_UInt16(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_UInt16(ref wrapper, NumericValue));
 
         wrapper.value = (int)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Int32(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_Int32(ref wrapper, NumericValue));
 
         wrapper.value = (uint)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_UInt32(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_UInt32(ref wrapper, NumericValue));
 
         wrapper.value = (long)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Int64(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_Int64(ref wrapper, NumericValue));
 
         wrapper.value = (ulong)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_UInt64(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_UInt64(ref wrapper, NumericValue));
 
         wrapper.value = (float)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Single(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_Single(ref wrapper, NumericValue));
 
         wrapper.value = (double)NumericValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Double(ref wrapper, NumericValue));
+        Assert.True(Marshal_Struct_ByRef_Double(ref wrapper, NumericValue));
 
         wrapper.value = StringValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_String(ref wrapper, StringValue));
+        Assert.True(Marshal_Struct_ByRef_String(ref wrapper, StringValue));
 
         wrapper.value = new BStrWrapper(null);
-        Assert.IsTrue(Marshal_Struct_ByRef_String(ref wrapper, null));
+        Assert.True(Marshal_Struct_ByRef_String(ref wrapper, null));
 
         wrapper.value = CharValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Char(ref wrapper, CharValue));
+        Assert.True(Marshal_Struct_ByRef_Char(ref wrapper, CharValue));
 
         wrapper.value = true;
-        Assert.IsTrue(Marshal_Struct_ByRef_Boolean(ref wrapper, true));
+        Assert.True(Marshal_Struct_ByRef_Boolean(ref wrapper, true));
 
         wrapper.value = DateValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_DateTime(ref wrapper, DateValue));
+        Assert.True(Marshal_Struct_ByRef_DateTime(ref wrapper, DateValue));
 
         wrapper.value = DecimalValue;
-        Assert.IsTrue(Marshal_Struct_ByRef_Decimal(ref wrapper, DecimalValue));
+        Assert.True(Marshal_Struct_ByRef_Decimal(ref wrapper, DecimalValue));
 
         wrapper.value = new CurrencyWrapper(DecimalValue);
-        Assert.IsTrue(Marshal_Struct_ByRef_Currency(ref wrapper, DecimalValue));
+        Assert.True(Marshal_Struct_ByRef_Currency(ref wrapper, DecimalValue));
 
         wrapper.value = DBNull.Value;
-        Assert.IsTrue(Marshal_Struct_ByRef_Null(ref wrapper));
+        Assert.True(Marshal_Struct_ByRef_Null(ref wrapper));
 
         wrapper.value = System.Reflection.Missing.Value;
-        Assert.IsTrue(Marshal_Struct_ByRef_Missing(ref wrapper));
+        Assert.True(Marshal_Struct_ByRef_Missing(ref wrapper));
 
         wrapper.value = null;
-        Assert.IsTrue(Marshal_Struct_ByRef_Empty(ref wrapper));
+        Assert.True(Marshal_Struct_ByRef_Empty(ref wrapper));
 
         if (hasComSupport)
         {
             wrapper.value = new object();
-            Assert.IsTrue(Marshal_Struct_ByRef_Object(ref wrapper));
+            Assert.True(Marshal_Struct_ByRef_Object(ref wrapper));
 
             wrapper.value = new UnknownWrapper(new object());
-            Assert.IsTrue(Marshal_Struct_ByRef_Object_IUnknown(ref wrapper));
+            Assert.True(Marshal_Struct_ByRef_Object_IUnknown(ref wrapper));
 
             wrapper.value = new GenerateIClassX();
-            Assert.IsTrue(Marshal_Struct_ByRef_Object(ref wrapper));
+            Assert.True(Marshal_Struct_ByRef_Object(ref wrapper));
 
             wrapper.value = new UnknownWrapper(new GenerateIClassX());
-            Assert.IsTrue(Marshal_Struct_ByRef_Object_IUnknown(ref wrapper));
+            Assert.True(Marshal_Struct_ByRef_Object_IUnknown(ref wrapper));
         }
         else
         {
@@ -374,15 +368,13 @@ partial class Test
                     {
                         wrapper.value = new object();
                         Marshal_Struct_ByRef_Object(ref wrapper);
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                    });
             Assert.Throws<NotSupportedException>(
                     () =>
                     {
                         wrapper.value = new UnknownWrapper(new object());
                         Marshal_Struct_ByRef_Object_IUnknown(ref wrapper);
-                    },
-                    "Built-in COM has been disabled via a feature switch");
+                    });
         }
     }
 }
