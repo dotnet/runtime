@@ -29,13 +29,13 @@
     See also eng\testing\WasmRunnerTemplate.sh
     -->
   <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-    <SetScriptCommands Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
+    <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="export SCENARIO=$(Scenario)" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-    <SetScriptCommands Condition="'$(Scenario)' != ''" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
+    <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="set &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="set &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
@@ -47,7 +47,8 @@
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
 
-    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
+    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(Scenario)' != 'BuildWasmApps' and '$(WasmMainAssemblyFileName)' == ''">--run WasmTestRunner.dll $(AssemblyName).dll</_AppArgs>
+    <_AppArgs Condition="'$(IsFunctionalTest)' != 'true' and '$(WasmMainAssemblyFileName)' != ''">--run $(WasmMainAssemblyFileName)</_AppArgs>
     <_AppArgs Condition="'$(IsFunctionalTest)' == 'true'">--run $(AssemblyName).dll</_AppArgs>
 
     <_AppArgs Condition="'$(WasmTestAppArgs)' != ''">$(_AppArgs) $(WasmTestAppArgs)</_AppArgs>

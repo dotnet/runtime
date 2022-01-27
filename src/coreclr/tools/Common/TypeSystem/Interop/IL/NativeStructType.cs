@@ -28,7 +28,23 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override string DiagnosticName
+        {
+            get
+            {
+                return "__NativeType__" + ManagedStructType.DiagnosticName;
+            }
+        }
+
         public override string Namespace
+        {
+            get
+            {
+                return "Internal.CompilerGenerated";
+            }
+        }
+
+        public override string DiagnosticNamespace
         {
             get
             {

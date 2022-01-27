@@ -51,7 +51,7 @@
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     #define USE_LAZY_PREFERRED_RANGE       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64)
 
 #if defined(HOST_UNIX)
     // In PAL we have a smechanism that reserves memory on start up that is
@@ -165,9 +165,7 @@
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
 
-#if defined(FEATURE_CORESYSTEM)
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-#endif // defined(FEATURE_CORESYSTEM)
 
 // If defined, support interpretation.
 

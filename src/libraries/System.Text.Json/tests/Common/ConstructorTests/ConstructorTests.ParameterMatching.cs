@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -1321,6 +1322,206 @@ namespace System.Text.Json.Serialization.Tests
             public ClassWithIgnoredSameType Prop { get; }
 
             public ClassWithIgnoredSameType(ClassWithIgnoredSameType prop) { }
+        }
+
+        [Fact]
+        public void StructWithPropertyInit_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(42, obj.A);
+            Assert.Equal(0, obj.B);
+        }
+
+        [Fact]
+        public void StructWithPropertyInit_OverrideInitedProperty()
+        {
+            string json = @"{""A"":43}";
+            var obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(43, obj.A);
+            Assert.Equal(0, obj.B);
+            
+            json = @"{""A"":0,""B"":44}";
+            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(0, obj.A);
+            Assert.Equal(44, obj.B);
+            
+            json = @"{""B"":45}";
+            obj = JsonSerializer.Deserialize<StructWithPropertyInit>(json);
+            Assert.Equal(42, obj.A); // JSON doesn't set A property so it's expected to be 42
+            Assert.Equal(45, obj.B);
+        }
+
+        public struct StructWithPropertyInit
+        {
+            public long A { get; set; } = 42;
+            public long B { get; set; }
+        }
+
+        [Fact]
+        public void StructWithFieldInit_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = JsonSerializer.Deserialize<StructWithFieldInit>(json);
+            Assert.Equal(0, obj.A);
+            Assert.Equal(42, obj.B);
+        }
+
+        public struct StructWithFieldInit
+        {
+            public long A;
+            public long B = 42;
+        }
+
+        [Fact]
+        public void StructWithExplicitParameterlessCtor_DeseralizeEmptyObject()
+        {
+            string json = @"{}";
+            var obj = JsonSerializer.Deserialize<StructWithExplicitParameterlessCtor>(json);
+            Assert.Equal(42, obj.A);
+        }
+
+        public struct StructWithExplicitParameterlessCtor
+        {
+            public long A;
+            public StructWithExplicitParameterlessCtor() => A = 42;
+        }
+
+        public async Task TestClassWithDefaultCtorParams()
+        {
+            ClassWithDefaultCtorParams obj = new ClassWithDefaultCtorParams(
+                new Point_2D_Struct_WithAttribute(1, 2),
+                DayOfWeek.Sunday,
+                (DayOfWeek)(-2),
+                (DayOfWeek)19,
+                BindingFlags.CreateInstance | BindingFlags.FlattenHierarchy,
+                SampleEnumUInt32.MinZero,
+                "Hello world!",
+                null,
+                "xzy",
+                'c',
+                ' ',
+                23,
+                4,
+                -40,
+                double.Epsilon,
+                23,
+                4,
+                -40,
+                float.MinValue,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10);
+
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithDefaultCtorParams>(json);
+            JsonTestHelper.AssertJsonEqual(json, await JsonSerializerWrapperForString.SerializeWrapper(obj));
+        }
+
+        public class ClassWithDefaultCtorParams
+        {
+            public Point_2D_Struct_WithAttribute Struct { get; }
+            public DayOfWeek Enum1 { get; }
+            public DayOfWeek Enum2 { get; }
+            public DayOfWeek Enum3 { get; }
+            public BindingFlags Enum4 { get; }
+            public SampleEnumUInt32 Enum5 { get; }
+            public string Str1 { get; }
+            public string Str2 { get; }
+            public string Str3 { get; }
+            public char Char1 { get; }
+            public char Char2 { get; }
+            public double Double1 { get; }
+            public double Double2 { get; }
+            public double Double3 { get; }
+            public double Double4 { get; }
+            public double Double5 { get; }
+            public float Float1 { get; }
+            public float Float2 { get; }
+            public float Float3 { get; }
+            public float Float4 { get; }
+            public float Float5 { get; }
+            public byte Byte { get; }
+            public decimal Decimal1 { get; }
+            public decimal Decimal2 { get; }
+            public short Short { get; }
+            public sbyte Sbyte { get; }
+            public int Int { get; }
+            public long Long { get; }
+            public ushort UShort { get; }
+            public uint UInt { get; }
+            public ulong ULong { get; }
+
+            public ClassWithDefaultCtorParams(
+                Point_2D_Struct_WithAttribute @struct = default,
+                DayOfWeek enum1 = default,
+                DayOfWeek enum2 = DayOfWeek.Sunday,
+                DayOfWeek enum3 = DayOfWeek.Sunday | DayOfWeek.Monday,
+                BindingFlags enum4 = BindingFlags.CreateInstance | BindingFlags.ExactBinding,
+                SampleEnumUInt32 enum5 = SampleEnumUInt32.MinZero,
+                string str1 = "abc",
+                string str2 = "",
+                string str3 = "\n\r⁉️\'\"\u200D\f\t\v\0\a\b\\\'\"",
+                char char1 = 'a',
+                char char2 = '\u200D',
+                double double1 = double.NegativeInfinity,
+                double double2 = double.PositiveInfinity,
+                double double3 = double.NaN,
+                double double4 = double.MaxValue,
+                double double5 = double.Epsilon,
+                float float1 = float.NegativeInfinity,
+                float float2 = float.PositiveInfinity,
+                float float3 = float.NaN,
+                float float4 = float.MinValue,
+                float float5 = float.Epsilon,
+                byte @byte = byte.MinValue,
+                decimal @decimal1 = decimal.MinValue,
+                decimal @decimal2 = decimal.MaxValue,
+                short @short = short.MinValue,
+                sbyte @sbyte = sbyte.MaxValue,
+                int @int = int.MinValue,
+                long @long = long.MaxValue,
+                ushort @ushort = ushort.MinValue,
+                uint @uint = uint.MaxValue,
+                ulong @ulong = ulong.MinValue)
+            {
+                Struct = @struct;
+                Enum1 = enum1;
+                Enum2 = enum2;
+                Enum3 = enum3;
+                Enum4 = enum4;
+                Enum5 = enum5;
+                Str1 = str1;
+                Str2 = str2;
+                Str3 = str3;
+                Char1 = char1;
+                Char2 = char2;
+                Double1 = double1;
+                Double2 = double2;
+                Double3 = double3;
+                Double4 = double4;
+                Float1 = float1;
+                Float2 = float2;
+                Float3 = float3;
+                Float4 = float4;
+                Byte = @byte;
+                Decimal1 = @decimal1;
+                Decimal2 = @decimal2;
+                Short = @short;
+                Sbyte = @sbyte;
+                Int = @int;
+                Long = @long;
+                UShort = @ushort;
+                UInt = @uint;
+                ULong = @ulong;
+            }
         }
     }
 }

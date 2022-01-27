@@ -9,6 +9,7 @@
     <RuntimeIdentifiers>linux-x64;win-x64;osx-x64</RuntimeIdentifiers>
     <Configurations>Debug;Release;Checked</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <Target Name="GenerateReproProjectResponseFile"

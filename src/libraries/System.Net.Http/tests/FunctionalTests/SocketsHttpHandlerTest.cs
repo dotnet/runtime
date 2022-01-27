@@ -837,8 +837,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted()
+        [InlineData(false)]
+        [InlineData(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted(bool responseHasContentLength)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -850,7 +852,14 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
+                if (responseHasContentLength)
+                {
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: new[] { new HttpHeaderData("Content-Length", DataBytes.Length.ToString()) });
+                }
+                else
+                {
+                    await connection.SendDefaultResponseHeadersAsync(streamId);
+                }
 
                 // Response data, missing Trailers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
@@ -888,8 +897,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-        public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available()
+        [InlineData(false)]
+        [InlineData(true)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available(bool responseHasContentLength)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -901,7 +912,14 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
 
                 // Response header.
-                await connection.SendDefaultResponseHeadersAsync(streamId);
+                if (responseHasContentLength)
+                {
+                    await connection.SendResponseHeadersAsync(streamId, endStream: false, headers: new[] { new HttpHeaderData("Content-Length", DataBytes.Length.ToString()) });
+                }
+                else
+                {
+                    await connection.SendDefaultResponseHeadersAsync(streamId);
+                }
 
                 // Response data, missing Trailers.
                 await connection.WriteFrameAsync(MakeDataFrame(streamId, DataBytes));
@@ -2236,9 +2254,9 @@ namespace System.Net.Http.Functional.Tests
 
                 await Task.WhenAll(handleRequestTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
-                Assert.Equal(handleRequestTasks[0].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(handleRequestTasks[1].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(handleRequestTasks[2].Result.Count, MaxConcurrentStreams);
+                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[0].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[1].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, handleRequestTasks[2].Result.Count);
 
                 await connection0.ShutdownIgnoringErrorsAsync(handleRequestTasks[0].Result.LastStreamId).ConfigureAwait(false);
                 await connection2.ShutdownIgnoringErrorsAsync(handleRequestTasks[2].Result.LastStreamId).ConfigureAwait(false);
@@ -2259,9 +2277,9 @@ namespace System.Net.Http.Functional.Tests
 
                 await Task.WhenAll(finalHandleTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
-                Assert.Equal(finalHandleTasks[0].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(finalHandleTasks[1].Result.Count, MaxConcurrentStreams);
-                Assert.Equal(finalHandleTasks[2].Result.Count, MaxConcurrentStreams);
+                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[0].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[1].Result.Count);
+                Assert.Equal(MaxConcurrentStreams, finalHandleTasks[2].Result.Count);
 
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 

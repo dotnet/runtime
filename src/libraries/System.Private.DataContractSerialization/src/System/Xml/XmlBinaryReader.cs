@@ -710,9 +710,8 @@ namespace System.Xml
 
         private void ReadAttributes2()
         {
-            int startOffset = 0;
             if (_buffered)
-                startOffset = BufferReader.Offset;
+                _ = BufferReader.Offset;
 
             while (true)
             {
@@ -756,28 +755,28 @@ namespace System.Xml
                         nameSpace = AddNamespace();
                         ReadName(nameSpace.Prefix);
                         ReadName(nameSpace.Uri);
-                        attributeNode = AddXmlnsAttribute(nameSpace);
+                        AddXmlnsAttribute(nameSpace);
                         break;
                     case XmlBinaryNodeType.ShortXmlnsAttribute:
                         SkipNodeType();
                         nameSpace = AddNamespace();
                         nameSpace.Prefix.SetValue(PrefixHandleType.Empty);
                         ReadName(nameSpace.Uri);
-                        attributeNode = AddXmlnsAttribute(nameSpace);
+                        AddXmlnsAttribute(nameSpace);
                         break;
                     case XmlBinaryNodeType.ShortDictionaryXmlnsAttribute:
                         SkipNodeType();
                         nameSpace = AddNamespace();
                         nameSpace.Prefix.SetValue(PrefixHandleType.Empty);
                         ReadDictionaryName(nameSpace.Uri);
-                        attributeNode = AddXmlnsAttribute(nameSpace);
+                        AddXmlnsAttribute(nameSpace);
                         break;
                     case XmlBinaryNodeType.DictionaryXmlnsAttribute:
                         SkipNodeType();
                         nameSpace = AddNamespace();
                         ReadName(nameSpace.Prefix);
                         ReadDictionaryName(nameSpace.Uri);
-                        attributeNode = AddXmlnsAttribute(nameSpace);
+                        AddXmlnsAttribute(nameSpace);
                         break;
                     case XmlBinaryNodeType.PrefixDictionaryAttributeA:
                     case XmlBinaryNodeType.PrefixDictionaryAttributeB:

@@ -948,6 +948,13 @@ inline BOOL MethodTable::HasExplicitSize()
 }
 
 //==========================================================================================
+inline BOOL MethodTable::IsAutoLayoutOrHasAutoLayoutField()
+{
+    LIMITED_METHOD_CONTRACT;
+    return GetClass()->IsAutoLayoutOrHasAutoLayoutField();
+}
+
+//==========================================================================================
 inline DWORD MethodTable::GetPerInstInfoSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;

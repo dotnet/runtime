@@ -204,7 +204,7 @@ void MDInfo::InitSigBuffer()
 
 // helper to append a string into the signature buffer. If size of signature buffer is not big enough,
 // we will grow it.
-HRESULT MDInfo::AddToSigBuffer(__in_z __in const char *string)
+HRESULT MDInfo::AddToSigBuffer(_In_z_ const char *string)
 {
     HRESULT     hr;
     size_t LL = strlen((LPSTR)m_sigBuf.Ptr()) + strlen(string) + 1;
@@ -368,7 +368,7 @@ void MDInfo::DisplayMD()
     WriteLine("===========================================================");
 } // MDVEHandlerClass()
 
-int MDInfo::WriteLine(__in_z __in const char *str)
+int MDInfo::WriteLine(_In_z_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -377,7 +377,7 @@ int MDInfo::WriteLine(__in_z __in const char *str)
     return count;
 } // int MDInfo::WriteLine()
 
-int MDInfo::Write(__in_z __in const char *str)
+int MDInfo::Write(_In_z_ const char *str)
 {
     ULONG32 count = (ULONG32) strlen(str);
 
@@ -385,7 +385,7 @@ int MDInfo::Write(__in_z __in const char *str)
     return count;
 } // int MDInfo::Write()
 
-int MDInfo::VWriteLine(__in_z __in const char *str, ...)
+int MDInfo::VWriteLine(_In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -397,7 +397,7 @@ int MDInfo::VWriteLine(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWriteLine()
 
-int MDInfo::VWrite(__in_z __in const char *str, ...)
+int MDInfo::VWrite(_In_z_ const char *str, ...)
 {
     va_list marker;
     int     count;
@@ -408,7 +408,7 @@ int MDInfo::VWrite(__in_z __in const char *str, ...)
     return count;
 } // int MDInfo::VWrite()
 
-int MDInfo::VWriteMarker(__in_z __in const char *str, va_list marker)
+int MDInfo::VWriteMarker(_In_z_ const char *str, va_list marker)
 {
     HRESULT hr;
     int count = -1;
@@ -561,7 +561,7 @@ const char *MDInfo::TokenTypeName(mdToken inToken)
 // Prints out name of the given memberref
 //
 
-LPCWSTR MDInfo::MemberRefName(mdMemberRef inMemRef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberRefName(mdMemberRef inMemRef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -829,7 +829,7 @@ void MDInfo::DisplaySignatureInfo(mdSignature inSignature)
 // member in wide characters
 //
 
-LPCWSTR MDInfo::MemberName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1312,7 +1312,7 @@ void MDInfo::DisplayGenericParamInfo(mdGenericParam tkParam, const char *prefix)
     DisplayCustomAttributes(tkParam, newprefix);
 }
 
-LPCWSTR MDInfo::TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TokenName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     LPCUTF8     pName;                  // Token name in UTF8.
 
@@ -1329,7 +1329,7 @@ LPCWSTR MDInfo::TokenName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, U
 // prints out name of typeref or typedef
 //
 
-LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     if (RidFromToken(inToken))
     {
@@ -1346,7 +1346,7 @@ LPCWSTR MDInfo::TypeDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR bu
         return W("");
 } // LPCWSTR MDInfo::TypeDeforRefName()
 
-LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     if (RidFromToken(inToken))
     {
@@ -1365,7 +1365,7 @@ LPCWSTR MDInfo::MemberDeforRefName(mdToken inToken, __out_ecount(bufLen) LPWSTR 
 //
 //
 
-LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeDefName(mdTypeDef inTypeDef, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1439,7 +1439,7 @@ void MDInfo::DisplayTypeDefProps(mdTypeDef inTypeDef)
 //  Prints out the name of the given TypeRef
 //
 
-LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, __out_ecount(bufLen) LPWSTR buffer, ULONG bufLen)
+LPCWSTR MDInfo::TypeRefName(mdTypeRef tr, _Out_writes_(bufLen) LPWSTR buffer, ULONG bufLen)
 {
     HRESULT hr;
 
@@ -1543,7 +1543,7 @@ void MDInfo::DisplayMethodSpecInfo(mdMethodSpec ms, const char *preFix)
 // associated with the class.
 //
 
-char *MDInfo::ClassFlags(DWORD flags, __out_ecount(STRING_BUFFER_LEN) char *sFlags)
+char *MDInfo::ClassFlags(DWORD flags, _Out_writes_(STRING_BUFFER_LEN) char *sFlags)
 {
     sFlags[0] = 0;
     ISFLAG(Td, NotPublic);
@@ -2169,7 +2169,7 @@ void MDInfo::DisplayPermissionInfo(mdPermission inPermission, const char *preFix
 
 // simply prints out the given GUID in standard form
 
-LPWSTR MDInfo::GUIDAsString(GUID inGuid, __out_ecount(bufLen) LPWSTR guidString, ULONG bufLen)
+LPWSTR MDInfo::GUIDAsString(GUID inGuid, _Out_writes_(bufLen) LPWSTR guidString, ULONG bufLen)
 {
     StringFromGUID2(inGuid, guidString, bufLen);
     return guidString;

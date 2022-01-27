@@ -34,6 +34,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         [DllImport("libc", SetLastError = true)]
         private static extern int sysconf(int name);
 
+        [DllImport("libc", SetLastError = true)]
+        protected static extern int mkfifo(string path, int mode);
+
         /// <summary>Asserts that the handle's inheritability matches the specified value.</summary>
         protected static void AssertInheritability(SafeHandle handle, HandleInheritability inheritability)
         {

@@ -456,7 +456,6 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 

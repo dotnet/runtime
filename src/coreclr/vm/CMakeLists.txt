@@ -289,7 +289,6 @@ set(GC_HEADERS_DAC
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
-    assemblyname.cpp
     assemblynative.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
@@ -392,7 +391,6 @@ set(VM_HEADERS_WKS
     ${VM_HEADERS_DAC_AND_WKS_COMMON}
     ../inc/jithelpers.h
     appdomainnative.hpp
-    assemblyname.hpp
     assemblynative.hpp
     assemblyspec.hpp
     assemblyspecbase.h
@@ -617,7 +615,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.cpp
         dispparammarshaler.cpp
         mngstdinterfaces.cpp
-        notifyexternals.cpp
         olecontexthelpers.cpp
         runtimecallablewrapper.cpp
         stdinterfaces.cpp
@@ -634,7 +631,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dispatchinfo.h
         dispparammarshaler.h
         mngstdinterfaces.h
-        notifyexternals.h
         olecontexthelpers.h
         runtimecallablewrapper.h
         stdinterfaces.h

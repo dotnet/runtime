@@ -210,7 +210,7 @@ namespace System.Security.Cryptography
                 {
                     if (throwOnNotFound)
                     {
-                        throw new CryptographicException(SR.Format(SR.Cryptography_CSP_NotFound, "Error"));
+                        throw new CryptographicException(SR.Cryptography_CSP_NotFound);
                     }
 
                     return null;
@@ -243,7 +243,7 @@ namespace System.Security.Cryptography
             {
                 if (hr != CapiHelper.S_OK)
                 {
-                    throw new CryptographicException(SR.Format(SR.Cryptography_CSP_NotFound, "Error"));
+                    throw new CryptographicException(SR.Cryptography_CSP_NotFound);
                 }
 
                 object retVal = CapiHelper.GetProviderParameter(safeProvHandle, parameters.KeyNumber, keyParam);

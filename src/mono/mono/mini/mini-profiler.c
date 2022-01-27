@@ -149,7 +149,7 @@ mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 	EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	if (target)
-		EMIT_NEW_METHODCONST (cfg, iargs [2], target); 
+		EMIT_NEW_METHODCONST (cfg, iargs [2], target);
 	else
 		EMIT_NEW_PCONST (cfg, iargs [2], NULL);
 

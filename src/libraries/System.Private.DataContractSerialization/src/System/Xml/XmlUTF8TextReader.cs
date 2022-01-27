@@ -52,15 +52,15 @@ namespace System.Xml
                 /*  8 (.) */
                          CharType.None,
                 /*  9 (.) */
-                         CharType.None|CharType.Comment|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
+                         CharType.None|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
                 /*  A (.) */
-                         CharType.None|CharType.Comment|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
+                         CharType.None|CharType.Comment|CharType.Whitespace|CharType.Text|CharType.SpecialWhitespace,
                 /*  B (.) */
                          CharType.None,
                 /*  C (.) */
                          CharType.None,
                 /*  D (.) */
-                         CharType.None|CharType.Comment|CharType.Comment|CharType.Whitespace,
+                         CharType.None|CharType.Comment|CharType.Whitespace,
                 /*  E (.) */
                          CharType.None,
                 /*  F (.) */
@@ -681,7 +681,7 @@ namespace System.Xml
             int offsetMax;
             byte[] buffer = BufferReader.GetBuffer(out offset, out offsetMax);
 
-            int ch = 0;
+            int ch;
             int anyChar = 0;
             int prefixChar = 0;
             int prefixOffset = offset;
@@ -736,7 +736,6 @@ namespace System.Xml
                 else
                 {
                     anyChar |= 0x80;
-                    ch = 0;
                 }
                 localName.SetValue(localNameOffset, offset - localNameOffset);
                 if (anyChar >= 0x80)
@@ -1192,8 +1191,7 @@ namespace System.Xml
                         else
                         {
                             // Get enough bytes for us to process next character, then go back to top of while loop
-                            int dummy;
-                            BufferReader.GetBuffer(3, out dummy);
+                            BufferReader.GetBuffer(3, out _);
                         }
                     }
                 }
@@ -1411,8 +1409,8 @@ namespace System.Xml
         {
             get
             {
-                int row, column;
-                GetPosition(out row, out column);
+                int row;
+                GetPosition(out row, out _);
                 return row;
             }
         }
@@ -1421,8 +1419,8 @@ namespace System.Xml
         {
             get
             {
-                int row, column;
-                GetPosition(out row, out column);
+                int column;
+                GetPosition(out _, out column);
                 return column;
             }
         }

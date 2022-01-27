@@ -1256,7 +1256,7 @@ HRESULT CordbModule::GetAssembly(ICorDebugAssembly **ppAssembly)
 
 // Public implementation of ICorDebugModule::GetName,
 // wrapper around code:GetNameWorker (which throws).
-HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
@@ -1324,7 +1324,7 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_pa
 // Note:
 //    Filename isn't necessarily the same as the module name in the metadata.
 //
-HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     CONTRACTL
     {
@@ -5169,8 +5169,8 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
 
                 int skipBytes = 0;
 
-#if defined(TARGET_X86) && defined(FEATURE_CORESYSTEM)
-                // Skip nop sleds on x86 coresystem.  The JIT adds these instructions as a security measure,
+#if defined(PSEUDORANDOM_NOP_INSERTION)
+                // Skip nop sleds the JIT adds. These instructions as a security measure,
                 // and incorrectly reports to us the wrong offset of the call instruction.
                 const BYTE nop_opcode = 0x90;
                 while (fetched && nativeBuffer[0] == nop_opcode)

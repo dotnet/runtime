@@ -121,8 +121,6 @@ namespace Microsoft.DotNet.Build.Tasks
             // Escape backtick and question mark characters to avoid running commands instead of echo'ing them.
             string sanitizedRunCommand = command.Replace("`", "\\`")
                                                     .Replace("?", "\\")
-                                                    .Replace("$", "")
-                                                    .Replace("%", "")
                                                     .Replace("\r","")
                                                     .Replace("\n"," ")
                                                     .Replace("&", "^&")

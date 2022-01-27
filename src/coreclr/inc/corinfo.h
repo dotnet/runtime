@@ -186,11 +186,18 @@ TODO: Talk about initializing strutures before use
 
 #include "corhdr.h"
 
-#if !defined(__deref_inout_ecount)
+#if !defined(_In_)
 // Minimum set of SAL annotations so that non Windows builds work
-#define __deref_inout_ecount(size)
-#define __inout_ecount(size)
-#define __out_ecount(size)
+#define _In_
+#define _In_reads_(size)
+#define _Inout_updates_(size)
+#define _Out_
+#define _Out_writes_(size)
+#define _Outptr_
+#define _Outptr_opt_
+#define _Outptr_opt_result_maybenull_
+#define _Outptr_result_z_
+#define _Outptr_result_buffer_(size)
 #endif
 
 #include "jiteeversionguid.h"
@@ -2256,7 +2263,7 @@ public:
     // If fAssembly=TRUE, suffix with a comma and the full assembly qualification
     // return size of representation
     virtual int appendClassName(
-            __deref_inout_ecount(*pnBufLen) char16_t** ppBuf,
+            _Outptr_result_buffer_(*pnBufLen) char16_t** ppBuf,
             int* pnBufLen,
             CORINFO_CLASS_HANDLE    cls,
             bool fNamespace,
@@ -2738,7 +2745,7 @@ public:
     // Returns the size of the message (including terminating null). This can be
     // greater than bufferLength if the buffer is insufficient.
     virtual uint32_t GetErrorMessage(
-            __inout_ecount(bufferLength) char16_t *buffer,
+            _Inout_updates_(bufferLength) char16_t *buffer,
             uint32_t bufferLength
             ) = 0;
 
@@ -2836,7 +2843,7 @@ public:
     virtual size_t findNameOfToken (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             mdToken                     metaTOK,     /* IN  */
-            __out_ecount (FQNameCapacity) char * szFQName, /* OUT */
+            _Out_writes_ (FQNameCapacity) char * szFQName, /* OUT */
             size_t FQNameCapacity  /* IN */
             ) = 0;
 
@@ -3090,12 +3097,6 @@ public:
                     CORINFO_FIELD_HANDLE    field,
                     void                  **ppIndirection = NULL
                     ) = 0;
-
-    // Sets another object to intercept calls to "self" and current method being compiled
-    virtual void setOverride(
-                ICorDynamicInfo             *pOverride,
-                CORINFO_METHOD_HANDLE       currentMethod
-                ) = 0;
 
     // Adds an active dependency from the context method's module to the given module
     // This is internal callback for the EE. JIT should not call it directly.

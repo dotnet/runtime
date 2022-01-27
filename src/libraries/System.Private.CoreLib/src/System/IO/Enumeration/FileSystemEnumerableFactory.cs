@@ -76,7 +76,7 @@ namespace System.IO.Enumeration
                     }
                     else
                     {
-                        if (Path.DirectorySeparatorChar != '\\' && expression.IndexOfAny(s_unixEscapeChars) != -1)
+                        if (Path.DirectorySeparatorChar != '\\' && expression.IndexOfAny(s_unixEscapeChars) >= 0)
                         {
                             // Backslash isn't the default separator, need to escape (e.g. Unix)
                             expression = expression.Replace("\\", "\\\\");

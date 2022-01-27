@@ -236,9 +236,9 @@ namespace System.Net.Http.Headers
 
             // Read range values <from> and <to> in '<unit> <from>-<to>/<length>'
             int fromStartIndex = current;
-            int fromLength = 0;
-            int toStartIndex = 0;
-            int toLength = 0;
+            int fromLength;
+            int toStartIndex;
+            int toLength;
             if (!TryGetRangeLength(input, ref current, out fromLength, out toStartIndex, out toLength))
             {
                 return 0;
@@ -260,7 +260,7 @@ namespace System.Net.Http.Headers
 
             // We may not have a length (e.g. 'bytes 1-2/*'). But if we do, parse the length now.
             int lengthStartIndex = current;
-            int lengthLength = 0;
+            int lengthLength;
             if (!TryGetLengthLength(input, ref current, out lengthLength))
             {
                 return 0;

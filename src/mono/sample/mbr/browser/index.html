@@ -19,7 +19,7 @@
     const App = {
       init: function () {
         const update = BINDING.bind_static_method("[WasmDelta] Sample.Test:Update");
-        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.Sample] Sample.Test:TestMeaning");
+        const testMeaning = BINDING.bind_static_method("[WasmDelta] Sample.Test:TestMeaning");
         const outElement = document.getElementById("out");
         document.getElementById("update").addEventListener("click", function () {
           update();

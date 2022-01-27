@@ -204,7 +204,6 @@ namespace System
                                                 (UriComponents)0);
                     if (_string.Length > ushort.MaxValue)
                     {
-                        err = ParsingError.SizeLimit;
                         return;
                     }
                 }

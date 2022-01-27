@@ -1386,7 +1386,7 @@ inline void SBuffer::ClearOpened()
 }
 #endif
 
-inline void SBuffer::DebugMoveBuffer(__out_bcount(size) BYTE *to, BYTE *from, COUNT_T size)
+inline void SBuffer::DebugMoveBuffer(_Out_writes_bytes_(size) BYTE *to, BYTE *from, COUNT_T size)
 {
     CONTRACT_VOID
     {
@@ -1424,7 +1424,7 @@ inline void SBuffer::DebugMoveBuffer(__out_bcount(size) BYTE *to, BYTE *from, CO
     RETURN;
 }
 
-inline void SBuffer::DebugCopyConstructBuffer(__out_bcount(size) BYTE *to, const BYTE *from, COUNT_T size)
+inline void SBuffer::DebugCopyConstructBuffer(_Out_writes_bytes_(size) BYTE *to, const BYTE *from, COUNT_T size)
 {
     CONTRACT_VOID
     {

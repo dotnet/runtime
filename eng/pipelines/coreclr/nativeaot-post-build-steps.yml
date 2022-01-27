@@ -31,5 +31,5 @@ steps:
         displayName: Run tests in single file mode
 
   - ${{ if eq(parameters.osGroup, 'windows') }}:
-    - script: $(Build.SourcesDirectory)/src/tests/run.sh runnativeaottests nativeaotmultimodule $(buildConfigUpper) ${{ parameters.archType }}
+    - script: $(Build.SourcesDirectory)/src/tests/run.cmd runnativeaottests nativeaotmultimodule $(buildConfigUpper) ${{ parameters.archType }}
       displayName: Run tests in multifile mode

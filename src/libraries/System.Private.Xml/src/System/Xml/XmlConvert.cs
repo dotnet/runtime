@@ -89,8 +89,8 @@ namespace System.Xml
             int copyPosition = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
-            IEnumerator? en = null;
+            MatchCollection? mc;
+            IEnumerator? en;
             if (underscorePos >= 0)
             {
                 if (s_decodeCharPattern == null)
@@ -201,7 +201,7 @@ namespace System.Xml
             int position = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
+            MatchCollection? mc;
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
@@ -396,9 +396,7 @@ namespace System.Xml
                 throw new ArgumentNullException(nameof(name));
             }
 
-            int colonPosition = -1;
-
-            int endPos = ValidateNames.ParseQName(name, 0, out colonPosition);
+            int endPos = ValidateNames.ParseQName(name, 0, out _);
             if (endPos != name.Length)
             {
                 throw CreateException(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, endPos), exceptionType, 0, endPos + 1);
@@ -757,7 +755,7 @@ namespace System.Xml
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
         }
 
-        public static string ToString(DateTime value, string format)
+        public static string ToString(DateTime value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
@@ -795,7 +793,7 @@ namespace System.Xml
             return xsdDateTime.ToString();
         }
 
-        public static string ToString(DateTimeOffset value, string format)
+        public static string ToString(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
@@ -1252,12 +1250,12 @@ namespace System.Xml
             return ToDateTime(s, AllDateTimeFormats);
         }
 
-        public static DateTime ToDateTime(string s, string format)
+        public static DateTime ToDateTime(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             return DateTime.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTime ToDateTime(string s, string[] formats)
+        public static DateTime ToDateTime(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
             return DateTime.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
@@ -1301,7 +1299,7 @@ namespace System.Xml
             return dateTimeOffset;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, string format)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
             if (s == null)
             {
@@ -1310,7 +1308,7 @@ namespace System.Xml
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s, string[] formats)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
             if (s == null)
             {

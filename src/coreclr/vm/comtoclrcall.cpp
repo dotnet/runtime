@@ -32,7 +32,6 @@
 #include "mlinfo.h"
 #include "dbginterface.h"
 #include "sigbuilder.h"
-#include "notifyexternals.h"
 #include "callconvbuilder.hpp"
 #include "comdelegate.h"
 #include "finalizerthread.h"

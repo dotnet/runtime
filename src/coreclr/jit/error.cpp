@@ -490,7 +490,7 @@ void logf(unsigned level, const char* fmt, ...)
     va_end(args);
 }
 
-void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line)
+void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, _In_z_ const char* file, unsigned line)
 {
     const int BUFF_SIZE = 512;
     char      buf1[BUFF_SIZE];

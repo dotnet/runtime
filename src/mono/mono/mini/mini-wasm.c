@@ -40,44 +40,6 @@ struct CallInfo {
 	ArgInfo args [1];
 };
 
-/* Return whenever TYPE represents a vtype with only one scalar member */
-static gboolean
-is_scalar_vtype (MonoType *type)
-{
-	MonoClass *klass;
-	MonoClassField *field;
-	gpointer iter;
-
-	if (!MONO_TYPE_ISSTRUCT (type))
-		return FALSE;
-	klass = mono_class_from_mono_type_internal (type);
-	mono_class_init_internal (klass);
-
-	int size = mono_class_value_size (klass, NULL);
-	if (size == 0 || size >= 8)
-		return FALSE;
-
-	iter = NULL;
-	int nfields = 0;
-	field = NULL;
-	while ((field = mono_class_get_fields_internal (klass, &iter))) {
-		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
-			continue;
-		nfields ++;
-		if (nfields > 1)
-			return FALSE;
-		MonoType *t = mini_get_underlying_type (field->type);
-		if (MONO_TYPE_ISSTRUCT (t)) {
-			if (!is_scalar_vtype (t))
-				return FALSE;
-		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t)))) {
-			return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
 // WASM ABI: https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
 
 static ArgStorage
@@ -117,7 +79,7 @@ get_storage (MonoType *type, gboolean is_return)
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
-		if (is_scalar_vtype (type))
+		if (mini_wasm_is_scalar_vtype (type))
 			return ArgVtypeAsScalar;
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
 	}
@@ -439,10 +401,10 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
-EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
+EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (void);
 
 //JS functions imported that we use
-extern void mono_set_timeout (int t, int d);
+extern void mono_set_timeout (int t);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
@@ -546,21 +508,7 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 	return 0;
 }
 
-#ifdef HOST_BROWSER
-
-void
-mono_runtime_setup_stat_profiler (void)
-{
-	g_error ("mono_runtime_setup_stat_profiler");
-}
-
-gboolean
-MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
-{
-	g_error ("mono_chain_signal");
-	
-	return FALSE;
-}
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 
 void
 mono_runtime_install_handlers (void)
@@ -573,6 +521,24 @@ mono_init_native_crash_info (void)
 	return;
 }
 
+#endif
+
+#ifdef HOST_BROWSER
+
+void
+mono_runtime_setup_stat_profiler (void)
+{
+	g_error ("mono_runtime_setup_stat_profiler");
+}
+
+gboolean
+MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
+{
+	g_error ("mono_chain_signal");
+
+	return FALSE;
+}
+
 gboolean
 mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
 {
@@ -581,21 +547,23 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_set_timeout_exec (int id)
+mono_set_timeout_exec (void)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
-	gpointer params[1] = { &id };
 	MonoObject *exc = NULL;
 
-	mono_runtime_try_invoke (method, NULL, params, &exc, error);
+	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
@@ -614,10 +582,10 @@ mono_set_timeout_exec (int id)
 #endif
 
 void
-mono_wasm_set_timeout (int timeout, int id)
+mono_wasm_set_timeout (int timeout)
 {
 #ifdef HOST_BROWSER
-	mono_set_timeout (timeout, id);
+	mono_set_timeout (timeout);
 #endif
 }
 
@@ -626,12 +594,15 @@ tp_cb (void)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
 	MonoObject *exc = NULL;
 
@@ -813,7 +784,7 @@ mono_arch_load_function (MonoJitICallId jit_icall_id)
 	return NULL;
 }
 
-MONO_API void 
+MONO_API void
 mono_wasm_enable_debugging (int log_level)
 {
 	mono_wasm_debug_level = log_level;
@@ -823,4 +794,42 @@ int
 mono_wasm_get_debug_level (void)
 {
 	return mono_wasm_debug_level;
+}
+
+/* Return whenever TYPE represents a vtype with only one scalar member */
+gboolean
+mini_wasm_is_scalar_vtype (MonoType *type)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	gpointer iter;
+
+	if (!MONO_TYPE_ISSTRUCT (type))
+		return FALSE;
+	klass = mono_class_from_mono_type_internal (type);
+	mono_class_init_internal (klass);
+
+	int size = mono_class_value_size (klass, NULL);
+	if (size == 0 || size >= 8)
+		return FALSE;
+
+	iter = NULL;
+	int nfields = 0;
+	field = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		nfields ++;
+		if (nfields > 1)
+			return FALSE;
+		MonoType *t = mini_get_underlying_type (field->type);
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			if (!mini_wasm_is_scalar_vtype (t))
+				return FALSE;
+		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

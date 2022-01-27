@@ -31,7 +31,7 @@ namespace Test
             Assert.AreEqual("Dummy.Virtual", new TestMethod(dummy.Virtual));
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             try
             {

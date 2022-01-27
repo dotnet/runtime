@@ -527,7 +527,7 @@ namespace System.Reflection.Emit
             }
 
             int iLast = fullname.LastIndexOf('.');
-            if (iLast == -1 || iLast == 0)
+            if (iLast <= 0)
             {
                 // no name space
                 m_strNameSpace = string.Empty;
@@ -1922,7 +1922,9 @@ namespace System.Reflection.Emit
 
             int tkParent = 0;
             if (m_typeParent != null)
+            {
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
+            }
 
             ModuleBuilder module = m_module;
 
@@ -1996,7 +1998,7 @@ namespace System.Reflection.Emit
 
                 if (meth.IsGenericMethodDefinition)
                 {
-                    int dummy = meth.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
+                    _ = meth.MetadataToken; // Doubles as "CreateMethod" for MethodBuilder -- analogous to CreateType()
                 }
 
                 MethodAttributes methodAttrs = meth.Attributes;
