@@ -500,7 +500,6 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            Debug.Assert(cert != null);
             return new X509ChainElement(cert, statuses.ToArray(), "");
         }
 
