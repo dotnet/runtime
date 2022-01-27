@@ -161,7 +161,7 @@ void Compiler::optCopyProp(Statement*               stmt,
         }
 
         if ((gsShadowVarInfo != nullptr) && newLclVarDsc->lvIsParam &&
-            (gsShadowVarInfo[newLclNum].shadowCopy == lclNum))
+            (gsShadowVarInfo[newLclNum].shadowCopy != ShadowParamVarInfo::NO_SHADOW_COPY))
         {
             continue;
         }
