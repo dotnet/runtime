@@ -102,6 +102,13 @@ namespace RemoteLoopServer
                             }
                             if (!close)
                             {
+                                if ((tested.Poll(1, SelectMode.SelectRead) && tested.Available == 0))
+                                {
+                                    close = true;
+                                }
+                            }
+                            if (!close)
+                            {
                                 testedNext = tested.ReceiveAsync(new Memory<byte>(testedBuffer), SocketFlags.None, cts.Token).AsTask();
                             }
                         }
@@ -142,14 +149,14 @@ namespace RemoteLoopServer
                     }
                     catch (WebSocketException ex)
                     {
-                        logger.LogWarning("ProcessWebSocketRequest closing failed", ex);
+                        logger.LogWarning("RemoteLoopHandler.ProcessWebSocketRequest closing failed", ex);
                     }
                 }
                 cts.Cancel();
             }
             catch (Exception ex)
             {
-                logger.LogError("ProcessWebSocketRequest failed", ex);
+                logger.LogError("RemoteLoopHandler.ProcessWebSocketRequest failed", ex);
             }
             finally
             {

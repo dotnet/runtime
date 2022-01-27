@@ -534,10 +534,9 @@ namespace System.Net.Http
                         if (cancellationToken.IsCancellationRequested)
                         {
                             _reader.Invoke("cancel");
-                            CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
+                            throw CancellationHelper.CreateOperationCanceledException(null, cancellationToken);
                         }
 
-                        CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                         if ((bool)read.GetObjectProperty("done"))
                         {
                             _reader.Dispose();
