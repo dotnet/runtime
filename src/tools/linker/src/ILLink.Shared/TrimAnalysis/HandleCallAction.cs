@@ -10,8 +10,8 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    partial struct HandleCallAction
-    {
+	partial struct HandleCallAction
+	{
 		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, out MultiValue methodReturnValue)
 		{
 			methodReturnValue = new MultiValue ();

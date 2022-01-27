@@ -286,7 +286,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresAssemblyFiles ("Message")]
 			[RequiresDynamicCode ("Message")]
 			// Linker member string format includes namespace of explicit interface method.
-			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresCapability.AttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2046", "ExplicitImplementationClassWithRequires.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3003", "ExplicitImplementationClassWithRequires.IBaseWithoutRequires.Method()", "IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3051", "IBaseWithoutRequires.Method()", "ExplicitImplementationClassWithRequires.IBaseWithoutRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
@@ -359,7 +359,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class ExplicitImplementationClassWithoutRequires : IBaseWithRequires
 		{
 			// Linker member string format includes namespace of explicit interface method.
-			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresCapability.AttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.Mono.Linker.Tests.Cases.RequiresCapability.RequiresAttributeMismatch.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Trimmer)]
 			[ExpectedWarning ("IL2046", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3003", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
 			[ExpectedWarning ("IL3051", "IBaseWithRequires.Method()", "ExplicitImplementationClassWithoutRequires.IBaseWithRequires.Method()", ProducedBy = ProducedBy.Analyzer)]
