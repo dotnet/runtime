@@ -604,5 +604,59 @@ namespace Internal.TypeSystem.Ecma
                 return (PInvokeStringFormat)(_typeDefinition.Attributes & TypeAttributes.StringFormatMask);
             }
         }
+
+        public override bool IsEquivalentTo(TypeDesc typeDesc)
+        {
+            if (base.IsEquivalentTo(typeDesc))
+                return true;
+
+            if (typeDesc is EcmaType)
+            {
+                return IsPossiblyEquivalent(this, (EcmaType)typeDesc);
+            }
+
+            return false;
+
+            static bool IsPossiblyEquivalent(EcmaType type1, EcmaType type2)
+            {
+                if (!type1.HasCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute"))
+                    return false;
+
+                if (!type2.HasCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute"))
+                    return false;
+
+                var attrOpt1 = type1.GetDecodedCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute");
+                var attrOpt2 = type2.GetDecodedCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute");
+                Debug.Assert(attrOpt1.HasValue);
+                Debug.Assert(attrOpt2.HasValue);
+                var attr1 = attrOpt1.Value;
+                var attr2 = attrOpt2.Value;
+
+                if (attr1.FixedArguments.Length != 2 || attr2.FixedArguments.Length != 2)
+                    return false;
+
+                var scope1 = attr1.FixedArguments[0].Value as string;
+                var identifier1 = attr1.FixedArguments[1].Value as string;
+                var scope2 = attr2.FixedArguments[0].Value as string;
+                var identifier2 = attr2.FixedArguments[1].Value as string;
+
+                if (scope1 == null || identifier1 == null || scope2 == null || identifier2 == null)
+                    return false;
+
+                if (identifier1 != identifier2)
+                    return false;
+
+                if (!Guid.TryParse(scope1, out var scopeGuidValue1))
+                    return false;
+
+                if (!Guid.TryParse(scope2, out var scopeGuidValue2))
+                    return false;
+
+                if (scopeGuidValue1 != scopeGuidValue2)
+                    return false;
+
+                return true;
+            }
+        }
     }
 }

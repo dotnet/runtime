@@ -25,6 +25,10 @@ namespace Internal.TypeSystem
         {
             // Its only valid to compare two TypeDescs in the same context
             Debug.Assert(o is not TypeDesc || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
+            if (o is TypeDesc)
+            {
+                return this.IsEquivalentTo((TypeDesc)o);
+            }
             return object.ReferenceEquals(this, o);
         }
 
@@ -33,14 +37,18 @@ namespace Internal.TypeSystem
         {
             // Its only valid to compare two TypeDescs in the same context
             Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
-            return object.ReferenceEquals(left, right);
+            if (left is null)
+                return object.ReferenceEquals(left, right);
+            return left.IsEquivalentTo(right);
         }
 
         public static bool operator !=(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
             Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
-            return !object.ReferenceEquals(left, right);
+            if (left is null)
+                return !object.ReferenceEquals(left, right);
+            return !left.IsEquivalentTo(right);
         }
 #endif
 
@@ -691,6 +699,16 @@ namespace Internal.TypeSystem
             {
                 return (GetTypeFlags(TypeFlags.IsIDynamicInterfaceCastable | TypeFlags.IsIDynamicInterfaceCastableComputed) & TypeFlags.IsIDynamicInterfaceCastable) != 0;
             }
+        }
+
+        /// <summary>
+        /// Determines whether two types have the same identity and are eligible for type equivalence.
+        /// </summary>
+        public virtual bool IsEquivalentTo(TypeDesc typeDesc)
+        {
+            // Its only valid to compare two TypeDescs in the same context
+            Debug.Assert(typeDesc is null || object.ReferenceEquals(this.Context, typeDesc.Context));
+            return object.ReferenceEquals(this, typeDesc);
         }
     }
 }
