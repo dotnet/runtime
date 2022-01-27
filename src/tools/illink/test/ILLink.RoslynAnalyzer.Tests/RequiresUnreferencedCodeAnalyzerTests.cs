@@ -423,5 +423,20 @@ class C
 
 			return VerifyRequiresUnreferencedCodeAnalyzer (source);
 		}
+
+		[Fact]
+		public Task TestPropertyAssignmentInAssemblyAttribute ()
+		{
+			var source = @"
+using System;
+[assembly: MyAttribute (Value = 5)]
+
+class MyAttribute : Attribute
+{
+	public int Value { get; set; }
+}
+";
+			return VerifyRequiresUnreferencedCodeAnalyzer (source);
+		}
 	}
 }

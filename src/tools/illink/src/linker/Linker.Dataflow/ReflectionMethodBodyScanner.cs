@@ -1453,7 +1453,7 @@ namespace Mono.Linker.Dataflow
 						if (typeNameValue is KnownStringValue typeNameStringValue) {
 							var resolvedAssembly = _context.TryResolve (assemblyNameStringValue.Contents);
 							if (resolvedAssembly == null) {
-								analysisContext.ReportWarning (DiagnosticId.UnresolvedAssemblyInCreateInstance, 
+								analysisContext.ReportWarning (DiagnosticId.UnresolvedAssemblyInCreateInstance,
 									assemblyNameStringValue.Contents,
 									calledMethod.GetDisplayName ());
 								continue;
@@ -1700,7 +1700,7 @@ namespace Mono.Linker.Dataflow
 					_context.LogWarning (message, messageCode, Origin, MessageSubCategory.TrimAnalysis);
 			}
 
-			public void ReportWarning (DiagnosticId id, params string [] args)
+			public void ReportWarning (DiagnosticId id, params string[] args)
 			{
 				if (DiagnosticsEnabled)
 					_context.LogWarning (Origin, id, args);
