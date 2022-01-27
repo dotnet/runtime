@@ -227,7 +227,7 @@ namespace System.Net.Http.Functional.Tests
                         }
 
                         await connection.ReadRequestDataAsync();
-                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, isFinal: false, content: chunkedTransfer ? "8\r\nTooShort\r\n" : "TooShort");
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, isFinal: false);
                         await clientFinished.Task;
 
                         if (PlatformDetection.IsBrowser)
