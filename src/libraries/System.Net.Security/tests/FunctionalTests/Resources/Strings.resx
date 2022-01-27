@@ -72,15 +72,6 @@
   <data name="net_gssapi_ntlm_missing_plugin" xml:space="preserve">
     <value>NTLM authentication requires the GSSAPI plugin 'gss-ntlmssp'.</value>
   </data>
-  <data name="net_context_establishment_failed" xml:space="preserve">
-    <value>GSSAPI security context establishment failed with status: {0} (Minor status: {1})</value>
-  </data>
-  <data name="net_context_wrap_failed" xml:space="preserve">
-    <value>GSSAPI encryption or signing failed with status: {0} (Minor status: {1})</value>
-  </data>
-  <data name="net_context_unwrap_failed" xml:space="preserve">
-    <value>GSSAPI decryption or signature verification failed with status: {0} (Minor status: {1})</value>
-  </data>
   <data name="net_context_buffer_too_small" xml:space="preserve">
     <value>Insufficient buffer space. Required: {0} Actual: {1}</value>
   </data>

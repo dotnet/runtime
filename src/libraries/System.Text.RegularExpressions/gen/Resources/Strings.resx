@@ -155,9 +155,6 @@
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
-  <data name="ArgumentNull_ArrayWithNullElements" xml:space="preserve">
-    <value>The array cannot contain null elements.</value>
-  </data>
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
@@ -240,9 +237,6 @@
   </data>
   <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
     <value>Collection is read-only.</value>
-  </data>
-  <data name="OnlyAllowedOnce" xml:space="preserve">
-    <value>This operation is only allowed once per object.</value>
   </data>
   <data name="PlatformNotSupported_CompileToAssembly" xml:space="preserve">
     <value>This platform does not support writing compiled regular expressions to an assembly.</value>

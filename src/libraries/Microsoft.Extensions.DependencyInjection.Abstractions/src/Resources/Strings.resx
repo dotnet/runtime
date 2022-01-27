@@ -121,10 +121,6 @@
     <value>Multiple constructors accepting all given argument types have been found in type '{0}'. There should only be one applicable constructor.</value>
     <comment>{0} = service type</comment>
   </data>
-  <data name="CannotLocateImplementation" xml:space="preserve">
-    <value>Unable to locate implementation '{0}' for service '{1}'.</value>
-    <comment>{0} = implementation type, {1} = service type</comment>
-  </data>
   <data name="CannotResolveService" xml:space="preserve">
     <value>Unable to resolve service for type '{0}' while attempting to activate '{1}'.</value>
     <comment>{0} = service which cannot be resolved, {1} = service being activated</comment>
