@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Data.SqlTypes
 {
     [XmlSchemaProvider("GetXsdType")]
-    public struct SqlBinary : INullable, IComparable, IXmlSerializable
+    public struct SqlBinary : INullable, IComparable, IXmlSerializable, IEquatable<SqlBinary>
     {
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
         private byte[]? _value;
@@ -362,20 +362,15 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals([NotNullWhen(true)] object? value)
-        {
-            if (!(value is SqlBinary))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlBinary other && Equals(other);
 
-            SqlBinary i = (SqlBinary)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlBinary other) =>
+            other.IsNull || IsNull ? other.IsNull && IsNull :
+            (this == other).Value;
 
         // Hash a byte array.
         // Trailing zeroes/spaces would affect the hash value, so caller needs to

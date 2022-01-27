@@ -1,48 +1,60 @@
 <Project>
 
-  <Target Name="ILLinkTrimSharedFramework"
-          AfterTargets="Build"
+  <Target Name="GetSharedFrameworkAssembliesToTrim"
           DependsOnTargets="PrepareForAssembliesTrim">
 
-    <Message Text="Trimming $(PackageRID) runtime pack assemblies with ILLinker..." Importance="high" />
-
     <PropertyGroup>
-      <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-      <RuntimePackILLinkArgs>$(ILLinkArgs)</RuntimePackILLinkArgs>
-      <!-- update debug symbols -->
-      <RuntimePackILLinkArgs>$(RuntimePackILLinkArgs) -b true</RuntimePackILLinkArgs>
+      <SharedFrameworkAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-runtimepack'))</SharedFrameworkAssembliesTrimmedArtifactsPath>
     </PropertyGroup>
 
     <ItemGroup>
-      <_LibrariesToTrim Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
-      <_LibrariesToTrim Include="$(SystemPrivateCoreLibPath)" />
+      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
+      <SharedFrameworkSuppressionsXml Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
+      <!-- Collect CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
+      <SharedFrameworkSuppressionsXml Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
+      <SharedFrameworkSuppressionsXml Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
+      
+      <SharedFrameworkAssemblyToTrim Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <SharedFrameworkAssemblyToTrim Include="$(SystemPrivateCoreLibPath)" />
+    </ItemGroup>
 
-      <RootAssemblies Include="@(_LibrariesToTrim)">
+    <ItemGroup>
+      <SharedFrameworkAssemblyTrimmed Include="$(SharedFrameworkAssembliesTrimmedArtifactsPath)*.*" />
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="ILLinkTrimSharedFramework"
+          AfterTargets="Build"
+          DependsOnTargets="GetSharedFrameworkAssembliesToTrim;PrepareForAssembliesTrim"
+          Inputs="$(ILLinkTasksAssembly);@(SharedFrameworkAssemblyToTrim);@(SharedFrameworkSuppressionsXml)"
+          Outputs="@(SharedFrameworkAssemblyTrimmed)">
+
+    <Message Text="Trimming $(PackageRID) shared framework assemblies with ILLinker..." Importance="high" />
+
+    <PropertyGroup>
+      <SharedFrameworkILLinkArgs>$(ILLinkArgs)</SharedFrameworkILLinkArgs>
+      <!-- update debug symbols -->
+      <SharedFrameworkILLinkArgs>$(SharedFrameworkILLinkArgs) -b true</SharedFrameworkILLinkArgs>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <RootAssemblies Include="@(SharedFrameworkAssemblyToTrim)">
         <RootMode>library</RootMode>
       </RootAssemblies>
     </ItemGroup>
 
-    <ItemGroup>
-      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <_RuntimePackSuppressionsXmls Include="$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)*.xml" />
-
-      <!-- Collate CoreLib suppression XML files not bin-placed in earlier per-library linker run. CoreLib doesn't use bin-place logic. -->
-      <_RuntimePackSuppressionsXmls Include="$(CoreLibSharedDir)ILLink\ILLink.Suppressions.LibraryBuild.xml" />
-      <_RuntimePackSuppressionsXmls Condition="'$(RuntimeFlavor)' == 'CoreCLR'" Include="$(CoreClrProjectRoot)System.Private.CoreLib\$(ProjectILLinkSuppressionsFile).LibraryBuild.xml" />
-    </ItemGroup>
-
     <PropertyGroup>
-      <RuntimePackILLinkArgs Condition="'@(_RuntimePackSuppressionsXmls)' != ''" >$(RuntimePackILLinkArgs) --link-attributes &quot;@(_RuntimePackSuppressionsXmls->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</RuntimePackILLinkArgs>
+      <SharedFrameworkILLinkArgs Condition="'@(SharedFrameworkSuppressionsXml)' != ''" >$(SharedFrameworkILLinkArgs) --link-attributes &quot;@(SharedFrameworkSuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</SharedFrameworkILLinkArgs>
     </PropertyGroup>
 
     <ILLink AssemblyPaths=""
         RootAssemblyNames="@(RootAssemblies)"
-        OutputDirectory="$(LibrariesTrimmedArtifactsPath)"
-        ExtraArgs="$(RuntimePackILLinkArgs)"
+        OutputDirectory="$(SharedFrameworkAssembliesTrimmedArtifactsPath)"
+        ExtraArgs="$(SharedFrameworkILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
+
   </Target>
+
 </Project>

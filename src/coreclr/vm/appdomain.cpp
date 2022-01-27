@@ -11,7 +11,6 @@
 #include "eeconfig.h"
 #include "gcheaputilities.h"
 #include "eventtrace.h"
-#include "assemblyname.hpp"
 #include "eeprofinterfaces.h"
 #include "dbginterface.h"
 #ifndef DACCESS_COMPILE

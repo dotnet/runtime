@@ -153,7 +153,7 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Used as storage in our relationship table
         /// </summary>
-        private struct RelationshipEntry
+        private struct RelationshipEntry : IEquatable<RelationshipEntry>
         {
             internal WeakReference _owner;
             internal MemberDescriptor _member;
@@ -169,20 +169,19 @@ namespace System.ComponentModel.Design.Serialization
             public override bool Equals([NotNullWhen(true)] object? o)
             {
                 Debug.Assert(o is RelationshipEntry, "This is only called indirectly from a dictionary only containing RelationshipEntry structs.");
-                return this == (RelationshipEntry)o;
+                return Equals((RelationshipEntry)o);
             }
 
-            public static bool operator ==(RelationshipEntry re1, RelationshipEntry re2)
+            public bool Equals(RelationshipEntry other)
             {
-                object? owner1 = (re1._owner.IsAlive ? re1._owner.Target : null);
-                object? owner2 = (re2._owner.IsAlive ? re2._owner.Target : null);
-                return owner1 == owner2 && re1._member.Equals(re2._member);
+                object? owner1 = (_owner.IsAlive ? _owner.Target : null);
+                object? owner2 = (other._owner.IsAlive ? other._owner.Target : null);
+                return owner1 == owner2 && _member.Equals(other._member);
             }
 
-            public static bool operator !=(RelationshipEntry re1, RelationshipEntry re2)
-            {
-                return !(re1 == re2);
-            }
+            public static bool operator ==(RelationshipEntry re1, RelationshipEntry re2) => re1.Equals(re2);
+
+            public static bool operator !=(RelationshipEntry re1, RelationshipEntry re2) => !re1.Equals(re2);
 
             public override int GetHashCode() => _hashCode;
         }
@@ -191,7 +190,7 @@ namespace System.ComponentModel.Design.Serialization
     /// <summary>
     /// This class represents a single relationship between an object and a member.
     /// </summary>
-    public readonly struct MemberRelationship
+    public readonly struct MemberRelationship : IEquatable<MemberRelationship>
     {
         public static readonly MemberRelationship Empty;
 
@@ -222,37 +221,26 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Infrastructure support to make this a first class struct
         /// </summary>
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            return obj is MemberRelationship rel && rel.Owner == Owner && rel.Member == Member;
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is MemberRelationship rel && Equals(rel);
 
         /// <summary>
         /// Infrastructure support to make this a first class struct
         /// </summary>
-        public override int GetHashCode()
-        {
-            if (Owner == null)
-            {
-                return base.GetHashCode();
-            }
-
-            return Owner.GetHashCode() ^ Member.GetHashCode();
-        }
-        /// <summary>
-        /// Infrastructure support to make this a first class struct
-        /// </summary>
-        public static bool operator ==(MemberRelationship left, MemberRelationship right)
-        {
-            return left.Owner == right.Owner && left.Member == right.Member;
-        }
+        public bool Equals(MemberRelationship other) => other.Owner == Owner && other.Member == Member;
 
         /// <summary>
         /// Infrastructure support to make this a first class struct
         /// </summary>
-        public static bool operator !=(MemberRelationship left, MemberRelationship right)
-        {
-            return !(left == right);
-        }
+        public override int GetHashCode() => Owner is null ? base.GetHashCode() : Owner.GetHashCode() ^ Member.GetHashCode();
+
+        /// <summary>
+        /// Infrastructure support to make this a first class struct
+        /// </summary>
+        public static bool operator ==(MemberRelationship left, MemberRelationship right) => left.Equals(right);
+
+        /// <summary>
+        /// Infrastructure support to make this a first class struct
+        /// </summary>
+        public static bool operator !=(MemberRelationship left, MemberRelationship right) => !left.Equals(right);
     }
 }

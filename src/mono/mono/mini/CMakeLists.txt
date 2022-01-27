@@ -46,7 +46,7 @@ if(HOST_WIN32)
 endif()
 
 # ICU
-if(HAVE_SYS_ICU)
+if(HAVE_SYS_ICU AND NOT HOST_WASI)
   if(STATIC_ICU)
     set(pal_icushim_sources_base
         pal_icushim_static.c)

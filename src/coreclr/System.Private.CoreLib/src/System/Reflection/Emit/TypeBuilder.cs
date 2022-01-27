@@ -1922,7 +1922,9 @@ namespace System.Reflection.Emit
 
             int tkParent = 0;
             if (m_typeParent != null)
+            {
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
+            }
 
             ModuleBuilder module = m_module;
 

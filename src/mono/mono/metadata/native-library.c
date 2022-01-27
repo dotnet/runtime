@@ -92,7 +92,7 @@ mono_dllmap_lookup_list (MonoDllMap *dll_map, const char *dll, const char* func,
 	if (!dll_map)
 		goto exit;
 
-	/* 
+	/*
 	 * we use the first entry we find that matches, since entries from
 	 * the config file are prepended to the list and we document that the
 	 * later entries win.
@@ -254,7 +254,7 @@ mono_global_dllmap_cleanup (void)
  * This function is used to programatically add \c DllImport remapping in either
  * a specific assembly, or as a global remapping.   This is done by remapping
  * references in a \c DllImport attribute from the \p dll library name into the \p tdll
- * name. If the \p dll name contains the prefix <code>i:</code>, the comparison of the 
+ * name. If the \p dll name contains the prefix <code>i:</code>, the comparison of the
  * library name is done without case sensitivity.
  *
  * If you pass \p func, this is the name of the \c EntryPoint in a \c DllImport if specified
@@ -526,7 +526,7 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags);
 
 	// Check the assembly directory if the search flag is set and the image exists
-	if ((flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY) != 0 && image != NULL && 
+	if ((flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY) != 0 && image != NULL &&
 		module == NULL && (image->filename != NULL)) {
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
@@ -1145,7 +1145,7 @@ pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char 
 
 #if HOST_WIN32 && HOST_X86
 					/* Try the stdcall mangled name */
-					/* 
+					/*
 					 * gcc under windows creates mangled names without the underscore, but MS.NET
 					 * doesn't support it, so we doesn't support it either.
 					 */
@@ -1385,7 +1385,7 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
 	char *file, *buffer, *err, *internal_path;
 	if (!bundle_save_library_initialized)
 		bundle_save_library_initialize ();
-	
+
 	file = g_build_filename (bundled_dylibrary_directory, destfname, (const char*)NULL);
 	buffer = g_str_from_file_region (fd, offset, size);
 	g_file_set_contents (file, buffer, size, NULL);
@@ -1400,7 +1400,7 @@ mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const 
  	mono_loader_register_module (internal_path, lib);
 	g_free (internal_path);
 	bundle_library_paths = g_slist_append (bundle_library_paths, file);
-	
+
 	g_free (buffer);
 }
 
