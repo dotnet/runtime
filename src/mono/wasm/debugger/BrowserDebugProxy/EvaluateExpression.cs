@@ -452,10 +452,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result
+                        exception = result,
+                        stackTrace = StackTrace
                     }
                 }),
-                surfaceError: true);
+                surfaceError: true); ;
+        }
+
+        public void UpdateStakTrace()
+        {
+            Error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
         }
     }
 }
