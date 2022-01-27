@@ -1126,7 +1126,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task DebugHotReloadMethodAddBreakpointUsingSDBChangeBreakpointPosition()
+        public async Task DebugHotReloadMethod_CheckBreakpointLineUpdated_ByVS_Simulated()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
             string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
