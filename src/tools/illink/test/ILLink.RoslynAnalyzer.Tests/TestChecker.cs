@@ -116,12 +116,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 			ValidateDiagnostics (node, node.AttributeLists);
 		}
 
-		public override void VisitConstructorDeclaration (ConstructorDeclarationSyntax node)
-		{
-			base.VisitConstructorDeclaration (node);
-			ValidateDiagnostics (node, node.AttributeLists);
-		}
-
 		private void ValidateDiagnostics (CSharpSyntaxNode memberSyntax, SyntaxList<AttributeListSyntax> attrLists)
 		{
 			var memberDiagnostics = _unmatched.Where (d => {
