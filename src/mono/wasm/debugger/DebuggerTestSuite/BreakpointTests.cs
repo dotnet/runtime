@@ -1138,7 +1138,12 @@ namespace DebuggerTests
 
             //apply first update
             pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
-                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1, bp.Value["breakpointId"].Value<string>(), 49, 12);
+                    asm_file_hot_reload, "MethodBody5", "StaticMethod1", 1, 
+                    rebindBreakpoint : async () =>
+                    {
+                        await RemoveBreakpoint(bp.Value["breakpointId"].Value<string>());
+                        await SetBreakpoint(".*/MethodBody1.cs$", 49, 12, use_regex: true);
+                    });
 
             JToken top_frame = pause_location["callFrames"]?[0];
             AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
