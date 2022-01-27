@@ -2193,7 +2193,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
+            if (type.IsByReferenceOfT || type.IsByRef)
             {
                 return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }
