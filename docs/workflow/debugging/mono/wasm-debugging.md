@@ -136,7 +136,7 @@ if they do end up being called due to a bug, a signature mismatch error happens.
 
 # Collecting stack traces with symbols in Blazor
 
-If a customer has a native crash in a .NET 6 Blazor app or another WebAssembly
+When debugging a native crash in a .NET 6 Blazor app or another WebAssembly
 framework that uses our default `dotnet.wasm`, the native stack frames will not
 have C symbol names, but will instead look like `$func1234`.
 
@@ -205,7 +205,7 @@ In order to get symbols, the user should:
 
    ```xml
      <!-- Builds a dotnet.wasm with debug symbols preserved -->
-     <PropertyGroup Condition="true">
+     <PropertyGroup>
        <WasmBuildNative>true</WasmBuildNative>
        <WasmNativeStrip>false</WasmNativeStrip>
      </PropertyGroup>
