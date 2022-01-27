@@ -999,7 +999,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ = () => MethodWithRequires ();
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
 			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]
@@ -1075,7 +1074,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
+			// TODO: Fix the discrepancy between linker and analyzer
+			// https://github.com/dotnet/linker/issues/2350
 			[ExpectedWarning ("IL2077", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			[RequiresAssemblyFiles ("Suppress in body")]

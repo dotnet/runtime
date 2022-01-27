@@ -9,6 +9,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	// Hits what appears to be a bug in the tool
 	// Could not initialize vtable of class(0x02000007) .MyReflect due to VTable setup of type Mono.Linker.Tests.Cases.DataFlow.IReflectDataflow+MyReflect failed assembly:/tmp/linker_tests/output/test.exe type:MyReflect member:(null)
 	[SkipPeVerify]
+	[ExpectedNoWarnings]
 	class IReflectDataflow
 	{
 		[ExpectBodyModified]
