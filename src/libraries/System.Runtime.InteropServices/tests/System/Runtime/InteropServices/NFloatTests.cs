@@ -711,6 +711,134 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(value, result);
         }
 
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsFinite(float value)
+        {
+            bool result = NFloat.IsFinite(value);
+            Assert.Equal(float.IsFinite(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsInfinity(float value)
+        {
+            bool result = NFloat.IsInfinity(value);
+            Assert.Equal(float.IsInfinity(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsNaN(float value)
+        {
+            bool result = NFloat.IsNaN(value);
+            Assert.Equal(float.IsNaN(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsNegative(float value)
+        {
+            bool result = NFloat.IsNegative(value);
+            Assert.Equal(float.IsNegative(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsNegativeInfinity(float value)
+        {
+            bool result = NFloat.IsNegativeInfinity(value);
+            Assert.Equal(float.IsNegativeInfinity(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsNormal(float value)
+        {
+            bool result = NFloat.IsNormal(value);
+            Assert.Equal(float.IsNormal(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsPositiveInfinity(float value)
+        {
+            bool result = NFloat.IsPositiveInfinity(value);
+            Assert.Equal(float.IsPositiveInfinity(value), result);
+        }
+
+        [Theory]
+        [InlineData(-4567.0f)]
+        [InlineData(-4567.89101f)]
+        [InlineData(0.0f)]
+        [InlineData(4567.0f)]
+        [InlineData(4567.89101f)]
+        [InlineData(float.Epsilon)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NaN)]
+        public void IsSubnormal(float value)
+        {
+            bool result = NFloat.IsSubnormal(value);
+            Assert.Equal(float.IsSubnormal(value), result);
+        }
+
         public static IEnumerable<object[]> EqualsData()
         {
             yield return new object[] { new NFloat(789.0f), new NFloat(789.0f), true };
