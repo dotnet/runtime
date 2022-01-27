@@ -6271,8 +6271,8 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
                 info.compCompHnd->resolveToken(&delegateResolvedToken);
 
                 CORINFO_CALL_INFO delegateCallInfo;
-                eeGetCallInfo(&delegateResolvedToken, nullptr /* constraint typeRef */,
-                              CORINFO_CALLINFO_SECURITYCHECKS, &delegateCallInfo);
+                eeGetCallInfo(&delegateResolvedToken, nullptr /* constraint typeRef */, CORINFO_CALLINFO_SECURITYCHECKS,
+                              &delegateCallInfo);
 
                 bool isOpenDelegate = false;
                 VerifyOrReturn(info.compCompHnd->isCompatibleDelegate(objTypeHandle, delegateResolvedToken.hClass,
@@ -14244,8 +14244,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP(" %08X", resolvedToken.token);
 
                 eeGetCallInfo(&resolvedToken, (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN),
-                              &callInfo);
+                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN), &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
                 if (callInfo.sig.callConv & CORINFO_CALLCONV_PARAMTYPE)
@@ -14284,7 +14283,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef */,
                               combine(combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_LDFTN),
-                                              CORINFO_CALLINFO_CALLVIRT),
+                                      CORINFO_CALLINFO_CALLVIRT),
                               &callInfo);
 
                 // This check really only applies to intrinsic Array.Address methods
@@ -14420,8 +14419,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 _impResolveToken(CORINFO_TOKENKIND_NewObj);
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
-                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM),
-                              &callInfo);
+                              combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM), &callInfo);
 
                 if (compIsForInlining())
                 {
@@ -14647,8 +14645,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,
                                   // this is how impImportCall invokes getCallInfo
                                   combine(combine(CORINFO_CALLINFO_ALLOWINSTPARAM, CORINFO_CALLINFO_SECURITYCHECKS),
-                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT
-                                                                  : CORINFO_CALLINFO_NONE),
+                                          (opcode == CEE_CALLVIRT) ? CORINFO_CALLINFO_CALLVIRT : CORINFO_CALLINFO_NONE),
                                   &callInfo);
                 }
                 else
@@ -17744,7 +17741,7 @@ SPILLSTACK:
             // low 32 bits of a byref pointer to an 'int' sized local). If the 'int' side has been
             // imported already, we need to change the type of the local and reimport the spill clique.
             // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
-            // the 'byref' size.            
+            // the 'byref' size.
             if (genActualType(tree->gtType) == TYP_BYREF && lvaTable[tempNum].lvType == TYP_INT)
             {
                 // Some other block in the spill clique set this to "int", but now we have "byref".
