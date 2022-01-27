@@ -4905,7 +4905,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
         return false;
     }
 
-#ifdef TARGET_ARMARCH
+#ifdef TARGET_ARM64
     if (parent->OperIsIndir() && parent->gtFlags & GTF_IND_VOLATILE)
     {
         // For ARMARCH we avoid using LEA for volatile INDs
