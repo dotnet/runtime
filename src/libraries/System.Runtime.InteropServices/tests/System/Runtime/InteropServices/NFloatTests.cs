@@ -804,7 +804,15 @@ namespace System.Runtime.InteropServices.Tests
         public void IsNormal(float value)
         {
             bool result = NFloat.IsNormal(value);
-            Assert.Equal(float.IsNormal(value), result);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(double.IsNormal(value), result);
+            }
+            else
+            {
+                Assert.Equal(float.IsNormal(value), result);
+            }
         }
 
         [Theory]
@@ -836,7 +844,15 @@ namespace System.Runtime.InteropServices.Tests
         public void IsSubnormal(float value)
         {
             bool result = NFloat.IsSubnormal(value);
-            Assert.Equal(float.IsSubnormal(value), result);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal(double.IsSubnormal(value), result);
+            }
+            else
+            {
+                Assert.Equal(float.IsSubnormal(value), result);
+            }
         }
 
         public static IEnumerable<object[]> EqualsData()
