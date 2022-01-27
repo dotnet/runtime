@@ -484,5 +484,13 @@ namespace System.Tests
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
             Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
         }
+
+        [Fact]
+        public static void InvalidFormattingWithInterpolatedStringTest()
+        {
+            TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
+            Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+            Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+        }
     }
 }
