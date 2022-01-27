@@ -52,9 +52,6 @@ namespace System.IO.Tests
         {
             // Checks that errors aren't thrown when calling Exists() on paths with impossible to create characters
             Assert.False(Exists(invalidPath));
-
-            Assert.False(Exists(".."));
-            Assert.False(Exists("."));
         }
 
         [Fact]
@@ -82,35 +79,6 @@ namespace System.IO.Tests
             string path = GetTestFilePath() + Path.DirectorySeparatorChar;
             Assert.False(Exists(path));
         }
-
-        [Fact]
-        public void PathEndsInTrailingSlash_AndExists()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.False(Exists(path + Path.DirectorySeparatorChar));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void PathEndsInAltTrailingSlash_AndExists_Windows()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.False(Exists(path + Path.DirectorySeparatorChar));
-        }
-
-        [Fact]
-        public void PathAlreadyExistsAsDirectory()
-        {
-            string path = GetTestFilePath();
-            Directory.CreateDirectory(path);
-
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
-        }
-
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
@@ -248,6 +216,43 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        #endregion
+    }
+
+    public class File_ExistsAsDirectory : FileSystemTest
+    {
+        #region Universal
+
+        [Fact]
+        public void DotAsPathReturnsFalse()
+        {
+            Assert.False(File.Exists("."));
+            Assert.False(File.Exists(".."));
+        }
+
+        [Fact]
+        public void PathEndsInTrailingSlash_AndExists()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.False(File.Exists(path + Path.DirectorySeparatorChar));
+        }
+
+        [Fact]
+        public void PathAlreadyExistsAsDirectory()
+        {
+            string path = GetTestFilePath();
+            Directory.CreateDirectory(path);
+
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
+        #endregion
+
+        #region PlatformSpecific
+
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
         public void FalseForNonRegularFile()
@@ -255,6 +260,15 @@ namespace System.IO.Tests
             string fileName = GetTestFilePath();
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.True(File.Exists(fileName));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PathEndsInAltTrailingSlash_AndExists_Windows()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.False(File.Exists(path + Path.DirectorySeparatorChar));
         }
 
         #endregion

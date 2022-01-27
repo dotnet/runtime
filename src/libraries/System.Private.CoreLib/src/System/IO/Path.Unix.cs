@@ -18,18 +18,13 @@ namespace System.IO
         {
             try
             {
-                if (path == null)
-                {
-                    return false;
-                }
-
-                if (path.Length == 0)
+               if (string.IsNullOrEmpty(path))
                 {
                     return false;
                 }
 
                 ReadOnlySpan<char> fullPath = GetFullPath(path).AsSpan();
-                return Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus _) > 0;
+                return Interop.Sys.LStat(fullPath, out fileinfo) == 0;
             }
 
             catch (ArgumentException) { }

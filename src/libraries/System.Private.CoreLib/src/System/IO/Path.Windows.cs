@@ -27,24 +27,21 @@ namespace System.IO
             (char)31
         };
 
-        //Checks if the given path is available for use.
+        // Checks if the given path is available for use.
         public static bool Exists([NotNullWhen(true)] string? path)
         {
             try
             {
-                if (path == null)
-                {
-                    return false;
-                }
-
-                if (path.Length == 0)
+                if (string.IsNullOrEmpty(path))
                 {
                     return false;
                 }
 
                 string fullPath = GetFullPath(path);
                 Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-                return FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true) == 0;
+                int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+
+                return (errorCode == 0) && (data.dwFileAttributes != -1);
             }
 
             catch (ArgumentException) { }
