@@ -307,27 +307,27 @@ namespace System.Diagnostics.Metrics
 {
     public sealed class Counter<T> : Instrument<T> where T : struct
     {
-        public void Add(T delta) {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  {  throw null; }
-        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) {  throw null; }
-        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) {  throw null; }
+        public void Add(T delta) { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
         public void Add(T delta, in TagList tagList) { throw null; }
         internal Counter(Meter meter, string name, string? unit, string? description) :
-                        base(meter, name, unit, description) {  throw null; }
+                        base(meter, name, unit, description) { throw null; }
     }
     public sealed class UpDownCounter<T> : Instrument<T> where T : struct
     {
-        public void Add(T delta) {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  {  throw null; }
-        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  {  throw null; }
-        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) {  throw null; }
-        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) {  throw null; }
+        public void Add(T delta) { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
+        public void Add(T delta, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
+        public void Add(T delta, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta, params System.Collections.Generic.KeyValuePair<string, object?>[] tags) { throw null; }
         public void Add(T delta, in TagList tagList) { throw null; }
         internal UpDownCounter(Meter meter, string name, string? unit, string? description) :
-                        base(meter, name, unit, description) {  throw null; }
+                        base(meter, name, unit, description) { throw null; }
     }
     public sealed class Histogram<T> : Instrument<T> where T : struct
     {
