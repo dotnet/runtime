@@ -40,7 +40,7 @@ namespace ILLink.RoslynAnalyzer
 				context.EnableConcurrentExecution ();
 			context.ConfigureGeneratedCodeAnalysis (GeneratedCodeAnalysisFlags.ReportDiagnostics);
 			context.RegisterOperationBlockAction (context => {
-				if (context.OwningSymbol.HasAttribute (RequiresUnreferencedCodeAnalyzer.RequiresUnreferencedCodeAttribute))
+				if (context.OwningSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
 					return;
 
 				foreach (var operationBlock in context.OperationBlocks) {
@@ -63,7 +63,7 @@ namespace ILLink.RoslynAnalyzer
 
 		static void ProcessInvocationOperation (OperationAnalysisContext context, IInvocationOperation invocationOperation)
 		{
-			if (context.ContainingSymbol.HasAttribute (RequiresUnreferencedCodeAnalyzer.RequiresUnreferencedCodeAttribute))
+			if (context.ContainingSymbol.IsInRequiresUnreferencedCodeAttributeScope ())
 				return;
 
 			ProcessTypeArguments (context, invocationOperation);
@@ -72,7 +72,7 @@ namespace ILLink.RoslynAnalyzer
 		static void ProcessTypeArguments (OperationAnalysisContext context, IInvocationOperation invocationOperation)
 		{
 			var targetMethod = invocationOperation.TargetMethod;
-			if (targetMethod.HasAttribute (RequiresUnreferencedCodeAnalyzer.RequiresUnreferencedCodeAttribute))
+			if (targetMethod.IsInRequiresUnreferencedCodeAttributeScope ())
 				return;
 
 			for (int i = 0; i < targetMethod.TypeParameters.Length; i++) {
