@@ -1249,7 +1249,7 @@ namespace DebuggerTests
             if (bpId != null)
             {
                 await RemoveBreakpoint(bpId);
-                await SetBreakpoint(".*/MethodBody1.cs$", 49, 12, use_regex: true);
+                await SetBreakpoint(".*/MethodBody1.cs$", newLine, newColumn, use_regex: true);
             }
 
             run_method = JObject.FromObject(new
