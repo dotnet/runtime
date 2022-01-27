@@ -2646,11 +2646,9 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
     {
         GenTree* tree = verCurrentState.esStack[i].val;
 
-        GenTree* lclVarTree;
-
         if ((tree->gtFlags & spillFlags) != 0 ||
-            (spillGlobEffects &&                        // Only consider the following when  spillGlobEffects == true
-             !impIsAddressInLocal(tree, &lclVarTree) && // No need to spill the GT_ADDR node on a local.
+            (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
+             !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
              gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                            // lvAddrTaken flag.
         {
@@ -14411,15 +14409,40 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impStackTop(0);
                 }
 
-                // If the expression to dup is simple, just clone it.
-                // Otherwise spill it to a temp, and reload the temp
-                // twice.
                 StackEntry se   = impPopStack();
                 GenTree*   tree = se.val;
                 tiRetVal        = se.seTypeInfo;
                 op1             = tree;
 
-                if (!opts.compDbgCode && !op1->IsIntegralConst(0) && !op1->IsFPZero() && !op1->IsLocal())
+                // If the expression to dup is simple, just clone it.
+                // Otherwise spill it to a temp, and reload the temp twice.
+                bool cloneExpr = false;
+
+                if (!opts.compDbgCode)
+                {
+                    // Duplicate 0 and +0.0
+                    if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
+                    {
+                        cloneExpr = true;
+                    }
+                    // Duplicate locals and addresses of them
+                    else if (op1->IsLocal())
+                    {
+                        cloneExpr = true;
+                    }
+                    else if (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal() &&
+                             (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
+                    {
+                        cloneExpr = true;
+                    }
+                }
+                else
+                {
+                    // Always clone for debug mode
+                    cloneExpr = true;
+                }
+
+                if (!cloneExpr)
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
                     impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
@@ -19555,7 +19578,10 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 
     if (op->gtOper == GT_LCL_VAR)
     {
-        *lclVarTreeOut = op;
+        if (lclVarTreeOut != nullptr)
+        {
+            *lclVarTreeOut = op;
+        }
         return true;
     }
     else
