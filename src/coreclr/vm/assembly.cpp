@@ -17,9 +17,6 @@
 
 #include "assembly.hpp"
 #include "appdomain.hpp"
-#include "assemblyname.hpp"
-
-
 
 #include "eeprofinterfaces.h"
 #include "reflectclasswriter.h"

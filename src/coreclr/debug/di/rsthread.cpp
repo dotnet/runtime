@@ -81,7 +81,6 @@ CordbThread::CordbThread(CordbProcess * pProcess, VMPTR_Thread vmThread) :
     m_fFloatStateValid(false),
     m_floatStackTop(0),
     m_fException(false),
-    m_fCreationEventQueued(false),
     m_EnCRemapFunctionIP(NULL),
     m_userState(kInvalidUserState),
     m_hCachedThread(INVALID_HANDLE_VALUE),
@@ -2789,21 +2788,6 @@ HRESULT CordbThread::GetBlockingObjects(ICorDebugBlockingObjectEnum **ppBlocking
     delete [] blockingObjs;
     return hr;
 }
-
-// ----------------------------------------------------------------------------
-// CordbThread::SetCreateEventQueued
-void CordbThread::SetCreateEventQueued()
-{
-    m_fCreationEventQueued = true;
-}
-
-// ----------------------------------------------------------------------------
-// CordbThread::CreateEventWasQueued
-bool CordbThread::CreateEventWasQueued()
-{
-    return m_fCreationEventQueued;
-}
-
 
 #ifdef FEATURE_INTEROP_DEBUGGING
 /* ------------------------------------------------------------------------- *

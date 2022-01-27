@@ -126,7 +126,6 @@ struct MSLAYOUT DebuggerIPCRuntimeOffsets
     void   *m_signalHijackCompleteBPAddr;
     void   *m_excepNotForRuntimeBPAddr;
     void   *m_notifyRSOfSyncCompleteBPAddr;
-    void   *m_raiseExceptionAddr;                       // The address of kernel32!RaiseException in the debuggee
     DWORD   m_debuggerWordTLSIndex;                     // The TLS slot for the debugger word used in the debugger hijack functions
 #endif // FEATURE_INTEROP_DEBUGGING
     SIZE_T  m_TLSIndex;                                 // The TLS index of the thread-local storage for coreclr.dll
@@ -363,30 +362,6 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 #include "dbgtransportsession.h"
 #endif // defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
-
-#if defined(TARGET_X86) && !defined(FEATURE_CORESYSTEM)
-// We have an versioning requirement.
-// Certain portions of the v1.0 and v1.1 IPC block are shared. This is b/c a v1.1 debugger needs to be able
-// to look at a v2.0 app enough to recognize the version mismatch.
-// This check is only necessary for platforms that ran on v1.1 (Win32-x86)
-
-// Just to catch any potential illegal change in the IPC block, we assert the offsets against the offsets from v1.1.
-// The constants here are pulled from v1.1.
-// The RS will look at these versioning fields, so they absolutely must line up.
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_leftSideProtocolCurrent) == 0x10);
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_leftSideProtocolMinSupported) == 0x14);
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_rightSideProtocolCurrent) == 0x18);
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_rightSideProtocolMinSupported) == 0x1c);
-
-// Unfortunately, on detecting such failure, v1.1 will also null out LSEA, LSER and RSPH.
-// If these get adjusted, a version-mismatch attach  will effectively null out random fields.
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_paddingObsoleteLSEA) == 0x30);
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_paddingObsoleteLSER) == 0x34);
-static_assert_no_msg(offsetof(DebuggerIPCControlBlock, m_rightSideProcessHandle) == 0x38);
-
-
-
-#endif
 
 #define INITIAL_APP_DOMAIN_INFO_LIST_SIZE   16
 

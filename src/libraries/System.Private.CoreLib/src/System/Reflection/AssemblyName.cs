@@ -162,6 +162,28 @@ namespace System.Reflection
             return name;
         }
 
+        private static Func<string, AssemblyName>? s_getAssemblyName;
+        private static Func<string, AssemblyName> InitGetAssemblyName()
+        {
+            Type? readerType = Type.GetType(
+                    "System.Reflection.Metadata.MetadataReader, System.Reflection.Metadata",
+                    throwOnError: true);
+
+            MethodInfo? getAssemblyNameMethod = readerType!.GetMethod(
+                "GetAssemblyName",
+                BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
+                null,
+                new Type[] { typeof(string) },
+                null);
+
+            if (getAssemblyNameMethod == null)
+            {
+                throw new MissingMethodException(readerType.FullName, "GetAssemblyName");
+            }
+
+            return s_getAssemblyName = getAssemblyNameMethod.CreateDelegate<Func<string, AssemblyName>>();
+        }
+
         /*
          * Get the AssemblyName for a given file. This will only work
          * if the file contains an assembly manifest. This method causes
@@ -169,10 +191,7 @@ namespace System.Reflection
          */
         public static AssemblyName GetAssemblyName(string assemblyFile)
         {
-            if (assemblyFile == null)
-                throw new ArgumentNullException(nameof(assemblyFile));
-
-            return GetFileInformationCore(assemblyFile);
+            return (s_getAssemblyName ?? InitGetAssemblyName())(assemblyFile);
         }
 
         public byte[]? GetPublicKey()

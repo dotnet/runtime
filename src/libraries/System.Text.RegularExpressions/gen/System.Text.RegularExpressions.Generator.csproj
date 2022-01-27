@@ -36,6 +36,7 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexFindOptimizations.cs" Link="Production\RegexFindOptimizations.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexNode.cs" Link="Production\RegexNode.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexNodeKind.cs" Link="Production\RegexNodeKind.cs" />
+    <Compile Include="..\src\System\Text\RegularExpressions\RegexOpcode.cs" Link="Production\RegexOpcode.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexOptions.cs" Link="Production\RegexOptions.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="Production\RegexParseError.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseException.cs" Link="Production\RegexParseException.cs" />
