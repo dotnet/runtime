@@ -131,9 +131,6 @@
   <data name="GenericInvalidData" xml:space="preserve">
     <value>Found invalid data while decoding.</value>
   </data>
-  <data name="InvalidArgumentOffsetCount" xml:space="preserve">
-    <value>Offset plus count is larger than the length of target array.</value>
-  </data>
   <data name="InvalidBeginCall" xml:space="preserve">
     <value>Only one asynchronous reader or writer is allowed time at one time.</value>
   </data>
@@ -178,9 +175,6 @@
   </data>
   <data name="ZLibErrorUnexpected" xml:space="preserve">
     <value>The underlying compression routine returned an unexpected error code.</value>
-  </data>
-  <data name="ArgumentNeedNonNegative" xml:space="preserve">
-    <value>The argument must be non-negative.</value>
   </data>
   <data name="CannotBeEmpty" xml:space="preserve">
     <value>String cannot be empty.</value>
@@ -265,9 +259,6 @@
   </data>
   <data name="NumEntriesWrong" xml:space="preserve">
     <value>Number of entries expected in End Of Central Directory does not correspond to number of entries in Central Directory.</value>
-  </data>
-  <data name="OffsetLengthInvalid" xml:space="preserve">
-    <value>The offset and length parameters are not valid for the array that was given.</value>
   </data>
   <data name="ReadingNotSupported" xml:space="preserve">
     <value>This stream from ZipArchiveEntry does not support reading.</value>
