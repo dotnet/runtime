@@ -40,7 +40,7 @@ namespace System.Numerics.Tests
             BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
             void Test()
             {
-                byte[] tempByteArray1 = new byte[0];
+                byte[] tempByteArray1 = Array.Empty<byte>();
                 using (new ThreadCultureChange(culture))
                 {
                     //default style

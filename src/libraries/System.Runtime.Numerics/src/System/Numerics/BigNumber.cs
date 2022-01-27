@@ -765,7 +765,7 @@ namespace System.Numerics
                     const double digitRatio = 0.934292276687070661;
                     currentBufferSize = Math.Min((int)(bufferSize * digitRatio) + 1, bufferSize);
                     Debug.Assert(buffer.Length == currentBufferSize || buffer[currentBufferSize] == 0);
-                    while (0 <= currentBufferSize - 1 && buffer[currentBufferSize - 1] == 0)
+                    while (0 < currentBufferSize && buffer[currentBufferSize - 1] == 0)
                     {
                         currentBufferSize--;
                     }
