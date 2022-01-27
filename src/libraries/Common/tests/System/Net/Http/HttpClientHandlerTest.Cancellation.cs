@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64333", TestPlatforms.Browser)] // out of memory
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36634", TestPlatforms.Browser)] // out of memory
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunkedTransfer)
