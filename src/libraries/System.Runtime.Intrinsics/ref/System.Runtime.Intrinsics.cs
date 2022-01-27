@@ -3713,6 +3713,8 @@ namespace System.Runtime.Intrinsics.X86
         public unsafe static System.Runtime.Intrinsics.Vector512<float> LoadVector512(float* address) { throw null; }
 
         public static float ReduceAdd(System.Runtime.Intrinsics.Vector512<float> left) { throw null; }
+        
+        public unsafe static void Store(float *address, System.Runtime.Intrinsics.Vector512<float> source) { throw null; }
 
         public new abstract partial class X64 : System.Runtime.Intrinsics.X86.Avx.X64
         {

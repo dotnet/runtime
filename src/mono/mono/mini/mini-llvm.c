@@ -7795,6 +7795,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_AVX512_STORE: {
+			LLVMValueRef dst_vec = convert (ctx, lhs, LLVMPointerType (LLVMTypeOf (rhs), 0));
+			mono_llvm_build_aligned_store (builder, rhs, dst_vec, FALSE, ins->inst_c0);
+			break;
+		}
+
 		case OP_AVX512_REDUCEADD: {
 			// Assume we are reducing vector of float
 			LLVMValueRef lvec = lhs;

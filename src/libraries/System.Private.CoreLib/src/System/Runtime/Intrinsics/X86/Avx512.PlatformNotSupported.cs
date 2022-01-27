@@ -38,6 +38,8 @@ namespace System.Runtime.Intrinsics.X86
 
         public static float ReduceAdd(Vector512<float> left) { throw new PlatformNotSupportedException(); }
 
+        public static unsafe void Store(float* address, Vector512<float> source) { throw new PlatformNotSupportedException(); }
+
 
     }
 }
