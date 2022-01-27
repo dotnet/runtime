@@ -24376,7 +24376,7 @@ size_t gc_heap::committed_size()
     dprintf (3, ("h%d committed in free %Id", heap_number, committed_in_free));
 
     total_committed += committed_in_free;
-#endif //USE_REGIO
+#endif //USE_REGIONS
 
     return total_committed;
 }
