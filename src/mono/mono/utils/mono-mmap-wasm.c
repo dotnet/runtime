@@ -63,7 +63,7 @@ mono_valloc_granule (void)
 
 static int
 prot_from_flags (int flags)
-{	
+{
 #if HOST_WASI
 	// The mmap in wasi-sdk rejects PROT_NONE, but otherwise disregards the flags
 	// We just need to pass an acceptable value

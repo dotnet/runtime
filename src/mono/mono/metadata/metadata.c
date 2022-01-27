@@ -4994,7 +4994,7 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 		if (!found && !mono_metadata_update_metadata_linear_search (meta, tdef, &loc, table_locator))
 			return 0;
 	}
-	
+
 	/* loc_result is 0..1, needs to be mapped to table index (that is +1) */
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
 }

@@ -47,11 +47,6 @@
         <target state="translated">Cílové pole není dostatečně dlouhé, aby bylo možné zkopírovat všechny položky v kolekci. Zkontrolujte index a délku pole.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">Pole nemůže obsahovat elementy null.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Počáteční index nemůže být menší než nula nebo větší než délka vstupu.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Kolekce je jen pro čtení.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Tuto operaci lze na objektu provést pouze jednou.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

@@ -1864,7 +1864,6 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
 
         case GT_OBJ:
         case GT_BLK:
-        case GT_DYN_BLK:
         case GT_ASG:
             // These should already have the appropriate type.
             assert(structVal->gtType == structType);
@@ -2647,11 +2646,9 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
     {
         GenTree* tree = verCurrentState.esStack[i].val;
 
-        GenTree* lclVarTree;
-
         if ((tree->gtFlags & spillFlags) != 0 ||
-            (spillGlobEffects &&                        // Only consider the following when  spillGlobEffects == true
-             !impIsAddressInLocal(tree, &lclVarTree) && // No need to spill the GT_ADDR node on a local.
+            (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
+             !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
              gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
                                            // lvAddrTaken flag.
         {
@@ -14428,15 +14425,40 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impStackTop(0);
                 }
 
-                // If the expression to dup is simple, just clone it.
-                // Otherwise spill it to a temp, and reload the temp
-                // twice.
                 StackEntry se   = impPopStack();
                 GenTree*   tree = se.val;
                 tiRetVal        = se.seTypeInfo;
                 op1             = tree;
 
-                if (!opts.compDbgCode && !op1->IsIntegralConst(0) && !op1->IsFPZero() && !op1->IsLocal())
+                // If the expression to dup is simple, just clone it.
+                // Otherwise spill it to a temp, and reload the temp twice.
+                bool cloneExpr = false;
+
+                if (!opts.compDbgCode)
+                {
+                    // Duplicate 0 and +0.0
+                    if (op1->IsIntegralConst(0) || op1->IsFloatPositiveZero())
+                    {
+                        cloneExpr = true;
+                    }
+                    // Duplicate locals and addresses of them
+                    else if (op1->IsLocal())
+                    {
+                        cloneExpr = true;
+                    }
+                    else if (op1->TypeIs(TYP_BYREF) && op1->OperIs(GT_ADDR) && op1->gtGetOp1()->IsLocal() &&
+                             (OPCODE)impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_INITOBJ)
+                    {
+                        cloneExpr = true;
+                    }
+                }
+                else
+                {
+                    // Always clone for debug mode
+                    cloneExpr = true;
+                }
+
+                if (!cloneExpr)
                 {
                     const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
                     impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
@@ -17086,19 +17108,29 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op3 = impPopStack().val; // Size
                 op2 = impPopStack().val; // Value
-                op1 = impPopStack().val; // Dest
+                op1 = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
                     size = (unsigned)op3->AsIntConCommon()->IconValue();
                     op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
                 }
                 else
                 {
-                    op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
+                    if (!op2->IsIntegralConst(0))
+                    {
+                        op2 = gtNewOperNode(GT_INIT_VAL, TYP_INT, op2);
+                    }
+
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
                     size = 0;
+
+                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    {
+                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                    }
                 }
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, false);
 
                 goto SPILL_APPEND;
 
@@ -17109,19 +17141,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     Verify(false, "bad opcode");
                 }
                 op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Src
-                op1 = impPopStack().val; // Dest
+                op2 = impPopStack().val; // Src addr
+                op1 = impPopStack().val; // Dst addr
 
-                if (op3->IsCnsIntOrI())
-                {
-                    size = (unsigned)op3->AsIntConCommon()->IconValue();
-                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
-                }
-                else
-                {
-                    op1  = new (this, GT_DYN_BLK) GenTreeDynBlk(op1, op3);
-                    size = 0;
-                }
                 if (op2->OperGet() == GT_ADDR)
                 {
                     op2 = op2->AsOp()->gtOp1;
@@ -17131,7 +17153,23 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
                 }
 
-                op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                if (op3->IsCnsIntOrI())
+                {
+                    size = (unsigned)op3->AsIntConCommon()->IconValue();
+                    op1  = new (this, GT_BLK) GenTreeBlk(GT_BLK, TYP_STRUCT, op1, typGetBlkLayout(size));
+                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0, true);
+                }
+                else
+                {
+                    op1  = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
+                    size = 0;
+
+                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+                    {
+                        op1->gtFlags |= GTF_BLK_VOLATILE;
+                    }
+                }
+
                 goto SPILL_APPEND;
 
             case CEE_CPOBJ:
@@ -19556,7 +19594,10 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 
     if (op->gtOper == GT_LCL_VAR)
     {
-        *lclVarTreeOut = op;
+        if (lclVarTreeOut != nullptr)
+        {
+            *lclVarTreeOut = op;
+        }
         return true;
     }
     else

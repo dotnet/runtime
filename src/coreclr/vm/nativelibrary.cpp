@@ -610,7 +610,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-#if defined(FEATURE_CORESYSTEM) && !defined(TARGET_UNIX)
+#if !defined(TARGET_UNIX)
         // Try to go straight to System32 for Windows API sets. This is replicating quick check from
         // the OS implementation of api sets.
         if (IsWindowsAPISet(wszLibName))
@@ -621,7 +621,7 @@ namespace
                 return hmod;
             }
         }
-#endif // FEATURE_CORESYSTEM && !TARGET_UNIX
+#endif // !TARGET_UNIX
 
         if (g_hostpolicy_embedded)
         {

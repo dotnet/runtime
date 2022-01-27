@@ -68,4 +68,4 @@ else()
 
 endif(CLR_CMAKE_HOST_UNIX)
 
-install_clr(TARGETS mcs DESTINATIONS .)
+install_clr(TARGETS mcs DESTINATIONS . COMPONENT spmi)

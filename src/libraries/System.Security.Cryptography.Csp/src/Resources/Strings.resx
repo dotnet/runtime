@@ -203,9 +203,6 @@
   <data name="Cryptography_RSA_DecryptWrongSize" xml:space="preserve">
     <value>The length of the data to decrypt is not valid for the size of this key.</value>
   </data>
-  <data name="Cryptography_TransformBeyondEndOfBuffer" xml:space="preserve">
-    <value>Attempt to transform beyond end of buffer.</value>
-  </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
   </data>

@@ -47,11 +47,6 @@
         <target state="translated">ターゲット配列の長さが不足しているため、コレクション内のすべての項目をコピーできません。配列のインデックスと長さをご確認ください。</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">配列に null 要素を含めることはできません。</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">開始インデックスに 0 より小さい値または入力長より大きい値を指定することはできません。</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">コレクションは読み取り専用です。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">この操作は、オブジェクトに付き 1 回のみ実行できます。</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

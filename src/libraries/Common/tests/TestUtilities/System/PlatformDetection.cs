@@ -60,8 +60,14 @@ namespace System
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
+#if NETCOREAPP
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+#else
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+#endif
+        
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
@@ -87,34 +93,8 @@ namespace System
             return !(bool)typeof(LambdaExpression).GetMethod("get_CanCompileToIL").Invoke(null, Array.Empty<object>());
         }
 
-        // Please make sure that you have the libgdiplus dependency installed.
-        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
-        public static bool IsDrawingSupported
-        {
-            get
-            {
-#if NETCOREAPP
-                if (!IsWindows)
-                {
-                    if (IsMobile)
-                    {
-                        return false;
-                    }
-                    else if (IsOSX)
-                    {
-                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                    }
-                    else
-                    {
-                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
-                    }
-                }
-#endif
-
-                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-
-            }
-        }
+        // Drawing is not supported on non windows platforms in .NET 7.0+.
+        public static bool IsDrawingSupported => IsWindows && IsNotWindowsNanoServer && IsNotWindowsServerCore;
 
         public static bool IsAsyncFileIOSupported => !IsBrowser && !(IsWindows && IsMonoRuntime); // https://github.com/dotnet/runtime/issues/34582
 

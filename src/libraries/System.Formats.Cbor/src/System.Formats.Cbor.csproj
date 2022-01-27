@@ -49,7 +49,6 @@ System.Formats.Cbor.CborWriter</PackageDescription>
   </ItemGroup>
     
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
