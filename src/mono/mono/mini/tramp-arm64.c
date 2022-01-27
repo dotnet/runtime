@@ -5,7 +5,7 @@
  * Copyright 2013 Xamarin Inc
  *
  * Based on tramp-arm.c:
- * 
+ *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -43,7 +43,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 	guint64 slot_addr;
 	int disp;
 
-	/* 
+	/*
 	 * Decode the address loaded by the PLT entry emitted by arch_emit_plt_entry () in
 	 * aot-compiler.c
 	 */

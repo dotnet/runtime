@@ -1504,6 +1504,12 @@
         "unix-loongarch64"
       ]
     },
+    "linux-armv6": {
+      "#import": [
+        "linux",
+        "unix-armv6"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -1756,6 +1762,17 @@
       "#import": [
         "maccatalyst.15",
         "maccatalyst.14-x64"
+      ]
+    },
+    "manjaro": {
+      "#import": [
+        "arch"
+      ]
+    },
+    "manjaro-x64": {
+      "#import": [
+        "manjaro",
+        "arch-x64"
       ]
     },
     "ol": {
@@ -3429,6 +3446,11 @@
       ]
     },
     "unix-loongarch64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-armv6": {
       "#import": [
         "unix"
       ]

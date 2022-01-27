@@ -275,7 +275,7 @@ mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, Mono
 /**
  * mono_config_for_assembly:
  */
-void 
+void
 mono_config_for_assembly (MonoImage *assembly)
 {
 }
@@ -618,8 +618,8 @@ mono_context_init (MonoDomain *domain)
  *
  * Used to set the system configuration for an appdomain
  *
- * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException: 
- * Error Initializing the configuration system. ---> System.ArgumentException: 
+ * Without using this, embedded builds will get 'System.Configuration.ConfigurationErrorsException:
+ * Error Initializing the configuration system. ---> System.ArgumentException:
  * The 'ExeConfigFilename' argument cannot be null.' for some managed calls.
  */
 void

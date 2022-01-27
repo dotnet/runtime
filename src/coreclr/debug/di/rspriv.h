@@ -2324,9 +2324,7 @@ public:
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
 
-#ifdef FEATURE_CORESYSTEM
     HMODULE GetTargetCLR() { return m_targetCLR; }
-#endif
 
 private:
     bool IsCreateProcessSupported();
@@ -2347,11 +2345,7 @@ private:
     // Store information about the process to be debugged
     ProcessDescriptor m_pd;
 
-//Note - this code could be useful outside coresystem, but keeping the change localized
-// because we are late in the win8 release
-#ifdef FEATURE_CORESYSTEM
     HMODULE m_targetCLR;
-#endif
 };
 
 
@@ -6266,10 +6260,6 @@ public:
    BOOL ConvertFrameForILMethodWithoutMetadata(ICorDebugFrame *           pFrame,
                                                ICorDebugInternalFrame2 ** ppInternalFrame2);
 
-    // Gets/sets m_fCreationEventQueued
-    bool CreateEventWasQueued();
-    void SetCreateEventQueued();
-
     //-----------------------------------------------------------
     // Data members
     //-----------------------------------------------------------
@@ -6326,11 +6316,6 @@ private:
     // and a debugger may normally just skip the first one knowing it can stop on the 2nd once.
     // Both events will set this bit high. Be careful not to reset this bit inbetween them.
     bool                  m_fException;
-
-    // True if a creation event has been queued for this thread
-    // The event may or may not have been dispatched yet
-    // Bugfix DevDiv2\DevDiv 77523 - this is only being set from ShimProcess::QueueFakeThreadAttachEventsNativeOrder
-    bool                  m_fCreationEventQueued;
 
     // Object handle for Exception object in debuggee.
     VMPTR_OBJECTHANDLE    m_vmExcepObjHandle;

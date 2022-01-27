@@ -2389,11 +2389,12 @@ namespace System.Runtime.Intrinsics
         {
             T result = default;
 
-            for (int index = 0; index < Vector256<T>.Count; index++)
-            {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result = Scalar<T>.Add(result, value);
-            }
+            // Doing this as Dot(lower) + Dot(upper) is important for floating-point determinism
+            // This is because the underlying dpps instruction on x86/x64 will do this equivalently
+            // and otherwise the software vs accelerated implementations may differ in returned result.
+
+            result = Scalar<T>.Add(result, Vector128.Dot(left.GetLower(), right.GetLower()));
+            result = Scalar<T>.Add(result, Vector128.Dot(left.GetUpper(), right.GetUpper()));
 
             return result;
         }

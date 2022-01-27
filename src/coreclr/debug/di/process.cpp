@@ -414,7 +414,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
 
             WCHAR *mutableFilePath = (WCHAR *)filePath;
 
-#if defined(FEATURE_CORESYSTEM)
             size_t pathLen = wcslen(mutableFilePath);
 
             const WCHAR *nidll = W(".ni.dll");
@@ -429,7 +428,6 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
             {
                 wcscpy_s(mutableFilePath+pathLen-dllLen, dllLen, W(".exe"));
             }
-#endif//FEATURE_CORESYSTEM
 
             ALLOW_DATATARGET_MISSING_MEMORY(
                 pMDII = LookupMetaDataFromDebuggerForSingleFile(pModule, mutableFilePath, dwImageTimeStamp, dwImageSize);
@@ -7626,27 +7624,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 
 
     {
-#if !defined FEATURE_CORESYSTEM
-        // kernel32!OpenThread does not exist on all platforms (missing on Win98).
-        // So we need to delay load it.
-        typedef HANDLE (WINAPI *FPOPENTHREAD)(DWORD dwDesiredAccess,
-                                              BOOL bInheritHandle,
-                                              DWORD dwThreadId);
-
-
-
-        HMODULE mod = WszGetModuleHandle(W("kernel32.dll"));
-
-        _ASSERTE(mod != NULL); // can't fail since Kernel32.dll is already loaded.
-
-        const FPOPENTHREAD pfnOpenThread = (FPOPENTHREAD)GetProcAddress(mod, "OpenThread");
-
-        if (pfnOpenThread != NULL)
-        {
-            m_hHelperThread = pfnOpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
-            CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
-        }
-#elif TARGET_UNIX
+#if TARGET_UNIX
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
         m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
@@ -7673,8 +7651,6 @@ HRESULT CordbProcess::GetRuntimeOffsets()
          m_runtimeOffsets.m_excepNotForRuntimeBPAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   0x%p\n",
          m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_raiseException=                 0x%p\n",
-         m_runtimeOffsets.m_raiseExceptionAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -9819,27 +9795,22 @@ HRESULT CordbProcess::EnsureClrInstanceIdSet()
     // If we didn't expect a specific CLR, then attempt to attach to any.
     if (m_clrInstanceId == 0)
     {
-
-#ifdef FEATURE_CORESYSTEM
+        // The only case in which we were allowed to request the "default" CLR instance
+        // ID is when we're running in V2 mode.  In V3, the client is required to pass
+        // a non-zero value to OpenVirtualProcess. Since V2 is no longer supported we
+        // no longer attempt to find it.
         if(m_cordb->GetTargetCLR() != 0)
         {
             m_clrInstanceId = PTR_TO_CORDB_ADDRESS(m_cordb->GetTargetCLR());
             return S_OK;
         }
-#endif
 
-        // The only case in which we're allowed to request the "default" CLR instance
-        // ID is when we're running in V2 mode.  In V3, the client is required to pass
-        // a non-zero value to OpenVirtualProcess.
+        // In V3, the client is required to pass a non-zero value to OpenVirtualProcess.
+        // In V2 mode we should be setting target CLR up front but return an error
+        // if we haven't.
         _ASSERTE(m_pShim != NULL);
+        return E_UNEXPECTED;
 
-        HRESULT hr = m_pShim->FindLoadedCLR(&m_clrInstanceId);
-        if (FAILED(hr))
-        {
-            // Couldn't find a loaded clr - no CLR instance ID yet
-            _ASSERTE(m_clrInstanceId == 0);
-            return hr;
-        }
     }
 
     // We've (now) got a valid CLR instance id
@@ -14908,26 +14879,6 @@ HRESULT CordbProcess::IsReadyForDetach()
 
 
         pAppDomain = m_appDomains.FindNext(&foundAppDomain);
-    }
-
-    // If we're using the shim, give a chance to early-out if the OS doesn't support detach
-    // so that the user can continue to debug in that case.
-    // Ideally we'd just rely on the failure from DebugActiveProcessStop, but by then it's too late
-    // to recover.  This function is our only chance to distinguish between graceful detach failures
-    // and hard detach failures (after which the process object is neutered).
-    if (m_pShim != NULL)
-    {
-#if !defined(FEATURE_CORESYSTEM) // CORESYSTEM TODO
-        HModuleHolder hKernel32;
-        hKernel32 = WszLoadLibrary(W("kernel32"));
-        if (hKernel32 == NULL)
-            return HRESULT_FROM_GetLastError();
-        typedef BOOL (*DebugActiveProcessStopSig) (DWORD);
-        DebugActiveProcessStopSig pDebugActiveProcessStop =
-            reinterpret_cast<DebugActiveProcessStopSig>(GetProcAddress(hKernel32, "DebugActiveProcessStop"));
-        if (pDebugActiveProcessStop == NULL)
-            return COR_E_PLATFORMNOTSUPPORTED;
-#endif
     }
 
     return S_OK;

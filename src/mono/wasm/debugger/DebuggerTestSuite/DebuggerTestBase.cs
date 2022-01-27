@@ -1189,9 +1189,72 @@ namespace DebuggerTests
             return await insp.WaitFor(Inspector.PAUSE);
         }
 
+        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(string asm_file, string pdb_file, string class_name, string method_name)
+        {
+            byte[] bytes = File.ReadAllBytes(asm_file);
+            string asm_base64 = Convert.ToBase64String(bytes);
+            bytes = File.ReadAllBytes(pdb_file);
+            string pdb_base64 = Convert.ToBase64String(bytes);
+
+            string expression = $"let asm_b64 = '{asm_base64}'; let pdb_b64 = '{pdb_base64}';";
+            expression = $"{{ {expression} invoke_static_method('[debugger-test] TestHotReloadUsingSDB:LoadLazyHotReload', asm_b64, pdb_b64); }}";
+            var load_assemblies = JObject.FromObject(new
+            {
+                expression
+            });
+
+            Result load_assemblies_res = await cli.SendCommand("Runtime.evaluate", load_assemblies, token);
+
+            Thread.Sleep(1000);
+            var run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReloadUsingSDB:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
+            });
+
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            return await insp.WaitFor(Inspector.PAUSE);
+        }
+
+        internal async Task<JObject> LoadAssemblyAndTestHotReloadUsingSDB(string asm_file_hot_reload, string class_name, string method_name, int id)
+        {
+            await cli.SendCommand("Debugger.resume", null, token);
+            var bytes = File.ReadAllBytes($"{asm_file_hot_reload}.{id}.dmeta");
+            string dmeta1 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.{id}.dil");
+            string dil1 = Convert.ToBase64String(bytes);
+
+            bytes = File.ReadAllBytes($"{asm_file_hot_reload}.{id}.dpdb");
+            string dpdb1 = Convert.ToBase64String(bytes);
+
+            var run_method = JObject.FromObject(new
+            {
+                expression = "invoke_static_method('[debugger-test] TestHotReloadUsingSDB:GetModuleGUID');"
+            });
+
+            var moduleGUID_res = await cli.SendCommand("Runtime.evaluate", run_method, token);
+
+            Assert.True(moduleGUID_res.IsOk);
+            var moduleGUID = moduleGUID_res.Value["result"]["value"];
+
+            var applyUpdates = JObject.FromObject(new
+            {
+                moduleGUID,
+                dmeta = dmeta1,
+                dil = dil1,
+                dpdb = dpdb1
+            });
+            await cli.SendCommand("DotnetDebugger.applyUpdates", applyUpdates, token);
+            run_method = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_static_method('[debugger-test] TestHotReloadUsingSDB:RunMethod', '" + class_name + "', '" + method_name + "'); }, 1);"
+            });
+            await cli.SendCommand("Runtime.evaluate", run_method, token);
+            return await insp.WaitFor(Inspector.PAUSE);
+        }
+
         internal async Task<JObject> LoadAssemblyAndTestHotReload(string asm_file, string pdb_file, string asm_file_hot_reload, string class_name, string method_name)
         {
-            // Simulate loading an assembly into the framework
             byte[] bytes = File.ReadAllBytes(asm_file);
             string asm_base64 = Convert.ToBase64String(bytes);
             bytes = File.ReadAllBytes(pdb_file);
@@ -1236,6 +1299,14 @@ namespace DebuggerTests
 
             await cli.SendCommand("Runtime.evaluate", run_method, token);
             return await insp.WaitFor(Inspector.PAUSE);
+        }
+
+        internal async Task SetJustMyCode(bool enabled)
+        {
+            var req = JObject.FromObject(new { enabled = enabled });
+            var res = await cli.SendCommand("DotnetDebugger.justMyCode", req, token);
+            Assert.True(res.IsOk);
+            Assert.Equal(res.Value["justMyCodeEnabled"], enabled);
         }
     }
 

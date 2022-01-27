@@ -75,6 +75,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void GetDictionaryInvalidValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"InvalidDictionary:0", "true"},
+                {"InvalidDictionary:1", "invalid"},
+            };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(input).Build();
+            var dict = new Dictionary<string, bool>();
+
+            config.Bind("InvalidDictionary", dict);
+
+            Assert.Single(dict);
+            Assert.True(dict["0"]);
+        }
+
+        [Fact]
         public void BindList()
         {
             var input = new Dictionary<string, string>

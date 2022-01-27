@@ -165,9 +165,7 @@
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
 
-#if defined(FEATURE_CORESYSTEM)
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-#endif // defined(FEATURE_CORESYSTEM)
 
 // If defined, support interpretation.
 

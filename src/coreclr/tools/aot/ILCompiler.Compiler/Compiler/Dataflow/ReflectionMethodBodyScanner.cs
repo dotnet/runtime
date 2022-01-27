@@ -1029,8 +1029,8 @@ namespace ILCompiler.Dataflow
                                                 // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                                 // that the method may have requirements which we can't fullfil -> warn.
                                                 reflectionContext.RecordUnrecognizedPattern(
-                                                    (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                                                    new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
+                                                    (int)DiagnosticId.MakeGenericMethod,
+                                                    new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                             }
 
                                             RequireDynamicallyAccessedMembers(
@@ -1048,8 +1048,8 @@ namespace ILCompiler.Dataflow
                                         // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                         // that the method may have requirements which we can't fullfil -> warn.
                                         reflectionContext.RecordUnrecognizedPattern(
-                                            (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                                            new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
+                                            (int)DiagnosticId.MakeGenericMethod,
+                                            new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                     }
 
                                     RequireDynamicallyAccessedMembers(
@@ -2162,8 +2162,8 @@ namespace ILCompiler.Dataflow
                                     // We don't know what method the `MakeGenericMethod` was called on, so we have to assume
                                     // that the method may have requirements which we can't fullfil -> warn.
                                     reflectionContext.RecordUnrecognizedPattern(
-                                        (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                                        new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(
+                                        (int)DiagnosticId.MakeGenericMethod,
+                                        new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(
                                             DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                                 }
                             }
@@ -2199,7 +2199,9 @@ namespace ILCompiler.Dataflow
                             if (comDangerousMethod)
                             {
                                 reflectionContext.AnalyzingPattern();
-                                reflectionContext.RecordUnrecognizedPattern(2050, $"P/invoke method '{calledMethod.GetDisplayName()}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.");
+                                reflectionContext.RecordUnrecognizedPattern(
+                                    (int)DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, 
+                                    new DiagnosticString(DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(calledMethod)));
                             }
                         }
 
@@ -2224,9 +2226,8 @@ namespace ILCompiler.Dataflow
                         {
                             string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresUnreferencedCodeAttribute"));
                             string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresUnreferencedCodeAttribute"));
-                            string message = new DiagnosticString(DiagnosticId.RequiresUnreferencedCode).GetMessage(calledMethod.GetDisplayName(), arg1, arg2);
 
-                            _logger.LogWarning(message, (int)DiagnosticId.RequiresUnreferencedCode, callingMethodBody, offset, MessageSubCategory.TrimAnalysis);
+                            _logger.LogWarning(callingMethodBody, offset, DiagnosticId.RequiresUnreferencedCode, calledMethod.GetDisplayName(), arg1, arg2);
                         }
 
                         if (shouldEnableAotWarnings &&
@@ -2239,9 +2240,8 @@ namespace ILCompiler.Dataflow
                         {
                             string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresDynamicCodeAttribute"));
                             string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresDynamicCodeAttribute"));
-                            string message = new DiagnosticString(DiagnosticId.RequiresDynamicCode).GetMessage(calledMethod.GetDisplayName(), arg1, arg2);
 
-                            logger.LogWarning(message, (int)DiagnosticId.RequiresDynamicCode, callingMethodBody, offset, MessageSubCategory.AotAnalysis);
+                            logger.LogWarning(callingMethodBody, offset, DiagnosticId.RequiresDynamicCode, calledMethod.GetDisplayName(), arg1, arg2);
                         }
 
                         // To get good reporting of errors we need to track the origin of the value for all method calls
@@ -2931,32 +2931,20 @@ namespace ILCompiler.Dataflow
                 // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
                 // annotation on a type, not a callsite which uses the annotation. We always want to warn about
                 // possible reflection access indicated by these annotations.
-
-                var message = string.Format(
-                        "'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which has 'DynamicallyAccessedMembersAttribute' requirements.",
-                        ((TypeOrigin)context.MemberWithRequirements).GetDisplayName(),
-                        entity.GetDisplayName());
-                _logger.LogWarning(message, 2115, context.Source, MessageSubCategory.TrimAnalysis);
+                _logger.LogWarning(context.Source, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers,
+                    ((TypeOrigin)context.MemberWithRequirements).GetDisplayName(), entity.GetDisplayName());
             }
             else
             {
                 if (entity is FieldDesc && context.ReportingEnabled)
                 {
-                    _logger.LogWarning(
-                        $"Field '{entity.GetDisplayName()}' with 'DynamicallyAccessedMembersAttribute' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the field.",
-                        2110,
-                        context.Source,
-                        MessageSubCategory.TrimAnalysis);
+                    _logger.LogWarning(context.Source, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
                 }
                 else
                 {
                     Debug.Assert(entity is MethodDesc);
 
-                    _logger.LogWarning(
-                    $"Method '{entity.GetDisplayName()}' with parameters or return value with `DynamicallyAccessedMembersAttribute` is accessed via reflection. Trimmer can't guarantee availability of the requirements of the method.",
-                    2111,
-                    context.Source,
-                    MessageSubCategory.TrimAnalysis);
+                    _logger.LogWarning(context.Source, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
                 }
             }
         }
@@ -2967,11 +2955,8 @@ namespace ILCompiler.Dataflow
             {
                 if (_purpose == ScanningPurpose.GetTypeDataflow)
                 {
-                    var message = string.Format(
-                        "'DynamicallyAccessedMembersAttribute' on '{0}' or one of its base types references '{1}' which requires unreferenced code.",
-                        ((TypeOrigin)reflectionContext.MemberWithRequirements).GetDisplayName(),
-                        method.GetDisplayName());
-                    _logger.LogWarning(message, 2113, reflectionContext.Source, MessageSubCategory.TrimAnalysis);
+                    _logger.LogWarning(reflectionContext.Source, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
+                        ((TypeOrigin)reflectionContext.MemberWithRequirements).GetDisplayName(), method.GetDisplayName());
                 }
             }
 
@@ -3064,8 +3049,8 @@ namespace ILCompiler.Dataflow
             if (!AnalyzeGenericInstantiationTypeArray(genericParametersArray, ref reflectionContext, reflectionMethod, genericMethod.GetMethodDefinition().Instantiation))
             {
                 reflectionContext.RecordUnrecognizedPattern(
-                    (int)DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed,
-                    new DiagnosticString(DiagnosticId.MakeGenericMethodCannotBeStaticallyAnalyzed).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(reflectionMethod)));
+                    (int)DiagnosticId.MakeGenericMethod,
+                    new DiagnosticString(DiagnosticId.MakeGenericMethod).GetMessage(DiagnosticUtilities.GetMethodSignatureDisplayName(reflectionMethod)));
             }
             else
             {
