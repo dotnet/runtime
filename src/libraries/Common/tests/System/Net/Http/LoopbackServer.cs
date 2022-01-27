@@ -1065,6 +1065,11 @@ namespace System.Net.Test.Common
                     }
                 }
             }
+
+            public override Task WaitForClose(CancellationToken cancellationToken)
+            {
+                return _socket.WaitForClose(cancellationToken);
+            }
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")

@@ -229,6 +229,12 @@ namespace System.Net.Http.Functional.Tests
                         await connection.ReadRequestDataAsync();
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, isFinal: false, content: chunkedTransfer ? "8\r\nTooShort\r\n" : "TooShort");
                         await clientFinished.Task;
+
+                        if (PlatformDetection.IsBrowser)
+                        {
+                            // make sure that the browser closed the connection
+                            await connection.WaitForClose(CancellationToken.None);
+                        }
                     });
 
                     var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };

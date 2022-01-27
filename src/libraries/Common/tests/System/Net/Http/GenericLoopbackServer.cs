@@ -86,6 +86,22 @@ namespace System.Net.Test.Common
             CloseWebSocket();
         }
 
+        public async Task WaitForClose(CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                if (_websocket != null
+                    ? _websocket.State == WebSocketState.Closed
+                    : _socket.Poll(1, SelectMode.SelectRead) && _socket.Available == 0)
+                {
+                    break;
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(100);
+            }
+        }
+
         public void Shutdown(SocketShutdown how)
         {
             _socket?.Shutdown(how);
@@ -137,6 +153,9 @@ namespace System.Net.Test.Common
 
         /// <summary>Waits for the client to signal cancellation.</summary>
         public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true);
+
+        /// <summary>Waits for the client to signal cancellation.</summary>
+        public abstract Task WaitForClose(CancellationToken cancellationToken);
 
         /// <summary>Helper function to make it easier to convert old test with strings.</summary>
         public async Task SendResponseBodyAsync(string content, bool isFinal = true)
