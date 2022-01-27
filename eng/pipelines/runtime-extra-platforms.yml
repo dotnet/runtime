@@ -35,13 +35,55 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 # include this unconditionally, because it has per job conditions
-- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
-  parameters:
-    isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-    isRollingBuild: ${{ variables.isRollingBuild }}
+#- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+#  parameters:
+#    isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+#    isRollingBuild: ${{ variables.isRollingBuild }}
 
 # Any jobs that are not specific to any platform
-- ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-other.yml
-    parameters:
-      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+#- ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
+#  - template: /eng/pipelines/runtime-extra-platforms-other.yml
+#    parameters:
+#      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+
+#
+# Android emulators
+# Build the whole product using Mono and run libraries tests
+#
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Android_x86
+    - Android_x64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true # $(_runSmokeTestsOnlyArg)
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isRollingBuild'], true))
