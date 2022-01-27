@@ -472,8 +472,8 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
-        [InlineData(-4567.0f, Skip = "Mono incorrectly handles")]
-        [InlineData(-4567.89101f, Skip = "Mono incorrectly handles")]
+        [InlineData(-4567.0f, Skip = "https://github.com/dotnet/runtime/issues/64386")]
+        [InlineData(-4567.89101f, Skip = "https://github.com/dotnet/runtime/issues/64386")]
         [InlineData(0.0f)]
         [InlineData(4567.0f)]
         [InlineData(4567.89101f)]
