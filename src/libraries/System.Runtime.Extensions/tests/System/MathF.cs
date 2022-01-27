@@ -1949,6 +1949,8 @@ namespace System.Tests
         [MemberData(nameof(Round_ToEven_TestData))]
         public static void Round_ToEven_0(float value, float expected)
         {
+            // Math.Round has special fast paths when MidpointRounding is a const
+            // Don't replace it with a variable
             Assert.Equal(expected, MathF.Round(value, MidpointRounding.ToEven));
             Assert.Equal(expected, MathF.Round(value, 0, MidpointRounding.ToEven));
         }
@@ -1990,6 +1992,8 @@ namespace System.Tests
         [MemberData(nameof(Round_AwayFromZero_TestData))]
         public static void Round_AwayFromZero_0(float value, float expected)
         {
+            // Math.Round has special fast paths when MidpointRounding is a const
+            // Don't replace it with a variable
             Assert.Equal(expected, MathF.Round(value, MidpointRounding.AwayFromZero));
             Assert.Equal(expected, MathF.Round(value, 0, MidpointRounding.AwayFromZero));
         }
