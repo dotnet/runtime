@@ -26,9 +26,7 @@ namespace Internal.TypeSystem
             // Its only valid to compare two TypeDescs in the same context
             Debug.Assert(o is not TypeDesc || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
             if (o is TypeDesc)
-            {
                 return this.IsEquivalentTo((TypeDesc)o);
-            }
             return object.ReferenceEquals(this, o);
         }
 
