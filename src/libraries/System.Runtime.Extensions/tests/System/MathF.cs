@@ -1939,7 +1939,7 @@ namespace System.Tests
             yield return new object[] { -0f, -0f };
             yield return new object[] { 0f, 0f };
             yield return new object[] { float.NaN, float.NaN };
-            yield return new object[] { float.PositiveInfinity, float.NegativeInfinity };
+            yield return new object[] { float.PositiveInfinity, float.PositiveInfinity };
             yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
             yield return new object[] { 3.4028235E+38f, 3.4028235E+38f };
             yield return new object[] { -3.4028235E+38f, -3.4028235E+38f };
@@ -1982,7 +1982,7 @@ namespace System.Tests
             yield return new object[] { -0f, -0f };
             yield return new object[] { 0f, 0f };
             yield return new object[] { float.NaN, float.NaN };
-            yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
+            yield return new object[] { float.PositiveInfinity, float.PositiveInfinity };
             yield return new object[] { float.NegativeInfinity, float.NegativeInfinity };
             yield return new object[] { 3.4028235E+38f, 3.4028235E+38f };
             yield return new object[] { -3.4028235E+38f, -3.4028235E+38f };
