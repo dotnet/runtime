@@ -611,13 +611,11 @@ namespace Internal.TypeSystem.Ecma
                 return true;
 
             if (typeDesc is EcmaType)
-            {
-                return IsPossiblyEquivalent(this, (EcmaType)typeDesc);
-            }
+                return CheckEquivalence(this, (EcmaType)typeDesc);
 
             return false;
 
-            static bool IsPossiblyEquivalent(EcmaType type1, EcmaType type2)
+            static bool CheckEquivalence(EcmaType type1, EcmaType type2)
             {
                 if (!type1.HasCustomAttribute("System.Runtime.InteropServices", "TypeIdentifierAttribute"))
                     return false;
