@@ -9186,6 +9186,11 @@ namespace System.Diagnostics.CodeAnalysis
         public string Message { get { throw null; } }
         public string? Url { get { throw null; } set { } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
+    public sealed class SetsRequiredMembersAttribute : System.Attribute
+    {
+        public SetsRequiredMembersAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     public sealed partial class StringSyntaxAttribute : System.Attribute
     {
@@ -13205,6 +13210,11 @@ namespace System.Runtime.CompilerServices
     public sealed partial class PreserveBaseOverridesAttribute : System.Attribute
     {
         public PreserveBaseOverridesAttribute() { }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+    public sealed class RequiredMemberAttribute : System.Attribute
+    {
+        public RequiredMemberAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     public sealed partial class ReferenceAssemblyAttribute : System.Attribute
