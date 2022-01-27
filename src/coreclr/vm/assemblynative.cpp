@@ -20,7 +20,6 @@
 #include "assemblynative.hpp"
 #include "dllimport.h"
 #include "field.h"
-#include "assemblyname.hpp"
 #include "eeconfig.h"
 #include "interoputil.h"
 #include "frames.h"

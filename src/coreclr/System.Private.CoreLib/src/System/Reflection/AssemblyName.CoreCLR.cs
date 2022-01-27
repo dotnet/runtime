@@ -32,17 +32,6 @@ namespace System.Reflection
             _flags = flags;
         }
 
-        // This call opens and closes the file, but does not add the
-        // assembly to the domain.
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern AssemblyName nGetFileInformation(string s);
-
-        internal static AssemblyName GetFileInformationCore(string assemblyFile)
-        {
-            string fullPath = Path.GetFullPath(assemblyFile);
-            return nGetFileInformation(fullPath);
-        }
-
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
         {
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete

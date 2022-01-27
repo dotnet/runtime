@@ -840,13 +840,14 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	guint32 flags;
 	int i, gen_param_count = 0, param_count, call_conv;
 	guint8 *p = buf;
-	gboolean hasthis, explicit_this, has_gen_params;
+	gboolean hasthis, explicit_this, has_gen_params, pinvoke;
 
 	flags = *p;
 	p ++;
 	has_gen_params = (flags & 0x10) != 0;
 	hasthis = (flags & 0x20) != 0;
 	explicit_this = (flags & 0x40) != 0;
+	pinvoke = (flags & 0x80) != 0;
 	call_conv = flags & 0x0F;
 
 	if (has_gen_params)
@@ -859,6 +860,7 @@ decode_signature_with_target (MonoAotModule *module, MonoMethodSignature *target
 	sig->sentinelpos = -1;
 	sig->hasthis = hasthis;
 	sig->explicit_this = explicit_this;
+	sig->pinvoke = pinvoke;
 	sig->call_convention = call_conv;
 	sig->generic_param_count = gen_param_count;
 	sig->ret = decode_type (module, p, &p, error);
@@ -1127,6 +1129,14 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
 				MonoJitICallInfo *info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
 				ref->method = mono_icall_get_wrapper_method (info);
+			} else if (subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
+				MonoClass *klass = decode_klass_ref (module, p, &p, error);
+				if (!klass)
+					return FALSE;
+				MonoMethodSignature *sig = decode_signature (module, p, &p);
+				if (!sig)
+					return FALSE;
+				ref->method = mono_marshal_get_native_func_wrapper_indirect (klass, sig, TRUE);
 			} else {
 				m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)

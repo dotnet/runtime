@@ -27459,7 +27459,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         _sort (&mark_list[0], mark_list_index - 1, 0);
 #endif //USE_VXSORT
 
-        dprintf (3, ("using mark list at GC #%d", settings.gc_index));
+        dprintf (3, ("using mark list at GC #%Id", (size_t)settings.gc_index));
         //verify_qsort_array (&mark_list[0], mark_list_index-1);
 #endif //!MULTIPLE_HEAPS
         use_mark_list = TRUE;
@@ -36666,7 +36666,7 @@ go_through_refs:
             hpt->heap_number, heap_number, n_eph, n_gen, n_card_set, total_cards_cleared,
             (n_eph ? (int)(((float)n_gen / (float)n_eph) * 100) : 0)));
         dprintf (3, ("h%d marking h%d Msoh: total cross %Id, useful: %Id, running ratio: %d",
-            hpt->heap_number, heap_number, n_eph_soh, n_gen_soh,
+            hpt->heap_number, heap_number, (size_t)n_eph_soh, (size_t)n_gen_soh,
             (n_eph_soh ? (int)(((float)n_gen_soh / (float)n_eph_soh) * 100) : 0)));
 #else
         generation_skip_ratio = ((n_eph > MIN_SOH_CROSS_GEN_REFS) ? (int)(((float)n_gen / (float)n_eph) * 100) : 100);
@@ -41414,7 +41414,7 @@ go_through_refs:
             hpt->heap_number, heap_number, n_eph, n_gen, n_card_set, total_cards_cleared,
             (n_eph ? (int)(((float)n_gen / (float)n_eph) * 100) : 0)));
         dprintf (3, ("h%d marking h%d Mloh: total cross %Id, useful: %Id, running ratio: %d",
-            hpt->heap_number, heap_number, n_eph_loh, n_gen_loh,
+            hpt->heap_number, heap_number, (size_t)n_eph_loh, (size_t)n_gen_loh,
             (n_eph_loh ? (int)(((float)n_gen_loh / (float)n_eph_loh) * 100) : 0)));
 #else
         generation_skip_ratio = min (((n_eph > MIN_LOH_CROSS_GEN_REFS) ?

@@ -4990,60 +4990,6 @@ ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly *mass)
 	return &mass->aname;
 }
 
-void
-ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle fname, MonoAssemblyName *name, MonoStringHandleOut normalized_codebase, MonoError *error)
-{
-	char *filename;
-	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	char *codebase = NULL;
-	gboolean res;
-	MonoImage *image;
-
-	filename = mono_string_handle_to_utf8 (fname, error);
-	return_if_nok (error);
-
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
-
-	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
-	image = mono_image_open_a_lot (alc, filename, &status);
-
-	if (!image){
-		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
-		else
-			mono_error_set_simple_file_not_found (error, filename);
-		g_free (filename);
-		return;
-	}
-
-	res = mono_assembly_fill_assembly_name_full (image, name, TRUE);
-	if (!res) {
-		mono_image_close (image);
-		g_free (filename);
-		mono_error_set_argument (error, "assemblyFile", "The file does not contain a manifest");
-		return;
-	}
-
-	if (filename != NULL && *filename != '\0') {
-		gchar *result;
-
-		codebase = g_strdup (filename);
-
-		mono_icall_make_platform_path (codebase);
-
-		const gchar *prepend = mono_icall_get_file_path_prefix (codebase);
-
-		result = g_strconcat (prepend, codebase, (const char*)NULL);
-		g_free (codebase);
-		codebase = result;
-	}
-	MONO_HANDLE_ASSIGN (normalized_codebase, mono_string_new_handle (codebase, error));
-	g_free (codebase);
-
-	mono_image_close (image);
-	g_free (filename);
-}
-
 static gboolean
 mono_module_type_is_visible (MonoTableInfo *tdef, MonoImage *image, int type)
 {
