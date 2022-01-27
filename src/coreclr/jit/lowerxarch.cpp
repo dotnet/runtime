@@ -3848,7 +3848,7 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
 
     // We will avoid using "andn" when one of the operands is (likely to be) in memory:
     // "and"'s RMW form provides for a shorter instruction sequence in that case.
-    if (!opNode->OperIs(GT_LCL_VAR))
+    if (IsBinOpInRMWStoreInd(andNode))
     {
         return nullptr;
     }
