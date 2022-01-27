@@ -1125,10 +1125,10 @@ extern "C" void *JIT_WriteBarrier_Loc;
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
 
-extern void *JIT_WriteBarrier_Loc;
+extern "C" void *JIT_WriteBarrier_Loc;
 void *JIT_WriteBarrier_Loc = 0;
 
-extern void *JIT_WriteBarrier_Table_Loc;
+extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
