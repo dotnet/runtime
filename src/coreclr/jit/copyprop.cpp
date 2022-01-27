@@ -172,11 +172,6 @@ void Compiler::optCopyProp(Statement*               stmt,
             continue;
         }
 
-        if (newLclDefNode->TypeGet() != tree->TypeGet())
-        {
-            continue;
-        }
-
         if (newLclDefVN != tree->gtVNPair.GetConservative())
         {
             continue;
@@ -221,6 +216,17 @@ void Compiler::optCopyProp(Statement*               stmt,
         }
 
         if (newSsaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            continue;
+        }
+
+        var_types newLclType = newLclVarDsc->TypeGet();
+        if (!newLclVarDsc->lvNormalizeOnLoad())
+        {
+            newLclType = genActualType(newLclType);
+        }
+
+        if (newLclType != tree->TypeGet())
         {
             continue;
         }
