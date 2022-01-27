@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy._certificatePolicy!,
                     chainPolicy.RevocationMode,
                     chainPolicy.RevocationFlag,
-                    chainPolicy.CustomTrustStore,
+                    chainPolicy._customTrustStore,
                     chainPolicy.TrustMode,
                     chainPolicy.VerificationTime,
                     chainPolicy.UrlRetrievalTimeout,

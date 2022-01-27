@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.X509Certificates
             ICertificatePal leafCert,
             X509Certificate2Collection? extraStore,
             X509RevocationMode revocationMode,
-            X509Certificate2Collection customTrustStore,
+            X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode)
         {
             _revocationMode = revocationMode;
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.X509Certificates
         private SafeCreateHandle PrepareCertsArray(
             ICertificatePal cert,
             X509Certificate2Collection? extraStore,
-            X509Certificate2Collection customTrustStore,
+            X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode)
         {
             List<SafeHandle> safeHandles = new List<SafeHandle> { ((AppleCertificatePal)cert).CertificateHandle };
@@ -225,8 +225,8 @@ namespace System.Security.Cryptography.X509Certificates
         internal void Execute(
             DateTime verificationTime,
             bool allowNetwork,
-            OidCollection applicationPolicy,
-            OidCollection certificatePolicy,
+            OidCollection? applicationPolicy,
+            OidCollection? certificatePolicy,
             X509RevocationFlag revocationFlag)
         {
             int osStatus;
@@ -308,8 +308,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private bool IsPolicyMatch(
             (X509Certificate2, int)[] elements,
-            OidCollection applicationPolicy,
-            OidCollection certificatePolicy)
+            OidCollection? applicationPolicy,
+            OidCollection? certificatePolicy)
         {
             if (applicationPolicy?.Count > 0 || certificatePolicy?.Count > 0)
             {
@@ -600,10 +600,6 @@ namespace System.Security.Cryptography.X509Certificates
             TimeSpan timeout,
             bool disableAia)
         {
-            Debug.Assert(applicationPolicy != null);
-            Debug.Assert(certificatePolicy != null);
-            Debug.Assert(customTrustStore != null);
-
             // If the time was given in Universal, it will stay Universal.
             // If the time was given in Local, it will be converted.
             // If the time was given in Unspecified, it will be assumed local, and converted.

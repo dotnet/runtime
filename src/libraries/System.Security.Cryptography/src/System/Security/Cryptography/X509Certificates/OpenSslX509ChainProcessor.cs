@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static OpenSslX509ChainProcessor InitiateChain(
             SafeX509Handle leafHandle,
-            X509Certificate2Collection customTrustStore,
+            X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode,
             DateTime verificationTime,
             TimeSpan remainingDownloadTime)
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static SafeX509StoreHandle GetTrustStore(
             X509ChainTrustMode trustMode,
-            X509Certificate2Collection customTrustStore,
+            X509Certificate2Collection? customTrustStore,
             SafeX509StackHandle untrusted,
             SafeX509StackHandle systemTrust)
         {
@@ -151,10 +151,17 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 using (SafeX509StackHandle customTrust = Interop.Crypto.NewX509Stack())
                 {
-                    foreach (X509Certificate2 cert in customTrustStore)
+                    if (customTrustStore != null)
                     {
-                        SafeX509StackHandle toAdd = cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData) ? customTrust : untrusted;
-                        AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal!).SafeHandle, toAdd);
+                        foreach (X509Certificate2 cert in customTrustStore)
+                        {
+                            SafeX509StackHandle toAdd =
+                                cert.SubjectName.RawData.ContentsEqual(cert.IssuerName.RawData) ?
+                                    customTrust :
+                                    untrusted;
+
+                            AddToStackAndUpRef(((OpenSslX509CertificateReader)cert.Pal!).SafeHandle, toAdd);
+                        }
                     }
 
                     return Interop.Crypto.X509ChainNew(customTrust, SafeX509StackHandle.InvalidHandle);
@@ -611,7 +618,7 @@ namespace System.Security.Cryptography.X509Certificates
             return workingChain;
         }
 
-        internal void Finish(OidCollection applicationPolicy, OidCollection certificatePolicy)
+        internal void Finish(OidCollection? applicationPolicy, OidCollection? certificatePolicy)
         {
             WorkingChain? workingChain = _workingChain;
 
@@ -862,7 +869,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509ChainElement[] elements,
             ref List<X509ChainStatus>? overallStatus,
             OidCollection? applicationPolicy,
-            OidCollection certificatePolicy)
+            OidCollection? certificatePolicy)
         {
             List<X509Certificate2> certsToRead = new List<X509Certificate2>();
 

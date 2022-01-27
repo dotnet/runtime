@@ -37,10 +37,6 @@ namespace System.Security.Cryptography.X509Certificates
             TimeSpan timeout,
             bool disableAia)
         {
-            Debug.Assert(applicationPolicy != null);
-            Debug.Assert(certificatePolicy != null);
-            Debug.Assert(customTrustStore != null);
-
             var chainPal = new AndroidCertPath();
             try
             {
@@ -95,7 +91,7 @@ namespace System.Security.Cryptography.X509Certificates
             internal void Initialize(
                 ICertificatePal cert,
                 X509Certificate2Collection? extraStore,
-                X509Certificate2Collection customTrustStore,
+                X509Certificate2Collection? customTrustStore,
                 X509ChainTrustMode trustMode)
             {
                 List<SafeHandle> extraCertHandles = new List<SafeHandle>() { ((AndroidCertificatePal)cert).SafeHandle };
@@ -189,8 +185,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             internal void Evaluate(
                 DateTime verificationTime,
-                OidCollection applicationPolicy,
-                OidCollection certificatePolicy,
+                OidCollection? applicationPolicy,
+                OidCollection? certificatePolicy,
                 X509RevocationMode revocationMode,
                 X509RevocationFlag revocationFlag)
             {
