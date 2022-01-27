@@ -168,8 +168,6 @@ namespace Mono.Linker
 
 		public Tracer Tracer { get; private set; }
 
-		public IReflectionPatternRecorder ReflectionPatternRecorder { get; set; }
-
 		public CodeOptimizationsSettings Optimizations { get; set; }
 
 		public bool AddReflectionAnnotations { get; set; }
@@ -209,7 +207,6 @@ namespace Mono.Linker
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			SerializationMarker = new SerializationMarker (this);
 			Tracer = factory.CreateTracer (this);
-			ReflectionPatternRecorder = new LoggingReflectionPatternRecorder (this);
 			MarkedKnownMembers = new KnownMembers ();
 			PInvokes = new List<PInvokeInfo> ();
 			Suppressions = new UnconditionalSuppressMessageAttributeState (this);
