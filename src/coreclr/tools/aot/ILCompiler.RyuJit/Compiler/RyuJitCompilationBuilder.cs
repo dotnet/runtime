@@ -22,7 +22,6 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new CoreRTILProvider();
         private ProfileDataManager _profileDataManager;
-        private bool _resilient;
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(context, group,
@@ -64,12 +63,6 @@ namespace ILCompiler
         public override CompilationBuilder UseILProvider(ILProvider ilProvider)
         {
             _ilProvider = ilProvider;
-            return this;
-        }
-
-        public CompilationBuilder UseResilience(bool resilient)
-        {
-            _resilient = resilient;
             return this;
         }
 

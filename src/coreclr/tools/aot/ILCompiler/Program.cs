@@ -804,7 +804,7 @@ namespace ILCompiler
                 builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
             }
 
-            ((RyuJitCompilationBuilder)builder).UseResilience(_resilient);
+            builder.UseResilience(_resilient);
 
             ICompilation compilation = builder.ToCompilation();
 
