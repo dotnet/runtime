@@ -22,6 +22,7 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new CoreRTILProvider();
         private ProfileDataManager _profileDataManager;
+        private bool _resilient;
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(context, group,
@@ -66,12 +67,18 @@ namespace ILCompiler
             return this;
         }
 
+        public CompilationBuilder UseResilience(bool resilient)
+        {
+            _resilient = resilient;
+            return this;
+        }
+
         protected override ILProvider GetILProvider()
         {
             return _ilProvider;
         }
 
-        public override ICompilation ToCompilation(bool ignoreUnresolved)
+        public override ICompilation ToCompilation()
         {
             ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
 
@@ -113,11 +120,14 @@ namespace ILCompiler
             if (_useDwarf5)
                 options |= RyuJitCompilationOptions.UseDwarf5;
 
+            if (_resilient)
+                options |= RyuJitCompilationOptions.UseResilience;
+
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, GetPreinitializationManager());
 
             JitConfigProvider.Initialize(_context.Target, jitFlagBuilder.ToArray(), _ryujitOptions);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));
-            return new RyuJitCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _devirtualizationManager, _inliningPolicy ?? _compilationGroup, _instructionSetSupport, _profileDataManager, _methodImportationErrorProvider, options, _parallelism, ignoreUnresolved);
+            return new RyuJitCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _devirtualizationManager, _inliningPolicy ?? _compilationGroup, _instructionSetSupport, _profileDataManager, _methodImportationErrorProvider, options, _parallelism);
         }
     }
 }

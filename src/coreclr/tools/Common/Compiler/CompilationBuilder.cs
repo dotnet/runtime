@@ -83,7 +83,7 @@ namespace ILCompiler
             return _dependencyTrackingLevel.CreateDependencyGraph(factory, comparer);
         }
 
-        public abstract ICompilation ToCompilation(bool ignoreUnresolved);
+        public abstract ICompilation ToCompilation();
     }
 
     /// <summary>

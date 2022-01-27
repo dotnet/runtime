@@ -27,7 +27,6 @@ namespace ILCompiler
         private readonly ProfileDataManager _profileDataManager;
         private readonly MethodImportationErrorProvider _methodImportationErrorProvider;
         private readonly int _parallelism;
-        private readonly bool _ignoreUnresolved;
 
         public InstructionSetSupport InstructionSetSupport { get; }
 
@@ -44,8 +43,7 @@ namespace ILCompiler
             ProfileDataManager profileDataManager,
             MethodImportationErrorProvider errorProvider,
             RyuJitCompilationOptions options,
-            int parallelism,
-            bool ignoreUnresolved)
+            int parallelism)
             : base(dependencyGraph, nodeFactory, roots, ilProvider, debugInformationProvider, devirtualizationManager, inliningPolicy, logger)
         {
             _compilationOptions = options;
@@ -66,8 +64,6 @@ namespace ILCompiler
             _methodImportationErrorProvider = errorProvider;
 
             _parallelism = parallelism;
-
-            _ignoreUnresolved = ignoreUnresolved;
         }
 
         public ProfileDataManager ProfileData => _profileDataManager;
@@ -213,7 +209,7 @@ namespace ILCompiler
                 {
                     Logger.LogWarning(method, DiagnosticId.COMInteropNotSupportedInFullAOT);
                 }
-                if (_ignoreUnresolved)
+                if ((_compilationOptions & RyuJitCompilationOptions.UseResilience) != 0)
                     Logger.LogMessage($"Ignoring unresolved method {method}, because: {exception.Message}");
                 else
                     Logger.LogError($"Method will always throw because: {exception.Message}", 1005, method, MessageSubCategory.AotAnalysis);
@@ -249,5 +245,6 @@ namespace ILCompiler
         MethodBodyFolding = 0x1,
         ControlFlowGuardAnnotations = 0x2,
         UseDwarf5 = 0x4,
+        UseResilience = 0x8,
     }
 }
