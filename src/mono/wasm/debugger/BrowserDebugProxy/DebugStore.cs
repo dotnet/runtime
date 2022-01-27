@@ -1009,6 +1009,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 executionContextId,
                 executionContextAuxData,
                 //hash:  should be the v8 hash algo, managed implementation is pending
+                isLiveEdit = false,
+                isModule = false,
+                scriptLanguage = "JavaScript",
+                hasSourceURL = false,
                 dotNetUrl = DotNetUrl,
             };
         }

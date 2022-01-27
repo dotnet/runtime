@@ -128,13 +128,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsOk => Value != null;
         public bool IsErr => Error != null;
 
-        private Result(JObject result, JObject error)
+        private Result(JObject result, JObject error, bool surfaceError = false)
         {
             if (result != null && error != null)
                 throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
 
             bool resultHasError = string.Equals((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
-            if (result != null && resultHasError)
+            if (result != null && resultHasError && !surfaceError)
             {
                 this.Value = null;
                 this.Error = result;
@@ -152,9 +152,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new Result(obj["result"] as JObject, obj["error"] as JObject);
         }
 
-        public static Result Ok(JObject ok) => new Result(ok, null);
+        public static Result Ok(JObject ok, bool surfaceError = false) => new Result(ok, null, surfaceError);
 
-        public static Result OkFromObject(object ok) => Ok(JObject.FromObject(ok));
+        public static Result OkFromObject(object ok, bool surfaceError = false) => Ok(JObject.FromObject(ok), surfaceError);
 
         public static Result Err(JObject err) => new Result(null, err);
 

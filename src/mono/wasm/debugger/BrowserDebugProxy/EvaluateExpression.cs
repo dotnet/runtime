@@ -390,17 +390,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            try {
+            try
+            {
                 var newScript = script.ContinueWith(
                     string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
 
                 var state = await newScript.RunAsync(cancellationToken: token);
-
                 return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
-            catch (Exception)
+            catch (CompilationErrorException cee)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}'.", "CompilationError");
+                throw new ReturnAsErrorException($"Running expression: {expression} failed with error: {cee.Message}. Check if the expression is correct.", "CompilationError");
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"BUG: Unable to run {expression}, error: {ex.Message}.");
             }
         }
 
@@ -435,16 +439,23 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public ReturnAsErrorException(string message, string className)
         {
-            Error = Result.Err(JObject.FromObject(new
+            var result = new
             {
-                result = new
+                type = "object",
+                subtype = "error",
+                description = message,
+                className
+            };
+            Error = Result.OkFromObject(JObject.FromObject(
+                new
                 {
-                    type = "object",
-                    subtype = "error",
-                    description = message,
-                    className
-                }
-            }));
+                    result = result,
+                    exceptionDetails = new
+                    {
+                        exception = result
+                    }
+                }),
+                surfaceError: true);
         }
     }
 }
