@@ -4636,7 +4636,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run an early flow graph simplification pass
         //
         auto earlyUpdateFlowGraphPhase = [this]() {
-            const bool doTailDup = false;
+            constexpr bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
         };
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
@@ -4776,6 +4776,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+
+        // Clear loop table info that is not used after this point, and might become invalid.
+        //
+        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
     }
 
 #ifdef DEBUG
@@ -4909,7 +4913,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 auto optUpdateFlowGraphPhase = [this]() {
-                    const bool doTailDup = false;
+                    constexpr bool doTailDup = false;
                     fgUpdateFlowGraph(doTailDup);
                 };
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
@@ -4966,11 +4970,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
@@ -5020,10 +5019,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions

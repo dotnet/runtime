@@ -51,6 +51,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
@@ -2611,7 +2614,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(endingPos);
                 BgeFar(doneLabel);
 
-                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
+                if (subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
                     // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
@@ -2641,8 +2644,35 @@ namespace System.Text.RegularExpressions
                         Ldloc(startingPos);
                         Sub();
                         Call(s_spanSliceIntIntMethod);
-                        Ldc(literal.Item1);
-                        Call(s_spanLastIndexOfChar);
+                        if (literal.Item3 is not null)
+                        {
+                            switch (literal.Item3.Length)
+                            {
+                                case 2:
+                                    Ldc(literal.Item3[0]);
+                                    Ldc(literal.Item3[1]);
+                                    Call(s_spanLastIndexOfAnyCharChar);
+                                    break;
+
+                                case 3:
+                                    Ldc(literal.Item3[0]);
+                                    Ldc(literal.Item3[1]);
+                                    Ldc(literal.Item3[2]);
+                                    Call(s_spanLastIndexOfAnyCharCharChar);
+                                    break;
+
+                                default:
+                                    Ldstr(literal.Item3);
+                                    Call(s_stringAsSpanMethod);
+                                    Call(s_spanLastIndexOfAnySpan);
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Ldc(literal.Item1);
+                            Call(s_spanLastIndexOfChar);
+                        }
                     }
                     Stloc(endingPos);
                     Ldloc(endingPos);
@@ -2783,8 +2813,8 @@ namespace System.Text.RegularExpressions
                 if (iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
                     !IsCaseInsensitive(node) &&
-                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal &&
-                    (literal.Item2?[0] ?? literal.Item1) != node.Ch)
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
                 {
                     // e.g. "<[^>]*?>"
                     // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
@@ -2793,9 +2823,30 @@ namespace System.Text.RegularExpressions
 
                     // startingPos = slice.IndexOfAny(node.Ch, literal);
                     Ldloc(slice);
-                    Ldc(node.Ch);
-                    Ldc(literal.Item2?[0] ?? literal.Item1);
-                    Call(s_spanIndexOfAnyCharChar);
+                    if (literal.Item3 is not null)
+                    {
+                        switch (literal.Item3.Length)
+                        {
+                            case 2:
+                                Ldc(node.Ch);
+                                Ldc(literal.Item3[0]);
+                                Ldc(literal.Item3[1]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            default:
+                                Ldstr(node.Ch + literal.Item3);
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        Ldc(node.Ch);
+                        Ldc(literal.Item2?[0] ?? literal.Item1);
+                        Call(s_spanIndexOfAnyCharChar);
+                    }
                     Stloc(startingPos);
 
                     // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
@@ -2823,7 +2874,7 @@ namespace System.Text.RegularExpressions
                 else if (iterationCount is null &&
                     node.Kind is RegexNodeKind.Setlazy &&
                     node.Str == RegexCharClass.AnyClass &&
-                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal2)
+                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
                 {
                     // e.g. ".*?string" with RegexOptions.Singleline
                     // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
@@ -2836,6 +2887,30 @@ namespace System.Text.RegularExpressions
                         Ldstr(literal2.Item2);
                         Call(s_stringAsSpanMethod);
                         Call(s_spanIndexOfSpan);
+                    }
+                    else if (literal2.Item3 is not null)
+                    {
+                        switch (literal2.Item3.Length)
+                        {
+                            case 2:
+                                Ldc(literal2.Item3[0]);
+                                Ldc(literal2.Item3[1]);
+                                Call(s_spanIndexOfAnyCharChar);
+                                break;
+
+                            case 3:
+                                Ldc(literal2.Item3[0]);
+                                Ldc(literal2.Item3[1]);
+                                Ldc(literal2.Item3[2]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            default:
+                                Ldstr(literal2.Item3);
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+                        }
                     }
                     else
                     {

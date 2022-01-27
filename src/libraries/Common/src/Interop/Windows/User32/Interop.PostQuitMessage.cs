@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class User32
     {
         [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static partial bool PeekMessageW(ref MSG msg, IntPtr hwnd, int msgMin, int msgMax, int remove);
+        public static partial void PostQuitMessage(int exitCode);
     }
 }

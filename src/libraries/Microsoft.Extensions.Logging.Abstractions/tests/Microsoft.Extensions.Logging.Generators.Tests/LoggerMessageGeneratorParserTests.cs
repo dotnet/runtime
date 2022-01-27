@@ -204,11 +204,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {ex} {ex2}"")]
                     static partial void M1(ILogger logger, System.Exception ex, System.Exception ex2);
+
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""M2 {arg1}: {ex}"")]
+                    static partial void M2(ILogger logger, string arg1, System.Exception ex);
                 }
             ");
 
-            Assert.Single(diagnostics);
+            Assert.Equal(2, diagnostics.Count);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, diagnostics[1].Id);
         }
 
         [Fact]
@@ -234,11 +238,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {logger}"")]
                     static partial void M1(ILogger logger);
+
+                    [LoggerMessage(EventId = 2, Message = ""M2 {logger}"")]
+                    static partial void M2(ILogger logger, LogLevel level);
                 }
             ");
 
-            Assert.Single(diagnostics);
+            Assert.Equal(2, diagnostics.Count);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[1].Id);
         }
 
         [Fact]

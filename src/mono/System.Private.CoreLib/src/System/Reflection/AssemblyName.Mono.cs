@@ -78,25 +78,6 @@ namespace System.Reflection
             }
         }
 
-        private static AssemblyName GetFileInformationCore(string assemblyFile)
-        {
-            unsafe
-            {
-                Assembly.InternalGetAssemblyName(Path.GetFullPath(assemblyFile), out MonoAssemblyName nativeName, out string? codebase);
-
-                var aname = new AssemblyName();
-                try
-                {
-                    aname.FillName(&nativeName, codebase, true, false, true);
-                    return aname;
-                }
-                finally
-                {
-                    RuntimeMarshal.FreeAssemblyName(ref nativeName, false);
-                }
-            }
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe MonoAssemblyName* GetNativeName(IntPtr assemblyPtr);
     }
