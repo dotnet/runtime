@@ -1799,7 +1799,6 @@ public:
     CHECK CheckCanExecuteManagedCode(MethodDesc* pMD);
     CHECK CheckLoading(DomainAssembly *pFile, FileLoadLevel level);
 
-    FileLoadLevel GetDomainAssemblyLoadLevel(DomainAssembly *pFile);
     BOOL IsLoading(DomainAssembly *pFile, FileLoadLevel level);
     static FileLoadLevel GetThreadFileLoadLevel();
 

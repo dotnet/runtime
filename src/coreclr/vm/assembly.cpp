@@ -133,7 +133,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssembl
 #ifdef FEATURE_COLLECTIBLE_TYPES
     m_isCollectible(fIsCollectible),
 #endif
-    m_nextAvailableModuleIndex(1),
     m_pLoaderAllocator(NULL),
 #ifdef FEATURE_COMINTEROP
     m_pITypeLib(NULL),

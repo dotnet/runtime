@@ -326,8 +326,6 @@ public:
     FORCEINLINE BOOL IsDynamic() { LIMITED_METHOD_CONTRACT; return m_isDynamic; }
     FORCEINLINE BOOL IsCollectible() { LIMITED_METHOD_DAC_CONTRACT; return m_isCollectible; }
 
-    DWORD GetNextModuleIndex() { LIMITED_METHOD_CONTRACT; return m_nextAvailableModuleIndex++; }
-
     void AddType(Module* pModule,
                  mdTypeDef cl);
     void AddExportedType(mdExportedType cl);
@@ -481,7 +479,6 @@ private:
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL                  m_isCollectible;
 #endif // FEATURE_COLLECTIBLE_TYPES
-    DWORD                 m_nextAvailableModuleIndex;
     PTR_LoaderAllocator   m_pLoaderAllocator;
 
 #ifdef FEATURE_COMINTEROP

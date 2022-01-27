@@ -2522,26 +2522,6 @@ void AppDomain::LoadSystemAssemblies()
     LoadAssembly(NULL, SystemDomain::System()->SystemPEAssembly(), FILE_ACTIVE);
 }
 
-FileLoadLevel AppDomain::GetDomainAssemblyLoadLevel(DomainAssembly *pFile)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    LoadLockHolder lock(this);
-
-    FileLoadLock* pLockEntry = (FileLoadLock *) lock->FindFileLock(pFile->GetPEAssembly());
-
-    if (pLockEntry == NULL)
-        return pFile->GetLoadLevel();
-    else
-        return pLockEntry->GetLoadLevel();
-}
-
 // This checks if the thread has initiated (or completed) loading at the given level.  A false guarantees that
 // (a) The current thread (or a thread blocking on the current thread) has not started loading the file
 //      at the given level, and
@@ -3018,7 +2998,7 @@ DomainAssembly *AppDomain::LoadDomainAssembly(FileLoadLock *pLock, FileLoadLevel
     // lower level.  In such a case, we throw an exception which transiently fails the current
     // load, since it is likely we have not satisfied the caller.
     // (An alternate, and possibly preferable, strategy here would be for all callers to explicitly
-    // identify the minimum load level acceptable via CheckLoadDomainAssembly and throw from there.)
+    // specify the minimum load level acceptable and throw if not reached.)
 
     pFile->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
 
