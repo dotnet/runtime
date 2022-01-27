@@ -2142,6 +2142,21 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
             <Issue>Fails on Windows Mono, test doesn't execute on none Windows platforms</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Assembly_False_True/Assembly_False_True/*">
+            <Issue>Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Assembly_True_True/Assembly_True_True/*">
+            <Issue>Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Assembly_Default/Assembly_Default/*">
+            <Issue>Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Assembly_False_False/Assembly_False_False/*">
+            <Issue>Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/BestFitMapping/Assembly_True_False/Assembly_True_False/*">
+            <Issue>Mono doesn't support interop BestFitMapping and ThrowOnUnmappableChar attributes</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
