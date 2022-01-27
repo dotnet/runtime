@@ -3214,7 +3214,7 @@ namespace System.Tests
             yield return new object[] { -0, -0 };
             yield return new object[] { 0, 0 };
             yield return new object[] { double.NaN, double.NaN };
-            yield return new object[] { double.NegativeInfinity, double.NegativeInfinity };
+            yield return new object[] { double.PositiveInfinity, double.PositiveInfinity };
             yield return new object[] { double.NegativeInfinity, double.NegativeInfinity };
             yield return new object[] { 1.7976931348623157E+308, 1.7976931348623157E+308 };
             yield return new object[] { -1.7976931348623157E+308, -1.7976931348623157E+308 };
@@ -3257,7 +3257,7 @@ namespace System.Tests
             yield return new object[] { -0, -0 };
             yield return new object[] { 0, 0 };
             yield return new object[] { double.NaN, double.NaN };
-            yield return new object[] { double.NegativeInfinity, double.NegativeInfinity };
+            yield return new object[] { double.PositiveInfinity, double.PositiveInfinity };
             yield return new object[] { double.NegativeInfinity, double.NegativeInfinity };
             yield return new object[] { 1.7976931348623157E+308, 1.7976931348623157E+308 };
             yield return new object[] { -1.7976931348623157E+308, -1.7976931348623157E+308 };
