@@ -27,7 +27,8 @@
 #include "slist.inl"
 #include "GCMemoryHelpers.h"
 
-EXTERN_C volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
+EXTERN_C volatile uint32_t RhpTrapThreads;
+volatile uint32_t RhpTrapThreads = (uint32_t)TrapThreadsFlags::None;
 
 GVAL_IMPL_INIT(PTR_Thread, RhpSuspendingThread, 0);
 
@@ -373,7 +374,8 @@ COOP_PINVOKE_HELPER(void, RhpCancelThreadAbort, (void* thread))
 
 C_ASSERT(sizeof(Thread) == sizeof(ThreadBuffer));
 
-EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
+EXTERN_C DECLSPEC_THREAD ThreadBuffer tls_CurrentThread;
+DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
 {
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
