@@ -255,7 +255,7 @@ namespace Internal.TypeSystem.Interop
             if (nativeType == NativeTypeKind.CustomMarshaler)
             {
                 if (isField)
-                    return MarshallerKind.Invalid;
+                    return MarshallerKind.FailedTypeLoad;
                 else
                     return MarshallerKind.CustomMarshaler;
             }
