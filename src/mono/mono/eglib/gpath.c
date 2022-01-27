@@ -32,7 +32,7 @@
 #include <sys/stat.h>
 
 #ifdef G_OS_WIN32
-#include <direct.h> 
+#include <direct.h>
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -47,45 +47,45 @@ g_build_path (const gchar *separator, const gchar *first_element, ...)
 	GString *path;
 	va_list args;
 	size_t slen;
-	
+
 	g_return_val_if_fail (separator != NULL, NULL);
-	
+
 	path = g_string_sized_new (48);
 	slen = strlen (separator);
-	
+
 	va_start (args, first_element);
 	for (elem = first_element; elem != NULL; elem = next) {
 		/* trim any trailing separators from @elem */
 		endptr = elem + strlen (elem);
 		trimmed = FALSE;
-		
+
 		while (endptr >= elem + slen) {
 			if (strncmp (endptr - slen, separator, slen) != 0)
 				break;
-			
+
 			endptr -= slen;
 			trimmed = TRUE;
 		}
-		
+
 		/* append elem, not including any trailing separators */
 		if (endptr > elem)
 			g_string_append_len (path, elem, endptr - elem);
-		
+
 		/* get the next element */
 		do {
 			if (!(next = va_arg (args, char *)))
 				break;
-			
+
 			/* remove leading separators */
 			while (!strncmp (next, separator, slen))
 				next += slen;
 		} while (*next == '\0');
-		
+
 		if (next || trimmed)
 			g_string_append_len (path, separator, slen);
 	}
 	va_end (args);
-	
+
 	return g_string_free (path, FALSE);
 }
 
@@ -149,7 +149,7 @@ g_path_get_basename (const char *filename)
 		r = strrchr_seperator (copy);
 
 		if (r == NULL){
-			g_free (copy);			
+			g_free (copy);
 			return g_strdup ("/");
 		}
 		r = g_strdup (&r[1]);
@@ -170,10 +170,10 @@ strtok_r(char *s, const char *delim, char **last)
 	char *spanp;
 	int c, sc;
 	char *tok;
-	
+
 	if (s == NULL && (s = *last) == NULL)
 		return NULL;
-	
+
 	/*
 	 * Skip (span) leading delimiters (s += strspn(s, delim), sort of).
 	 */
@@ -247,8 +247,8 @@ g_find_program_in_path (const gchar *program)
 #endif
 
 	while ((l = strtok_r (x, G_SEARCHPATH_SEPARATOR_S, &save)) != NULL){
-		char *probe_path; 
-		
+		char *probe_path;
+
 		x = NULL;
 		probe_path = g_build_path (G_DIR_SEPARATOR_S, l, program, NULL);
 #ifdef HAVE_ACCESS
@@ -309,7 +309,7 @@ g_ensure_directory_exists (const gchar *filename)
 	gunichar2 *p;
 	gunichar2 *dir_utf16 = NULL;
 	int retval;
-	
+
 	if (!dir_utf8 || !dir_utf8 [0])
 		return FALSE;
 
@@ -332,7 +332,7 @@ g_ensure_directory_exists (const gchar *filename)
 	p = dir_utf16;
 
 	/* get past C:\ )*/
-	while (*p++ != '\\')	
+	while (*p++ != '\\')
 	{
 	}
 
@@ -349,7 +349,7 @@ g_ensure_directory_exists (const gchar *filename)
 			break;
 		*p++ = '\\';
 	}
-	
+
 	g_free (dir_utf16);
 	return TRUE;
 #else
@@ -357,17 +357,17 @@ g_ensure_directory_exists (const gchar *filename)
 	gchar *dir = g_path_get_dirname (filename);
 	int retval;
 	struct stat sbuf;
-	
+
 	if (!dir || !dir [0]) {
 		g_free (dir);
 		return FALSE;
 	}
-	
+
 	if (stat (dir, &sbuf) == 0 && S_ISDIR (sbuf.st_mode)) {
 		g_free (dir);
 		return TRUE;
 	}
-	
+
 	p = dir;
 	while (*p == '/')
 		p++;
@@ -385,7 +385,7 @@ g_ensure_directory_exists (const gchar *filename)
 			break;
 		*p++ = '/';
 	}
-	
+
 	g_free (dir);
 	return TRUE;
 #endif

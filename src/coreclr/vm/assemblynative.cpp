@@ -20,7 +20,6 @@
 #include "assemblynative.hpp"
 #include "dllimport.h"
 #include "field.h"
-#include "assemblyname.hpp"
 #include "eeconfig.h"
 #include "interoputil.h"
 #include "frames.h"
@@ -86,9 +85,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
     }
 
     // Initialize spec
-    spec.InitializeSpec(pStackingAllocator,
-                        &assemblyNameRef,
-                        FALSE);
+    spec.InitializeSpec(pStackingAllocator, &assemblyNameRef);
+
     GCPROTECT_END();
 
     spec.SetCodeBase(NULL);

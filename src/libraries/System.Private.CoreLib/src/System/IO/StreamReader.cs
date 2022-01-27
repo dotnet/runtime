@@ -845,7 +845,37 @@ namespace System.IO
             return sb.ToString();
         }
 
-        public override Task<string?> ReadLineAsync()
+        public override Task<string?> ReadLineAsync() =>
+            ReadLineAsync(default).AsTask();
+
+        /// <summary>
+        /// Reads a line of characters asynchronously from the current stream and returns the data as a string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A value task that represents the asynchronous read operation. The value of the <c>TResult</c>
+        /// parameter contains the next line from the stream, or is <see langword="null" /> if all of the characters have been read.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters in the next line is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read and print all lines from the file until the end of the file is reached or the operation timed out.
+        /// <code lang="C#">
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StreamReader reader = File.OpenText("existingfile.txt");
+        ///
+        /// string line;
+        /// while ((line = await reader.ReadLineAsync(tokenSource.Token)) is not null)
+        /// {
+        ///     Console.WriteLine(line);
+        /// }
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// If this method is canceled via <paramref name="cancellationToken"/>, some data
+        /// that has been read from the current <see cref="Stream"/> but not stored (by the
+        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.
+        /// </remarks>
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overridden.
@@ -853,21 +883,21 @@ namespace System.IO
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
             {
-                return base.ReadLineAsync();
+                return base.ReadLineAsync(cancellationToken);
             }
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string?> task = ReadLineAsyncInternal();
+            Task<string?> task = ReadLineAsyncInternal(cancellationToken);
             _asyncReadTask = task;
 
-            return task;
+            return new ValueTask<string?>(task);
         }
 
-        private async Task<string?> ReadLineAsyncInternal()
+        private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
-            if (_charPos == _charLen && (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) == 0)
+            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
             {
                 return null;
             }
@@ -903,7 +933,7 @@ namespace System.IO
 
                         _charPos = tmpCharPos = i + 1;
 
-                        if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false)) > 0))
+                        if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) > 0))
                         {
                             tmpCharPos = _charPos;
                             if (_charBuffer[tmpCharPos] == '\n')
@@ -921,12 +951,37 @@ namespace System.IO
                 i = tmpCharLen - tmpCharPos;
                 sb ??= new StringBuilder(i + 80);
                 sb.Append(tmpCharBuffer, tmpCharPos, i);
-            } while (await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false) > 0);
+            } while (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) > 0);
 
             return sb.ToString();
         }
 
-        public override Task<string> ReadToEndAsync()
+        public override Task<string> ReadToEndAsync() => ReadToEndAsync(default);
+
+        /// <summary>
+        /// Reads all characters from the current position to the end of the stream asynchronously and returns them as one string.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation. The value of the <c>TResult</c> parameter contains
+        /// a string with the characters from the current position to the end of the stream.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">The number of characters is larger than <see cref="int.MaxValue"/>.</exception>
+        /// <exception cref="ObjectDisposedException">The stream reader has been disposed.</exception>
+        /// <exception cref="InvalidOperationException">The reader is currently in use by a previous read operation.</exception>
+        /// <example>
+        /// The following example shows how to read the contents of a file by using the <see cref="ReadToEndAsync(CancellationToken)"/> method.
+        /// <code lang="C#">
+        /// using CancellationTokenSource tokenSource = new (TimeSpan.FromSeconds(1));
+        /// using StreamReader reader = File.OpenText("existingfile.txt");
+        ///
+        /// Console.WriteLine(await reader.ReadToEndAsync(tokenSource.Token));
+        /// </code>
+        /// </example>
+        /// <remarks>
+        /// If this method is canceled via <paramref name="cancellationToken"/>, some data
+        /// that has been read from the current <see cref="Stream"/> but not stored (by the
+        /// <see cref="StreamReader"/>) or returned (to the caller) may be lost.
+        /// </remarks>
+        public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Read() which a subclass might have overridden.
@@ -934,19 +989,19 @@ namespace System.IO
             // and delegate to our base class (which will call into Read) when we are not sure.
             if (GetType() != typeof(StreamReader))
             {
-                return base.ReadToEndAsync();
+                return base.ReadToEndAsync(cancellationToken);
             }
 
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            Task<string> task = ReadToEndAsyncInternal();
+            Task<string> task = ReadToEndAsyncInternal(cancellationToken);
             _asyncReadTask = task;
 
             return task;
         }
 
-        private async Task<string> ReadToEndAsyncInternal()
+        private async Task<string> ReadToEndAsyncInternal(CancellationToken cancellationToken)
         {
             // Call ReadBuffer, then pull data out of charBuffer.
             StringBuilder sb = new StringBuilder(_charLen - _charPos);
@@ -955,7 +1010,7 @@ namespace System.IO
                 int tmpCharPos = _charPos;
                 sb.Append(_charBuffer, tmpCharPos, _charLen - tmpCharPos);
                 _charPos = _charLen;  // We consumed these characters
-                await ReadBufferAsync(CancellationToken.None).ConfigureAwait(false);
+                await ReadBufferAsync(cancellationToken).ConfigureAwait(false);
             } while (_charLen > 0);
 
             return sb.ToString();

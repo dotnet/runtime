@@ -61,9 +61,6 @@ namespace System.Text.RegularExpressions
             _textend = begpos + len;
             _textstart = startpos;
             _balancing = false;
-
-            Debug.Assert(!(_textbeg < 0 || _textstart < _textbeg || _textend < _textstart || Text.Length < _textend),
-                "The parameters are out of range.");
         }
 
         /// <summary>Returns an empty Match object.</summary>

@@ -35,8 +35,8 @@ namespace System.Tests
             EndOfStreamException i = new EndOfStreamException(exceptionMessage, ex);
 
             Assert.Equal(exceptionMessage, i.Message);
-            Assert.Equal(i.InnerException.Message, innerExceptionMessage);
-            Assert.Equal(i.InnerException.HResult, ex.HResult);
+            Assert.Equal(innerExceptionMessage, i.InnerException.Message);
+            Assert.Equal(ex.HResult, i.InnerException.HResult);
             Assert.Equal(COR_E_ENDOFSTREAM, unchecked((uint)i.HResult));
         }
     }

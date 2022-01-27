@@ -339,17 +339,21 @@ namespace Microsoft.Extensions.Logging.Generators
                                             foundException |= lp.IsException;
                                             foundLogLevel |= lp.IsLogLevel;
 
+                                            bool forceAsTemplateParams = false;
                                             if (lp.IsLogger && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLoggerInMessage, paramSymbol.Locations[0], paramName);
+                                                forceAsTemplateParams = true;
                                             }
                                             else if (lp.IsException && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionExceptionInMessage, paramSymbol.Locations[0], paramName);
+                                                forceAsTemplateParams = true;
                                             }
                                             else if (lp.IsLogLevel && lm.TemplateMap.ContainsKey(paramName))
                                             {
                                                 Diag(DiagnosticDescriptors.ShouldntMentionLogLevelInMessage, paramSymbol.Locations[0], paramName);
+                                                forceAsTemplateParams = true;
                                             }
                                             else if (lp.IsLogLevel && level != null && !lm.TemplateMap.ContainsKey(paramName))
                                             {
@@ -368,7 +372,7 @@ namespace Microsoft.Extensions.Logging.Generators
                                             }
 
                                             lm.AllParameters.Add(lp);
-                                            if (lp.IsTemplateParameter)
+                                            if (lp.IsTemplateParameter || forceAsTemplateParams)
                                             {
                                                 lm.TemplateParameters.Add(lp);
                                             }
