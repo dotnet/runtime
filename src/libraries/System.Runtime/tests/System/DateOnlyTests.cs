@@ -514,5 +514,13 @@ namespace System.Tests
             Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
             Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
         }
+
+        [Fact]
+        public static void InvalidFormattingWithInterpolatedStringTest()
+        {
+            DateOnly dateOnly = DateOnly.FromDateTime(DateTime.Today);
+            Assert.Throws<FormatException>(() => $"{dateOnly:u}");
+            Assert.Throws<FormatException>(() => $"{dateOnly:hh-ss}");
+        }
     }
 }
