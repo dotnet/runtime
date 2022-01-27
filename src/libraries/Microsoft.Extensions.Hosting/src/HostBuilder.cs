@@ -21,6 +21,9 @@ namespace Microsoft.Extensions.Hosting
     /// </summary>
     public partial class HostBuilder : IHostBuilder
     {
+        private const string _hostBuildingEventName = "HostBuilding";
+        private const string _hostBuiltEventName = "HostBuilt";
+
         private List<Action<IConfigurationBuilder>> _configureHostConfigActions = new List<Action<IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IConfigurationBuilder>> _configureAppConfigActions = new List<Action<HostBuilderContext, IConfigurationBuilder>>();
         private List<Action<HostBuilderContext, IServiceCollection>> _configureServicesActions = new List<Action<HostBuilderContext, IServiceCollection>>();
@@ -131,28 +134,27 @@ namespace Microsoft.Extensions.Hosting
 
             // REVIEW: If we want to raise more events outside of these calls then we will need to
             // stash this in a field.
-            using var diagnosticListener = new DiagnosticListener("Microsoft.Extensions.Hosting");
-            const string hostBuildingEventName = "HostBuilding";
-            const string hostBuiltEventName = "HostBuilt";
+            using DiagnosticListener diagnosticListener = LogHostBuilding(this);
 
-            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuildingEventName))
+            InitializeHostConfiguration();
+            InitializeHostingEnvironment();
+            InitializeHostBuilderContext();
+            InitializeAppConfiguration();
+            InitializeServiceProvider();
+
+            return ResolveHost(_appServices, diagnosticListener);
+        }
+
+        internal static DiagnosticListener LogHostBuilding(IHostBuilder builder)
+        {
+            var diagnosticListener = new DiagnosticListener("Microsoft.Extensions.Hosting");
+
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(_hostBuildingEventName))
             {
-                Write(diagnosticListener, hostBuildingEventName, this);
+                Write(diagnosticListener, _hostBuildingEventName, builder);
             }
 
-            BuildHostConfiguration();
-            CreateHostingEnvironment();
-            CreateHostBuilderContext();
-            BuildAppConfiguration();
-            CreateServiceProvider();
-
-            var host = _appServices.GetRequiredService<IHost>();
-            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(hostBuiltEventName))
-            {
-                Write(diagnosticListener, hostBuiltEventName, host);
-            }
-
-            return host;
+            return diagnosticListener;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
@@ -165,7 +167,7 @@ namespace Microsoft.Extensions.Hosting
             diagnosticSource.Write(name, value);
         }
 
-        private void BuildHostConfiguration()
+        private void InitializeHostConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
                 .AddInMemoryCollection(); // Make sure there's some default storage since there are no default providers
@@ -177,25 +179,33 @@ namespace Microsoft.Extensions.Hosting
             _hostConfiguration = configBuilder.Build();
         }
 
-        private void CreateHostingEnvironment()
+        private void InitializeHostingEnvironment()
         {
-            _hostingEnvironment = new HostingEnvironment()
-            {
-                ApplicationName = _hostConfiguration[HostDefaults.ApplicationKey],
-                EnvironmentName = _hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
-                ContentRootPath = ResolveContentRootPath(_hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
-            };
-
-            if (string.IsNullOrEmpty(_hostingEnvironment.ApplicationName))
-            {
-                // Note GetEntryAssembly returns null for the net4x console test runner.
-                _hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
-            }
-
-            _hostingEnvironment.ContentRootFileProvider = _defaultProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
+            (_hostingEnvironment, _defaultProvider) = CreateHostingEnvironment(_hostConfiguration);
         }
 
-        private string ResolveContentRootPath(string contentRootPath, string basePath)
+        internal static (HostingEnvironment, PhysicalFileProvider) CreateHostingEnvironment(IConfiguration hostConfiguration)
+        {
+            var hostingEnvironment = new HostingEnvironment()
+            {
+                ApplicationName = hostConfiguration[HostDefaults.ApplicationKey],
+                EnvironmentName = hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
+                ContentRootPath = ResolveContentRootPath(hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
+            };
+
+            if (string.IsNullOrEmpty(hostingEnvironment.ApplicationName))
+            {
+                // Note GetEntryAssembly returns null for the net4x console test runner.
+                hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+            }
+
+            var physicalFileProvider = new PhysicalFileProvider(hostingEnvironment.ContentRootPath);
+            hostingEnvironment.ContentRootFileProvider = physicalFileProvider;
+
+            return (hostingEnvironment, physicalFileProvider);
+        }
+
+        internal static string ResolveContentRootPath(string contentRootPath, string basePath)
         {
             if (string.IsNullOrEmpty(contentRootPath))
             {
@@ -208,7 +218,7 @@ namespace Microsoft.Extensions.Hosting
             return Path.Combine(Path.GetFullPath(basePath), contentRootPath);
         }
 
-        private void CreateHostBuilderContext()
+        private void InitializeHostBuilderContext()
         {
             _hostBuilderContext = new HostBuilderContext(Properties)
             {
@@ -217,7 +227,7 @@ namespace Microsoft.Extensions.Hosting
             };
         }
 
-        private void BuildAppConfiguration()
+        private void InitializeAppConfiguration()
         {
             IConfigurationBuilder configBuilder = new ConfigurationBuilder()
                 .SetBasePath(_hostingEnvironment.ContentRootPath)
@@ -231,18 +241,23 @@ namespace Microsoft.Extensions.Hosting
             _hostBuilderContext.Configuration = _appConfiguration;
         }
 
-        private void CreateServiceProvider()
+        internal static IServiceCollection CreateServiceCollection(
+            HostBuilderContext hostBuilderContext,
+            HostingEnvironment hostingEnvironment,
+            PhysicalFileProvider defaultFileProvider,
+            IConfiguration appConfiguration,
+            Func<IServiceProvider> serviceProviderGetter)
         {
             var services = new ServiceCollection();
 #pragma warning disable CS0618 // Type or member is obsolete
-            services.AddSingleton<IHostingEnvironment>(_hostingEnvironment);
+            services.AddSingleton<IHostingEnvironment>(hostingEnvironment);
 #pragma warning restore CS0618 // Type or member is obsolete
-            services.AddSingleton<IHostEnvironment>(_hostingEnvironment);
-            services.AddSingleton(_hostBuilderContext);
+            services.AddSingleton<IHostEnvironment>(hostingEnvironment);
+            services.AddSingleton(hostBuilderContext);
             // register configuration as factory to make it dispose with the service provider
-            services.AddSingleton(_ => _appConfiguration);
+            services.AddSingleton(_ => appConfiguration);
 #pragma warning disable CS0618 // Type or member is obsolete
-            services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
+            services.AddSingleton(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostApplicationLifetime, ApplicationLifetime>();
 
@@ -250,16 +265,29 @@ namespace Microsoft.Extensions.Hosting
 
             services.AddSingleton<IHost>(_ =>
             {
-                return new Internal.Host(_appServices,
-                    _hostingEnvironment,
-                    _defaultProvider,
-                    _appServices.GetRequiredService<IHostApplicationLifetime>(),
-                    _appServices.GetRequiredService<ILogger<Internal.Host>>(),
-                    _appServices.GetRequiredService<IHostLifetime>(),
-                    _appServices.GetRequiredService<IOptions<HostOptions>>());
+                IServiceProvider appServices = serviceProviderGetter();
+                return new Internal.Host(appServices,
+                    hostingEnvironment,
+                    defaultFileProvider,
+                    appServices.GetRequiredService<IHostApplicationLifetime>(),
+                    appServices.GetRequiredService<ILogger<Internal.Host>>(),
+                    appServices.GetRequiredService<IHostLifetime>(),
+                    appServices.GetRequiredService<IOptions<HostOptions>>());
             });
-            services.AddOptions().Configure<HostOptions>(options => { options.Initialize(_hostConfiguration); });
+            services.AddOptions().Configure<HostOptions>(options => { options.Initialize(hostBuilderContext.Configuration); });
             services.AddLogging();
+
+            return services;
+        }
+
+        private void InitializeServiceProvider()
+        {
+            var services = CreateServiceCollection(
+                _hostBuilderContext,
+                _hostingEnvironment,
+                _defaultProvider,
+                _appConfiguration,
+                () => _appServices);
 
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
@@ -274,15 +302,27 @@ namespace Microsoft.Extensions.Hosting
             }
 
             _appServices = _serviceProviderFactory.CreateServiceProvider(containerBuilder);
+        }
 
-            if (_appServices == null)
+        internal static IHost ResolveHost(IServiceProvider serviceProvider, DiagnosticListener diagnosticListener)
+        {
+            if (serviceProvider is null)
             {
                 throw new InvalidOperationException(SR.NullIServiceProvider);
             }
 
             // resolve configuration explicitly once to mark it as resolved within the
             // service provider, ensuring it will be properly disposed with the provider
-            _ = _appServices.GetService<IConfiguration>();
+            _ = serviceProvider.GetService<IConfiguration>();
+
+            var host = serviceProvider.GetRequiredService<IHost>();
+
+            if (diagnosticListener.IsEnabled() && diagnosticListener.IsEnabled(_hostBuiltEventName))
+            {
+                Write(diagnosticListener, _hostBuiltEventName, host);
+            }
+
+            return host;
         }
     }
 }

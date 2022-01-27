@@ -7,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace ServerComparison.TestSites
 {
@@ -14,6 +16,36 @@ namespace ServerComparison.TestSites
     {
         public static void Main(string[] args)
         {
+            //var builder = Host.CreateApplicationBuilder(args);
+
+            //builder.Configuration.AddJsonFile("myconfig.json");
+            //Console.WriteLine($"MyConfigVariable = ${builder.Configuration["MyConfigVariable"]}");
+
+            //builder.Services.AddHostedService<MyHostedService>();
+
+            //var minConsoleLogLevel = builder.Environment.IsDevelopment() ? LogLevel.Trace : LogLevel.Warning;
+            //builder.Logging.AddFilter<ConsoleLoggerProvider>(level => level >= minConsoleLogLevel);
+
+            //builder.Build().Run();
+
+            //var builder = Host.CreateDefaultBuilder(args)
+            //    .ConfigureAppConfiguration(hostConfig =>
+            //    {
+            //        hostConfig.AddJsonFile("myconfig.json");
+            //    })
+            //    .ConfigureServices((context, services) =>
+            //    {
+            //        Console.WriteLine($"MyConfigVariable = ${context.Configuration["MyConfigVariable"]}");
+            //        services.AddHostedService<MyHostedService>();
+            //    })
+            //    .ConfigureLogging((context, logging) =>
+            //    {
+            //        var minConsoleLogLevel = context.HostingEnvironment.IsDevelopment() ? LogLevel.Trace : LogLevel.Warning;
+            //        logging.AddFilter<ConsoleLoggerProvider>(level => level >= minConsoleLogLevel);
+            //    });
+
+            //builder.Build().Run();
+
             var builder = new HostBuilder()
                 .ConfigureHostConfiguration(configBuilder =>
                 {
@@ -59,6 +91,12 @@ namespace ServerComparison.TestSites
                     throw new InvalidOperationException("Starting mechanic not specified");
                 }
             }
+        }
+
+        private class MyHostedService : IHostedService
+        {
+            public Task StartAsync(CancellationToken cancellationToken) => throw new NotImplementedException();
+            public Task StopAsync(CancellationToken cancellationToken) => throw new NotImplementedException();
         }
     }
 }
