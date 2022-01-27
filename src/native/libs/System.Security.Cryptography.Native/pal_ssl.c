@@ -478,7 +478,7 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
+void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
     // We never reuse same CTX for both client and server
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_MODE,  mode ? SSL_SESS_CACHE_BOTH : SSL_SESS_CACHE_OFF, NULL);
@@ -486,6 +486,41 @@ void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
     {
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
     }
+
+    if (newSessionCb)
+    {
+        SSL_CTX_sess_set_new_cb(ctx, newSessionCb);
+    }
+
+    if (removeSessionCb)
+    {
+        SSL_CTX_sess_set_remove_cb(ctx, removeSessionCb);
+    }
+}
+
+const char* CryptoNative_SslGetServerName(SSL * ssl)
+{
+    return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+}
+
+int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION *session)
+{
+    return SSL_set_session(ssl, session);
+}
+
+void CryptoNative_SslSessionFree(SSL_SESSION *session)
+{
+    SSL_SESSION_free(session);
+}
+
+const char* CryptoNative_SslSessionGetHostname(SSL_SESSION *session)
+{
+    return SSL_SESSION_get0_hostname(session);
+}
+
+int CryptoNative_SslSessionSetHostname(SSL_SESSION *session, const char *hostname)
+{
+    return SSL_SESSION_set1_hostname(session, hostname);
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
@@ -694,6 +729,16 @@ int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
 void* CryptoNative_SslGetData(SSL* ssl)
 {
     return SSL_get_ex_data(ssl, 0);
+}
+
+int32_t CryptoNative_SslCtxSetData(SSL_CTX* ctx, void *ptr)
+{
+    return SSL_CTX_set_ex_data(ctx, 0, ptr);
+}
+
+void* CryptoNative_SslCtxGetData(SSL_CTX* ctx)
+{
+    return SSL_CTX_get_ex_data(ctx, 0);
 }
 
 int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len)

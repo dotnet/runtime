@@ -56,6 +56,12 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SslSetTlsExtHostName(SafeSslHandle ssl, string host);
 
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetServerName")]
+        internal static unsafe partial IntPtr SslGetServerName(IntPtr ssl);
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSession")]
+        internal static unsafe partial int SslSetSession(SafeSslHandle ssl, IntPtr session);
+
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static partial void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
@@ -161,6 +167,18 @@ internal static partial class Interop
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionGetHostname")]
+        internal static partial IntPtr SessionGetHostname(IntPtr session);
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionFree")]
+        internal static partial void SessionFree(IntPtr session);
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname", CharSet = CharSet.Ansi)]
+        internal static partial int SessionSetHostname(IntPtr session, string name);
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetHostname")]
+        internal static partial int SessionSetHostname(IntPtr session, IntPtr name);
 
         internal static class Capabilities
         {

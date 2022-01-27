@@ -117,6 +117,13 @@ typedef int32_t (*SslCtxSetAlpnCallback)(SSL* ssl,
     const uint8_t* in,
     uint32_t inlen,
     void* arg);
+
+// the function pointer used for new  session
+typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* sesssion);
+
+// the function pointer used for new  session
+typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* sesssion);
+
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -150,7 +157,33 @@ PALEXPORT void CryptoNative_SslSetClientCertCallback(SSL* ssl, int set);
 /*=======
 Sets session caching. 0 is disabled.
 */
-PALEXPORT void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode);
+PALEXPORT void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode,  SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
+
+/*
+Returns name associated with given ssl session.
+OpenSSL holds reference to it and it must not be freed.
+*/
+PALEXPORT const char* CryptoNative_SslGetServerName(SSL * ssl);
+
+/*
+This function will attach existing ssl session for possible TLS resume.
+*/
+PALEXPORT int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION *session);
+
+/*
+ * Frees SSL session.
+ */
+PALEXPORT void CryptoNative_SslSessionFree(SSL_SESSION *session);
+
+/*
+ * Get name associated with given SSL_SESSION.
+ */
+PALEXPORT const char* CryptoNative_SslSessionGetHostname(SSL_SESSION *session);
+
+/*
+ * Associate name with given SSL_SESSION.
+ */
+PALEXPORT int CryptoNative_SslSessionSetHostname(SSL_SESSION *session, const char *hostname);
 
 /*
 Shims the SSL_new method.
@@ -327,7 +360,7 @@ PALEXPORT void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx);
 /*
 Shims the SSL_set_quiet_shutdown method.
 */
-PALEXPORT void CryptoNative_SslSetQuietShutdown(SSL* ctx, int mode);
+PALEXPORT void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode);
 
 /*
 Shims the SSL_get_client_CA_list method.
@@ -350,6 +383,16 @@ PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void *ptr);
 Shims SSL_get_ex_data to retrieve application context.
 */
 PALEXPORT void* CryptoNative_SslGetData(SSL* ssl);
+
+/*
+Shims SSL_CTX_set_ex_data to attach application context.
+*/
+PALEXPORT int32_t  CryptoNative_SslCtxSetData(SSL_CTX* ctx, void *ptr);
+
+/*
+Shims SSL_CTX_get_ex_data to retrieve application context.
+*/
+PALEXPORT void* CryptoNative_SslCtxGetData(SSL_CTX* ctx);
 
 /*
 
