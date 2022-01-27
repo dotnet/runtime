@@ -24,6 +24,7 @@ import {
     mono_wasm_debugger_log,
     mono_wasm_trace_logger,
     mono_wasm_add_dbg_command_received,
+    mono_wasm_add_dbg_command_result,
 } from "./debug";
 import { runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
@@ -266,6 +267,7 @@ export const __linker_exports: any = {
     mono_wasm_fire_debugger_agent_message,
     mono_wasm_debugger_log,
     mono_wasm_add_dbg_command_received,
+    mono_wasm_add_dbg_command_result,
 
     // mono-threads-wasm.c
     schedule_background_exec,
