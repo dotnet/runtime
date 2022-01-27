@@ -182,6 +182,7 @@ namespace System
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
+        public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
