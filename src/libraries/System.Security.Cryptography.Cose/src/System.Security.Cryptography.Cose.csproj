@@ -19,7 +19,7 @@
   
   <ItemGroup>
     <!-- TODO: Private version replace with an official one when available -->
-    <PackageReference Include="System.Formats.Cbor" Version="7.0.0-dev" />
+    <PackageReference Include="System.Formats.Cbor" Version="$(SystemFormatsCborVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

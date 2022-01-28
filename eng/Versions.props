@@ -125,6 +125,7 @@
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <runtimenativeSystemIOPortsVersion>7.0.0-alpha.1.22073.5</runtimenativeSystemIOPortsVersion>
+    <SystemFormatsCborVersion>7.0.0-preview.1.22071.6</SystemFormatsCborVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemRuntimeNumericsTestDataVersion>7.0.0-beta.22075.1</SystemRuntimeNumericsTestDataVersion>
     <SystemComponentModelTypeConverterTestDataVersion>7.0.0-beta.22075.1</SystemComponentModelTypeConverterTestDataVersion>
