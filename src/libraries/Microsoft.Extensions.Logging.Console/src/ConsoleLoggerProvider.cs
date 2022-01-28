@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
 #pragma warning disable CS0618
-        private void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
+        private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)

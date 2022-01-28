@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [Conditional("DEBUG")]
-        public void CheckQName(QilNode n)
+        public static void CheckQName(QilNode n)
         {
             Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.QNameX), "Must be a singleton QName");
         }

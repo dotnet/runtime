@@ -11,8 +11,7 @@ namespace System.Net.Mime.Tests
         [Fact]
         public void EncodedStreamFactory_WhenAskedForEncodedStreamForHeader_WithBase64_ShouldReturnBase64Stream()
         {
-            var esf = new EncodedStreamFactory();
-            IEncodableStream test = esf.GetEncoderForHeader(Encoding.UTF8, true, 5);
+            IEncodableStream test = EncodedStreamFactory.GetEncoderForHeader(Encoding.UTF8, true, 5);
             Assert.True(test is Base64Stream);
         }
     }

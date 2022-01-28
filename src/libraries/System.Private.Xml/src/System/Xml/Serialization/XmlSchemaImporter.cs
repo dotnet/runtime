@@ -37,10 +37,10 @@ namespace System.Xml.Serialization
             get { return (Options & CodeGenerationOptions.GenerateOrder) != 0; }
         }
 
-        internal TypeMapping GetDefaultMapping(TypeFlags flags)
+        internal static TypeMapping GetDefaultMapping(TypeFlags flags)
         {
             PrimitiveMapping mapping = new PrimitiveMapping();
-            mapping.TypeDesc = Scope.GetTypeDesc("string", XmlSchema.Namespace, flags);
+            mapping.TypeDesc = TypeScope.GetTypeDesc("string", XmlSchema.Namespace, flags);
             mapping.TypeName = mapping.TypeDesc!.DataType!.Name;
             mapping.Namespace = XmlSchema.Namespace;
             return mapping;
@@ -350,18 +350,9 @@ namespace System.Xml.Serialization
             if (!(desiredMappingType.IsAssignableFrom(mapping.GetType())))
                 throw new InvalidOperationException(SR.Format(SR.XmlElementImportedTwice, element.Name, ns, mapping.GetType().Name, desiredMappingType.Name));
 
-            // let the extensions to run
-            if (!mapping.TypeDesc!.IsMappedType)
-            {
-                RunSchemaExtensions(mapping, element.SchemaTypeName, element.SchemaType, element, TypeFlags.CanBeElementValue);
-            }
             return mapping;
         }
 
-        private void RunSchemaExtensions(TypeMapping mapping, XmlQualifiedName qname, XmlSchemaType? type, XmlSchemaObject context, TypeFlags flags)
-        {
-            // nop
-        }
         private string GenerateUniqueTypeName(string desiredName, string? ns)
         {
             int i = 1;
@@ -873,7 +864,7 @@ namespace System.Xml.Serialization
             return member;
         }
 
-        private bool IsNeedXmlSerializationAttributes(ArrayMapping arrayMapping)
+        private static bool IsNeedXmlSerializationAttributes(ArrayMapping arrayMapping)
         {
             if (arrayMapping.Elements!.Length != 1)
                 return true;
@@ -976,7 +967,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private void AddScopeElement(INameScope? scope, ElementAccessor element, ref bool duplicateElements, bool allowDuplicates)
+        private static void AddScopeElement(INameScope? scope, ElementAccessor element, ref bool duplicateElements, bool allowDuplicates)
         {
             if (scope == null)
                 return;
@@ -1000,7 +991,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void AddScopeElements(INameScope? scope, ElementAccessor[] elements, ref bool duplicateElements, bool allowDuplicates)
+        private static void AddScopeElements(INameScope? scope, ElementAccessor[] elements, ref bool duplicateElements, bool allowDuplicates)
         {
             for (int i = 0; i < elements.Length; i++)
             {
@@ -1201,14 +1192,6 @@ namespace System.Xml.Serialization
             mapping.TypeDesc = Scope.GetTypeDesc(makeElement ? typeof(XmlElement) : typeof(XmlNode));
             mapping.TypeName = mapping.TypeDesc.Name;
 
-
-            TypeFlags flags = TypeFlags.CanBeElementValue;
-            if (makeElement)
-                flags |= TypeFlags.CanBeTextValue;
-
-            // let the extensions to run
-            RunSchemaExtensions(mapping, XmlQualifiedName.Empty, null, any, flags);
-
             if (GenerateOrder && any.Namespace != null)
             {
                 NamespaceList list = new NamespaceList(any.Namespace, targetNamespace!);
@@ -1396,13 +1379,6 @@ namespace System.Xml.Serialization
                 mapping.TypeDesc = Scope.GetTypeDesc(mixed ? typeof(XmlNode) : typeof(XmlElement));
             }
 
-            TypeFlags flags = TypeFlags.CanBeElementValue;
-            if (items.AnyAttribute != null || mixed)
-                flags |= TypeFlags.CanBeTextValue;
-
-            // let the extensions to run
-            RunSchemaExtensions(mapping, XmlQualifiedName.Empty, null, any, flags);
-
             mapping.TypeName = mapping.TypeDesc.Name;
             if (repeats)
                 mapping.TypeDesc = mapping.TypeDesc.CreateArrayTypeDesc();
@@ -1513,7 +1489,7 @@ namespace System.Xml.Serialization
             member.TypeDesc = member.TypeDesc.CreateArrayTypeDesc();
         }
 
-        private bool KeepXmlnsDeclarations(XmlSchemaType type, out string? xmlnsMemberName)
+        private static bool KeepXmlnsDeclarations(XmlSchemaType type, out string? xmlnsMemberName)
         {
             xmlnsMemberName = null;
             if (type.Annotation == null)
@@ -1632,11 +1608,6 @@ namespace System.Xml.Serialization
                 mapping = GetDefaultMapping(TypeFlags.CanBeAttributeValue);
             }
 
-            // let the extensions to run
-            if (mapping != null && !mapping.TypeDesc!.IsMappedType)
-            {
-                RunSchemaExtensions(mapping, attribute.SchemaTypeName, attribute.SchemaType, attribute, TypeFlags.CanBeElementValue | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeTextValue);
-            }
             AttributeAccessor accessor = new AttributeAccessor();
             accessor.Name = attribute.Name;
             accessor.Namespace = ns;
@@ -1746,7 +1717,7 @@ namespace System.Xml.Serialization
                 sourceType = FindType(sourceType.DerivedFrom, TypeFlags.CanBeElementValue | TypeFlags.CanBeAttributeValue)!;
             }
             if (sourceType is XmlSchemaComplexType) return null;
-            TypeDesc? sourceTypeDesc = Scope.GetTypeDesc((XmlSchemaSimpleType)sourceType);
+            TypeDesc? sourceTypeDesc = TypeScope.GetTypeDesc((XmlSchemaSimpleType)sourceType);
             if (sourceTypeDesc != null && sourceTypeDesc.FullName != typeof(string).FullName)
                 return ImportPrimitiveDataType(dataType, flags);
             identifier = Accessor.UnescapeName(identifier);
@@ -1846,13 +1817,13 @@ namespace System.Xml.Serialization
             return mapping;
         }
 
-        private PrimitiveMapping? ImportNonXsdPrimitiveDataType(XmlSchemaSimpleType dataType, string? ns, TypeFlags flags)
+        private static PrimitiveMapping? ImportNonXsdPrimitiveDataType(XmlSchemaSimpleType dataType, string? ns, TypeFlags flags)
         {
             PrimitiveMapping? mapping = null;
             TypeDesc? typeDesc;
             if (dataType.Name != null && dataType.Name.Length != 0)
             {
-                typeDesc = Scope.GetTypeDesc(dataType.Name, ns, flags);
+                typeDesc = TypeScope.GetTypeDesc(dataType.Name, ns, flags);
                 if (typeDesc != null)
                 {
                     mapping = new PrimitiveMapping();
@@ -1908,7 +1879,7 @@ namespace System.Xml.Serialization
             TypeDesc? typeDesc;
             if (dataType.Name != null && dataType.Name.Length != 0)
             {
-                typeDesc = Scope.GetTypeDesc(dataType);
+                typeDesc = TypeScope.GetTypeDesc(dataType);
                 if (typeDesc != null) return typeDesc;
             }
             XmlQualifiedName qname = BaseTypeName(dataType);
@@ -1928,7 +1899,7 @@ namespace System.Xml.Serialization
                 return (XmlSchemaSimpleType?)Scope.GetTypeDesc(typeof(string)).DataType;
             }
 
-            TypeDesc? typeDesc = Scope.GetTypeDesc(name.Name, name.Namespace, flags);
+            TypeDesc? typeDesc = TypeScope.GetTypeDesc(name.Name, name.Namespace, flags);
             if (typeDesc != null && typeDesc.DataType is XmlSchemaSimpleType)
                 return (XmlSchemaSimpleType)typeDesc.DataType;
 
@@ -1940,7 +1911,7 @@ namespace System.Xml.Serialization
 
             if (name.Namespace == XmlSchema.Namespace)
             {
-                return (XmlSchemaSimpleType?)Scope.GetTypeDesc("string", XmlSchema.Namespace, flags)!.DataType;
+                return (XmlSchemaSimpleType?)TypeScope.GetTypeDesc("string", XmlSchema.Namespace, flags)!.DataType;
             }
             else
             {
@@ -1989,7 +1960,7 @@ namespace System.Xml.Serialization
             return attribute;
         }
 
-        private XmlSchemaForm ElementForm(string? ns, XmlSchemaElement element)
+        private static XmlSchemaForm ElementForm(string? ns, XmlSchemaElement element)
         {
             if (element.Form == XmlSchemaForm.None)
             {
@@ -2017,7 +1988,7 @@ namespace System.Xml.Serialization
             return element.Form;
         }
 
-        private XmlSchemaForm AttributeForm(string? ns, XmlSchemaAttribute attribute)
+        private static XmlSchemaForm AttributeForm(string? ns, XmlSchemaAttribute attribute)
         {
             if (attribute.Form == XmlSchemaForm.None)
             {

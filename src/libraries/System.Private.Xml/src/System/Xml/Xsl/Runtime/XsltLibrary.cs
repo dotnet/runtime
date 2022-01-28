@@ -171,7 +171,7 @@ namespace System.Xml.Xsl.Runtime
             return 0;   // have to return something
         }
 
-        private DecimalFormat CreateDecimalFormat(string infinitySymbol, string nanSymbol, string characters)
+        private static DecimalFormat CreateDecimalFormat(string infinitySymbol, string nanSymbol, string characters)
         {
             // BUGBUG: Fallback to the old XSLT implementation
             NumberFormatInfo info = new NumberFormatInfo();

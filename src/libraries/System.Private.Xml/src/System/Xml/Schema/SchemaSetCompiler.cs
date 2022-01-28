@@ -1479,7 +1479,7 @@ namespace System.Xml.Schema
         }
 
         [return: NotNullIfNotNull("particle")]
-        private XmlSchemaParticle? CannonicalizePointlessRoot(XmlSchemaParticle particle)
+        private static XmlSchemaParticle? CannonicalizePointlessRoot(XmlSchemaParticle particle)
         {
             if (particle == null)
             {
@@ -1966,12 +1966,12 @@ namespace System.Xml.Schema
             return true;
         }
 
-        private bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
+        private static bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             return IsValidOccurrenceRangeRestriction(derivedParticle.MinOccurs, derivedParticle.MaxOccurs, baseParticle.MinOccurs, baseParticle.MaxOccurs);
         }
 
-        private bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
+        private static bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
         {
             return (baseMinOccurs <= minOccurs) && (maxOccurs <= baseMaxOccurs);
         }
@@ -2076,7 +2076,7 @@ namespace System.Xml.Schema
             _complexTypeStack.Push(complexType);
         }
 
-        private XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
+        private static XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
         {
             if ((complexContent != null && complexContent.IsMixed) ||
                 (complexContent == null && complexType.IsMixed))
@@ -2384,7 +2384,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsProcessContentsRestricted(XmlSchemaComplexType? baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
+        private static bool IsProcessContentsRestricted(XmlSchemaComplexType? baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
         {
             if (baseType == XmlSchemaComplexType.AnyType)
             {
@@ -3108,7 +3108,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CopyPosition(XmlSchemaAnnotated to, XmlSchemaAnnotated from, bool copyParent)
+        private static void CopyPosition(XmlSchemaAnnotated to, XmlSchemaAnnotated from, bool copyParent)
         {
             to.SourceUri = from.SourceUri;
             to.LinePosition = from.LinePosition;
@@ -3120,7 +3120,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsFixedEqual(SchemaDeclBase baseDecl, SchemaDeclBase derivedDecl)
+        private static bool IsFixedEqual(SchemaDeclBase baseDecl, SchemaDeclBase derivedDecl)
         {
             if (baseDecl.Presence == SchemaDeclBase.Use.Fixed || baseDecl.Presence == SchemaDeclBase.Use.RequiredFixed)
             {

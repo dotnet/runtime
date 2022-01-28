@@ -12,7 +12,9 @@ namespace System.Net.Sockets
         private ThreadPoolBoundHandle? _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;
 
+#pragma warning disable CA1822
         internal void SetExposed() { /* nop */ }
+#pragma warning restore CA1822
 
         internal ThreadPoolBoundHandle? IOCPBoundHandle
         {

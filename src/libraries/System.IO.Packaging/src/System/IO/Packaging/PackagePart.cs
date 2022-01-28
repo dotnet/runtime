@@ -776,7 +776,7 @@ namespace System.IO.Packaging
         //return false. These properties do not throw ObjectDisposedException.
         //So we rely on the values of these properties to determine if a stream
         //has been closed.
-        private bool IsStreamClosed(Stream s)
+        private static bool IsStreamClosed(Stream s)
         {
             return !s.CanRead && !s.CanSeek && !s.CanWrite;
         }

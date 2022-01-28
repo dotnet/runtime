@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization
         internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
 
 
-        internal bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
+        internal static bool ShouldFlush(Utf8JsonWriter writer, ref WriteStack state)
         {
             // If surpassed flush threshold then return false which will flush stream.
             return (state.FlushThreshold > 0 && writer.BytesPending > state.FlushThreshold);

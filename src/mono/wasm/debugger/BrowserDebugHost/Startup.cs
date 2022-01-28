@@ -34,6 +34,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public IConfiguration Configuration { get; }
 
+#pragma warning disable CA1822
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IOptionsMonitor<ProxyOptions> optionsAccessor, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
         {
@@ -56,6 +57,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 .UseWebSockets()
                 .UseDebugProxy(options);
         }
+#pragma warning restore CA1822
     }
 
     internal static class DebugExtensions

@@ -120,7 +120,7 @@ namespace System.Xml.Serialization
             return methodName;
         }
 
-        private TypeMapping[] EnsureArrayIndex(TypeMapping[]? a, int index)
+        private static TypeMapping[] EnsureArrayIndex(TypeMapping[]? a, int index)
         {
             if (a == null) return new TypeMapping[32];
             if (index < a.Length) return a;
@@ -130,7 +130,7 @@ namespace System.Xml.Serialization
         }
 
         [return: NotNullIfNotNull("value")]
-        internal string? GetCSharpString(string? value)
+        internal static string? GetCSharpString(string? value)
         {
             return ReflectionAwareILGen.GetCSharpString(value);
         }

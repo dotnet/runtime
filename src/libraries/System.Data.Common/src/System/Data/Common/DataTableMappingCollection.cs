@@ -54,7 +54,7 @@ namespace System.Data.Common
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public int Count => (null != _items) ? _items.Count : 0;
 
-        private Type ItemType => typeof(DataTableMapping);
+        private static Type ItemType => typeof(DataTableMapping);
 
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -321,7 +321,7 @@ namespace System.Data.Common
             _items[index] = newValue;
         }
 
-        private void ValidateType([NotNull] object? value)
+        private static void ValidateType([NotNull] object? value)
         {
             if (null == value)
             {

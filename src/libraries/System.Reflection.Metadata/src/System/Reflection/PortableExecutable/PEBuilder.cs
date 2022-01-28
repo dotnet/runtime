@@ -140,7 +140,7 @@ namespace System.Reflection.PortableExecutable
             return result.MoveToImmutable();
         }
 
-        private void WritePESignature(BlobBuilder builder)
+        private static void WritePESignature(BlobBuilder builder)
         {
             // MS-DOS stub (128 bytes)
             builder.WriteBytes(s_dosHeader);
@@ -327,7 +327,7 @@ namespace System.Reflection.PortableExecutable
             builder.WriteUInt64(0);
         }
 
-        private void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
+        private static void WriteSectionHeaders(BlobBuilder builder, ImmutableArray<SerializedSection> serializedSections)
         {
             foreach (var serializedSection in serializedSections)
             {

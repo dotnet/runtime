@@ -1838,7 +1838,7 @@ namespace System.Xml
             return pDst + 3;
         }
 
-        protected void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
+        protected static void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
         {
             if (allowOnlyWhitespace)
             {
@@ -2132,15 +2132,15 @@ namespace System.Xml
             {
                 if (_newLineOnAttributes)
                 {
-                    base.ValidateContentChars(_indentChars, "IndentChars", true);
-                    base.ValidateContentChars(_newLineChars, "NewLineChars", true);
+                    ValidateContentChars(_indentChars, "IndentChars", true);
+                    ValidateContentChars(_newLineChars, "NewLineChars", true);
                 }
                 else
                 {
-                    base.ValidateContentChars(_indentChars, "IndentChars", false);
+                    ValidateContentChars(_indentChars, "IndentChars", false);
                     if (base._newLineHandling != NewLineHandling.Replace)
                     {
-                        base.ValidateContentChars(_newLineChars, "NewLineChars", false);
+                        ValidateContentChars(_newLineChars, "NewLineChars", false);
                     }
                 }
             }

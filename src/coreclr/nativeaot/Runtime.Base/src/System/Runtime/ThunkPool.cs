@@ -269,7 +269,7 @@ namespace System.Runtime
             return false;
         }
 
-        private IntPtr TryGetThunkDataAddress(IntPtr thunkAddress)
+        private static IntPtr TryGetThunkDataAddress(IntPtr thunkAddress)
         {
             nuint thunkAddressValue = (nuint)(nint)ClearThumbBit(thunkAddress);
 

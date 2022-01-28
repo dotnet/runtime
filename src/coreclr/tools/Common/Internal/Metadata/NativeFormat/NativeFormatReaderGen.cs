@@ -7,6 +7,7 @@
 #pragma warning disable 169
 #pragma warning disable 282 // There is no defined ordering between fields in multiple declarations of partial class or struct
 #pragma warning disable CA1066 // IEquatable<T> implementations aren't used
+#pragma warning disable CA1822
 #pragma warning disable IDE0059
 
 using System;

@@ -575,7 +575,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private HeaderStoreItemInfo CloneHeaderInfo(HeaderDescriptor descriptor, HeaderStoreItemInfo sourceInfo)
+        private static HeaderStoreItemInfo CloneHeaderInfo(HeaderDescriptor descriptor, HeaderStoreItemInfo sourceInfo)
         {
             var destinationInfo = new HeaderStoreItemInfo
             {
@@ -975,7 +975,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private void ParseAndAddValue(HeaderDescriptor descriptor, HeaderStoreItemInfo info, string? value)
+        private static void ParseAndAddValue(HeaderDescriptor descriptor, HeaderStoreItemInfo info, string? value)
         {
             Debug.Assert(info != null);
 
@@ -1226,7 +1226,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private bool AreEqual(object value, object? storeValue, IEqualityComparer? comparer)
+        private static bool AreEqual(object value, object? storeValue, IEqualityComparer? comparer)
         {
             Debug.Assert(value != null);
 

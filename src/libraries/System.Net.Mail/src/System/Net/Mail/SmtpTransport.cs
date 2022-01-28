@@ -139,9 +139,9 @@ namespace System.Net.Mail
             return result;
         }
 
-        internal void EndGetConnection(IAsyncResult result)
+        internal static void EndGetConnection(IAsyncResult result)
         {
-            _connection!.EndGetConnection(result);
+            SmtpConnection.EndGetConnection(result);
         }
 
         internal IAsyncResult BeginSendMail(MailAddress sender!!, MailAddressCollection recipients!!,
@@ -174,7 +174,7 @@ namespace System.Net.Mail
             }
         }
 
-        internal MailWriter EndSendMail(IAsyncResult result)
+        internal static MailWriter EndSendMail(IAsyncResult result)
         {
             try
             {

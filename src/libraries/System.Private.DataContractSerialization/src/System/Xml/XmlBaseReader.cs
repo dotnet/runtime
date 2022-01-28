@@ -1902,7 +1902,7 @@ namespace System.Xml
             writer.WriteStartElement(prefixBuffer, prefixOffset, prefixLength, localNameBuffer, localNameOffset, localNameLength);
         }
 
-        private void SignAttribute(XmlSigningNodeWriter writer, XmlAttributeNode attributeNode)
+        private static void SignAttribute(XmlSigningNodeWriter writer, XmlAttributeNode attributeNode)
         {
             QNameType qnameType = attributeNode.QNameType;
             if (qnameType == QNameType.Normal)
@@ -2676,7 +2676,7 @@ namespace System.Xml
                 return i;
             }
 
-            public int CompareQNameType(QNameType type1, QNameType type2)
+            public static int CompareQNameType(QNameType type1, QNameType type2)
             {
                 return (int)type1 - (int)type2;
             }
@@ -2950,7 +2950,7 @@ namespace System.Xml
                 return null;
             }
 
-            private bool TryGetShortPrefix(string s, out PrefixHandleType shortPrefix)
+            private static bool TryGetShortPrefix(string s, out PrefixHandleType shortPrefix)
             {
                 int length = s.Length;
                 if (length == 0)

@@ -118,7 +118,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator CreateCharMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
@@ -157,7 +157,7 @@ namespace Microsoft.Interop
             throw new MarshallingNotSupportedException(info, context);
         }
 
-        private IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)

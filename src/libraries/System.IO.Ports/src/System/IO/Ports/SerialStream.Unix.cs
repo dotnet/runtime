@@ -335,6 +335,7 @@ namespace System.IO.Ports
             }
         }
 
+#pragma warning disable CA1822
         internal bool DiscardNull
         {
             set
@@ -350,6 +351,7 @@ namespace System.IO.Ports
                 // Ignore.
             }
         }
+#pragma warning restore CA1822
 
         internal void DiscardInBuffer()
         {
@@ -553,7 +555,7 @@ namespace System.IO.Ports
         public override void EndWrite(IAsyncResult asyncResult)
             => EndReadWrite(asyncResult);
 
-        private int EndReadWrite(IAsyncResult asyncResult)
+        private static int EndReadWrite(IAsyncResult asyncResult)
         {
             try
             {

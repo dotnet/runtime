@@ -56,7 +56,7 @@ namespace System.Runtime.Serialization.Json
             jsonWriter.WriteString(serialized);
         }
 
-        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext? context, IList<Type>? serializerKnownTypeList)
+        private static List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext? context, IList<Type>? serializerKnownTypeList)
         {
             List<Type> knownTypesList = new List<Type>();
             if (context != null)

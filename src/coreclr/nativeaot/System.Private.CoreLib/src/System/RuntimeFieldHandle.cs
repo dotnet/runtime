@@ -43,7 +43,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
+        private static int _rotl(int value, int shift)
         {
             return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }

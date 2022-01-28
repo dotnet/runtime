@@ -1012,7 +1012,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private object? UnWrapUnion(object? typedValue)
+        private static object? UnWrapUnion(object? typedValue)
         {
             XsdSimpleValue? simpleValue = typedValue as XsdSimpleValue;
             if (simpleValue != null)

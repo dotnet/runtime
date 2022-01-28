@@ -444,7 +444,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private ConstantModel? GetConstantModel(FieldInfo fieldInfo)
+        private static ConstantModel? GetConstantModel(FieldInfo fieldInfo)
         {
             if (fieldInfo.IsSpecialName) return null;
             return new ConstantModel(fieldInfo, ((IConvertible)fieldInfo.GetValue(null)!).ToInt64(null));

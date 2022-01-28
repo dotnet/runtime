@@ -44,9 +44,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Type[] typeArgs = { typeof(T) };
             Type constructed = _exportFactoryType.MakeGenericType(typeArgs);
 
-            var lifetimeContext = new LifetimeContext();
-
-            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => lifetimeContext.GetExportLifetimeContextFromExport<T>(export);
+            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => LifetimeContext.GetExportLifetimeContextFromExport<T>(export);
             object[] args = { exportLifetimeContextCreator };
 
             var instance = Activator.CreateInstance(constructed, args);
@@ -59,9 +57,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Type[] typeArgs = { typeof(T), typeof(M) };
             Type constructed = _exportFactoryType.MakeGenericType(typeArgs);
 
-            var lifetimeContext = new LifetimeContext();
-
-            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => lifetimeContext.GetExportLifetimeContextFromExport<T>(export);
+            Func<Tuple<T, Action>> exportLifetimeContextCreator = () => LifetimeContext.GetExportLifetimeContextFromExport<T>(export);
             var metadataView = AttributedModelServices.GetMetadataView<M>(export.Metadata);
             object?[] args = { exportLifetimeContextCreator, metadataView };
 

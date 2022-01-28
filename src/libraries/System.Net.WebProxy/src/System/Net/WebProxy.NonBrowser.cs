@@ -13,7 +13,7 @@ namespace System.Net
         private static volatile IPAddress[]? s_localAddresses;
         private static int s_networkChangeRegistered;
 
-        private bool IsLocal(Uri host)
+        private static bool IsLocal(Uri host)
         {
             if (host.IsLoopback)
             {

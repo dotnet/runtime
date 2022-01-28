@@ -226,6 +226,7 @@ namespace System.Linq.Expressions.Interpreter
             _currentStackDepth += instruction.ConsumedStack;
         }
 
+#pragma warning disable CA1822
         /// <summary>
         /// Attaches a cookie to the last emitted instruction.
         /// </summary>
@@ -239,6 +240,7 @@ namespace System.Linq.Expressions.Interpreter
             _debugCookies.Add(new KeyValuePair<int, object?>(Count - 1, cookie));
 #endif
         }
+#pragma warning restore CA1822
 
         public int Count => _instructions.Count;
         public int CurrentStackDepth => _currentStackDepth;
@@ -887,7 +889,7 @@ namespace System.Linq.Expressions.Interpreter
             Emit(GetLoadField(field));
         }
 
-        private Instruction GetLoadField(FieldInfo field)
+        private static Instruction GetLoadField(FieldInfo field)
         {
             lock (s_loadFields)
             {

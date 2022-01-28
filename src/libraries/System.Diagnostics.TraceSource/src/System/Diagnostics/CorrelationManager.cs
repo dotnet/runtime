@@ -90,7 +90,7 @@ namespace System.Diagnostics
                 }
             }
 
-            private IEnumerator GetEnumerator(StackNode? n)
+            private static IEnumerator GetEnumerator(StackNode? n)
             {
                 while (n != null)
                 {

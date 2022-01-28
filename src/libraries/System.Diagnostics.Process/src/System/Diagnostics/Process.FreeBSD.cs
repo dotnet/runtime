@@ -88,7 +88,7 @@ namespace System.Diagnostics
         }
 
         // <summary>Gets execution path</summary>
-        private string? GetPathToOpenFile()
+        private static string? GetPathToOpenFile()
         {
             if (Interop.Sys.Stat("/usr/local/bin/open", out _) == 0)
             {

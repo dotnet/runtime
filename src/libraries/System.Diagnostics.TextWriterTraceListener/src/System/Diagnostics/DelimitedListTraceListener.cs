@@ -239,7 +239,7 @@ namespace System.Diagnostics
             Write(sb.ToString());
         }
 
-        private void EscapeMessage(string? message, StringBuilder sb)
+        private static void EscapeMessage(string? message, StringBuilder sb)
         {
             if (!string.IsNullOrEmpty(message))
             {

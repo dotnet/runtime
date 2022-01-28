@@ -44,13 +44,5 @@ namespace System.Net.Security
         {
             return _handle.ToString();
         }
-
-#if DEBUG
-        //This method should never be called for this type
-        public new IntPtr DangerousGetHandle()
-        {
-            throw new InvalidOperationException();
-        }
-#endif
     }
 }

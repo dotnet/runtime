@@ -36,7 +36,7 @@ namespace Microsoft.NET.HostModel.ComHost
         private const int NumTablesToSkip = 5;
         private const int SizeOfTableHeader = sizeof(int) * 4;
 
-        private Guid FindGuid(ReadOnlySpan<byte> fileContents)
+        private static Guid FindGuid(ReadOnlySpan<byte> fileContents)
         {
             checked
             {

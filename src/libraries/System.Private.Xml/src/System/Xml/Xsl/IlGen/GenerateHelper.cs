@@ -803,6 +803,7 @@ namespace System.Xml.Xsl.IlGen
             Emit(OpCodes.Ret);
         }
 
+#pragma warning disable CA1822
         [Conditional("DEBUG")]
         private void TraceCall(OpCode opcode, MethodInfo meth)
         {
@@ -830,6 +831,7 @@ namespace System.Xml.Xsl.IlGen
             }
 #endif
         }
+#pragma warning restore CA1822
 
         public void Call(MethodInfo meth)
         {

@@ -265,7 +265,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool IsBroadcast(IPAddress address)
+        private static bool IsBroadcast(IPAddress address)
         {
             if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {

@@ -106,6 +106,7 @@ namespace System.Runtime.Caching
             Interlocked.Decrement(ref _counterValues[idx]);
         }
 #else
+#pragma warning disable CA1822
         internal Counters(string cacheName)
         {
         }
@@ -121,6 +122,7 @@ namespace System.Runtime.Caching
         internal void Decrement(CounterName name)
         {
         }
+#pragma warning restore CA1822
 #endif
     }
 }

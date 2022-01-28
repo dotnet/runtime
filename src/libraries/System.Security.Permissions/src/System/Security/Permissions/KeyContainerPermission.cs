@@ -14,7 +14,6 @@ namespace System.Security.Permissions
         public KeyContainerPermissionFlags Flags { get; }
         public KeyContainerPermissionAccessEntryCollection AccessEntries { get; }
         public bool IsUnrestricted() { return false; }
-        private bool IsEmpty() { return false; }
         public override bool IsSubsetOf(IPermission target) { return false; }
         public override IPermission Intersect(IPermission target) { return null; }
         public override IPermission Union(IPermission target) { return null; }

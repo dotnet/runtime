@@ -213,7 +213,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            private string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+            private static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
             {
                 string typeRet;
                 object valueRet;

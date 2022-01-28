@@ -53,6 +53,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
+#pragma warning disable CA1822
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
 
         internal void EnsureThreadPoolBindingInitialized() { /* nop */ }
@@ -62,6 +63,7 @@ namespace Microsoft.Win32.SafeHandles
             cachedLength = -1;
             return false;
         }
+#pragma warning restore CA1822
 
         private static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode,
                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException)

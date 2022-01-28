@@ -875,7 +875,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
+        private static void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
         {
             Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
             thisLockTaken = false;
@@ -1458,13 +1458,13 @@ namespace System.Net.WebSockets
                                                 {
                                                     // If an exception is thrown we know that the locks have been released,
                                                     // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
-                                                    _webSocket.ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
+                                                    ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
                                                     throw;
                                                 }
 
                                                 if (callCompleteOnCloseCompleted)
                                                 {
-                                                    _webSocket.ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
+                                                    ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
                                                     _webSocket.FinishOnCloseCompleted();
                                                 }
                                             }

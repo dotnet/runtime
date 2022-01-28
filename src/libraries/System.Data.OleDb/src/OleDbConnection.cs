@@ -307,8 +307,6 @@ namespace System.Data.OleDb
             return quotedIdentifierCase;
         }
 
-        internal bool ForceNewConnection { get { return false; } set {; } }
-
         public new OleDbTransaction BeginTransaction()
         {
             return BeginTransaction(IsolationLevel.Unspecified);

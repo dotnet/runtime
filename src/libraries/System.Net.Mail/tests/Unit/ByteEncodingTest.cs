@@ -114,9 +114,8 @@ namespace System.Net.Mime.Tests
         [InlineData(true, "Emoji subject : 🕐🕑🕒🕓🕔🕕\r\n11")]
         public void EncodeString_IsSameAsEncodeBytes_IfOneByteCodepointOnLineWrap(bool useBase64Encoding, string value)
         {
-            var factory = new EncodedStreamFactory();
-            IEncodableStream streamForEncodeString = factory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
-            IEncodableStream streamForEncodeBytes = factory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
+            IEncodableStream streamForEncodeString = EncodedStreamFactory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
+            IEncodableStream streamForEncodeBytes = EncodedStreamFactory.GetEncoderForHeader(Encoding.UTF8, useBase64Encoding, 0);
 
             streamForEncodeString.EncodeString(value, Encoding.UTF8);
             string encodeStringResult = streamForEncodeString.GetEncodedString();

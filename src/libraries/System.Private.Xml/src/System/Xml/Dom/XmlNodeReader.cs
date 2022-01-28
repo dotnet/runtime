@@ -167,7 +167,7 @@ namespace System.Xml
             }
         }
 
-        private bool IsLocalNameEmpty(XmlNodeType nt)
+        private static bool IsLocalNameEmpty(XmlNodeType nt)
         {
             switch (nt)
             {
@@ -377,7 +377,7 @@ namespace System.Xml
             _nDeclarationAttrCount = i;
         }
 
-        public string? GetDeclarationAttr(XmlDeclaration decl, string name)
+        public static string? GetDeclarationAttr(XmlDeclaration decl, string name)
         {
             //PreCondition: curNode is pointing at Declaration node or one of its virtual attributes
             if (name == strVersion)
@@ -437,7 +437,7 @@ namespace System.Xml
             _nDocTypeAttrCount = i;
         }
 
-        public string? GetDocumentTypeAttr(XmlDocumentType docType, string name)
+        public static string? GetDocumentTypeAttr(XmlDocumentType docType, string name)
         {
             //PreCondition: nav is pointing at DocumentType node or one of its virtual attributes
             if (name == strPublicID)
@@ -466,7 +466,7 @@ namespace System.Xml
             return -1;
         }
 
-        private string? GetAttributeFromElement(XmlElement elem, string name)
+        private static string? GetAttributeFromElement(XmlElement elem, string name)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name);
             if (attr != null)
@@ -489,7 +489,7 @@ namespace System.Xml
             };
         }
 
-        private string? GetAttributeFromElement(XmlElement elem, string name, string? ns)
+        private static string? GetAttributeFromElement(XmlElement elem, string name, string? ns)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name, ns);
             if (attr != null)

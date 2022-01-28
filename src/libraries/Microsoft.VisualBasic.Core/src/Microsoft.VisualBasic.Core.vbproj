@@ -9,7 +9,7 @@
     <OptionCompare>Binary</OptionCompare>
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
-    <NoWarn>$(NoWarn),CA1052,CA1810,CA2200</NoWarn>
+    <NoWarn>$(NoWarn),CA1052,CA1810,CA1822,CA2200</NoWarn>
     <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>

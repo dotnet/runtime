@@ -601,7 +601,7 @@ namespace System.IO
                 return eventType;
             }
 
-            private bool ShouldRescanOccur(FSEventStreamEventFlags flags)
+            private static bool ShouldRescanOccur(FSEventStreamEventFlags flags)
             {
                 // Check if any bit is set that signals that the caller should rescan
                 return (flags.HasFlag(FSEventStreamEventFlags.kFSEventStreamEventFlagMustScanSubDirs) ||
@@ -620,7 +620,7 @@ namespace System.IO
                 return _includeChildren || _fullDirectory.AsSpan().StartsWith(System.IO.Path.GetDirectoryName(eventPath), StringComparison.OrdinalIgnoreCase);
             }
 
-            private int? FindRenameChangePairedChange(
+            private static int? FindRenameChangePairedChange(
                 int currentIndex,
                 Span<FSEventStreamEventFlags> flags, Span<FSEventStreamEventId> ids)
             {

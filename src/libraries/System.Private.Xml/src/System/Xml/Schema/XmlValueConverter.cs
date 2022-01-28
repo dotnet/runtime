@@ -2339,7 +2339,7 @@ namespace System.Xml.Schema
             return base.ChangeListType(value, destinationType, nsResolver);
         }
 
-        private bool SupportsType(Type clrType)
+        private static bool SupportsType(Type clrType)
         {
             if (clrType == BooleanType) return true;
             if (clrType == ByteType) return true;
@@ -2817,7 +2817,7 @@ namespace System.Xml.Schema
         ///   2. A strongly-typed array
         ///   3. A string
         /// </summary>
-        private bool IsListType(Type type)
+        private static bool IsListType(Type type)
         {
             // IsClrListType returns true if "type" is one of the list interfaces
             if (type == IListType || type == ICollectionType || type == IEnumerableType || type == StringType)
@@ -2886,7 +2886,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Tokenize "value" by splitting it on whitespace characters.  Insert tokens into an ArrayList and return the list.
         /// </summary>
-        private List<string> StringAsList(string value)
+        private static List<string> StringAsList(string value)
         {
             return new List<string>(XmlConvert.SplitString(value));
         }

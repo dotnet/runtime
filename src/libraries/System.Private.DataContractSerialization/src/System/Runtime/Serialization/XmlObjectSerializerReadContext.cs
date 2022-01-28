@@ -983,7 +983,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private bool IsContentNode(XmlNodeType nodeType)
+        private static bool IsContentNode(XmlNodeType nodeType)
         {
             switch (nodeType)
             {

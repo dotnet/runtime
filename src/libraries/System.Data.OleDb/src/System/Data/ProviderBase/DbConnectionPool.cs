@@ -658,8 +658,6 @@ namespace System.Data.ProviderBase
             return (new Timer(new TimerCallback(this.CleanupCallback), null, _cleanupWait, _cleanupWait));
         }
 
-        private bool IsBlockingPeriodEnabled() => true;
-
         private DbConnectionInternal CreateObject(DbConnection? owningObject, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection)
         {
             DbConnectionInternal? newObj = null;
@@ -715,11 +713,6 @@ namespace System.Data.ProviderBase
                 }
 
                 ADP.TraceExceptionForCapture(e);
-
-                if (!IsBlockingPeriodEnabled())
-                {
-                    throw;
-                }
 
                 newObj = null; // set to null, so we do not return bad new object
                 // Failed to create instance

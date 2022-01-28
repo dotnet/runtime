@@ -21,7 +21,7 @@ namespace System.Net.NetworkInformation
         private const int IpV6HeaderLengthInBytes = 40;
         private static ushort DontFragment = OperatingSystem.IsFreeBSD() ? (ushort)IPAddress.HostToNetworkOrder((short)0x4000) : (ushort)0x4000;
 
-        private unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static unsafe SocketConfig GetSocketConfig(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             // Use a random value as the identifier. This doesn't need to be perfectly random
             // or very unpredictable, rather just good enough to avoid unexpected conflicts.
@@ -58,7 +58,7 @@ namespace System.Net.NetworkInformation
                 }, buffer, totalLength));
         }
 
-        private Socket GetRawSocket(SocketConfig socketConfig)
+        private static Socket GetRawSocket(SocketConfig socketConfig)
         {
             IPEndPoint ep = (IPEndPoint)socketConfig.EndPoint;
             AddressFamily addrFamily = ep.Address.AddressFamily;
@@ -108,7 +108,7 @@ namespace System.Net.NetworkInformation
             return socket;
         }
 
-        private bool TryGetPingReply(
+        private static bool TryGetPingReply(
             SocketConfig socketConfig, byte[] receiveBuffer, int bytesReceived, long startingTimestamp, ref int ipHeaderLength,
             [NotNullWhen(true)] out PingReply? reply)
         {
@@ -232,7 +232,7 @@ namespace System.Net.NetworkInformation
             return true;
         }
 
-        private PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static PingReply SendIcmpEchoRequestOverRawSocket(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
@@ -276,7 +276,7 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+        private static async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
         {
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))

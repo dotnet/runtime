@@ -110,7 +110,7 @@ namespace System.Xml
         }
 
         [DoesNotReturn]
-        protected void ThrowClosed()
+        protected static void ThrowClosed()
         {
             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlWriterClosed));
         }
@@ -717,7 +717,7 @@ namespace System.Xml
             FlushElement();
         }
 
-        protected void EndComment()
+        protected static void EndComment()
         {
         }
 
@@ -756,32 +756,32 @@ namespace System.Xml
                 VerifyWhitespace(chars, offset, count);
         }
 
-        private void VerifyWhitespace(char ch)
+        private static void VerifyWhitespace(char ch)
         {
             if (!IsWhitespace(ch))
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
-        private void VerifyWhitespace(string s)
+        private static void VerifyWhitespace(string s)
         {
             for (int i = 0; i < s.Length; i++)
                 if (!IsWhitespace(s[i]))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
-        private void VerifyWhitespace(char[] chars, int offset, int count)
+        private static void VerifyWhitespace(char[] chars, int offset, int count)
         {
             for (int i = 0; i < count; i++)
                 if (!IsWhitespace(chars[offset + i]))
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlIllegalOutsideRoot));
         }
 
-        private bool IsWhitespace(char ch)
+        private static bool IsWhitespace(char ch)
         {
             return (ch == ' ' || ch == '\n' || ch == '\r' || ch == 't');
         }
 
-        protected void EndContent()
+        protected static void EndContent()
         {
         }
 
@@ -1724,10 +1724,6 @@ namespace System.Xml
             if (_writeState == WriteState.Attribute)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlInvalidWriteState, "WriteStartElement", WriteState.ToString())));
             AutoComplete(WriteState.Content);
-        }
-
-        protected void EndArray()
-        {
         }
 
         private string GeneratePrefix(string ns, XmlDictionaryString? xNs)

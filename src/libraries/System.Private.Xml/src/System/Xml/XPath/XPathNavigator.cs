@@ -1087,7 +1087,7 @@ namespace System.Xml.XPath
             return validityTracker.IsValid;
         }
 
-        private XmlReader GetValidatingReader(XmlReader reader, XmlSchemaSet schemas, ValidationEventHandler validationEvent, XmlSchemaType? schemaType, XmlSchemaElement? schemaElement, XmlSchemaAttribute? schemaAttribute)
+        private static XmlReader GetValidatingReader(XmlReader reader, XmlSchemaSet schemas, ValidationEventHandler validationEvent, XmlSchemaType? schemaType, XmlSchemaElement? schemaElement, XmlSchemaAttribute? schemaAttribute)
         {
             if (schemaAttribute != null)
             {
@@ -1839,7 +1839,7 @@ namespace System.Xml.XPath
         // namespace(0)    ?(0)            before(-1)      before(-2)
         // attribute(1)    after(1)        ?(0)            before(-1)
         // other    (2)    after(2)        after(1)        ?(0)
-        private XmlNodeOrder CompareSiblings(XPathNavigator n1, XPathNavigator n2)
+        private static XmlNodeOrder CompareSiblings(XPathNavigator n1, XPathNavigator n2)
         {
             int cmp = 0;
 
@@ -2043,7 +2043,7 @@ namespace System.Xml.XPath
             return reader;
         }
 
-        internal void BuildSubtree(XmlReader reader, XmlWriter writer)
+        internal static void BuildSubtree(XmlReader reader, XmlWriter writer)
         {
             // important (perf) string literal...
             string xmlnsUri = XmlReservedNs.NsXmlNs; // http://www.w3.org/2000/xmlns/

@@ -260,7 +260,7 @@ namespace Microsoft.VisualBasic
 
         protected override string NullToken => "Nothing";
 
-        private void EnsureInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
+        private static void EnsureInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
             if (fInDoubleQuotes)
             {
@@ -271,7 +271,7 @@ namespace Microsoft.VisualBasic
             fInDoubleQuotes = true;
         }
 
-        private void EnsureNotInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
+        private static void EnsureNotInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
             if (!fInDoubleQuotes)
             {
@@ -1192,7 +1192,7 @@ namespace Microsoft.VisualBasic
             Output.WriteLine();
         }
 
-        private bool IsDocComment(CodeCommentStatement comment)
+        private static bool IsDocComment(CodeCommentStatement comment)
         {
             return ((comment != null) && (comment.Comment != null) && comment.Comment.DocComment);
         }
@@ -1539,7 +1539,7 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        private bool MethodIsOverloaded(CodeMemberMethod e, CodeTypeDeclaration c)
+        private static bool MethodIsOverloaded(CodeMemberMethod e, CodeTypeDeclaration c)
         {
             if ((e.Attributes & MemberAttributes.Overloaded) != 0)
             {
@@ -1701,7 +1701,7 @@ namespace Microsoft.VisualBasic
             Output.WriteLine("End Sub");
         }
 
-        private bool PropertyIsOverloaded(CodeMemberProperty e, CodeTypeDeclaration c)
+        private static bool PropertyIsOverloaded(CodeMemberProperty e, CodeTypeDeclaration c)
         {
             if ((e.Attributes & MemberAttributes.Overloaded) != 0)
             {
@@ -2159,7 +2159,7 @@ namespace Microsoft.VisualBasic
             GenerateNamespaceEnd(e);
         }
 
-        private bool AllowLateBound(CodeCompileUnit e)
+        private static bool AllowLateBound(CodeCompileUnit e)
         {
             object o = e.UserData["AllowLateBound"];
             if (o != null && o is bool)
@@ -2171,7 +2171,7 @@ namespace Microsoft.VisualBasic
             return true;
         }
 
-        private bool RequireVariableDeclaration(CodeCompileUnit e)
+        private static bool RequireVariableDeclaration(CodeCompileUnit e)
         {
             object o = e.UserData["RequireVariableDeclaration"];
             if (o != null && o is bool)
@@ -2181,7 +2181,7 @@ namespace Microsoft.VisualBasic
             return true;
         }
 
-        private bool GetUserData(CodeObject e, string property, bool defaultValue)
+        private static bool GetUserData(CodeObject e, string property, bool defaultValue)
         {
             object o = e.UserData[property];
             if (o != null && o is bool)

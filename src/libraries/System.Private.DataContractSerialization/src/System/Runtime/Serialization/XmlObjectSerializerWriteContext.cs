@@ -501,7 +501,7 @@ namespace System.Runtime.Serialization
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal void GetObjectData(ISerializable obj, SerializationInfo serInfo, StreamingContext context)
+        internal static void GetObjectData(ISerializable obj, SerializationInfo serInfo, StreamingContext context)
         {
             obj.GetObjectData(serInfo, context);
         }

@@ -294,7 +294,7 @@ namespace System.Data.Common
         }
 
         [Conditional("DEBUG")]
-        private void ValidateCombinedSet(DBConnectionString? componentSet, DBConnectionString combinedSet)
+        private static void ValidateCombinedSet(DBConnectionString? componentSet, DBConnectionString combinedSet)
         {
             Debug.Assert(combinedSet != null, "The combined connection string should not be null");
             if ((componentSet != null) && (combinedSet._restrictionValues != null) && (componentSet._restrictionValues != null))

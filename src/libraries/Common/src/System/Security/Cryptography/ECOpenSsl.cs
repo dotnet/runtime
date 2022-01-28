@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
 
         internal SafeEcKeyHandle Value => _key.Value;
 
-        private SafeEcKeyHandle GenerateKeyLazy(AsymmetricAlgorithm owner) =>
+        private static SafeEcKeyHandle GenerateKeyLazy(AsymmetricAlgorithm owner) =>
             GenerateKeyByKeySize(owner.KeySize);
 
         public void Dispose()

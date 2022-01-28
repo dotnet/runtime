@@ -249,7 +249,7 @@ namespace System.Data.Common
             _IDbDataAdapter.DeleteCommand = CloneCommand(pfrom.DeleteCommand);
         }
 
-        private IDbCommand? CloneCommand(IDbCommand? command)
+        private static IDbCommand? CloneCommand(IDbCommand? command)
         {
             return (IDbCommand?)((command is ICloneable) ? ((ICloneable)command).Clone() : null);
         }
@@ -783,7 +783,7 @@ namespace System.Data.Common
             }
         }
 
-        private void ParameterOutput(IDataParameter parameter, DataRow row, DataTableMapping mappings, MissingMappingAction missingMapping, MissingSchemaAction missingSchema)
+        private static void ParameterOutput(IDataParameter parameter, DataRow row, DataTableMapping mappings, MissingMappingAction missingMapping, MissingSchemaAction missingSchema)
         {
             if (0 != (ParameterDirection.Output & parameter.Direction))
             {
@@ -1460,7 +1460,7 @@ namespace System.Data.Common
             }
         }
 
-        private ConnectionState UpdateConnectionOpen(IDbConnection connection, StatementType statementType, IDbConnection?[] connections, ConnectionState[] connectionStates, bool useSelectConnectionState)
+        private static ConnectionState UpdateConnectionOpen(IDbConnection connection, StatementType statementType, IDbConnection?[] connections, ConnectionState[] connectionStates, bool useSelectConnectionState)
         {
             Debug.Assert(null != connection, "unexpected null connection");
             int index = (int)statementType;
@@ -1704,7 +1704,7 @@ namespace System.Data.Common
             return affected; // return the count of successful rows within the batch failure
         }
 
-        private int UpdatedRowStatusSkip(BatchCommandInfo[] batchCommands, int commandCount)
+        private static int UpdatedRowStatusSkip(BatchCommandInfo[] batchCommands, int commandCount)
         {
             Debug.Assert(null != batchCommands, "null batchCommands?");
 

@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Logging.EventLog
             }
         }
 
-        private EventLogEntryType GetEventLogEntryType(LogLevel level)
+        private static EventLogEntryType GetEventLogEntryType(LogLevel level)
         {
             switch (level)
             {

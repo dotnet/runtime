@@ -935,7 +935,7 @@ namespace System.Net
             }
         }
 
-        private Exception TranslateConnectException(Exception e)
+        private static Exception TranslateConnectException(Exception e)
         {
             if (e is SocketException se)
             {

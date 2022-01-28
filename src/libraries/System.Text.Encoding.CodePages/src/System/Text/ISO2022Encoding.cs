@@ -1110,7 +1110,7 @@ namespace System.Text
         }
 
         // We know we have an escape sequence, so check it starting with the byte after the escape
-        private ISO2022Modes CheckEscapeSequenceJP(byte[] bytes, int escapeCount)
+        private static ISO2022Modes CheckEscapeSequenceJP(byte[] bytes, int escapeCount)
         {
             // Have an escape sequence
             if (bytes[0] != ESCAPE)
@@ -1175,7 +1175,7 @@ namespace System.Text
             return ISO2022Modes.ModeInvalidEscape;
         }
 
-        private byte DecrementEscapeBytes(ref byte[] bytes, ref int count)
+        private static byte DecrementEscapeBytes(ref byte[] bytes, ref int count)
         {
             Debug.Assert(count > 0, "[ISO2022Encoding.DecrementEscapeBytes]count > 0");
 
@@ -1407,7 +1407,7 @@ namespace System.Text
         }
 
         // We know we have an escape sequence, so check it starting with the byte after the escape
-        private ISO2022Modes CheckEscapeSequenceKR(byte[] bytes, int escapeCount)
+        private static ISO2022Modes CheckEscapeSequenceKR(byte[] bytes, int escapeCount)
         {
             // Have an escape sequence
             if (bytes[0] != ESCAPE)

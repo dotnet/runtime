@@ -3559,7 +3559,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool IsWildcardEndPoint(EndPoint? endPoint)
+        private static bool IsWildcardEndPoint(EndPoint? endPoint)
         {
             if (endPoint == null)
             {

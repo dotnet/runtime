@@ -556,7 +556,7 @@ namespace System.DirectoryServices.Protocols
                 IntPtr tempPtr = IntPtr.Zero;
 
                 // build server control
-                managedServerControls = _connection.BuildControlArray(controls, true);
+                managedServerControls = LdapConnection.BuildControlArray(controls, true);
                 int structSize = Marshal.SizeOf(typeof(LdapControl));
                 if (managedServerControls != null)
                 {
@@ -574,7 +574,7 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 // Build client control.
-                managedClientControls = _connection.BuildControlArray(controls, false);
+                managedClientControls = LdapConnection.BuildControlArray(controls, false);
                 if (managedClientControls != null)
                 {
                     clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);

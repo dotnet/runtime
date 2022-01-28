@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.XsltOld
             return result;
         }
 
-        public void CheckEmpty(Compiler compiler)
+        public static void CheckEmpty(Compiler compiler)
         {
             // Really EMPTY means no content at all, but the sake of compatibility with MSXML we allow whitespace
             string elementName = compiler.Input.Name;
@@ -90,12 +90,12 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
+        public static void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
         {
             CheckRequiredAttribute(compiler, attrValue != null, attrName);
         }
 
-        public void CheckRequiredAttribute(Compiler compiler, bool attr, string attrName)
+        public static void CheckRequiredAttribute(Compiler compiler, bool attr, string attrName)
         {
             if (!attr)
             {

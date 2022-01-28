@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        private void ExecuteHandlers(CancellationTokenSource cancel)
+        private static void ExecuteHandlers(CancellationTokenSource cancel)
         {
             // Noop if this is already cancelled
             if (cancel.IsCancellationRequested)

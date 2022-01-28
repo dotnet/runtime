@@ -355,8 +355,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal ReadObjectInfo() { }
 
-        internal void ObjectEnd() { }
-
         internal void PrepareForReuse()
         {
             _lastPosition = 0;
@@ -725,7 +723,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         // Retrieves the member type from the MemberInfo
-        internal Type GetMemberType(MemberInfo objMember)
+        internal static Type GetMemberType(MemberInfo objMember)
         {
             if (objMember is FieldInfo)
             {

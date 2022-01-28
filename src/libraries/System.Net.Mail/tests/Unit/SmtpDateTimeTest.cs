@@ -30,9 +30,8 @@ namespace System.Net.Mime.Tests
         [Fact]
         public void SmtpDateTime_WithInvalidTimeZone_ShouldParseDateCorrectly()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
             string timeZoneOffset;
-            DateTime result = smtpDt.ParseValue(InvalidDateStringWithInvalidTimeZone, out timeZoneOffset);
+            DateTime result = SmtpDateTime.ParseValue(InvalidDateStringWithInvalidTimeZone, out timeZoneOffset);
 
             Assert.Equal("7M-Gte", timeZoneOffset);
             Assert.Equal(new DateTime(2009, 5, 17, 15, 34, 07), result);
@@ -48,11 +47,10 @@ namespace System.Net.Mime.Tests
         [InlineData(InvalidDateStringWithBadDayOfWeek)]
         public void SmtpDateTime_InvalidInput_ShouldThrowException(string input)
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
             Assert.Throws<FormatException>(() =>
             {
                 string timeZoneOffset;
-                DateTime results = smtpDt.ParseValue(input, out timeZoneOffset);
+                DateTime results = SmtpDateTime.ParseValue(input, out timeZoneOffset);
             });
         }
 
@@ -88,9 +86,7 @@ namespace System.Net.Mime.Tests
             string expectedTimeZoneOffset,
             DateTimeKind expectedKind)
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
-
-            DateTime result = smtpDt.ParseValue(input, out string timeZoneOffset);
+            DateTime result = SmtpDateTime.ParseValue(input, out string timeZoneOffset);
 
             Assert.Equal(expectedYear, result.Year);
             Assert.Equal(expectedMonth, result.Month);
@@ -112,35 +108,31 @@ namespace System.Net.Mime.Tests
         [Fact]
         public void SmtpDate_ValidateTimeZoneShortHandValue_WithValidShortHand_ShouldReturnTrue()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
-            smtpDt.ValidateTimeZoneShortHandValue("GMT");
+            SmtpDateTime.ValidateTimeZoneShortHandValue("GMT");
         }
 
         [Fact]
         public void SmtpDate_ValidateTimeZoneShortHandValue_WithInvalidShortHand_ShouldReturnFalse()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
-            Assert.Throws<FormatException>(() => smtpDt.ValidateTimeZoneShortHandValue("7M-GTE"));
+            Assert.Throws<FormatException>(() => SmtpDateTime.ValidateTimeZoneShortHandValue("7M-GTE"));
         }
 
         [Fact]
         public void SmtpDate_ValidateTimeZoneOffsetValue_WithValidAndInvalidOffsets_ShouldReturnCorrectly()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
-
             bool positive;
             int hours;
             int minutes;
 
-            smtpDt.ValidateAndGetTimeZoneOffsetValues("+0000", out positive, out hours, out minutes);
-            smtpDt.ValidateAndGetTimeZoneOffsetValues("+9959", out positive, out hours, out minutes);
-            smtpDt.ValidateAndGetTimeZoneOffsetValues("-9959", out positive, out hours, out minutes);
-            smtpDt.ValidateAndGetTimeZoneOffsetValues("+0900", out positive, out hours, out minutes);
+            SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("+0000", out positive, out hours, out minutes);
+            SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("+9959", out positive, out hours, out minutes);
+            SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("-9959", out positive, out hours, out minutes);
+            SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("+0900", out positive, out hours, out minutes);
 
-            Assert.Throws<FormatException>(() => smtpDt.ValidateAndGetTimeZoneOffsetValues("+0080", out positive, out hours, out minutes));
-            Assert.Throws<FormatException>(() => smtpDt.ValidateAndGetTimeZoneOffsetValues("+-0045", out positive, out hours, out minutes));
-            Assert.Throws<FormatException>(() => smtpDt.ValidateAndGetTimeZoneOffsetValues("+10000", out positive, out hours, out minutes));
-            Assert.Throws<FormatException>(() => smtpDt.ValidateAndGetTimeZoneOffsetValues("-A000", out positive, out hours, out minutes));
+            Assert.Throws<FormatException>(() => SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("+0080", out positive, out hours, out minutes));
+            Assert.Throws<FormatException>(() => SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("+-0045", out positive, out hours, out minutes));
+            Assert.Throws<FormatException>(() => SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("+10000", out positive, out hours, out minutes));
+            Assert.Throws<FormatException>(() => SmtpDateTime.ValidateAndGetTimeZoneOffsetValues("-A000", out positive, out hours, out minutes));
         }
 
         [Fact]
@@ -152,46 +144,41 @@ namespace System.Net.Mime.Tests
         [Fact]
         public void SmtpDate_TimeSpanToOffset_ShouldConvertCorrectly()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
             TimeSpan timeZone = TimeZoneInfo.Utc.GetUtcOffset(DateTime.Now);
             string timeZoneToString = timeZone.ToString();
-            string result = smtpDt.TimeSpanToOffset(timeZone);
+            string result = SmtpDateTime.TimeSpanToOffset(timeZone);
             Assert.Equal("+0000", result);
         }
 
         [Fact]
         public void SmtpDate_TimeSpanToOffset_WithNonGmtOffset_ShouldConvertCorrectly()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
-            Assert.Equal("-0800", smtpDt.TimeSpanToOffset(new TimeSpan(-8, 0, 0)));
-            Assert.Equal("-1000", smtpDt.TimeSpanToOffset(new TimeSpan(-10, 0, 0)));
-            Assert.Equal("+1000", smtpDt.TimeSpanToOffset(new TimeSpan(10, 0, 0)));
-            Assert.Equal("+0400", smtpDt.TimeSpanToOffset(new TimeSpan(4, 0, 0)));
+            Assert.Equal("-0800", SmtpDateTime.TimeSpanToOffset(new TimeSpan(-8, 0, 0)));
+            Assert.Equal("-1000", SmtpDateTime.TimeSpanToOffset(new TimeSpan(-10, 0, 0)));
+            Assert.Equal("+1000", SmtpDateTime.TimeSpanToOffset(new TimeSpan(10, 0, 0)));
+            Assert.Equal("+0400", SmtpDateTime.TimeSpanToOffset(new TimeSpan(4, 0, 0)));
         }
 
         [Fact]
         public void SmtpDate_TryParseTimeZoneString_WithValidShortHand_ShouldReturnCorrectOffset()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
             TimeSpan span;
-            Assert.True(smtpDt.TryParseTimeZoneString("GMT", out span));
+            Assert.True(SmtpDateTime.TryParseTimeZoneString("GMT", out span));
             Assert.Equal(TimeSpan.Zero, span);
         }
 
         [Fact]
         public void SmtpDate_TryParseTimeZoneString_WithUnknownShortHand_ShouldReturnFalse()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
             TimeSpan span;
-            Assert.False(smtpDt.TryParseTimeZoneString("ABCD", out span));
+            Assert.False(SmtpDateTime.TryParseTimeZoneString("ABCD", out span));
         }
 
         [Fact]
         public void SmtpDate_TryParseTimeZoneString_WithInvalidShortHand_ShouldThrowException()
         {
-            var smtpDt = new SmtpDateTime(DateTime.Now);
             TimeSpan span;
-            Assert.Throws<FormatException>(() => smtpDt.TryParseTimeZoneString("7mGTE", out span));
+            Assert.Throws<FormatException>(() => SmtpDateTime.TryParseTimeZoneString("7mGTE", out span));
         }
     }
 }

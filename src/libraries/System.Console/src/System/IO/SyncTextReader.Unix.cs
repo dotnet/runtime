@@ -35,7 +35,7 @@ namespace System.IO
                 lock (this)
                 {
                     StdInReader r = Inner;
-                    return !r.IsUnprocessedBufferEmpty() || r.StdinReady;
+                    return !r.IsUnprocessedBufferEmpty() || StdInReader.StdinReady;
                 }
             }
         }

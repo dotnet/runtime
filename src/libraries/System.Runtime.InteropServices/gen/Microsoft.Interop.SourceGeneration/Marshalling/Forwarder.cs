@@ -20,7 +20,7 @@ namespace Microsoft.Interop
             return info.ManagedType.Syntax;
         }
 
-        private bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
+        private static bool TryRehydrateMarshalAsAttribute(TypePositionInfo info, out AttributeSyntax marshalAsAttribute)
         {
             marshalAsAttribute = null!;
             // If the parameter has [MarshalAs] marshalling, we resurface that

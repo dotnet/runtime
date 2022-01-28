@@ -71,7 +71,7 @@ namespace System.Configuration
             }
         }
 
-        private int GetNoneNesting(string val)
+        private static int GetNoneNesting(string val)
         {
             int count = 0;
             int len = val.Length;

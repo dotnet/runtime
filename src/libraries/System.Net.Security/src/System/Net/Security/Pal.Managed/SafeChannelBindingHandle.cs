@@ -32,7 +32,7 @@ namespace System.Net.Security
             SetCertHashLength(length);
         }
 
-        private byte[] GetPrefixBytes(ChannelBindingKind kind)
+        private static byte[] GetPrefixBytes(ChannelBindingKind kind)
         {
             Debug.Assert(kind == ChannelBindingKind.Endpoint || kind == ChannelBindingKind.Unique);
             return kind == ChannelBindingKind.Endpoint

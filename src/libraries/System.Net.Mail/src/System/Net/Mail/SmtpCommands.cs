@@ -33,7 +33,7 @@ namespace System.Net.Mail
             IAsyncResult result = reader.BeginReadLine(s_onReadLine, multiResult);
             if (result.CompletedSynchronously)
             {
-                LineInfo info = reader.EndReadLine(result);
+                LineInfo info = SmtpReplyReader.EndReadLine(result);
                 if (!(multiResult.Result is Exception))
                     multiResult.Result = info;
                 multiResult.Leave();
@@ -64,7 +64,7 @@ namespace System.Net.Mail
                 try
                 {
                     SmtpConnection conn = (SmtpConnection)multiResult.Context;
-                    LineInfo info = conn.Reader!.CurrentReader!.EndReadLine(result);
+                    LineInfo info = SmtpReplyReader.EndReadLine(result);
                     if (!(multiResult.Result is Exception))
                         multiResult.Result = info;
                     multiResult.Leave();
@@ -125,7 +125,7 @@ namespace System.Net.Mail
             IAsyncResult readLinesResult = reader.BeginReadLines(s_onReadLines, multiResult);
             if (readLinesResult.CompletedSynchronously)
             {
-                LineInfo[] lines = conn.Reader.CurrentReader!.EndReadLines(readLinesResult);
+                LineInfo[] lines = SmtpReplyReader.EndReadLines(readLinesResult);
                 if (!(multiResult.Result is Exception))
                     multiResult.Result = lines;
                 multiResult.Leave();
@@ -152,7 +152,7 @@ namespace System.Net.Mail
                 try
                 {
                     SmtpConnection conn = (SmtpConnection)multiResult.Context;
-                    LineInfo[] lines = conn.Reader!.CurrentReader!.EndReadLines(result);
+                    LineInfo[] lines = SmtpReplyReader.EndReadLines(result);
                     if (!(multiResult.Result is Exception))
                         multiResult.Result = lines;
                     multiResult.Leave();

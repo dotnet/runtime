@@ -432,7 +432,7 @@ namespace System.Diagnostics
             return _sharedCounter.Increment();
         }
 
-        private void ThrowReadOnly()
+        private static void ThrowReadOnly()
         {
             throw new InvalidOperationException(SR.ReadOnlyCounter);
         }

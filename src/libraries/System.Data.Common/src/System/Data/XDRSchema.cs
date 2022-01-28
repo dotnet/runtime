@@ -65,7 +65,7 @@ namespace System.Data
                 ds.DataSetName = _schemaName;
         }
 
-        internal XmlElement? FindTypeNode(XmlElement node)
+        internal static XmlElement? FindTypeNode(XmlElement node)
         {
             string strType;
             XmlNode? vn;
@@ -128,7 +128,7 @@ namespace System.Data
             return null;
         }
 
-        internal bool IsTextOnlyContent(XmlElement node)
+        internal static bool IsTextOnlyContent(XmlElement node)
         {
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), $"Invalid node type {node.LocalName}");
 
@@ -151,7 +151,7 @@ namespace System.Data
             throw ExceptionBuilder.InvalidAttributeValue("content", value);
         }
 
-        internal bool IsXDRField(XmlElement node, XmlElement typeNode)
+        internal static bool IsXDRField(XmlElement node, XmlElement typeNode)
         {
             int min = 1;
             int max = 1;
@@ -294,7 +294,7 @@ namespace System.Data
         private static readonly NameType s_enumerationNameType = FindNameType("enumeration");
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-        private Type ParseDataType(string dt, string dtValues)
+        private static Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
             string[] parts = dt.Split(':');
@@ -315,7 +315,7 @@ namespace System.Data
             return nt.type;
         }
 
-        internal string GetInstanceName(XmlElement node)
+        internal static string GetInstanceName(XmlElement node)
         {
             string instanceName;
 
@@ -490,12 +490,12 @@ namespace System.Data
                 }
         }
 
-        internal void GetMinMax(XmlElement elNode, ref int minOccurs, ref int maxOccurs)
+        internal static void GetMinMax(XmlElement elNode, ref int minOccurs, ref int maxOccurs)
         {
             GetMinMax(elNode, false, ref minOccurs, ref maxOccurs);
         }
 
-        internal void GetMinMax(XmlElement elNode, bool isAttribute, ref int minOccurs, ref int maxOccurs)
+        internal static void GetMinMax(XmlElement elNode, bool isAttribute, ref int minOccurs, ref int maxOccurs)
         {
             string occurs = elNode.GetAttribute(Keywords.MINOCCURS);
             if (occurs != null && occurs.Length > 0)

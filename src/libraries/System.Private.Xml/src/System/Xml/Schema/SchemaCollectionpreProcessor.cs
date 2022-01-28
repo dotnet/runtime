@@ -1789,12 +1789,12 @@ namespace System.Xml.Schema
             }
         }
 
-        private void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
+        private static void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
         {
             child.Parent = parent;
         }
 
-        private void PreprocessAnnotation(XmlSchemaObject schemaObject)
+        private static void PreprocessAnnotation(XmlSchemaObject schemaObject)
         {
             XmlSchemaAnnotated? annotated = schemaObject as XmlSchemaAnnotated;
             if (annotated != null)

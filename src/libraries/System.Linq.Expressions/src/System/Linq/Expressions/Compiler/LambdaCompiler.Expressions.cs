@@ -929,11 +929,6 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private void EmitDebugInfoExpression(Expression expr)
-        {
-            return;
-        }
-
         #region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)

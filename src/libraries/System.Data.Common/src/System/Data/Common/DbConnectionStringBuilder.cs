@@ -336,7 +336,7 @@ namespace System.Data.Common
             return Dictionary.GetEnumerator();
         }
 
-        private string ObjectToString(object keyword)
+        private static string ObjectToString(object keyword)
         {
             try
             {
@@ -384,7 +384,7 @@ namespace System.Data.Common
             return CurrentValues.TryGetValue(keyword, out value);
         }
 
-        internal Attribute[] GetAttributesFromCollection(AttributeCollection collection)
+        internal static Attribute[] GetAttributesFromCollection(AttributeCollection collection)
         {
             Attribute[] attributes = new Attribute[collection.Count];
             collection.CopyTo(attributes, 0);

@@ -107,7 +107,7 @@ namespace Internal.Runtime.TypeLoader
             if (!signature.IsNativeLayoutSignature)
                 Environment.FailFast("Not a valid native layout signature");
 
-            NativeReader reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(signature);
+            NativeReader reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(signature);
             return reader.OffsetToAddress(signature.NativeLayoutOffset);
         }
     }
@@ -318,7 +318,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the native layout info reader
         //
-        internal unsafe NativeReader GetNativeLayoutInfoReader(NativeFormatModuleInfo module)
+        internal static unsafe NativeReader GetNativeLayoutInfoReader(NativeFormatModuleInfo module)
         {
             return GetNativeLayoutInfoReader(module.Handle);
         }
@@ -326,7 +326,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the native layout info reader
         //
-        internal unsafe NativeReader GetNativeLayoutInfoReader(RuntimeSignature signature)
+        internal static unsafe NativeReader GetNativeLayoutInfoReader(RuntimeSignature signature)
         {
             Debug.Assert(signature.IsNativeLayoutSignature);
             return GetNativeLayoutInfoReader(new TypeManagerHandle(signature.ModuleHandle));
@@ -335,7 +335,7 @@ namespace Internal.Runtime.TypeLoader
         //
         // Returns the native layout info reader
         //
-        internal unsafe NativeReader GetNativeLayoutInfoReader(TypeManagerHandle moduleHandle)
+        internal static unsafe NativeReader GetNativeLayoutInfoReader(TypeManagerHandle moduleHandle)
         {
             Debug.Assert(!moduleHandle.IsNull);
 
@@ -409,7 +409,7 @@ namespace Internal.Runtime.TypeLoader
         }
 
         // Looks up an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank. A rank of -1 indicates SzArray
-        internal bool TryGetArrayTypeForElementType_LookupOnly(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
+        internal static bool TryGetArrayTypeForElementType_LookupOnly(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             if (isMdArray && (rank < MDArray.MinRank) && (rank > MDArray.MaxRank))
             {
@@ -619,7 +619,7 @@ namespace Internal.Runtime.TypeLoader
 
         // get the generics hash table and external references table for a module
         // TODO multi-file: consider whether we want to cache this info
-        private unsafe bool GetHashtableFromBlob(NativeFormatModuleInfo module, ReflectionMapBlob blobId, out NativeHashtable hashtable, out ExternalReferencesTable externalReferencesLookup)
+        private static unsafe bool GetHashtableFromBlob(NativeFormatModuleInfo module, ReflectionMapBlob blobId, out NativeHashtable hashtable, out ExternalReferencesTable externalReferencesLookup)
         {
             byte* pBlob;
             uint cbBlob;
@@ -683,7 +683,7 @@ namespace Internal.Runtime.TypeLoader
             return TryComputeHasInstantiationDeterminedSize(type, out hasInstantiationDeterminedSize);
         }
 
-        internal bool TryComputeHasInstantiationDeterminedSize(DefType type, out bool hasInstantiationDeterminedSize)
+        internal static bool TryComputeHasInstantiationDeterminedSize(DefType type, out bool hasInstantiationDeterminedSize)
         {
             Debug.Assert(type.HasInstantiation);
 

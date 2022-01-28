@@ -230,7 +230,7 @@ namespace System.Configuration
 
         public Configuration CurrentConfiguration => _configRecord?.CurrentConfiguration;
 
-        internal ConfigurationElement CreateElement(Type type)
+        internal static ConfigurationElement CreateElement(Type type)
         {
             ConfigurationElement element = (ConfigurationElement)TypeUtil.CreateInstance(type);
             element.CallInit();
@@ -1192,7 +1192,7 @@ namespace System.Configuration
             return dataToWrite;
         }
 
-        private bool SerializeLockList(ConfigurationLockCollection list, string elementKey, XmlWriter writer)
+        private static bool SerializeLockList(ConfigurationLockCollection list, string elementKey, XmlWriter writer)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -1727,7 +1727,7 @@ namespace System.Configuration
             PostDeserialize();
         }
 
-        private object DeserializePropertyValue(ConfigurationProperty prop, XmlReader reader)
+        private static object DeserializePropertyValue(ConfigurationProperty prop, XmlReader reader)
         {
             Debug.Assert(prop != null, "prop != null");
             Debug.Assert(reader != null, "reader != null");

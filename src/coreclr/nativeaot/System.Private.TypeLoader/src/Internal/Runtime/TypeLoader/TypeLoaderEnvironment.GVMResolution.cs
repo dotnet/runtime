@@ -101,7 +101,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
+        private static MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
         {
             NativeParser parser = new NativeParser(nativeLayoutReader, nativeLayoutOffset);
 
@@ -116,7 +116,7 @@ namespace Internal.Runtime.TypeLoader
             return new MethodNameAndSignature(methodName, methodSig);
         }
 
-        private RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
+        private static RuntimeTypeHandle GetOpenTypeDefinition(RuntimeTypeHandle typeHandle, out RuntimeTypeHandle[] typeArgumentsHandles)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
                 return RuntimeAugments.GetGenericInstantiation(typeHandle, out typeArgumentsHandles);
@@ -125,7 +125,7 @@ namespace Internal.Runtime.TypeLoader
             return typeHandle;
         }
 
-        private RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
+        private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
         {
             if (RuntimeAugments.IsGenericType(typeHandle))
                 return RuntimeAugments.GetGenericDefinition(typeHandle);
@@ -133,7 +133,7 @@ namespace Internal.Runtime.TypeLoader
             return typeHandle;
         }
 
-        private bool FindMatchingInterfaceSlot(NativeFormatModuleInfo module, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature, RuntimeTypeHandle instanceTypeHandle, RuntimeTypeHandle openTargetTypeHandle, RuntimeTypeHandle[] targetTypeInstantiation, bool variantDispatch, bool defaultMethods)
+        private static bool FindMatchingInterfaceSlot(NativeFormatModuleInfo module, NativeReader nativeLayoutReader, ref NativeParser entryParser, ref ExternalReferencesTable extRefs, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature, RuntimeTypeHandle instanceTypeHandle, RuntimeTypeHandle openTargetTypeHandle, RuntimeTypeHandle[] targetTypeInstantiation, bool variantDispatch, bool defaultMethods)
         {
             uint numTargetImplementations = entryParser.GetUnsigned();
 
@@ -280,7 +280,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private bool ResolveInterfaceGenericVirtualMethodSlot(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
+        private static bool ResolveInterfaceGenericVirtualMethodSlot(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
         {
             if (IsPregeneratedOrTemplateRuntimeTypeHandle(targetTypeHandle))
             {
@@ -328,7 +328,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private bool ResolveInterfaceGenericVirtualMethodSlot_Static(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
+        private static bool ResolveInterfaceGenericVirtualMethodSlot_Static(RuntimeTypeHandle targetTypeHandle, bool lookForDefaultImplementation, ref RuntimeTypeHandle declaringType, ref MethodNameAndSignature methodNameAndSignature)
         {
             // Get the open type definition of the containing type of the generic virtual method being resolved
             RuntimeTypeHandle openCallingTypeHandle = GetTypeDefinition(declaringType);

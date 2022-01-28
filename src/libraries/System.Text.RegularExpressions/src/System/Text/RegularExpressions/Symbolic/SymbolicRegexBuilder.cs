@@ -291,7 +291,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<TElement> CreateConcat(SymbolicRegexNode<TElement> left, SymbolicRegexNode<TElement> right) => SymbolicRegexNode<TElement>.CreateConcat(this, left, right);
 
-        private int CalculateFixedLength(SymbolicRegexNode<TElement>[] nodes)
+        private static int CalculateFixedLength(SymbolicRegexNode<TElement>[] nodes)
         {
             int length = 0;
             foreach (SymbolicRegexNode<TElement> node in nodes)

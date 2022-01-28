@@ -284,7 +284,7 @@ namespace System.Xml
                 return GetIDInfoByElement_(eleName);
         }
 
-        private WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
+        private static WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
         {
             ArrayList gcElemRefs = new ArrayList();
             foreach (WeakReference<XmlElement> elemRef in elementList)
@@ -503,7 +503,7 @@ namespace System.Xml
         }
         // the function examines all the siblings before the refNode
         //  if any of the nodes has type equals to "nt", return true; otherwise, return false;
-        private bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
+        private static bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             if (refNode == null)
                 return false;
@@ -524,7 +524,7 @@ namespace System.Xml
 
         // the function examines all the siblings after the refNode
         //  if any of the nodes has the type equals to "nt", return true; otherwise, return false;
-        private bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
+        private static bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             XmlNode? node = refNode;
             while (node != null)
@@ -858,7 +858,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode? NormalizeText(XmlNode node)
+        private static XmlNode? NormalizeText(XmlNode node)
         {
             XmlNode? retnode = null;
             XmlNode? n = node;
@@ -1217,7 +1217,7 @@ namespace System.Xml
             return node;
         }
 
-        internal XmlNodeType ConvertToNodeType(string nodeTypeString)
+        internal static XmlNodeType ConvertToNodeType(string nodeTypeString)
         {
             if (nodeTypeString == "element")
             {

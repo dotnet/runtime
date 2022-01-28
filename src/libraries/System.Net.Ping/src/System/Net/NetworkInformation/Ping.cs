@@ -412,7 +412,7 @@ namespace System.Net.NetworkInformation
         }
 
         // Tests if the current machine supports the given ip protocol family.
-        private void TestIsIpSupported(IPAddress ip)
+        private static void TestIsIpSupported(IPAddress ip)
         {
             if (ip.AddressFamily == AddressFamily.InterNetwork && !SocketProtocolSupportPal.OSSupportsIPv4)
             {

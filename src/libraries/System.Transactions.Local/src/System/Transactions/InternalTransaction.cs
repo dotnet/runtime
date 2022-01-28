@@ -389,11 +389,6 @@ namespace System.Transactions
 
         public void Dispose()
         {
-            if (_promotedTransaction != null)
-            {
-                // If there is a promoted transaction dispose it.
-                _promotedTransaction.Dispose();
-            }
         }
 
         #endregion

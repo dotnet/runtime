@@ -5,7 +5,7 @@ namespace System.Drawing.Text
 {
     public partial class PrivateFontCollection
     {
-        private void GdiAddFontFile(string filename)
+        private static void GdiAddFontFile(string filename)
         {
             Interop.Gdi32.AddFontFile(filename);
         }

@@ -1234,7 +1234,7 @@ namespace System.Drawing.Printing
         }
 
         // Write null terminated string, return length of string in characters (including null)
-        private short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
+        private static short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
         {
             if (str == null)
                 str = "";

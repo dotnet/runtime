@@ -164,7 +164,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// TODO: Explore an unexplored state on transition further.
         /// </summary>
-        public void ExploreState(int state) => new NotImplementedException();
+        public static void ExploreState(int state) => new NotImplementedException();
 
         public static SymbolicNFA<S> Explore(SymbolicRegexNode<S> root, int bound)
         {

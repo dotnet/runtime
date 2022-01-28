@@ -111,7 +111,7 @@ namespace System.Composition.Hosting.Core
             CheckTarget(dependency, @checked, checking);
         }
 
-        private StringBuilder DescribeCompositionStack(CompositionDependency import, IEnumerable<CompositionDependency> dependencies)
+        private static StringBuilder DescribeCompositionStack(CompositionDependency import, IEnumerable<CompositionDependency> dependencies)
         {
             var result = new StringBuilder();
             if (dependencies.FirstOrDefault() == null)

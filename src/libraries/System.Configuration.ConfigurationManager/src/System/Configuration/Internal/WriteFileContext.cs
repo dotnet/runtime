@@ -93,7 +93,7 @@ namespace System.Configuration.Internal
 
         // Copy all the files attributes that we care about from the source
         // file to the destination file
-        private void DuplicateFileAttributes(string source, string destination)
+        private static void DuplicateFileAttributes(string source, string destination)
         {
             DateTime creationTime;
 
@@ -111,7 +111,7 @@ namespace System.Configuration.Internal
 
         // Copy over all the attributes you would want copied from a template file.
         // As of right now this is just acl's
-        private void DuplicateTemplateAttributes(string source, string destination)
+        private static void DuplicateTemplateAttributes(string source, string destination)
         {
             FileAttributes fileAttributes = File.GetAttributes(source);
             File.SetAttributes(destination, fileAttributes);
@@ -128,7 +128,7 @@ namespace System.Configuration.Internal
         //       2) We are depending on the current behavior that if the file is locked
         //          and we can not open it, that we will get an UnauthorizedAccessException
         //          and not the IOException.
-        private void ValidateWriteAccess(string filename)
+        private static void ValidateWriteAccess(string filename)
         {
             FileStream fs = null;
 
@@ -154,7 +154,7 @@ namespace System.Configuration.Internal
         /// <summary>
         /// Replace one file with another, retrying if locked.
         /// </summary>
-        private void ReplaceFile(string source, string target)
+        private static void ReplaceFile(string source, string target)
         {
             bool writeSucceeded;
             int duration = 0;
@@ -181,7 +181,7 @@ namespace System.Configuration.Internal
         }
 
         // Attempt to move a file from one location to another, overwriting if needed
-        private bool AttemptMove(string source, string target)
+        private static bool AttemptMove(string source, string target)
         {
             try
             {

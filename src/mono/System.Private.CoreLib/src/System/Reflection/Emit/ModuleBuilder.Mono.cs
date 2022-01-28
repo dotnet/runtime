@@ -532,7 +532,7 @@ namespace System.Reflection.Emit
             return copy;
         }
 
-        internal int GetMethodToken(MethodInfo method)
+        internal static int GetMethodToken(MethodInfo method)
         {
             if (method == null)
                 throw new ArgumentNullException(nameof(method));
@@ -546,7 +546,7 @@ namespace System.Reflection.Emit
         }
 
         [ComVisible(true)]
-        internal int GetConstructorToken(ConstructorInfo con)
+        internal static int GetConstructorToken(ConstructorInfo con)
         {
             if (con == null)
                 throw new ArgumentNullException(nameof(con));
@@ -554,7 +554,7 @@ namespace System.Reflection.Emit
             return con.MetadataToken;
         }
 
-        internal int GetFieldToken(FieldInfo field)
+        internal static int GetFieldToken(FieldInfo field)
         {
             if (field == null)
                 throw new ArgumentNullException(nameof(field));
@@ -582,7 +582,7 @@ namespace System.Reflection.Emit
             return GetToken(str);
         }
 
-        internal int GetTypeToken(Type type)
+        internal static int GetTypeToken(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));

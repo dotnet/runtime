@@ -171,7 +171,7 @@ namespace System.Security.Cryptography
             return bytesWritten;
         }
 
-        private PAL_ChainingMode GetPalChainMode(PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
+        private static PAL_ChainingMode GetPalChainMode(PAL_SymmetricAlgorithm algorithm, CipherMode cipherMode, int feedbackSizeInBytes)
         {
             return cipherMode switch
             {

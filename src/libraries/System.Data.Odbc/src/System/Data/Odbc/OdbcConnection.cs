@@ -373,10 +373,6 @@ namespace System.Data.Odbc
             }
         }
 
-        private void DisposeMe(bool disposing)
-        { // MDAC 65459
-        }
-
         internal string GetConnectAttrString(ODBC32.SQL_ATTR attribute)
         {
             string value = "";

@@ -372,7 +372,7 @@ namespace System.Transactions
 
 
         // Remove a transaction from the table.
-        internal void Remove(InternalTransaction tx)
+        internal static void Remove(InternalTransaction tx)
         {
             Debug.Assert(tx._tableBucket != null);
             tx._tableBucket.Remove(tx);

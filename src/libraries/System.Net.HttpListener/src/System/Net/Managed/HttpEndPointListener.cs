@@ -56,7 +56,7 @@ namespace System.Net
             if (secure)
             {
                 _secure = secure;
-                _cert = _listener.LoadCertificateAndKey (addr, port);
+                _cert = HttpListener.LoadCertificateAndKey (addr, port);
             }
 
             _endpoint = new IPEndPoint(addr, port);
@@ -161,7 +161,7 @@ namespace System.Net
             return true;
         }
 
-        public void UnbindContext(HttpListenerContext context)
+        public static void UnbindContext(HttpListenerContext context)
         {
             if (context == null || context.Request == null)
                 return;
@@ -227,7 +227,7 @@ namespace System.Net
             return null;
         }
 
-        private HttpListener? MatchFromList(string? host, string path, List<ListenerPrefix>? list, out ListenerPrefix? prefix)
+        private static HttpListener? MatchFromList(string? host, string path, List<ListenerPrefix>? list, out ListenerPrefix? prefix)
         {
             prefix = null;
             if (list == null)
@@ -253,7 +253,7 @@ namespace System.Net
             return bestMatch;
         }
 
-        private void AddSpecial(List<ListenerPrefix> list, ListenerPrefix prefix)
+        private static void AddSpecial(List<ListenerPrefix> list, ListenerPrefix prefix)
         {
             if (list == null)
                 return;
@@ -266,7 +266,7 @@ namespace System.Net
             list.Add(prefix);
         }
 
-        private bool RemoveSpecial(List<ListenerPrefix> list, ListenerPrefix prefix)
+        private static bool RemoveSpecial(List<ListenerPrefix> list, ListenerPrefix prefix)
         {
             if (list == null)
                 return false;

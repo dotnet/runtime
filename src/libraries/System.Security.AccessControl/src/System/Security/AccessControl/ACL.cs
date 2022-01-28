@@ -1239,7 +1239,7 @@ namespace System.Security.AccessControl
         // This method determines whether the object type and inherited object type from the original ace
         // should be retained or not based on access mask and aceflags for a given split
         //
-        private void GetObjectTypesForSplit(ObjectAce originalAce, int accessMask, AceFlags aceFlags, out ObjectAceFlags objectFlags, out Guid objectType, out Guid inheritedObjectType)
+        private static void GetObjectTypesForSplit(ObjectAce originalAce, int accessMask, AceFlags aceFlags, out ObjectAceFlags objectFlags, out Guid objectType, out Guid inheritedObjectType)
         {
 
             objectFlags = 0;
@@ -1267,7 +1267,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        private bool ObjectTypesMatch(QualifiedAce ace, QualifiedAce newAce)
+        private static bool ObjectTypesMatch(QualifiedAce ace, QualifiedAce newAce)
         {
             Guid objectType = (ace is ObjectAce) ? ((ObjectAce)ace).ObjectAceType : Guid.Empty;
             Guid newObjectType = (newAce is ObjectAce) ? ((ObjectAce)newAce).ObjectAceType : Guid.Empty;
@@ -1275,7 +1275,7 @@ namespace System.Security.AccessControl
             return objectType.Equals(newObjectType);
         }
 
-        private bool InheritedObjectTypesMatch(QualifiedAce ace, QualifiedAce newAce)
+        private static bool InheritedObjectTypesMatch(QualifiedAce ace, QualifiedAce newAce)
         {
             Guid inheritedObjectType = (ace is ObjectAce) ? ((ObjectAce)ace).InheritedObjectAceType : Guid.Empty;
             Guid newInheritedObjectType = (newAce is ObjectAce) ? ((ObjectAce)newAce).InheritedObjectAceType : Guid.Empty;
@@ -1283,7 +1283,7 @@ namespace System.Security.AccessControl
             return inheritedObjectType.Equals(newInheritedObjectType);
         }
 
-        private bool AccessMasksAreMergeable(QualifiedAce ace, QualifiedAce newAce)
+        private static bool AccessMasksAreMergeable(QualifiedAce ace, QualifiedAce newAce)
         {
             //
             // The access masks are mergeable in any of the following conditions
@@ -1309,7 +1309,7 @@ namespace System.Security.AccessControl
             return false;
         }
 
-        private bool AceFlagsAreMergeable(QualifiedAce ace, QualifiedAce newAce)
+        private static bool AceFlagsAreMergeable(QualifiedAce ace, QualifiedAce newAce)
         {
             //
             // The ace flags can be considered for merge in any of the following conditions
@@ -1340,7 +1340,7 @@ namespace System.Security.AccessControl
             return false;
         }
 
-        private bool GetAccessMaskForRemoval(QualifiedAce ace, ObjectAceFlags objectFlags, Guid objectType, ref int accessMask)
+        private static bool GetAccessMaskForRemoval(QualifiedAce ace, ObjectAceFlags objectFlags, Guid objectType, ref int accessMask)
         {
             if ((ace.AccessMask & accessMask & ObjectAce.AccessMaskWithObjectType) != 0)
             {
@@ -1394,7 +1394,7 @@ namespace System.Security.AccessControl
 
         }
 
-        private bool GetInheritanceFlagsForRemoval(QualifiedAce ace, ObjectAceFlags objectFlags, Guid inheritedObjectType, ref AceFlags aceFlags)
+        private static bool GetInheritanceFlagsForRemoval(QualifiedAce ace, ObjectAceFlags objectFlags, Guid inheritedObjectType, ref AceFlags aceFlags)
         {
             if (((ace.AceFlags & AceFlags.ContainerInherit) != 0) && ((aceFlags & AceFlags.ContainerInherit) != 0))
             {
@@ -1909,7 +1909,7 @@ namespace System.Security.AccessControl
 
         #region Protected Methods
 
-        internal void CheckAccessType(AccessControlType accessType)
+        internal static void CheckAccessType(AccessControlType accessType)
         {
             if (accessType != AccessControlType.Allow &&
                 accessType != AccessControlType.Deny)

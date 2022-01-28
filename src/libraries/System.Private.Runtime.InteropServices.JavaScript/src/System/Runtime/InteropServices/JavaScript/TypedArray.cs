@@ -153,7 +153,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        private U? UnBoxValue(object jsValue)
+        private static U? UnBoxValue(object jsValue)
         {
             if (jsValue == null)
                 return null;

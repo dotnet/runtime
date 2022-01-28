@@ -175,7 +175,7 @@ namespace System.Data.OleDb
 
         }
 
-        private string BuildRegularExpression(string invalidChars, string invalidStartingChars)
+        private static string BuildRegularExpression(string invalidChars, string invalidStartingChars)
         {
             StringBuilder regularExpression = new StringBuilder("[^");
             ADP.EscapeSpecialCharacters(invalidStartingChars, regularExpression);
@@ -656,7 +656,7 @@ namespace System.Data.OleDb
             return resultTable;
         }
 
-        private void SetIdentifierCase(string columnName, int propertyID, DataRow row, OleDbConnection connection)
+        private static void SetIdentifierCase(string columnName, int propertyID, DataRow row, OleDbConnection connection)
         {
             object? property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, propertyID);
             IdentifierCase identifierCase = IdentifierCase.Unknown;

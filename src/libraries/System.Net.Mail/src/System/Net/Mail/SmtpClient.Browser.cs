@@ -48,7 +48,7 @@ namespace System.Net.Mail
             Initialize();
         }
 
-        private void Initialize()
+        private static void Initialize()
         {
             throw new PlatformNotSupportedException();
         }
@@ -127,7 +127,7 @@ namespace System.Net.Mail
             set => throw new PlatformNotSupportedException();
         }
 
-        private bool ServerSupportsEai => throw new PlatformNotSupportedException();
+        private static bool ServerSupportsEai => throw new PlatformNotSupportedException();
 
         public void Send(string from, string recipients, string? subject, string? body) => throw new PlatformNotSupportedException();
 

@@ -101,7 +101,7 @@ namespace System.Runtime.Serialization.Json
                             JsonFormatCollectionWriterDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
                             {
-                                tempDelegate = new ReflectionJsonFormatWriter().ReflectionWriteCollection;
+                                tempDelegate = ReflectionJsonFormatWriter.ReflectionWriteCollection;
                             }
                             else
                             {

@@ -326,7 +326,7 @@ namespace System.Xml
             return retNode;
         }
 
-        internal void Detach(XmlAttribute attr)
+        internal static void Detach(XmlAttribute attr)
         {
             attr.OwnerElement!.Attributes.Remove(attr);
         }

@@ -238,7 +238,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Attempts to steal from each queue starting from <paramref name="startInclusive"/> to <paramref name="endExclusive"/>.
         /// </summary>
-        private bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
+        private static bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
         {
             for (WorkStealingQueue? queue = startInclusive; queue != endExclusive; queue = queue._nextQueue)
             {

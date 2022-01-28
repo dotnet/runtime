@@ -126,7 +126,7 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     // Locate the template type and native layout info
-                    _templateType = TypeBeingBuilt.Context.TemplateLookup.TryGetTypeTemplate(TypeBeingBuilt, ref _nativeLayoutInfo);
+                    _templateType = TemplateLocator.TryGetTypeTemplate(TypeBeingBuilt, ref _nativeLayoutInfo);
                     Debug.Assert(_templateType == null || !_templateType.RuntimeTypeHandle.IsNull());
 
                     _templateTypeLoaderNativeLayout = true;
@@ -159,7 +159,7 @@ namespace Internal.Runtime.TypeLoader
                     }
                     if (!_nativeLayoutTokenComputed)
                     {
-                        TypeBeingBuilt.Context.TemplateLookup.TryGetMetadataNativeLayout(TypeBeingBuilt, out _r2rnativeLayoutInfo.Module, out _r2rnativeLayoutInfo.Offset);
+                        TemplateLocator.TryGetMetadataNativeLayout(TypeBeingBuilt, out _r2rnativeLayoutInfo.Module, out _r2rnativeLayoutInfo.Offset);
 
                         if (_r2rnativeLayoutInfo.Module != null)
                             _readyToRunNativeLayout = true;
@@ -208,7 +208,7 @@ namespace Internal.Runtime.TypeLoader
 
             nativeLayoutInfoLoadContext._methodArgumentHandles = new Instantiation(null);
 
-            nativeLayoutInfo.Reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutInfo.Module.Handle);
+            nativeLayoutInfo.Reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutInfo.Module.Handle);
             nativeLayoutInfo.LoadContext = nativeLayoutInfoLoadContext;
         }
 
@@ -252,7 +252,7 @@ namespace Internal.Runtime.TypeLoader
         {
             universalLayoutInfo = new NativeLayoutInfo();
             universalLayoutLoadContext = null;
-            TypeDesc universalTemplate = TypeBeingBuilt.Context.TemplateLookup.TryGetUniversalTypeTemplate(TypeBeingBuilt, ref universalLayoutInfo);
+            TypeDesc universalTemplate = TemplateLocator.TryGetUniversalTypeTemplate(TypeBeingBuilt, ref universalLayoutInfo);
             if (universalTemplate == null)
                 return new NativeParser();
 
@@ -788,7 +788,7 @@ namespace Internal.Runtime.TypeLoader
         /// </summary>
         /// <param name="type"></param>
         /// <returns></returns>
-        private unsafe TypeBuilder.GCLayout GetInstanceGCLayout(TypeDesc type)
+        private static unsafe TypeBuilder.GCLayout GetInstanceGCLayout(TypeDesc type)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Any));
             Debug.Assert(!type.IsValueType);
@@ -821,7 +821,7 @@ namespace Internal.Runtime.TypeLoader
         /// NOTE: if the fieldtype is a reference type, this function will return GCLayout.None
         ///       Consumers of the api must handle that special case.
         /// </summary>
-        private unsafe TypeBuilder.GCLayout GetFieldGCLayout(TypeDesc fieldType)
+        private static unsafe TypeBuilder.GCLayout GetFieldGCLayout(TypeDesc fieldType)
         {
             if (!fieldType.IsValueType)
             {
@@ -1064,6 +1064,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
+#pragma warning disable CA1822
         public bool IsHFA
         {
             get
@@ -1083,6 +1084,7 @@ namespace Internal.Runtime.TypeLoader
 #endif
             }
         }
+#pragma warning restore CA1822
 
         public VTableLayoutInfo[] VTableMethodSignatures;
         public int NumSealedVTableMethodSignatures;

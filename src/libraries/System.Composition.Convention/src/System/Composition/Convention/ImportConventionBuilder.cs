@@ -169,7 +169,7 @@ namespace System.Composition.Convention
             return;
         }
 
-        private bool IsSupportedImportManyType(TypeInfo typeInfo)
+        private static bool IsSupportedImportManyType(TypeInfo typeInfo)
         {
             return typeInfo.IsArray ||
                 (typeInfo.IsGenericTypeDefinition && s_supportedImportManyTypes.Contains(typeInfo.AsType())) ||

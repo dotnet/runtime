@@ -119,9 +119,9 @@ namespace System.Reflection.Metadata
             _nextOrPrevious = this;
         }
 
+        [Conditional("DEBUG")]
         private void CheckInvariants()
         {
-#if DEBUG
             Debug.Assert(_buffer != null);
             Debug.Assert(Length >= 0 && Length <= _buffer.Length);
             Debug.Assert(_nextOrPrevious != null);
@@ -140,7 +140,6 @@ namespace System.Reflection.Metadata
 
                 Debug.Assert(totalLength == Count);
             }
-#endif
         }
 
         public int Count => _previousLengthOrFrozenSuffixLengthDelta + Length;

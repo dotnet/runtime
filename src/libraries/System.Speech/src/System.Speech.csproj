@@ -5,7 +5,7 @@
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <!-- CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
-    <NoWarn>$(NoWarn);CS0649;SA1129;CA1846;CA1847;IDE0059</NoWarn>
+    <NoWarn>$(NoWarn);CS0649;SA1129;CA1846;CA1847;IDE0059;CA1822</NoWarn>
     <Nullable>annotations</Nullable>
     <IsTrimmable>false</IsTrimmable>
     <IsPackable>true</IsPackable>

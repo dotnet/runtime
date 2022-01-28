@@ -1201,6 +1201,7 @@ namespace System.Diagnostics
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
+#pragma warning disable CA1822
         private string AppendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
@@ -1227,6 +1228,8 @@ namespace System.Diagnostics
             string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
+#pragma warning restore CA1822
+
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif

@@ -141,7 +141,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        private Type ResolveDataContractTypeInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly)
+        private static Type ResolveDataContractTypeInSharedTypeMode(string assemblyName, string typeName, out Assembly assembly)
         {
             // The method is used only when _mode == SerializationMode.SharedType.
             // _mode is set to SerializationMode.SharedType only when the context is for NetDataContractSerializer.

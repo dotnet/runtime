@@ -9,9 +9,11 @@ namespace System.Runtime.Serialization
     [DataContract(Name = nameof(MarshalByRefObject), Namespace = Globals.DataContractXsdBaseNamespace + "System")]
     internal abstract class MarshalByRefObjectAdapter
     {
+#pragma warning disable CA1822
         // never used, but must be first in the hierarchy in order to maintain NetFX compat
         [DataMember(Name = "__identity", Order = 0)]
         public object? Identity { get { return null; } set { } }
+#pragma warning restore CA1822
     }
 
     /// <summary>

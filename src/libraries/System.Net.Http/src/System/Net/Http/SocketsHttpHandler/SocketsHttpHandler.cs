@@ -580,7 +580,7 @@ namespace System.Net.Http
             return handler.SendAsync(request, cancellationToken);
         }
 
-        private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
+        private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
             if (request.Version.Major == 0)
             {

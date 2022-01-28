@@ -370,7 +370,7 @@ namespace Microsoft.Win32
             return false;
         }
 
-        private IntPtr DefWndProc
+        private static IntPtr DefWndProc
         {
             get
             {
@@ -517,7 +517,7 @@ namespace Microsoft.Win32
             }
         }
 
-        private UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
+        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
@@ -703,7 +703,7 @@ namespace Microsoft.Win32
         ///  This empties this control's callback queue, propagating any exceptions
         ///  back as needed.
         /// </summary>
-        private void InvokeMarshaledCallbacks()
+        private static void InvokeMarshaledCallbacks()
         {
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
 

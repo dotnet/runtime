@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization
             private ArgBuilder? _collectionContractArg;
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private XmlFormatClassReaderDelegate CreateReflectionXmlClassReader(ClassDataContract classContract)
+            private static XmlFormatClassReaderDelegate CreateReflectionXmlClassReader(ClassDataContract classContract)
             {
                 return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
             }
@@ -161,7 +161,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader()
+            private static XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader()
             {
                 return new ReflectionXmlCollectionReader().ReflectionReadCollection;
             }
@@ -184,7 +184,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader()
+            private static XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader()
             {
                 return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
             }
@@ -316,7 +316,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            private bool HasFactoryMethod(ClassDataContract classContract)
+            private static bool HasFactoryMethod(ClassDataContract classContract)
             {
                 return Globals.TypeOfIObjectReference.IsAssignableFrom(classContract.UnderlyingType);
             }

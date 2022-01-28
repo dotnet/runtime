@@ -115,7 +115,7 @@ namespace System.Runtime.Serialization.Json
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
 
-            private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
+            private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
                 MethodInfo signature = GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
@@ -317,7 +317,6 @@ namespace System.Runtime.Serialization.Json
             private void WriteCollection(CollectionDataContract collectionContract)
             {
                 LocalBuilder itemName = _ilg.DeclareLocal(typeof(XmlDictionaryString), "itemName");
-                _ilg.Load(_contextArg);
                 _ilg.LoadMember(JsonFormatGeneratorStatics.CollectionItemNameProperty);
                 _ilg.Store(itemName);
 

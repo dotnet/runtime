@@ -1783,7 +1783,7 @@ namespace System.Xml
         }
 
 
-        private void VerifyPrefixXml(string? prefix, string ns)
+        private static void VerifyPrefixXml(string? prefix, string ns)
         {
             if (prefix != null && prefix.Length == 3)
             {

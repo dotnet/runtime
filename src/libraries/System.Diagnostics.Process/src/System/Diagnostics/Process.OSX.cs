@@ -42,7 +42,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets execution path</summary>
-        private string GetPathToOpenFile()
+        private static string GetPathToOpenFile()
         {
             return "/usr/bin/open";
         }
@@ -95,7 +95,7 @@ namespace System.Diagnostics
         // ---- Unix PAL layer ends here ----
         // ----------------------------------
 
-        private Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
+        private static Interop.libproc.rusage_info_v3 GetCurrentProcessRUsage()
         {
             return Interop.libproc.proc_pid_rusage(Environment.ProcessId);
         }

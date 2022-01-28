@@ -413,7 +413,7 @@ namespace System.Net
         public TransportContext TransportContext => new Context();
 
         private Uri? RequestUri => _requestUri;
-        private bool SupportsWebSockets => true;
+        private static bool SupportsWebSockets => true;
 
         private sealed class GetClientCertificateAsyncResult : LazyAsyncResult
         {

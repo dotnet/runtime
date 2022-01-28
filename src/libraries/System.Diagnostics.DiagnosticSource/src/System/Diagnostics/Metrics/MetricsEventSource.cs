@@ -391,7 +391,7 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
+            private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
             {
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
@@ -409,7 +409,7 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private string FormatTags(KeyValuePair<string, string>[] labels)
+            private static string FormatTags(KeyValuePair<string, string>[] labels)
             {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < labels.Length; i++)
@@ -423,7 +423,7 @@ namespace System.Diagnostics.Metrics
                 return sb.ToString();
             }
 
-            private string FormatQuantiles(QuantileValue[] quantiles)
+            private static string FormatQuantiles(QuantileValue[] quantiles)
             {
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)

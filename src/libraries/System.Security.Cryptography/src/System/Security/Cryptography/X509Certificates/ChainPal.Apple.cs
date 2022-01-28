@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.X509Certificates
             return elements;
         }
 
-        private bool IsPolicyMatch(
+        private static bool IsPolicyMatch(
             (X509Certificate2, int)[] elements,
             OidCollection? applicationPolicy,
             OidCollection? certificatePolicy)

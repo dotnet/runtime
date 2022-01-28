@@ -5,9 +5,7 @@ namespace System.Drawing.Text
 {
     public partial class PrivateFontCollection
     {
-        private void GdiAddFontFile(string filename)
-        {
-             // There is no GDI on Unix, only libgdiplus, so this is a no-op.
-        }
+        // There is no GDI on Unix, only libgdiplus, so this is a no-op.
+        partial void GdiAddFontFile(string filename);
     }
 }

@@ -219,7 +219,7 @@ namespace Microsoft.Interop
                         IdentifierName(ManualTypeMarshallingHelper.ValuePropertyName))));
         }
 
-        private StatementSyntax GenerateValuePropertyAssignment(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithValuePropertyStubContext subContext)
+        private static StatementSyntax GenerateValuePropertyAssignment(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithValuePropertyStubContext subContext)
         {
             // <marshalerIdentifier>.Value = <nativeIdentifier>;
             return ExpressionStatement(
@@ -466,7 +466,7 @@ namespace Microsoft.Interop
             _valuePropertyType = valuePropertyType;
         }
 
-        private bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition && !info.IsByRef || info.RefKind == RefKind.In;
         }
@@ -552,7 +552,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private StatementSyntax GenerateValuePropertyAssignment(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithValuePropertyStubContext subContext)
+        private static StatementSyntax GenerateValuePropertyAssignment(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithValuePropertyStubContext subContext)
         {
             // <marshalerIdentifier>.Value = <nativeIdentifier>;
             return ExpressionStatement(

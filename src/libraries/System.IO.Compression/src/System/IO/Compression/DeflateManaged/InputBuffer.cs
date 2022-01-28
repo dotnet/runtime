@@ -102,7 +102,7 @@ namespace System.IO.Compression
             return _bitBuffer;
         }
 
-        private uint GetBitMask(int count) => ((uint)1 << count) - 1;
+        private static uint GetBitMask(int count) => ((uint)1 << count) - 1;
 
         /// <summary>Gets count bits from the input buffer. Returns -1 if not enough bits available.</summary>
         public int GetBits(int count)

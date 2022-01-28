@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
+        private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
 
@@ -103,7 +103,7 @@ namespace System.Reflection.Metadata
             return assemblyNameFlags;
         }
 
-        private AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
         {
             return (AssemblyContentType)(((int)flags & (int)AssemblyFlags.ContentTypeMask) >> 9);
         }

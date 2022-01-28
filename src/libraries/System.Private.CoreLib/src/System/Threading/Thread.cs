@@ -470,6 +470,7 @@ namespace System.Threading
             return SetApartmentState(state, throwOnError:false);
         }
 
+#pragma warning disable CA1822 // SetApartmentStateUnchecked should pass `this`
         private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
@@ -485,6 +486,7 @@ namespace System.Threading
 
             return SetApartmentStateUnchecked(state, throwOnError);
         }
+#pragma warning disable CA1822
 
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CompressedStack GetCompressedStack()

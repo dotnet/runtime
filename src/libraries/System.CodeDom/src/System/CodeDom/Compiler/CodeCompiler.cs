@@ -133,7 +133,7 @@ namespace System.CodeDom.Compiler
             return FromFileBatch(options, filenames);
         }
 
-        private void ResolveReferencedAssemblies(CompilerParameters options, CodeCompileUnit e)
+        private static void ResolveReferencedAssemblies(CompilerParameters options, CodeCompileUnit e)
         {
             if (e.ReferencedAssemblies.Count > 0)
             {

@@ -111,7 +111,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Convert the set into an equivalent array of ranges. The ranges are nonoverlapping and ordered.
         /// </summary>
-        public (uint, uint)[] ToRanges(BDD set) => BDDRangeConverter.ToRanges(set, 15);
+        public static (uint, uint)[] ToRanges(BDD set) => BDDRangeConverter.ToRanges(set, 15);
 
         public BDD ConvertToCharSet(BDD pred) => pred;
 
@@ -269,7 +269,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return ranges_repr.Length <= ranges_compl_repr.Length ? ranges_repr : ranges_compl_repr;
         }
 
-        private string RepresentSet(BDD set) =>
+        private static string RepresentSet(BDD set) =>
             set.IsEmpty ? "" : RepresentRanges(ToRanges(set));
 
         private static string RepresentRanges((uint, uint)[] ranges, bool checkSingletonComlement = true)

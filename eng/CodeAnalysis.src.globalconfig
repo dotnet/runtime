@@ -306,7 +306,8 @@ dotnet_diagnostic.CA1820.severity = none
 dotnet_diagnostic.CA1821.severity = warning
 
 # CA1822: Mark members as static
-dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_code_quality.CA1822.api_surface = private, internal
 
 # CA1823: Avoid unused private fields
 dotnet_diagnostic.CA1823.severity = warning
@@ -825,7 +826,7 @@ dotnet_diagnostic.CA5400.severity = none
 # CA5401: Do not use CreateEncryptor with non-default IV
 dotnet_diagnostic.CA5401.severity = none
 
-# CA5402: Use CreateEncryptor with the default IV 
+# CA5402: Use CreateEncryptor with the default IV
 dotnet_diagnostic.CA5402.severity = none
 
 # CA5403: Do not hard-code certificate

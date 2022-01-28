@@ -133,10 +133,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
-        private void CloseCore()
-        {
-            // Nop
-        }
+        partial void CloseCore();
 
         /// <devdoc>
         ///     Make sure we are watching for a process exit.
@@ -793,7 +790,7 @@ namespace System.Diagnostics
         // methods such as WriteLine as well as native CRT functions like printf) which are making an
         // assumption that the console standard handles (obtained via GetStdHandle()) are opened
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
-        private void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
+        private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributesParent = default;
             securityAttributesParent.bInheritHandle = Interop.BOOL.TRUE;

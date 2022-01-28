@@ -213,7 +213,7 @@ namespace System.Reflection
             return new Version(versionNumbers[0], versionNumbers[1], versionNumbers[2], versionNumbers[3]);
         }
 
-        private string ParseCulture(string attributeValue)
+        private static string ParseCulture(string attributeValue)
         {
             if (attributeValue.Equals("Neutral", StringComparison.OrdinalIgnoreCase))
             {

@@ -243,7 +243,7 @@ namespace System.Threading
         /// <param name="current">The current participant count</param>
         /// <param name="total">The total participants count</param>
         /// <param name="sense">The sense flag</param>
-        private void GetCurrentTotal(int currentTotal, out int current, out int total, out bool sense)
+        private static void GetCurrentTotal(int currentTotal, out int current, out int total, out bool sense)
         {
             total = (int)(currentTotal & TOTAL_MASK);
             current = (int)((currentTotal & CURRENT_MASK) >> 16);

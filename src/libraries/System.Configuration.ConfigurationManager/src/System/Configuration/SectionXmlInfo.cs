@@ -37,11 +37,6 @@ namespace System.Configuration
 
         internal string ConfigSourceStreamName { get; set; }
 
-        internal object ConfigSourceStreamVersion
-        {
-            set { }
-        }
-
         internal string ConfigKey { get; }
 
         internal string DefinitionConfigPath { get; }

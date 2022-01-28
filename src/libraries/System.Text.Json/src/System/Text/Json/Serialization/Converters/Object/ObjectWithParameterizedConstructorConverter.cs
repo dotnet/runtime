@@ -380,7 +380,7 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool HandlePropertyWithContinuation(
+        private static bool HandlePropertyWithContinuation(
             ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonPropertyInfo jsonPropertyInfo)

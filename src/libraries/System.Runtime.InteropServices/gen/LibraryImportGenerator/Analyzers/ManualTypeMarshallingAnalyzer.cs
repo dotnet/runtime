@@ -519,7 +519,7 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
 
-            private ImmutableArray<Location> GetDiagnosticLocations(SymbolAnalysisContext context, ISymbol targetSymbol, AttributeData marshallingAttribute)
+            private static ImmutableArray<Location> GetDiagnosticLocations(SymbolAnalysisContext context, ISymbol targetSymbol, AttributeData marshallingAttribute)
             {
                 // If we're using a compilation that references another compilation, the symbol locations can be in source in the wrong compilation,
                 // which can cause exceptions when reporting diagnostics. Make sure the symbol is defined in the current Compilation's source module before using its locations.

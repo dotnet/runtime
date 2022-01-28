@@ -57,7 +57,7 @@ namespace Microsoft.Win32
 {
     public sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
-        private void ClosePerfDataKey()
+        private static void ClosePerfDataKey()
         {
             // System keys should never be closed.  However, we want to call RegCloseKey
             // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources

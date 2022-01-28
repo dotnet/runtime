@@ -11,6 +11,7 @@ namespace Internal.Runtime
     // Extensions to MethodTable that are specific to the use in Runtime.Base.
     internal unsafe partial struct MethodTable
     {
+#pragma warning disable CA1822
         internal MethodTable* GetArrayEEType()
         {
 #if INPLACE_RUNTIME
@@ -46,6 +47,7 @@ namespace Internal.Runtime
             return EH.GetClasslibExceptionFromEEType(id, GetAssociatedModuleAddress());
 #endif
         }
+#pragma warning restore CA1822
 
         internal IntPtr GetClasslibFunction(ClassLibFunctionId id)
         {

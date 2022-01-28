@@ -1908,7 +1908,7 @@ namespace System.Data.SqlTypes
              (_data3 == 0x5a86c47aL) && (_data2 >= 0x098a2240L));
         }
 
-        private bool FGt10_38(Span<uint> rglData)
+        private static bool FGt10_38(Span<uint> rglData)
         {
             Debug.Assert(rglData.Length == 4, "rglData.Length == 4", $"Wrong array length: {rglData.Length}");
 

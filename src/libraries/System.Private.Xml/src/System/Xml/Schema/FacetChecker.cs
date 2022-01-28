@@ -669,7 +669,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            private object ParseFacetValue(XmlSchemaDatatype datatype, XmlSchemaFacet facet, string code, IXmlNamespaceResolver? nsmgr, XmlNameTable? nameTable)
+            private static object ParseFacetValue(XmlSchemaDatatype datatype, XmlSchemaFacet facet, string code, IXmlNamespaceResolver? nsmgr, XmlNameTable? nameTable)
             {
                 object? typedValue;
                 Exception? ex = datatype.TryParseValue(facet.Value!, nameTable, nsmgr, out typedValue);
@@ -838,7 +838,7 @@ namespace System.Xml.Schema
             return null;
         }
 
-        internal void CheckWhitespaceFacets(ref string s, XmlSchemaDatatype datatype)
+        internal static void CheckWhitespaceFacets(ref string s, XmlSchemaDatatype datatype)
         {
             // before parsing, check whitespace facet
             RestrictionFacets? restriction = datatype.Restriction;
@@ -875,7 +875,7 @@ namespace System.Xml.Schema
                     break;
             }
         }
-        internal Exception? CheckPatternFacets(RestrictionFacets? restriction, string value)
+        internal static Exception? CheckPatternFacets(RestrictionFacets? restriction, string value)
         {
             if (restriction != null && (restriction.Flags & RestrictionFlags.Pattern) != 0)
             {
@@ -1089,7 +1089,7 @@ namespace System.Xml.Schema
             return MatchEnumeration(datatype.ValueConverter.ToDecimal(value), enumeration, datatype.ValueConverter);
         }
 
-        internal bool MatchEnumeration(decimal value, ArrayList enumeration, XmlValueConverter valueConverter)
+        internal static bool MatchEnumeration(decimal value, ArrayList enumeration, XmlValueConverter valueConverter)
         {
             for (int i = 0; i < enumeration.Count; ++i)
             {
@@ -1100,7 +1100,7 @@ namespace System.Xml.Schema
             }
             return false;
         }
-        internal Exception? CheckTotalAndFractionDigits(decimal value, int totalDigits, int fractionDigits, bool checkTotal, bool checkFraction)
+        internal static Exception? CheckTotalAndFractionDigits(decimal value, int totalDigits, int fractionDigits, bool checkTotal, bool checkFraction)
         {
             decimal maxValue = FacetsChecker.Power(10, totalDigits) - 1; //(decimal)Math.Pow(10, totalDigits) - 1 ;
             int powerCnt = 0;
@@ -1190,7 +1190,7 @@ namespace System.Xml.Schema
         {
             return MatchEnumeration(datatype.ValueConverter.ToDouble(value), enumeration, datatype.ValueConverter);
         }
-        private bool MatchEnumeration(double value, ArrayList enumeration, XmlValueConverter valueConverter)
+        private static bool MatchEnumeration(double value, ArrayList enumeration, XmlValueConverter valueConverter)
         {
             for (int i = 0; i < enumeration.Count; ++i)
             {
@@ -1261,7 +1261,7 @@ namespace System.Xml.Schema
             return MatchEnumeration((TimeSpan)value, enumeration);
         }
 
-        private bool MatchEnumeration(TimeSpan value, ArrayList enumeration)
+        private static bool MatchEnumeration(TimeSpan value, ArrayList enumeration)
         {
             for (int i = 0; i < enumeration.Count; ++i)
             {
@@ -1335,7 +1335,7 @@ namespace System.Xml.Schema
             return MatchEnumeration(datatype.ValueConverter.ToDateTime(value), enumeration, datatype);
         }
 
-        private bool MatchEnumeration(DateTime value, ArrayList enumeration, XmlSchemaDatatype datatype)
+        private static bool MatchEnumeration(DateTime value, ArrayList enumeration, XmlSchemaDatatype datatype)
         {
             for (int i = 0; i < enumeration.Count; ++i)
             {
@@ -1365,7 +1365,7 @@ namespace System.Xml.Schema
             return CheckValueFacets(value, datatype, true);
         }
 
-        internal Exception? CheckValueFacets(string value, XmlSchemaDatatype datatype, bool verifyUri)
+        internal static Exception? CheckValueFacets(string value, XmlSchemaDatatype datatype, bool verifyUri)
         {
             //Length, MinLength, MaxLength
             int length = value.Length;
@@ -1415,7 +1415,7 @@ namespace System.Xml.Schema
             return MatchEnumeration(datatype.ValueConverter.ToString(value), enumeration, datatype);
         }
 
-        private bool MatchEnumeration(string value, ArrayList enumeration, XmlSchemaDatatype datatype)
+        private static bool MatchEnumeration(string value, ArrayList enumeration, XmlSchemaDatatype datatype)
         {
             if (datatype.TypeCode == XmlTypeCode.AnyUri)
             {
@@ -1440,7 +1440,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private Exception? CheckBuiltInFacets(string s, XmlTypeCode typeCode, bool verifyUri)
+        private static Exception? CheckBuiltInFacets(string s, XmlTypeCode typeCode, bool verifyUri)
         {
             Exception? exception = null;
 
@@ -1548,7 +1548,7 @@ namespace System.Xml.Schema
             return MatchEnumeration((XmlQualifiedName)datatype.ValueConverter.ChangeType(value, typeof(XmlQualifiedName)), enumeration);
         }
 
-        private bool MatchEnumeration(XmlQualifiedName value, ArrayList enumeration)
+        private static bool MatchEnumeration(XmlQualifiedName value, ArrayList enumeration)
         {
             for (int i = 0; i < enumeration.Count; ++i)
             {
@@ -1617,7 +1617,7 @@ namespace System.Xml.Schema
             return MatchEnumeration((byte[])value, enumeration, datatype);
         }
 
-        private bool MatchEnumeration(byte[] value, ArrayList enumeration, XmlSchemaDatatype datatype)
+        private static bool MatchEnumeration(byte[] value, ArrayList enumeration, XmlSchemaDatatype datatype)
         {
             for (int i = 0; i < enumeration.Count; ++i)
             {

@@ -512,7 +512,7 @@ namespace Internal.Runtime.TypeLoader
             }
             finally
             {
-                conversionParams.ResetPinnedObjects();
+                CallConversionParameters.ResetPinnedObjects();
             }
         }
 

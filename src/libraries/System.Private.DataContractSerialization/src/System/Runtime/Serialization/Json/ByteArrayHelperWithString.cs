@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization.Json
     {
         public static readonly ByteArrayHelperWithString Instance = new ByteArrayHelperWithString();
 
-        internal void WriteArray(XmlWriter writer, byte[] array, int offset, int count)
+        internal static void WriteArray(XmlWriter writer, byte[] array, int offset, int count)
         {
             XmlJsonReader.CheckArray(array, offset, count);
             writer.WriteAttributeString(string.Empty, JsonGlobals.typeString, string.Empty, JsonGlobals.arrayString);
@@ -42,12 +42,12 @@ namespace System.Runtime.Serialization.Json
             WriteArray(writer, array, offset, count);
         }
 
-        private void ThrowConversionException(string value, string type)
+        private static void ThrowConversionException(string value, string type)
         {
             throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, type));
         }
 
-        private byte ToByte(int value)
+        private static byte ToByte(int value)
         {
             if (value < byte.MinValue || value > byte.MaxValue)
             {

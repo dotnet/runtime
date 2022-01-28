@@ -589,7 +589,7 @@ namespace System.Configuration
         // and contains no more or less than a single element.
         //
         // Throws a ConfigurationErrorsException if there is an error.
-        private void ValidateSectionXml(string xmlElement, string configKey)
+        private static void ValidateSectionXml(string xmlElement, string configKey)
         {
             if (string.IsNullOrEmpty(xmlElement))
                 return;
@@ -1253,7 +1253,7 @@ namespace System.Configuration
         //
         // Take an ExeDefinition and translate it to a string
         //
-        private string ExeDefinitionToString(ConfigurationAllowExeDefinition allowDefinition) =>
+        private static string ExeDefinitionToString(ConfigurationAllowExeDefinition allowDefinition) =>
             allowDefinition switch
             {
                 ConfigurationAllowExeDefinition.MachineOnly => AllowDefinitionMachineOnly,
@@ -1463,7 +1463,7 @@ namespace System.Configuration
             else return null;
         }
 
-        private bool AreLocationAttributesModified(SectionRecord sectionRecord, ConfigurationSection configSection)
+        private static bool AreLocationAttributesModified(SectionRecord sectionRecord, ConfigurationSection configSection)
         {
             OverrideModeSetting overrideMode = OverrideModeSetting.s_locationDefault;
             bool inheritInChildApplications = true;
@@ -1485,7 +1485,7 @@ namespace System.Configuration
                 || (inheritInChildApplications != configSection.SectionInformation.InheritInChildApplications);
         }
 
-        private bool AreSectionAttributesModified(SectionRecord sectionRecord, ConfigurationSection configSection)
+        private static bool AreSectionAttributesModified(SectionRecord sectionRecord, ConfigurationSection configSection)
         {
             string configSource;
             string protectionProviderName;
@@ -1510,7 +1510,7 @@ namespace System.Configuration
                 || AreLocationAttributesModified(sectionRecord, configSection);
         }
 
-        private bool IsConfigSectionMoved(SectionRecord sectionRecord, ConfigurationSection configSection)
+        private static bool IsConfigSectionMoved(SectionRecord sectionRecord, ConfigurationSection configSection)
         {
             if (!sectionRecord.HasFileInput)
                 return true;
@@ -1735,7 +1735,7 @@ namespace System.Configuration
 
         // Take an element name, and create an xml string that contains
         // that element in an empty state
-        private string WriteEmptyElement(string elementName)
+        private static string WriteEmptyElement(string elementName)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -1836,7 +1836,6 @@ namespace System.Configuration
                         {
                             SectionXmlInfo sectionXmlInfo = sectionRecord.FileInput.SectionXmlInfo;
                             sectionXmlInfo.StreamVersion = ConfigStreamInfo.StreamVersion;
-                            sectionXmlInfo.ConfigSourceStreamVersion = configSourceStreamVersion;
                         }
                     }
                     else
@@ -1874,7 +1873,6 @@ namespace System.Configuration
                                 sectionXmlInfo.RawXml = null;
                                 sectionXmlInfo.ConfigSource = configSource;
                                 sectionXmlInfo.ConfigSourceStreamName = configSourceStreamName;
-                                sectionXmlInfo.ConfigSourceStreamVersion = configSourceStreamVersion;
                                 sectionXmlInfo.ProtectionProviderName =
                                     configSection.SectionInformation.ProtectionProviderName;
                                 sectionXmlInfo.OverrideModeSetting =
@@ -2157,7 +2155,7 @@ namespace System.Configuration
             return wroteASection;
         }
 
-        private void CheckPreamble(byte[] preamble, XmlUtilWriter utilWriter, byte[] buffer)
+        private static void CheckPreamble(byte[] preamble, XmlUtilWriter utilWriter, byte[] buffer)
         {
             bool hasByteOrderMark = false;
             using (Stream preambleStream = new MemoryStream(buffer))
@@ -2188,7 +2186,7 @@ namespace System.Configuration
         //
         // Calculate a new indent based on the position of the parent element and the current node.
         //
-        private int UpdateIndent(int oldIndent, XmlUtil xmlUtil, XmlUtilWriter utilWriter, int parentLinePosition)
+        private static int UpdateIndent(int oldIndent, XmlUtil xmlUtil, XmlUtilWriter utilWriter, int parentLinePosition)
         {
             int indent = oldIndent;
             if ((xmlUtil.Reader.NodeType == XmlNodeType.Element) && utilWriter.IsLastLineBlank)
@@ -2962,7 +2960,7 @@ namespace System.Configuration
             return wroteASection;
         }
 
-        private void WriteSectionUpdate(XmlUtilWriter utilWriter, DefinitionUpdate update, int linePosition, int indent,
+        private static void WriteSectionUpdate(XmlUtilWriter utilWriter, DefinitionUpdate update, int linePosition, int indent,
             bool skipFirstIndent)
         {
             ConfigurationSection configSection = (ConfigurationSection)update.SectionRecord.Result;

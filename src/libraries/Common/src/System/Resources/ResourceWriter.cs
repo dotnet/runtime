@@ -399,7 +399,7 @@ namespace System.Resources
 
         // Finds the ResourceTypeCode for a type, or adds this type to the
         // types list.
-        private ResourceTypeCode FindTypeCode(object? value, List<string> types)
+        private static ResourceTypeCode FindTypeCode(object? value, List<string> types)
         {
             if (value == null)
                 return ResourceTypeCode.Null;
@@ -472,7 +472,7 @@ namespace System.Resources
             return (ResourceTypeCode)(typeIndex + ResourceTypeCode.StartOfUserTypes);
         }
 
-        private void WriteValue(ResourceTypeCode typeCode, object? value, BinaryWriter writer)
+        private static void WriteValue(ResourceTypeCode typeCode, object? value, BinaryWriter writer)
         {
             Debug.Assert(writer != null);
 

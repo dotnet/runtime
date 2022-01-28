@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Json
                 return;
             }
 
-            ByteArrayHelperWithString.Instance.WriteArray(Writer, bytes, 0, bytes.Length);
+            ByteArrayHelperWithString.WriteArray(Writer, bytes, 0, bytes.Length);
         }
 
         internal override void WriteQName(XmlQualifiedName value)

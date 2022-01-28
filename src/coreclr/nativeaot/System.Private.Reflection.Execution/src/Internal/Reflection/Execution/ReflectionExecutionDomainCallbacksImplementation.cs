@@ -115,7 +115,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle)
         {
-            return _executionEnvironment.TryGetStaticClassConstructionContext(runtimeTypeHandle);
+            return ExecutionEnvironmentImplementation.TryGetStaticClassConstructionContext(runtimeTypeHandle);
         }
 
         /// <summary>

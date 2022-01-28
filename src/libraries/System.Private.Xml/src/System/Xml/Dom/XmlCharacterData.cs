@@ -185,7 +185,7 @@ namespace System.Xml
                 AfterEvent(args);
         }
 
-        internal bool CheckOnData(string? data)
+        internal static bool CheckOnData(string? data)
         {
             return XmlCharType.IsOnlyWhitespace(data);
         }

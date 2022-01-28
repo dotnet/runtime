@@ -48,7 +48,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         [Conditional("DEBUG")]
-        public void AssertFilter(QilLoop filter)
+        public static void AssertFilter(QilLoop filter)
         {
             Debug.Assert(filter.NodeType == QilNodeType.Filter, "XPathPatternBuilder expected to generate list of Filters on top level");
             Debug.Assert(filter.Variable.XmlType!.IsSubtypeOf(T.NodeNotRtf));
@@ -56,7 +56,7 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(filter.Body.XmlType!.IsSubtypeOf(T.Boolean));
         }
 
-        private void FixupFilterBinding(QilLoop filter, QilNode newBinding)
+        private static void FixupFilterBinding(QilLoop filter, QilNode newBinding)
         {
             AssertFilter(filter);
             filter.Variable.Binding = newBinding;

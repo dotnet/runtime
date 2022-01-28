@@ -377,7 +377,7 @@ namespace System.Net.Security
 
         internal IAsyncResult BeginShutdown(AsyncCallback? asyncCallback, object? asyncState) => TaskToApm.Begin(ShutdownAsync(), asyncCallback, asyncState);
 
-        internal void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
+        internal static void EndShutdown(IAsyncResult asyncResult) => TaskToApm.End(asyncResult);
 
         public TransportContext TransportContext => new SslStreamContext(this);
 

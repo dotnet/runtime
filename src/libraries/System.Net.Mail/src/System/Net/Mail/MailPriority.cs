@@ -252,7 +252,7 @@ namespace System.Net.Mail
             EmptySendContext context = (EmptySendContext)result.AsyncState!;
             try
             {
-                context._writer.EndGetContentStream(result).Close();
+                BaseWriter.EndGetContentStream(result).Close();
             }
             catch (Exception ex)
             {
@@ -289,7 +289,7 @@ namespace System.Net.Mail
                 IAsyncResult newResult = writer.BeginGetContentStream(EmptySendCallback, new EmptySendContext(writer, result));
                 if (newResult.CompletedSynchronously)
                 {
-                    writer.EndGetContentStream(newResult).Close();
+                    BaseWriter.EndGetContentStream(newResult).Close();
                     result.InvokeCallback();
                 }
                 return result;

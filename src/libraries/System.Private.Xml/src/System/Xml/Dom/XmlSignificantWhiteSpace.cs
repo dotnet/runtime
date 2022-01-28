@@ -11,7 +11,7 @@ namespace System.Xml
     {
         protected internal XmlSignificantWhitespace(string? strData, XmlDocument doc) : base(strData, doc)
         {
-            if (!doc.IsLoading && !base.CheckOnData(strData))
+            if (!doc.IsLoading && !CheckOnData(strData))
                 throw new ArgumentException(SR.Xdom_WS_Char);
         }
 

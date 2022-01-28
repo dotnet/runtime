@@ -13,7 +13,7 @@ namespace System.Xml
         {
             if (ofObjectToReturn == null || ofObjectToReturn == typeof(System.IO.Stream) || ofObjectToReturn == typeof(object))
             {
-                return await DownloadManager.GetStreamAsync(absoluteUri, _credentials, _proxy).ConfigureAwait(false);
+                return await XmlDownloadManager.GetStreamAsync(absoluteUri, _credentials, _proxy).ConfigureAwait(false);
             }
 
             throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);

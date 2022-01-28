@@ -30,7 +30,7 @@ namespace System.Net.Http
             return uriBuilder.Uri;
         }
 
-        public Uri? ExecuteProxyAutoConfiguration(SafeCreateHandle cfurl, CFProxy proxy)
+        private static Uri? ExecuteProxyAutoConfiguration(SafeCreateHandle cfurl, CFProxy proxy)
         {
             Uri? result = null;
             CFRunLoopRef runLoop = CFRunLoopGetCurrent();

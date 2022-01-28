@@ -475,6 +475,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
             }
 
+#pragma warning disable CA1822
             // This property value is used by the debugger EE as the message
             // displayed when a dynamic object has no members.
             public string Empty
@@ -484,6 +485,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return SR.EmptyDynamicView;
                 }
             }
+#pragma warning restore CA1822
         }
     }
 }

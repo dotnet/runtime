@@ -130,7 +130,7 @@ namespace Internal.Reflection.Execution
         //
         // Encapsulates the assembly ref->def matching policy.
         //
-        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
+        private static bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
         {
             //
             // The defName came from trusted metadata so it should be fully specified.
@@ -231,7 +231,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
+        private static void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
         {
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {

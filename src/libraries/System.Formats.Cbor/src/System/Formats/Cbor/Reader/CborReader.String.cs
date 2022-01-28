@@ -503,7 +503,7 @@ namespace System.Formats.Cbor
             AdvanceDataItemCounters();
         }
 
-        private int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer, Encoding utf8Encoding)
+        private static int ValidateUtf8AndGetCharCount(ReadOnlySpan<byte> buffer, Encoding utf8Encoding)
         {
             try
             {

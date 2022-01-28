@@ -83,7 +83,7 @@ namespace System.Net
             }
         }
 
-        private void ValidateTimeout(TimeSpan value)
+        private static void ValidateTimeout(TimeSpan value)
         {
             long timeoutValue = Convert.ToInt64(value.TotalSeconds);
             if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
