@@ -307,7 +307,7 @@ namespace System.Net.Test.Common
             await GetOpenRequest().WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
         }
 
-        public override Task WaitForClose(CancellationToken cancellationToken)
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

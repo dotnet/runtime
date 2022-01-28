@@ -985,7 +985,7 @@ namespace System.Net.Test.Common
             Assert.Equal((int)ProtocolErrors.CANCEL, rstStreamFrame.ErrorCode);
         }
 
-        public override Task WaitForClose(CancellationToken cancellationToken)
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

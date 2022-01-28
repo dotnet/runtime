@@ -1066,9 +1066,9 @@ namespace System.Net.Test.Common
                 }
             }
 
-            public override Task WaitForClose(CancellationToken cancellationToken)
+            public override Task WaitForCloseAsync(CancellationToken cancellationToken)
             {
-                return _socket.WaitForClose(cancellationToken);
+                return _socket.WaitForCloseAsync(cancellationToken);
             }
         }
 
