@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<InvalidOperationException>(() => module.DefineInitializedData("MyField2", new byte[] { 1, 0, 1 }, FieldAttributes.Public));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineInitializedData_EnsureAlignmentIsMinimumNeededForUseOfCreateSpan()
         {
             ModuleBuilder module = Helpers.DynamicModule();
