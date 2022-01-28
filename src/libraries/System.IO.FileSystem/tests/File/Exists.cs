@@ -166,8 +166,7 @@ namespace System.IO.Tests
 
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void DoesCaseInsensitiveInvariantComparions()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -177,8 +176,7 @@ namespace System.IO.Tests
             Assert.True(Exists(testFile.FullName.ToLowerInvariant()));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         public void DoesCaseSensitiveComparisons()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
