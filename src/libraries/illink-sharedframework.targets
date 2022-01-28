@@ -5,7 +5,7 @@
 
     <PropertyGroup>
       <SharedFrameworkAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-runtimepack'))</SharedFrameworkAssembliesTrimmedArtifactsPath>
-      <SharedFrameworkAssembliesMarkerFile>$(IntermediateOutputPath)sfx-linker-$(TargetOS)-marker.txt</SharedFrameworkAssembliesMarkerFile>
+      <SharedFrameworkAssembliesMarkerFile>$(IntermediateOutputPath)sfx-linker-$(TargetOS)-$(TargetArchitecture)-marker.txt</SharedFrameworkAssembliesMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
