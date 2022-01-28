@@ -9,8 +9,6 @@ namespace System.IO.Tests
     {
         public override bool Exists(string path) => Path.Exists(path);
 
-        #region Universal
-
         [Fact]
         public void PathAlreadyExistsAsFile()
         {
@@ -21,10 +19,6 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
-
-        #endregion
-
-        #region PlatformSpecific
 
         [ConditionalFact(nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
@@ -37,7 +31,5 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
-
-        #endregion
     }
 }

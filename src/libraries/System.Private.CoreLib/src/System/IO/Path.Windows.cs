@@ -27,37 +27,21 @@ namespace System.IO
             (char)31
         };
 
-        // Checks if the given path is available for use.
-        public static bool Exists([NotNullWhen(true)] string? path)
+        private static bool ExistsCore(string fullPath)
         {
-            try
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+            bool result = (errorCode == Interop.Errors.ERROR_SUCCESS) && (data.dwFileAttributes != -1);
+
+            if (PathInternal.IsDirectorySeparator(path[path.Length - 1]))
             {
-                if (string.IsNullOrEmpty(path))
-                {
-                    return false;
-                }
-
-                string fullPath = GetFullPath(path);
-                Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-                int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
-                bool result = (errorCode == 0) && (data.dwFileAttributes != -1);
-
-                if (PathInternal.IsDirectorySeparator(path[path.Length - 1]))
-                {
-                    // We want to make sure that if the path ends in a trailing slash, it's truly a directory
-                    // because FillAttributeInfo syscall removes any trailing slashes and may give false positives
-                    // for existing files.
-                    result = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
-                }
-
-                return result;
+                // We want to make sure that if the path ends in a trailing slash, it's truly a directory
+                // because FillAttributeInfo syscall removes any trailing slashes and may give false positives
+                // for existing files.
+                result = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
             }
 
-            catch (ArgumentException) { }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-
-            return false;
+            return result;
         }
 
         // Expands the given path to a fully qualified path.
