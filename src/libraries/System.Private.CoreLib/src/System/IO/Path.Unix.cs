@@ -14,30 +14,9 @@ namespace System.IO
         public static char[] GetInvalidPathChars() => new char[] {'\0'};
 
         // Checks if the given path is available for use.
-        public static bool Exists([NotNullWhen(true)] string? path)
+        private static bool ExistsCore(string fullPath)
         {
-            try
-            {
-                if (string.IsNullOrEmpty(path))
-                {
-                    return false;
-                }
-
-                ReadOnlySpan<char> fullPath = GetFullPath(path).AsSpan();
-                return Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus _) == 0;
-            }
-
-            catch (ArgumentException)
-            {
-            }
-            catch (IOException)
-            {
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
-
-            return false;
+            return Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus _) == Interop.Errors.ERROR_SUCCESS;
         }
 
         // Expands the given path to a fully qualified path.

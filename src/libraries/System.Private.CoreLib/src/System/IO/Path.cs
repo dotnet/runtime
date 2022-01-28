@@ -76,6 +76,39 @@ namespace System.IO
         }
 
         /// <summary>
+        ///  Determines whether a given path exists on the filesystem.
+        /// true if the caller has the required permissions and the path exists on the filesystem; otherwise, false.
+        /// This method also returns false if path is null, an invalid path, or a zero-length string.
+        /// If the caller does not have sufficient permissions to read the specified path,
+        /// no exception is thrown and the method returns false regardless of the existence of path.
+        /// </summary>
+        /// <remarks>
+        /// It would also return true for existing, non-regular files like pipes unlike File.Exists.
+        /// Logically this is equivalent to File.Exists(path) || Directory.Exists(path).
+        /// </remarks>
+        /// <param name="path">The path to check</param>
+        /// <returns> Boolean </returns>
+        public static bool Exists([NotNullWhen(true)] string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            string? fullPath;
+            try
+            {
+                fullPath = GetFullPath(path);
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+
+            return ExistsCore(fullPath);
+        }
+
+        /// <summary>
         /// Returns the directory portion of a file path. This method effectively
         /// removes the last segment of the given file path, i.e. it returns a
         /// string consisting of all characters up to but not including the last

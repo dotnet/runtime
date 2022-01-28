@@ -9,8 +9,6 @@ namespace System.IO.Tests
     {
         public override bool Exists(string path) => Path.Exists(path);
 
-        #region Universal
-
         [Fact]
         public void PathAlreadyExistsAsDirectory()
         {
@@ -22,20 +20,13 @@ namespace System.IO.Tests
             Assert.True(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-
-        #endregion
-
-        #region PlatformSpecific
-
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
-        public void FalseForNonRegularFile()
+        public void TrueForNonRegularFile()
         {
             string fileName = GetTestFilePath();
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.True(Exists(fileName));
         }
-
-        #endregion
     }
 }
