@@ -1493,6 +1493,7 @@ class SuperPMIReplayAsmDiffs:
                 with ChangeDir(self.coreclr_args.core_root):
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
+                    logging.info("return_code: %s", return_code)
 
                 base_metrics = read_csv_metrics(base_metrics_summary_file)
                 diff_metrics = read_csv_metrics(diff_metrics_summary_file)
@@ -1517,17 +1518,18 @@ class SuperPMIReplayAsmDiffs:
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
+                # This file had asm diffs; keep track of that.
+                if is_nonzero_length_file(diff_mcl_file):
+                    files_with_asm_diffs.append(mch_file)
+
                 # There were diffs. Go through each method that created diffs and
                 # create a base/diff asm file with diffable asm. In addition, create
                 # a standalone .mc for easy iteration.
-                if is_nonzero_length_file(diff_mcl_file):
+                if is_nonzero_length_file(diff_mcl_file) and self.coreclr_args.diff_with_release is not True:
                     # AsmDiffs. Save the contents of the fail.mcl file to dig into failures.
 
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-
-                    # This file had asm diffs; keep track of that.
-                    files_with_asm_diffs.append(mch_file)
 
                     self.diff_mcl_contents = None
                     with open(diff_mcl_file) as file_handle:
@@ -1712,24 +1714,23 @@ class SuperPMIReplayAsmDiffs:
 
         # Construct an overall Markdown summary file.
 
-        if self.coreclr_args.diff_with_release is not True:
-            if len(all_md_summary_files) > 0:
-                overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
-                if not os.path.isdir(self.coreclr_args.spmi_location):
-                    os.makedirs(self.coreclr_args.spmi_location)
-                if os.path.isfile(overall_md_summary_file):
-                    os.remove(overall_md_summary_file)
+        if len(all_md_summary_files) > 0 and self.coreclr_args.diff_with_release is not True:
+            overall_md_summary_file = create_unique_file_name(self.coreclr_args.spmi_location, "diff_summary", "md")
+            if not os.path.isdir(self.coreclr_args.spmi_location):
+                os.makedirs(self.coreclr_args.spmi_location)
+            if os.path.isfile(overall_md_summary_file):
+                os.remove(overall_md_summary_file)
 
-                with open(overall_md_summary_file, "w") as write_fh:
-                    for summary_file_info in all_md_summary_files:
-                        summary_mch  = summary_file_info[0]
-                        summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
-                        summary_file = summary_file_info[1]
-                        with open(summary_file, "r") as read_fh:
-                            write_fh.write("## " + summary_mch_filename + ":\n\n")
-                            shutil.copyfileobj(read_fh, write_fh)
+            with open(overall_md_summary_file, "w") as write_fh:
+                for summary_file_info in all_md_summary_files:
+                    summary_mch  = summary_file_info[0]
+                    summary_mch_filename = os.path.basename(summary_mch) # Display just the MCH filename, not the full path
+                    summary_file = summary_file_info[1]
+                    with open(summary_file, "r") as read_fh:
+                        write_fh.write("## " + summary_mch_filename + ":\n\n")
+                        shutil.copyfileobj(read_fh, write_fh)
 
-                logging.info("  Summary Markdown file: %s", overall_md_summary_file)
+            logging.info("  Summary Markdown file: %s", overall_md_summary_file)
 
         # Report the set of MCH files with asm diffs and replay failures.
 
