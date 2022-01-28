@@ -88,15 +88,10 @@ namespace System.Net.Test.Common
 
         public async Task WaitForClose(CancellationToken cancellationToken)
         {
-            while (true)
+            while (_websocket != null
+                    ? _websocket.State != WebSocketState.Closed
+                    : !(_socket.Poll(1, SelectMode.SelectRead) && _socket.Available == 0))
             {
-                if (_websocket != null
-                    ? _websocket.State == WebSocketState.Closed
-                    : _socket.Poll(1, SelectMode.SelectRead) && _socket.Available == 0)
-                {
-                    break;
-                }
-
                 cancellationToken.ThrowIfCancellationRequested();
                 await Task.Delay(100);
             }

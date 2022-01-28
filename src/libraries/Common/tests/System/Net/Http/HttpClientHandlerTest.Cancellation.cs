@@ -230,21 +230,19 @@ namespace System.Net.Http.Functional.Tests
                         await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, isFinal: false);
                         await clientFinished.Task;
 
-                        if (PlatformDetection.IsBrowser)
-                        {
-                            // make sure that the browser closed the connection
-                            await connection.WaitForClose(CancellationToken.None);
-                        }
+#if TARGET_BROWSER
+                        // make sure that the browser closed the connection
+                        await connection.WaitForClose(CancellationToken.None);
+#endif
                     });
 
                     var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     req.Headers.ConnectionClose = connectionClose;
 
-                    if (PlatformDetection.IsBrowser)
-                    {
-                        var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
-                        req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
-                    }
+#if TARGET_BROWSER
+                    var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+                    req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+#endif
 
                     Task<HttpResponseMessage> getResponse = client.SendAsync(TestAsync, req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>

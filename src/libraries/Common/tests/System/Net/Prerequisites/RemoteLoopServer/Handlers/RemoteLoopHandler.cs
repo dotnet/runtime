@@ -100,12 +100,10 @@ namespace RemoteLoopServer
                                 var slice = new ArraySegment<byte>(testedBuffer, 0, testedNext.Result);
                                 await control.SendAsync(slice, WebSocketMessageType.Binary, true, cts.Token).ConfigureAwait(false);
                             }
-                            if (!close)
+                            // did we get TCP FIN?
+                            if (!close && (tested.Poll(1, SelectMode.SelectRead) && tested.Available == 0))
                             {
-                                if ((tested.Poll(1, SelectMode.SelectRead) && tested.Available == 0))
-                                {
-                                    close = true;
-                                }
+                                close = true;
                             }
                             if (!close)
                             {
