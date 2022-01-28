@@ -96,7 +96,7 @@ compilation, it had some downsides:
 * Not all methods with loops are performance sensitive, so in many
 cases we saw increased startup JIT time without any steady state
 benefit.  In some applications where startup JIT time is significant
-the impact was on the order or 20%.
+the impact was on the order of 20%.
 
 * In fact, early optimization of methods may lead to lower
 steady-state performance, because (a) class initializers may not yet
@@ -193,7 +193,7 @@ contain.
 
 A Tier0 method may contain many patchpoints. In our current
 implementation the runtime may create one OSR method per patchpoint.
-Each OSR method may comprise most or all of the original method. So worst case we can have a lot of OSR codegen, but it is currently thought such cases
+Each OSR method may comprise most or all of the original method. So in the worst case we can have a lot of OSR codegen, but it is currently thought such cases
 will be rare. We may need to implement some policy to avoid this.
 
 ### Execution of Tier0 Code with Patchpoints
@@ -209,7 +209,7 @@ table.
 The first time the patchpoint is seen by the runtime it adds an entry
 to the table. The local counter in the method is reloaded with a value
 determined by `DOTNET_OSR_CounterBump` (currently 0x1000).  If a
-patchpoint at a given offset is hit more than `DOTNET_HitLimit` times
+patchpoint at a given offset is hit more than `DOTNET_OSR_HitLimit` times
 (currently 0x10) then the runtime will create an OSR method for that
 offset.
 
@@ -223,7 +223,7 @@ code.  It may need some adjusting.
 The OSR method is created synchronously on the thread that hits the
 hit limit threshold. If a second thread arrives while the OSR method
 is being created it will simply have its counter reloaded and continue
-executing Tier0 code for the time being. Eventually it may come back
+executing Tier0 code for the time being. Eventually it may come back.
 
 Once the method is ready the initiating thread is transitioned to the
 OSR method; any subsequently arriving executions from other active
@@ -243,22 +243,22 @@ a few twists:
 * Importation starts at the specified IL offset and pulls in all the
 code reachable from that point. Typically (but not always) the method entry (IL offset 0) is unreachable
 and so the OSR method only imports a subset of the full method.
-* Control normally branches from fgFirstBB to the BB at the OSR IL offset (the "osr entry").
+* Control normally branches from the first block (`fgFirstBB`) to the block at the OSR IL offset (the "osr entry").
 Special care is needed when the osr entry is in the middle of a try or in a nested try.
 * If dynamic PGO is enabled the OSR method will read the PGO data captured by the Tier0
 method, but we also instrument the OSR method to ensure any Tier1 version we produce
 later on sees all the PGO data it would have seen if we'd forcibly kept the method at Tier0.
 
-The JIT may need to import the entry if it can be reached by tail
+The JIT may need to import the entry block if it can be reached by tail
 recursion to loop optimizations, even if there no explicit IL branch
-to offset 0 in the IL reachable from the OSR Il offset. This was the
+to offset 0 in the IL reachable from the OSR IL offset. This was the
 source of a number of subtle bugs -- the call site that eventually may
 loop back to the method entry could come from an inlinee, or via
 devirtualization, etc.
 
 For the most part the jit treats an OSR method just like any other
 optimized jitted method. But aside from importation, frame layout,
-pgo, and prolog/epilog codegen details bleed through in only a handful
+PGO, and prolog/epilog codegen details bleed through in only a handful
 of places.
 
 #### Frame Layout
@@ -284,7 +284,7 @@ OSR methods are never called directly; they can only be invoked by `CORINFO_HELP
 When the OSR method returns, it cleans up both its own stack and the
 Tier0 method stack.
 
-Note if a Tier0 method is recursive and has loops there can be some interesting dynamics. After a sufficient amount of looping an OSR method will be created, and the currently active Tier0 instance will transition to the OSR method. When th OSR method makes a recursive call, it will invoke the Tier0 method, which will then fairly quickly transition to the OSR version just created.
+Note if a Tier0 method is recursive and has loops there can be some interesting dynamics. After a sufficient amount of looping an OSR method will be created, and the currently active Tier0 instance will transition to the OSR method. When the OSR method makes a recursive call, it will invoke the Tier0 method, which will then fairly quickly transition to the OSR version just created.
 
 ## Debugging OSR
 
