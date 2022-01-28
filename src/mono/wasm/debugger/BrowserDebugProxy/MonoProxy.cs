@@ -816,8 +816,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            foreach (var method in store.EnC(asm, meta_buf, pdb_buf))
+            var methods = store.EnC(asm, meta_buf, pdb_buf);
+            foreach (var method in methods)
+            {
                 await ResetBreakpoint(sessionId, method, token);
+            }
+            var files = methods.Distinct(new MethodInfo.SourceComparer());
+            foreach (var file in files)
+            {
+                JObject scriptSource = JObject.FromObject(file.Source.ToScriptSource(context.Id, context.AuxData));
+                Log("debug", $"sending after update {file.Source.Url} {context.Id} {sessionId.sessionId}");
+                SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+            }
             return true;
         }
 
@@ -832,6 +842,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (var req in context.BreakpointRequests.Values)
             {
                 if (req.Method != null && req.Method.Assembly.Id == method.Info.Assembly.Id && req.Method.Token == method.Info.Token)
+                {
+                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                }
+                //trying to reset breakpoints that were not bound but are in the same file of a method update
+                if (req.Method == null && method.Info.SourceName.Equals(req.File))
                 {
                     await SetBreakpoint(sessionId, context.store, req, true, token);
                 }
