@@ -129,6 +129,7 @@ let exportedAPI: DotnetPublicAPI;
 
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
+// At runtime this will be referred to as 'createDotnetRuntime'
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, requirePromise: Promise<Function> },
@@ -249,6 +250,10 @@ function initializeImportsAndExports(
     list.registerRuntime(exportedAPI);
 
     configure_emscripten_startup(module, exportedAPI);
+
+    // HACK: Maintain compatibility with emscripten's generated dotnet.worker.js
+    if (typeof ((<any>globalThis)["importScripts"]) === "function")
+        return <any>exportedAPI.Module;
 
     return exportedAPI;
 }
