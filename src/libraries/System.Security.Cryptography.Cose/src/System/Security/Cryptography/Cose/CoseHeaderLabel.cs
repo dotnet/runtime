@@ -32,7 +32,10 @@ namespace System.Security.Cryptography.Cose
             LabelAsString = label ?? throw new ArgumentException(null, nameof(label));
         }
 
-        public bool Equals(CoseHeaderLabel other)
-            => LabelAsInt32.HasValue ? LabelAsInt32 == other.LabelAsInt32 : LabelAsInt32 == other.LabelAsInt32;
+        public bool Equals(CoseHeaderLabel other) => LabelAsInt32.HasValue ? LabelAsInt32 == other.LabelAsInt32 : LabelAsInt32 == other.LabelAsInt32;
+
+        public override bool Equals(object? obj) => obj is CoseHeaderLabel otherObj && Equals(otherObj);
+
+        public override int GetHashCode() => base.GetHashCode();
     }
 }
