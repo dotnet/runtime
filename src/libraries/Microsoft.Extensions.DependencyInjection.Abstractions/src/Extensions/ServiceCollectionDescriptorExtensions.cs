@@ -740,6 +740,7 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
                 collection.Insert(index, newDescriptor);
 
                 collection.Remove(oldDescriptor);
+
                 if (onlyFirst)
                     break;
             }
