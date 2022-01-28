@@ -25,6 +25,22 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
 let ctx: DownloadAssetsContext | null = null;
 
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
+    // HACK: Emscripten expects us to provide it a fully qualified path where it can find
+    //  our main script so that it can be loaded from inside of workers, because workers
+    //  have their paths relative to the root instead of relative to our location
+    // In the browser we can create a hyperlink and set its href to a relative URL,
+    //  and the browser will convert it into an absolute one for us
+    if (
+        (typeof (globalThis.document) === "object") &&
+        (typeof (globalThis.document.createElement) === "function")
+    ) {
+        const temp = globalThis.document.createElement("a");
+        temp.href = "dotnet.js";
+        console.log("determined url of main script to be " + temp.href);
+        (<any>module)["mainScriptUrlOrBlob"] = temp.href;
+    } else
+        console.log("could not determine url of main script for workers");
+
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {
         module.preInit = [];
@@ -42,7 +58,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         module.postRun = [module.postRun];
     }
 
-    // when user set configSrc or config, we are running our default startup sequence. 
+    // when user set configSrc or config, we are running our default startup sequence.
     if (module.configSrc || module.config) {
         // execution order == [0] ==
         // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
