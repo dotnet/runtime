@@ -161,7 +161,7 @@ To build and run the samples with AOT, add `/p:RunAOTCompilation=true` to the ab
 
 Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mono/wasm runtime performance.
 
-### Templates
+## Templates
 
 The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-tools` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
 
@@ -179,7 +179,7 @@ Example use of the `wasmconsole` template:
     Hello World!
     Args:
 
-### Upgrading Emscripten
+## Upgrading Emscripten
 
 Bumping Emscripten version involves these steps:
 
