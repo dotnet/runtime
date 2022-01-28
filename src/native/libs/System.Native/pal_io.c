@@ -61,7 +61,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
-#if defined(TARGET_LINUX) && !defined(TARGET_WASM)
+#ifdef __linux__
 #include <sys/utsname.h>
 
 // Ensure FICLONE is defined for all Linux builds.
@@ -1174,7 +1174,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 #endif // !HAVE_FCOPYFILE
 
 
-#ifdef __NR_copy_file_range
+#ifdef __linux__
 static ssize_t CopyFileRange(int inFd, int outFd, size_t len)
 {
     return syscall(__NR_copy_file_range, inFd, NULL, outFd, NULL, len, 0);
@@ -1189,7 +1189,6 @@ static bool SupportsCopyFileRange()
     {
         isSupported = -1;
 
-#ifdef TARGET_LINUX
         // Avoid known issues with copy_file_range that are fixed in Linux 5.3+ (https://lwn.net/Articles/789527/).
         struct utsname name;
         if (uname(&name) == 0)
@@ -1204,7 +1203,6 @@ static bool SupportsCopyFileRange()
                 isSupported = CopyFileRange(-1, -1, 0) == -1 && errno != ENOSYS ? 1 : -1;
             }
         }
-#endif
 
         s_isSupported = isSupported;
     }
@@ -1241,7 +1239,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         copied = ret == 0;
     }
 #endif
-#ifdef __NR_copy_file_range
+#ifdef __linux__
     if (SupportsCopyFileRange() && !copied && sourceLength != 0)
     {
         do
