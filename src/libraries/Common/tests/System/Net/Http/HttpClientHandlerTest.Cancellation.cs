@@ -232,7 +232,7 @@ namespace System.Net.Http.Functional.Tests
 
 #if TARGET_BROWSER
                         // make sure that the browser closed the connection
-                        await connection.WaitForClose(CancellationToken.None);
+                        await connection.WaitForCloseAsync(CancellationToken.None);
 #endif
                     });
 
