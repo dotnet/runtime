@@ -54,13 +54,30 @@ namespace System.Security.Cryptography.X509Certificates
         public ICertificatePal CopyWithPrivateKey(ECDsa privateKey)
         {
             var typedKey = privateKey as ECDsaImplementation.ECDsaSecurityTransforms;
+            byte[] ecPrivateKey;
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey(typedKey.GetKeys().PrivateKey);
-            }
+                ECParameters ecParameters = default;
 
-            byte[] ecPrivateKey = privateKey.ExportECPrivateKey();
+                if (typedKey.TryExportDataKeyParameters(includePrivateParameters: true, ref ecParameters))
+                {
+                    using (PinAndClear.Track(ecParameters.D!))
+                    {
+                        AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters);
+                        ecPrivateKey = writer.Encode();
+                        writer.Reset();
+                    }
+                }
+                else
+                {
+                    return CopyWithPrivateKey(typedKey.GetKeys().PrivateKey);
+                }
+            }
+            else
+            {
+                ecPrivateKey = privateKey.ExportECPrivateKey();
+            }
 
             using (PinAndClear.Track(ecPrivateKey))
             using (SafeSecKeyRefHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(ecPrivateKey, true))
@@ -72,13 +89,30 @@ namespace System.Security.Cryptography.X509Certificates
         public ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
             var typedKey = privateKey as ECDiffieHellmanImplementation.ECDiffieHellmanSecurityTransforms;
+            byte[] ecPrivateKey;
 
             if (typedKey != null)
             {
-                return CopyWithPrivateKey(typedKey.GetKeys().PrivateKey);
-            }
+                ECParameters ecParameters = default;
 
-            byte[] ecPrivateKey = privateKey.ExportECPrivateKey();
+                if (typedKey.TryExportDataKeyParameters(includePrivateParameters: true, ref ecParameters))
+                {
+                    using (PinAndClear.Track(ecParameters.D!))
+                    {
+                        AsnWriter writer = EccKeyFormatHelper.WriteECPrivateKey(ecParameters);
+                        ecPrivateKey = writer.Encode();
+                        writer.Reset();
+                    }
+                }
+                else
+                {
+                    return CopyWithPrivateKey(typedKey.GetKeys().PrivateKey);
+                }
+            }
+            else
+            {
+                ecPrivateKey = privateKey.ExportECPrivateKey();
+            }
 
             using (PinAndClear.Track(ecPrivateKey))
             using (SafeSecKeyRefHandle privateSecKey = Interop.AppleCrypto.ImportEphemeralKey(ecPrivateKey, true))
