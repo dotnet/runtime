@@ -107,7 +107,7 @@
         ldarg.0
         ldarga.s 1
         mkrefany !T
-        stfld typedref InvalidCSharp.WithTypedReferenceField`1::Field
+        stfld typedref valuetype InvalidCSharp.WithTypedReferenceField`1<!T>::Field
         ret
     }
 
@@ -115,7 +115,7 @@
         instance class [System.Runtime]System.Type GetFieldType () cil managed
     {
         ldarg.0
-        ldfld typedref InvalidCSharp.WithTypedReferenceField`1::Field
+        ldfld typedref valuetype InvalidCSharp.WithTypedReferenceField`1<!T>::Field
         refanytype
         call class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle )
         ret
