@@ -2229,7 +2229,7 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
 
     // Optionally enable adjustment during stress.
-    if (!tiVerificationNeeded && compStressCompile(STRESS_GENERIC_VARN, 15))
+    if (compStressCompile(STRESS_GENERIC_VARN, 15))
     {
         thisVarDsc->lvHasILStoreOp = true;
     }
@@ -3516,9 +3516,6 @@ void Compiler::fgFindBasicBlocks()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-#ifndef DEBUG
-    if (tiVerificationNeeded)
-#endif
     {
         // always run these checks for a debug build
         verCheckNestingLevel(initRoot);
@@ -3527,7 +3524,7 @@ void Compiler::fgFindBasicBlocks()
 #ifndef DEBUG
     // fgNormalizeEH assumes that this test has been passed.  And Ssa assumes that fgNormalizeEHTable
     // has been run.  So do this unless we're in minOpts mode (and always in debug).
-    if (tiVerificationNeeded || !opts.MinOpts())
+    if (!opts.MinOpts())
 #endif
     {
         fgCheckBasicBlockControlFlow();

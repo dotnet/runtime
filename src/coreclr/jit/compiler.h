@@ -8084,7 +8084,6 @@ public:
                        CORINFO_RESOLVED_TOKEN* pConstrainedToken,
                        CORINFO_CALLINFO_FLAGS  flags,
                        CORINFO_CALL_INFO*      pResult);
-    inline CORINFO_CALLINFO_FLAGS addVerifyFlag(CORINFO_CALLINFO_FLAGS flags);
 
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
@@ -10715,12 +10714,6 @@ public:
     */
 
 public:
-    // Set to true if verification cannot be skipped for this method
-    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
-    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
-    // bool tiVerificationNeeded;
-    static const bool tiVerificationNeeded = false;
-
     // Returns true if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
     // for example, signatures. For example, the permanent home byref (byref that

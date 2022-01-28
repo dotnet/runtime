@@ -5625,10 +5625,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
     assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
-
-    assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
     /* Setup an error trap */
 
@@ -6156,17 +6153,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                 eeGetMethodFullName(info.compMethodHnd), dspPtr(impTokenLookupContextHandle)));
     }
 
-    if (tiVerificationNeeded)
-    {
-        JITLOG((LL_INFO10000, "tiVerificationNeeded initially set to true for %s\n", info.compFullName));
-    }
 #endif // DEBUG
 
-    /* Since tiVerificationNeeded can be turned off in the middle of
-       compiling a method, and it might have caused blocks to be queued up
-       for reimporting, impCanReimport can be used to check for reimporting. */
-
-    impCanReimport = (tiVerificationNeeded || compStressCompile(STRESS_CHK_REIMPORT, 15));
+    impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
     /* Initialize set a bunch of global values */
 
