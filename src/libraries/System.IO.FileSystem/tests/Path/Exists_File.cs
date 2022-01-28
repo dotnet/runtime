@@ -12,14 +12,6 @@ namespace System.IO.Tests
         #region Universal
 
         [Fact]
-        public void PathEndsInTrailingSlash_AndExists()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.True(Exists(path + Path.DirectorySeparatorChar));
-        }
-
-        [Fact]
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();

@@ -79,6 +79,24 @@ namespace System.IO.Tests
             string path = GetTestFilePath() + Path.DirectorySeparatorChar;
             Assert.False(Exists(path));
         }
+
+        [Fact]
+        public void PathEndsInTrailingSlash_AndExists()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.False(Exists(path + Path.DirectorySeparatorChar));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PathEndsInAltTrailingSlash_AndExists_Windows()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.False(Exists(path + Path.DirectorySeparatorChar));
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
@@ -231,14 +249,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void PathEndsInTrailingSlash_AndExists()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.False(File.Exists(path + Path.DirectorySeparatorChar));
-        }
-
-        [Fact]
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();
@@ -260,15 +270,6 @@ namespace System.IO.Tests
             string fileName = GetTestFilePath();
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.True(File.Exists(fileName));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void PathEndsInAltTrailingSlash_AndExists_Windows()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            Assert.False(File.Exists(path + Path.DirectorySeparatorChar));
         }
 
         #endregion
