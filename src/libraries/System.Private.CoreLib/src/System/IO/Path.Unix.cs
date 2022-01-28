@@ -16,11 +16,7 @@ namespace System.IO
         // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             if (path.Contains('\0'))
                 throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));

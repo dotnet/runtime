@@ -137,9 +137,6 @@
   <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
     <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
   </data>
-  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
-    <value>The hash algorithm name cannot be null or empty.</value>
-  </data>
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
   </data>

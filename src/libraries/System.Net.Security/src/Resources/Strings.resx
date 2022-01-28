@@ -266,9 +266,6 @@
   <data name="security_ExtendedProtectionPolicy_NoEmptyServiceNameCollection" xml:space="preserve">
     <value>The ServiceNameCollection must contain at least one service name.</value>
   </data>
-  <data name="security_ServiceNameCollection_EmptyServiceName" xml:space="preserve">
-    <value>A service name must not be null or empty.</value>
-  </data>
   <data name="net_allocate_ssl_context_failed" xml:space="preserve">
     <value>Failed to allocate SSL/TLS context, OpenSSL error - {0}.</value>
   </data>

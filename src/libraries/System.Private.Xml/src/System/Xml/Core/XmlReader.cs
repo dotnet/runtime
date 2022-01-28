@@ -1635,12 +1635,7 @@ namespace System.Xml
         // Creates an XmlReader for parsing XML from the given Uri.
         public static XmlReader Create(string inputUri)
         {
-            ArgumentNullException.ThrowIfNull(inputUri);
-
-            if (inputUri.Length == 0)
-            {
-                throw new ArgumentException(SR.XmlConvert_BadUri, nameof(inputUri));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(inputUri);
 
             // Avoid using XmlReader.Create(string, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.

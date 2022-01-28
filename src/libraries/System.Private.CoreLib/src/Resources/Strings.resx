@@ -1005,17 +1005,11 @@
   <data name="Argument_EmitWriteLineType" xml:space="preserve">
     <value>EmitWriteLine does not support this field or local type.</value>
   </data>
-  <data name="Argument_EmptyDecString" xml:space="preserve">
-    <value>Decimal separator cannot be the empty string.</value>
-  </data>
   <data name="Argument_EmptyFileName" xml:space="preserve">
     <value>Empty file name is not legal.</value>
   </data>
   <data name="Argument_EmptyName" xml:space="preserve">
     <value>Empty name is not legal.</value>
-  </data>
-  <data name="Argument_EmptyPath" xml:space="preserve">
-    <value>Empty path name is not legal.</value>
   </data>
   <data name="Argument_EmptyWaithandleArray" xml:space="preserve">
     <value>Waithandle array may not be empty.</value>
@@ -1482,9 +1476,6 @@
   </data>
   <data name="Argument_StringFirstCharIsZero" xml:space="preserve">
     <value>The first char in the string is the null character.</value>
-  </data>
-  <data name="Argument_StringZeroLength" xml:space="preserve">
-    <value>String cannot be of zero length.</value>
   </data>
   <data name="Argument_StructMustNotBeValueClass" xml:space="preserve">
     <value>The structure must not be a value class.</value>

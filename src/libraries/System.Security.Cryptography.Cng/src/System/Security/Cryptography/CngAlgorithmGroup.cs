@@ -18,11 +18,7 @@ namespace System.Security.Cryptography
     {
         public CngAlgorithmGroup(string algorithmGroup)
         {
-            if (algorithmGroup == null)
-                throw new ArgumentNullException(nameof(algorithmGroup));
-            if (algorithmGroup.Length == 0)
-                throw new ArgumentException(SR.Format(SR.Cryptography_InvalidAlgorithmGroup, algorithmGroup), nameof(algorithmGroup));
-
+            ArgumentException.ThrowIfNullOrEmpty(algorithmGroup);
             _algorithmGroup = algorithmGroup;
         }
 
