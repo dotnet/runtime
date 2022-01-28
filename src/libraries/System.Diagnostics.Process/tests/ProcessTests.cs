@@ -267,11 +267,16 @@ namespace System.Diagnostics.Tests
                 {
                     if (px != null) // sometimes process is null
                     {
-                        Assert.Equal("notepad", px.ProcessName);
-
-                        px.Kill();
-                        Assert.True(px.WaitForExit(WaitInMS));
-                        px.WaitForExit(); // wait for event handlers to complete
+                        try
+                        {
+                            Assert.Equal("notepad", px.ProcessName.ToLower());
+                        }
+                        finally
+                        {
+                            px.Kill();
+                            Assert.True(px.WaitForExit(WaitInMS));
+                            px.WaitForExit(); // wait for event handlers to complete
+                        }
                     }
                 }
             }

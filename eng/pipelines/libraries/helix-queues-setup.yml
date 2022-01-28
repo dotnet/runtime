@@ -82,6 +82,10 @@ jobs:
         # Limiting interp runs as we don't need as much coverage.
         - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
 
+    # Linux s390x
+    - ${{ if eq(parameters.platform, 'Linux_s390x') }}:
+        - Ubuntu.2004.S390X.Experimental.Open
+
     # OSX arm64
     - ${{ if eq(parameters.platform, 'OSX_arm64') }}:
       - OSX.1100.ARM64.Open

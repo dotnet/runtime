@@ -446,6 +446,7 @@
     <Compile Include="System\Xml\Serialization\CodeIdentifiers.cs" />
     <Compile Include="System\Xml\Serialization\Compilation.cs" />
     <Compile Include="System\Xml\Serialization\Compiler.cs" />
+    <Compile Include="System\Xml\Serialization\ContextAwareTables.cs" />
     <Compile Include="System\Xml\Serialization\ImportContext.cs" />
     <Compile Include="System\Xml\Serialization\indentedWriter.cs" />
     <Compile Include="System\Xml\Serialization\IXmlSerializable.cs" />
@@ -565,6 +566,7 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
