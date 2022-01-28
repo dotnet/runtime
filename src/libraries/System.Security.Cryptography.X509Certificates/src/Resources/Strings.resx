@@ -115,12 +115,6 @@
   <data name="Chain_RevocationStatusUnknown" xml:space="preserve">
     <value>The certificate's revocation status could not be determined.</value>
   </data>
-  <data name="Chain_SettingNotSupported" xml:space="preserve">
-    <value>The certificate chain setting '{0}' is not supported on this platform.</value>
-  </data>
-  <data name="Chain_VerificationFlagNotSupported" xml:space="preserve">
-    <value>The verification flag '{0}' is not supported on this platform.</value>
-  </data>
   <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
     <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
   </data>
@@ -135,9 +129,6 @@
   </data>
   <data name="Cryptography_CertReq_DatesReversed" xml:space="preserve">
     <value>The provided notBefore value is later than the notAfter value.</value>
-  </data>
-  <data name="Cryptography_CertReq_DateTooOld" xml:space="preserve">
-    <value>The value predates 1950 and has no defined encoding.</value>
   </data>
   <data name="Cryptography_CertReq_DuplicateExtension" xml:space="preserve">
     <value>An X509Extension with OID '{0}' has already been specified.</value>
@@ -195,9 +186,6 @@
   </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
-  </data>
-  <data name="Cryptography_InvalidPublicKey_Object" xml:space="preserve">
-    <value>The provided PublicKey object is invalid, valid Oid and EncodedKeyValue property values are required.</value>
   </data>
   <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
     <value>The specified RSA parameters are not valid. Exponent and Modulus are required. If D is present, it must have the same length as Modulus. If D is present, P, Q, DP, DQ, and InverseQ are required and must have half the length of Modulus, rounded up, otherwise they must be omitted.</value>
@@ -349,9 +337,6 @@
   <data name="NotSupported_ECDiffieHellman_Csp" xml:space="preserve">
     <value>CryptoApi ECDiffieHellman keys are not supported.</value>
   </data>
-  <data name="NotSupported_Export_MultiplePrivateCerts" xml:space="preserve">
-    <value>Only one certificate with a private key can be exported in a single PFX.</value>
-  </data>
   <data name="NotSupported_KeyAlgorithm" xml:space="preserve">
     <value>The certificate key algorithm is not supported.</value>
   </data>
@@ -429,30 +414,6 @@
   </data>
   <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
     <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
-  </data>
-  <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
-    <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
-  </data>
-  <data name="Cryptography_Asn_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
-    <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>
-  </data>
-  <data name="Cryptography_Asn_NamedBitListRequiresFlagsEnum" xml:space="preserve">
-    <value>Named bit list operations require an enum with the [Flags] attribute.</value>
-  </data>
-  <data name="Cryptography_Asn_NamedBitListValueTooBig" xml:space="preserve">
-    <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
-  </data>
-  <data name="Cryptography_Asn_UniversalValueIsFixed" xml:space="preserve">
-    <value>Tags with TagClass Universal must have the appropriate TagValue value for the data type being read or written.</value>
-  </data>
-  <data name="Cryptography_Asn_UnusedBitCountRange" xml:space="preserve">
-    <value>Unused bit count must be between 0 and 7, inclusive.</value>
-  </data>
-  <data name="Cryptography_AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
-    <value>Encode cannot be called while a Sequence or SetOf is still open.</value>
-  </data>
-  <data name="Cryptography_AsnWriter_PopWrongTag" xml:space="preserve">
-    <value>Cannot pop the requested tag as it is not currently in progress.</value>
   </data>
   <data name="Cryptography_NotValidPublicOrPrivateKey" xml:space="preserve">
     <value>Key is not a valid public or private key.</value>

@@ -3353,9 +3353,9 @@ namespace System.Text.RegularExpressions.Generator
                 if (!needsCulture)
                 {
                     int[] codes = rm.Code.Codes;
-                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize(codes[codepos]))
+                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize((RegexOpcode)codes[codepos]))
                     {
-                        if ((codes[codepos] & RegexCode.Ci) == RegexCode.Ci)
+                        if (((RegexOpcode)codes[codepos] & RegexOpcode.CaseInsensitive) == RegexOpcode.CaseInsensitive)
                         {
                             needsCulture = true;
                             break;
@@ -3710,7 +3710,7 @@ namespace System.Text.RegularExpressions.Generator
                 RegexCharClass.NotWordClass => "any character other than a word character",
                 RegexCharClass.SpaceClass => "a whitespace character",
                 RegexCharClass.WordClass => "a word character",
-                _ => $"a character in the set {RegexCharClass.SetDescription(charClass)}",
+                _ => $"a character in the set {RegexCharClass.DescribeSet(charClass)}",
             };
 
         /// <summary>Writes a textual description of the node tree fit for rending in source.</summary>
