@@ -421,10 +421,22 @@ OSR methods show up normally in the stack, unless execution is paused
 in the OSR epilog (working on this). You will only see one entry for
 a Tier0 method that's transitioned to an OSR method.
 
+## OSR and Performance
 
+As noted above, the combination of `QJFL=1` and `OSR=1` will typically provide better startup and comparable of better steady-state. But it's also possible
+to spend considerable time in OSR methods (eg the all-in-`Main` benchmark).
 
+Generally speaking the performance of an OSR method should be comparable to the equivalent Tier1 method. In practice we see variations of +/- 20% or so. There are a number or reasons for this:
+* OSR methods are often a subset of the full Tier1 method, and in many cases just comprise one loop. The JIT can often generate much better code for a single loop in isolation than a single loop in a more complex method.
+* A few optimizations are disabled in OSR methods, notably struct promotion.
+* OSR methods may only see fractional PGO data (as parts of the Tier0 method may not have executed yet). The JIT doesn't cope very well yet with this sort of partial PGO coverage.
 
+### Impact on BenchmarkDotNet Results
 
+BenchmarkDotNet (BDN) typically does a pretty good job of ensuring that measurements are made on the most optimized version of a method. Usually this is the Tier1 version. As such, we don't expect to see OSR have much impact on BDN derived results.
 
+However, one can configure BenchmarkDotNet in ways that make it more likely that it will measure OSR methods, or some combination of OSR and Tier1 -- in particular reducing the number of warmup iterations. By default a method must be called 30 times to be rejitted at Tier1. So if BDN benchmark is run with less than 30 iterations, there's a chance it may not be measuring Tier1 code for all methods. And when OSR is enabled, this will often mean measuring OSR method perf.
 
+This happens more often with benchmarks that either (a) do a lot of internal looping to boost the elapsed time of a measurement interval, rather than relying on BDN to determine the appropriate iteration strategy, or (b) are very long running, so that BDN determines that it does not need to run many iterations to obtain measurements of "significant" duration (250 ms or so).
 
+In the performance repo configurations we reduce the number of warmup iterations and have some benchmarks that fall into both categories above. We'll likely need to make some adjustment to these benchmarks to ensure that we're measuring Tier1 code performance.
