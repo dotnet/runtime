@@ -139,8 +139,8 @@ extern "C" void PopulateDebugHeaders()
     size_t currentDebugPos = 0;
     size_t currentGlobalPos = 0;
 
-    ZeroMemory(s_DebugEntries, DebugTypeEntriesArraySize);
-    ZeroMemory(s_GlobalEntries, GlobalEntriesArraySize);
+    ZeroMemory(s_DebugEntries, sizeof(s_DebugEntries));
+    ZeroMemory(s_GlobalEntries, sizeof(s_GlobalEntries));
 
     MAKE_SIZE_ENTRY(GcDacVars);
     MAKE_DEBUG_FIELD_ENTRY(GcDacVars, major_version_number);
