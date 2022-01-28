@@ -1550,7 +1550,7 @@ namespace System
                 return;
             }
 
-            if (typeof(T).IsValueType)
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
