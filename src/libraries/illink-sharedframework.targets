@@ -57,6 +57,7 @@
         ToolPath="$(_DotNetHostDirectory)" />
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(SharedFrameworkAssembliesMarkerFile)'))" />
     <Touch Files="$(SharedFrameworkAssembliesMarkerFile)"
            AlwaysCreate="true" />
 
