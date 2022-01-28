@@ -1749,6 +1749,16 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted)
 
 		do {
 			ret = clock_nanosleep (CLOCK_MONOTONIC, TIMER_ABSTIME, &target, NULL);
+#if HOST_ANDROID
+		/*
+		 * Although clock_nanosleep should never return a negative value according
+		 * to the POSIX specification, older versions of Android libc return -1
+		 * and set errno on failure instead of returning the errno directly.
+		 * See https://github.com/xamarin/xamarin-android/issues/6600
+		 */
+		if (ret == -1)
+			ret = errno;
+#endif
 		} while (ret != 0);
 #elif HOST_WIN32
 		Sleep (ms);
