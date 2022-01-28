@@ -830,6 +830,26 @@ namespace DebuggerTests
         }
 
         [Fact]
+        public async Task GetSourceEmbeddedSource()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+
+            var sourceToGet = JObject.FromObject(new
+            {
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
+            });
+
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
+        }
+
+        [Fact]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
