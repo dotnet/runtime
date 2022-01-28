@@ -300,12 +300,6 @@
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>
-  <data name="Cryptography_InvalidAlgorithmGroup" xml:space="preserve">
-    <value>The algorithm group '{0}' is invalid.</value>
-  </data>
-  <data name="Cryptography_InvalidAlgorithmName" xml:space="preserve">
-    <value>The algorithm name '{0}' is invalid.</value>
-  </data>
   <data name="Cryptography_InvalidBlockSize" xml:space="preserve">
     <value>Specified block size is not valid for this algorithm.</value>
   </data>
@@ -384,9 +378,6 @@
   <data name="Cryptography_InvalidKey_Weak" xml:space="preserve">
     <value>Specified key is a known weak key for '{0}' and cannot be used.</value>
   </data>
-  <data name="Cryptography_InvalidKeyBlobFormat" xml:space="preserve">
-    <value>The key blob format '{0}' is invalid.</value>
-  </data>
   <data name="Cryptography_InvalidKeySize" xml:space="preserve">
     <value>Specified key is not a valid size for this algorithm.</value>
   </data>
@@ -404,9 +395,6 @@
   </data>
   <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
     <value>Specified padding mode is not valid for this algorithm.</value>
-  </data>
-  <data name="Cryptography_InvalidProviderName" xml:space="preserve">
-    <value>The provider name '{0}' is invalid.</value>
   </data>
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
