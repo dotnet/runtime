@@ -5,7 +5,7 @@
 
     <PropertyGroup>
       <OOBAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</OOBAssembliesTrimmedArtifactsPath>
-      <OOBAssembliesMarkerFile>$(IntermediateOutputPath)oob-linker-$(TargetOS)-marker.txt</OOBAssembliesMarkerFile>
+      <OOBAssembliesMarkerFile>$(IntermediateOutputPath)oob-linker-$(TargetOS)-$(TargetArchitecture)-marker.txt</OOBAssembliesMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
