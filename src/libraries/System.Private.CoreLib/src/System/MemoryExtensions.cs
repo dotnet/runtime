@@ -1543,6 +1543,7 @@ namespace System
         /// <summary>
         /// Reverses the sequence of the elements in the entire span.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(this Span<T> span)
         {
             if (span.Length <= 1)
@@ -1573,7 +1574,11 @@ namespace System
                     return;
                 }
             }
+            ReverseInner<T>(span);
+        }
 
+        private static void ReverseInner<T>(this Span<T> span)
+        {
             ref T first = ref MemoryMarshal.GetReference(span);
             ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, span.Length), -1);
             do

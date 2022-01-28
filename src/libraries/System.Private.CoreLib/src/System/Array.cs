@@ -1637,6 +1637,7 @@ namespace System
         // located at index length - i - 1, where length is the
         // length of the array.
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse(Array array)
         {
             if (array == null)
@@ -1718,6 +1719,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(T[] array)
         {
             if (array == null)
@@ -1725,6 +1727,7 @@ namespace System
             Reverse(array, 0, array.Length);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Reverse<T>(T[] array, int index, int length)
         {
             if (array == null)
@@ -1739,6 +1742,34 @@ namespace System
             if (length <= 1)
                 return;
 
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    SpanHelpers.ReverseByteRef(ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                {
+                    SpanHelpers.ReverseCharRef(ref Unsafe.As<T, char>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    SpanHelpers.ReverseInt32Ref(ref Unsafe.As<T, int>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    SpanHelpers.ReverseInt64Ref(ref Unsafe.As<T, long>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index)), length);
+                    return;
+                }
+            }
+            ReverseInner(array, index, length);
+        }
+
+        private static void ReverseInner<T>(T[] array, int index, int length)
+        {
             ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
             ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
             do
