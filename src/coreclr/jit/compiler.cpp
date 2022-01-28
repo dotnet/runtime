@@ -6396,9 +6396,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Honor the config setting that tells the jit to
         // always optimize methods with loops.
         //
-        // If that's not set, and OSR is enabled, the jit may still
+        // If neither of those apply, and OSR is enabled, the jit may still
         // decide to optimize, if there's something in the method that
-        // OSR currently cannot handle.
+        // OSR currently cannot handle, or we're optionally suppressing
+        // OSR by method hash.
         //
         const char* reason = nullptr;
 
@@ -6406,35 +6407,42 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             reason = "tail.call and not BBINSTR";
         }
-        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
-            if (compHasBackwardJump)
-            {
-                reason = "loop";
-            }
+            reason = "loop";
         }
-        else if (JitConfig.TC_OnStackReplacement() > 0)
+
+        if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const bool patchpointsOK = compCanHavePatchpoints(&reason);
-            assert(patchpointsOK || (reason != nullptr));
+            const char* noPatchpointReason = nullptr;
+            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
-            // Optionally disable OSR by method hash.
-            //
-            if (patchpointsOK && compHasBackwardJump)
+            if (canEscapeViaOSR)
             {
+                // Optionally disable OSR by method hash. This will force any
+                // method that might otherwise get trapped in Tier0 to be optimized.
+                //
                 static ConfigMethodRange JitEnableOsrRange;
                 JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
                 const unsigned hash = impInlineRoot()->info.compMethodHash();
                 if (!JitEnableOsrRange.Contains(hash))
                 {
-                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
-                    JITDUMPEXEC(JitEnableOsrRange.Dump());
-                    JITDUMP("\n");
-                    reason = "OSR disabled by JitEnableOsrRange";
+                    canEscapeViaOSR = false;
+                    reason          = "OSR disabled by JitEnableOsrRange";
                 }
             }
 #endif
+
+            if (canEscapeViaOSR)
+            {
+                JITDUMP("\nOSR enabled for this method\n");
+            }
+            else
+            {
+                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                assert(reason != nullptr);
+            }
         }
 
         if (reason != nullptr)

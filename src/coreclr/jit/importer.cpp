@@ -9540,6 +9540,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                 // Take care to pass raw IL offset here as the 'debug info' might be different for
                                 // inlinees.
                                 rawILOffset);
+
+            // Devirtualization may change which method gets invoked. Update our local cache.
+            //
+            methHnd = callInfo->hMethod;
         }
 
         if (impIsThis(obj))
@@ -11803,9 +11807,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    // Is OSR enabled?
+    bool enablePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+
+#ifdef DEBUG
+
+    // Optionally suppress patchpoints by method hash
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0))
+    static ConfigMethodRange JitEnablePatchpointRange;
+    JitEnablePatchpointRange.EnsureInit(JitConfig.JitEnablePatchpointRange());
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitEnablePatchpointRange.Contains(hash);
+    enablePatchpoints &= inRange;
+
+#endif // DEBUG
+
+    if (enablePatchpoints)
     {
         // We don't inline at Tier0, if we do, we may need rethink our approach.
         // Could probably support inlines that don't introduce flow.
@@ -11820,13 +11836,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         //
         if (!compTailPrefixSeen)
         {
-            assert(compCanHavePatchpoints());
-
             // The normaly policy is only to add patchpoints to the targets of lexically
             // backwards branches.
             //
             if (compHasBackwardJump)
             {
+                assert(compCanHavePatchpoints());
+
                 // Is the start of this block a suitable patchpoint?
                 //
                 if (((block->bbFlags & BBF_BACKWARD_JUMP_TARGET) != 0) && (verCurrentState.esStackDepth == 0))
@@ -11857,8 +11873,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         const bool tryOffsetOSR = offsetOSR >= 0;
         const bool tryRandomOSR = randomOSR > 0;
 
-        if ((tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) && !block->hasHndIndex() &&
-            ((block->bbFlags & BBF_PATCHPOINT) == 0))
+        if (compCanHavePatchpoints() && (tryOffsetOSR || tryRandomOSR) && (verCurrentState.esStackDepth == 0) &&
+            !block->hasHndIndex() && ((block->bbFlags & BBF_PATCHPOINT) == 0))
         {
             // Block start can have a patchpoint. See if we should add one.
             //
