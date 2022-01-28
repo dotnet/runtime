@@ -270,7 +270,7 @@ namespace System.Net.Security
 
             try
             {
-                if (_decryptedBytesCount is not 0)
+                if ((_decryptedBytesCount | _internalBufferCount) != 0)
                 {
                     throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
                 }
