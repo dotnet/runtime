@@ -174,11 +174,14 @@ fix_libc_name (const char *name)
 
 /**
  * mono_dl_open_self:
- * \param error_msg pointer for error message on failure
+ * \param error pointer to MonoError
  *
  * Returns a handle to the main program, on android x86 it's not possible to
  * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
  * handle in this platform.
+ * \p error points to MonoError where an error will be stored in
+ * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
+ * \returns a \c MonoDl pointer on success, NULL on failure.
  */
 MonoDl*
 mono_dl_open_self (MonoError *error)
@@ -186,8 +189,6 @@ mono_dl_open_self (MonoError *error)
 
 #if defined(TARGET_ANDROID) && !defined(WIN32)
 	MonoDl *module;
-	if (error_msg)
-		*error_msg = NULL;
 	module = (MonoDl *) g_malloc (sizeof (MonoDl));
 	if (!module) {
 		mono_error_set_out_of_memory (error, NULL);
@@ -250,7 +251,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, MonoError
 
 	if (!lib && !is_ok (load_error) && mono_error_get_error_code (load_error) == MONO_ERROR_BAD_IMAGE) {
 		char *error_msg = mono_dl_current_error_string ();
-		mono_error_set_error (error, MONO_ERROR_BAD_IMAGE, error_msg);
+		mono_error_set_error (error, MONO_ERROR_BAD_IMAGE, "%s", error_msg);
 		g_free (error_msg);
 		mono_error_cleanup (load_error);
 		return NULL;
@@ -327,7 +328,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, MonoError
 		}
 		if (!lib) {
 			char *error_msg = mono_dl_current_error_string ();
-			mono_error_set_error (error, MONO_ERROR_FILE_NOT_FOUND, error_msg);
+			mono_error_set_error (error, MONO_ERROR_FILE_NOT_FOUND, "%s", error_msg);
 			g_free (error_msg);
 			g_free (module);
 			return NULL;
@@ -368,7 +369,7 @@ mono_dl_symbol (MonoDl *module, const char *name, MonoError *error)
 	}
 
 	err = (module->dl_fallback != NULL) ? err :  mono_dl_current_error_string ();
-	mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", err);
+	mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s", err);
 	g_free (err);
 
 	return NULL;
