@@ -327,12 +327,9 @@ internal static partial class Interop
                         Crypto.ErrClearError();
                     }
 
-                    if (sslAuthenticationOptions.CertSelectionDelegate != null && sslAuthenticationOptions.CertificateContext == null)
-                    {
-                        // We don't have certificate but we have callback. We should wait for remote certificate and
-                        // possible trusted issuer list.
-                        Interop.Ssl.SslSetClientCertCallback(sslHandle, 1);
-                    }
+                    // Set client cert callback, this will interrupt the handshake with SecurityStatusPalErrorCode.CredentialsNeeded
+                    // if server actually requests a certificate.
+                    Ssl.SslSetClientCertCallback(sslHandle, 1);
                 }
 
                 if (sslAuthenticationOptions.IsServer && sslAuthenticationOptions.RemoteCertRequired)

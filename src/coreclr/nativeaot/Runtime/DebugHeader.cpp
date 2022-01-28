@@ -109,7 +109,8 @@ struct DotNetRuntimeDebugHeader
 #ifdef TARGET_WINDOWS
 #pragma comment (linker, "/EXPORT:DotNetRuntimeDebugHeader,DATA")
 #endif
-extern "C" DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
+extern "C" struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader;
+struct DotNetRuntimeDebugHeader DotNetRuntimeDebugHeader = {};
 
 #define MAKE_DEBUG_ENTRY(TypeName, FieldName, Value)                             \
     do                                                                           \

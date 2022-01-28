@@ -471,8 +471,16 @@ CONFIG_INTEGER(JitOffsetOnStackReplacement, W("JitOffsetOnStackReplacement"), -1
 #endif // debug
 
 #if defined(DEBUG)
-CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange")) // Enable osr for only some methods
-#endif                                                   // debug
+// EnableOsrRange allows you to limit the set of methods that will rely on OSR to escape
+// from Tier0 code. Methods outside the range that would normally be jitted at Tier0
+// and have patchpoints will instead be switched to optimized.
+CONFIG_STRING(JitEnableOsrRange, W("JitEnableOsrRange"))
+// EnablePatchpointRange allows you to limit the set of Tier0 methods that
+// will have patchpoints, and hence control which methods will create OSR methods.
+// Unlike EnableOsrRange, it will not alter the optimization setting for methods
+// outside the enabled range.
+CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
+#endif
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)

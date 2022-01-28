@@ -4844,7 +4844,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
+    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -5945,7 +5945,7 @@ public:
 
     bool fgReorderBlocks();
 
-    void fgDetermineFirstColdBlock();
+    PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
@@ -6931,7 +6931,7 @@ public:
         }
 
 #ifdef DEBUG
-        void lpValidatePreHeader()
+        void lpValidatePreHeader() const
         {
             // If this is called, we expect there to be a pre-header.
             assert(lpFlags & LPFLG_HAS_PREHEAD);
@@ -6991,6 +6991,8 @@ public:
                        BasicBlock*   bottom,
                        BasicBlock*   exit,
                        unsigned char exitCnt);
+
+    void optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
@@ -8082,7 +8084,6 @@ public:
                        CORINFO_RESOLVED_TOKEN* pConstrainedToken,
                        CORINFO_CALLINFO_FLAGS  flags,
                        CORINFO_CALL_INFO*      pResult);
-    inline CORINFO_CALLINFO_FLAGS addVerifyFlag(CORINFO_CALLINFO_FLAGS flags);
 
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
@@ -10713,12 +10714,6 @@ public:
     */
 
 public:
-    // Set to true if verification cannot be skipped for this method
-    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
-    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
-    // bool tiVerificationNeeded;
-    static const bool tiVerificationNeeded = false;
-
     // Returns true if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
     // for example, signatures. For example, the permanent home byref (byref that

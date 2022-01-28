@@ -4176,6 +4176,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
+                case GT_CLS_VAR:
 
                     // We evaluate op2 before op1
                     bReverseInAssignment = true;
@@ -22024,8 +22025,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    GenTree* lclVarTree = nullptr;
-    return OperIsConst() || Compiler::impIsAddressInLocal(this, &lclVarTree);
+    return OperIsConst() || Compiler::impIsAddressInLocal(this);
 }
 
 //------------------------------------------------------------------------

@@ -95,6 +95,9 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.OleDateTime:
                     return context.GetWellKnownType(WellKnownType.Double);
 
+                case MarshallerKind.FailedTypeLoad:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
+
                 case MarshallerKind.SafeHandle:
                 case MarshallerKind.CriticalHandle:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
@@ -456,7 +459,7 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.Array:
                         {
                             if (isField)
-                                return MarshallerKind.Invalid;
+                                return MarshallerKind.FailedTypeLoad;
 
                             var arrayType = (ArrayType)type;
 
@@ -583,6 +586,8 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsObject)
             {
+                if (nativeType == NativeTypeKind.AsAny && isField)
+                    return MarshallerKind.FailedTypeLoad;
                 if (nativeType == NativeTypeKind.AsAny)
                     return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
                 else

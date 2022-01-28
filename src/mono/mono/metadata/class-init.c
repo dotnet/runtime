@@ -2017,6 +2017,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		min_align = 16;
 	 */
 
+	/* Respect the specified packing size at least to the extent necessary to align double variables.
+	 * This should avoid any GC problems, and will allow packing_size to be respected to support
+	 * CreateSpan<T>
+	 */
+	min_align = MIN (MONO_ABI_ALIGNOF (double), MAX (min_align, packing_size));
+
 	/*
 	 * When we do generic sharing we need to have layout
 	 * information for open generic classes (either with a generic

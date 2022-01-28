@@ -17,12 +17,6 @@
 #include "clrversion.h"
 #include "../dlls/mscorrc/resource.h"
 #include "ex.h"
-#if !defined(FEATURE_CORESYSTEM)
-#undef NTDDI_VERSION
-#define NTDDI_VERSION NTDDI_WIN7
-#include "commctrl.h"
-#endif
-
 
 BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 {
@@ -193,48 +187,46 @@ int UtilMessageBoxNonLocalizedVA(
         }
 
 #if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-        // If the current process isn't interactive (a service for example), then we report the message
-        // in the event log and via OutputDebugString.
+#ifdef HOST_UNIX
+        // For non-interactive processes, we report the message in the event log and via OutputDebugString.
         //
         // We may still however attempt to display the message box if the MB_SERVICE_NOTIFICATION
         // message box style was specified.
-        if (!RunningInteractive())
+        StackSString message;
+
+        message.Printf(W(".NET Runtime version : %s - "), CLR_PRODUCT_VERSION_L);
+        if (lpTitle)
+            message.Append(lpTitle);
+        if (!formattedMessage.IsEmpty())
+            message.Append(formattedMessage);
+
+        ClrReportEvent(W(".NET Runtime"),
+            EVENTLOG_ERROR_TYPE,    // event type
+            0,                      // category zero
+            1024,                   // event identifier
+            NULL,                   // no user security identifier
+            message.GetUnicode());
+
+        if(lpTitle != NULL)
+            WszOutputDebugString(lpTitle);
+        if(!formattedMessage.IsEmpty())
+            WszOutputDebugString(formattedMessage);
+
+        // If we are running as a service and displayForNonInteractive is FALSE then IDABORT is
+        // the best value to return as it will most likely cause callers of this API to abort the process.
+        // This is the right thing to do since attaching a debugger doesn't make much sense when the process isn't
+        // running in interactive mode.
+        if(!displayForNonInteractive)
         {
-            StackSString message;
-
-            message.Printf(W(".NET Runtime version : %s - "), CLR_PRODUCT_VERSION_L);
-            if (lpTitle)
-                message.Append(lpTitle);
-            if (!formattedMessage.IsEmpty())
-                message.Append(formattedMessage);
-
-            ClrReportEvent(W(".NET Runtime"),
-                EVENTLOG_ERROR_TYPE,    // event type
-                0,                      // category zero
-                1024,                   // event identifier
-                NULL,                   // no user security identifier
-                message.GetUnicode());
-
-            if(lpTitle != NULL)
-                WszOutputDebugString(lpTitle);
-            if(!formattedMessage.IsEmpty())
-                WszOutputDebugString(formattedMessage);
-
-            // If we are running as a service and displayForNonInteractive is FALSE then IDABORT is
-            // the best value to return as it will most likely cause callers of this API to abort the process.
-            // This is the right thing to do since attaching a debugger doesn't make much sense when the process isn't
-            // running in interactive mode.
-            if(!displayForNonInteractive)
-            {
-                fDisplayMsgBox = FALSE;
-                result = IDABORT;
-            }
-            else
-            {
-                // Include in the MB_DEFAULT_DESKTOP_ONLY style.
-                uType |= MB_DEFAULT_DESKTOP_ONLY;
-            }
+            fDisplayMsgBox = FALSE;
+            result = IDABORT;
         }
+        else
+        {
+            // Include in the MB_DEFAULT_DESKTOP_ONLY style.
+            uType |= MB_DEFAULT_DESKTOP_ONLY;
+        }
+#endif // HOST_UNIX
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 
         if (fDisplayMsgBox)

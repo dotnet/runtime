@@ -177,9 +177,6 @@
   <data name="InvalidOperation_PipeHandleNotSet" xml:space="preserve">
     <value>Pipe handle has not been set.  Did your PipeStream implementation call InitializeHandle?</value>
   </data>
-  <data name="InvalidOperation_PipeNotAsync" xml:space="preserve">
-    <value>Pipe is not opened in asynchronous mode.</value>
-  </data>
   <data name="InvalidOperation_PipeReadModeNotMessage" xml:space="preserve">
     <value>ReadMode is not of PipeTransmissionMode.Message.</value>
   </data>
