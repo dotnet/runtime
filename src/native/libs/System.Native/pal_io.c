@@ -1193,12 +1193,9 @@ static bool SupportsCopyFileRange()
         struct utsname name;
         if (uname(&name) == 0)
         {
-            if (name.release[0] && name.release[1] &&
-                (name.release[1] != '.' ||
-                 name.release[0] > '5'  ||
-                 (name.release[0] == '5' && name.release[2] && name.release[3] &&
-                     (name.release[3] != '.' ||
-                      name.release[2] >= '3'))))
+            unsigned int major = 0, minor = 0;
+            sscanf(name.release, "%u.%u", &major, &minor);
+            if (major > 5 || (major == 5 && minor >=3))
             {
                 isSupported = CopyFileRange(-1, -1, 0) == -1 && errno != ENOSYS ? 1 : -1;
             }
