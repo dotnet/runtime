@@ -2753,7 +2753,7 @@ namespace System.Net.Http.Functional.Tests
             HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.GetAsync($"{(useSsl ? "https" : "http")}://nowhere.invalid/foo"));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectCallback_SslStream_OK(bool useSslStream)
@@ -2803,7 +2803,7 @@ namespace System.Net.Http.Functional.Tests
                 }, options: new GenericLoopbackOptions{UseSsl = true});
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public async Task ConnectCallback_DerivedSslStream_OK()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
