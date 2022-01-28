@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection.Extensions
 {
@@ -699,6 +700,50 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
             }
 
             collection.Add(descriptor);
+            return collection;
+        }
+
+        /// <summary>
+        /// hehzer
+        /// </summary>
+        /// <typeparam name="TService"></typeparam>
+        /// <typeparam name="TOldImplementation"></typeparam>
+        /// <typeparam name="TNewImplementation"></typeparam>
+        /// <param name="collection"></param>
+        /// <param name="onlyFirst"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        public static IServiceCollection Replace<TService, TOldImplementation, TNewImplementation>(this IServiceCollection collection, bool onlyFirst = false)
+        {
+            if (collection == null)
+            {
+                throw new ArgumentNullException(nameof(collection));
+            }
+
+            var serviceType = typeof(TService);
+            var oldImplementationType = typeof(TOldImplementation);
+            var newImplementationType = typeof(TNewImplementation);
+
+            var oldDescriptors = collection.Where(service => service.ServiceType == serviceType && service.ImplementationType == oldImplementationType).ToArray();
+
+            for (int i = 0; i < oldDescriptors.Length; i++)
+            {
+                var oldDescriptor = oldDescriptors[i];
+                var index = collection.IndexOf(oldDescriptor);
+
+                // Copy the old descriptor, but replace its implementation type.
+                var newDescriptor = ServiceDescriptor.Describe(
+                    oldDescriptor.ServiceType,
+                    newImplementationType,
+                    oldDescriptor.Lifetime);
+
+                collection.Insert(index, newDescriptor);
+
+                collection.Remove(oldDescriptor);
+                if (onlyFirst)
+                    break;
+            }
+
             return collection;
         }
 
