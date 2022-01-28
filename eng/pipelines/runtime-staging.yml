@@ -303,7 +303,7 @@ jobs:
           eq(variables['isRollingBuild'], true))
       ${{ if eq(variables['isRollingBuild'], true) }}:
         # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
         extraStepsParameters:
           creator: dotnet-bot
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
@@ -518,10 +518,40 @@ jobs:
       # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
       # ${{ if eq(variables['isRollingBuild'], true) }}:
       #   # extra steps, run tests
-      #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       #   extraStepsParameters:
       #     creator: dotnet-bot
       #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Special Configurations - Rolling build only
+#
+
+#
+# Build the whole product using Mono for Android and run runtime tests with Android devices
+# Co-op GC 
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - ${{ if eq(variables['isRollingBuild'], true) }}:
+      - Linux_x64
+    jobParameters:
+      testScope: innerloop
+      nameSuffix: AllSubsets_Mono_CoOp_GC
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnvOptions="MONO_GC_SUSPEND=coop MONO_SLEEP_ABORT_LIMIT=250"
+      timeoutInMinutes: 120
+      condition: >-
+          eq(variables['isRollingBuild'], true)
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop
