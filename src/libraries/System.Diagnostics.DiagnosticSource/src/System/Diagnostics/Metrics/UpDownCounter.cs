@@ -25,20 +25,20 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         public void Add(T delta) => RecordMeasurement(delta);
 
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tag">A key-value pair tag associated with the measurement.</param>
         public void Add(T delta, KeyValuePair<string, object?> tag) => RecordMeasurement(delta, tag);
 
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
         /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
         public void Add(T delta, KeyValuePair<string, object?> tag1, KeyValuePair<string, object?> tag2) => RecordMeasurement(delta, tag1, tag2);
@@ -46,7 +46,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tag1">A first key-value pair tag associated with the measurement.</param>
         /// <param name="tag2">A second key-value pair tag associated with the measurement.</param>
         /// <param name="tag3">A third key-value pair tag associated with the measurement.</param>
@@ -55,21 +55,21 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tags">A span of key-value pair tags associated with the measurement.</param>
         public void Add(T delta, ReadOnlySpan<KeyValuePair<string, object?>> tags) => RecordMeasurement(delta, tags);
 
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tags">A list of key-value pair tags associated with the measurement.</param>
         public void Add(T delta, params KeyValuePair<string, object?>[] tags) => RecordMeasurement(delta, tags.AsSpan());
 
         /// <summary>
         /// Record the delta value of the measurement. The delta can be positive, negative or zero.
         /// </summary>
-        /// <param name="delta">The amount to be added, can be positive, negative or zero.</param>
+        /// <param name="delta">The amount to be added which can be positive, negative or zero.</param>
         /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
         public void Add(T delta, in TagList tagList) => RecordMeasurement(delta, in tagList);
     }

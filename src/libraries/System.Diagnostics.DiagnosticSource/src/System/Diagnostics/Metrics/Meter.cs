@@ -85,51 +85,51 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Create a metrics UpDownCounter object.
         /// </summary>
-        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         /// <remarks>
         /// UpDownCounter is an Instrument which supports reporting positive or negative metric values.
-        /// Example uses for Counter: reporting the change in active requests or queue size.
+        /// Example uses for UpDownCounter: reporting the change in active requests or queue size.
         /// </remarks>
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct => new UpDownCounter<T>(this, name, unit, description);
 
         /// <summary>
-        /// Create ObservableUpDownCounter object. ObservableUpDownCounter is an Instrument which reports increasing or decresing value(s) when the instrument is being observed.
+        /// Create an ObservableUpDownCounter object. ObservableUpDownCounter is an Instrument which reports increasing or decreasing value(s) when the instrument is being observed.
         /// </summary>
-        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
         /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         /// <remarks>
-        /// Example uses for ObservableUpDownCounter: process heap size and approximate number of items in a lock-free circular buffer.
+        /// Example uses for ObservableUpDownCounter: the process heap size or the approximate number of items in a lock-free circular buffer.
         /// </remarks>
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(string name, Func<T> observeValue, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableUpDownCounter<T>(this, name, observeValue, unit, description);
 
 
         /// <summary>
-        /// Create ObservableUpDownCounter object. ObservableUpDownCounter is an Instrument which reports increasing or decresing value(s) when the instrument is being observed.
+        /// Create an ObservableUpDownCounter object. ObservableUpDownCounter is an Instrument which reports increasing or decreasing value(s) when the instrument is being observed.
         /// </summary>
-        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
         /// <param name="observeValue">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" /></param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         /// <remarks>
-        /// Example uses for ObservableUpDownCounter: process heap size and approximate number of items in a lock-free circular buffer.
+        /// Example uses for ObservableUpDownCounter: the process heap size or the approximate number of items in a lock-free circular buffer.
         /// </remarks>
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(string name, Func<Measurement<T>> observeValue, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableUpDownCounter<T>(this, name, observeValue, unit, description);
 
         /// <summary>
-        /// Create ObservableUpDownCounter object. ObservableUpDownCounter is an Instrument which reports increasing or decresing value(s) when the instrument is being observed.
+        /// Create an ObservableUpDownCounter object. ObservableUpDownCounter is an Instrument which reports increasing or decreasing value(s) when the instrument is being observed.
         /// </summary>
-        /// <param name="name">The instrument name. cannot be null.</param>
+        /// <param name="name">The instrument name. Cannot be null.</param>
         /// <param name="observeValues">The callback to call to get the measurements when the <see cref="ObservableCounter{t}.Observe" /> is called by <see cref="MeterListener.RecordObservableInstruments" />.</param>
         /// <param name="unit">Optional instrument unit of measurements.</param>
         /// <param name="description">Optional instrument description.</param>
         /// <remarks>
-        /// Example uses for ObservableUpDownCounter: process heap size and approximate number of items in a lock-free circular buffer.
+        /// Example uses for ObservableUpDownCounter: the process heap size or the approximate number of items in a lock-free circular buffer.
         /// </remarks>
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(string name, Func<IEnumerable<Measurement<T>>> observeValues, string? unit = null, string? description = null) where T : struct =>
                                         new ObservableUpDownCounter<T>(this, name, observeValues, unit, description);
