@@ -704,15 +704,17 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         }
 
         /// <summary>
-        /// hehzer
+        /// Replace all services in <see cref="IServiceCollection"/> with the same service type
+        /// as <typeparamref name="TOldImplementation"/> and adds <typeparamref name="TNewImplementation"/> to the collection.
         /// </summary>
-        /// <typeparam name="TService"></typeparam>
-        /// <typeparam name="TOldImplementation"></typeparam>
-        /// <typeparam name="TNewImplementation"></typeparam>
-        /// <param name="collection"></param>
-        /// <param name="onlyFirst"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <typeparam name="TService">The type of the service to replace.</typeparam>
+        /// <typeparam name="TOldImplementation">The old instance of the service to replace.</typeparam>
+        /// <typeparam name="TNewImplementation">The new instance of the service to add.</typeparam>
+        /// <param name="collection">The <see cref="IServiceCollection"/>.</param>
+        /// <param name="onlyFirst">Support to only replace the first <typeparamref name="TService"/> corresponding to <typeparamref name="TOldImplementation"/>
+        /// By default is false
+        /// </param>
+        /// <returns>The <see cref="IServiceCollection"/> for chaining.</returns>
         public static IServiceCollection Replace<TService, TOldImplementation, TNewImplementation>(this IServiceCollection collection, bool onlyFirst = false)
         {
             if (collection == null)
