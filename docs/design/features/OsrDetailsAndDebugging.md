@@ -38,6 +38,8 @@ version to an OSR version that is optimized. OSR versions of the
 native code for a method are unusual in many ways; we discuss this
 further below.
 
+For more detail on the OSR design, see the References section.
+
 ### Tiered Compilation
 
 OSR is built on top of Tiered Compilation, which we briefly recap.
@@ -261,25 +263,69 @@ optimized jitted method. But aside from importation, frame layout,
 pgo, and prolog/epilog codegen details bleed through in only a handful
 of places.
 
+One of these is that an OSR method will never need to zero init any locals or see undefined values for locals; all this is dealt with by the Tier0 frame. (The OSR method may still need to zero temps it has allocated).
+
 #### Frame Layout
 
-(forthcoming)
+For and OSR method, the OSR frame logically "incorporates" the Tier0 method frame. Because the OSR method has different register saves and different temporaries, there is an OSR specific portion of the frame that extends beyond the Tier0 frame.
+
+On x64, Tier0 frames are always RBP frames. On Arm64, Tier0 frames can be any of the 5 frame types the jit can create.
+
+On x64 we currently have the frame pointer (if needed) refer to the base of the OSR extension. On arm64 the frame pointer refers to the base of the Tier0 frame. This divergence is historical and we should likely fix x64 to follow the same plan as arm64.
+
+Locals corresponding to Tier0 args or locals (aka `lvaIsOSRLocal`) that have stack homes in OSR methods will use the Tier0 slot for that home in the OSR method. So it is not uncommon for the OSR method to be accessing parts of the Tier0 frame throughout its execution. Those slots are reported to GC as necessary.
+
+But often much of the Tier0 frame is effectively dead after the transition and execution of the OSR method's prolog, as the Tier0 live state is enregistered by the OSR method.
 
 #### OSR Prolog
 
-(forthcoming)
+The OSR prolog is conceptually similar to a normal method prolog, with a few key difference.
+
+When an OSR method is entered, all callee-save registers have the values they had when the Tier0 method was called, but the values in argument registers are unknown (and almost certainly not the args passed to the Tier0 method). The OSR method must initialize any live-in enregistered args or locals from the corresponding slots on the Tier0 frame. This happens in `genEnregisterOSRArgsAndLocals`.
+
+If the OSR method needs to report a generics context it uses the Tier0 frame slot; we ensure this is possible by forcing a Tier0 method with patchpoints to always report its generics context.
+
+An OSR method does not need to register function entry callbacks as it is never called; similarly it does not need to acquire the synchronous method monitor, as the Tier0 frame will have already done that.
 
 #### OSR Epilog
 
-(forthcoming)
+The OSR epilog does the following:
+* undoes the OSR contribution to the frame (SP add)
+* restores the callee-saved registers saved by the OSR prolog
+* undoes the Tier0 frame (SP add)
+* restores any Tier0 callees saves needed (x64 only, restores RPB)
+* returns to the Tier0/OSR method's caller
+
+This epilog has a non-standard format because of the two SP adjustments.
+This is currently breaking x64 epilog unwind.
+
+On Arm64 we have epilog unwind codes and the second SP adjust does not appear to cause problems.
 
 #### Funclets in OSR Methods
 
-(forthcoming)
+OSR funclets are more or less normal funclets.
+
+On Arm64, to satisfy PSPSYm reporting constraints, the funclet frame must be padded to include the Tier0 frame size. This is conceptually similar to the way the funclet frames also pad for homed varargs arguments -- in both cases the padded space is never used, it is just there to ensure the PSPSym ends up at the same caller-SP relative offset for the main function and any funclet.
+
+#### OSR Unwind Info
+
+On x64 the prolog unwind includes a phantom SP adjustment at offset 0 for the Tier0 frame.
+
+As noted above the two SP adjusts in the x64 epilog are currently causing problems if we try and unwind in the epilog. Unwinding in the prolog and method body seems to work correctly; the unwind codes properly describe what needs to be done.
+
+On arm64 there are unwind codes for epilogs and this problem does not seem to arise.
+
+When an OSR method is active, stack frames will show just that method and not the Tier0 method.
+
+#### OSR GC Info
+
+OSR GC info is standard. The only unusual aspect is that some special offsets (generics context, etc) may refer to slots in the Tier0 frame.
 
 ### Execution of an OSR Method
 
 OSR methods are never called directly; they can only be invoked by `CORINFO_HELP_PATCHPOINT` when called from a Tier0 method with patchpoints.
+
+On x64, to preserve proper stack alignment, the runtime helper will "push" a phantom return address on the stack (x64 methods assume SP is aligned 8 mod 16 on entry). This is not necessary on arm64 as calls do not push to the stack.
 
 When the OSR method returns, it cleans up both its own stack and the
 Tier0 method stack.
@@ -303,7 +349,7 @@ Compiling 32655 System.Text.Json.Serialization.Converters.ObjectWithParameterize
 ```
 Here the annotations like `@0x5f` tell you the IL offset for the particular OSR method.
 
-As an aside, seeing patchpoints at offset `@0x0` is a pretty clear indication that the example was run with random patchpoints enabled, as IL offset 0 is rarely the start of a loop. 
+As an aside, seeing patchpoints at offset `@0x0` is a pretty clear indication that the example was run with random patchpoints enabled, as IL offset 0 is rarely the start of a loop.
 
 Also note that an OSR method will always be invoked immediately after it is jitted. So each of the OSR methods above was executed at least once.
 
@@ -440,3 +486,8 @@ However, one can configure BenchmarkDotNet in ways that make it more likely that
 This happens more often with benchmarks that either (a) do a lot of internal looping to boost the elapsed time of a measurement interval, rather than relying on BDN to determine the appropriate iteration strategy, or (b) are very long running, so that BDN determines that it does not need to run many iterations to obtain measurements of "significant" duration (250 ms or so).
 
 In the performance repo configurations we reduce the number of warmup iterations and have some benchmarks that fall into both categories above. We'll likely need to make some adjustment to these benchmarks to ensure that we're measuring Tier1 code performance.
+
+## References
+
+* [OSR Design Document](https://github.com/dotnet/runtime/blob/main/docs/design/features/OnStackReplacement.md). May be a bit dated in places.
+* [OSR Next Steps Issue](https://github.com/dotnet/runtime/issues/33658). Has a lot of information on issues encountered during bring-up, current limitations, and ideas for things we might revisit.
