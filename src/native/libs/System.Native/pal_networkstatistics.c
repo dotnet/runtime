@@ -526,8 +526,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
         }
         iepi->Port = ntohs(head_xinpcb->inp_inc.inc_ie.ie_lport);
 #else
-        struct xinpcb* head_xinpcb = (struct xinpcb*)xHeadPtr;
-        struct inpcb in_pcb head_xinpcb->xi_inp;
+        struct inpcb in_pcb = head_xinpcb->xi_inp;
 
         uint8_t vflag = in_pcb.inp_vflag; // INP_IPV4 or INP_IPV6
         if ((vflag & INP_IPV4) == INP_IPV4)
