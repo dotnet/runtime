@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using InvalidCSharp;
 
 using Xunit;
@@ -23,6 +24,7 @@ class Validate
         var t = typeof(WithRefField);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Create_RefField_Worker(string str, int depth)
     {
         if (depth == 5)
@@ -46,6 +48,7 @@ class Validate
         Create_RefField_Worker(str, 1);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Create_RefStructField_Worker(string str, int depth)
     {
         if (depth == 5)
@@ -68,6 +71,7 @@ class Validate
         Create_RefStructField_Worker(str, 1);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Create_TypedReferenceRefField_Worker(Validate v, int depth)
     {
         if (depth == 5)
