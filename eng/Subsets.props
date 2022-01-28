@@ -106,7 +106,8 @@
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools." />
-    <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib, runtime, and other low level class libraries." />
+    <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
+    <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
@@ -203,7 +204,7 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
+  <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true'">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrNativeAotSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
