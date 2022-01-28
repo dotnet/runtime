@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CrossHostArch>x64</CrossHostArch>
-    <OutputPath>$(RuntimeBinDir)/$(CrossHostArch)/ilc</OutputPath>
+    <OutputPath>$(RuntimeBinDir)/$(CrossHostArch)/ilc/</OutputPath>
     <RuntimeIdentifier>$(ToolsRID)</RuntimeIdentifier>
   </PropertyGroup>
   <Import Project="ILCompiler.props" />
