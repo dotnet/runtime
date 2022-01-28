@@ -1503,17 +1503,15 @@ class SuperPMIReplayAsmDiffs:
 
                 if return_code != 0:
 
-                    # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
+                    # Don't report as replay failure asm diffs (return code 2) if not checking diffs with Release build or missing data (return code 3).
                     # Anything else, such as compilation failure (return code 1, typically a JIT assert) will be
                     # reported as a replay failure.
-                    if return_code != 2 and return_code != 3:
+                    if (return_code != 2 || self.coreclr_args.diff_with_release is True) and return_code != 3:
                         result = False
                         files_with_replay_failures.append(mch_file)
 
                         if is_nonzero_length_file(fail_mcl_file):
                             # Unclean replay. Examine the contents of the fail.mcl file to dig into failures.
-                            if return_code == 0:
-                                logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
                             print_fail_mcl_file_method_numbers(fail_mcl_file)
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
