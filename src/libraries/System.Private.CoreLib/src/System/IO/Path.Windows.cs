@@ -40,8 +40,17 @@ namespace System.IO
                 string fullPath = GetFullPath(path);
                 Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
                 int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+                bool result = (errorCode == 0) && (data.dwFileAttributes != -1);
 
-                return (errorCode == 0) && (data.dwFileAttributes != -1);
+                if (PathInternal.IsDirectorySeparator(path[path.Length - 1]))
+                {
+                    // We want to make sure that if the path ends in a trailing slash, it's truly a directory
+                    // because FillAttributeInfo syscall removes any trailing slashes and may give false positives
+                    // for existing files.
+                    result = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
+                }
+
+                return result;
             }
 
             catch (ArgumentException) { }
