@@ -538,15 +538,15 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - ${{ if eq(variables['isRollingBuild'], true) }}:
+    #- ${{ if eq(variables['isRollingBuild'], true) }}:
       - Linux_x64
     jobParameters:
       testScope: innerloop
       nameSuffix: AllSubsets_Mono_CoOp_GC
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:MonoEnvOptions="MONO_GC_SUSPEND=coop MONO_SLEEP_ABORT_LIMIT=250"
       timeoutInMinutes: 120
-      condition: >-
-          eq(variables['isRollingBuild'], true)
+      #condition: >-
+      #    eq(variables['isRollingBuild'], true)
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
