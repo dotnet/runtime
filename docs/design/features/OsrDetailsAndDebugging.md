@@ -15,7 +15,7 @@ are active stack frames for the method.
 
 The primary goal of OSR is to allow the runtime to initially jit most
 methods without optimization, and then transition control (via OSR) if
-when the invocations of those methods become compute
+and when the invocations of those methods become compute
 intensive. During a transition the active invocations are rewritten
 "on stack" to have the proper frame shape and code references.
 
@@ -28,7 +28,7 @@ as `Main` is only ever called once.
 OSR is also in many ways similar to EnC (Edit and Continue), though
 there are key differences.  EnC transitions are initiated by user
 edits via the debugger, and typically this means the IL version of the
-method has changed. OSR transition are mediated by the runtime, and
+method has changed. OSR transitions are mediated by the runtime, and
 the transitioned-to methods represent different native code
 compilation of the same IL code version.
 
@@ -79,7 +79,7 @@ to pass through Tier0.
 
 ### Quick Jit For Loops (aka `QJFL`)
 
-Tiered compilation was introduced in the .NET Core 3.0 release. 
+Tiered compilation was introduced in the .NET Core 3.0 release.
 
 Initially, all methods that got jitted went through Tier0. But
 during the development cycle we got a fair amount of feedback that
@@ -91,7 +91,7 @@ loops would be initially optimized and not participate in tiered jitting.
 We often use the shorthand `QJFL=0` to describe this behavior.
 
 While `QJFL=0` addressed the immediate problems users had with tiered
-compilation, it had some downsides: 
+compilation, it had some downsides:
 
 * Not all methods with loops are performance sensitive, so in many
 cases we saw increased startup JIT time without any steady state
@@ -138,7 +138,7 @@ values of QJFL, OSR, and BBINSTR.
 The JIT does an initial IL scan for the method; during this scan it
 checks for several things:
 * if there is any lexically backwards IL branch (`compHasBackwardsBranch`)
-* if there is any lexically backwards branch in catch, filter, finally, 
+* if there is any lexically backwards branch in catch, filter, finally,
 or fault region (aka "loop in handler").
 * if there is any `localloc`
 * if the method is a reverse PInvoke
@@ -238,7 +238,7 @@ The OSR method is specific to a Tier0 method at a specific IL
 offset. When the runtime decides to create an OSR method it invokes
 the jit and passes a special OSR flag and the IL offset.
 
-This compilation is similar to a normal optimized compilation, with 
+This compilation is similar to a normal optimized compilation, with
 a few twists:
 * Importation starts at the specified IL offset and pulls in all the
 code reachable from that point. Typically (but not always) the method entry (IL offset 0) is unreachable
@@ -292,14 +292,20 @@ Note if a Tier0 method is recursive and has loops there can be some interesting 
 
 * `DOTNET_DumpJittedMethods=1` will specially mark OSR methods with the inspiring IL offsets.
 
-### Tracing Runtime Policy
+For example, running a libraries test with some stressful OSR settings, there ended up being 699 OSR methods jitted out of 160675 total methods. Grepping for OSR in the dump output, the last few lines were:
 
-* `DOTNET_LogEnable=1`
-* `DOTNET_LogFacility=0x00400000`
-* `DOTNET_LogLevel=5`
-* and say `DOTNET_LogToConsole=1`
+```
+Compiling 32408 System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1[WrapperForPoint_3D][System.Text.Json.Serialization.Tests.WrapperForPoint_3D]::OnTryRead, IL size = 850, hash=0x5a693818 Tier1-OSR @0x5f
+Compiling 32411 System.Text.Json.Serialization.Tests.ConverterForPoint3D::Read, IL size = 40, hash=0x294c33b5 Tier1-OSR @0xf
+Compiling 32412 System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1[WrapperForPoint_3D][System.Text.Json.Serialization.Tests.WrapperForPoint_3D]::OnTryWrite, IL size = 757, hash=0x1ed8b727 Tier1-OSR @0x60
+Compiling 32629 System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[KeyValuePair`2][System.Collections.Generic.KeyValuePair`2[System.__Canon,System.__Canon]]::ReadConstructorArgumentsWithContinuation, IL size = 192, hash=0x7ab2e686 Tier1-OSR @0x0
+Compiling 32655 System.Text.Json.Serialization.Converters.ObjectWithParameterizedConstructorConverter`1[Point_3D_Struct][System.Text.Json.Serialization.Tests.Point_3D_Struct]::ReadConstructorArgumentsWithContinuation, IL size = 192, hash=0xb37dcd36 Tier1-OSR @0x0
+```
+Here the annotations like `@0x5f` tell you the IL offset for the particular OSR method.
 
-will log runtime behavior from calls to `CORINFO_HELP_PATCHPOINT` from Tier0 methods.
+As an aside, seeing patchpoints at offset `@0x0` is a pretty clear indication that the example was run with random patchpoints enabled, as IL offset 0 is rarely the start of a loop. 
+
+Also note that an OSR method will always be invoked immediately after it is jitted. So each of the OSR methods above was executed at least once.
 
 ### Controlling which methods are OSR Eligible
 
@@ -308,8 +314,16 @@ will log runtime behavior from calls to `CORINFO_HELP_PATCHPOINT` from Tier0 met
 * `DOTNET_JitEnableOsrRange=...` -- use method hash to refine which methods are OSR eligible
 * `DOTNET_JitEnablePatchpointRange=...` -- use method hash to refine which Tier0 methods get patchpoints
 
-Binary searching using the `Enable` controls has proven to be a reliable 
+Binary searching using the `Enable` controls has proven to be a reliable
 way to track down issues in OSR codegen.
+
+On the same example as above, now run with `COMPlus_JitEnableOsrRange=00000000-7FFFFFFF` there were 249 OSR methods created. Methods with hashes outside this range that would have been handled by OSR were instead immediately optimized and bypassed tiering. So you can systematically reduce the set of OSR methods created to try and find the method or methods that are causing a test failure.
+
+If you are not familiar with range syntax, ranges values are in hex, and entries can be intervals (as above), singletons, or unions of intervals and singletons, eg
+```
+COMPlus_JitEnableOsrRange=00000000-3FFFFFFF,067a3f68,F0000000-FFFFFFFF
+```
+I find I rarely need to use anything other than a single range.
 
 ### Changing rate at which OSR methods get created
 
@@ -328,6 +342,40 @@ created the first time a patchpoint is hit.
 If a method has multiple (say two) patchpoints, it may require some
 fiddling with these settings to ensure that both OSR versions get
 created in a given run.
+
+### Tracing Runtime Policy
+
+Setting
+
+* `DOTNET_LogEnable=1`
+* `DOTNET_LogFacility=0x00400000`
+* `DOTNET_LogLevel=5`
+* and say `DOTNET_LogToConsole=1`
+
+will log runtime behavior from calls to `CORINFO_HELP_PATCHPOINT` from Tier0 methods.
+
+For example:
+```
+TID 4bdc2: Jit_Patchpoint: patchpoint [17] (0x0000FFFF1E5F3BB8) hit 1 in Method=0x0000FFFF1EAD9130M (Xunit.JsonDeserializer::DeserializeInternal) [il offset 45] (limit 2)
+TID 4bdc2: Jit_Patchpoint: patchpoint [17] (0x0000FFFF1E5F3BB8) TRIGGER at count 2
+TID 4bdc2: JitPatchpointWorker: creating OSR version of Method=0x0000FFFF1EAD9130M (Xunit.JsonDeserializer::DeserializeInternal) at offset 45
+TID 4bdc2: Jit_Patchpoint: patchpoint [17] (0x0000FFFF1E5F3BB8) TRANSITION to ip 0x0000FFFF1E5F6820
+TID 4bdc2: Jit_Patchpoint: patchpoint [18] (0x0000FFFF1E5F6BE0) hit 1 in Method=0x0000FFFF1EB03B58M (Xunit.JsonBoolean::.ctor) [il offset 0] (limit 2)
+TID 4bdc2: Jit_Patchpoint: patchpoint [18] (0x0000FFFF1E5F6BE0) TRIGGER at count 2
+TID 4bdc2: JitPatchpointWorker: creating OSR version of Method=0x0000FFFF1EB03B58M (Xunit.JsonBoolean::.ctor) at offset 0
+TID 4bdc2: Jit_Patchpoint: patchpoint [18] (0x0000FFFF1E5F6BE0) TRANSITION to ip 0x0000FFFF1E5F6D00
+```
+Here the number in brackets `[17]` is the number of distinct patchpoints that have called the runtime helper; from the runtime side this serve as a sort of patchpoint ID.
+
+A `hit` is just a call from an Tier0 method to the helper. A `TRIGGER` is a hit that now has reached the `DOTNET_OSR_HitCount` limit, and at this point an OSR method is created. A `TRANSITION` is the transition of control from the Tier0 method to the OSR method.
+
+You can use the following config settings to further alter runtime policy:
+* `DOTNET_OSR_LowId`
+* `DOTNET_OSR_HighId`
+These collectively form an inclusive range describing which patchpoint IDs will
+be allowed to `TRIGGER` (and therefore `TRANSITION`).
+
+So you can also use this to control which OSR methods are created by the runtime, without altering JIT behavior.
 
 ### Changing where patchpoints are placed in Tier0 code
 
