@@ -23,17 +23,41 @@ class Validate
         var t = typeof(WithRefField);
     }
 
+    private static void Create_RefField_Worker(string str, int depth)
+    {
+        if (depth == 5)
+        {
+            return;
+        }
+
+        WithRefField s = new(ref str);
+        string newStr = new(str);
+
+        Create_RefField_Worker(str + $" {depth}", depth + 1);
+        Assert.False(s.ConfirmFieldInstance(newStr));
+        Assert.True(s.ConfirmFieldInstance(str));
+    }
+
     [Fact]
     public static void Validate_Create_RefField()
     {
         var str = nameof(Validate_Create_RefField);
         Console.WriteLine($"{str}...");
+        Create_RefField_Worker(str, 1);
+    }
+
+    private static void Create_RefStructField_Worker(string str, int depth)
+    {
+        if (depth == 5)
+        {
+            return;
+        }
 
         WithRefField s = new(ref str);
-        Assert.True(s.ConfirmFieldInstance(str));
+        WithRefStructField t = new(ref s);
 
-        string newStr = new(str);
-        Assert.False(s.ConfirmFieldInstance(newStr));
+        Create_RefStructField_Worker(str + $" {depth}", depth + 1);
+        Assert.True(t.ConfirmFieldInstance(ref s));
     }
 
     [Fact]
@@ -41,10 +65,21 @@ class Validate
     {
         var str = nameof(Validate_Create_RefStructField);
         Console.WriteLine($"{str}...");
+        Create_RefStructField_Worker(str, 1);
+    }
 
-        WithRefField s = new(ref str);
-        WithRefStructField t = new(ref s);
-        Assert.True(t.ConfirmFieldInstance(ref s));
+    private static void Create_TypedReferenceRefField_Worker(Validate v, int depth)
+    {
+        if (depth == 5)
+        {
+            return;
+        }
+
+        WithTypedReferenceField<Validate> s = new(ref v);
+
+        Create_TypedReferenceRefField_Worker(v, depth + 1);
+        Assert.Equal(typeof(Validate), s.GetFieldType());
+        Assert.True(s.ConfirmFieldInstance(v));
     }
 
     [Fact]
@@ -53,7 +88,6 @@ class Validate
         Console.WriteLine($"{nameof(Validate_Create_TypedReferenceRefField)}...");
 
         Validate v = new();
-        WithTypedReferenceField<Validate> s = new(v);
-        Assert.Equal(typeof(Validate), s.GetFieldType());
+        Create_TypedReferenceRefField_Worker(v, 1);
     }
 }
