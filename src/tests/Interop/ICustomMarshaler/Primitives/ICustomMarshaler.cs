@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using static TestLibrary.Utilities;
 
 namespace System.Runtime.InteropServices.Tests
 {
@@ -684,8 +685,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static void DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException()
         {
-            // throw MarshalDirectiveException, but it is unhandled (?)
-            // [0xc]   ICustomMarshaler_TargetWindows!Internal_CompilerGenerated__Module___<ReverseDelegateStub>ICustomMarshaler_TargetWindows_System_Runtime_InteropServices_Tests_ICustomMarshalerTests_TestDelegateRef + 0x2b
             Assert.Throws<MarshalDirectiveException>(() => CustomMarshallerWithDelegateRef(84664, (ref int x) => x.ToString()));
         }
         public static int Main(String[] args)
@@ -719,7 +718,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
                 Field_ParentIsStruct_ThrowsTypeLoadException();
                 Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
-                if (!PlatformDetection.IsNativeAot)
+                if (SupportsComInterop)
                 {
                     // EH interop is not supported for NativeAOT.
                     DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
