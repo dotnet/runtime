@@ -319,8 +319,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
         public static IncrementalHash CreateHash(HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new IncrementalHash(hashAlgorithm, HashProviderDispenser.CreateHashProvider(hashAlgorithm.Name));
         }
@@ -381,8 +380,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new IncrementalHash(hashAlgorithm, new HMACCommon(hashAlgorithm.Name, key, -1));
         }

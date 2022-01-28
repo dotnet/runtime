@@ -143,9 +143,6 @@
   <data name="Cryptography_CSP_WrongKeySpec" xml:space="preserve">
     <value>The specified cryptographic service provider (CSP) does not support this key algorithm: {0}.</value>
   </data>
-  <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
-    <value>The hash algorithm name cannot be null or empty.</value>
-  </data>
   <data name="Cryptography_InvalidDSASignatureSize" xml:space="preserve">
     <value>Length of the DSA signature was not 40 bytes.</value>
   </data>

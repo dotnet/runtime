@@ -22,8 +22,8 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void EmptyStringPipeName_Throws_ArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream(""));
-            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream(".", ""));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(""));
+            AssertExtensions.Throws<ArgumentException>("pipeName", () => new NamedPipeClientStream(".", ""));
         }
 
         [Theory]

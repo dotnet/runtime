@@ -678,12 +678,9 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
 
@@ -696,14 +693,10 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
 
@@ -733,11 +726,6 @@ namespace System.Security.Cryptography
         private static Exception PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-        }
-
-        private static Exception HashAlgorithmNameNullOrEmpty()
-        {
-            return new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
         }
 
         private void ThrowIfDisposed()

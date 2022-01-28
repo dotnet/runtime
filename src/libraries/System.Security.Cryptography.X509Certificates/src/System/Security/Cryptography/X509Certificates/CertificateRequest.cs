@@ -58,12 +58,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <seealso cref="X500DistinguishedName(string)"/>
         public CertificateRequest(string subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
-            if (subjectName == null)
-                throw new ArgumentNullException(nameof(subjectName));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = new X500DistinguishedName(subjectName);
 
@@ -88,12 +85,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public CertificateRequest(X500DistinguishedName subjectName, ECDsa key, HashAlgorithmName hashAlgorithm)
         {
-            if (subjectName == null)
-                throw new ArgumentNullException(nameof(subjectName));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
 
@@ -122,14 +116,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// <seealso cref="X500DistinguishedName(string)"/>
         public CertificateRequest(string subjectName, RSA key, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (subjectName == null)
-                throw new ArgumentNullException(nameof(subjectName));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             SubjectName = new X500DistinguishedName(subjectName);
 
@@ -162,14 +152,10 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (subjectName == null)
-                throw new ArgumentNullException(nameof(subjectName));
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             SubjectName = subjectName;
 
@@ -194,12 +180,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public CertificateRequest(X500DistinguishedName subjectName, PublicKey publicKey, HashAlgorithmName hashAlgorithm)
         {
-            if (subjectName == null)
-                throw new ArgumentNullException(nameof(subjectName));
-            if (publicKey == null)
-                throw new ArgumentNullException(nameof(publicKey));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(publicKey);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
             PublicKey = publicKey;

@@ -210,12 +210,9 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
         {
-            ValidateArgs(path, encoding);
-
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
+            ArgumentNullException.ThrowIfNull(options);
             if ((options.Access & FileAccess.Read) == 0)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(options));
@@ -226,21 +223,14 @@ namespace System.IO
 
         private static Stream ValidateArgsAndOpenPath(string path, Encoding encoding, int bufferSize)
         {
-            ValidateArgs(path, encoding);
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
             if (bufferSize <= 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            }
 
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize);
-        }
-
-        private static void ValidateArgs(string path, Encoding encoding)
-        {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
         }
 
         public override void Close()
