@@ -459,7 +459,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 surfaceError: true); ;
         }
 
-        public void UpdateStakTrace()
+        public void UpdateStackTrace()
         {
             Error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
         }
