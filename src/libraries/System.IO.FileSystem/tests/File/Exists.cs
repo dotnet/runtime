@@ -79,7 +79,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PathEndsInAltTrailingSlash_Windows()
         {
-            string path = GetTestFilePath() + Path.DirectorySeparatorChar;
+            string path = GetTestFilePath() + Path.AltDirectorySeparatorChar;
             Assert.False(Exists(path));
         }
 
@@ -97,7 +97,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            Assert.False(Exists(path + Path.DirectorySeparatorChar));
+            Assert.False(Exists(path + Path.AltDirectorySeparatorChar));
         }
 
         [Fact]
