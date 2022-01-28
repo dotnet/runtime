@@ -9,9 +9,9 @@ namespace System.IO
 {
     public static partial class Path
     {
-        public static char[] GetInvalidFileNameChars() => new char[] {'\0', '/'};
+        public static char[] GetInvalidFileNameChars() => new char[] { '\0', '/' };
 
-        public static char[] GetInvalidPathChars() => new char[] {'\0'};
+        public static char[] GetInvalidPathChars() => new char[] { '\0' };
 
         // Checks if the given path is available for use.
         private static bool ExistsCore(string fullPath)

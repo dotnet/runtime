@@ -237,8 +237,6 @@ namespace System.IO.Tests
 
     public class File_ExistsAsDirectory : FileSystemTest
     {
-        #region Universal
-
         [Fact]
         public void DotAsPathReturnsFalse()
         {
@@ -257,10 +255,6 @@ namespace System.IO.Tests
             Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
 
-        #endregion
-
-        #region PlatformSpecific
-
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
         public void FalseForNonRegularFile()
@@ -269,7 +263,5 @@ namespace System.IO.Tests
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.True(File.Exists(fileName));
         }
-
-        #endregion
     }
 }

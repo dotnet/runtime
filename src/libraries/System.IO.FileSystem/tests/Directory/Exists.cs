@@ -371,7 +371,6 @@ namespace System.IO.Tests
 
     public class Directory_ExistsAsFile : FileSystemTest
     {
-        #region Universal
 
         [Fact]
         public void PathAlreadyExistsAsFile()
@@ -383,10 +382,6 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
             Assert.False(Directory.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
         }
-
-        #endregion
-
-        #region PlatformSpecific
 
         [ConditionalFact(nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
@@ -408,7 +403,5 @@ namespace System.IO.Tests
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.False(Directory.Exists(fileName));
         }
-
-        #endregion
     }
 }
