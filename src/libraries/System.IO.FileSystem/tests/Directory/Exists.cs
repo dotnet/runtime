@@ -371,7 +371,6 @@ namespace System.IO.Tests
 
     public class Directory_ExistsAsFile : FileSystemTest
     {
-
         [Fact]
         public void PathAlreadyExistsAsFile()
         {
