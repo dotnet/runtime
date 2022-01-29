@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -198,8 +199,8 @@ namespace System
                 }
 
                 // Then try in the user's home directory.
-                string? home = PersistedFiles.GetHomeDirectory();
-                if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
+                string home = Environment.GetFolderPath(System.Environment.SpecialFolder.UserProfile);
+                if ((db = ReadDatabase(term, home + "/.terminfo")) != null)
                 {
                     return db;
                 }

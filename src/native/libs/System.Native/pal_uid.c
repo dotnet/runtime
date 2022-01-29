@@ -13,6 +13,8 @@
 #include <grp.h>
 #include <pwd.h>
 
+#include <minipal/gethomedir.h>
+
 // Linux c-libraries (glibc, musl) provide a thread-safe getgrouplist.
 // OSX man page mentions explicitly the implementation is not thread safe,
 // due to using getgrent.
@@ -68,6 +70,11 @@ int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, int32_t buf
     while ((error = getpwuid_r(uid, &nativePwd, buf, Int32ToSizeT(buflen), &result)) == EINTR);
 
     return ConvertNativePasswdToPalPasswd(error, &nativePwd, result, pwd);
+}
+
+char* SystemNative_GetHomeDirectory()
+{
+    return minipal_gethomedir();
 }
 
 int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen)

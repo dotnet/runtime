@@ -59,15 +59,7 @@ namespace System
 
             // All other paths are based on the XDG Base Directory Specification:
             // https://specifications.freedesktop.org/basedir-spec/latest/
-            string? home = null;
-            try
-            {
-                home = PersistedFiles.GetHomeDirectory();
-            }
-            catch (Exception exc)
-            {
-                Debug.Fail($"Unable to get home directory: {exc}");
-            }
+            string? home = PersistedFiles.GetHomeDirectory();
 
             // Fall back to '/' when we can't determine the home directory.
             // This location isn't writable by non-root users which provides some safeguard

@@ -41,6 +41,12 @@ PALEXPORT int32_t SystemNative_GetPwUidR(uint32_t uid, Passwd* pwd, char* buf, i
 PALEXPORT int32_t SystemNative_GetPwNamR(const char* name, Passwd* pwd, char* buf, int32_t buflen);
 
 /**
+ * Returns the path to home directory read from 'HOME' environment variable.
+ * If $HOME is not set, fallback to getpwuid() library function.
+ */
+PALEXPORT char* SystemNative_GetHomeDirectory(void);
+
+/**
 * Gets and returns the effective user's identity.
 * Implemented as shim to geteuid(2).
 *

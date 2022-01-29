@@ -15,9 +15,6 @@ internal static partial class Interop
             internal byte* Password;
             internal uint  UserId;
             internal uint  GroupId;
-            internal byte* UserInfo;
-            internal byte* HomeDirectory;
-            internal byte* Shell;
         }
 
         [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPwUidR", SetLastError = false)]

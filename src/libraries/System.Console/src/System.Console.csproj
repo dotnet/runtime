@@ -153,8 +153,6 @@
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
     <Compile Include="System\IO\SyncTextReader.Unix.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Unix.cs"
-             Link="Common\System\IO\PersistedFiles.Unix.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs"
              Link="Common\System\IO\PersistedFiles.Names.Unix.cs" />
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs"
@@ -189,10 +187,6 @@
              Link="Common\Interop\Unix\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
              Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
-             Link="Common\Interop\Unix\Interop.GetEUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs"
-             Link="Common\Interop\Unix\Interop.GetPwUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs"
              Link="Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSignalForBreak.cs"
