@@ -6,7 +6,7 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 
-const commands_result = new Map<number, CommandResponse>();
+const commands_received = new Map<number, CommandResponse>();
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
@@ -43,7 +43,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
             value: base64String
         }
     };
-    commands_result.set(id, buffer_obj);
+    commands_received.set(id, buffer_obj);
 }
 
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
@@ -63,8 +63,8 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
-    const { res_ok, res } = commands_result.get(id) as CommandResponse;
-    commands_result.delete(id);
+    const { res_ok, res } = commands_received.get(id) as CommandResponse;
+    commands_received.delete(id);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
     return res;
@@ -74,8 +74,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
-    const { res_ok, res } = commands_result.get(id) as CommandResponse;
-    commands_result.delete(id);
+    const { res_ok, res } = commands_received.get(id) as CommandResponse;
+    commands_received.delete(id);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_send_dbg_command");
     return res;
@@ -83,8 +83,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 }
 
 export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
-    const { res_ok, res } = commands_result.get(0) as CommandResponse;
-    commands_result.delete(0);
+    const { res_ok, res } = commands_received.get(0) as CommandResponse;
+    commands_received.delete(0);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_get_dbg_command_info");
     return res;
