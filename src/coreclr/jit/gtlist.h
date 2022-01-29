@@ -55,7 +55,7 @@ GTNODE(CNS_STR          , GenTreeStrCon      ,0,GTK_LEAF)
 //-----------------------------------------------------------------------------
 
 GTNODE(NOT              , GenTreeOp          ,0,GTK_UNOP)
-GTNODE(NOP              , GenTree            ,0,GTK_UNOP|GTK_NOCONTAIN)
+GTNODE(NOP              , GenTree            ,0,GTK_UNOP|DBK_NOCONTAIN)
 GTNODE(NEG              , GenTreeOp          ,0,GTK_UNOP)
 
 GTNODE(INTRINSIC        , GenTreeIntrinsic   ,0,GTK_BINOP|GTK_EXOP)
@@ -76,8 +76,8 @@ GTNODE(BITCAST          , GenTreeMultiRegOp  ,0,GTK_UNOP)               // reint
 #else
 GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reinterpretation of bits as another type
 #endif
-GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // Check for NaN
-GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // alloca()
+GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
+GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
 GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // address of
 
@@ -256,7 +256,7 @@ GTNODE(JTRUE            , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)
 GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,GTK_SPECIAL)            // Multi-dimensional array-element address
 GTNODE(ARR_INDEX        , GenTreeArrIndex    ,0,GTK_BINOP|GTK_EXOP)     // Effective, bounds-checked index for one dimension of a multi-dimensional array element
 GTNODE(ARR_OFFSET       , GenTreeArrOffs     ,0,GTK_SPECIAL)            // Flattened offset of multi-dimensional array element
-GTNODE(CALL             , GenTreeCall        ,0,GTK_SPECIAL|GTK_NOCONTAIN)
+GTNODE(CALL             , GenTreeCall        ,0,GTK_SPECIAL|DBK_NOCONTAIN)
 GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,GTK_SPECIAL)            // List of fields of a struct, when passed as an argument
 
 GTNODE(RETURN           , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)
@@ -276,7 +276,7 @@ GTNODE(END_LFIN         , GenTreeVal         ,0,GTK_LEAF|GTK_NOVALUE) // End loc
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
 //-----------------------------------------------------------------------------
 
-GTNODE(JMPTABLE         , GenTree            ,0,GTK_LEAF|GTK_NOCONTAIN|DBK_NOTHIR) // Generates the jump table for switches
+GTNODE(JMPTABLE         , GenTree            ,0,GTK_LEAF|DBK_NOCONTAIN|DBK_NOTHIR) // Generates the jump table for switches
 GTNODE(SWITCH_TABLE     , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)  // Jump Table based switch construct
 
 //-----------------------------------------------------------------------------

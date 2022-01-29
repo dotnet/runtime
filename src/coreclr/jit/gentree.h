@@ -98,8 +98,7 @@ enum GenTreeOperKind
     GTK_COMMUTE = 0x08,   // commutative  operator
     GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
                           // by adding non-node fields to unary or binary operator.
-    GTK_NOVALUE   = 0x20, // node does not produce a value
-    GTK_NOCONTAIN = 0x40, // this node is a value, but may not be contained
+    GTK_NOVALUE = 0x20,   // node does not produce a value
 
     GTK_MASK = 0xFF
 };
@@ -113,8 +112,9 @@ enum GenTreeDebugOperKind
 {
     DBK_FIRST_FLAG = GTK_MASK + 1,
 
-    DBK_NOTHIR = DBK_FIRST_FLAG,      // This oper is not supported in HIR (before rationalization).
-    DBK_NOTLIR = DBK_FIRST_FLAG << 1, // This oper is not supported in LIR (after rationalization).
+    DBK_NOTHIR    = DBK_FIRST_FLAG,      // This oper is not supported in HIR (before rationalization).
+    DBK_NOTLIR    = DBK_FIRST_FLAG << 1, // This oper is not supported in LIR (after rationalization).
+    DBK_NOCONTAIN = DBK_FIRST_FLAG << 2, // This oper produces a value, but may not be contained.
 
     DBK_MASK = ~GTK_MASK
 };
@@ -895,7 +895,9 @@ public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.
 
+#ifdef DEBUG
     bool canBeContained() const;
+#endif
 
     // for codegen purposes, is this node a subnode of its parent
     bool isContained() const;
