@@ -21577,12 +21577,16 @@ void Compiler::considerGuardedDevirtualization(
 
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
+    const int maxExactClasses = 1;
+    CORINFO_CLASS_HANDLE exactClasses[maxExactClasses] = {0};
+    int exactClassesCount = info.compCompHnd->getExactClasses(baseClass, maxExactClasses, exactClasses);
+
     // We currently only get likely class guesses when there is PGO data
     // with class profiles.
     //
-    if (fgPgoClassProfiles == 0)
+    if (fgPgoClassProfiles == 0 && exactClassesCount == 0)
     {
-        JITDUMP("Not guessing for class: no class profile pgo data, or pgo disabled\n");
+        JITDUMP("Not guessing for class: no class profile pgo data, or pgo disabled, or no exact classes\n");
         return;
     }
 
@@ -21599,36 +21603,45 @@ void Compiler::considerGuardedDevirtualization(
     const int         maxLikelyClasses = 32;
     LikelyClassRecord likelyClasses[maxLikelyClasses];
 
+    if (fgPgoClassProfiles > 0)
+    {
 #ifdef DEBUG
-    // Optional stress mode to pick a random known class, rather than
-    // the most likely known class.
-    //
-    doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
-
-    if (doRandomDevirt)
-    {
-        // Reuse the random inliner's random state.
+        // Optional stress mode to pick a random known class, rather than
+        // the most likely known class.
         //
-        CLRRandom* const random =
-            impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        likelyClasses[0].clsHandle  = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
-        likelyClasses[0].likelihood = 100;
-        if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+        doRandomDevirt = JitConfig.JitRandomGuardedDevirtualization() != 0;
+
+        if (doRandomDevirt)
         {
-            numberOfClasses = 1;
+            // Reuse the random inliner's random state.
+            //
+            CLRRandom* const random =
+                impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
+            likelyClasses[0].clsHandle = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+            likelyClasses[0].likelihood = 100;
+            if (likelyClasses[0].clsHandle != NO_CLASS_HANDLE)
+            {
+                numberOfClasses = 1;
+            }
         }
-    }
-    else
+        else
 #endif
-    {
-        numberOfClasses =
-            getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        {
+            numberOfClasses =
+                getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+        }
     }
 
     // For now we only use the most popular type
-
     likelihood  = likelyClasses[0].likelihood;
     likelyClass = likelyClasses[0].clsHandle;
+
+    if (exactClassesCount == 1)
+    {
+        likelyClass     = exactClasses[0];
+        likelihood      = 100;
+        numberOfClasses = 1;
+    }
 
     if (numberOfClasses < 1)
     {
@@ -21688,6 +21701,11 @@ void Compiler::considerGuardedDevirtualization(
 
     CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
     JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
+
+    if (exactClassesCount > 0)
+    {
+        call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_EXACT;
+    }
 
     // Add this as a potential candidate.
     //

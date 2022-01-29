@@ -3708,6 +3708,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_UNBOXED                 = 0x00080000, // this call was optimized to use the unboxed entry point
     GTF_CALL_M_GUARDED_DEVIRT          = 0x00100000, // this call is a candidate for guarded devirtualization
     GTF_CALL_M_GUARDED_DEVIRT_CHAIN    = 0x00200000, // this call is a candidate for chained guarded devirtualization
+    GTF_CALL_M_GUARDED_DEVIRT_EXACT    = 0x20000000, // this call was transformed by guarded devirtualization for exact classes (no fallback)
     GTF_CALL_M_GUARDED                 = 0x00400000, // this call was transformed by guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00800000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x01000000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
@@ -4566,6 +4567,11 @@ struct GenTreeCall final : public GenTree
     bool IsGuardedDevirtualizationCandidate() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT) != 0;
+    }
+
+    bool IsGuardedDevirtualizationCandidateForExactClasses() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_EXACT) != 0;
     }
 
     bool IsPure(Compiler* compiler) const;

@@ -9320,6 +9320,35 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
+
+/*********************************************************************/
+
+int CEEInfo::getExactClasses (
+        CORINFO_CLASS_HANDLE  baseType,
+        int                   maxExactClasses,
+        CORINFO_CLASS_HANDLE* exactClsRet
+        )
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    int exactClassesCount;
+
+    JIT_TO_EE_TRANSITION();
+
+    // This function is currently implemented only on NativeAOT
+    // but can be implemented for CoreCLR as well (e.g. for internal types)
+
+    exactClassesCount = 0;
+
+    EE_TO_JIT_TRANSITION();
+
+    return exactClassesCount;
+}
+
 /*********************************************************************/
 
 CORINFO_CLASS_HANDLE CEEInfo::getArgClass (

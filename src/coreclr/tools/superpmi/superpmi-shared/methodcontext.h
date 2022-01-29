@@ -369,6 +369,15 @@ public:
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
                                      DWORD*                  exception);
 
+    void recGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
+                            int                   maxExactClasses,
+                            CORINFO_CLASS_HANDLE* exactClsRet,
+                            int                   result);
+    void dmpGetExactClasses(DLD key, DLD value);
+    int repGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
+                           int                   maxExactClasses,
+                           CORINFO_CLASS_HANDLE* exactClsRet);
+
     void recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result);
     void dmpGetArgNext(DWORDLONG key, DWORDLONG value);
     CORINFO_ARG_LIST_HANDLE repGetArgNext(CORINFO_ARG_LIST_HANDLE args);
@@ -1043,6 +1052,7 @@ enum mcPackets
     Packet_IsFieldStatic = 137,
     PacketCR_AssertLog = 138,
     Packet_GetArgClass = 139,
+    Packet_GetExactClasses = 194,
     Packet_GetArgType = 140,
     //Retired5 = 141,
     Packet_CheckMethodModifier = 142,
@@ -1096,7 +1106,7 @@ enum mcPackets
     Packet_GetModuleAssembly = 190,
     Packet_GetAssemblyName = 191,
     Packet_IsIntrinsic = 192,
-    Packet_UpdateEntryPointForTailCall = 193,
+    Packet_UpdateEntryPointForTailCall = 193
 };
 
 void SetDebugDumpVariables();
