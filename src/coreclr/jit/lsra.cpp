@@ -1299,6 +1299,10 @@ void LinearScan::doLinearScan()
 
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
+#ifdef DEBUG
+    compiler->fgDebugCheckLinks();
+#endif
+
     compiler->compLSRADone = true;
 }
 

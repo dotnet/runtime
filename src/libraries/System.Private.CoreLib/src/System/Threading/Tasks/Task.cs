@@ -5627,6 +5627,20 @@ namespace System.Threading.Tasks
                 _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
                     var thisRef = (DelayPromiseWithCancellation)state!;
+
+                    // Normally RunContinuationsAsynchronously is set at construction time.  We don't want to
+                    // set it at construction because we want the timer firing (already on a thread pool thread with
+                    // a stack in which it's fine to execute arbitrary code) to synchronously invoke any continuations
+                    // from this task.  However, a cancellation request will come synchronously from a call to
+                    // CancellationTokenSource.Cancel, and we don't want to invoke arbitrary continuations from
+                    // this delay task as part of that Cancel call.  As such, we set RunContinuationsAsynchronously
+                    // after the fact, only when the task is being completed due to cancellation.  There is a race
+                    // condition here, such that if the timer also fired concurrently, it might win, in which case
+                    // it might also observe this RunContinuationsAsynchronously, but that's benign.  An alternative
+                    // is to make the whole cancellation registration queue, but that's visible in that the Task's
+                    // IsCompleted wouldn't be set synchronously as part of IsCompleted.
+                    thisRef.AtomicStateUpdate((int)TaskCreationOptions.RunContinuationsAsynchronously, 0);
+
                     if (thisRef.TrySetCanceled(cancellationToken))
                     {
                         thisRef.Cleanup();

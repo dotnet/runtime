@@ -86,6 +86,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     HWIntrinsicCategory    category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
     size_t                 numArgs     = node->GetOperandCount();
 
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(isa));
+
     int ival = HWIntrinsicInfo::lookupIval(intrinsicId, compiler->compOpportunisticallyDependsOn(InstructionSet_AVX));
 
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));

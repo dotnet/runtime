@@ -117,13 +117,13 @@ namespace System.Security.Cryptography.X509Certificates
                 if (_chainPolicy != null && _chainPolicy.CustomTrustStore != null)
                 {
                     if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
-                        throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode, nameof(_chainPolicy.TrustMode));
+                        throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode);
 
                     foreach (X509Certificate2 customCertificate in _chainPolicy.CustomTrustStore)
                     {
                         if (customCertificate == null || customCertificate.Handle == IntPtr.Zero)
                         {
-                            throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate, nameof(_chainPolicy.CustomTrustStore));
+                            throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate);
                         }
                     }
                 }

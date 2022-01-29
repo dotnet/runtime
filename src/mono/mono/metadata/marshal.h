@@ -233,6 +233,11 @@ typedef struct {
 	MonoLLVMFuncWrapperSubtype subtype;
 } LLVMFuncWrapperInfo;
 
+typedef struct {
+	MonoClass *klass;
+	MonoMethodSignature *sig;
+} NativeFuncWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -277,6 +282,8 @@ typedef struct {
 		AOTInitWrapperInfo aot_init;
 		/* LLVM_FUNC */
 		LLVMFuncWrapperInfo llvm_func;
+		/* NATIVE_FUNC_INDIRECT */
+		NativeFuncWrapperInfo native_func;
 	} d;
 } WrapperInfo;
 

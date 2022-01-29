@@ -68,15 +68,7 @@ namespace System.Net.Mail
 
         internal void SetContentFromFile(string fileName, ContentType? contentType)
         {
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (fileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, contentType);
@@ -84,15 +76,7 @@ namespace System.Net.Mail
 
         internal void SetContentFromFile(string fileName, string? mediaType)
         {
-            if (fileName == null)
-            {
-                throw new ArgumentNullException(nameof(fileName));
-            }
-
-            if (fileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(fileName)), nameof(fileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(fileName);
 
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             _part.SetContent(stream, null, mediaType);

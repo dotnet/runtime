@@ -3,6 +3,8 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Test.Cryptography;
 using Xunit;
 
@@ -15,6 +17,10 @@ namespace System.Security.Cryptography.Tests
         protected abstract byte[] HashData(byte[] source);
         protected abstract byte[] HashData(ReadOnlySpan<byte> source);
         protected abstract int HashData(ReadOnlySpan<byte> source, Span<byte> destination);
+        protected abstract int HashData(Stream source, Span<byte> destination);
+        protected abstract byte[] HashData(Stream source);
+        protected abstract ValueTask<int> HashDataAsync(Stream source, Memory<byte> destination, CancellationToken cancellationToken);
+        protected abstract ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken);
 
         protected void Verify(string input, string output)
         {
@@ -33,6 +39,54 @@ namespace System.Security.Cryptography.Tests
             }
 
             Assert.Equal(expected, actual);
+        }
+
+        private async Task VerifyComputeHashStreamAsync(Stream input, string output)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            byte[] actual;
+
+            using (HashAlgorithm hash = Create())
+            {
+                Assert.True(hash.HashSize > 0);
+                actual = await hash.ComputeHashAsync(input);
+            }
+
+            Assert.Equal(expected, actual);
+        }
+
+        private void VerifyOneShotStream(Stream input, string output)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            Span<byte> buffer = stackalloc byte[512 / 8];
+
+            int written = HashData(input, buffer);
+            AssertExtensions.SequenceEqual(expected, buffer.Slice(0, written));
+        }
+
+        private async Task VerifyOneShotStreamAsync(Stream input, string output)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+            Memory<byte> buffer = new byte[512 / 8];
+
+            int written = await HashDataAsync(input, buffer, cancellationToken: default);
+            AssertExtensions.SequenceEqual(expected, buffer.Slice(0, written).Span);
+        }
+
+        private void VerifyOneShotAllocatingStream(Stream input, string output)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+
+            byte[] digest = HashData(input);
+            Assert.Equal(expected, digest);
+        }
+
+        private async Task VerifyOneShotAllocatingStreamAsync(Stream input, string output)
+        {
+            byte[] expected = ByteUtils.HexToByteArray(output);
+
+            byte[] digest = await HashDataAsync(input, cancellationToken: default);
+            Assert.Equal(expected, digest);
         }
 
         private void VerifyICryptoTransformStream(Stream input, string output)
@@ -140,13 +194,13 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void HashData_ByteArray_Null()
         {
-            AssertExtensions.Throws<ArgumentNullException>("source", () => HashData(null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => HashData((byte[])null));
         }
 
         [Fact]
         public void HashData_BufferTooSmall()
         {
-            AssertExtensions.Throws<ArgumentException>("destination", () => HashData(default, default));
+            AssertExtensions.Throws<ArgumentException>("destination", () => HashData(Span<byte>.Empty, default));
         }
 
         [Fact]
@@ -320,6 +374,85 @@ namespace System.Security.Cryptography.Tests
             {
                 VerifyICryptoTransformStream(stream, output);
             }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                VerifyOneShotStream(stream, output);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                VerifyOneShotAllocatingStream(stream, output);
+            }
+        }
+
+        protected async Task VerifyRepeatingAsync(string input, int repeatCount, string output)
+        {
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                await VerifyComputeHashStreamAsync(stream, output);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                await VerifyOneShotStreamAsync(stream, output);
+            }
+
+            using (Stream stream = new DataRepeatingStream(input, repeatCount))
+            {
+                await VerifyOneShotAllocatingStreamAsync(stream, output);
+            }
+        }
+
+        [Fact]
+        public void HashData_Null_Stream_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () => HashData((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => HashData((Stream)null, Span<byte>.Empty));
+        }
+
+        [Fact]
+        public void HashData_ShortDestination_Throws()
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => HashData(Stream.Null, Span<byte>.Empty));
+        }
+
+        [Fact]
+        public void HashDataAsync_Null_Stream_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataAsync((Stream)null, cancellationToken: default));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "source",
+                () => HashDataAsync((Stream)null, Memory<byte>.Empty, cancellationToken: default));
+        }
+
+        [Fact]
+        public void HashDataAsync_ShortDestination_Throws()
+        {
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => HashDataAsync(Stream.Null, Memory<byte>.Empty, cancellationToken: default));
+        }
+
+        [Fact]
+        public void HashDataAsync_Buffer_CancelledToken()
+        {
+            Memory<byte> buffer = new byte[512 / 8];
+            CancellationToken cancelledToken = new CancellationToken(canceled: true);
+            ValueTask<int> waitable = HashDataAsync(Stream.Null, buffer, cancelledToken);
+            Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
+            AssertExtensions.FilledWith<byte>(0, buffer.Span);
+        }
+
+        [Fact]
+        public void HashDataAsync_Allocating_CancelledToken()
+        {
+            CancellationToken cancelledToken = new CancellationToken(canceled: true);
+            ValueTask<byte[]> waitable = HashDataAsync(Stream.Null, cancelledToken);
+            Assert.True(waitable.IsCanceled, nameof(waitable.IsCanceled));
         }
 
         [Fact]
@@ -509,92 +642,6 @@ namespace System.Security.Cryptography.Tests
                 hash.TransformFinalBlock(hashInput, 0, hashInput.Length);
 
                 Assert.Equal(expectedDigest, hash.Hash);
-            }
-        }
-
-        protected class DataRepeatingStream : Stream
-        {
-            private int _remaining;
-            private byte[] _data;
-
-            public DataRepeatingStream(string data, int repeatCount)
-            {
-                _remaining = repeatCount;
-                _data = ByteUtils.AsciiBytes(data);
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                if (!CanRead)
-                {
-                    throw new NotSupportedException();
-                }
-
-                if (_remaining == 0)
-                {
-                    return 0;
-                }
-
-                if (count < _data.Length)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                int multiple = count / _data.Length;
-
-                if (multiple > _remaining)
-                {
-                    multiple = _remaining;
-                }
-
-                int localOffset = offset;
-
-                for (int i = 0; i < multiple; i++)
-                {
-                    Buffer.BlockCopy(_data, 0, buffer, localOffset, _data.Length);
-                    localOffset += _data.Length;
-                }
-
-                _remaining -= multiple;
-                return _data.Length * multiple;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (disposing)
-                {
-                    _data = null;
-                }
-            }
-
-            public override void Flush()
-            {
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void SetLength(long value)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                throw new NotSupportedException();
-            }
-
-            public override bool CanRead { get { return _data != null; } }
-            public override bool CanSeek { get { return false; } }
-            public override bool CanWrite { get { return false; } }
-            public override long Length { get { throw new NotSupportedException(); } }
-
-            public override long Position
-            {
-                get { throw new NotSupportedException(); }
-                set { throw new NotSupportedException(); }
             }
         }
     }
