@@ -19,7 +19,7 @@
 namespace BINDER_SPACE
 {
     StringLexer::LEXEME_TYPE
-    StringLexer::GetNextLexeme(SString &currentString, BOOL fPermitUnescapedQuotes)
+    StringLexer::GetNextLexeme(SString &currentString)
     {
         BOOL fIsEscaped = FALSE;
         WCHAR wcCurrentChar = INVALID_CHARACTER;
@@ -43,11 +43,11 @@ namespace BINDER_SPACE
 
         // First character of string lexeme; push it back
         PushCharacter(wcCurrentChar, fIsEscaped);
-        return ParseString(currentString, fPermitUnescapedQuotes);
+        return ParseString(currentString);
     }
 
     StringLexer::LEXEME_TYPE
-    StringLexer::ParseString(SString &currentString, BOOL fPermitUnescapedQuotes)
+    StringLexer::ParseString(SString &currentString)
     {
         BOOL fIsFirstCharacter = TRUE;
         WCHAR wcCurrentChar = INVALID_CHARACTER;
@@ -99,7 +99,7 @@ namespace BINDER_SPACE
                 break;
             }
 
-            if (!fPermitUnescapedQuotes && !fIsEscaped && IsQuoteCharacter(wcCurrentChar) && !IsQuoteCharacter(wcOpeningQuote))
+            if (!fIsEscaped && IsQuoteCharacter(wcCurrentChar) && !IsQuoteCharacter(wcOpeningQuote))
             {
                 // Unescaped quotes in the middle of the string are an error
                 return LEXEME_TYPE_INVALID;
@@ -145,6 +145,26 @@ namespace BINDER_SPACE
         if (fFoundWhiteSpace)
         {
             currentString.Truncate(cursor + 1);
+        }
+    }
+
+    BOOL StringLexer::IsSeparatorChar(WCHAR wcChar)
+    {
+        return ((wcChar == W(',')) || (wcChar == W('=')));
+    }
+
+    StringLexer::LEXEME_TYPE StringLexer::GetLexemeType(WCHAR wcChar)
+    {
+        switch (wcChar)
+        {
+        case W('='):
+            return LEXEME_TYPE_EQUALS;
+        case W(','):
+            return LEXEME_TYPE_COMMA;
+        case 0:
+            return LEXEME_TYPE_END_OF_STREAM;
+        default:
+            return LEXEME_TYPE_STRING;
         }
     }
 };

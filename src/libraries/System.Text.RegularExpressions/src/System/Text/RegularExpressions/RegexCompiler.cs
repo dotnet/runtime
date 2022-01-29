@@ -51,6 +51,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfChar = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanLastIndexOfAnySpan = typeof(MemoryExtensions).GetMethod("LastIndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanLastIndexOfSpan = typeof(MemoryExtensions).GetMethod("LastIndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanSliceIntIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int), typeof(int) })!;
@@ -465,134 +468,173 @@ namespace System.Text.RegularExpressions
             // searching is required; otherwise, false.
             bool GenerateAnchors()
             {
-                // Generate anchor checks.
-                if ((_code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
+                Label label;
+
+                // Anchors that fully implement FindFirstChar, with a check that leads to immediate success or failure determination.
+                switch (_code.FindOptimizations.FindMode)
                 {
-                    switch (_code.FindOptimizations.LeadingAnchor)
-                    {
-                        case RegexPrefixAnalyzer.Beginning:
-                            {
-                                Label l1 = DefineLabel();
-                                Ldloc(pos);
-                                Ldthisfld(s_runtextbegField);
-                                Ble(l1);
-                                Br(returnFalse);
-                                MarkLabel(l1);
-                            }
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldthisfld(s_runtextbegField);
+                        Ble(label);
+                        Br(returnFalse);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldthisfld(s_runtextstartField);
+                        Ble(label);
+                        Br(returnFalse);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldloc(end);
+                        Ldc(1);
+                        Sub();
+                        Bge(label);
+                        Ldthis();
+                        Ldloc(end);
+                        Ldc(1);
+                        Sub();
+                        Stfld(s_runtextposField);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                        label = DefineLabel();
+                        Ldloc(pos);
+                        Ldloc(end);
+                        Bge(label);
+                        Ldthis();
+                        Ldloc(end);
+                        Stfld(s_runtextposField);
+                        MarkLabel(label);
+                        Ldc(1);
+                        Ret();
+                        return true;
+
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                    case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                        // Jump to the end, minus the min required length, which in this case is actually the fixed length.
+                        {
+                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            label = DefineLabel();
+                            Ldloc(pos);
+                            Ldloc(end);
+                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Sub();
+                            Bge(label);
+                            Ldthis();
+                            Ldloc(end);
+                            Ldc(_code.Tree.MinRequiredLength + extraNewlineBump);
+                            Sub();
+                            Stfld(s_runtextposField);
+                            MarkLabel(label);
                             Ldc(1);
                             Ret();
                             return true;
+                        }
+                }
 
-                        case RegexPrefixAnalyzer.Start:
-                            {
-                                Label l1 = DefineLabel();
-                                Ldloc(pos);
-                                Ldthisfld(s_runtextstartField);
-                                Ble(l1);
-                                Br(returnFalse);
-                                MarkLabel(l1);
-                            }
+                // Now handle anchors that boost the position but don't determine immediate success or failure.
+
+                switch (_code.FindOptimizations.LeadingAnchor)
+                {
+                    case RegexNodeKind.Bol:
+                        {
+                            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+                            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+                            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+                            // to boost our position to the next line, and then continue normally with any prefix or char class searches.
+
+                            label = DefineLabel();
+
+                            // if (pos > runtextbeg...
+                            Ldloc(pos!);
+                            Ldthisfld(s_runtextbegField);
+                            Ble(label);
+
+                            // ... && inputSpan[pos - 1] != '\n') { ... }
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
                             Ldc(1);
-                            Ret();
-                            return true;
+                            Sub();
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
+                            Ldc('\n');
+                            Beq(label);
 
-                        case RegexPrefixAnalyzer.EndZ:
+                            // int tmp = inputSpan.Slice(pos).IndexOf('\n');
+                            Ldloca(inputSpan);
+                            Ldloc(pos);
+                            Call(s_spanSliceIntMethod);
+                            Ldc('\n');
+                            Call(s_spanIndexOfChar);
+                            using (RentedLocalBuilder newlinePos = RentInt32Local())
                             {
-                                Label l1 = DefineLabel();
+                                Stloc(newlinePos);
+
+                                // if (newlinePos < 0 || newlinePos + pos + 1 > end)
+                                // {
+                                //     base.runtextpos = end;
+                                //     return false;
+                                // }
+                                Ldloc(newlinePos);
+                                Ldc(0);
+                                Blt(returnFalse);
+                                Ldloc(newlinePos);
                                 Ldloc(pos);
-                                Ldloc(end);
+                                Add();
                                 Ldc(1);
-                                Sub();
-                                Bge(l1);
-                                Ldthis();
+                                Add();
                                 Ldloc(end);
+                                Bgt(returnFalse);
+
+                                // pos += newlinePos + 1;
+                                Ldloc(pos);
+                                Ldloc(newlinePos);
+                                Add();
                                 Ldc(1);
-                                Sub();
-                                Stfld(s_runtextposField);
-                                MarkLabel(l1);
+                                Add();
+                                Stloc(pos);
                             }
-                            Ldc(1);
-                            Ret();
-                            return true;
 
-                        case RegexPrefixAnalyzer.End:
-                            {
-                                Label l1 = DefineLabel();
-                                Ldloc(pos);
-                                Ldloc(end);
-                                Bge(l1);
-                                Ldthis();
-                                Ldloc(end);
-                                Stfld(s_runtextposField);
-                                MarkLabel(l1);
-                            }
-                            Ldc(1);
-                            Ret();
-                            return true;
+                            MarkLabel(label);
+                        }
+                        break;
+                }
 
-                        case RegexPrefixAnalyzer.Bol:
-                            {
-                                // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
-                                // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-                                // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-                                // to boost our position to the next line, and then continue normally with any prefix or char class searches.
-
-                                Label atBeginningOfLine = DefineLabel();
-
-                                // if (pos > runtextbeg...
-                                Ldloc(pos!);
-                                Ldthisfld(s_runtextbegField);
-                                Ble(atBeginningOfLine);
-
-                                // ... && inputSpan[pos - 1] != '\n') { ... }
-                                Ldloca(inputSpan);
-                                Ldloc(pos);
-                                Ldc(1);
-                                Sub();
-                                Call(s_spanGetItemMethod);
-                                LdindU2();
-                                Ldc('\n');
-                                Beq(atBeginningOfLine);
-
-                                // int tmp = inputSpan.Slice(pos).IndexOf('\n');
-                                Ldloca(inputSpan);
-                                Ldloc(pos);
-                                Call(s_spanSliceIntMethod);
-                                Ldc('\n');
-                                Call(s_spanIndexOfChar);
-                                using (RentedLocalBuilder newlinePos = RentInt32Local())
-                                {
-                                    Stloc(newlinePos);
-
-                                    // if (newlinePos < 0 || newlinePos + pos + 1 > end)
-                                    // {
-                                    //     base.runtextpos = end;
-                                    //     return false;
-                                    // }
-                                    Ldloc(newlinePos);
-                                    Ldc(0);
-                                    Blt(returnFalse);
-                                    Ldloc(newlinePos);
-                                    Ldloc(pos);
-                                    Add();
-                                    Ldc(1);
-                                    Add();
-                                    Ldloc(end);
-                                    Bgt(returnFalse);
-
-                                    // pos += newlinePos + 1;
-                                    Ldloc(pos);
-                                    Ldloc(newlinePos);
-                                    Add();
-                                    Ldc(1);
-                                    Add();
-                                    Stloc(pos);
-                                }
-
-                                MarkLabel(atBeginningOfLine);
-                            }
+                switch (_code.FindOptimizations.TrailingAnchor)
+                {
+                    case RegexNodeKind.End or RegexNodeKind.EndZ when _code.FindOptimizations.MaxPossibleLength is int maxLength:
+                        // Jump to the end, minus the max allowed length.
+                        {
+                            int extraNewlineBump = _code.FindOptimizations.FindMode == FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ ? 1 : 0;
+                            label = DefineLabel();
+                            Ldloc(pos);
+                            Ldloc(end);
+                            Ldc(maxLength + extraNewlineBump);
+                            Sub();
+                            Bge(label);
+                            Ldloc(end);
+                            Ldc(maxLength + extraNewlineBump);
+                            Sub();
+                            Stloc(pos);
+                            MarkLabel(label);
                             break;
-                    }
+                        }
                 }
 
                 return false;
@@ -2572,7 +2614,7 @@ namespace System.Text.RegularExpressions
                 Ldloc(endingPos);
                 BgeFar(doneLabel);
 
-                if (subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal)
+                if (subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
                 {
                     // endingPos = inputSpan.Slice(startingPos, Math.Min(inputSpan.Length, endingPos + literal.Length - 1) - startingPos).LastIndexOf(literal);
                     // if (endingPos < 0)
@@ -2602,8 +2644,35 @@ namespace System.Text.RegularExpressions
                         Ldloc(startingPos);
                         Sub();
                         Call(s_spanSliceIntIntMethod);
-                        Ldc(literal.Item1);
-                        Call(s_spanLastIndexOfChar);
+                        if (literal.Item3 is not null)
+                        {
+                            switch (literal.Item3.Length)
+                            {
+                                case 2:
+                                    Ldc(literal.Item3[0]);
+                                    Ldc(literal.Item3[1]);
+                                    Call(s_spanLastIndexOfAnyCharChar);
+                                    break;
+
+                                case 3:
+                                    Ldc(literal.Item3[0]);
+                                    Ldc(literal.Item3[1]);
+                                    Ldc(literal.Item3[2]);
+                                    Call(s_spanLastIndexOfAnyCharCharChar);
+                                    break;
+
+                                default:
+                                    Ldstr(literal.Item3);
+                                    Call(s_stringAsSpanMethod);
+                                    Call(s_spanLastIndexOfAnySpan);
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            Ldc(literal.Item1);
+                            Call(s_spanLastIndexOfChar);
+                        }
                     }
                     Stloc(endingPos);
                     Ldloc(endingPos);
@@ -2744,8 +2813,8 @@ namespace System.Text.RegularExpressions
                 if (iterationCount is null &&
                     node.Kind is RegexNodeKind.Notonelazy &&
                     !IsCaseInsensitive(node) &&
-                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal &&
-                    (literal.Item2?[0] ?? literal.Item1) != node.Ch)
+                    subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                    (literal.Item3 is not null ? !literal.Item3.Contains(node.Ch) : (literal.Item2?[0] ?? literal.Item1) != node.Ch)) // no overlap between node.Ch and the start of the literal
                 {
                     // e.g. "<[^>]*?>"
                     // This lazy loop will consume all characters other than node.Ch until the subsequent literal.
@@ -2754,9 +2823,30 @@ namespace System.Text.RegularExpressions
 
                     // startingPos = slice.IndexOfAny(node.Ch, literal);
                     Ldloc(slice);
-                    Ldc(node.Ch);
-                    Ldc(literal.Item2?[0] ?? literal.Item1);
-                    Call(s_spanIndexOfAnyCharChar);
+                    if (literal.Item3 is not null)
+                    {
+                        switch (literal.Item3.Length)
+                        {
+                            case 2:
+                                Ldc(node.Ch);
+                                Ldc(literal.Item3[0]);
+                                Ldc(literal.Item3[1]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            default:
+                                Ldstr(node.Ch + literal.Item3);
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        Ldc(node.Ch);
+                        Ldc(literal.Item2?[0] ?? literal.Item1);
+                        Call(s_spanIndexOfAnyCharChar);
+                    }
                     Stloc(startingPos);
 
                     // if ((uint)startingPos >= (uint)slice.Length) goto doneLabel;
@@ -2784,7 +2874,7 @@ namespace System.Text.RegularExpressions
                 else if (iterationCount is null &&
                     node.Kind is RegexNodeKind.Setlazy &&
                     node.Str == RegexCharClass.AnyClass &&
-                    subsequent?.FindStartingCharacterOrString() is ValueTuple<char, string?> literal2)
+                    subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
                 {
                     // e.g. ".*?string" with RegexOptions.Singleline
                     // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
@@ -2797,6 +2887,30 @@ namespace System.Text.RegularExpressions
                         Ldstr(literal2.Item2);
                         Call(s_stringAsSpanMethod);
                         Call(s_spanIndexOfSpan);
+                    }
+                    else if (literal2.Item3 is not null)
+                    {
+                        switch (literal2.Item3.Length)
+                        {
+                            case 2:
+                                Ldc(literal2.Item3[0]);
+                                Ldc(literal2.Item3[1]);
+                                Call(s_spanIndexOfAnyCharChar);
+                                break;
+
+                            case 3:
+                                Ldc(literal2.Item3[0]);
+                                Ldc(literal2.Item3[1]);
+                                Ldc(literal2.Item3[2]);
+                                Call(s_spanIndexOfAnyCharCharChar);
+                                break;
+
+                            default:
+                                Ldstr(literal2.Item3);
+                                Call(s_stringAsSpanMethod);
+                                Call(s_spanIndexOfAnySpan);
+                                break;
+                        }
                     }
                     else
                     {
@@ -3820,9 +3934,9 @@ namespace System.Text.RegularExpressions
                 if (!needsCulture)
                 {
                     int[] codes = _code!.Codes;
-                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize(codes[codepos]))
+                    for (int codepos = 0; codepos < codes.Length; codepos += RegexCode.OpcodeSize((RegexOpcode)codes[codepos]))
                     {
-                        if ((codes[codepos] & RegexCode.Ci) == RegexCode.Ci)
+                        if (((RegexOpcode)codes[codepos] & RegexOpcode.CaseInsensitive) == RegexOpcode.CaseInsensitive)
                         {
                             needsCulture = true;
                             break;

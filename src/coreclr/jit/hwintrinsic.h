@@ -577,6 +577,25 @@ struct HWIntrinsicInfo
         return lookup(id).ins[type - TYP_BYTE];
     }
 
+    static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)
+    {
+        assert(intrinsicNode != nullptr);
+
+        NamedIntrinsic intrinsic = intrinsicNode->GetHWIntrinsicId();
+        var_types      type      = TYP_UNKNOWN;
+
+        if (lookupCategory(intrinsic) == HW_Category_Scalar)
+        {
+            type = intrinsicNode->TypeGet();
+        }
+        else
+        {
+            type = intrinsicNode->GetSimdBaseType();
+        }
+
+        return lookupIns(intrinsic, type);
+    }
+
     static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {
         return lookup(id).category;

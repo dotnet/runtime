@@ -4,6 +4,9 @@
 using Internal.Cryptography;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -109,6 +112,128 @@ namespace System.Security.Cryptography
             Debug.Assert(bytesWritten == HashSizeInBytes);
 
             return true;
+        }
+
+        /// <summary>
+        /// Computes the hash of a stream using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <p>
+        ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        ///   size. The SHA256 algorithm always produces a 256-bit hash, or 32 bytes.
+        ///   </p>
+        ///   <p>-or-</p>
+        ///   <p>
+        ///   <paramref name="source" /> does not support reading.
+        ///   </p>
+        /// </exception>
+        public static int HashData(Stream source, Span<byte> destination)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < HashSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA256, HashSizeInBytes, source, destination);
+        }
+
+        /// <summary>
+        /// Computes the hash of a stream using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> does not support reading.
+        /// </exception>
+        public static byte[] HashData(Stream source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA256, HashSizeInBytes, source);
+        }
+
+        /// <summary>
+        /// Asynchronously computes the hash of a stream using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> does not support reading.
+        /// </exception>
+        public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA256, HashSizeInBytes, source, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously computes the hash of a stream using the SHA256 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <p>
+        ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        ///   size. The SHA256 algorithm always produces a 256-bit hash, or 32 bytes.
+        ///   </p>
+        ///   <p>-or-</p>
+        ///   <p>
+        ///   <paramref name="source" /> does not support reading.
+        ///   </p>
+        /// </exception>
+        public static ValueTask<int> HashDataAsync(
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < HashSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStreamAsync(
+                HashAlgorithmNames.SHA256,
+                HashSizeInBytes,
+                source,
+                destination,
+                cancellationToken);
         }
 
         private sealed class Implementation : SHA256

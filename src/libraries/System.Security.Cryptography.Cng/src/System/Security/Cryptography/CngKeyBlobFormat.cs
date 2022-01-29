@@ -18,11 +18,7 @@ namespace System.Security.Cryptography
     {
         public CngKeyBlobFormat(string format)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
-            if (format.Length == 0)
-                throw new ArgumentException(SR.Format(SR.Cryptography_InvalidKeyBlobFormat, format), nameof(format));
-
+            ArgumentException.ThrowIfNullOrEmpty(format);
             _format = format;
         }
 

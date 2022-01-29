@@ -1,110 +1,108 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Threading;
-
 namespace System.Text.RegularExpressions
 {
     /// <summary>Specifies the kind of a <see cref="RegexNode"/>.</summary>
     internal enum RegexNodeKind
     {
+        /// <summary>Unknown node type.</summary>
+        /// <remarks>This should never occur on an actual node, and instead is used as a sentinel.</remarks>
+        Unknown = 0,
+
         // The following are leaves (no children) and correspond to primitive operations in the regular expression.
 
         /// <summary>A specific character, e.g. `a`.</summary>
         /// <remarks>The character is specified in <see cref="RegexNode.Ch"/>.</remarks>
-        One = RegexCode.One,
+        One = RegexOpcode.One,
         /// <summary>Anything other than a specific character, e.g. `.` when not in <see cref="RegexOptions.Singleline"/> mode, or `[^a]`.</summary>
         /// <remarks>The character is specified in <see cref="RegexNode.Ch"/>.</remarks>
-        Notone = RegexCode.Notone,
+        Notone = RegexOpcode.Notone,
         /// <summary>A character class / set, e.g. `[a-z1-9]` or `\w`.</summary>
         /// <remarks>The <see cref="RegexCharClass"/> set string is specified in <see cref="RegexNode.Str"/>.</remarks>
-        Set = RegexCode.Set,
+        Set = RegexOpcode.Set,
 
         /// <summary>A sequence of at least two specific characters, e.g. `abc`.</summary>
         /// <remarks>The characters are specified in <see cref="RegexNode.Str"/>.  This is purely a representational optimization, equivalent to multiple <see cref="One"/> nodes concatenated together.</remarks>
-        Multi = RegexCode.Multi,
+        Multi = RegexOpcode.Multi,
 
         /// <summary>A loop around a specific character, e.g. `a*`.</summary>
         /// <remarks>
         /// The character is specified in <see cref="RegexNode.Ch"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.
         /// This is purely a representational optimization, equivalent to a <see cref="Loop"/> wrapped around a <see cref="One"/>.
         /// </remarks>
-        Oneloop = RegexCode.Oneloop,
+        Oneloop = RegexOpcode.Oneloop,
         /// <summary>A loop around anything other than a specific character, e.g. `.*` when not in <see cref="RegexOptions.Singleline"/> mode, or `[^a]*`.</summary>
         /// <remarks>The character is specified in <see cref="RegexNode.Ch"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.</remarks>
         /// This is purely a representational optimization, equivalent to a <see cref="Loop"/> wrapped around a <see cref="Notone"/>.
-        Notoneloop = RegexCode.Notoneloop,
+        Notoneloop = RegexOpcode.Notoneloop,
         /// <summary>A loop around a character class / set, e.g. `[a-z1-9]*` or `\w*`.</summary>
         /// <remarks>The <see cref="RegexCharClass"/> set string is specified in <see cref="RegexNode.Str"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.</remarks>
         /// This is purely a representational optimization, equivalent to a <see cref="Loop"/> wrapped around a <see cref="Set"/>.
-        Setloop = RegexCode.Setloop,
+        Setloop = RegexOpcode.Setloop,
 
         /// <summary>A lazy loop around a specific character, e.g. `a*?`.</summary>
         /// <remarks>The character is specified in <see cref="RegexNode.Ch"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.</remarks>
         /// This is purely a representational optimization, equivalent to a <see cref="Lazyloop"/> wrapped around a <see cref="One"/>.
-        Onelazy = RegexCode.Onelazy,
+        Onelazy = RegexOpcode.Onelazy,
         /// <summary>A lazy loop around anything other than a specific character, e.g. `.*?` when not in <see cref="RegexOptions.Singleline"/> mode, or `[^a]*?`.</summary>
         /// <remarks>The character is specified in <see cref="RegexNode.Ch"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.</remarks>
         /// This is purely a representational optimization, equivalent to a <see cref="Lazyloop"/> wrapped around a <see cref="Notone"/>.
-        Notonelazy = RegexCode.Notonelazy,
+        Notonelazy = RegexOpcode.Notonelazy,
         /// <summary>A lazy loop around a character class / set, e.g. `[a-z1-9]*?` or `\w?`.</summary>
         /// <remarks>The <see cref="RegexCharClass"/> set string is specified in <see cref="RegexNode.Str"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.</remarks>
         /// This is purely a representational optimization, equivalent to a <see cref="Lazyloop"/> wrapped around a <see cref="Set"/>.
-        Setlazy = RegexCode.Setlazy,
+        Setlazy = RegexOpcode.Setlazy,
 
         /// <summary>An atomic loop around a specific character, e.g. `(?> a*)`.</summary>
         /// <remarks>
         /// The character is specified in <see cref="RegexNode.Ch"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.
         /// This is purely a representational optimization, equivalent to a <see cref="Atomic"/> wrapped around a <see cref="Oneloop"/>.
         /// </remarks>
-        Oneloopatomic = RegexCode.Oneloopatomic,
+        Oneloopatomic = RegexOpcode.Oneloopatomic,
         /// <summary>An atomic loop around anything other than a specific character, e.g. `(?>.*)` when not in <see cref="RegexOptions.Singleline"/> mode.</summary>
         /// <remarks>
         /// The character is specified in <see cref="RegexNode.Ch"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.
         /// This is purely a representational optimization, equivalent to a <see cref="Atomic"/> wrapped around a <see cref="Notoneloop"/>.
         /// </remarks>
-        Notoneloopatomic = RegexCode.Notoneloopatomic,
+        Notoneloopatomic = RegexOpcode.Notoneloopatomic,
         /// <summary>An atomic loop around a character class / set, e.g. `(?>\d*)`.</summary>
         /// <remarks>
         /// The <see cref="RegexCharClass"/> set string is specified in <see cref="RegexNode.Str"/>, the minimum number of iterations in <see cref="RegexNode.M"/>, and the maximum number of iterations in <see cref="RegexNode.N"/>.
         /// This is purely a representational optimization, equivalent to a <see cref="Atomic"/> wrapped around a <see cref="Setloop"/>.
         /// </remarks>
-        Setloopatomic = RegexCode.Setloopatomic,
+        Setloopatomic = RegexOpcode.Setloopatomic,
 
         /// <summary>A backreference, e.g. `\1`.</summary>
         /// <remarks>The capture group number referenced is stored in <see cref="RegexNode.M"/>.</remarks>
-        Backreference = RegexCode.Ref,
+        Backreference = RegexOpcode.Backreference,
 
         /// <summary>A beginning-of-line anchor, e.g. `^` in <see cref="RegexOptions.Multiline"/> mode.</summary>
-        Bol = RegexCode.Bol,
+        Bol = RegexOpcode.Bol,
         /// <summary>An end-of-line anchor, e.g. `$` in <see cref="RegexOptions.Multiline"/> mode.</summary>
-        Eol = RegexCode.Eol,
+        Eol = RegexOpcode.Eol,
         /// <summary>A word boundary anchor, e.g. `\b`.</summary>
-        Boundary = RegexCode.Boundary,
+        Boundary = RegexOpcode.Boundary,
         /// <summary>Not a word boundary anchor, e.g. `\B`.</summary>
-        NonBoundary = RegexCode.NonBoundary,
+        NonBoundary = RegexOpcode.NonBoundary,
         /// <summary>A word boundary anchor, e.g. `\b` in <see cref="RegexOptions.ECMAScript"/> mode.</summary>
-        ECMABoundary = RegexCode.ECMABoundary,
+        ECMABoundary = RegexOpcode.ECMABoundary,
         /// <summary>Not a word boundary anchor, e.g. `\B` in <see cref="RegexOptions.ECMAScript"/> mode..</summary>
-        NonECMABoundary = RegexCode.NonECMABoundary,
+        NonECMABoundary = RegexOpcode.NonECMABoundary,
         /// <summary>A beginning-of-string anchor, e.g. `\A`, or `^` when not in <see cref="RegexOptions.Multiline"/> mode.</summary>
-        Beginning = RegexCode.Beginning,
+        Beginning = RegexOpcode.Beginning,
         /// <summary>A start anchor, e.g. `\G`.</summary>
-        Start = RegexCode.Start,
+        Start = RegexOpcode.Start,
         /// <summary>A end-of-string-or-before-ending-newline anchor, e.g. `\Z`, or `$` when not in <see cref="RegexOptions.Multiline"/> mode.</summary>
-        EndZ = RegexCode.EndZ,
+        EndZ = RegexOpcode.EndZ,
         /// <summary>A end-of-string-only anchor, e.g. `\z`.</summary>
-        End = RegexCode.End,
+        End = RegexOpcode.End,
 
         /// <summary>A fabricated node injected during analyses to signal a location in the matching where the engine may set the next bumpalong position to the current position.</summary>
-        UpdateBumpalong = RegexCode.UpdateBumpalong,
+        UpdateBumpalong = RegexOpcode.UpdateBumpalong,
 
         /// <summary>Fails when matching an empty string, e.g. `(?!)`.</summary>
-        Nothing = 22,
+        Nothing = RegexOpcode.Nothing,
         /// <summary>Matches the empty string, e.g. ``.</summary>
         Empty = 23,
 
@@ -130,7 +128,7 @@ namespace System.Text.RegularExpressions
         /// One and only one child, the expression in the loop. The minimum number of iterations is in <see cref="RegexNode.M"/>,
         /// and the maximum number of iterations is in <see cref="RegexNode.N"/>.
         /// </remarks>
-        Loop = 26,                                   // m,x      * + ? {,}
+        Loop = 26,
         /// <summary>A lazy loop around an arbitrary <see cref="RegexNode"/>, e.g. `(ab|cd)*?`.</summary>
         /// <remarks>
         /// One and only one child, the expression in the loop. The minimum number of iterations is in <see cref="RegexNode.M"/>,

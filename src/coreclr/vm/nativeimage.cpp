@@ -289,7 +289,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
     }
 
     GUID assemblyMvid;
-    assembly->GetManifestImport()->GetScopeProps(NULL, &assemblyMvid);
+    assembly->GetMDImport()->GetScopeProps(NULL, &assemblyMvid);
 
     const byte *pImageBase = (const BYTE *)m_pImageLayout->GetBase();
     const GUID *componentMvid = (const GUID *)&pImageBase[m_pComponentAssemblyMvids->VirtualAddress] + assemblyNameIndex->Index;

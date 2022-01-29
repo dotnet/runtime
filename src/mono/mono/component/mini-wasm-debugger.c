@@ -174,7 +174,7 @@ mono_wasm_debugger_init (void)
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_assembly_loaded_callback (prof, assembly_loaded);
 
-//debugger-agent initialization	
+//debugger-agent initialization
 	DebuggerTransport trans;
 	trans.name = "buffer-wasm-communication";
 	trans.send = receive_debugger_agent_message;
@@ -202,7 +202,7 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		MonoDebugHandle *handle = mono_debug_get_handle (assembly_image);
 		if (handle) {
 			MonoPPDBFile *ppdb = handle->ppdb;
-			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy. 
+			if (ppdb && !mono_ppdb_is_embedded (ppdb)) { //if it's an embedded pdb we don't need to send pdb extrated to DebuggerProxy.
 				pdb_image = mono_ppdb_get_image (ppdb);
 				mono_wasm_asm_loaded (assembly_image->assembly_name, assembly_image->raw_data, assembly_image->raw_data_len, pdb_image->raw_data, pdb_image->raw_data_len);
 				return;
@@ -339,7 +339,7 @@ write_value_to_buffer (MdbgProtBuffer *buf, MonoTypeEnum type, const char* varia
 	return TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE void 
+EMSCRIPTEN_KEEPALIVE void
 mono_wasm_set_is_debugger_attached (gboolean is_attached)
 {
 	mono_set_is_debugger_attached (is_attached);
@@ -357,7 +357,7 @@ mono_wasm_set_is_debugger_attached (gboolean is_attached)
 
 extern void mono_wasm_add_dbg_command_received(mono_bool res_ok, int id, void* buffer, int buffer_len);
 
-EMSCRIPTEN_KEEPALIVE gboolean 
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size, int valtype, char* newvalue)
 {
 	if (!debugger_enabled) {
@@ -378,7 +378,7 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 	return TRUE;
 }
 
-EMSCRIPTEN_KEEPALIVE gboolean 
+EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command, guint8* data, unsigned int size)
 {
 	if (!debugger_enabled) {
@@ -392,7 +392,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	buffer_init (&buf, 128);
 	gboolean no_reply;
 	MdbgProtErrorCode error = 0;
-	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD ) 
+	if (command_set == MDBGPROT_CMD_SET_VM && command == MDBGPROT_CMD_VM_INVOKE_METHOD )
 	{
 		DebuggerTlsData* tls = mono_wasm_get_tls ();
 		InvokeData invoke_data;
@@ -409,12 +409,12 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	return TRUE;
 }
 
-static gboolean 
+static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
 	mono_wasm_add_dbg_command_received(1, -1, data, len);
 	mono_wasm_save_thread_context();
-	mono_wasm_fire_debugger_agent_message ();	
+	mono_wasm_fire_debugger_agent_message ();
 	return FALSE;
 }
 

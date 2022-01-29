@@ -807,7 +807,7 @@ mono_de_process_single_step (void *tls, gboolean from_signal)
 	if (method->wrapper_type && method->wrapper_type != MONO_WRAPPER_DYNAMIC_METHOD)
 		goto exit;
 
-	/* 
+	/*
 	 * FIXME:
 	 * Stopping in memset makes half-initialized vtypes visible.
 	 * Stopping in memcpy makes half-copied vtypes visible.
@@ -999,7 +999,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 			hit = FALSE;
 		}
 	}
-				
+
 	if (loc) {
 		req->last_method = method;
 		req->last_line = loc->row;
@@ -1498,7 +1498,7 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 		err = rt_callbacks.handle_multiple_ss_requests ();
 
 		if (err == DE_ERR_NOT_IMPLEMENTED) {
-			PRINT_DEBUG_MSG (0, "Received a single step request while the previous one was still active.\n");		
+			PRINT_DEBUG_MSG (0, "Received a single step request while the previous one was still active.\n");
 			return DE_ERR_NOT_IMPLEMENTED;
 		}
 	}
@@ -1596,7 +1596,7 @@ get_class_to_get_builder_field (DbgEngineStackFrame *frame)
 
 		if (!this_obj)
 			return NULL;
-			
+
 		context = mono_get_generic_context_from_stack_frame (frame->ji, mono_get_generic_info_from_stack_frame (frame->ji, &the_frame->ctx));
 		inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (original_class), &context, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */

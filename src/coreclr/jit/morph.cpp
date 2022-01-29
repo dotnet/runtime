@@ -11606,7 +11606,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     break;
                 case GT_OBJ:
                 case GT_BLK:
-                case GT_DYN_BLK:
                 case GT_IND:
                     // A non-null mac here implies this node is part of an address computation (the tree parent is
                     // GT_ADDR).
@@ -13441,28 +13440,6 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
         std::swap(tree->gtOp1, tree->gtOp2);
     }
 
-    if (!optValnumCSE_phase)
-    {
-        GenTree* optimizedTree = nullptr;
-        if (tree->OperIs(GT_ADD))
-        {
-            optimizedTree = fgOptimizeAddition(tree);
-        }
-        else if (tree->OperIs(GT_MUL))
-        {
-            optimizedTree = fgOptimizeMultiply(tree);
-        }
-        else if (tree->OperIs(GT_AND))
-        {
-            optimizedTree = fgOptimizeBitwiseAnd(tree);
-        }
-
-        if (optimizedTree != nullptr)
-        {
-            return optimizedTree;
-        }
-    }
-
     if (fgOperIsBitwiseRotationRoot(tree->OperGet()))
     {
         GenTree* rotationTree = fgRecognizeAndMorphBitwiseRotation(tree);
@@ -13483,7 +13460,36 @@ GenTree* Compiler::fgOptimizeCommutativeArithmetic(GenTreeOp* tree)
 
     if (varTypeIsIntegralOrI(tree))
     {
+        genTreeOps oldTreeOper   = tree->OperGet();
         GenTreeOp* optimizedTree = fgMorphCommutative(tree->AsOp());
+        if (optimizedTree != nullptr)
+        {
+            if (!optimizedTree->OperIs(oldTreeOper))
+            {
+                // "optimizedTree" could end up being a COMMA.
+                return optimizedTree;
+            }
+
+            tree = optimizedTree;
+        }
+    }
+
+    if (!optValnumCSE_phase)
+    {
+        GenTree* optimizedTree = nullptr;
+        if (tree->OperIs(GT_ADD))
+        {
+            optimizedTree = fgOptimizeAddition(tree);
+        }
+        else if (tree->OperIs(GT_MUL))
+        {
+            optimizedTree = fgOptimizeMultiply(tree);
+        }
+        else if (tree->OperIs(GT_AND))
+        {
+            optimizedTree = fgOptimizeBitwiseAnd(tree);
+        }
+
         if (optimizedTree != nullptr)
         {
             return optimizedTree;
@@ -13535,8 +13541,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
 
     // Fold (x + 0) - given it won't change the tree type to TYP_REF.
     // TODO-Bug: this code will lose the GC-ness of a tree like "native int + byref(0)".
-    if (op2->IsCnsIntOrI() && (op2->AsIntCon()->IconValue() == 0) &&
-        ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
+    if (op2->IsIntegralConst(0) && ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
     {
         if (op2->IsCnsIntOrI() && (op2->AsIntCon()->gtFieldSeq != nullptr) &&
             (op2->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField()))
@@ -13550,9 +13555,8 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         return op1;
     }
 
-    // TODO-CQ: this transform preserves VNs and can be enabled outside global morph.
     // Note that these transformations are legal for floating-point ADDs as well.
-    if (opts.OptimizationEnabled() && fgGlobalMorph)
+    if (opts.OptimizationEnabled())
     {
         // - a + b = > b - a
         // ADD((NEG(a), b) => SUB(b, a)
@@ -13661,6 +13665,13 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             return mul;
         }
 
+#ifdef TARGET_XARCH
+        // Should we try to replace integer multiplication with lea/add/shift sequences?
+        bool mulShiftOpt = compCodeOpt() != SMALL_CODE;
+#else  // !TARGET_XARCH
+        bool mulShiftOpt = false;
+#endif // !TARGET_XARCH
+
         size_t abs_mult      = (mult >= 0) ? mult : -mult;
         size_t lowestBit     = genFindLowestBit(abs_mult);
         bool   changeToShift = false;
@@ -13703,7 +13714,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             op2->AsIntConCommon()->SetIconValue(genLog2(abs_mult));
             changeToShift = true;
         }
-        else if ((lowestBit > 1) && jitIsScaleIndexMul(lowestBit) && optAvoidIntMult())
+        else if (mulShiftOpt && (lowestBit > 1) && jitIsScaleIndexMul(lowestBit))
         {
             int     shift  = genLog2(lowestBit);
             ssize_t factor = abs_mult >> shift;
@@ -14976,23 +14987,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             break;
 
         case GT_STORE_DYN_BLK:
-        case GT_DYN_BLK:
-            if (tree->OperGet() == GT_STORE_DYN_BLK)
-            {
-                tree->AsDynBlk()->Data() = fgMorphTree(tree->AsDynBlk()->Data());
-            }
-            tree->AsDynBlk()->Addr()        = fgMorphTree(tree->AsDynBlk()->Addr());
-            tree->AsDynBlk()->gtDynamicSize = fgMorphTree(tree->AsDynBlk()->gtDynamicSize);
-
-            tree->gtFlags &= ~GTF_CALL;
-            tree->SetIndirExceptionFlags(this);
-
-            if (tree->OperGet() == GT_STORE_DYN_BLK)
-            {
-                tree->gtFlags |= tree->AsDynBlk()->Data()->gtFlags & GTF_ALL_EFFECT;
-            }
-            tree->gtFlags |= tree->AsDynBlk()->Addr()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= tree->AsDynBlk()->gtDynamicSize->gtFlags & GTF_ALL_EFFECT;
+            tree = fgMorphStoreDynBlock(tree->AsStoreDynBlk());
             break;
 
         default:
