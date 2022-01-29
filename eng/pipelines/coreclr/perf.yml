@@ -497,6 +497,8 @@ jobs:
       - Android_arm64
       - MacCatalyst_x64
       - iOSSimulator_x64
+      - iOS_arm64
+      - iOS_arm
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: Maui_Packs_Mono
