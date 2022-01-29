@@ -3705,27 +3705,16 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     {
         case IAT_VALUE:
         {
-            bool avoidRelativeCall = false;
+            bool targetIsNear = true;
 #ifdef TARGET_ARM64
-            if (comp->eeGetRelocTypeHint(addr) != IMAGE_REL_ARM64_BRANCH26)
-            {
-                if (call->gtCallType == CT_HELPER)
-                {
-                    avoidRelativeCall = true;
-                }
-                else
-                {
-                    avoidRelativeCall =
-                        comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) & CORINFO_FLG_OPTIMIZED;
-                }
-            }
+            targetIsWithin28bit = comp->eeGetRelocTypeHint(addr) == IMAGE_REL_ARM64_BRANCH26;
 #endif
 
             // Non-virtual direct call to known address.
             // For JIT helper based tailcall (only used on x86) the target
             // address is passed as an arg to the helper so we want a node for
             // it.
-            if (avoidRelativeCall || !IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
+            if (!targetIsNear || !IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
             {
                 result = AddrGen(addr);
             }
