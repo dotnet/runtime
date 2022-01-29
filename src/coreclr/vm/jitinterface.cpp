@@ -11345,8 +11345,20 @@ WORD CEEJitInfo::getRelocTypeHint(void * target)
     // guess whether the native instruction (e.g. br) will be able to reach this target or not
     // within 128Mb (1Mb is subtracted because we don't know the exact code size at this point)
     // NOTE: it's still just a hint
-    if (FitsInRel28(abs((INT64)m_CodeHeader->GetCodeStartAddress()) - (INT64)target) + 1024 * 1024)
-        return IMAGE_REL_ARM64_BRANCH26;
+    if (m_pMethodBeingCompiled)
+    {
+        PTR_LoaderAllocator alloc = m_pMethodBeingCompiled->GetLoaderAllocator();
+        auto heapList = (HeapList*)alloc->m_pLastUsedCodeHeap;
+        if (heapList != nullptr)
+        {
+            BYTE* codeHeap = heapList->pHeap->GetAllocPtr();
+            INT64 delta = (INT64)((BYTE*)target - codeHeap);
+            if (FitsInRel28(delta))
+            {
+                return IMAGE_REL_ARM64_BRANCH26;
+            }
+        }
+    }
 #endif
 
     // No hints

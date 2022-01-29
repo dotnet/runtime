@@ -444,6 +444,8 @@ public:
     // Space for header is reserved immediately before. It is not included in size.
     virtual void* AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs) = 0;
 
+    virtual PTR_BYTE GetAllocPtr() = 0;
+
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) = 0;
 #endif
@@ -538,6 +540,11 @@ public:
         m_LoaderHeap.EnumMemoryRegions(flags);
     }
 #endif
+
+    virtual PTR_BYTE GetAllocPtr()
+    {
+        return m_LoaderHeap.GetAllocPtr();
+    }
 };
 
 #if defined(HOST_64BIT)

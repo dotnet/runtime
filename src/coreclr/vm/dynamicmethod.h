@@ -298,6 +298,8 @@ public:
 
     LoaderAllocator* GetAllocator() { return m_pAllocator; }
 
+    virtual PTR_BYTE GetAllocPtr() { return 0; }
+
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
