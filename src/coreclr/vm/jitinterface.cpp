@@ -6443,13 +6443,6 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
     }
 
-    if (pMD->GetModule()->IsSystem()) // is it an FCall?
-    {
-        // TODO: also check if it's tier1 managed method
-        // pMD->GetCodeVersionManager()->GetNativeCodeVersion ?
-        result |= CORINFO_FLG_OPTIMIZED;
-    }
-
     return result;
 }
 
