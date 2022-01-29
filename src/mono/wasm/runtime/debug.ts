@@ -6,8 +6,7 @@ import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 
-let commands_received: CommandResponse;
-let commands_result: CommandResponse;
+const commands_result = new Map<number, CommandResponse>();
 let _call_function_res_cache: any = {};
 let _next_call_function_res_id = 0;
 let _debugger_buffer_len = -1;
@@ -44,20 +43,7 @@ export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, 
             value: base64String
         }
     };
-    commands_received = buffer_obj;
-}
-
-export function mono_wasm_add_dbg_command_result(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
-    const base64String = toBase64StringImpl(assembly_data);
-    const buffer_obj = {
-        res_ok,
-        res: {
-            id,
-            value: base64String
-        }
-    };
-    commands_result = buffer_obj;
+    commands_result.set(id, buffer_obj);
 }
 
 function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
@@ -77,7 +63,8 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command_with_parms(id, command_set, command, _debugger_buffer, length, valtype, newvalue.toString());
 
-    const { res_ok, res } = commands_result;
+    const { res_ok, res } = commands_result.get(id) as CommandResponse;
+    commands_result.delete(id);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
     return res;
@@ -87,7 +74,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
     mono_wasm_malloc_and_set_debug_buffer(command_parameters);
     cwraps.mono_wasm_send_dbg_command(id, command_set, command, _debugger_buffer, command_parameters.length);
 
-    const { res_ok, res } = commands_result;
+    const { res_ok, res } = commands_result.get(id) as CommandResponse;
+    commands_result.delete(id);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_send_dbg_command");
     return res;
@@ -95,7 +83,8 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 }
 
 export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
-    const { res_ok, res } = commands_received;
+    const { res_ok, res } = commands_result.get(0) as CommandResponse;
+    commands_result.delete(0);
     if (!res_ok)
         throw new Error("Failed on mono_wasm_get_dbg_command_info");
     return res;
@@ -148,10 +137,10 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
                 prop.name,
                 {
                     get() {
-                        return mono_wasm_send_dbg_command(-1, prop.get.commandSet, prop.get.command, prop.get.buffer);
+                        return mono_wasm_send_dbg_command(prop.get.id, prop.get.commandSet, prop.get.command, prop.get.buffer);
                     },
                     set: function (newValue) {
-                        mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return commands_result.res_ok;
+                        mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;
                     }
                 }
             );
@@ -163,7 +152,7 @@ function _create_proxy_from_object_id(objectId: string, details: any) {
                         return prop.value;
                     },
                     set: function (newValue) {
-                        mono_wasm_send_dbg_command_with_parms(-1, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return commands_result.res_ok;
+                        mono_wasm_send_dbg_command_with_parms(prop.set.id, prop.set.commandSet, prop.set.command, prop.set.buffer, prop.set.length, prop.set.valtype, newValue); return true;
                     }
                 }
             );

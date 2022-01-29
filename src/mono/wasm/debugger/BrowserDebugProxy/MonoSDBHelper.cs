@@ -700,7 +700,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoSDBHelper
     {
         private static int debuggerObjectId;
-        private static int cmdId;
+        private static int cmdId = 1;
         private static int GetId() {return cmdId++;}
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
@@ -2180,6 +2180,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 command = CmdVM.InvokeMethod,
                                 buffer = data,
                                 length = length,
+                                id = GetId()
                                 }),
                             name = propertyNameStr
                         }));
@@ -2505,7 +2506,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             command = CmdObject.RefSetValues,
                             buffer = data,
                             valtype,
-                            length = length
+                            length,
+                            id = GetId()
                         }));
                     }
                     if (!isRootHidden)
@@ -2636,7 +2638,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         command = CmdVM.InvokeMethod,
                                         buffer = data,
                                         valtype = attr["set"]["valtype"],
-                                        length = length
+                                        length,
+                                        id = GetId()
                                 });
                         }
                         continue;
@@ -2655,7 +2658,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     commandSet = CommandSet.Vm,
                                     command = CmdVM.InvokeMethod,
                                     buffer = data,
-                                    length = length
+                                    length = length,
+                                    id = GetId()
                                     }),
                                 name = propertyNameStr
                             }));
