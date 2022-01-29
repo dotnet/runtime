@@ -85,7 +85,7 @@ enum genTreeOps : BYTE
 // The following enum defines a set of bit flags that can be used
 // to classify expression tree nodes.
 //
-enum genTreeKinds
+enum GenTreeOperKind
 {
     GTK_SPECIAL = 0x00, // special operator
     GTK_LEAF    = 0x01, // leaf    operator
@@ -101,6 +101,22 @@ enum genTreeKinds
     GTK_NOVALUE   = 0x20, // node does not produce a value
     GTK_NOTLIR    = 0x40, // node is not allowed in LIR
     GTK_NOCONTAIN = 0x80, // this node is a value, but may not be contained
+
+    GTK_MASK = 0xFF
+};
+
+// The following enum defines a set of bit flags that describe opers for the purposes
+// of DEBUG-only checks. This is separate from the above "GenTreeOperKind"s to avoid
+// making the table for those larger in Release builds. However, it resides in the same
+// "namespace" and so all values here must be distinct from those in "GenTreeOperKind".
+//
+enum GenTreeDebugOperKind
+{
+    DBK_FIRST_FLAG = GTK_MASK + 1,
+
+    DBK_NOTHIR = DBK_FIRST_FLAG, // This oper is not supported in HIR (before rationalization).
+
+    DBK_MASK = ~GTK_MASK
 };
 
 /*****************************************************************************/
@@ -1645,6 +1661,20 @@ public:
     }
 
 #ifdef DEBUG
+    static const GenTreeDebugOperKind gtDebugOperKindTable[];
+
+    static GenTreeDebugOperKind DebugOperKind(genTreeOps oper)
+    {
+        assert(oper < GT_COUNT);
+
+        return gtDebugOperKindTable[oper];
+    }
+
+    GenTreeDebugOperKind DebugOperKind() const
+    {
+        return DebugOperKind(OperGet());
+    }
+
     bool NullOp1Legal() const
     {
         assert(OperIsSimple());
