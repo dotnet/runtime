@@ -3556,6 +3556,11 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 			}
 		}
 
+		if (m_type_is_byref (field->type) && !m_class_is_byreflike (klass)) {
+			mono_error_set_type_load_name (error, NULL, NULL, "Field '%s' is a byref in a non-byref-like type", field->name);
+			goto leave;
+		}
+
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
 			char *base = mono_array_addr_internal (rva_data, char, 0);
 			size_t size = mono_array_length_internal (rva_data);
@@ -3856,6 +3861,12 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	klass->supertypes = NULL;
 	mono_class_setup_supertypes (klass);
 	mono_class_setup_mono_type (klass);
+
+	/* Check if the type is marked as byreflike.
+	 * The IsByRefLike attribute only applies to value types and enums. This matches CoreCLR behavior.
+	 */
+	if (klass->enumtype || klass->valuetype)
+		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set);
 
 	/* enums are done right away */
 	if (!klass->enumtype)

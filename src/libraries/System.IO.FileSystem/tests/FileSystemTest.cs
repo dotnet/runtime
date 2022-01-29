@@ -11,9 +11,6 @@ namespace System.IO.Tests
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
 
-        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.MacCatalyst;
-        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX & ~TestPlatforms.MacCatalyst;
-
         public static bool AreAllLongPathsAvailable => PathFeatures.AreAllLongPathsAvailable();
 
         public static bool LongPathsAreNotBlocked => !PathFeatures.AreLongPathsBlocked();

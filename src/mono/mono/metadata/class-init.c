@@ -364,6 +364,14 @@ mono_class_setup_fields (MonoClass *klass)
 			g_free (type_name);
 			break;
 		}
+		if (m_type_is_byref (field->type)) {
+			if (!m_class_is_byreflike (klass)) {
+				char *class_name = mono_type_get_full_name (klass);
+				mono_class_set_type_load_failure (klass, "Type %s is not a ByRefLike type so ref field, '%s', is invalid", class_name, field->name);
+				g_free (class_name);
+				break;
+			}
+		}
 		/* The def_value of fields is compute lazily during vtable creation */
 	}
 
@@ -2008,6 +2016,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	 if (klass->simd_type)
 		min_align = 16;
 	 */
+
+	/* Respect the specified packing size at least to the extent necessary to align double variables.
+	 * This should avoid any GC problems, and will allow packing_size to be respected to support
+	 * CreateSpan<T>
+	 */
+	min_align = MIN (MONO_ABI_ALIGNOF (double), MAX (min_align, packing_size));
 
 	/*
 	 * When we do generic sharing we need to have layout

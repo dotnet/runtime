@@ -1504,6 +1504,12 @@
         "unix-loongarch64"
       ]
     },
+    "linux-armv6": {
+      "#import": [
+        "linux",
+        "unix-armv6"
+      ]
+    },
     "linux-mips64": {
       "#import": [
         "linux",
@@ -3440,6 +3446,11 @@
       ]
     },
     "unix-loongarch64": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "unix-armv6": {
       "#import": [
         "unix"
       ]

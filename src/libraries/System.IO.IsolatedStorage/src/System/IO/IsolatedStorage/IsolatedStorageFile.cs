@@ -288,13 +288,7 @@ namespace System.IO.IsolatedStorage
 
         public DateTimeOffset GetCreationTime(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             EnsureStoreIsValid();
 
@@ -310,13 +304,7 @@ namespace System.IO.IsolatedStorage
 
         public DateTimeOffset GetLastAccessTime(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             EnsureStoreIsValid();
 
@@ -332,13 +320,7 @@ namespace System.IO.IsolatedStorage
 
         public DateTimeOffset GetLastWriteTime(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (path.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(path);
 
             EnsureStoreIsValid();
 
@@ -354,42 +336,16 @@ namespace System.IO.IsolatedStorage
 
         public void CopyFile(string sourceFileName, string destinationFileName)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
-            if (sourceFileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
-            }
-
-            if (destinationFileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
             CopyFile(sourceFileName, destinationFileName, false);
         }
 
         public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
-            if (sourceFileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
-            }
-
-            if (destinationFileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
             EnsureStoreIsValid();
 
@@ -416,21 +372,8 @@ namespace System.IO.IsolatedStorage
 
         public void MoveFile(string sourceFileName, string destinationFileName)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
-
-            if (sourceFileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceFileName));
-            }
-
-            if (destinationFileName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationFileName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(sourceFileName);
+            ArgumentException.ThrowIfNullOrEmpty(destinationFileName);
 
             EnsureStoreIsValid();
 
@@ -457,21 +400,8 @@ namespace System.IO.IsolatedStorage
 
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName)
         {
-            if (sourceDirectoryName == null)
-                throw new ArgumentNullException(nameof(sourceDirectoryName));
-
-            if (destinationDirectoryName == null)
-                throw new ArgumentNullException(nameof(destinationDirectoryName));
-
-            if (sourceDirectoryName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(sourceDirectoryName));
-            }
-
-            if (destinationDirectoryName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(destinationDirectoryName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(sourceDirectoryName);
+            ArgumentException.ThrowIfNullOrEmpty(destinationDirectoryName);
 
             EnsureStoreIsValid();
 

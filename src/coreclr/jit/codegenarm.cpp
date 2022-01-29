@@ -82,7 +82,7 @@ bool CodeGen::genInstrWithConstant(
         // generate two or more instructions
 
         // first we load the immediate into tmpReg
-        instGen_Set_Reg_To_Imm(attr, tmpReg, imm);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
 
         // generate the instruction using a three register encoding with the immediate in tmpReg
         GetEmitter()->emitIns_R_R_R(ins, attr, reg1, reg2, tmpReg);

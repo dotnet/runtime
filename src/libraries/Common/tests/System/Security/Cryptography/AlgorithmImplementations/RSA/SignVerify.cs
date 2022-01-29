@@ -48,14 +48,18 @@ namespace System.Security.Cryptography.Rsa.Tests
         protected abstract bool VerifyData(RSA rsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
         protected abstract bool VerifyHash(RSA rsa, byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding);
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        public void InvalidHashAlgorithmName_Throws(string name)
+        [Fact]
+        public void InvalidHashAlgorithmName_Throws()
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                var invalidName = new HashAlgorithmName(name);
+                var invalidName = new HashAlgorithmName(null);
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => SignData(rsa, new byte[1], invalidName, RSASignaturePadding.Pkcs1));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => SignHash(rsa, new byte[1], invalidName, RSASignaturePadding.Pkcs1));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => VerifyData(rsa, new byte[1], new byte[1], invalidName, RSASignaturePadding.Pkcs1));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => VerifyHash(rsa, new byte[1], new byte[1], invalidName, RSASignaturePadding.Pkcs1));
+
+                invalidName = new HashAlgorithmName("");
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => SignData(rsa, new byte[1], invalidName, RSASignaturePadding.Pkcs1));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => SignHash(rsa, new byte[1], invalidName, RSASignaturePadding.Pkcs1));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => VerifyData(rsa, new byte[1], new byte[1], invalidName, RSASignaturePadding.Pkcs1));

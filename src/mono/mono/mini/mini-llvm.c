@@ -7486,7 +7486,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				addresses [ins->dreg] = addresses [ins->sreg1];
 			} else {
 				if (!addresses [ins->sreg1]) {
-					addresses [ins->sreg1] = build_alloca (ctx, t);
+					addresses [ins->sreg1] = build_named_alloca (ctx, t, "llvm_outarg_vt");
 					g_assert (values [ins->sreg1]);
 					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, t)), addresses [ins->sreg1]);
 					addresses [ins->dreg] = addresses [ins->sreg1];
@@ -7496,6 +7496,11 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "llvm_outarg_vt_copy");
 					LLVMBuildStore (builder, convert (ctx, v, type_to_llvm_type (ctx, t)), addresses [ins->dreg]);
 				} else {
+					if (values [ins->sreg1]) {
+						LLVMTypeRef src_t = LLVMTypeOf (values [ins->sreg1]);
+						LLVMValueRef dst = convert (ctx, addresses [ins->sreg1], LLVMPointerType (src_t, 0));
+						LLVMBuildStore (builder, values [ins->sreg1], dst);
+					}
 					addresses [ins->dreg] = addresses [ins->sreg1];
 				}
 			}

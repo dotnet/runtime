@@ -61,24 +61,18 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
             ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
-            if (mod == null)
-                throw new ArgumentNullException(nameof(mod));
+            ArgumentNullException.ThrowIfNull(mod);
 
             if (parameterTypes != null)
             {
                 foreach (Type t in parameterTypes)
                 {
-                    if (t == null)
-                        throw new ArgumentNullException(nameof(parameterTypes));
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
                 }
             }
 

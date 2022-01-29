@@ -62,12 +62,7 @@ namespace System.Formats.Asn1
             // where "f?" is anything from "f" to "fffffff" (tenth of a second down to 100ns/1-tick)
             // with no trailing zeros.
             DateTimeOffset normalized = value.ToUniversalTime();
-
-            if (normalized.Year > 9999)
-            {
-                // This is unreachable since DateTimeOffset guards against this internally.
-                throw new ArgumentOutOfRangeException(nameof(value));
-            }
+            Debug.Assert(normalized.Year <= 9999, "DateTimeOffset guards against this internally");
 
             // We're only loading in sub-second ticks.
             // Ticks are defined as 1e-7 seconds, so their printed form
