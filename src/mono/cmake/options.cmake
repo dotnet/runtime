@@ -45,7 +45,6 @@ option (ENABLE_ICALL_SYMBOL_MAP "Generate tables which map icall functions to th
 option (ENABLE_PERFTRACING "Enables support for eventpipe library")
 option (ENABLE_INTERP_LIB "Enable separate interpreter library")
 option (ENABLE_LAZY_GC_THREAD_CREATION "Enable lazy runtime thread creation, embedding host must do it explicitly")
-option (ENABLE_WERROR "Compile with -Werror")
 option (ENABLE_LLVM_RUNTIME "Enable runtime support code for LLVM.")
 option (ENABLE_CHECKED_BUILD "Enable additional checks")
 option (ENABLE_CHECKED_BUILD_PRIVATE_TYPES "Enable compile time checking that getter functions are used")

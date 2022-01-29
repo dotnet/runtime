@@ -8349,6 +8349,8 @@ parse_cpu_features (const gchar *attr)
 #elif defined(TARGET_WASM)
 	if (!strcmp (attr + prefix, "simd"))
 		feature = MONO_CPU_WASM_SIMD;
+#else
+	(void)prefix; // unused
 #endif
 
 	if (enabled)
