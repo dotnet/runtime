@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // --------------------------------------------------------------------------------
-// DomainFile.h
+// DomainAssembly.h
 //
 
 // --------------------------------------------------------------------------------
 
 
-#ifndef _DOMAINFILE_H_
-#define _DOMAINFILE_H_
+#ifndef _DOMAINASSEMBLY_H_
+#define _DOMAINASSEMBLY_H_
 
 // --------------------------------------------------------------------------------
 // Required headers
@@ -59,26 +59,22 @@ enum NotificationStatus
 };
 
 // --------------------------------------------------------------------------------
-// DomainFile represents a file loaded (or being loaded) into an app domain.  It
+// DomainAssembly represents an assembly loaded (or being loaded) into an app domain.  It
 // is guranteed to be unique per file per app domain.
 // --------------------------------------------------------------------------------
 
-class DomainFile
+class DomainAssembly final
 {
-    VPTR_BASE_VTABLE_CLASS(DomainFile);
-
-  public:
+public:
 
     // ------------------------------------------------------------
     // Public API
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    virtual ~DomainFile();
-    DomainFile() {LIMITED_METHOD_CONTRACT;};
+    ~DomainAssembly();
+    DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
-
-    virtual LoaderAllocator *GetLoaderAllocator();
 
     PTR_AppDomain GetAppDomain()
     {
@@ -93,11 +89,40 @@ class DomainFile
         return PTR_PEAssembly(m_pPEAssembly);
     }
 
+    Assembly* GetAssembly()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        CONSISTENCY_CHECK(CheckLoaded());
+
+        return m_pAssembly;
+    }
+
+    Module* GetModule()
+    {
+        LIMITED_METHOD_CONTRACT;
+        CONSISTENCY_CHECK(CheckLoaded());
+
+        return m_pModule;
+    }
+
     IMDInternalImport *GetMDImport()
     {
         WRAPPER_NO_CONTRACT;
         return m_pPEAssembly->GetMDImport();
     }
+
+    OBJECTREF GetExposedAssemblyObjectIfExists()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        OBJECTREF objRet = NULL;
+        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
+        return objRet;
+    }
+
+    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
+    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
+    OBJECTREF GetExposedAssemblyObject();
 
     OBJECTREF GetExposedModuleObjectIfExists()
     {
@@ -130,9 +155,17 @@ class DomainFile
     }
 #endif
 
-    virtual BOOL IsAssembly() = 0;
+    BOOL IsCollectible()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_fCollectible;
+    }
 
-    DomainAssembly *GetDomainAssembly();
+    ULONG HashIdentity()
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetPEAssembly()->HashIdentity();
+    }
 
     // ------------------------------------------------------------
     // Loading state checks
@@ -202,7 +235,6 @@ class DomainFile
         return EnsureLoadLevel(FILE_LOAD_ALLOCATE);
     }
 
-
     void EnsureLibraryLoaded()
     {
         WRAPPER_NO_CONTRACT;
@@ -213,10 +245,6 @@ class DomainFile
     // state (unless it needs to be.)  This should be used when a particular level of loading
     // is required for an operation.  Note that deadlocks are tolerated so the level may be one
     void EnsureLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
-
-    // AttemptLoadLevel is a generic routine used to try to further load the file to a given level.
-    // No guarantee is made about the load level resulting however.
-    void AttemptLoadLevel(FileLoadLevel targetLevel) DAC_EMPTY();
 
     // CheckLoadLevel is an assert predicate used to verify the load level of an assembly.
     // deadlockOK indicates that the level is allowed to be one short if we are restricted
@@ -245,16 +273,12 @@ class DomainFile
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    BOOL Equals(DomainFile *pFile) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pFile->GetPEAssembly()); }
+    BOOL Equals(DomainAssembly *pAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pAssembly->GetPEAssembly()); }
     BOOL Equals(PEAssembly *pPEAssembly) { WRAPPER_NO_CONTRACT; return GetPEAssembly()->Equals(pPEAssembly); }
 #endif // DACCESS_COMPILE
 
-    Module* GetCurrentModule();
-    Module* GetLoadedModule();
-    Module* GetModule();
-
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif
 
 #ifndef DACCESS_COMPILE
@@ -262,7 +286,33 @@ class DomainFile
     DynamicMethodTable* GetDynamicMethodTable();
 #endif
 
- protected:
+    DomainAssembly* GetNextDomainAssemblyInSameALC()
+    {
+        return m_NextDomainAssemblyInSameALC;
+    }
+
+    void SetNextDomainAssemblyInSameALC(DomainAssembly* domainAssembly)
+    {
+        _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
+        m_NextDomainAssemblyInSameALC = domainAssembly;
+    }
+
+    LoaderAllocator* GetLoaderAllocator()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLoaderAllocator;
+    }
+
+// ------------------------------------------------------------
+// Resource access
+// ------------------------------------------------------------
+
+    BOOL GetResource(LPCSTR szName, DWORD* cbResource,
+        PBYTE* pbInMemoryResource, DomainAssembly** pAssemblyRef,
+        LPCSTR* szFileName, DWORD* dwLocation,
+        BOOL fSkipRaiseResolveEvent);
+
+ private:
     // ------------------------------------------------------------
     // Loader API
     // ------------------------------------------------------------
@@ -272,59 +322,53 @@ class DomainFile
     friend class Module;
     friend class FileLoadLock;
 
-    DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly);
+    DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
     void SetLoadLevel(FileLoadLevel level) { LIMITED_METHOD_CONTRACT; m_level = level; }
 
 #ifndef DACCESS_COMPILE
-    virtual void Begin() = 0;
-    virtual void Allocate() = 0;
+    void Begin();
+    void Allocate();
     void AddDependencies();
     void PreLoadLibrary();
     void LoadLibrary();
-    void PostLoadLibrary();
+    void PostLoadLibrary(); 
     void EagerFixups();
     void VtableFixups();
-    virtual void DeliverSyncEvents() = 0;
-    virtual void DeliverAsyncEvents() = 0;
+    void DeliverSyncEvents();
+    void DeliverAsyncEvents();
     void FinishLoad();
     void Activate();
+
+    void RegisterWithHostAssembly();
+    void UnregisterFromHostAssembly();
 #endif
 
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
+    void SetAssembly(Assembly* pAssembly);
 
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
     void SetShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NEEDNOTIFICATION; }
 
-    // ------------------------------------------------------------
-    // Instance data
-    // ------------------------------------------------------------
-
-    PTR_AppDomain               m_pDomain;
-    PTR_PEAssembly              m_pPEAssembly;
-    PTR_Module                  m_pModule;
-    FileLoadLevel               m_level;
-    LOADERHANDLE                m_hExposedModuleObject;
-
     class ExInfo
     {
         enum
         {
-           ExType_ClrEx,
-           ExType_HR
+            ExType_ClrEx,
+            ExType_HR
         }
         m_type;
         union
         {
-            Exception                   *m_pEx;
-            HRESULT                     m_hr;
+            Exception* m_pEx;
+            HRESULT    m_hr;
         };
 
-        public:
+    public:
         void Throw()
         {
             CONTRACTL
@@ -334,209 +378,35 @@ class DomainFile
                 MODE_ANY;
             }
             CONTRACTL_END;
-            if (m_type==ExType_ClrEx)
+            if (m_type == ExType_ClrEx)
             {
-                PAL_CPP_THROW(Exception *, m_pEx->DomainBoundClone());
+                PAL_CPP_THROW(Exception*, m_pEx->DomainBoundClone());
             }
-            if (m_type==ExType_HR)
+            if (m_type == ExType_HR)
                 ThrowHR(m_hr);
             _ASSERTE(!"Bad exception type");
             ThrowHR(E_UNEXPECTED);
         };
+
         ExInfo(Exception* pEx)
         {
             LIMITED_METHOD_CONTRACT;
-            m_type=ExType_ClrEx;
-            m_pEx=pEx;
+            m_type = ExType_ClrEx;
+            m_pEx = pEx;
         };
 
-        void ConvertToHResult()
-        {
-            LIMITED_METHOD_CONTRACT;
-            if(m_type==ExType_HR)
-                return;
-            _ASSERTE(m_type==ExType_ClrEx);
-            HRESULT hr=m_pEx->GetHR();
-            delete m_pEx;
-            m_hr=hr;
-            m_type=ExType_HR;
-        };
         ~ExInfo()
         {
             LIMITED_METHOD_CONTRACT;
-            if (m_type==ExType_ClrEx)
+            if (m_type == ExType_ClrEx)
                 delete m_pEx;
         }
-    }* m_pError;
-
-    void ReleaseManagedData()
-    {
-        if (m_pError)
-            m_pError->ConvertToHResult();
     };
-
-    DWORD                    m_notifyflags;
-    BOOL                        m_loading;
-    // m_pDynamicMethodTable is used by the light code generation to allow method
-    // generation on the fly. They are lazily created when/if a dynamic method is requested
-    // for this specific module
-    DynamicMethodTable          *m_pDynamicMethodTable;
-    class UMThunkHash *m_pUMThunkHash;
-    BOOL m_bDisableActivationCheck;
-};
-
-//---------------------------------------------------------------------------------------
-// One of these values is specified when requesting a module iterator to customize which
-// modules should appear in the enumeration
-enum ModuleIterationOption
-{
-    // include only modules that are already loaded (m_level >= FILE_LOAD_DELIVER_EVENTS)
-    kModIterIncludeLoaded                = 1,
-
-    // include all modules, even those that are still in the process of loading (all m_level values)
-    kModIterIncludeLoading               = 2,
-
-    // include only modules loaded just enough that profilers are notified of them.
-    // (m_level >= FILE_LOAD_LOADLIBRARY).  See comment at code:DomainFile::IsAvailableToProfilers
-    kModIterIncludeAvailableToProfilers  = 3,
-};
-
-// --------------------------------------------------------------------------------
-// DomainAssembly is a subclass of DomainFile which specifically represents a assembly.
-// --------------------------------------------------------------------------------
-
-class DomainAssembly : public DomainFile
-{
-    VPTR_VTABLE_CLASS(DomainAssembly, DomainFile);
 
 public:
-    // ------------------------------------------------------------
-    // Public API
-    // ------------------------------------------------------------
-
-    LoaderAllocator *GetLoaderAllocator()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoaderAllocator;
-    }
-
-    void SetAssembly(Assembly* pAssembly);
-
-    BOOL IsAssembly()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return TRUE;
-    }
-
-    OBJECTREF GetExposedAssemblyObjectIfExists()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedAssemblyObject, &objRet);
-        return objRet;
-    }
-
-    // Returns managed representation of the assembly (Assembly or AssemblyBuilder).
-    // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
-    OBJECTREF GetExposedAssemblyObject();
-
-    Assembly* GetCurrentAssembly();
-    Assembly* GetLoadedAssembly();
-    Assembly* GetAssembly();
-
-#ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-    // ------------------------------------------------------------
-    // Modules
-    // ------------------------------------------------------------
-    class ModuleIterator
-    {
-        ArrayList::Iterator m_i;
-        ModuleIterationOption m_moduleIterationOption;
-
-      public:
-        BOOL Next()
-        {
-            WRAPPER_NO_CONTRACT;
-            while (m_i.Next())
-            {
-                if (m_i.GetElement() == NULL)
-                {
-                    continue;
-                }
-                if (GetDomainFile()->IsError())
-                {
-                    continue;
-                }
-                if (m_moduleIterationOption == kModIterIncludeLoading)
-                    return TRUE;
-                if ((m_moduleIterationOption == kModIterIncludeLoaded) &&
-                    GetDomainFile()->IsLoaded())
-                    return TRUE;
-                if ((m_moduleIterationOption == kModIterIncludeAvailableToProfilers) &&
-                    GetDomainFile()->IsAvailableToProfilers())
-                    return TRUE;
-            }
-            return FALSE;
-        }
-        Module *GetModule()
-        {
-            WRAPPER_NO_CONTRACT;
-            return GetDomainFile()->GetModule();
-        }
-        Module  *GetLoadedModule()
-        {
-            WRAPPER_NO_CONTRACT;
-            return GetDomainFile()->GetLoadedModule();
-        }
-        DomainFile *GetDomainFile()
-        {
-            WRAPPER_NO_CONTRACT;
-            return dac_cast<PTR_DomainFile>(m_i.GetElement());
-        }
-        SIZE_T GetIndex()
-        {
-            WRAPPER_NO_CONTRACT;
-            return m_i.GetIndex();
-        }
-
-      private:
-        friend class DomainAssembly;
-        // Cannot have constructor so this iterator can be used inside a union
-        static ModuleIterator Create(DomainAssembly * pDomainAssembly, ModuleIterationOption moduleIterationOption)
-        {
-            WRAPPER_NO_CONTRACT;
-            ModuleIterator i;
-
-            i.m_i = pDomainAssembly->m_Modules.Iterate();
-            i.m_moduleIterationOption = moduleIterationOption;
-
-            return i;
-        }
-    };
-    friend class ModuleIterator;
-
-    ModuleIterator IterateModules(ModuleIterationOption moduleIterationOption)
-    {
-        WRAPPER_NO_CONTRACT;
-        return ModuleIterator::Create(this, moduleIterationOption);
-    }
-
-    // ------------------------------------------------------------
-    // Resource access
-    // ------------------------------------------------------------
-
-    BOOL GetResource(LPCSTR szName, DWORD *cbResource,
-                     PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
-                     LPCSTR *szFileName, DWORD *dwLocation,
-                     BOOL fSkipRaiseResolveEvent);
-
-    // ------------------------------------------------------------
-    // Debugger control API
-    // ------------------------------------------------------------
+// ------------------------------------------------------------
+// Debugger control API
+// ------------------------------------------------------------
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
     {
@@ -553,75 +423,46 @@ public:
     void SetupDebuggingConfig(void);
     DWORD ComputeDebuggingConfig(void);
 
-    HRESULT GetDebuggingCustomAttributes(DWORD *pdwFlags);
+    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
 
     BOOL IsVisibleToDebugger();
     BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
     void NotifyDebuggerUnload();
 
-    inline BOOL IsCollectible();
-
-
- private:
-
-    // ------------------------------------------------------------
-    // Loader API
-    // ------------------------------------------------------------
-
-    friend class AppDomain;
-    friend class Assembly;
-
-#ifndef DACCESS_COMPILE
-public:
-    ~DomainAssembly();
 private:
-    DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator);
-#endif
-
-    // ------------------------------------------------------------
-    // Internal routines
-    // ------------------------------------------------------------
-
-#ifndef DACCESS_COMPILE
-    void Begin();
-    void Allocate();
-    void DeliverSyncEvents();
-    void DeliverAsyncEvents();
-    void RegisterWithHostAssembly();
-    void UnregisterFromHostAssembly();
-#endif
-
- public:
-    ULONG HashIdentity();
-
     // ------------------------------------------------------------
     // Instance data
     // ------------------------------------------------------------
 
-  private:
-    LOADERHANDLE                            m_hExposedAssemblyObject;
-    PTR_Assembly                            m_pAssembly;
-    DebuggerAssemblyControlFlags            m_debuggerFlags;
-    ArrayList                               m_Modules;
-    BOOL                                    m_fDebuggerUnloadStarted;
-    BOOL                                    m_fCollectible;
-    Volatile<bool>                          m_fHostAssemblyPublished;
-    PTR_LoaderAllocator                     m_pLoaderAllocator;
-    DomainAssembly*                         m_NextDomainAssemblyInSameALC;
+    PTR_Assembly                m_pAssembly;
+    PTR_AppDomain               m_pDomain;
+    PTR_PEAssembly              m_pPEAssembly;
+    PTR_Module                  m_pModule;
 
-  public:
-      DomainAssembly* GetNextDomainAssemblyInSameALC()
-      {
-          return m_NextDomainAssemblyInSameALC;
-      }
+    BOOL                        m_fCollectible;
+    DomainAssembly*             m_NextDomainAssemblyInSameALC;
+    PTR_LoaderAllocator         m_pLoaderAllocator;
 
-      void SetNextDomainAssemblyInSameALC(DomainAssembly* domainAssembly)
-      {
-          _ASSERTE(m_NextDomainAssemblyInSameALC == NULL);
-          m_NextDomainAssemblyInSameALC = domainAssembly;
-      }
+    FileLoadLevel               m_level;
+    BOOL                        m_loading;
+
+    LOADERHANDLE                m_hExposedModuleObject;
+    LOADERHANDLE                m_hExposedAssemblyObject;
+
+    ExInfo*                     m_pError;
+
+    BOOL                        m_bDisableActivationCheck;
+    BOOL                        m_fHostAssemblyPublished;
+
+    // m_pDynamicMethodTable is used by the light code generation to allow method
+    // generation on the fly. They are lazily created when/if a dynamic method is requested
+    // for this specific module
+    DynamicMethodTable*         m_pDynamicMethodTable;
+
+
+    DebuggerAssemblyControlFlags    m_debuggerFlags;
+    DWORD                       m_notifyflags;
+    BOOL                        m_fDebuggerUnloadStarted;
 };
 
-typedef DomainAssembly::ModuleIterator DomainModuleIterator;
-
-#endif  // _DOMAINFILE_H_
+#endif  // _DOMAINASSEMBLY_H_

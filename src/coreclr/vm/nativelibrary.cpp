@@ -318,7 +318,7 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        PEAssembly *pManifestFile = pAssembly->GetManifestFile();
+        PEAssembly *pManifestFile = pAssembly->GetPEAssembly();
         PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
@@ -363,7 +363,7 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_AssemblyBinder pBinder = pAssembly->GetManifestFile()->GetAssemblyBinder();
+        PTR_AssemblyBinder pBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
         return pBinder->GetManagedAssemblyLoadContext();
     }
 
@@ -461,7 +461,7 @@ namespace
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
 
-        SString path = pAssembly->GetManifestFile()->GetPath();
+        SString path = pAssembly->GetPEAssembly()->GetPath();
 
         SString::Iterator lastPathSeparatorIter = path.End();
         if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
@@ -771,7 +771,7 @@ NATIVE_LIBRARY_HANDLE NativeLibrary::LoadLibraryByName(LPCWSTR libraryName, Asse
     }
     else
     {
-        GetDllImportSearchPathFlags(callingAssembly->GetManifestModule(),
+        GetDllImportSearchPathFlags(callingAssembly->GetModule(),
                                     &dllImportSearchPathFlags, &searchAssemblyDirectory);
     }
 

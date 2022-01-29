@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // --------------------------------------------------------------------------------
-// DomainFile.cpp
+// DomainAssembly.cpp
 //
 
 // --------------------------------------------------------------------------------
@@ -30,33 +30,42 @@
 #endif // FEATURE_PERFMAP
 
 #ifndef DACCESS_COMPILE
-DomainFile::DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly)
-  : m_pDomain(pDomain),
+DomainAssembly::DomainAssembly(AppDomain* pDomain, PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
+    m_pAssembly(NULL),
+    m_pDomain(pDomain),
     m_pPEAssembly(pPEAssembly),
     m_pModule(NULL),
+    m_fCollectible(pLoaderAllocator->IsCollectible()),
+    m_NextDomainAssemblyInSameALC(NULL),
+    m_pLoaderAllocator(pLoaderAllocator),
     m_level(FILE_LOAD_CREATE),
-    m_pError(NULL),
-    m_notifyflags(NOT_NOTIFIED),
     m_loading(TRUE),
+    m_hExposedModuleObject(NULL),
+    m_hExposedAssemblyObject(NULL),
+    m_pError(NULL),
+    m_bDisableActivationCheck(FALSE),
+    m_fHostAssemblyPublished(FALSE),
     m_pDynamicMethodTable(NULL),
-    m_pUMThunkHash(NULL),
-    m_bDisableActivationCheck(FALSE)
+    m_debuggerFlags(DACF_NONE),
+    m_notifyflags(NOT_NOTIFIED),
+    m_fDebuggerUnloadStarted(FALSE)
 {
     CONTRACTL
     {
         CONSTRUCTOR_CHECK;
-        THROWS;  // From CreateHandle
-        GC_NOTRIGGER;
+        THROWS;             // ValidateForExecution
+        GC_TRIGGERS;        // ValidateForExecution
         MODE_ANY;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
-    m_hExposedModuleObject = NULL;
     pPEAssembly->AddRef();
+    pPEAssembly->ValidateForExecution();
+
+    SetupDebuggingConfig();
 }
 
-DomainFile::~DomainFile()
+DomainAssembly::~DomainAssembly()
 {
     CONTRACTL
     {
@@ -70,36 +79,24 @@ DomainFile::~DomainFile()
     m_pPEAssembly->Release();
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
+
     delete m_pError;
-}
 
-#endif //!DACCESS_COMPILE
+    if (m_fHostAssemblyPublished)
+    {
+        // Remove association first.
+        UnregisterFromHostAssembly();
+    }
 
-LoaderAllocator * DomainFile::GetLoaderAllocator()
-{
-    CONTRACTL
+    if (m_pAssembly != NULL)
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    Assembly *pAssembly = GetDomainAssembly()->GetAssembly();
-    if ((pAssembly != NULL) && (pAssembly->IsCollectible()))
-    {
-        return pAssembly->GetLoaderAllocator();
-    }
-    else
-    {
-        return this->GetAppDomain()->GetLoaderAllocator();
+        delete m_pAssembly;
     }
 }
-
-#ifndef DACCESS_COMPILE
 
 // Optimization intended for EnsureLoadLevel only
 #include <optsmallperfcritical.h>
-void DomainFile::EnsureLoadLevel(FileLoadLevel targetLevel)
+void DomainAssembly::EnsureLoadLevel(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
     {
@@ -112,7 +109,7 @@ void DomainFile::EnsureLoadLevel(FileLoadLevel targetLevel)
     TRIGGERSGC ();
     if (IsLoading())
     {
-        this->GetAppDomain()->LoadDomainFile(this, targetLevel);
+        this->GetAppDomain()->LoadDomainAssembly(this, targetLevel);
 
         // Enforce the loading requirement.  Note that we may have a deadlock in which case we
         // may be off by one which is OK.  (At this point if we are short of targetLevel we know
@@ -127,26 +124,7 @@ void DomainFile::EnsureLoadLevel(FileLoadLevel targetLevel)
 }
 #include <optdefault.h>
 
-void DomainFile::AttemptLoadLevel(FileLoadLevel targetLevel)
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    if (IsLoading())
-        this->GetAppDomain()->LoadDomainFile(this, targetLevel);
-    else
-        ThrowIfError(targetLevel);
-
-    RETURN;
-}
-
-
-CHECK DomainFile::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
+CHECK DomainAssembly::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 {
     CONTRACTL
     {
@@ -176,7 +154,7 @@ CHECK DomainFile::CheckLoadLevel(FileLoadLevel requiredLevel, BOOL deadlockOK)
 
 
 
-void DomainFile::RequireLoadLevel(FileLoadLevel targetLevel)
+void DomainAssembly::RequireLoadLevel(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
     {
@@ -196,7 +174,7 @@ void DomainFile::RequireLoadLevel(FileLoadLevel targetLevel)
 }
 
 
-void DomainFile::SetError(Exception *ex)
+void DomainAssembly::SetError(Exception *ex)
 {
     CONTRACT_VOID
     {
@@ -211,26 +189,26 @@ void DomainFile::SetError(Exception *ex)
 
     m_pError = new ExInfo(ex->DomainBoundClone());
 
-    GetCurrentModule()->NotifyEtwLoadFinished(ex->GetHR());
-
-    if (!IsProfilerNotified())
+    if (m_pModule)
     {
-        SetProfilerNotified();
+        m_pModule->NotifyEtwLoadFinished(ex->GetHR());
+
+        if (!IsProfilerNotified())
+        {
+            SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
-        if (GetCurrentModule() != NULL)
-        {
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
-            GetCurrentModule()->NotifyProfilerLoadFinished(ex->GetHR());
-        }
+            m_pModule->NotifyProfilerLoadFinished(ex->GetHR());
 #endif
+        }
     }
 
     RETURN;
 }
 
-void DomainFile::ThrowIfError(FileLoadLevel targetLevel)
+void DomainAssembly::ThrowIfError(FileLoadLevel targetLevel)
 {
     CONTRACT_VOID
     {
@@ -250,7 +228,7 @@ void DomainFile::ThrowIfError(FileLoadLevel targetLevel)
     RETURN;
 }
 
-CHECK DomainFile::CheckNoError(FileLoadLevel targetLevel)
+CHECK DomainAssembly::CheckNoError(FileLoadLevel targetLevel)
 {
     LIMITED_METHOD_CONTRACT;
     CHECK(m_level >= targetLevel
@@ -259,7 +237,7 @@ CHECK DomainFile::CheckNoError(FileLoadLevel targetLevel)
     CHECK_OK;
 }
 
-CHECK DomainFile::CheckLoaded()
+CHECK DomainAssembly::CheckLoaded()
 {
     CONTRACTL
     {
@@ -270,7 +248,7 @@ CHECK DomainFile::CheckLoaded()
     }
     CONTRACTL_END;
 
-    CHECK_MSG(CheckNoError(FILE_LOADED), "DomainFile load resulted in an error");
+    CHECK_MSG(CheckNoError(FILE_LOADED), "DomainAssembly load resulted in an error");
 
     if (IsLoaded())
         CHECK_OK;
@@ -287,7 +265,7 @@ CHECK DomainFile::CheckLoaded()
     CHECK_OK;
 }
 
-CHECK DomainFile::CheckActivated()
+CHECK DomainAssembly::CheckActivated()
 {
     CONTRACTL
     {
@@ -298,7 +276,7 @@ CHECK DomainFile::CheckActivated()
     }
     CONTRACTL_END;
 
-    CHECK_MSG(CheckNoError(FILE_ACTIVE), "DomainFile load resulted in an error");
+    CHECK_MSG(CheckNoError(FILE_ACTIVE), "DomainAssembly load resulted in an error");
 
     if (IsActive())
         CHECK_OK;
@@ -311,27 +289,13 @@ CHECK DomainFile::CheckActivated()
         CHECK_OK;
 
     CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
-    CHECK_MSG(IsLoaded(), "DomainFile has not been fully loaded");
+    CHECK_MSG(IsLoaded(), "DomainAssembly has not been fully loaded");
     CHECK_MSG(m_bDisableActivationCheck || CheckLoadLevel(FILE_ACTIVE), "File has not had execution verified");
 
     CHECK_OK;
 }
 
 #endif //!DACCESS_COMPILE
-
-DomainAssembly *DomainFile::GetDomainAssembly()
-{
-    CONTRACTL
-    {
-        SUPPORTS_DAC;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(IsAssembly());
-    return (DomainAssembly *) this;
-}
 
 // Return true iff the debugger should get notifications about this assembly.
 //
@@ -358,7 +322,7 @@ BOOL DomainAssembly::IsVisibleToDebugger()
 // Returns managed representation of the module (Module or ModuleBuilder).
 // Returns NULL if the managed scout was already collected (see code:LoaderAllocator#AssemblyPhases).
 //
-OBJECTREF DomainFile::GetExposedModuleObject()
+OBJECTREF DomainAssembly::GetExposedModuleObject()
 {
     CONTRACTL
     {
@@ -423,9 +387,9 @@ OBJECTREF DomainFile::GetExposedModuleObject()
     }
 
     return pLoaderAllocator->GetHandleValue(m_hExposedModuleObject);
-} // DomainFile::GetExposedModuleObject
+}
 
-BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
+BOOL DomainAssembly::DoIncrementalLoad(FileLoadLevel level)
 {
     STANDARD_VM_CONTRACT;
 
@@ -491,7 +455,7 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
 
 #ifdef FEATURE_MULTICOREJIT
     {
-        Module * pModule = GetModule();
+        Module * pModule = m_pModule;
 
         if (pModule != NULL) // Should not triggle assert when module is NULL
         {
@@ -503,7 +467,7 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
     return TRUE;
 }
 
-void DomainFile::PreLoadLibrary()
+void DomainAssembly::PreLoadLibrary()
 {
     CONTRACTL
     {
@@ -512,11 +476,9 @@ void DomainFile::PreLoadLibrary()
     }
     CONTRACTL_END;
 
-} // DomainFile::PreLoadLibrary
+} // DomainAssembly::PreLoadLibrary
 
-// Note that this is the sole loading function which must be called OUTSIDE THE LOCK, since
-// it will potentially involve the OS loader lock.
-void DomainFile::LoadLibrary()
+void DomainAssembly::LoadLibrary()
 {
     CONTRACTL
     {
@@ -527,7 +489,7 @@ void DomainFile::LoadLibrary()
 
 }
 
-void DomainFile::PostLoadLibrary()
+void DomainAssembly::PostLoadLibrary()
 {
     CONTRACTL
     {
@@ -557,46 +519,46 @@ void DomainFile::PostLoadLibrary()
     if (!IsProfilerNotified())
     {
         SetProfilerNotified();
-        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
+        GetModule()->NotifyProfilerLoadFinished(S_OK);
     }
 
 #endif
 }
 
-void DomainFile::AddDependencies()
+void DomainAssembly::AddDependencies()
 {
     STANDARD_VM_CONTRACT;
 }
 
-void DomainFile::EagerFixups()
+void DomainAssembly::EagerFixups()
 {
     WRAPPER_NO_CONTRACT;
 
 #ifdef FEATURE_READYTORUN
-    if (GetCurrentModule()->IsReadyToRun())
+    if (GetModule()->IsReadyToRun())
     {
-        GetCurrentModule()->RunEagerFixups();
+        GetModule()->RunEagerFixups();
 
-        PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetImage();
+        PEImageLayout * pLayout = GetModule()->GetReadyToRunInfo()->GetImage();
 
         TADDR base = dac_cast<TADDR>(pLayout->GetBase());
 
         ExecutionManager::AddCodeRange(base, base + (TADDR)pLayout->GetVirtualSize(),
                                         ExecutionManager::GetReadyToRunJitManager(),
                                          RangeSection::RANGE_SECTION_READYTORUN,
-                                         GetCurrentModule() /* (void *)pLayout */);
+                                         GetModule() /* (void *)pLayout */);
     }
 #endif // FEATURE_READYTORUN
 }
 
-void DomainFile::VtableFixups()
+void DomainAssembly::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-    GetCurrentModule()->FixupVTables();
+    GetModule()->FixupVTables();
 }
 
-void DomainFile::FinishLoad()
+void DomainAssembly::FinishLoad()
 {
     CONTRACTL
     {
@@ -621,7 +583,7 @@ void DomainFile::FinishLoad()
 #endif
 }
 
-void DomainFile::Activate()
+void DomainAssembly::Activate()
 {
     CONTRACT_VOID
     {
@@ -631,24 +593,11 @@ void DomainFile::Activate()
     }
     CONTRACT_END;
 
-    // If we are a module, ensure we've activated the assembly first.
-
-    if (!IsAssembly())
-    {
-        GetDomainAssembly()->EnsureActive();
-    }
-    else
-    {
-        // We cannot execute any code in this assembly until we know what exception plan it is on.
-        // At the point of an exception's stack-crawl it is too late because we cannot tolerate a GC.
-        // See PossiblyUnwrapThrowable and its callers.
-        _ASSERTE(GetLoadedModule() == GetDomainAssembly()->GetLoadedAssembly()->GetManifestModule());
-        GetLoadedModule()->IsRuntimeWrapExceptions();
-    }
-
-    // Now activate any dependencies.
-    // This will typically cause reentrancy of course.
-
+    // We cannot execute any code in this assembly until we know what exception plan it is on.
+    // At the point of an exception's stack-crawl it is too late because we cannot tolerate a GC.
+    // See PossiblyUnwrapThrowable and its callers.
+    _ASSERTE(GetModule() == GetAssembly()->GetModule());
+    GetModule()->IsRuntimeWrapExceptions();
 
     //
     // Now call the module constructor.  Note that this might cause reentrancy;
@@ -669,84 +618,18 @@ void DomainFile::Activate()
     }
 #endif //_DEBUG
 
-
     RETURN;
-}
-
-//--------------------------------------------------------------------------------
-// DomainAssembly
-//--------------------------------------------------------------------------------
-
-DomainAssembly::DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator)
-  : DomainFile(pDomain, pPEAssembly),
-    m_pAssembly(NULL),
-    m_debuggerFlags(DACF_NONE),
-    m_fDebuggerUnloadStarted(FALSE),
-    m_fCollectible(pLoaderAllocator->IsCollectible()),
-    m_fHostAssemblyPublished(false),
-    m_pLoaderAllocator(pLoaderAllocator),
-    m_NextDomainAssemblyInSameALC(NULL)
-{
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        STANDARD_VM_CHECK;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    pPEAssembly->ValidateForExecution();
-
-    // !!! backout
-
-    m_hExposedAssemblyObject = NULL;
-
-    SetupDebuggingConfig();
-
-    // Add a Module iterator entry for this assembly.
-    IfFailThrow(m_Modules.Append(this));
-}
-
-DomainAssembly::~DomainAssembly()
-{
-    CONTRACTL
-    {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (m_fHostAssemblyPublished)
-    {
-        // Remove association first.
-        UnregisterFromHostAssembly();
-    }
-
-    ModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
-    {
-        if (i.GetDomainFile() != this)
-            delete i.GetDomainFile();
-    }
-
-    if (m_pAssembly != NULL)
-    {
-        delete m_pAssembly;
-    }
 }
 
 void DomainAssembly::SetAssembly(Assembly* pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(pAssembly->GetManifestModule()->GetPEAssembly()==m_pPEAssembly);
+    _ASSERTE(pAssembly->GetModule()->GetPEAssembly()==m_pPEAssembly);
     _ASSERTE(m_pAssembly == NULL);
 
     m_pAssembly = pAssembly;
-    m_pModule = pAssembly->GetManifestModule();
+    m_pModule = pAssembly->GetModule();
 
     pAssembly->SetDomainAssembly(this);
 }
@@ -841,7 +724,7 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
     }
 
     return pLoaderAllocator->GetHandleValue(m_hExposedAssemblyObject);
-} // DomainAssembly::GetExposedAssemblyObject
+}
 
 void DomainAssembly::Begin()
 {
@@ -917,8 +800,7 @@ void DomainAssembly::Allocate()
     }
 
     SetAssembly(pAssembly);
-
-} // DomainAssembly::Allocate
+}
 
 void DomainAssembly::DeliverAsyncEvents()
 {
@@ -933,9 +815,7 @@ void DomainAssembly::DeliverAsyncEvents()
 
     OVERRIDE_LOAD_LEVEL_LIMIT(FILE_ACTIVE);
     m_pDomain->RaiseLoadingAssemblyEvent(this);
-
 }
-
 
 void DomainAssembly::DeliverSyncEvents()
 {
@@ -946,17 +826,8 @@ void DomainAssembly::DeliverSyncEvents()
     }
     CONTRACTL_END;
 
-    GetCurrentModule()->NotifyEtwLoadFinished(S_OK);
+    GetModule()->NotifyEtwLoadFinished(S_OK);
 
-    // We may be notified from inside the loader lock if we are delivering IJW events, so keep track.
-#ifdef PROFILING_SUPPORTED
-    if (!IsProfilerNotified())
-    {
-        SetProfilerNotified();
-        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
-    }
-
-#endif
 #ifdef DEBUGGING_SUPPORTED
     GCX_COOP();
     if (!IsDebuggerNotified())
@@ -968,7 +839,7 @@ void DomainAssembly::DeliverSyncEvents()
 
     }
 #endif // DEBUGGING_SUPPORTED
-} // DomainAssembly::DeliverSyncEvents
+}
 
 /*
   // The enum for dwLocation from managed code:
@@ -1152,7 +1023,6 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
     }
 
     // There is still work we need to do even when no debugger is attached.
-
     if (flags & ATTACH_ASSEMBLY_LOAD)
     {
         if (ShouldNotifyDebugger())
@@ -1162,23 +1032,17 @@ BOOL DomainAssembly::NotifyDebuggerLoad(int flags, BOOL attaching)
         result = TRUE;
     }
 
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
+    if(this->ShouldNotifyDebugger())
     {
-        DomainFile * pDomainFile = i.GetDomainFile();
-        if(pDomainFile->ShouldNotifyDebugger())
-        {
-            result = result ||
-                pDomainFile->GetModule()->NotifyDebuggerLoad(this->GetAppDomain(), pDomainFile, flags, attaching);
-        }
+        result = result ||
+            this->GetModule()->NotifyDebuggerLoad(this->GetAppDomain(), this, flags, attaching);
     }
+
     if( ShouldNotifyDebugger())
     {
            result|=m_pModule->NotifyDebuggerLoad(m_pDomain, this, ATTACH_MODULE_LOAD, attaching);
            SetDebuggerNotified();
     }
-
-
 
     return result;
 }
@@ -1195,29 +1059,22 @@ void DomainAssembly::NotifyDebuggerUnload()
 
     m_fDebuggerUnloadStarted = TRUE;
 
-    // Dispatch module unloads for all modules. Debugger is resilient in case we haven't dispatched
+    // Dispatch module unload for the module. Debugger is resilient in case we haven't dispatched
     // a previous load event (such as if debugger attached after the modules was loaded).
-    DomainModuleIterator i = IterateModules(kModIterIncludeLoading);
-    while (i.Next())
-    {
-            i.GetDomainFile()->GetModule()->NotifyDebuggerUnload(this->GetAppDomain());
-    }
+    this->GetModule()->NotifyDebuggerUnload(this->GetAppDomain());
 
     g_pDebugInterface->UnloadAssembly(this);
-
 }
 
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
 
-void
-DomainFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+void DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-    //sizeof(DomainFile) == 0x60
-    DAC_ENUM_VTHIS();
+    DAC_ENUM_DTHIS();
 
     // Modules are needed for all minidumps, but they are enumerated elsewhere
     // so we don't need to duplicate effort; thus we do noting with m_pModule.
@@ -1233,19 +1090,6 @@ DomainFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pDomain->EnumMemoryRegions(flags, true);
     }
-}
-
-void
-DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    //sizeof(DomainAssembly) == 0xe0
-    DAC_ENUM_VTHIS();
-    DomainFile::EnumMemoryRegions(flags);
-
-    // For minidumps without full memory, we need to always be able to iterate over m_Modules.
-    m_Modules.EnumMemoryRegions(flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
