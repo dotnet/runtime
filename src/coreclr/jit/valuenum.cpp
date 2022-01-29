@@ -9062,10 +9062,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
-                    case GT_LOCKADD: // Binop
-                        noway_assert("LOCKADD should not appear before lowering");
-                        break;
-
                     case GT_XORR: // Binop
                     case GT_XAND: // Binop
                     case GT_XADD: // Binop
