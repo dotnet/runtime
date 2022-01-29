@@ -95,10 +95,10 @@ enum GenTreeOperKind
     GTK_KINDMASK = (GTK_SPECIAL | GTK_LEAF | GTK_UNOP | GTK_BINOP), // operator kind mask
     GTK_SMPOP    = (GTK_UNOP | GTK_BINOP),
 
-    GTK_COMMUTE = 0x08,   // commutative  operator
-    GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
-                          // by adding non-node fields to unary or binary operator.
-    GTK_NOVALUE = 0x20,   // node does not produce a value
+    GTK_COMMUTE = 0x08, // commutative  operator
+    GTK_EXOP    = 0x10, // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
+                        // by adding non-node fields to unary or binary operator.
+    GTK_NOVALUE = 0x20, // node does not produce a value
 
     GTK_MASK = 0xFF
 };
@@ -894,6 +894,7 @@ private:
 public:
     // The register number is stored in a small format (8 bits), but the getters return and the setters take
     // a full-size (unsigned) format, to localize the casts here.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
     bool canBeContained() const;

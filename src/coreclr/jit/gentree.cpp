@@ -21,13 +21,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned char GenTree::gtOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) ((ok) & GTK_MASK) + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ok) ((ok)&GTK_MASK) + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
 #ifdef DEBUG
 const GenTreeDebugOperKind GenTree::gtDebugOperKindTable[] = {
-#define GTNODE(en, st, cm, ok) static_cast<GenTreeDebugOperKind>((ok) & DBK_MASK),
+#define GTNODE(en, st, cm, ok) static_cast<GenTreeDebugOperKind>((ok)&DBK_MASK),
 #include "gtlist.h"
 };
 #endif // DEBUG
