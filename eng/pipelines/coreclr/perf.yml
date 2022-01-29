@@ -484,7 +484,7 @@ jobs:
         additionalSetupParameters: '--latestdotnet'
         logicalmachine: 'perftiger'
 
-  # build maui workload packs
+  # build maui runtime packs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
