@@ -3707,7 +3707,7 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
         {
             bool targetIsNear = true;
 #ifdef TARGET_ARM64
-            targetIsWithin28bit = comp->eeGetRelocTypeHint(addr) == IMAGE_REL_ARM64_BRANCH26;
+            targetIsNear = comp->eeGetRelocTypeHint(addr) == IMAGE_REL_ARM64_BRANCH26;
 #endif
 
             // Non-virtual direct call to known address.
