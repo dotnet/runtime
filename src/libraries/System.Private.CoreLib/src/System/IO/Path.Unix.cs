@@ -16,7 +16,17 @@ namespace System.IO
         // Checks if the given path is available for use.
         private static bool ExistsCore(string fullPath)
         {
-            return Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus _) == Interop.Errors.ERROR_SUCCESS;
+            bool result = Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus fileInfo) == Interop.Errors.ERROR_SUCCESS;
+            if (PathInternal.IsDirectorySeparator(fullPath[fullPath.Length - 1]))
+            {
+                // If the path ends with trailing slash, we want to make sure it's a directory.
+                // Although Lstat returns the correct result on desktop platforms,
+                // on browser WASM, it seems to strip trailing slash, leading to false positives for files.
+                // This check prevents it from doing so.
+                result = result && (fileInfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
+            }
+
+            return result;
         }
 
         // Expands the given path to a fully qualified path.
