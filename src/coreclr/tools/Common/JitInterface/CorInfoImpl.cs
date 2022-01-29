@@ -2929,7 +2929,26 @@ namespace Internal.JitInterface
 
         private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
         {
-            // TODO: implement
+#if !READYTORUN
+            MetadataType type = HandleToObject(baseType) as MetadataType;
+
+            if (type == null)
+                return 0;
+
+            // Give up on shared types
+            if (type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.HasVariance || type.IsArray)
+                return 0;
+
+            // type is already sealed, return it
+            if (_compilation.IsEffectivelySealed(type))
+            {
+                *exactClsRet = baseType;
+                return 1;
+            }
+
+            // TODO: find all implementations/subclasses
+            // the number of them must be <= maxExactClasses
+#endif
             return 0;
         }
 
