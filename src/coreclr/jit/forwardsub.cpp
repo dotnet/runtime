@@ -48,7 +48,7 @@
 // Statement(n+2):
 //    use ...  lcl1 ... use ... lcl2 ...
 //
-// If we can forward sub tree2, then the def aind use of lcl1 become
+// If we can forward sub tree2, then the def and use of lcl1 become
 // adjacent.
 //
 // For legality we must show that evaluating "tree" at its new position
@@ -84,9 +84,9 @@
 // * Allow fwd sub of "simple, cheap" trees when there's more than one use.
 // * Search more widely for the use.
 // * Use height/depth to avoid blowing morph's recursion, rather than tree size.
-// * Sub accross a block boundary if successor block is unique, join-free,
+// * Sub across a block boundary if successor block is unique, join-free,
 //   and in the same EH region.
-// * Retrun this later, after we have built SSA, and handle single-def single-use
+// * Rerun this later, after we have built SSA, and handle single-def single-use
 //   from SSA perspective.
 //
 //------------------------------------------------------------------------
