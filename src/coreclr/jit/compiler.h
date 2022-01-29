@@ -6562,8 +6562,8 @@ private:
     void fgMarkAddressExposedLocals(Statement* stmt);
 
     PhaseStatus fgForwardSub();
-    bool fgForwardSub(BasicBlock* block);
-    bool fgForwardSub(Statement* statement);
+    bool fgForwardSubBlock(BasicBlock* block);
+    bool fgForwardSubStatement(Statement* statement);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;

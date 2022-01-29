@@ -11759,7 +11759,7 @@ GenTree* Compiler::gtFoldExprCompare(GenTree* tree)
     }
 
     /* Currently we can only fold when the two subtrees exactly match */
-    /* ORDER_SIDEFF here covers volatile subtrees */
+    /* GTF_ORDER_SIDEFF here covers volatile subtrees */
 
     if ((tree->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) || GenTree::Compare(op1, op2, true) == false)
     {

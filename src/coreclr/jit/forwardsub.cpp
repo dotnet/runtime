@@ -7,50 +7,132 @@
 #pragma hdrstop
 #endif
 
+//------------------------------------------------------------------------
 // Simple Forward Substitution
+//
+// This phase tries to reconnect trees that were split early on by
+// phases like the importer and inlining. We run it before morph
+// to provide more context for morph's tree based optimizations, and
+// we run it after the local address visitor because that phase sets
+// address exposure for locals and computes (early) ref counts.
+//
+// The general pattern we look for is
+//
+//  Statement(n):
+//    GT_ASG(lcl, tree)
+//  Statement(n+1):
+//    ... use of lcl ...
+//
+// where those are the only appearances of lcl and lcl is not address
+// exposed.
+//
+// The "optimization" here transforms this to
+//
+//  ~~Statement(n)~~ (removed)
+//  Statement(n+1):
+//    ... use of tree ...
+//
+// As always our main concerns are throughput, legality, profitability,
+// and ensuring downstream phases do not get confused.
+//
+// For throughput, we try and early out on illegal or unprofitable cases
+// before doing the more costly bits of analysis. We only scan a limited
+// amount of IR and just give up if we can't find what we are looking for.
+//
+// If we're successful we will backtrack a bit, to try and catch cases like
+//
+// Statement(n):
+//    lcl1 = tree1
+// Statement(n+1):
+//    lcl2 = tree2
+// Statement(n+2):
+//    use ...  lcl1 ... use ... lcl2 ...
+//
+// If we can forward sub tree2, then the def aind use of lcl1 become
+// adjacent.
+//
+// For legality we must show that evaluating "tree" at its new position
+// can't change any observable behavior. This largely means running an
+// interference analysis between tree and the portion of Statement(n+1)
+// that will evaluate before "tree". This analysis is complicated by some
+// missing flags on trees, in particular modelling the potential uses
+// of exposed locals. We run supplementary scans looking for those.
+//
+// Ideally we'd update the tree with our findings, or better yet ensure
+// that upstream phases didn't leave the wrong flags.
+//
+// For profitability we first try and avoid code growth. We do this
+// by only substituting in cases where lcl has exactly one def and one use.
+// This info is computed for us but the RCS_Early ref counting done during
+// the immediately preceeding fgMarkAddressExposedLocals phase.
+//
+// Because of this, once we've substituted "tree" we know that lcl is dead
+// and we can remove the assignment statement.
+//
+// Even with ref count screening, we don't know for sure where the
+// single use of local might be, so we have to seach for it.
+//
+// We also take pains not to create overly large trees as the recursion
+// done by morph incorporates a lot of state; deep trees may lead to
+// stack overflows.
+//
+// There are a fair number of ad-hoc restrictions on what can be
+// substituted where; these reflect various blemishes or implicit
+// contracts in our IR shapes that we should either remove or mandate.
+//
+// Possible enhancements:
+// * Allow fwd sub of "simple, cheap" trees when there's more than one use.
+// * Search more widely for the use.
+// * Use height/depth to avoid blowing morph's recursion, rather than tree size.
+// * Sub accross a block boundary if successor block is unique, join-free,
+//   and in the same EH region.
+// * Retrun this later, after we have built SSA, and handle single-def single-use
+//   from SSA perspective.
+//
+//------------------------------------------------------------------------
 
 //------------------------------------------------------------------------
-// fgForwardSub: try forward substitution in this method
+// fgForwardSub: run forward substitution in this method
 //
 // Returns:
 //   suitable phase status
 //
 PhaseStatus Compiler::fgForwardSub()
 {
-    bool changed = false;
-    bool enabled = true;
+    if (!opts.OptimizationEnabled())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
 #if defined(DEBUG)
-    enabled = JitConfig.JitNoForwardSub() == 0;
+    if (JitConfig.JitNoForwardSub() > 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 #endif
 
-    if (enabled)
+    bool changed = false;
+
+    for (BasicBlock* const block : Blocks())
     {
-        for (BasicBlock* const block : Blocks())
-        {
-            JITDUMP("\n\n===> " FMT_BB "\n", block->bbNum);
-            changed |= fgForwardSub(block);
-        }
+        JITDUMP("\n\n===> " FMT_BB "\n", block->bbNum);
+        changed |= fgForwardSubBlock(block);
     }
 
     return changed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
-// fgForwardSub(BasicBlock) -- try forward substitution in this block
+// fgForwardSubBlock: run forward substitution in this block
 //
 // Arguments:
 //    block -- block to process
 //
 // Returns:
-//    true if any forward substitution took place
+//    true if any IR was modified
 //
-bool Compiler::fgForwardSub(BasicBlock* block)
+bool Compiler::fgForwardSubBlock(BasicBlock* block)
 {
-    // Look for top-level ASG where the value defined is
-    // a local that's not address-exposed, and the local has
-    // exactly one use.
-
     Statement* stmt     = block->firstStmt();
     Statement* lastStmt = block->lastStmt();
     bool       changed  = false;
@@ -59,7 +141,7 @@ bool Compiler::fgForwardSub(BasicBlock* block)
     {
         Statement* const prevStmt    = stmt->GetPrevStmt();
         Statement* const nextStmt    = stmt->GetNextStmt();
-        bool const       substituted = fgForwardSub(stmt);
+        bool const       substituted = fgForwardSubStatement(stmt);
 
         if (substituted)
         {
@@ -67,12 +149,18 @@ bool Compiler::fgForwardSub(BasicBlock* block)
             changed = true;
         }
 
+        // Try backtracking if we substituted.
+        //
         if (substituted && (prevStmt != lastStmt) && prevStmt->GetRootNode()->OperIs(GT_ASG))
         {
+            // Yep, bactrack.
+            //
             stmt = prevStmt;
         }
         else
         {
+            // Move on to the next.
+            //
             stmt = nextStmt;
         }
     }
@@ -103,8 +191,8 @@ public:
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
         , m_useCount(0)
-        , m_useFlags(0)
-        , m_accumulatedFlags(0)
+        , m_useFlags(GTF_EMPTY)
+        , m_accumulatedFlags(GTF_EMPTY)
         , m_treeSize(0)
     {
     }
@@ -184,7 +272,7 @@ public:
         return m_parentNode;
     }
 
-    unsigned GetFlags() const
+    GenTreeFlags GetFlags() const
     {
         return m_useFlags;
     }
@@ -200,14 +288,14 @@ public:
     }
 
 private:
-    GenTree** m_use;
-    GenTree*  m_node;
-    GenTree*  m_parentNode;
-    unsigned  m_lclNum;
-    unsigned  m_useCount;
-    unsigned  m_useFlags;
-    unsigned  m_accumulatedFlags;
-    unsigned  m_treeSize;
+    GenTree**    m_use;
+    GenTree*     m_node;
+    GenTree*     m_parentNode;
+    unsigned     m_lclNum;
+    unsigned     m_useCount;
+    GenTreeFlags m_useFlags;
+    GenTreeFlags m_accumulatedFlags;
+    unsigned     m_treeSize;
 };
 
 //------------------------------------------------------------------------
@@ -222,7 +310,7 @@ public:
         UseExecutionOrder = true
     };
 
-    EffectsVisitor(Compiler* compiler) : GenTreeVisitor<EffectsVisitor>(compiler), m_flags(0)
+    EffectsVisitor(Compiler* compiler) : GenTreeVisitor<EffectsVisitor>(compiler), m_flags(GTF_EMPTY)
     {
     }
 
@@ -245,18 +333,18 @@ public:
         return fgWalkResult::WALK_CONTINUE;
     }
 
-    unsigned GetFlags()
+    GenTreeFlags GetFlags()
     {
         return m_flags;
     }
 
 private:
-    unsigned m_flags;
+    GenTreeFlags m_flags;
 };
 
 //------------------------------------------------------------------------
-// fgForwardSub(Statement) -- forward sub this statement's computation
-//  to the next statement, if legal and profitable
+// fgForwardSubStatement: forward substitute this statement's
+//  computation to the next statement, if legal and profitable
 //
 // arguments:
 //    stmt - statement in question
@@ -265,7 +353,7 @@ private:
 //    true if statement computation was forwarded.
 //    caller is responsible for removing the now-dead statement.
 //
-bool Compiler::fgForwardSub(Statement* stmt)
+bool Compiler::fgForwardSubStatement(Statement* stmt)
 {
     // Is this tree a def of a single use, unaliased local?
     //
@@ -344,7 +432,7 @@ bool Compiler::fgForwardSub(Statement* stmt)
 
     if (fwdSubNode->IsCall() && fwdSubNode->AsCall()->IsNoReturn())
     {
-        JITDUMP(" tree to sub is no return call\n");
+        JITDUMP(" tree to sub is a 'no return' call\n");
         return false;
     }
 
