@@ -36,10 +36,10 @@ GTNODE(CATCH_ARG        , GenTree            ,0,GTK_LEAF)             // Excepti
 GTNODE(LABEL            , GenTree            ,0,GTK_LEAF)             // Jump-target
 GTNODE(JMP              , GenTreeVal         ,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,GTK_LEAF)             // Address of a function
-GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|GTK_NOTLIR)  // Place holder for the return expression from an inline candidate
+GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
 GTNODE(CLS_VAR          , GenTreeClsVar      ,0,GTK_LEAF)             // Static data member
 
-GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF|GTK_NOVALUE|GTK_NOTLIR)  // Placeholder for a "late arg" in the original arg list.
+GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)  // Placeholder for a "late arg" in the original arg list.
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -79,7 +79,7 @@ GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reint
 GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|GTK_NOCONTAIN) // alloca()
 
-GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|GTK_NOTLIR)    // address of
+GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // address of
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
@@ -93,14 +93,14 @@ GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
 GTNODE(ARR_LENGTH       , GenTreeArrLen      ,0,GTK_UNOP|GTK_EXOP)
-GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|GTK_NOTLIR) // Member-field
-GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|GTK_NOTLIR) // object allocator
+GTNODE(FIELD            , GenTreeField       ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Member-field
+GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // object allocator
 
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP) // Initialization value for an initBlk
 
-GTNODE(BOX              , GenTreeBox         ,0,GTK_UNOP|GTK_EXOP|GTK_NOTLIR)   // Marks its first operands (a local) as being a box
-GTNODE(PUTARG_TYPE      , GenTreeOp          ,0,GTK_UNOP|GTK_NOTLIR)            // Saves argument type between importation and morph
-GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP|GTK_NOTLIR) // Runtime handle lookup
+GTNODE(BOX              , GenTreeBox         ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Marks its first operands (a local) as being a box
+GTNODE(PUTARG_TYPE      , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)            // Saves argument type between importation and morph
+GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Runtime handle lookup
 
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
 GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (16-bit)
@@ -128,7 +128,7 @@ GTNODE(RSZ              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROL              , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(ROR              , GenTreeOp          ,0,GTK_BINOP)
 
-GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
+GTNODE(ASG              , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(EQ               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(NE               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(LT               , GenTreeOp          ,0,GTK_BINOP)
@@ -146,14 +146,14 @@ GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
-GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
-GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|GTK_NOTLIR)
-GTNODE(COLON            , GenTreeColon       ,0,GTK_BINOP|GTK_NOTLIR)
+GTNODE(COMMA            , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
+GTNODE(QMARK            , GenTreeQmark       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR)
+GTNODE(COLON            , GenTreeColon       ,0,GTK_BINOP|DBK_NOTLIR)
 
-GTNODE(INDEX            , GenTreeIndex       ,0,GTK_BINOP|GTK_EXOP|GTK_NOTLIR) // SZ-array-element.
+GTNODE(INDEX            , GenTreeIndex       ,0,GTK_BINOP|GTK_EXOP|DBK_NOTLIR) // SZ-array-element.
 GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,GTK_BINOP|GTK_EXOP)            // Addr of SZ-array-element; used when aiming to minimize compile times.
 
-GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|GTK_NOTLIR)
+GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTLIR)
 GTNODE(LEA              , GenTreeAddrMode    ,0,GTK_BINOP|GTK_EXOP)
 
 #if !defined(TARGET_64BIT)

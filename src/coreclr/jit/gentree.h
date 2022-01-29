@@ -99,8 +99,7 @@ enum GenTreeOperKind
     GTK_EXOP    = 0x10,   // Indicates that an oper for a node type that extends GenTreeOp (or GenTreeUnOp)
                           // by adding non-node fields to unary or binary operator.
     GTK_NOVALUE   = 0x20, // node does not produce a value
-    GTK_NOTLIR    = 0x40, // node is not allowed in LIR
-    GTK_NOCONTAIN = 0x80, // this node is a value, but may not be contained
+    GTK_NOCONTAIN = 0x40, // this node is a value, but may not be contained
 
     GTK_MASK = 0xFF
 };
@@ -114,7 +113,8 @@ enum GenTreeDebugOperKind
 {
     DBK_FIRST_FLAG = GTK_MASK + 1,
 
-    DBK_NOTHIR = DBK_FIRST_FLAG, // This oper is not supported in HIR (before rationalization).
+    DBK_NOTHIR = DBK_FIRST_FLAG,      // This oper is not supported in HIR (before rationalization).
+    DBK_NOTLIR = DBK_FIRST_FLAG << 1, // This oper is not supported in LIR (after rationalization).
 
     DBK_MASK = ~GTK_MASK
 };
@@ -1089,34 +1089,6 @@ public:
         return true;
     }
 
-    bool IsLIR() const
-    {
-        if ((OperKind(gtOper) & GTK_NOTLIR) != 0)
-        {
-            return false;
-        }
-
-        switch (gtOper)
-        {
-            case GT_NOP:
-                // NOPs may only be present in LIR if they do not produce a value.
-                return IsNothingNode();
-
-            case GT_ADDR:
-            {
-                // ADDR ndoes may only be present in LIR if the location they refer to is not a
-                // local, class variable, or IND node.
-                GenTree*   location   = gtGetOp1();
-                genTreeOps locationOp = location->OperGet();
-                return !location->IsLocal() && (locationOp != GT_CLS_VAR) && (locationOp != GT_IND);
-            }
-
-            default:
-                // All other nodes are assumed to be correct.
-                return true;
-        }
-    }
-
     // LIR flags
     //   These helper methods, along with the flag values they manipulate, are defined in lir.h
     //
@@ -1711,6 +1683,17 @@ public:
             default:
                 return false;
         }
+    }
+
+    bool OperIsLIR() const
+    {
+        if (OperIs(GT_NOP))
+        {
+            // NOPs may only be present in LIR if they do not produce a value.
+            return IsNothingNode();
+        }
+
+        return (DebugOperKind() & DBK_NOTLIR) == 0;
     }
 
     bool        OperSupportsReverseOps() const;

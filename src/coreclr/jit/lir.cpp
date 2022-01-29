@@ -1415,12 +1415,12 @@ private:
     {
         for (GenTree* operand : node->Operands())
         {
-            if (!operand->IsLIR())
+            // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
+            if (operand->OperIs(GT_ARGPLACE))
             {
-                // ARGPLACE nodes are not represented in the LIR sequence. Ignore them.
-                assert(operand->OperIs(GT_ARGPLACE));
                 continue;
             }
+
             if (operand->isContained())
             {
                 UseNodeOperands(operand);
@@ -1524,7 +1524,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
     for (Iterator node = begin(), end = this->end(); node != end; prev = *node, ++node)
     {
         // Verify that the node is allowed in LIR.
-        assert(node->IsLIR());
+        assert(node->OperIsLIR());
 
         // Some nodes should never be marked unused, as they must be contained in the backend.
         // These may be marked as unused during dead code elimination traversal, but they *must* be subsequently

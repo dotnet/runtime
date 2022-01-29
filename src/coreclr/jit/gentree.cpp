@@ -15606,7 +15606,7 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
 // Return value: returns true if it is possible to contain this node and false otherwise.
 bool GenTree::canBeContained() const
 {
-    assert(IsLIR());
+    assert(OperIsLIR());
 
     if (gtHasReg())
     {
@@ -15638,7 +15638,7 @@ bool GenTree::canBeContained() const
 //
 bool GenTree::isContained() const
 {
-    assert(IsLIR());
+    assert(OperIsLIR());
     const bool isMarkedContained = ((gtFlags & GTF_CONTAINED) != 0);
 
 #ifdef DEBUG
