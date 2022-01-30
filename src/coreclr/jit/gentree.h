@@ -6420,7 +6420,6 @@ public:
         , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
 #endif
-        , m_compilerAdded(false)
     {
     }
 
@@ -6507,16 +6506,6 @@ public:
         m_prev = prevStmt;
     }
 
-    bool IsCompilerAdded() const
-    {
-        return m_compilerAdded;
-    }
-
-    void SetCompilerAdded()
-    {
-        m_compilerAdded = true;
-    }
-
     bool IsPhiDefnStmt() const
     {
         return m_rootNode->IsPhiDefn();
@@ -6553,8 +6542,6 @@ private:
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.
     unsigned  m_stmtID;
 #endif
-
-    bool m_compilerAdded; // Was the statement created by optimizer?
 };
 
 // StatementList: adapter class for forward iteration of the statement linked list using range-based `for`,
