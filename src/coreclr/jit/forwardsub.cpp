@@ -557,6 +557,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // If we're relying on purity of fwdSubNode for legality of forward sub,
     // do some extra checks for global uses that might not be reflected in the flags.
     //
+    // TODO: remove this once we can trust upstream phases and/or gtUpdateStmtSideEffects
+    // to set GTF_GLOB_REF properly.
+    //
     if (fwdSubNodeInvariant && ((fsv.GetFlags() & (GTF_CALL | GTF_ASG)) != 0))
     {
         EffectsVisitor ev(this);
@@ -718,6 +721,15 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         JITDUMP(" tree to sub is call, use is call arg\n");
         return false;
+    }
+
+    // If the intial has truncate on store semantics, we need to replicate
+    // that here with a cast.
+    //
+    if (varDsc->lvNormalizeOnStore() && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))
+    {
+        JITDUMP(" [adding cast for normalize on store]");
+        fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, varDsc->TypeGet());
     }
 
     // Looks good, forward sub!
