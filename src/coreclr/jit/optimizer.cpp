@@ -7916,6 +7916,25 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             {
                 switch (oper)
                 {
+                    case GT_COMMA:
+                        tree->gtVNPair = tree->AsOp()->gtOp2->gtVNPair;
+                        break;
+
+                    // Is it an addr of a array index expression?
+                    case GT_ARR_ADDR:
+                    {
+                        CORINFO_CLASS_HANDLE elemTypeEq =
+                            EncodeElemType(tree->AsArrAddr()->GetElemType(), tree->AsArrAddr()->GetElemClassHandle());
+                        ValueNum elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+
+                        // Label this with a "dummy" PtrToArrElem so that we pick it up when looking at the ASG.
+                        ValueNum ptrToArrElemVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN,
+                                                                     vnStore->VNForNull(), vnStore->VNForNull(),
+                                                                     vnStore->VNForNull());
+                        tree->gtVNPair.SetBoth(ptrToArrElemVN);
+                    }
+                    break;
+
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
                         if (tree->AsHWIntrinsic()->OperIsMemoryStore())

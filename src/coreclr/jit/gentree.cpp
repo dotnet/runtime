@@ -4042,28 +4042,22 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         GenTree* addr = op1->gtEffectiveVal();
 
                         bool doAddrMode = true;
-                        // See if we can form a complex addressing mode.
-                        // Always use an addrMode for an array index indirection.
-                        // TODO-1stClassStructs: Always do this, but first make sure it's
-                        // done in Lowering as well.
-                        if ((tree->gtFlags & GTF_IND_ARR_INDEX) == 0)
+                        // TODO-1stClassStructs: Always do this, but first make sure it's done in Lowering as well.
+                        if (tree->TypeGet() == TYP_STRUCT)
                         {
-                            if (tree->TypeGet() == TYP_STRUCT)
+                            doAddrMode = false;
+                        }
+                        else if (varTypeIsStruct(tree))
+                        {
+                            // This is a heuristic attempting to match prior behavior when indirections
+                            // under a struct assignment would not be considered for addressing modes.
+                            if (compCurStmt != nullptr)
                             {
-                                doAddrMode = false;
-                            }
-                            else if (varTypeIsStruct(tree))
-                            {
-                                // This is a heuristic attempting to match prior behavior when indirections
-                                // under a struct assignment would not be considered for addressing modes.
-                                if (compCurStmt != nullptr)
+                                GenTree* expr = compCurStmt->GetRootNode();
+                                if ((expr->OperGet() == GT_ASG) &&
+                                    ((expr->gtGetOp1() == tree) || (expr->gtGetOp2() == tree)))
                                 {
-                                    GenTree* expr = compCurStmt->GetRootNode();
-                                    if ((expr->OperGet() == GT_ASG) &&
-                                        ((expr->gtGetOp1() == tree) || (expr->gtGetOp2() == tree)))
-                                    {
-                                        doAddrMode = false;
-                                    }
+                                    doAddrMode = false;
                                 }
                             }
                         }
@@ -9470,12 +9464,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                     if (tree->gtFlags & GTF_IND_INVARIANT)
                     {
                         printf("#");
-                        --msgLength;
-                        break;
-                    }
-                    if (tree->gtFlags & GTF_IND_ARR_INDEX)
-                    {
-                        printf("a");
                         --msgLength;
                         break;
                     }

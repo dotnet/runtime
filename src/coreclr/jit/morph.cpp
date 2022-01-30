@@ -5345,7 +5345,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         GenTreeIndir* const indir = tree->AsIndir();
         indir->Addr()             = indexAddr;
         bool canCSE               = indir->CanCSE();
-        indir->gtFlags            = GTF_IND_ARR_INDEX | (indexAddr->gtFlags & GTF_ALL_EFFECT);
+        indir->gtFlags            = indexAddr->gtFlags & GTF_ALL_EFFECT;
         if (!canCSE)
         {
             indir->SetDoNotCSE();
@@ -5549,9 +5549,6 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     tree->gtFlags &= ~(GTF_INX_RNGCHK | GTF_INX_NOFAULT);
 
     tree->AsOp()->gtOp1 = addr;
-
-    // This is an array index expression.
-    tree->gtFlags |= GTF_IND_ARR_INDEX;
 
     // If there's a bounds check, the indir won't fault.
     if (bndsChk || indexNonFaulting)
@@ -10396,22 +10393,10 @@ GenTree* Compiler::fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE cl
 {
     GenTree* addr;
     GenTree* tree = *pTree;
-    // If this is an indirection, we can return its op1, unless it's a GTF_IND_ARR_INDEX, in which case we
-    // need to hang onto that for the purposes of value numbering.
+    // If this is an indirection, we can return its address.
     if (tree->OperIsIndir())
     {
-        if ((tree->gtFlags & GTF_IND_ARR_INDEX) == 0)
-        {
-            addr = tree->AsOp()->gtOp1;
-        }
-        else
-        {
-            if (isRValue && tree->OperIsBlk())
-            {
-                tree->ChangeOper(GT_IND);
-            }
-            addr = gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
-        }
+        addr = tree->AsOp()->gtOp1;
     }
     else if (tree->gtOper == GT_COMMA)
     {
@@ -12859,32 +12844,29 @@ DONE_MORPHING_CHILDREN:
 
             if (op1->OperGet() == GT_IND)
             {
-                if ((op1->gtFlags & GTF_IND_ARR_INDEX) == 0)
+                // Can not remove a GT_ADDR if it is currently a CSE candidate.
+                if (gtIsActiveCSE_Candidate(tree))
                 {
-                    // Can not remove a GT_ADDR if it is currently a CSE candidate.
-                    if (gtIsActiveCSE_Candidate(tree))
-                    {
-                        break;
-                    }
-
-                    // Perform the transform ADDR(IND(...)) == (...).
-                    GenTree* addr = op1->AsOp()->gtOp1;
-
-                    // If tree has a zero field sequence annotation, update the annotation
-                    // on addr node.
-                    FieldSeqNode* zeroFieldSeq = nullptr;
-                    if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroFieldSeq))
-                    {
-                        fgAddFieldSeqForZeroOffset(addr, zeroFieldSeq);
-                    }
-
-                    noway_assert(varTypeIsGC(addr->gtType) || addr->gtType == TYP_I_IMPL);
-
-                    DEBUG_DESTROY_NODE(op1);
-                    DEBUG_DESTROY_NODE(tree);
-
-                    return addr;
+                    break;
                 }
+
+                // Perform the transform ADDR(IND(...)) == (...).
+                GenTree* addr = op1->AsOp()->gtOp1;
+
+                // If tree has a zero field sequence annotation, update the annotation
+                // on addr node.
+                FieldSeqNode* zeroFieldSeq = nullptr;
+                if (GetZeroOffsetFieldMap()->Lookup(tree, &zeroFieldSeq))
+                {
+                    fgAddFieldSeqForZeroOffset(addr, zeroFieldSeq);
+                }
+
+                noway_assert(varTypeIsGC(addr->gtType) || addr->gtType == TYP_I_IMPL);
+
+                DEBUG_DESTROY_NODE(op1);
+                DEBUG_DESTROY_NODE(tree);
+
+                return addr;
             }
             else if (op1->OperGet() == GT_OBJ)
             {

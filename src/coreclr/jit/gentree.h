@@ -543,11 +543,10 @@ enum GenTreeFlags : unsigned int
     GTF_IND_UNALIGNED           = 0x02000000, // GT_IND   -- the load or store is unaligned (we assume worst case
                                               //             alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND   -- the target is invariant (a prejit indirection)
-    GTF_IND_ARR_INDEX           = 0x00800000, // GT_IND   -- the indirection represents an (SZ) array index
     GTF_IND_NONNULL             = 0x00400000, // GT_IND   -- the indirection never returns null (zero)
 
-    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | \
-                    GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_ARR_INDEX | GTF_IND_TGT_NOT_HEAP,
+    GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |
+                    GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP,
 
     GTF_CLS_VAR_VOLATILE        = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
     GTF_CLS_VAR_INITCLASS       = 0x20000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
@@ -1974,7 +1973,7 @@ public:
 
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
-    // Requires "this" to be the address of an array (the child of a GT_IND labeled with GTF_IND_ARR_INDEX).
+    // Requires "this" to be the address of an array (the operand of a GT_ARR_ADDR).
     // Sets "pArr" to the node representing the array (either an array object pointer, or perhaps a byref to the some
     // element).
     // Sets "*pArrayType" to the class handle for the array type.
