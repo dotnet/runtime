@@ -3993,6 +3993,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
+                case GT_ARR_ADDR:
+                    costEx = 0;
+                    costSz = 0;
+
+                    // To preserve previous behavior, we will always use "gtMarkAddrMode" for ARR_ADDR.
+                    if (op1->OperIs(GT_ADD) && gtMarkAddrMode(op1, &costEx, &costSz, tree->AsArrAddr()->GetElemType()))
+                    {
+                        op1->SetCosts(costEx, costSz);
+                        goto DONE;
+                    }
+                    break;
+
                 case GT_BLK:
                 case GT_IND:
 
