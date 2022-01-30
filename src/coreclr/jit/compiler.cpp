@@ -9309,8 +9309,14 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_CNS_INT:
+            case GT_ARR_ADDR:
+                if (tree->gtFlags & GTF_ARR_ADDR_NONNULL)
+                {
+                    chars += printf("[ARR_ADDR_NONNULL]");
+                }
+                break;
 
+            case GT_CNS_INT:
             {
                 GenTreeFlags handleKind = (tree->gtFlags & GTF_ICON_HDL_MASK);
 

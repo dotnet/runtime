@@ -575,6 +575,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_BOX_VALUE               = 0x80000000, // GT_BOX -- "box" is on a value type
 
+    GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
+
     GTF_ICON_HDL_MASK           = 0xFF000000, // Bits used by handle types below
     GTF_ICON_SCOPE_HDL          = 0x01000000, // GT_CNS_INT -- constant is a scope handle
     GTF_ICON_CLASS_HDL          = 0x02000000, // GT_CNS_INT -- constant is a class handle

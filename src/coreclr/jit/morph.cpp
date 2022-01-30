@@ -5554,6 +5554,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     if (bndsChk || indexNonFaulting)
     {
         tree->gtFlags |= GTF_IND_NONFAULTING;
+        addr->gtFlags |= GTF_ARR_ADDR_NONNULL;
     }
     else
     {
