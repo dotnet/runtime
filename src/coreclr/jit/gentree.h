@@ -5844,6 +5844,56 @@ struct GenTreeIndexAddr : public GenTreeOp
 #endif
 };
 
+// GenTreeArrAddr - GT_ARR_ADDR, carries information about the array type from morph to VN.
+//                  This node is just a wrapper (similar to GenTreeBox), the real address
+//                  expression is contained in its first operand.
+//
+struct GenTreeArrAddr : GenTreeUnOp
+{
+private:
+    CORINFO_CLASS_HANDLE m_elemClassHandle; // The array element class. Currently only used for arrays of TYP_STRUCT.
+    var_types            m_elemType;        // The normalized (TYP_SIMD != TYP_STRUCT) array element type.
+    uint8_t              m_firstElemOffset; // Offset to the first element of the array.
+
+public:
+    GenTreeArrAddr(GenTree* addr, var_types elemType, CORINFO_CLASS_HANDLE elemClassHandle, uint8_t firstElemOffset)
+        : GenTreeUnOp(GT_ARR_ADDR, TYP_BYREF, addr DEBUGARG(/* largeNode */ false))
+        , m_elemClassHandle(elemClassHandle)
+        , m_elemType(elemType)
+        , m_firstElemOffset(firstElemOffset)
+    {
+        assert(addr->TypeIs(TYP_BYREF));
+        assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
+               (elemClassHandle == NO_CLASS_HANDLE));
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeArrAddr() : GenTreeUnOp()
+    {
+    }
+#endif
+
+    GenTree*& Addr()
+    {
+        return gtOp1;
+    }
+
+    CORINFO_CLASS_HANDLE GetElemClassHandle() const
+    {
+        return m_elemClassHandle;
+    }
+
+    var_types GetElemType() const
+    {
+        return m_elemType;
+    }
+
+    uint8_t GetFirstElemOffset() const
+    {
+        return m_firstElemOffset;
+    }
+};
+
 /* gtArrLen -- array length (GT_ARR_LENGTH)
    GT_ARR_LENGTH is used for "arr.length" */
 

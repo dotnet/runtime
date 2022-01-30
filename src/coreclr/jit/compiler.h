@@ -11551,6 +11551,7 @@ public:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
+            case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
             {
