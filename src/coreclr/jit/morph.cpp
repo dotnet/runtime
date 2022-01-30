@@ -12966,15 +12966,11 @@ DONE_MORPHING_CHILDREN:
                 // Originally, I gave all the comma nodes type "byref".  But the ADDR(IND(x)) == x transform
                 // might give op1 a type different from byref (like, say, native int).  So now go back and give
                 // all the comma nodes the type of op1.
-                // TODO: the comma flag update below is conservative and can be improved.
-                // For example, if we made the ADDR(IND(x)) == x transformation, we may be able to
-                // get rid of some of the IND flags on the COMMA nodes (e.g., GTF_GLOB_REF).
 
                 while (!commas.Empty())
                 {
                     GenTree* comma = commas.Pop();
                     comma->gtType  = op1->gtType;
-                    comma->gtFlags |= op1->gtFlags;
 #ifdef DEBUG
                     comma->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
