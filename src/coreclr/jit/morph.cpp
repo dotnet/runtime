@@ -5237,7 +5237,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     unsigned             elemSize       = asIndex->gtIndElemSize;
     CORINFO_CLASS_HANDLE elemStructType = asIndex->gtStructElemClass;
 
-    noway_assert(elemTyp != TYP_STRUCT || elemStructType != nullptr);
+    noway_assert(elemTyp != TYP_STRUCT || elemStructType != NO_CLASS_HANDLE);
 
     // Fold "cns_str"[cns_index] to ushort constant
     // NOTE: don't do it for empty string, the operation will fail anyway
@@ -5273,7 +5273,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
             // This is the new type of the node.
             tree->gtType = elemTyp;
             // Now set elemStructType to null so that we don't confuse value numbering.
-            elemStructType = nullptr;
+            elemStructType = NO_CLASS_HANDLE;
         }
     }
 #endif // FEATURE_SIMD
@@ -5281,7 +5281,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // Set up the array length's offset into lenOffs
     // And    the first element's offset into elemOffs
     ssize_t lenOffs;
-    ssize_t elemOffs;
+    uint8_t elemOffs;
     if (tree->gtFlags & GTF_INX_STRING_LAYOUT)
     {
         lenOffs  = OFFSETOF__CORINFO_String__stringLen;
@@ -5308,8 +5308,10 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     //    side-effecting.
     // 3. Perform an explicit bounds check: GT_BOUNDS_CHECK(index, GT_ARR_LENGTH(array))
     // 4. Compute the address of the element that will be accessed:
-    //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize))
-    // 5. Dereference the address with a GT_IND.
+    //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize)) OR
+    //    GT_ADD(GT_ADD(array, GT_ADD(GT_MUL(index, elementSize), firstElementOffset)))
+    // 5. Wrap the address in a GT_ADD_ADDR (the information saved there will later be used by VN).
+    // 6. Dereference the address with a GT_IND.
     //
     // This expansion explicitly exposes the bounds check and the address calculation to the optimizer, which allows
     // for more straightforward bounds-check removal, CSE, etc.
@@ -5320,7 +5322,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
 
         GenTreeIndexAddr* const indexAddr =
             new (this, GT_INDEX_ADDR) GenTreeIndexAddr(array, index, elemTyp, elemStructType, elemSize,
-                                                       static_cast<unsigned>(lenOffs), static_cast<unsigned>(elemOffs));
+                                                       static_cast<unsigned>(lenOffs), elemOffs);
         indexAddr->gtFlags |= (array->gtFlags | index->gtFlags) & GTF_ALL_EFFECT;
 
         // Mark the indirection node as needing a range check if necessary.
@@ -5530,8 +5532,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         addr = gtNewOperNode(GT_ADD, TYP_BYREF, arrRef, addr);
     }
 
-    assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE) != 0) ||
-           (GenTree::s_gtNodeSizes[GT_IND] == TREE_NODE_SZ_SMALL));
+    addr = new (this, GT_ARR_ADDR) GenTreeArrAddr(addr, elemTyp, elemStructType, elemOffs);
 
     // Change the orginal GT_INDEX node into a GT_IND node
     tree->SetOper(GT_IND);
@@ -5619,19 +5620,19 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     //
     GenTree* arrElem = tree->gtEffectiveVal();
 
-    if (fgIsCommaThrow(tree))
+    if (!arrElem->OperIs(GT_IND) || !arrElem->AsIndir()->Addr()->OperIs(GT_ARR_ADDR))
     {
-        if ((arrElem != indTree) ||     // A new tree node may have been created
-            (!indTree->OperIs(GT_IND))) // The GT_IND may have been changed to a GT_CNS_INT
-        {
-            return tree; // Just return the Comma-Throw, don't try to attach the fieldSeq info, etc..
-        }
+        // This branch is hit if "tree" was folded down to a comma throw.
+        // Just return it, don't try to attach the fieldSeq info, etc..
+        return tree;
+    }
+    else
+    {
+        addr = arrElem->AsIndir()->Addr()->AsArrAddr()->Addr();
     }
 
     assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
     DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED)
-
-    addr = arrElem->gtGetOp1();
 
     GenTree* cnsOff = nullptr;
     if (addr->OperIs(GT_ADD))

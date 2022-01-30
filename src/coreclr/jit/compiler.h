@@ -5604,6 +5604,8 @@ public:
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
+    void fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr);
+
 #ifdef FEATURE_SIMD
     // Does value-numbering for a GT_SIMD tree
     void fgValueNumberSimd(GenTreeSIMD* tree);

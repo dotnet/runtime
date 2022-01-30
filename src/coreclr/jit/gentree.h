@@ -5865,6 +5865,10 @@ public:
         assert(addr->TypeIs(TYP_BYREF));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
+
+        // We will only consider "addr" for CSE. This is more profitable and precise
+        // because ARR_ADDR can get its VN "polluted" by zero-offset field sequences.
+        SetDoNotCSE();
     }
 
 #if DEBUGGABLE_GENTREE

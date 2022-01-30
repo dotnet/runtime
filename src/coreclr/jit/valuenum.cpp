@@ -6367,7 +6367,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ADDR, GT_BOUNDS_CHECK,
+                                                 GT_ADDR, GT_ARR_ADDR, GT_BOUNDS_CHECK,
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -7939,43 +7939,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
 
                     ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
                                                                   rhsVNPair.GetLiberal(), lhs->TypeGet());
-                    recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign (case 1)"));
-                }
-                // It may be that we haven't parsed it yet. Try.
-                else if (lhs->gtFlags & GTF_IND_ARR_INDEX)
-                {
-                    ArrayInfo arrInfo;
-                    bool      b = GetArrayInfoMap()->Lookup(lhs, &arrInfo);
-                    assert(b);
-                    ValueNum      arrVN  = ValueNumStore::NoVN;
-                    ValueNum      inxVN  = ValueNumStore::NoVN;
-                    FieldSeqNode* fldSeq = nullptr;
-
-                    // Try to parse it.
-                    GenTree* arr = nullptr;
-                    arg->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
-                    if (arr == nullptr)
-                    {
-                        fgMutateGcHeap(tree DEBUGARG("assignment to unparseable array expression"));
-                        return;
-                    }
-                    // Otherwise, parsing succeeded.
-
-                    // Need to form H[arrType][arr][ind][fldSeq] = rhsVNPair.GetLiberal()
-
-                    // Get the element type equivalence class representative.
-                    CORINFO_CLASS_HANDLE elemTypeEq = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                    arrVN                           = arr->gtVNPair.GetLiberal();
-
-                    FieldSeqNode* zeroOffsetFldSeq = nullptr;
-                    if (GetZeroOffsetFieldMap()->Lookup(arg, &zeroOffsetFldSeq))
-                    {
-                        fldSeq = GetFieldSeqStore()->Append(fldSeq, zeroOffsetFldSeq);
-                    }
-
-                    ValueNum heapVN = fgValueNumberArrIndexAssign(elemTypeEq, arrVN, inxVN, fldSeq,
-                                                                  rhsVNPair.GetLiberal(), lhs->TypeGet());
-                    recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign (case 2)"));
+                    recordGcHeapStore(tree, heapVN DEBUGARG("ArrIndexAssign"));
                 }
                 else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
                 {
@@ -8782,81 +8746,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 ValueNum newUniq = vnStore->VNForExpr(compCurBB, tree->TypeGet());
                 tree->gtVNPair   = vnStore->VNPWithExc(ValueNumPair(newUniq, newUniq), addrXvnp);
             }
-            // We always want to evaluate the LHS when the GT_IND node is marked with GTF_IND_ARR_INDEX
-            // as this will relabel the GT_IND child correctly using the VNF_PtrToArrElem
-            else if ((tree->gtFlags & GTF_IND_ARR_INDEX) != 0)
-            {
-                ArrayInfo arrInfo;
-                bool      b = GetArrayInfoMap()->Lookup(tree, &arrInfo);
-                assert(b);
-
-                ValueNum      inxVN  = ValueNumStore::NoVN;
-                FieldSeqNode* fldSeq = nullptr;
-
-                // Try to parse it.
-                GenTree* arr = nullptr;
-                addr->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
-                if (arr != nullptr)
-                {
-                    assert(fldSeq != FieldSeqStore::NotAField());
-
-                    // Need to form H[arrType][arr][ind][fldSeq]
-                    // Get the array element type equivalence class rep.
-                    CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                    ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
-                    JITDUMP("    VNForHandle(arrElemType: %s) is " FMT_VN "\n",
-                            (arrInfo.m_elemType == TYP_STRUCT) ? eeGetClassName(arrInfo.m_elemStructType)
-                                                               : varTypeName(arrInfo.m_elemType),
-                            elemTypeEqVN);
-
-                    // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will
-                    // be captured as part of the value of the composite "addr" operation...
-                    ValueNum arrVN = vnStore->VNLiberalNormalValue(arr->gtVNPair);
-                    inxVN          = vnStore->VNNormalValue(inxVN);
-
-                    // Additionally, relabel the address with a PtrToArrElem value number.
-                    ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
-                    ValueNum elemAddr =
-                        vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN);
-
-                    // The aggregate "addr" VN should have had all the exceptions bubble up...
-                    addr->gtVNPair = vnStore->VNPWithExc(ValueNumPair(elemAddr, elemAddr), addrXvnp);
-#ifdef DEBUG
-                    ValueNum elemAddrWithExc = addr->gtVNPair.GetLiberal();
-                    if (verbose)
-                    {
-                        printf("  Relabeled IND_ARR_INDEX address node ");
-                        Compiler::printTreeID(addr);
-                        printf(" with l:" FMT_VN ": ", elemAddrWithExc);
-                        vnStore->vnDump(this, elemAddrWithExc);
-                        printf("\n");
-                        if (elemAddrWithExc != elemAddr)
-                        {
-                            printf("      [" FMT_VN " is: ", elemAddr);
-                            vnStore->vnDump(this, elemAddr);
-                            printf("]\n");
-                        }
-                    }
-#endif // DEBUG
-
-                    // We now need to retrieve the value number for the array element value
-                    // and give this value number to the GT_IND node 'tree'
-                    // We do this whenever we have an rvalue, but we don't do it for a
-                    // normal LHS assignment into an array element.
-                    //
-                    if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
-                    {
-                        fgValueNumberArrIndexVal(tree, elemTypeEq, arrVN, inxVN, addrXvnp, fldSeq);
-                    }
-                }
-                else // An unparseable array expression.
-                {
-                    if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
-                    {
-                        tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(), addrXvnp);
-                    }
-                }
-            }
             // In general we skip GT_IND nodes on that are the LHS of an assignment.  (We labeled these earlier.)
             // We will "evaluate" this as part of the assignment.
             else if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
@@ -8883,7 +8772,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, addrXvnp);
                 }
-                else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && funcApp.m_func == VNF_PtrToStatic)
+                else if (vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp) && (funcApp.m_func == VNF_PtrToStatic))
                 {
                     var_types indType    = tree->TypeGet();
                     ValueNum  fieldSeqVN = funcApp.m_args[1];
@@ -9092,6 +8981,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         tree->gtVNPair       = vnStore->VNPWithExc(tree->AsOp()->gtOp2->gtVNPair, op1Xvnp);
                     }
                     break;
+
+                    case GT_ARR_ADDR:
+                        fgValueNumberArrIndexAddr(tree->AsArrAddr());
+                        break;
 
                     case GT_BOUNDS_CHECK:
                     {
@@ -9372,6 +9265,54 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
         intrinsic->gtVNPair =
             vnStore->VNPWithExc(vnStore->VNPairForFunc(intrinsic->TypeGet(), VNF_ObjGetType, arg0VNP), arg0VNPx);
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberArrIndexAddr: Numbers the ARR_ADDR tree using VNF_PtrToArrElem.
+//
+// Arguments:
+//    arrAddr - The GT_ARR_ADDR tree to number
+//
+void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
+{
+    GenTree*             addr           = arrAddr->Addr();
+    var_types            elemType       = arrAddr->GetElemType();
+    CORINFO_CLASS_HANDLE elemStructType = arrAddr->GetElemClassHandle();
+    unsigned             elemOffset     = arrAddr->GetFirstElemOffset();
+    unsigned             elemSize       = (elemType == TYP_STRUCT) ? typGetObjLayout(elemStructType)->GetSize()
+                                                                   : genTypeSize(elemType);
+
+    // Try to parse it.
+    ArrayInfo     arrInfo(elemType, elemSize, elemOffset, elemStructType);
+    GenTree*      arr         = nullptr;
+    ValueNum      inxVN       = ValueNumStore::NoVN;
+    FieldSeqNode* fldSeq      = nullptr;
+    addr->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
+
+    if (arr == nullptr)
+    {
+        JITDUMP("    *** ARR_ADDR -- an unparseable array expression, assigning a new, unique VN\n");
+        arrAddr->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(addr->gtVNPair));
+        return;
+    }
+
+    // Get the element type equivalence class representative.
+    CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(elemType, elemStructType);
+    ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+    JITDUMP("    VNForHandle(arrElemType: %s) is " FMT_VN "\n",
+            (elemType == TYP_STRUCT) ? eeGetClassName(elemStructType) : varTypeName(elemType), elemTypeEqVN);
+
+    ValueNum arrVN = vnStore->VNNormalValue(arr->GetVN(VNK_Liberal));
+    inxVN          = vnStore->VNNormalValue(inxVN);
+
+    // Look up if we have any zero-offset sequences...
+    assert((fldSeq == nullptr) && !GetZeroOffsetFieldMap()->Lookup(addr));
+    GetZeroOffsetFieldMap()->Lookup(arrAddr, &fldSeq);
+    ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
+
+    ValueNum     arrAddrVN  = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN);
+    ValueNumPair arrAddrVNP = ValueNumPair(arrAddrVN, arrAddrVN);
+    arrAddr->gtVNPair       = vnStore->VNPWithExc(arrAddrVNP, vnStore->VNPExceptionSet(addr->gtVNPair));
 }
 
 #ifdef FEATURE_SIMD
