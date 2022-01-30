@@ -7916,37 +7916,6 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             {
                 switch (oper)
                 {
-                    case GT_COMMA:
-                        tree->gtVNPair = tree->AsOp()->gtOp2->gtVNPair;
-                        break;
-
-                    case GT_ADDR:
-                        // Is it an addr of a array index expression?
-                        {
-                            GenTree* addrArg = tree->AsOp()->gtOp1;
-                            if (addrArg->OperGet() == GT_IND)
-                            {
-                                // Is the LHS an array index expression?
-                                if (addrArg->gtFlags & GTF_IND_ARR_INDEX)
-                                {
-                                    ArrayInfo arrInfo;
-                                    bool      b = GetArrayInfoMap()->Lookup(addrArg, &arrInfo);
-                                    assert(b);
-                                    CORINFO_CLASS_HANDLE elemTypeEq =
-                                        EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                                    ValueNum elemTypeEqVN =
-                                        vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
-                                    ValueNum ptrToArrElemVN =
-                                        vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN,
-                                                           // The rest are dummy arguments.
-                                                           vnStore->VNForNull(), vnStore->VNForNull(),
-                                                           vnStore->VNForNull());
-                                    tree->gtVNPair.SetBoth(ptrToArrElemVN);
-                                }
-                            }
-                        }
-                        break;
-
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
                         if (tree->AsHWIntrinsic()->OperIsMemoryStore())

@@ -5568,13 +5568,6 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         tree->gtFlags |= GTF_DONT_CSE;
     }
 
-    // Store information about it.
-    GetArrayInfoMap()->Set(tree, ArrayInfo(elemTyp, elemSize, (int)elemOffs, elemStructType));
-
-    // Remember this 'indTree' that we just created, as we still need to attach the fieldSeq information to it.
-
-    GenTree* indTree = tree;
-
     // Did we create a bndsChk tree?
     if (bndsChk)
     {
@@ -12836,14 +12829,7 @@ DONE_MORPHING_CHILDREN:
                     commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
                 }
-                bool      wasArrIndex = (tree->gtFlags & GTF_IND_ARR_INDEX) != 0;
-                ArrayInfo arrInfo;
-                if (wasArrIndex)
-                {
-                    bool b = GetArrayInfoMap()->Lookup(tree, &arrInfo);
-                    assert(b);
-                    GetArrayInfoMap()->Remove(tree);
-                }
+
                 tree          = op1;
                 GenTree* addr = commaNode->AsOp()->gtOp2;
                 // TODO-1stClassStructs: we often create a struct IND without a handle, fix it.
@@ -12852,10 +12838,6 @@ DONE_MORPHING_CHILDREN:
                 op1->gtFlags |= treeFlags & ~GTF_ALL_EFFECT & ~GTF_IND_NONFAULTING;
                 op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
 
-                if (wasArrIndex)
-                {
-                    GetArrayInfoMap()->Set(op1, arrInfo);
-                }
 #ifdef DEBUG
                 op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif

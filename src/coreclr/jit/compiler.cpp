@@ -1916,7 +1916,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_blockToEHPreds     = nullptr;
     m_fieldSeqStore      = nullptr;
     m_zeroOffsetFieldMap = nullptr;
-    m_arrayInfoMap       = nullptr;
     m_refAnyClass        = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {

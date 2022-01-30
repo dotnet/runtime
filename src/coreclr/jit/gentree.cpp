@@ -406,14 +406,6 @@ void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
 #ifdef DEBUG
     gtSeqNum = 0;
 #endif
-    // Transfer any annotations.
-    if (src->OperGet() == GT_IND && src->gtFlags & GTF_IND_ARR_INDEX)
-    {
-        ArrayInfo arrInfo;
-        bool      b = comp->GetArrayInfoMap()->Lookup(src, &arrInfo);
-        assert(b);
-        comp->GetArrayInfoMap()->Set(this, arrInfo);
-    }
     DEBUG_DESTROY_NODE(src);
 }
 
@@ -7741,26 +7733,6 @@ GenTree* Compiler::gtCloneExpr(
 
         /* Flags */
         addFlags |= tree->gtFlags;
-
-        // Copy any node annotations, if necessary.
-        switch (tree->gtOper)
-        {
-            case GT_STOREIND:
-            case GT_IND:
-            case GT_OBJ:
-            case GT_STORE_OBJ:
-            {
-                ArrayInfo arrInfo;
-                if (!tree->AsIndir()->gtOp1->OperIs(GT_INDEX_ADDR) && TryGetArrayInfo(tree->AsIndir(), &arrInfo))
-                {
-                    GetArrayInfoMap()->Set(copy, arrInfo);
-                }
-            }
-            break;
-
-            default:
-                break;
-        }
 
 #ifdef DEBUG
         /* GTF_NODE_MASK should not be propagated from 'tree' to 'copy' */
@@ -16658,33 +16630,29 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 {
                     // Attempt to find a handle for this expression.
                     // We can do this for an array element indirection, or for a field indirection.
-                    ArrayInfo arrInfo;
-                    if (TryGetArrayInfo(tree->AsIndir(), &arrInfo))
+                    GenTree* addr = tree->AsIndir()->Addr();
+                    if (addr->OperIs(GT_ARR_ADDR))
                     {
-                        structHnd = arrInfo.m_elemStructType;
+                        structHnd = addr->AsArrAddr()->GetElemClassHandle();
+                        break;
+                    }
+
+                    FieldSeqNode* fieldSeq = nullptr;
+                    if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->OperIs(GT_CNS_INT))
+                    {
+                        fieldSeq = addr->gtGetOp2()->AsIntCon()->gtFieldSeq;
                     }
                     else
                     {
-                        GenTree*      addr     = tree->AsIndir()->Addr();
-                        FieldSeqNode* fieldSeq = nullptr;
-                        if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->OperIs(GT_CNS_INT))
-                        {
-                            fieldSeq = addr->gtGetOp2()->AsIntCon()->gtFieldSeq;
-                        }
-                        else
-                        {
-                            GetZeroOffsetFieldMap()->Lookup(addr, &fieldSeq);
-                        }
-                        if (fieldSeq != nullptr)
-                        {
-                            fieldSeq = fieldSeq->GetTail();
+                        GetZeroOffsetFieldMap()->Lookup(addr, &fieldSeq);
+                    }
 
-                            if (fieldSeq != FieldSeqStore::NotAField() && !fieldSeq->IsPseudoField())
-                            {
-                                // Note we may have a primitive here (and correctly fail to obtain the handle)
-                                eeGetFieldType(fieldSeq->GetFieldHandle(), &structHnd);
-                            }
-                        }
+                    if ((fieldSeq != nullptr) && (fieldSeq != FieldSeqStore::NotAField()))
+                    {
+                        fieldSeq = fieldSeq->GetTail();
+
+                        // Note we may have a primitive here (and correctly fail to obtain the handle)
+                        eeGetFieldType(fieldSeq->GetFieldHandle(), &structHnd);
                     }
                 }
                 break;
@@ -17557,21 +17525,10 @@ bool GenTree::ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqN
 {
     if (OperIsIndir())
     {
-        if (gtFlags & GTF_IND_ARR_INDEX)
-        {
-            bool b = comp->GetArrayInfoMap()->Lookup(this, arrayInfo);
-            assert(b);
-            return true;
-        }
+        return AsIndir()->Addr()->ParseArrayElemAddrForm(comp, arrayInfo, pFldSeq);
+    }
 
-        // Otherwise...
-        GenTree* addr = AsIndir()->Addr();
-        return addr->ParseArrayElemAddrForm(comp, arrayInfo, pFldSeq);
-    }
-    else
-    {
-        return false;
-    }
+    return false;
 }
 
 bool GenTree::ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq)
@@ -17610,16 +17567,29 @@ bool GenTree::ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, Field
             {
                 return false;
             }
-            else
+
+            // The "Addr" node might be annotated with a zero-offset field sequence.
+            FieldSeqNode* zeroOffsetFldSeq = nullptr;
+            if (comp->GetZeroOffsetFieldMap()->Lookup(this, &zeroOffsetFldSeq))
             {
-                // The "Addr" node might be annotated with a zero-offset field sequence.
-                FieldSeqNode* zeroOffsetFldSeq = nullptr;
-                if (comp->GetZeroOffsetFieldMap()->Lookup(this, &zeroOffsetFldSeq))
-                {
-                    *pFldSeq = comp->GetFieldSeqStore()->Append(*pFldSeq, zeroOffsetFldSeq);
-                }
-                return addrArg->ParseArrayElemForm(comp, arrayInfo, pFldSeq);
+                *pFldSeq = comp->GetFieldSeqStore()->Append(*pFldSeq, zeroOffsetFldSeq);
             }
+
+            return addrArg->ParseArrayElemForm(comp, arrayInfo, pFldSeq);
+        }
+
+        case GT_ARR_ADDR:
+        {
+            GenTreeArrAddr*      arrAddr        = AsArrAddr();
+            var_types            elemType       = arrAddr->GetElemType();
+            CORINFO_CLASS_HANDLE elemStructType = arrAddr->GetElemClassHandle();
+            unsigned             elemOffset     = arrAddr->GetFirstElemOffset();
+            unsigned             elemSize       =
+                (elemType == TYP_STRUCT) ? comp->typGetObjLayout(elemStructType)->GetSize()
+                                         : genTypeSize(elemType);
+
+            *arrayInfo = ArrayInfo(elemType, elemSize, elemOffset, elemStructType);
+            return true;
         }
 
         default:
