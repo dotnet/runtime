@@ -37,7 +37,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct BCRYPT_KEY_DATA_BLOB_HEADER
+        internal struct BCRYPT_KEY_DATA_BLOB_HEADER
         {
             public uint dwMagic;
             public uint dwVersion;

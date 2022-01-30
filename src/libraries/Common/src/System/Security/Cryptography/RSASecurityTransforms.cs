@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -13,16 +12,6 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    public partial class RSA : AsymmetricAlgorithm
-    {
-        public static new partial RSA Create()
-        {
-            return new RSAImplementation.RSASecurityTransforms();
-        }
-    }
-#endif
-
     internal static partial class RSAImplementation
     {
         public sealed partial class RSASecurityTransforms : RSA
