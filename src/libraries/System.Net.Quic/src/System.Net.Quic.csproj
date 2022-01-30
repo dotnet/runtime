@@ -128,8 +128,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.OpenSsl\src\System.Security.Cryptography.OpenSsl.csproj" />
     <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
+    <Reference Include="System.Security.Cryptography.OpenSsl" />
   </ItemGroup>
 
   <!-- Support for deploying msquic -->
