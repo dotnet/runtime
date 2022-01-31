@@ -277,6 +277,7 @@ namespace System
         public override string Message { get { throw null; } }
         public virtual string? ParamName { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static void ThrowIfNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullAttribute] string? argument, [System.Runtime.CompilerServices.CallerArgumentExpression("argument")] string? paramName = null) { throw null; }
     }
     public partial class ArgumentNullException : System.ArgumentException
     {

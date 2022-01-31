@@ -227,10 +227,7 @@ namespace System.ComponentModel
         /// </summary>
         public MaskedTextProvider(string mask, CultureInfo? culture, bool allowPromptAsInput, char promptChar, char passwordChar, bool restrictToAscii)
         {
-            if (string.IsNullOrEmpty(mask))
-            {
-                throw new ArgumentException(SR.MaskedTextProviderMaskNullOrEmpty, nameof(mask));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(mask);
 
             foreach (char c in mask)
             {

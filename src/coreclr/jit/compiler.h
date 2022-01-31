@@ -7122,12 +7122,6 @@ protected:
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
-    /**************************************************************************
-     *                       Optimization conditions
-     *************************************************************************/
-
-    bool optAvoidIntMult(void);
-
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
     //  of for the CSE analysis.

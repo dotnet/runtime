@@ -224,8 +224,7 @@ namespace System.IO.Tests
 
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void DoesCaseInsensitiveInvariantComparisons()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -234,8 +233,7 @@ namespace System.IO.Tests
             Assert.True(Exists(testDir.FullName.ToLowerInvariant()));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
         public void DoesCaseSensitiveComparisons()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

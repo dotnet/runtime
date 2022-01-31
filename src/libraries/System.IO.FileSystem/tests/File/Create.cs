@@ -233,8 +233,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => File.Create(testFile.ToLowerInvariant()));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void CaseInsensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());

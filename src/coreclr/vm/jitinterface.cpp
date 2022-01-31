@@ -953,7 +953,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 ThrowBadTokenException(pResolvedToken);
 
             {
-                DomainFile *pTargetModule = pModule->LoadModule(GetAppDomain(), metaTOK);
+                DomainAssembly *pTargetModule = pModule->LoadModule(GetAppDomain(), metaTOK);
                 if (pTargetModule == NULL)
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 th = TypeHandle(pTargetModule->GetModule()->GetGlobalMethodTable());
@@ -2029,53 +2029,53 @@ bool CEEInfo::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod,
     return result;
 }
 
+static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
+{
+    STANDARD_VM_CONTRACT;
+
+    // Ensure that if we have multiple fields with the same offset,
+    // that we don't double count the data in the gc layout.
+    if (*gcPtrs == TYPE_GC_NONE)
+    {
+        *gcPtrs = type;
+        return 1;
+    }
+    else if (*gcPtrs != type)
+    {
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
+    return 0;
+}
+
 /*********************************************************************/
 static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 {
     STANDARD_VM_CONTRACT;
 
-    unsigned result = 0;
-
     _ASSERTE(pMT->IsValueType());
 
     if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
-    {
-        if (gcPtrs[0] == TYPE_GC_NONE)
-        {
-            gcPtrs[0] = TYPE_GC_BYREF;
-            result++;
-        }
-        else if (gcPtrs[0] != TYPE_GC_BYREF)
-        {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        return result;
-    }
+        return MarkGCField(gcPtrs, TYPE_GC_BYREF);
 
+    unsigned result = 0;
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
         int fieldStartIndex = pFD->GetOffset() / TARGET_POINTER_SIZE;
 
-        if (pFD->GetFieldType() != ELEMENT_TYPE_VALUETYPE)
-        {
-            if (pFD->IsObjRef())
-            {
-                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
-                {
-                    gcPtrs[fieldStartIndex] = TYPE_GC_REF;
-                    result++;
-                }
-                else if (gcPtrs[fieldStartIndex] != TYPE_GC_REF)
-                {
-                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
-                }
-            }
-        }
-        else
+        if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
             MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
             result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
+        }
+        else if (pFD->IsObjRef())
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_REF);
+        }
+        else if (pFD->IsByRef())
+        {
+            result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_BYREF);
         }
     }
     return result;
@@ -12733,7 +12733,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                 LARGE_INTEGER methodJitTimeStop;
                 QueryPerformanceCounter(&methodJitTimeStop);
                 SString codeBase;
-                ftn->GetModule()->GetDomainFile()->GetPEAssembly()->GetPathOrCodeBase(codeBase);
+                ftn->GetModule()->GetDomainAssembly()->GetPEAssembly()->GetPathOrCodeBase(codeBase);
                 codeBase.AppendPrintf(W(",0x%x,%d,%d\n"),
                                  //(const WCHAR *)codeBase, //module name
                                  ftn->GetMemberDef(), //method token
