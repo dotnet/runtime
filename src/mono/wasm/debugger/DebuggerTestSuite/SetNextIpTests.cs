@@ -31,19 +31,7 @@ public class SetNextIpTests : DebuggerTestBase
         var pause_location = await EvaluateAndCheck(
             "window.setTimeout(function() { invoke_add(); invoke_add(); }, 1);",
             "dotnet://debugger-test.dll/debugger-test.cs", 9, 8,
-            "IntAdd",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                Assert.Equal("other", pause_location["reason"]?.Value<string>());
-                Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-
-                var top_frame = pause_location["callFrames"][0];
-                Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
-                Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
-
-                CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
-                await Task.CompletedTask;
-            }
+            "IntAdd"
         );
         var top_frame = pause_location["callFrames"][0]["functionLocation"];
         await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
@@ -63,20 +51,7 @@ public class SetNextIpTests : DebuggerTestBase
         //a breakpoint, the breakpoint continue working
         pause_location = await StepAndCheck(StepKind.Resume,
             "dotnet://debugger-test.dll/debugger-test.cs", 9, 8,
-            "IntAdd",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                Assert.Equal("other", pause_location["reason"]?.Value<string>());
-                Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
-
-                var top_frame = pause_location["callFrames"][0];
-                Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
-                Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
-
-                CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
-                await Task.CompletedTask;
-            }
-        );
+            "IntAdd");
     }
 
     [Fact]
