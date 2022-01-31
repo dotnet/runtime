@@ -112,7 +112,7 @@ steps:
   - script: |
       curl -o dotnet-install.sh 'https://dot.net/v1/dotnet-install.sh'
       chmod -R a+rx .
-      ls
+      ls -la
       ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir --verbose
       dotnet --info
       dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json
