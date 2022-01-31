@@ -308,11 +308,8 @@ jobs:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
-    - MacCatalyst_arm64
     - tvOSSimulator_x64
     - iOSSimulator_x86
-    - iOS_arm64
     - Linux_arm
     jobParameters:
       testGroup: innerloop
@@ -331,7 +328,6 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - tvOS_arm64
     - iOS_arm
     - Linux_musl_x64
     jobParameters:
@@ -409,7 +405,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
