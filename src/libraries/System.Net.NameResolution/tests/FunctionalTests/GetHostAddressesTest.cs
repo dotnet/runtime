@@ -177,7 +177,6 @@ namespace System.Net.NameResolution.Tests
     [Collection(nameof(DisableParallelization))]
     public class GetHostAddressesTest_Cancellation
     {
-        [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         public async Task DnsGetHostAddresses_PostCancelledToken_Throws()
@@ -195,7 +194,6 @@ namespace System.Net.NameResolution.Tests
         }
 
         // This is a regression test for https://github.com/dotnet/runtime/issues/63552
-        [OuterLoop]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/33378", TestPlatforms.AnyUnix)] // Cancellation of an outstanding getaddrinfo is not supported on *nix.
         public async Task DnsGetHostAddresses_ResolveParallelCancelOnFailure_AllCallsReturn()
