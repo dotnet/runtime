@@ -3991,7 +3991,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 Module * pTokenModule;
                 dwByValueClassToken = fsig.GetArgProps().PeekValueTypeTokenClosed(GetModule(), &bmtGenerics->typeContext, &pTokenModule);
-                fIsByValue = TRUE;
 
                 // By-value class
                 BAD_FORMAT_NOTHROW_ASSERT(dwByValueClassToken != 0);
@@ -4067,6 +4066,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             // TypedReference shares the rest of the code here
 IS_VALUETYPE:
             {
+                fIsByValue = TRUE;
+
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
                 {

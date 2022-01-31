@@ -307,7 +307,7 @@ private:
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
     void LowerPutArgStk(GenTreePutArgStk* tree);
 
-    bool TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType = TYP_UNDEF);
+    bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
 

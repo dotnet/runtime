@@ -490,6 +490,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml.cs">
       <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\MessageImprint.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml" />
+    <Compile Include="System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml.cs">
+      <DependentUpon>System\Security\Cryptography\Pkcs\Asn1\OtherCertificateFormat.xml</DependentUpon>
+    </Compile>
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiFailureInfo.cs" />
     <Compile Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatus.cs" />
     <AsnXml Include="System\Security\Cryptography\Pkcs\Asn1\PkiStatusInfo.xml" />

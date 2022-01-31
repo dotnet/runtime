@@ -76,6 +76,41 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Determines whether the specified file or directory exists.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="File.Exists(string?)"/> it returns true for existing, non-regular files like pipes.
+        /// If the path targets an existing link, but the target of the link does not exist, it returns true.
+        /// </remarks>
+        /// <param name="path">The path to check</param>
+        /// <returns>
+        /// <see langword="true" /> if the caller has the required permissions and <paramref name="path" /> contains
+        /// the name of an existing file or directory; otherwise, <see langword="false" />.
+        /// This method also returns <see langword="false" /> if <paramref name="path" /> is <see langword="null" />,
+        /// an invalid path, or a zero-length string. If the caller does not have sufficient permissions to read the specified path,
+        /// no exception is thrown and the method returns <see langword="false" /> regardless of the existence of <paramref name="path" />.
+        /// </returns>
+        public static bool Exists([NotNullWhen(true)] string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            string? fullPath;
+            try
+            {
+                fullPath = GetFullPath(path);
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+
+            return ExistsCore(fullPath);
+        }
+
+        /// <summary>
         /// Returns the directory portion of a file path. This method effectively
         /// removes the last segment of the given file path, i.e. it returns a
         /// string consisting of all characters up to but not including the last

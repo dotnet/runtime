@@ -120,7 +120,7 @@ bool CodeGen::genInstrWithConstant(instruction ins,
         // generate two or more instructions
 
         // first we load the immediate into tmpReg
-        instGen_Set_Reg_To_Imm(size, tmpReg, imm);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, imm);
         regSet.verifyRegUsed(tmpReg);
 
         // when we are in an unwind code region

@@ -47,11 +47,6 @@
         <target state="translated">Длина конечного массива недостаточна для копирования всех элементов коллекции. Проверьте индекс и длину массива.</target>
         <note />
       </trans-unit>
-      <trans-unit id="ArgumentNull_ArrayWithNullElements">
-        <source>The array cannot contain null elements.</source>
-        <target state="translated">Массив не может содержать null-элементы.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
         <target state="translated">Начальный индекс не может быть меньше 0 или больше длины ввода.</target>
@@ -210,11 +205,6 @@
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Данная коллекция предназначена только для чтения.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OnlyAllowedOnce">
-        <source>This operation is only allowed once per object.</source>
-        <target state="translated">Для каждого объекта допускается только однократное выполнение этой операции.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">

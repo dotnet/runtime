@@ -24,6 +24,7 @@ namespace ILCompiler
         protected IEnumerable<ICompilationRootProvider> _compilationRoots = Array.Empty<ICompilationRootProvider>();
         protected OptimizationMode _optimizationMode = OptimizationMode.None;
         protected int _parallelism = -1;
+        protected bool _resilient;
 
         public CompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup compilationGroup, NameMangler nameMangler)
         {
@@ -69,6 +70,12 @@ namespace ILCompiler
         public CompilationBuilder UseOptimizationMode(OptimizationMode mode)
         {
             _optimizationMode = mode;
+            return this;
+        }
+
+        public CompilationBuilder UseResilience(bool resilient)
+        {
+            _resilient = resilient;
             return this;
         }
 

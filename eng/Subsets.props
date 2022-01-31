@@ -27,7 +27,7 @@
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
-    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x'">Mono</PrimaryRuntimeFlavor>
+    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">Mono</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -106,7 +106,8 @@
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="Clr.Native" Description="All CoreCLR native non-test components, including the runtime, jits, and other native tools." />
-    <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib, runtime, and other low level class libraries." />
+    <SubsetName Include="Clr.NativeAotLibs" Description="The CoreCLR native AOT CoreLib and other low level class libraries." />
+    <SubsetName Include="Clr.NativeAotRuntime" Description="The stripped-down CoreCLR native AOT runtime." />
     <SubsetName Include="Clr.PalTests" OnDemand="true" Description="The CoreCLR PAL tests." />
     <SubsetName Include="Clr.PalTestList" OnDemand="true" Description="Generate the list of the CoreCLR PAL tests. When using the command line, use Clr.PalTests instead." />
     <SubsetName Include="Clr.Hosts" Description="The CoreCLR corerun test host." />
@@ -203,7 +204,7 @@
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrILToolsSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
+  <PropertyGroup Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true'">
     <ClrRuntimeBuildSubsets>$(ClrRuntimeBuildSubsets);ClrNativeAotSubset=true</ClrRuntimeBuildSubsets>
   </PropertyGroup>
 
@@ -363,6 +364,7 @@
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\archives\dotnet-nethost.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />
+        <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)\pkg\projects\nativeaot-packages.proj" Category="packs" />
       </ItemGroup>
       <ItemGroup>
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" />

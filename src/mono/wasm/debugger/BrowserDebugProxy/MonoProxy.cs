@@ -874,14 +874,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (shouldReturn)
                     return true;
 
-                if (j == 0 &&
-                    (method?.Info.DebuggerAttrInfo.HasStepThrough == true ||
-                    method?.Info.DebuggerAttrInfo.HasDebuggerHidden == true ||
-                    method?.Info.DebuggerAttrInfo.HasStepperBoundary == true ||
-                    (method?.Info.DebuggerAttrInfo.HasNonUserCode == true && JustMyCode)))
+                if (j == 0 && method?.Info.DebuggerAttrInfo.DoAttributesAffectCallStack(JustMyCode) == true)
                 {
-                    if (method.Info.DebuggerAttrInfo.HasDebuggerHidden ||
-                        (method.Info.DebuggerAttrInfo.HasStepperBoundary && event_kind == EventKind.Step))
+                    if (method.Info.DebuggerAttrInfo.ShouldStepOut(event_kind))
                     {
                         if (event_kind == EventKind.Step)
                             context.IsSkippingHiddenMethod = true;
@@ -1529,7 +1524,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 using (Stream data = await src_file.GetSourceAsync(checkHash: false, token: token))
                 {
-                    if (data.Length == 0)
+                    if (data is MemoryStream && data.Length == 0)
                         return false;
 
                     using (var reader = new StreamReader(data))
