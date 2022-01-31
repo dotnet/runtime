@@ -440,7 +440,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-      - MacCatalyst_x64
+    - MacCatalyst_x64
     - ${{ if eq(variables['isRollingBuild'], true) }}:
       - MacCatalyst_arm64
     variables:
