@@ -18,6 +18,13 @@ public class SetNextIpTests : DebuggerTestBase
     [Fact]
     public async Task SetNextIP()
     {
+        async Task CheckLocalsAsync(JToken locals, int c, int d, int e, bool f)
+        {
+            CheckNumber(locals, "c", c);
+            CheckNumber(locals, "d", d);
+            CheckNumber(locals, "e", e);
+            await CheckBool(locals, "f", f);
+        }
         var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 9, 8);
 
         var pause_location = await EvaluateAndCheck(
@@ -39,53 +46,17 @@ public class SetNextIpTests : DebuggerTestBase
         );
         var top_frame = pause_location["callFrames"][0]["functionLocation"];
         await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
-        locals_fn: async (locals) =>
-            {
-                CheckNumber(locals, "c", 0);
-                CheckNumber(locals, "d", 0);
-                CheckNumber(locals, "e", 0);
-                await CheckBool(locals, "f", false);
-            });
+            locals_fn: async (locals) => await CheckLocalsAsync(locals, 0, 0, 0, false));
         await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 13, 8, "IntAdd",
-        locals_fn: async (locals) =>
-            {
-                CheckNumber(locals, "c", 0);
-                CheckNumber(locals, "d", 0);
-                CheckNumber(locals, "e", 0);
-                await CheckBool(locals, "f", true);
-            });
+            locals_fn: async (locals) => await CheckLocalsAsync(locals, 0, 0, 0, true));
         await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 9, 8, "IntAdd",
-        locals_fn: async (locals) =>
-            {
-                CheckNumber(locals, "c", 0);
-                CheckNumber(locals, "d", 0);
-                CheckNumber(locals, "e", 0);
-                await CheckBool(locals, "f", true);
-            });
+            locals_fn: async (locals) => await CheckLocalsAsync(locals, 0, 0, 0, true));
         await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "IntAdd",
-        locals_fn: async (locals) =>
-            {
-                CheckNumber(locals, "c", 30);
-                CheckNumber(locals, "d", 0);
-                CheckNumber(locals, "e", 0);
-                await CheckBool(locals, "f", true);
-            });
+            locals_fn: async (locals) => await CheckLocalsAsync(locals, 30, 0, 0, true));
         await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-test.cs", 11, 8, "IntAdd",
-        locals_fn: async (locals) =>
-            {
-                CheckNumber(locals, "c", 30);
-                CheckNumber(locals, "d", 0);
-                CheckNumber(locals, "e", 0);
-                await CheckBool(locals, "f", true);
-            });
+            locals_fn: async (locals) => await CheckLocalsAsync(locals, 30, 0, 0, true));
         await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 12, 8, "IntAdd",
-        locals_fn: async (locals) =>
-            {
-                CheckNumber(locals, "c", 30);
-                CheckNumber(locals, "d", 0);
-                CheckNumber(locals, "e", 10);
-                await CheckBool(locals, "f", true);
-            });
+            locals_fn: async (locals) => await CheckLocalsAsync(locals, 30, 0, 10, true));
 
         //to check that after moving the execution pointer to the same line that there is already
         //a breakpoint, the breakpoint continue working
