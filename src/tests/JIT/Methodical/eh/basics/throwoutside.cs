@@ -29,7 +29,7 @@ public class a
         throw new Exception();
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         //Start recording
         testLog.StartRecording();

@@ -126,7 +126,7 @@ gboolean mono_use_llvm = FALSE;
 
 gboolean mono_use_fast_math = FALSE;
 
-// Lists of allowlisted and blocklisted CPU features 
+// Lists of allowlisted and blocklisted CPU features
 MonoCPUFeatures mono_cpu_features_enabled = (MonoCPUFeatures)0;
 
 #ifdef DISABLE_SIMD
@@ -1506,7 +1506,7 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
-		MonoVTable *vtable = mono_class_vtable_checked (patch_info->data.field->parent, error);
+		MonoVTable *vtable = mono_class_vtable_checked (m_field_get_parent (patch_info->data.field), error);
 		mono_error_assert_ok (error);
 
 		if (mono_class_field_is_special_static (patch_info->data.field)) {
@@ -2021,7 +2021,7 @@ mono_enable_jit_dump (void)
 {
 	if (perf_dump_pid == 0)
 		perf_dump_pid = getpid();
-	
+
 	if (!perf_dump_file) {
 		char name [64];
 		FileHeader header;
@@ -2029,18 +2029,18 @@ mono_enable_jit_dump (void)
 
 		mono_os_mutex_init (&perf_dump_mutex);
 		mono_os_mutex_lock (&perf_dump_mutex);
-		
+
 		g_snprintf (name, sizeof (name), "/tmp/jit-%d.dump", perf_dump_pid);
 		unlink (name);
 		perf_dump_file = fopen (name, "w");
-		
+
 		add_file_header_info (&header);
 		if (perf_dump_file) {
 			fwrite (&header, sizeof (header), 1, perf_dump_file);
 			//This informs perf of the presence of the jitdump file and support for the feature.
 			perf_dump_mmap_addr = mmap (NULL, sizeof (header), PROT_READ | PROT_EXEC, MAP_PRIVATE, fileno (perf_dump_file), 0);
 		}
-		
+
 		mono_os_mutex_unlock (&perf_dump_mutex);
 	}
 }
@@ -2062,12 +2062,12 @@ void
 mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 {
 	static uint64_t code_index;
-	
+
 	if (perf_dump_file) {
 		JitCodeLoadRecord record;
 		size_t nameLen = strlen (jinfo->d.method->name);
 		memset (&record, 0, sizeof (record));
-		
+
 		add_basic_JitCodeLoadRecord_info (&record);
 		record.header.total_size = sizeof (record) + nameLen + 1 + jinfo->code_size;
 		record.vma = (guint64)jinfo->code_start;
@@ -2075,13 +2075,13 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
 		record.code_size = (guint64)jinfo->code_size;
 
 		mono_os_mutex_lock (&perf_dump_mutex);
-		
+
 		record.code_index = ++code_index;
-		
+
 		// TODO: write debugInfo and unwindInfo immediately before the JitCodeLoadRecord (while lock is held).
-		
+
 		record.header.timestamp = mono_clock_get_time_ns (clock_id);
-		
+
 		fwrite (&record, sizeof (record), 1, perf_dump_file);
 		fwrite (jinfo->d.method->name, nameLen + 1, 1, perf_dump_file);
 		fwrite (code, jinfo->code_size, 1, perf_dump_file);
@@ -2812,7 +2812,7 @@ mono_jit_free_method (MonoMethod *method)
 
 	mono_debug_remove_method (method, NULL);
 	mono_lldb_remove_method (method, ji);
-	
+
 	//seq_points are always on get_default_jit_mm
 	jit_mm = get_default_jit_mm ();
 	jit_mm_lock (jit_mm);
@@ -4402,7 +4402,7 @@ mini_init (const char *filename, const char *runtime_version)
 		mono_ee_interp_init (mono_interp_opts_string);
 #endif
 	mono_components_init ();
-	
+
 	mono_component_debugger ()->parse_options (mono_debugger_agent_get_sdb_options ());
 
 	mono_os_mutex_init_recursive (&jit_mutex);
@@ -4522,7 +4522,7 @@ mini_init (const char *filename, const char *runtime_version)
 	if (default_opt & MONO_OPT_AOT)
 		mono_aot_init ();
 
-	mono_component_debugger ()->init (&mono_defaults);
+	mono_component_debugger ()->init ();
 
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	mono_set_generic_sharing_supported (TRUE);

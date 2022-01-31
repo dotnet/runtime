@@ -159,9 +159,12 @@ namespace System.Data.Tests.SqlTypes
             SqlInt64 test180II = new SqlInt64(180);
 
             Assert.False(test0.Equals(test158));
+            Assert.False(test0.Equals((object)test158));
             Assert.False(test158.Equals(test180));
+            Assert.False(test158.Equals((object)test180));
             Assert.False(test180.Equals(new SqlString("TEST")));
             Assert.True(test180.Equals(test180II));
+            Assert.True(test180.Equals((object)test180II));
         }
 
         [Fact]

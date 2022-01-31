@@ -26,8 +26,6 @@ namespace System.IO.Compression
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
-            if (!stream.CanRead)
-                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
             Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
 
@@ -312,16 +310,8 @@ namespace System.IO.Compression
                 finally
                 {
                     _stream = null!;
-
-                    try
-                    {
-                        _inflater?.Dispose();
-                    }
-                    finally
-                    {
-                        _inflater = null!;
-                        base.Dispose(disposing);
-                    }
+                    _inflater = null!;
+                    base.Dispose(disposing);
                 }
             }
         }

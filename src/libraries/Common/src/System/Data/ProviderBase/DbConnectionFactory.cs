@@ -386,23 +386,13 @@ namespace System.Data.ProviderBase
             // if two threads happen to hit this at the same time.  One will be GC'd
             if (metaDataFactory == null)
             {
-                bool allowCache = false;
-                metaDataFactory = CreateMetaDataFactory(internalConnection, out allowCache);
-                if (allowCache)
-                {
-                    connectionPoolGroup.MetaDataFactory = metaDataFactory;
-                }
+                metaDataFactory = CreateMetaDataFactory(internalConnection);
+                connectionPoolGroup.MetaDataFactory = metaDataFactory;
             }
             return metaDataFactory;
         }
 
-        protected virtual DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
-        {
-            // providers that support GetSchema must override this with a method that creates a meta data
-            // factory appropriate for them.
-            cacheMetaDataFactory = false;
-            throw ADP.NotSupported();
-        }
+        protected abstract DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection);
 
         protected abstract DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool? pool, DbConnection? owningConnection);
 

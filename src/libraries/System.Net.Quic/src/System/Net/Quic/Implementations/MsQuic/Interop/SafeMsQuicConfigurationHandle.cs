@@ -156,9 +156,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 ulong ms = (ulong)options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond;
                 if (ms > (1ul << 62) - 1) throw new Exception("IdleTimeout is too large (max 2^62-1 milliseconds)");
 
-                settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
                 settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
             }
+            else
+            {
+                settings.IdleTimeoutMs = 0;
+            }
+            settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
 
             uint status;
             SafeMsQuicConfigurationHandle? configurationHandle;

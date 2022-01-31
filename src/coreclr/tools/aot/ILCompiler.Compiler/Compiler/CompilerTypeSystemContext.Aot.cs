@@ -14,12 +14,21 @@ namespace ILCompiler
 {
     partial class CompilerTypeSystemContext
     {
+        // Chosen rather arbitrarily. For the app that I was looking at, cutoff point of 7 compiled
+        // more than 10 minutes on a release build of the compiler, and I lost patience.
+        // Cutoff point of 5 produced an 1.7 GB object file.
+        // Cutoff point of 4 produced an 830 MB object file.
+        // Cutoff point of 3 produced an 470 MB object file.
+        // We want this to be high enough so that it doesn't cut off too early. But also not too
+        // high because things that are recursive often end up expanding laterally as well
+        // through various other generic code the deep code calls into.
+        public const int DefaultGenericCycleCutoffPoint = 4;
+
         public SharedGenericsConfiguration GenericsConfig
         {
             get;
         }
 
-        private readonly DelegateFeature _delegateFeatures;
         private readonly MetadataFieldLayoutAlgorithm _metadataFieldLayoutAlgorithm = new CompilerMetadataFieldLayoutAlgorithm();
         private readonly RuntimeDeterminedFieldLayoutAlgorithm _runtimeDeterminedFieldLayoutAlgorithm = new RuntimeDeterminedFieldLayoutAlgorithm();
         private readonly VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
@@ -29,7 +38,7 @@ namespace ILCompiler
         private ArrayOfTRuntimeInterfacesAlgorithm _arrayOfTRuntimeInterfacesAlgorithm;
         private MetadataType _arrayOfTType;
 
-        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures)
+        public CompilerTypeSystemContext(TargetDetails details, SharedGenericsMode genericsMode, DelegateFeature delegateFeatures, int genericCycleCutoffPoint = DefaultGenericCycleCutoffPoint)
             : base(details)
         {
             _genericsMode = genericsMode;
@@ -37,7 +46,9 @@ namespace ILCompiler
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_metadataFieldLayoutAlgorithm);
 
-            _delegateFeatures = delegateFeatures;
+            _delegateInfoHashtable = new DelegateInfoHashtable(delegateFeatures);
+
+            _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector(genericCycleCutoffPoint);
 
             GenericsConfig = new SharedGenericsConfiguration();
         }
@@ -165,11 +176,6 @@ namespace ILCompiler
                 yield return m;
         }
 
-        protected override DelegateInfo CreateDelegateInfo(TypeDesc delegateType)
-        {
-            return new DelegateInfo(delegateType, _delegateFeatures);
-        }
-
         internal DefType GetClosestDefType(TypeDesc type)
         {
             if (type.IsArray)
@@ -187,7 +193,7 @@ namespace ILCompiler
             return (DefType)type;
         }
 
-        private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector = new LazyGenericsSupport.GenericCycleDetector();
+        private readonly LazyGenericsSupport.GenericCycleDetector _genericCycleDetector;
 
         public void DetectGenericCycles(TypeSystemEntity owner, TypeSystemEntity referent)
         {

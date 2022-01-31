@@ -19,7 +19,7 @@
 
 /*
  * Returns true if @bb is a basic block which falls through the next block.
- * TODO verify if it helps to check if the bb last ins is a branch to its successor. 
+ * TODO verify if it helps to check if the bb last ins is a branch to its successor.
  */
 static gboolean
 mono_bb_is_fall_through (MonoCompile *cfg, MonoBasicBlock *bb)
@@ -30,7 +30,7 @@ mono_bb_is_fall_through (MonoCompile *cfg, MonoBasicBlock *bb)
 
 /*
  * Used by the arch code to replace the exception handling
- * with a direct branch. This is safe to do if the 
+ * with a direct branch. This is safe to do if the
  * exception object isn't used, no rethrow statement and
  * no filter statement (verify).
  *
@@ -57,9 +57,9 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE && clause->data.catch_class && mono_class_is_assignable_from_internal (clause->data.catch_class, exclass)) {
 				MonoBasicBlock *tbb;
 
-				/* get the basic block for the handler and 
+				/* get the basic block for the handler and
 				 * check if the exception object is used.
-				 * Flag is set during method_to_ir due to 
+				 * Flag is set during method_to_ir due to
 				 * pop-op is optmized away in codegen (burg).
 				 */
 				tbb = cfg->cil_offset_to_bb [clause->handler_offset];
@@ -69,7 +69,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 
 					/* Check if this catch clause is ok to optimize by
 					 * looking for the BB_EXCEPTION_UNSAFE in every BB that
-					 * belongs to the same region. 
+					 * belongs to the same region.
 					 *
 					 * UNSAFE flag is set during method_to_ir (OP_RETHROW)
 					 */
@@ -93,11 +93,11 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 						jump->inst_i1 = (MonoInst *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst));
 						jump->inst_true_bb = targetbb;
 
-						if (cfg->verbose_level > 2) 
+						if (cfg->verbose_level > 2)
 							g_print ("found exception to optimize - returning branch to BB%d (%s) (instead of throw) for method %s:%s\n", targetbb->block_num, m_class_get_name (clause->data.catch_class), m_class_get_name (cfg->method->klass), cfg->method->name);
 
 						return jump;
-					} 
+					}
 
 					return NULL;
 				} else {
@@ -168,7 +168,7 @@ br_to_br_un (int opcode)
  * mono_replace_ins:
  *
  *   Replace INS with its decomposition which is stored in a series of bblocks starting
- * at FIRST_BB and ending at LAST_BB. On enter, PREV points to the predecessor of INS. 
+ * at FIRST_BB and ending at LAST_BB. On enter, PREV points to the predecessor of INS.
  * On return, it will be set to the last ins of the decomposition.
  */
 void
@@ -183,7 +183,7 @@ mono_replace_ins (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst 
 	}
 
 	if (first_bb == last_bb) {
-		/* 
+		/*
 		 * Only one replacement bb, merge the code into
 		 * the current bb.
 		 */
@@ -295,7 +295,7 @@ mono_if_conversion (MonoCompile *cfg)
 
 	// FIXME: Make this work with extended bblocks
 
-	/* 
+	/*
 	 * This pass requires somewhat optimized IR code so it should be run after
 	 * local cprop/deadce. Also, it should be run before dominator computation, since
 	 * it changes control flow.
@@ -349,7 +349,7 @@ mono_if_conversion (MonoCompile *cfg)
 			true_bb = branch->inst_true_bb;
 			false_bb = branch->inst_false_bb;
 
-			/* 
+			/*
 			 * Check that bb1 and bb2 are 'simple' and both assign to the same
 			 * variable.
 			 */
@@ -364,7 +364,7 @@ mono_if_conversion (MonoCompile *cfg)
 			for (tmp = ins1->next; tmp; tmp = tmp->next)
 				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_IL_SEQ_POINT) || (tmp->opcode == OP_BR)))
 					simple = FALSE;
-					
+
 			for (tmp = ins2->next; tmp; tmp = tmp->next)
 				if (!((tmp->opcode == OP_NOP) || (tmp->opcode == OP_IL_SEQ_POINT) || (tmp->opcode == OP_BR)))
 					simple = FALSE;
@@ -549,7 +549,7 @@ mono_if_conversion (MonoCompile *cfg)
 				continue;
 
 			if (!(cfg->opt & MONO_OPT_DEADCE))
-				/* 
+				/*
 				 * It is possible that dreg is never set before, so we can't use
 				 * it as an sreg of the cmov instruction (#582322).
 				 */
@@ -618,10 +618,10 @@ mono_if_conversion (MonoCompile *cfg)
 				(bb->region == bb->out_bb [0]->region)) {
 				mono_merge_basic_blocks (cfg, bb, bb->out_bb [0]);
 
-				/* 
-				 * bbn might have fallen through to the next bb without a branch, 
+				/*
+				 * bbn might have fallen through to the next bb without a branch,
 				 * have to add one now (#474718).
-				 * FIXME: Maybe need to do this more generally in 
+				 * FIXME: Maybe need to do this more generally in
 				 * merge_basic_blocks () ?
 				 */
 				if (!(bb->last_ins && MONO_IS_BRANCH_OP (bb->last_ins)) && bb->out_count) {
@@ -717,7 +717,7 @@ mono_if_conversion (MonoCompile *cfg)
 		mono_unlink_bblock (cfg, bb, branch1->inst_true_bb);
 		mono_unlink_bblock (cfg, bb, branch1->inst_false_bb);
 		branch1->inst_target_bb = next_bb;
-		mono_link_bblock (cfg, bb, next_bb);		
+		mono_link_bblock (cfg, bb, next_bb);
 
 		/* Rewrite the second branch */
 		branch2->opcode = br_to_br_un (branch2->opcode);
@@ -774,7 +774,7 @@ mono_if_conversion (MonoCompile *cfg)
 }
 
 void
-mono_nullify_basic_block (MonoBasicBlock *bb) 
+mono_nullify_basic_block (MonoBasicBlock *bb)
 {
 	bb->in_count = 0;
 	bb->out_count = 0;
@@ -785,7 +785,7 @@ mono_nullify_basic_block (MonoBasicBlock *bb)
 	bb->cil_code = NULL;
 }
 
-static void 
+static void
 replace_out_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *repl)
 {
 	int i;
@@ -805,7 +805,7 @@ replace_out_block (MonoBasicBlock *bb, MonoBasicBlock *orig,  MonoBasicBlock *re
 	}
 }
 
-static void 
+static void
 replace_in_block (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl)
 {
 	int i;
@@ -829,7 +829,7 @@ static void
 replace_out_block_in_code (MonoBasicBlock *bb, MonoBasicBlock *orig, MonoBasicBlock *repl)
 {
 	MonoInst *ins;
-	
+
 	for (ins = bb->code; ins != NULL; ins = ins->next) {
 		switch (ins->opcode) {
 		case OP_BR:
@@ -885,7 +885,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		bb->not_useless = TRUE;
 		return FALSE;
 	}
-	
+
 	MONO_BB_FOR_EACH_INS (bb, inst) {
 		switch (inst->opcode) {
 		case OP_NOP:
@@ -899,7 +899,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 			return FALSE;
 		}
 	}
-	
+
 	if (target_bb == NULL) {
 		if ((bb->out_count == 1) && (bb->out_bb [0] == bb->next_bb)) {
 			target_bb = bb->next_bb;
@@ -908,25 +908,25 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 			return FALSE;
 		}
 	}
-	
+
 	/* Do not touch BBs following a switch (they are the "default" branch) */
 	if ((previous_bb->last_ins != NULL) && (previous_bb->last_ins->opcode == OP_SWITCH)) {
 		return FALSE;
 	}
-	
+
 	/* Do not touch BBs following the entry BB and jumping to something that is not */
 	/* thiry "next" bb (the entry BB cannot contain the branch) */
 	if ((previous_bb == cfg->bb_entry) && (bb->next_bb != target_bb)) {
 		return FALSE;
 	}
 
-	/* 
-	 * Do not touch BBs following a try block as the code in 
+	/*
+	 * Do not touch BBs following a try block as the code in
 	 * mini_method_compile needs them to compute the length of the try block.
 	 */
 	if (MONO_BBLOCK_IS_IN_REGION (previous_bb, MONO_REGION_TRY))
 		return FALSE;
-	
+
 	/* Check that there is a target BB, and that bb is not an empty loop (Bug 75061) */
 	if ((target_bb != NULL) && (target_bb != bb)) {
 		int i;
@@ -934,7 +934,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 		if (cfg->verbose_level > 1) {
 			printf ("remove_block_if_useless, removed BB%d\n", bb->block_num);
 		}
-		
+
 		/* unlink_bblock () modifies the bb->in_bb array so can't use a for loop here */
 		while (bb->in_count) {
 			MonoBasicBlock *in_bb = bb->in_bb [0];
@@ -942,7 +942,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 			mono_link_bblock (cfg, in_bb, target_bb);
 			replace_out_block_in_code (in_bb, bb, target_bb);
 		}
-		
+
 		mono_unlink_bblock (cfg, bb, target_bb);
 		if (previous_bb != cfg->bb_entry && mono_bb_is_fall_through (cfg, previous_bb)) {
 			for (i = 0; i < previous_bb->out_count; i++) {
@@ -956,10 +956,10 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 				}
 			}
 		}
-		
+
 		previous_bb->next_bb = bb->next_bb;
 		mono_nullify_basic_block (bb);
-		
+
 		return TRUE;
 	} else {
 		return FALSE;
@@ -967,7 +967,7 @@ remove_block_if_useless (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *p
 }
 
 void
-mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn) 
+mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *bbn)
 {
 	MonoInst *inst;
 	MonoBasicBlock *prev_bb;
@@ -1048,7 +1048,7 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 	}
 	mono_nullify_basic_block (bbn);
 
-	/* 
+	/*
 	 * If bbn fell through to its next bblock, have to add a branch, since bb
 	 * will not fall though to the same bblock (#513931).
 	 */
@@ -1087,7 +1087,7 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
 		MONO_ADD_INS (bb, ins);
 		mono_link_bblock (cfg, bb, next);
 		ins->inst_target_bb = next;
-	}		
+	}
 }
 
 /*
@@ -1096,7 +1096,7 @@ move_basic_block_to_end (MonoCompile *cfg, MonoBasicBlock *bb)
  *   Remove BB from the control flow graph
  */
 void
-mono_remove_bblock (MonoCompile *cfg, MonoBasicBlock *bb) 
+mono_remove_bblock (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoBasicBlock *tmp_bb;
 
@@ -1112,7 +1112,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
 	MonoBasicBlock *previous_bb;
-	
+
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			int i;
@@ -1132,15 +1132,15 @@ mono_remove_critical_edges (MonoCompile *cfg)
 			printf ("\n");
 		}
 	}
-	
+
 	for (previous_bb = cfg->bb_entry, bb = previous_bb->next_bb; bb != NULL; previous_bb = previous_bb->next_bb, bb = bb->next_bb) {
 		if (bb->in_count > 1) {
 			int in_bb_index;
 			for (in_bb_index = 0; in_bb_index < bb->in_count; in_bb_index++) {
 				MonoBasicBlock *in_bb = bb->in_bb [in_bb_index];
-				/* 
+				/*
 				 * Have to remove non-critical edges whose source ends with a BR_REG
-				 * ins too, since inserting a computation before the BR_REG could 
+				 * ins too, since inserting a computation before the BR_REG could
 				 * overwrite the sreg1 of the ins.
 				 */
 				if ((in_bb->out_count > 1) || (in_bb->out_count == 1 && in_bb->last_ins && in_bb->last_ins->opcode == OP_BR_REG)) {
@@ -1148,7 +1148,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 					new_bb->block_num = cfg->num_bblocks++;
 //					new_bb->real_offset = bb->real_offset;
 					new_bb->region = bb->region;
-					
+
 					/* Do not alter the CFG while altering the BB list */
 					if (mono_bb_is_fall_through (cfg, previous_bb)) {
 						if (previous_bb != cfg->bb_entry) {
@@ -1172,7 +1172,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 							new_bb_after_entry->block_num = cfg->num_bblocks++;
 //							new_bb_after_entry->real_offset = bb->real_offset;
 							new_bb_after_entry->region = bb->region;
-							
+
 							MONO_INST_NEW (cfg, jump, OP_BR);
 							MONO_ADD_INS (new_bb_after_entry, jump);
 							jump->cil_code = bb->cil_code;
@@ -1181,7 +1181,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 							mono_unlink_bblock (cfg, previous_bb, bb);
 							mono_link_bblock (cfg, new_bb_after_entry, bb);
 							mono_link_bblock (cfg, previous_bb, new_bb_after_entry);
-							
+
 							previous_bb->next_bb = new_bb_after_entry;
 							previous_bb = new_bb_after_entry;
 
@@ -1190,12 +1190,12 @@ mono_remove_critical_edges (MonoCompile *cfg)
 							}
 						}
 					}
-					
+
 					/* Insert new_bb in the BB list */
 					previous_bb->next_bb = new_bb;
 					new_bb->next_bb = bb;
 					previous_bb = new_bb;
-					
+
 					/* Setup in_bb and out_bb */
 					new_bb->in_bb = (MonoBasicBlock **)mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
 					new_bb->in_bb [0] = in_bb;
@@ -1203,12 +1203,12 @@ mono_remove_critical_edges (MonoCompile *cfg)
 					new_bb->out_bb = (MonoBasicBlock **)mono_mempool_alloc ((cfg)->mempool, sizeof (MonoBasicBlock*));
 					new_bb->out_bb [0] = bb;
 					new_bb->out_count = 1;
-					
+
 					/* Relink in_bb and bb to (from) new_bb */
 					replace_out_block (in_bb, bb, new_bb);
 					replace_out_block_in_code (in_bb, bb, new_bb);
 					replace_in_block (bb, in_bb, new_bb);
-					
+
 					if (cfg->verbose_level > 2) {
 						printf ("remove_critical_edges, removed critical edge from BB%d to BB%d (added BB%d)\n", in_bb->block_num, bb->block_num, new_bb->block_num);
 					}
@@ -1216,7 +1216,7 @@ mono_remove_critical_edges (MonoCompile *cfg)
 			}
 		}
 	}
-	
+
 	if (cfg->verbose_level > 3) {
 		for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 			int i;
@@ -1260,7 +1260,7 @@ mono_optimize_branches (MonoCompile *cfg)
 		niterations = cfg->num_bblocks * 2;
 	else
 		niterations = 1000;
-	
+
 	do {
 		MonoBasicBlock *previous_bb;
 		changed = FALSE;
@@ -1291,7 +1291,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				for (i = 0; i < bbn->out_count; i++)
 					replace_in_block (bbn->out_bb [i], bbn, NULL);
 
-				mono_nullify_basic_block (bbn);			
+				mono_nullify_basic_block (bbn);
 				changed = TRUE;
 			}
 
@@ -1341,7 +1341,7 @@ mono_optimize_branches (MonoCompile *cfg)
 				for (i = 0; i < bbn->out_count; i++)
 					replace_in_block (bbn->out_bb [i], bbn, NULL);
 
-				mono_nullify_basic_block (bbn);			
+				mono_nullify_basic_block (bbn);
 				changed = TRUE;
 				continue;
 			}
@@ -1355,7 +1355,7 @@ mono_optimize_branches (MonoCompile *cfg)
 					if (bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
 						bbn_first_inst->inst_target_bb != bbn &&
 						bbn_first_inst->inst_target_bb->region == bb->region) {
-						
+
 						if (cfg->verbose_level > 2)
 							g_print ("branch to branch triggered %d -> %d -> %d\n", bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num);
 
@@ -1387,7 +1387,7 @@ mono_optimize_branches (MonoCompile *cfg)
 						untaken_branch_target = bb->last_ins->inst_true_bb;
 					}
 					if (taken_branch_target) {
-						/* if mono_eval_cond_branch () is ever taken to handle 
+						/* if mono_eval_cond_branch () is ever taken to handle
 						 * non-constant values to compare, issue a pop here.
 						 */
 						bb->last_ins->opcode = OP_BR;
@@ -1401,12 +1401,12 @@ mono_optimize_branches (MonoCompile *cfg)
 					bbn_first_inst = mono_bb_first_inst (bbn, filter);
 					if (bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
 					    bbn_first_inst->inst_target_bb->region == bb->region) {
-						if (cfg->verbose_level > 2)		
-							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num, 
+						if (cfg->verbose_level > 2)
+							g_print ("cbranch1 to branch triggered %d -> (%d) %d (0x%02x)\n",
+								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num,
 								 bbn_first_inst->opcode);
 
-						/* 
+						/*
 						 * Unlink, then relink bblocks to avoid various
 						 * tricky situations when the two targets of the branch
 						 * are equal, or will become equal after the change.
@@ -1428,8 +1428,8 @@ mono_optimize_branches (MonoCompile *cfg)
 					if (bbn && bb->region == bbn->region && bbn_first_inst && bbn_first_inst->opcode == OP_BR &&
 						bbn_first_inst->inst_target_bb->region == bb->region) {
 						if (cfg->verbose_level > 2)
-							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n", 
-								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num, 
+							g_print ("cbranch2 to branch triggered %d -> (%d) %d (0x%02x)\n",
+								 bb->block_num, bbn->block_num, bbn_first_inst->inst_target_bb->block_num,
 								 bbn_first_inst->opcode);
 
 						mono_unlink_bblock (cfg, bb, bb->last_ins->inst_true_bb);
@@ -1449,7 +1449,7 @@ mono_optimize_branches (MonoCompile *cfg)
 					 * If bb is an extended bb, it could contain an inside branch to bbn.
 					 * FIXME: Enable the optimization if that is not true.
 					 * If bblocks_linked () is true, then merging bb and bbn
-					 * would require addition of an extra branch at the end of bbn 
+					 * would require addition of an extra branch at the end of bbn
 					 * slowing down loops.
 					 */
 					if (bbn && bb->region == bbn->region && bbn->in_count == 1 && cfg->enable_extended_bblocks && bbn != cfg->bb_exit && !bb->extended && !bbn->out_of_line && !mono_bblocks_linked (bbn, bb)) {
@@ -1472,7 +1472,7 @@ mono_optimize_branches (MonoCompile *cfg)
 
 						move_basic_block_to_end (cfg, bb->last_ins->inst_true_bb);
 						if (cfg->verbose_level > 2)
-							g_print ("cbranch to throw block triggered %d.\n", 
+							g_print ("cbranch to throw block triggered %d.\n",
 									 bb->block_num);
 					}
 				}

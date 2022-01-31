@@ -135,11 +135,11 @@ namespace System.Net.Http.Headers
             int current = startIndex;
 
             // Caller must remove leading whitespace.
-            string? comment = null;
-            ProductHeaderValue? product = null;
+            string? comment;
+            ProductHeaderValue? product;
             if (input[current] == '(')
             {
-                int commentLength = 0;
+                int commentLength;
                 if (HttpRuleParser.GetCommentLength(input, current, out commentLength) != HttpParseResult.Parsed)
                 {
                     return 0;

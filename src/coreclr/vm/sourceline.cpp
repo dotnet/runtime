@@ -127,7 +127,7 @@ public:
 
 //////////////////////////////////////////////////////////////////
 
-bool SourceLine::LoadDataFromPdb( __in_z LPWSTR wszFilename )
+bool SourceLine::LoadDataFromPdb( _In_z_ LPWSTR wszFilename )
 {
     CONTRACTL {
         THROWS;
@@ -172,7 +172,7 @@ bool SourceLine::LoadDataFromPdb( __in_z LPWSTR wszFilename )
 
 //////////////////////////////////////////////////////////////////
 
-SourceLine::SourceLine( __in_z LPWSTR pszFileName )
+SourceLine::SourceLine( _In_z_ LPWSTR pszFileName )
 {
     WRAPPER_NO_CONTRACT;
     if (LoadDataFromPdb(pszFileName)) {
@@ -185,7 +185,7 @@ SourceLine::SourceLine( __in_z LPWSTR pszFileName )
 
 //////////////////////////////////////////////////////////////////
 
-HRESULT SourceLine::GetSourceLine( DWORD dwFunctionToken, DWORD dwOffset, __out_ecount(dwFileNameMaxLen) __out_z LPWSTR pszFileName, DWORD dwFileNameMaxLen, PDWORD pdwLineNumber )
+HRESULT SourceLine::GetSourceLine( DWORD dwFunctionToken, DWORD dwOffset, _Out_writes_z_(dwFileNameMaxLen) LPWSTR pszFileName, DWORD dwFileNameMaxLen, PDWORD pdwLineNumber )
 {
     CONTRACTL {
         THROWS;
@@ -242,7 +242,7 @@ HRESULT SourceLine::GetSourceLine( DWORD dwFunctionToken, DWORD dwOffset, __out_
 
 //////////////////////////////////////////////////////////////////
 
-HRESULT SourceLine::GetLocalName( DWORD dwFunctionToken, DWORD dwSlot, __out_ecount(dwNameMaxLen) __out_z LPWSTR pszName, DWORD dwNameMaxLen )
+HRESULT SourceLine::GetLocalName( DWORD dwFunctionToken, DWORD dwSlot, _Out_writes_z_(dwNameMaxLen) LPWSTR pszName, DWORD dwNameMaxLen )
 {
     CONTRACTL {
         THROWS;
@@ -307,19 +307,19 @@ HRESULT SourceLine::GetLocalName( DWORD dwFunctionToken, DWORD dwSlot, __out_eco
 }
 
 #else // !ENABLE_DIAGNOSTIC_SYMBOL_READING
-SourceLine::SourceLine( __in_z LPWSTR pszFileName )
+SourceLine::SourceLine( _In_z_ LPWSTR pszFileName )
 {
     LIMITED_METHOD_CONTRACT;
     initialized_ = false;
 }
 
-HRESULT SourceLine::GetSourceLine( DWORD dwFunctionToken, DWORD dwOffset, __out_ecount(dwFileNameMaxLen) __out_z LPWSTR pszFileName, DWORD dwFileNameMaxLen, PDWORD pdwLineNumber )
+HRESULT SourceLine::GetSourceLine( DWORD dwFunctionToken, DWORD dwOffset, _Out_writes_z_(dwFileNameMaxLen) LPWSTR pszFileName, DWORD dwFileNameMaxLen, PDWORD pdwLineNumber )
 {
     LIMITED_METHOD_CONTRACT;
     return E_NOTIMPL;
 }
 
-HRESULT SourceLine::GetLocalName( DWORD dwFunctionToken, DWORD dwSlot, __out_ecount(dwNameMaxLen) __out_z LPWSTR pszName, DWORD dwNameMaxLen )
+HRESULT SourceLine::GetLocalName( DWORD dwFunctionToken, DWORD dwSlot, _Out_writes_z_(dwNameMaxLen) LPWSTR pszName, DWORD dwNameMaxLen )
 {
     LIMITED_METHOD_CONTRACT;
     return E_NOTIMPL;

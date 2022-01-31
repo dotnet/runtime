@@ -27,7 +27,7 @@ typedef unsigned int armword_t;
 #if defined(_MSC_VER) && !defined(ARM_NOIASM)
 #	define ARM_IASM(_expr) __emit (_expr)
 #else
-#	define ARM_IASM(_expr) 
+#	define ARM_IASM(_expr)
 #endif
 
 /* even_scale = rot << 1 */

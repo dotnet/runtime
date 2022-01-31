@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization.Json
                         Type elementType = collectionContract.GetCollectionElementType();
                         bool isDictionary = collectionContract.Kind == CollectionKind.Dictionary || collectionContract.Kind == CollectionKind.GenericDictionary;
 
-                        DataContract? itemContract = null;
+                        DataContract? itemContract;
                         JsonDataContract? jsonDataContract = null;
                         if (isDictionary)
                         {

@@ -89,7 +89,7 @@ void StgPoolReadOnly::Uninit()
 //*****************************************************************************
 HRESULT StgPoolReadOnly::GetStringW(        // Return code.
     ULONG       iOffset,                    // Offset of string in pool.
-    __out_ecount(cchBuffer) LPWSTR szOut,   // Output buffer for string.
+    _Out_writes_(cchBuffer) LPWSTR szOut,   // Output buffer for string.
     int         cchBuffer)                  // Size of output buffer.
 {
     STATIC_CONTRACT_NOTHROW;

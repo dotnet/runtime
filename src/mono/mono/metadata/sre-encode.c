@@ -2,8 +2,8 @@
  * \file
  * Routines for encoding SRE builders into a
  * MonoDynamicImage and generating tokens.
- *   
- * 
+ *
+ *
  * Author:
  *   Paolo Molaro (lupus@ximian.com)
  *
@@ -161,7 +161,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		g_assert_not_reached ();
 		return;
 	}
-		
+
 	if (m_type_is_byref (type))
 		sigbuffer_add_value (buf, MONO_TYPE_BYREF);
 
@@ -343,13 +343,13 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE: {
 		MonoClass *klass = val->vtable->klass;
-		
+
 		if (m_class_is_enumtype (klass)) {
 			*ret_type = mono_class_enum_basetype_internal (klass)->type;
 			goto handle_enum;
 		} else if (mono_is_corlib_image (m_class_get_image (klass)) && strcmp (m_class_get_name_space (klass), "System") == 0 && strcmp (m_class_get_name (klass), "DateTime") == 0) {
 			len = 8;
-		} else 
+		} else
 			g_error ("we can't encode valuetypes, we should have never reached this line");
 		break;
 	}
@@ -438,7 +438,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	/*
 	 * If it's in the same module and not a generic type parameter:
 	 */
-	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) && 
+	if ((m_class_get_image (klass) == &assembly->image) && (type->type != MONO_TYPE_VAR) &&
 			(type->type != MONO_TYPE_MVAR)) {
 		token = MONO_TYPEDEFORREF_TYPEDEF | (MONO_HANDLE_GETVAL (tb, table_idx) << MONO_TYPEDEFORREF_BITS);
 		/* This function is called multiple times from sre and sre-save, so same object is okay */

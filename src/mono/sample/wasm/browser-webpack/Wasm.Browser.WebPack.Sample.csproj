@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <!--
+    <WasmEnableES6>true</WasmEnableES6>
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+  </ItemGroup>
+
+
+  <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="$(WasmAppDir)/dotnet.js;
+          $(WasmAppDir)/dotnet.wasm;
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/dotnet-runtime/.npm-stamp">
+    <ItemGroup>
+      <NpmPackageFiles Include="$(WasmAppDir)/dotnet.js"/>
+      <NpmPackageFiles Include="$(WasmAppDir)/dotnet.wasm"/>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/dotnet-runtime" />
+    <Touch Files="bin/dotnet-runtime/.npm-stamp" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="WebPack" AfterTargets="WasmBuildApp" DependsOnTargets="CopyRelinkedPackage">
+    <Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+    <Exec Command="npm run webpack -- --env Configuration=$(Configuration) --env WasmAppDir=$(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+  </Target>
+
+  <Target Name="RunSample" DependsOnTargets="WebPack">
+    <Exec Command="dotnet serve --directory $(WasmAppDir)" WorkingDirectory="$(MSBuildProjectDirectory)"/>
+  </Target>
+
+</Project>

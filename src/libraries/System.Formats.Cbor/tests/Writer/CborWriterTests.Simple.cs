@@ -12,26 +12,6 @@ namespace System.Formats.Cbor.Tests
         // Additional pairs generated using http://cbor.me/
 
         [Theory]
-        [InlineData(0.0, "f90000")]
-        [InlineData(-0.0, "f98000")]
-        [InlineData(1.0, "f93c00")]
-        [InlineData(1.5, "f93e00")]
-        [InlineData(65504.0, "f97bff")]
-        [InlineData(5.960464477539063e-8, "f90001")]
-        [InlineData(0.00006103515625, "f90400")]
-        [InlineData(-4.0, "f9c400")]
-        [InlineData(float.PositiveInfinity, "f97c00")]
-        [InlineData(float.NaN, "f9fe00")]
-        [InlineData(float.NegativeInfinity, "f9fc00")]
-        public static void WriteHalf_SingleValue_HappyPath(float input, string hexExpectedEncoding)
-        {
-            byte[] expectedEncoding = hexExpectedEncoding.HexToByteArray();
-            var writer = new CborWriter();
-            writer.WriteHalf((Half)input);
-            AssertHelper.HexEqual(expectedEncoding, writer.Encode());
-        }
-
-        [Theory]
         [InlineData(100000.0, "fa47c35000")]
         [InlineData(3.4028234663852886e+38, "fa7f7fffff")]
         [InlineData(float.PositiveInfinity, "f97c00")]

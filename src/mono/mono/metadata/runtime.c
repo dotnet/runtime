@@ -66,7 +66,7 @@ mono_runtime_fire_process_exit_event (void)
 	MONO_STATIC_POINTER_INIT_END (MonoMethod, procexit_method)
 
 	g_assert (procexit_method);
-	
+
 	mono_runtime_try_invoke (procexit_method, NULL, NULL, &exc, error);
 #endif
 }
