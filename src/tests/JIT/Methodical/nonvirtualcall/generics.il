@@ -22,14 +22,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module nonvirtualcalls_generics.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -37,8 +30,8 @@
 .corflags 0x00000001    //  ILONLY
 
 
-
-.class public abstract auto ansi beforefieldinit Test_generics.Base
+.namespace Test_generics {
+.class public abstract auto ansi beforefieldinit Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -170,7 +163,7 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test_generics.Child
+.class public auto ansi beforefieldinit Child
        extends Test_generics.Base
 {
   .method public hidebysig virtual final 
@@ -379,7 +372,7 @@
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test_generics.GrandChild
+.class public auto ansi beforefieldinit GrandChild
        extends Test_generics.Child
 {
   .method public hidebysig virtual final 
@@ -578,7 +571,7 @@
 
 } // end of class Test.GrandChild
 
-.class public auto ansi sealed beforefieldinit Test_generics.SealedGrandChild
+.class public auto ansi sealed beforefieldinit SealedGrandChild
        extends Test_generics.GrandChild
 {
   .method public hidebysig specialname rtspecialname 
@@ -592,7 +585,7 @@
 
 } // end of class Test.SealedGrandChild
 
-.class public abstract auto ansi sealed beforefieldinit Test_generics.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallSealedGrandChild() cil managed
@@ -700,7 +693,7 @@
     IL_000e:  ret
   } // end of method Program::CallFromInsideGrandChild
 
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -749,7 +742,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_generics.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -809,6 +802,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-
+}

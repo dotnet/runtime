@@ -14,14 +14,7 @@
 .assembly 'catchfinally_tail'// as "catchfinally_tail"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'catchfinally_tail.exe'
+.assembly extern xunit.core {}
 // MVID: {CCB52291-4072-427C-8C14-2780C164EB2B}
 .namespace JitTest
 {

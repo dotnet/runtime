@@ -152,7 +152,7 @@ Submit a PR request with the updated version, wait for all checks to pass and fo
     {
       "dockerfile": "src/ubuntu/18.04/webassembly/Dockerfile",
       "simpleTags": [
-        "ubuntu-18.04-webassembly-20200529220811-6a6da63"
+        "ubuntu-18.04-webassembly-20210707133424-12f133e"
       ],
       "digest": "sha256:1f2d920a70bd8d55bbb329e87c3bd732ef930d64ff288dab4af0aa700c25cfaf",
       "osType": "Linux",
@@ -169,7 +169,7 @@ Copy the docker image tag and replace it in [platform-matrix.yml](https://github
 
 ```
 container:
-    image: ubuntu-18.04-webassembly-20200409132031-f70ea41
+    image: ubuntu-18.04-webassembly-20210707133424-12f133e
     registry: mcr
 ```
 

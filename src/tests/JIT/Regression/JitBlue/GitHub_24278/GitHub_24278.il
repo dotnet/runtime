@@ -3,14 +3,7 @@
 
 .assembly extern System.Runtime { }
 .assembly GitHub_24278 { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module GitHub_24278.exe
+.assembly extern xunit.core {}
 
 // GitHub 24278: a bug is reproduced when
 // 1) a register is used in the prolog for initializing GSSecurityCookie (i.e. the register contains a random non-zero value) and

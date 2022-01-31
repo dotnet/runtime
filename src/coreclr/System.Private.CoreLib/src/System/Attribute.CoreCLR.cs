@@ -34,7 +34,7 @@ namespace System
             // create the hashtable that keeps track of inherited types
             Dictionary<Type, AttributeUsageAttribute> types = new Dictionary<Type, AttributeUsageAttribute>(11);
 
-            // create an array list to collect all the requested attibutes
+            // create an array list to collect all the requested attributes
             List<Attribute> attributeList = new List<Attribute>();
             CopyToAttributeList(attributeList, attributes, types);
             do
@@ -137,7 +137,7 @@ namespace System
             }
 
             // create the hashtable that keeps track of inherited types
-            // create an array list to collect all the requested attibutes
+            // create an array list to collect all the requested attributes
             Dictionary<Type, AttributeUsageAttribute> types = new Dictionary<Type, AttributeUsageAttribute>(11);
             List<Attribute> attributeList = new List<Attribute>();
             CopyToAttributeList(attributeList, attributes, types);

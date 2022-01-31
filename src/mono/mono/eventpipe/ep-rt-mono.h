@@ -28,9 +28,6 @@
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
-#undef EP_ARRAY_SIZE
-#define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
-
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT MONO_INFINITE_WAIT
 
@@ -1756,7 +1753,7 @@ ep_rt_utf8_string_replace (
 	if (strFound != NULL)
 	{
 		size_t strSearchLen = strlen(strSearch);
-		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1;
 		ep_char8_t *newStr =  g_new(ep_char8_t, newStrSize);
 		if (newStr == NULL)
 		{

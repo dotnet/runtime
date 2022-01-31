@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "ConvertStringSidToSidW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        internal static partial int ConvertStringSidToSid(
+        internal static partial BOOL ConvertStringSidToSid(
             string stringSid,
             out IntPtr ByteArray);
     }

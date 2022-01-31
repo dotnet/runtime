@@ -17,20 +17,13 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:3600:0
 }
-.assembly foo
+.assembly 'b356258'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module foo.exe
+.assembly extern xunit.core {}
 // MVID: {3C4B1460-B1C6-4337-8B12-587C5269CE8D}
 .imagebase 0x00400000
 .file alignment 0x00000200

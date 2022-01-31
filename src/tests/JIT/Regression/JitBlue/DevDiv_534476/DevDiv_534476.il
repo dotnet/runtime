@@ -4,13 +4,7 @@
 .assembly extern System.Runtime {auto}
 .assembly extern System.Console {auto}
 .assembly DevDiv_534476 {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 // The test showed a problem with stack level calculations during morph phase
 // that did not reflect code movements in the later phases.

@@ -9,18 +9,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xa20b8571
+.assembly 'b59948'
 {
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module '1'
+.assembly extern xunit.core {}
 // MVID: {9A90DFD6-02B6-45EC-9CEF-25C2CAF3BF19}
 
 .file alignment 512

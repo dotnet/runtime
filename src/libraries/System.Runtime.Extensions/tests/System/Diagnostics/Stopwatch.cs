@@ -11,11 +11,13 @@ namespace System.Diagnostics.Tests
     {
         private static readonly ManualResetEvent s_sleepEvent = new ManualResetEvent(false);
 
+        private static readonly int s_defaultSleepTimeMs = PlatformDetection.IsBrowser ? 5 : 1;
+
         [Fact]
         public static void GetTimestamp()
         {
             long ts1 = Stopwatch.GetTimestamp();
-            Sleep();
+            Sleep(s_defaultSleepTimeMs);
             long ts2 = Stopwatch.GetTimestamp();
             Assert.NotEqual(ts1, ts2);
         }
@@ -30,20 +32,20 @@ namespace System.Diagnostics.Tests
             Assert.Equal(0, watch.ElapsedMilliseconds);
             watch.Start();
             Assert.True(watch.IsRunning);
-            Sleep();
+            Sleep(s_defaultSleepTimeMs);
             Assert.True(watch.Elapsed > TimeSpan.Zero);
 
             watch.Stop();
             Assert.False(watch.IsRunning);
 
             var e1 = watch.Elapsed;
-            Sleep();
+            Sleep(s_defaultSleepTimeMs);
             var e2 = watch.Elapsed;
             Assert.Equal(e1, e2);
             Assert.Equal((long)e1.TotalMilliseconds, watch.ElapsedMilliseconds);
 
             var t1 = watch.ElapsedTicks;
-            Sleep();
+            Sleep(s_defaultSleepTimeMs);
             var t2 = watch.ElapsedTicks;
             Assert.Equal(t1, t2);
         }
@@ -55,7 +57,7 @@ namespace System.Diagnostics.Tests
             Assert.True(watch.IsRunning);
             watch.Start(); // should be no-op
             Assert.True(watch.IsRunning);
-            Sleep();
+            Sleep(s_defaultSleepTimeMs);
             Assert.True(watch.Elapsed > TimeSpan.Zero);
 
             watch.Reset();
@@ -122,7 +124,7 @@ namespace System.Diagnostics.Tests
             Assert.True(false, $"All {AllowedTries} fell outside of {WindowFactor} window of {SleepTime} sleep time: {string.Join(", ", results)}");
         }
 
-        private static void Sleep(int milliseconds = 1)
+        private static void Sleep(int milliseconds)
         {
             s_sleepEvent.WaitOne(milliseconds);
         }

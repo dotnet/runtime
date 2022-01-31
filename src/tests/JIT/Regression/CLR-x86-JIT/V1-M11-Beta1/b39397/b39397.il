@@ -7,14 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xcbda6722 {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'b39397' {}
+.assembly extern xunit.core {}
 .class ILGEN_0xcbda6722 {
 .method static float32 Method_0x796a(int64 Arg_0x0) {
 .maxstack	17

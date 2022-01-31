@@ -11,14 +11,7 @@
 
 
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'switch2.exe'
+.assembly extern xunit.core {}
 
 .class public auto ansi Test_switch2
        extends ['mscorlib']System.Object

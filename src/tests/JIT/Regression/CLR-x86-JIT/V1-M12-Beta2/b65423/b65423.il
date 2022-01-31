@@ -6,17 +6,10 @@
 .assembly extern mscorlib { auto }
 .assembly extern Microsoft.VisualBasic { auto }
 
-.assembly 'b1904'
+.assembly 'b65423'
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'b1904.exe'
+.assembly extern xunit.core {}
 .class private auto ansi b1904 extends ['mscorlib']System.Object
 {
   .field private static int32 Count

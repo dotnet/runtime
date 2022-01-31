@@ -147,6 +147,28 @@ struct Limit
 
         return false;
     }
+    bool MultiplyConstant(int i)
+    {
+        switch (type)
+        {
+            case keDependent:
+                return true;
+            case keBinOpArray:
+            case keConstant:
+                if (CheckedOps::MulOverflows(cns, i, CheckedOps::Signed))
+                {
+                    return false;
+                }
+                cns *= i;
+                return true;
+            case keUndef:
+            case keUnknown:
+                // For these values of 'type', conservatively return false
+                break;
+        }
+
+        return false;
+    }
 
     bool Equals(Limit& l)
     {
@@ -250,6 +272,21 @@ struct RangeOps
         }
     }
 
+    // Given a constant limit in "l1", multiply it to l2 and mutate "l2".
+    static Limit MultiplyConstantLimit(Limit& l1, Limit& l2)
+    {
+        assert(l1.IsConstant());
+        Limit l = l2;
+        if (l.MultiplyConstant(l1.GetConstant()))
+        {
+            return l;
+        }
+        else
+        {
+            return Limit(Limit::keUnknown);
+        }
+    }
+
     // Given two ranges "r1" and "r2", perform an add operation on the
     // ranges.
     static Range Add(Range& r1, Range& r2)
@@ -287,6 +324,47 @@ struct RangeOps
         if (r2hi.IsConstant())
         {
             result.uLimit = AddConstantLimit(r2hi, r1hi);
+        }
+        return result;
+    }
+
+    // Given two ranges "r1" and "r2", perform an multiply operation on the
+    // ranges.
+    static Range Multiply(Range& r1, Range& r2)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r1hi = r1.UpperLimit();
+        Limit& r2lo = r2.LowerLimit();
+        Limit& r2hi = r2.UpperLimit();
+
+        Range result = Limit(Limit::keUnknown);
+
+        // Check lo ranges if they are dependent and not unknown.
+        if ((r1lo.IsDependent() && !r1lo.IsUnknown()) || (r2lo.IsDependent() && !r2lo.IsUnknown()))
+        {
+            result.lLimit = Limit(Limit::keDependent);
+        }
+        // Check hi ranges if they are dependent and not unknown.
+        if ((r1hi.IsDependent() && !r1hi.IsUnknown()) || (r2hi.IsDependent() && !r2hi.IsUnknown()))
+        {
+            result.uLimit = Limit(Limit::keDependent);
+        }
+
+        if (r1lo.IsConstant())
+        {
+            result.lLimit = MultiplyConstantLimit(r1lo, r2lo);
+        }
+        if (r2lo.IsConstant())
+        {
+            result.lLimit = MultiplyConstantLimit(r2lo, r1lo);
+        }
+        if (r1hi.IsConstant())
+        {
+            result.uLimit = MultiplyConstantLimit(r1hi, r2hi);
+        }
+        if (r2hi.IsConstant())
+        {
+            result.uLimit = MultiplyConstantLimit(r2hi, r1hi);
         }
         return result;
     }
@@ -376,6 +454,32 @@ struct RangeOps
                 result.uLimit = r2hi;
             }
         }
+        return result;
+    }
+
+    // Given a Range C from an op (x << C), convert it to be used as
+    // (x * C'), where C' is a power of 2.
+    static Range ConvertShiftToMultiply(Range& r1)
+    {
+        Limit& r1lo = r1.LowerLimit();
+        Limit& r1hi = r1.UpperLimit();
+
+        if (!r1lo.IsConstant() || !r1hi.IsConstant())
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        // Keep it simple for now, check if 0 <= C < 31
+        int r1loConstant = r1lo.GetConstant();
+        int r1hiConstant = r1hi.GetConstant();
+        if (r1loConstant <= 0 || r1loConstant > 31 || r1hiConstant <= 0 || r1hiConstant > 31)
+        {
+            return Limit(Limit::keUnknown);
+        }
+
+        Range result  = Limit(Limit::keConstant);
+        result.lLimit = Limit(Limit::keConstant, 1 << r1loConstant);
+        result.uLimit = Limit(Limit::keConstant, 1 << r1hiConstant);
         return result;
     }
 };
@@ -483,6 +587,9 @@ public:
 
     // Does the addition of the two limits overflow?
     bool AddOverflows(Limit& limit1, Limit& limit2);
+
+    // Does the multiplication of the two limits overflow?
+    bool MultiplyOverflows(Limit& limit1, Limit& limit2);
 
     // Does the binary operation between the operands overflow? Check recursively.
     bool DoesBinOpOverflow(BasicBlock* block, GenTreeOp* binop);

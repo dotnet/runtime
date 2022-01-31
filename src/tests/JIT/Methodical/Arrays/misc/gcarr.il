@@ -19,14 +19,7 @@
 .assembly 'gcarr'// as "gcarr"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'gcarr.exe'
+.assembly extern xunit.core {}
 .namespace GCTest
 {
   .class private auto ansi Test

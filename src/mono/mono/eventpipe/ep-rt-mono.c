@@ -5245,7 +5245,7 @@ mono_profiler_class_loading (
 
 	uint64_t class_id;
 	uint64_t module_id;
-	
+
 	mono_profiler_get_class_data (klass, &class_id, &module_id, NULL, NULL, NULL);
 
 	mono_profiler_fire_event_enter ();
@@ -5428,7 +5428,7 @@ mono_profiler_module_loading (
 {
 	if (!EventEnabledMonoProfilerModuleLoading ())
 		return;
-	
+
 	mono_profiler_fire_event_enter ();
 
 	FireEtwMonoProfilerModuleLoading (
@@ -5466,7 +5466,7 @@ mono_profiler_module_loaded (
 {
 	if (!EventEnabledMonoProfilerModuleLoaded ())
 		return;
-	
+
 	uint64_t module_id = (uint64_t)image;
 	const ep_char8_t *module_path = NULL;
 	const ep_char8_t *module_guid = NULL;
@@ -5517,7 +5517,7 @@ mono_profiler_module_unloaded (
 {
 	if (!EventEnabledMonoProfilerModuleUnloaded ())
 		return;
-	
+
 	uint64_t module_id = (uint64_t)image;
 	const ep_char8_t *module_path = NULL;
 	const ep_char8_t *module_guid = NULL;
@@ -5570,7 +5570,7 @@ mono_profiler_assembly_loading (
 {
 	if (!EventEnabledMonoProfilerAssemblyLoading ())
 		return;
-	
+
 	uint64_t assembly_id;
 	uint64_t module_id;
 
@@ -5624,7 +5624,7 @@ mono_profiler_assembly_unloading (
 {
 	if (!EventEnabledMonoProfilerAssemblyUnloading ())
 		return;
-	
+
 	uint64_t assembly_id;
 	uint64_t module_id;
 
@@ -6039,7 +6039,7 @@ mono_profiler_gc_allocation (
 	if (object) {
 		vtable_id = (uint64_t)mono_object_get_vtable_internal (object);
 		object_size = (uint64_t)mono_object_get_size_internal (object);
-		
+
 		/* account for object alignment */
 		object_size += 7;
 		object_size &= ~7;

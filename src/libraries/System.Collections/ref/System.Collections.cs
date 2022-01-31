@@ -47,6 +47,8 @@ namespace System.Collections.Generic
         public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
     }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer
     {

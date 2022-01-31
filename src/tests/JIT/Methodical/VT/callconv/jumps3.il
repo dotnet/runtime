@@ -15,17 +15,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly jumps // as "jumps"
+.assembly 'jumps3' // as "jumps"
 {
                         }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module jumps.exe
+.assembly extern xunit.core {}
 .namespace MS
 {
   .class value private auto ansi sealed VT

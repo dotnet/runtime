@@ -742,6 +742,7 @@ PAL_ProbeMemory(
     BOOL fWriteAccess)
 {
     int fds[2];
+    int flags;
 
     if (pipe(fds) != 0)
     {
@@ -749,8 +750,11 @@ PAL_ProbeMemory(
         return FALSE;
     }
 
-    fcntl(fds[0], O_NONBLOCK);
-    fcntl(fds[1], O_NONBLOCK);
+    flags = fcntl(fds[0], F_GETFL, 0);
+    fcntl(fds[0], F_SETFL, flags | O_NONBLOCK);
+    
+    flags = fcntl(fds[1], F_GETFL, 0);
+    fcntl(fds[1], F_SETFL, flags | O_NONBLOCK);
 
     PVOID pEnd = (PBYTE)pBuffer + cbBuffer;
     BOOL result = TRUE;

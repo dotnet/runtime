@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly attrib014_2{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module attrib014_2.exe
+.assembly 'test_08'{}
+.assembly extern xunit.core {}
 
 .class private auto ansi import beforefieldinit ShellApplication
        extends [mscorlib]System.Object

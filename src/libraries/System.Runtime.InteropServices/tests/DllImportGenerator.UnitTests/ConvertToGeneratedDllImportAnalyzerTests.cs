@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Microsoft.CodeAnalysis;
@@ -153,6 +154,29 @@ partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
+        [ConditionalTheory]
+        [InlineData(UnmanagedType.Interface)]
+        [InlineData(UnmanagedType.IDispatch)]
+        [InlineData(UnmanagedType.IInspectable)]
+        [InlineData(UnmanagedType.IUnknown)]
+        [InlineData(UnmanagedType.SafeArray)]
+        public async Task UnsupportedUnmanagedType_NoDiagnostic(UnmanagedType unmanagedType)
+        {
+            string source = $@"
+using System.Runtime.InteropServices;
+unsafe partial class Test
+{{
+    [DllImport(""DoesNotExist"")]
+    public static extern void Method_Parameter([MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]int p);
+
+    [DllImport(""DoesNotExist"")]
+    [return: MarshalAs(UnmanagedType.{unmanagedType}, MarshalType = ""DNE"")]
+    public static extern int Method_Return();
+}}
+";
+            await VerifyCS.VerifyAnalyzerAsync(source);
+        }
+
         [ConditionalFact]
         public async Task GeneratedDllImport_NoDiagnostic()
         {
@@ -169,22 +193,7 @@ partial class Test
     public static extern partial void Method();
 }}
 ";
-            // Only this test case needs the ancillary reference, so it creates/runs the test directly
-            // instead of going through VerifyAnalyzerAsync
-            (_, MetadataReference ancillary) = TestUtils.GetReferenceAssemblies();
-            var test = new VerifyCS.Test()
-            {
-                TestCode = source
-            };
-            test.SolutionTransforms.Add((solution, projectId) =>
-            {
-                Project project = solution.GetProject(projectId)!;
-                var refs = new List<MetadataReference>(project.MetadataReferences.Count + 1);
-                refs.AddRange(project.MetadataReferences);
-                refs.Add(ancillary);
-                return solution.WithProjectMetadataReferences(projectId, refs);
-            });
-            await test.RunAsync(default);
+            await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [ConditionalFact]

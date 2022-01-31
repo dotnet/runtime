@@ -25,14 +25,7 @@
 
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module init_byte.exe
+.assembly extern xunit.core {}
 // MVID: {FDCD7B4C-5230-4304-82F7-A3D10057533E}
 .imagebase 0x00400000
 .file alignment 0x00001000

@@ -7,11 +7,6 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object?>
     {
-        public ObjectConverter()
-        {
-            IsInternalConverterForNumberType = true;
-        }
-
         public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
@@ -49,16 +44,6 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             runtimeConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
-        }
-
-        internal override object? ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
-        {
-            if (options.UnknownTypeHandling == JsonUnknownTypeHandling.JsonElement)
-            {
-                return JsonElement.ParseValue(ref reader);
-            }
-
-            return JsonNodeConverter.Instance.Read(ref reader, typeof(object), options);
         }
     }
 }

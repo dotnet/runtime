@@ -13,13 +13,7 @@
 .assembly 'instance'// as "instance"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class abstract auto ansi BaseTest extends [mscorlib]System.Object

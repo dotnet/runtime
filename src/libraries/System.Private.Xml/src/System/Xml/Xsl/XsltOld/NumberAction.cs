@@ -653,8 +653,6 @@ namespace System.Xml.Xsl.XsltOld
                         {
                             // 60-based Zodiak numbering begins with two characters
                             seq = NumberingSequence.Zodiac3;
-                            tokLen--;
-                            startLen++;
                         }
                         else
                         {

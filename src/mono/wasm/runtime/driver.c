@@ -136,47 +136,12 @@ static MonoDomain *root_domain;
 
 #define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
 
+extern void mono_wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data);
+
 static void
 wasm_trace_logger (const char *log_domain, const char *log_level, const char *message, mono_bool fatal, void *user_data)
 {
-	EM_ASM({
-		var log_level = $0;
-		var message = Module.UTF8ToString ($1);
-		var isFatal = $2;
-		var domain = Module.UTF8ToString ($3); // is this always Mono?
-		var dataPtr = $4;
-
-		if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
-			INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
-			return;
-		}
-
-		if (isFatal)
-			console.trace (message);
-
-		switch (Module.UTF8ToString ($0)) {
-			case "critical":
-			case "error":
-				console.error (message);
-				break;
-			case "warning":
-				console.warn (message);
-				break;
-			case "message":
-				console.log (message);
-				break;
-			case "info":
-				console.info (message);
-				break;
-			case "debug":
-				console.debug (message);
-				break;
-			default:
-				console.log (message);
-				break;
-		}
-	}, log_level, message, fatal, log_domain, user_data);
-
+	mono_wasm_trace_logger(log_domain, log_level, message, fatal, user_data);
 	if (fatal)
 		exit (1);
 }
@@ -485,12 +450,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 
 #ifdef DEBUG
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
+	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
+	// monoeg_g_setenv ("MONO_LOG_MASK", "gc", 0);
     // Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
     // output will be sent to the console.  Right now this is the only way to emit debug logging from
     // corlib assemblies.
-	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
+	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
@@ -610,7 +575,7 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoAssembly* 
+EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_get_corlib ()
 {
 	return mono_image_get_assembly (mono_get_corlib());
@@ -691,7 +656,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
-	
+
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
 
@@ -819,7 +784,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 		return MARSHAL_TYPE_VOID;
 	case MONO_TYPE_BOOLEAN:
 		return MARSHAL_TYPE_BOOL;
-	case MONO_TYPE_I:	// IntPtr
+	case MONO_TYPE_I: // IntPtr
+	case MONO_TYPE_U: // UIntPtr
 	case MONO_TYPE_PTR:
 		return MARSHAL_TYPE_POINTER;
 	case MONO_TYPE_I1:
@@ -964,7 +930,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
 	if (!type)
 		return MARSHAL_ERROR_NULL_TYPE_POINTER;
-	
+
 	if ((klass == mono_get_string_class ()) &&
 		mono_string_instance_is_interned ((MonoString *)obj)) {
 		*resultL = 0;
@@ -974,14 +940,14 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 
 	if (mono_class_is_enum (klass))
 		type = mono_type_get_underlying_type (type);
-	
+
 	if (!type)
 		return MARSHAL_ERROR_NULL_TYPE_POINTER;
-	
+
 	int mono_type = mono_type_get_type (type);
-	
+
 	if (mono_type == MONO_TYPE_GENERICINST) {
-		// HACK: While the 'any other type' fallback is valid for classes, it will do the 
+		// HACK: While the 'any other type' fallback is valid for classes, it will do the
 		//  wrong thing for structs, so we need to make sure the valuetype handler is used
 		if (mono_type_generic_inst_is_valuetype (type))
 			mono_type = MONO_TYPE_VALUETYPE;
@@ -1029,7 +995,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			break;
 		case MONO_TYPE_VALUETYPE:
 			{
-				int obj_size = mono_object_get_size (obj), 
+				int obj_size = mono_object_get_size (obj),
 					required_size = (sizeof (int)) + (sizeof (MonoType *)) + obj_size;
 
 				// Check whether this struct has special-case marshaling
@@ -1139,7 +1105,7 @@ mono_wasm_enable_on_demand_gc (int enable)
 }
 
 EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_intern_string (MonoString *string) 
+mono_wasm_intern_string (MonoString *string)
 {
 	return mono_string_intern (string);
 }
@@ -1191,12 +1157,12 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 	return mono_object_unbox (obj);
 }
 
-EMSCRIPTEN_KEEPALIVE char * 
+EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_name (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
 }
 
-EMSCRIPTEN_KEEPALIVE char * 
+EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }

@@ -7,21 +7,15 @@
 .assembly extern mscorlib { auto }
 
 .assembly test_2c { }
-.assembly extern xunit.core
+.assembly extern xunit.core {}
+.namespace JitTest_test_2c
 {
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.namespace JitTest
-{
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
     .field private static int32 m
     .field private static int32 n
-    .method private hidebysig  static int32 Main() il managed
+    .method public hidebysig  static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -31,11 +25,11 @@
       .locals (int32 V_0)
       ldc.i4.1
       call       void [System.Runtime.Extensions]System.Environment::set_ExitCode(int32)
-      ldsfld     int32 JitTest.Test::n
+      ldsfld     int32 JitTest_test_2c.Test::n
       ldc.i4.1
       bne.un.s   IL_0047
 
-      ldsfld     int32 JitTest.Test::m
+      ldsfld     int32 JitTest_test_2c.Test::m
       ldc.i4     0x375f00
       bne.un.s   IL_0029
 
@@ -46,7 +40,7 @@
 
 IL_0029:
       ldstr      "FAILED: 10! != "
-      ldsflda    int32 JitTest.Test::m
+      ldsflda    int32 JitTest_test_2c.Test::m
       call       instance class System.String [mscorlib]System.Int32::ToString()
       call       class System.String [mscorlib]System.String::Concat(class System.String,
                                                                                class System.String)
@@ -56,20 +50,20 @@ IL_0029:
 
 IL_0047:
       nop
-      ldsfld     int32 JitTest.Test::n
+      ldsfld     int32 JitTest_test_2c.Test::n
       ldc.i4.1
       beq        MERGE
 
-      ldsfld     int32 JitTest.Test::m
-      ldsfld     int32 JitTest.Test::n
+      ldsfld     int32 JitTest_test_2c.Test::m
+      ldsfld     int32 JitTest_test_2c.Test::n
       dup
       ldc.i4.1
       sub
-      stsfld     int32 JitTest.Test::n
+      stsfld     int32 JitTest_test_2c.Test::n
       mul
-      stsfld     int32 JitTest.Test::m
+      stsfld     int32 JitTest_test_2c.Test::m
 MERGE:
-      tail. call       int32 JitTest.Test::Main()
+      tail. call       int32 JitTest_test_2c.Test::Main()
 RET:
       ret
     } // end of method Test::Main
@@ -80,9 +74,9 @@ RET:
       // Code size       14 (0xe)
       .maxstack  8
       IL_0000:  ldc.i4.1
-      IL_0001:  stsfld     int32 JitTest.Test::m
+      IL_0001:  stsfld     int32 JitTest_test_2c.Test::m
       IL_0006:  ldc.i4.s   10
-      IL_0008:  stsfld     int32 JitTest.Test::n
+      IL_0008:  stsfld     int32 JitTest_test_2c.Test::n
       IL_000d:  ret
     } // end of method Test::.cctor
 
@@ -98,6 +92,6 @@ RET:
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_test_2c
 
 //*********** DISASSEMBLY COMPLETE ***********************

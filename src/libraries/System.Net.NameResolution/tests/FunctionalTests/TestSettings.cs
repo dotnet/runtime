@@ -8,9 +8,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.NameResolution.Tests
 {
-    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-    public partial class NoParallelTests { }
-
     internal static class TestSettings
     {
         // A hostname that will not exist in any DNS caches, forcing some I/O to lookup.

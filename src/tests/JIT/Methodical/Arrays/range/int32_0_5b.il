@@ -20,24 +20,13 @@
            
   
 }
-.assembly 'test'
+.assembly 'int32_0_5b'
 {
-
-
-  
-  
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'test.exe'
+.assembly extern xunit.core {}
 .namespace JitTest
 {
-  .class private auto ansi Test
+  .class public auto ansi Int32_0_5B
          extends [mscorlib]System.Object
   {
     .method private hidebysig static int32 
@@ -99,7 +88,7 @@
       ret
     } // end of method 'Test::try_index'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -148,55 +137,55 @@
       			ldloc.0
       			ldc.i4		-10000
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.m1
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.0
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4.1
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		5
       			ldc.i4.1
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		6
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4		1000
       			ldc.i4.0
-      			call		int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call		int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4 1000000
       			ldc.i4.0
-      			call       int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call       int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldloc.0
       			ldc.i4 1300000
       			ldc.i4.0
-      			call       int32 JitTest.Test::try_index(int32[0...5], int32, int32)
+      			call       int32 JitTest.Int32_0_5B::try_index(int32[0...5], int32, int32)
       			brfalse		Failure
       			
       			ldc.i4    0x64

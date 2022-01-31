@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #Usage message
 function usage {
@@ -66,7 +66,7 @@ function exit_with_error {
     local printUsage=$2
 
     echo "ERROR: $errorMessage"
-    if [ "$printUsage" == "true" ]; then
+    if [[ "$printUsage" == "true" ]]; then
         echo ''
         usage
     fi
@@ -153,7 +153,7 @@ function handle_exit {
 
     echo 'The script is exited. Cleaning environment..'
 
-    if [ "$__ciMode" == "emulator" ]; then
+    if [[ "$__ciMode" == "emulator" ]]; then
         clean_env
     fi
 }
@@ -242,7 +242,7 @@ function cross_build_coreclr_with_docker {
 
     # Check build configuration and choose Docker image
     __dockerEnvironmentVariables=""
-    if [ "$__buildArch" == "arm" ]; then
+    if [[ "$__buildArch" == "arm" ]]; then
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
@@ -261,7 +261,7 @@ function cross_build_coreclr_with_docker {
             exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
         ;;
         esac
-    elif [ "$__buildArch" == "armel" ]; then
+    elif [[ "$__buildArch" == "armel" ]]; then
         # For armel Tizen, we are going to construct RootFS on the fly.
         case $__linuxCodeName in
         tizen)
@@ -280,7 +280,7 @@ function cross_build_coreclr_with_docker {
     fi
     __dockerCmd="sudo docker run ${__dockerEnvironmentVariables} --privileged -i --rm -v $__currentWorkingDirectory:/opt/code -w /opt/code $__dockerImage"
 
-    if [ $__skipRootFS == 0 ]; then
+    if [[ "$__skipRootFS" == 0 ]]; then
         # Build rootfs
         __buildRootfsCmd="$__RepoRootDir/eng/common/cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
 
@@ -369,7 +369,7 @@ function run_tests_using_docker {
 
     # Configure docker
     __dockerEnvironmentVariables=""
-    if [ "$__buildArch" == "arm" ]; then
+    if [[ "$__buildArch" == "arm" ]]; then
         case $__linuxCodeName in
         trusty)
             __dockerImage=" mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu1404_cross_prereqs_v3"
@@ -385,7 +385,7 @@ function run_tests_using_docker {
             exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
         ;;
         esac
-    elif [ "$__buildArch" == "armel" ]; then
+    elif [[ "$__buildArch" == "armel" ]]; then
         case $__linuxCodeName in
         tizen)
             __dockerImage=" tizendotnet/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255-tizen-rootfs-5.0m1"
@@ -494,7 +494,7 @@ do
 done
 
 #Check if there are any uncommited changes in the source directory as git adds and removes patches
-if [[ $(git status -s) != "" ]]; then
+if [[ -n $(git status -s)  ]]; then
    echo 'ERROR: There are some uncommited changes. To avoid losing these changes commit them and try again.'
    echo ''
    git status
@@ -502,7 +502,7 @@ if [[ $(git status -s) != "" ]]; then
 fi
 
 exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
-if [ "$__ciMode" == "emulator" ]; then
+if [[ "$__ciMode" == "emulator" ]]; then
     #Check if the compulsory arguments have been presented to the script and if the input paths exist
     exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
     exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
@@ -513,7 +513,7 @@ fi
 
 __coreFxBinDir="./bin/CoreFxBinDir" # TODO-cleanup: Just for testing....
 #Check if the optional arguments are present in the case that testing is to be done
-if [ $__skipTests == 0 ]; then
+if [[ "$__skipTests" == 0 ]]; then
     exit_if_empty "$__testRootDir" "Testing requested, but --testRootDir not provided" true
     exit_if_path_absent "$__testRootDir" "Path specified in --testRootDir does not exist" false
 
@@ -523,10 +523,10 @@ if [ $__skipTests == 0 ]; then
     exit_if_empty "$__testDirFile" "Testing requested, but --testDirFile not provided" true
     exit_if_path_absent "$__testDirFile" "Path specified in --testDirFile does not exist" false
 
-    if [ ! -z "$__skipMscorlib" ]; then
+    if [[ -n "$__skipMscorlib" ]]; then
         exit_if_empty "$__mscorlibDir" "Testing and skipmscorlib requested, but --mscorlibDir not provided" true
     fi
-    if [ ! -z "$__mscorlibDir" ]; then
+    if [[ -n "$__mscorlibDir" ]]; then
         echo '--mscorlibDir provided; will be using this path for running tests and ignoring the generated mscorlib.dll'
         exit_if_path_absent "$__mscorlibDir/mscorlib.dll" "Path specified in --mscorlibDir does not contain mscorlib.dll"
     fi
@@ -562,7 +562,7 @@ set -e
 ## Begin cross build
 (set +x; echo "Git HEAD @ $__initialGitHead")
 
-if [ "$__ciMode" == "docker" ]; then
+if [[ "$__ciMode" == "docker" ]]; then
     # Complete the cross build using Docker
     (set +x; echo 'Building coreclr...')
     cross_build_coreclr_with_docker
@@ -581,13 +581,13 @@ else
 fi
 
 #If tests are to be skipped end the script here, else continue
-if [ $__skipTests == 1 ]; then
+if [[ "$__skipTests" == 1 ]]; then
     exit 0
 fi
 
 __unittestResult=0
 ## Begin CoreCLR test
-if [ "$__ciMode" == "docker" ]; then
+if [[ "$__ciMode" == "docker" ]]; then
     run_tests_using_docker
     __unittestResult=$?
 else

@@ -17,7 +17,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
-.assembly retbuf_bug
+.assembly 'smallFrame'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -29,14 +29,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module retbuf_bug.exe
+.assembly extern xunit.core {}
 // MVID: {FD923469-B98F-4B21-ABCA-4105B0A8ED94}
 .imagebase 0x00400000
 .file alignment 0x00000200

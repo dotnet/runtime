@@ -3,14 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly DevDiv_279396 {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module DevDiv_279396.exe
+.assembly extern xunit.core {}
 
 // This test originally triggered an assertion in the emitter that ensured that no lclVar or lclFld access exceeded the
 // bounds of its containing method's frame. The problematic access was created during morphing by folding

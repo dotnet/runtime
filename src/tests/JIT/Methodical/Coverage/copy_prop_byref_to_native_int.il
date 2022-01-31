@@ -4,14 +4,8 @@
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime { auto }
 
-.assembly CopyPropByrefToNativeInt { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'copy_prop_byref_to_native_int' { }
+.assembly extern xunit.core {}
 
 .typedef [System.Runtime]System.WeakReference as WeakRef
 .typedef [System.Runtime]System.GC as GC

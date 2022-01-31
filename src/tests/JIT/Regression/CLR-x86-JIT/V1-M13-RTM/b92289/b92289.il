@@ -8,14 +8,8 @@
 }
 .assembly extern mscorlib {}
 .assembly extern System {}
-.assembly EHTest {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'b92289' {}
+.assembly extern xunit.core {}
 .class public EHTest
 {
 .method public static void f2() cil managed synchronized

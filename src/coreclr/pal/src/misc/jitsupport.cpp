@@ -82,7 +82,7 @@ static const CpuCapability CpuCapabilities[] = {
 // If the capability name is not recognized or unused at present, zero is returned.
 static unsigned long LookupCpuCapabilityFlag(const char* start, size_t length)
 {
-    for (size_t i = 0; i < _countof(CpuCapabilities); i++)
+    for (size_t i = 0; i < ARRAY_SIZE(CpuCapabilities); i++)
     {
         const char* capabilityName = CpuCapabilities[i].name;
         if ((length == strlen(capabilityName)) && (memcmp(start, capabilityName, length) == 0))
@@ -260,11 +260,26 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
     int64_t valueFromSysctl = 0;
     size_t sz = sizeof(valueFromSysctl);
 
-    if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
-        flags->Set(InstructionSet_Atomics);
+    if ((sysctlbyname("hw.optional.arm.FEAT_AES", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Aes);
 
     if ((sysctlbyname("hw.optional.armv8_crc32", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
         flags->Set(InstructionSet_Crc32);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_DotProd", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Dp);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Rdm);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Sha1);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA256", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Sha256);
+
+    if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Atomics);
 #endif // HAVE_SYSCTLBYNAME
     // CoreCLR SIMD and FP support is included in ARM64 baseline
     // On exceptional basis platforms may leave out support, but CoreCLR does not

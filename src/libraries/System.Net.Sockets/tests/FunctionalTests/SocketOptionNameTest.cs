@@ -51,7 +51,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public void MulticastOption_CreateSocketSetGetOption_GroupAndInterfaceIndex_SetSucceeds_GetThrows()
         {
             int interfaceIndex = 0;
@@ -66,7 +65,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))] // Skip on Nano: https://github.com/dotnet/runtime/issues/26286
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/61343", TestPlatforms.Android)]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -692,9 +690,9 @@ namespace System.Net.Sockets.Tests
         private static int SOL_SOCKET = OperatingSystem.IsLinux() ? 1 : (int)SocketOptionLevel.Socket;
     }
 
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     // Set of tests to not run  together with any other tests.
-    public partial class NoParallelTests
+    public class NoParallelTests
     {
         [Fact]
         public void BindDuringTcpWait_Succeeds()
@@ -716,7 +714,7 @@ namespace System.Net.Sockets.Tests
             }
 
             // Bind a socket to the same address we just used.
-            // To avoid conflict with other tests, this is part of the NoParallelTests test collection.
+            // To avoid conflict with other tests, this is part of the DisableParallelization test collection.
             using (Socket b = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
                 b.Bind(new IPEndPoint(IPAddress.Loopback, port));

@@ -22,7 +22,7 @@
 // string.
 //
 // If you need a direct non-unicode representation, you will have to provide a fresh SString which can
-// recieve a conversion operation if necessary.
+// receive a conversion operation if necessary.
 //
 // The alternate encodings available are:
 // 1. ASCII - string consisting entirely of ASCII (7 bit) characters.  This is the only 1 byte encoding
@@ -632,7 +632,7 @@ private:
 
     // Copy the string from the target into the provided buffer, converting to unicode if necessary
     bool DacGetUnicode(COUNT_T                                  bufChars,
-                       __out_z __inout_ecount(bufChars) WCHAR * buffer,
+                       _Inout_updates_z_(bufChars) WCHAR * buffer,
                        COUNT_T *                                needChars) const;
 
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) const

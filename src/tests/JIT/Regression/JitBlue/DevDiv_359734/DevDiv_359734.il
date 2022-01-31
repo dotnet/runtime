@@ -13,14 +13,8 @@
 // The fix was to bump lclVar ref counts after remorphing but before attempting to remove the expression.
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'DevDiv_359734'{}
+.assembly extern xunit.core {}
 .class ILGEN_CLASS
 {
     .method static char ILGEN_METHOD(bool, char, int16, int32)

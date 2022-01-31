@@ -53,8 +53,8 @@ lower_load (MonoCompile *cfg, MonoInst *load, MonoInst *ldaddr)
 	}
 
 	if (replaced_op != load->opcode) {
-		if (cfg->verbose_level > 2) 
-			printf ("Incompatible load type: expected %s but got %s\n", 
+		if (cfg->verbose_level > 2)
+			printf ("Incompatible load type: expected %s but got %s\n",
 				mono_inst_name (replaced_op),
 				mono_inst_name (load->opcode));
 		return FALSE;
@@ -84,8 +84,8 @@ lower_store (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 
 
 	if (replaced_op != store->opcode) {
-		if (cfg->verbose_level > 2) 
-			printf ("Incompatible store_reg type: expected %s but got %s\n", 
+		if (cfg->verbose_level > 2)
+			printf ("Incompatible store_reg type: expected %s but got %s\n",
 				mono_inst_name (replaced_op),
 				mono_inst_name (store->opcode));
 		return FALSE;
@@ -131,7 +131,7 @@ lower_store_imm (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 
 #if TARGET_SIZEOF_VOID_P == 8
 	case OP_STORE_MEMBASE_IMM:
-#endif    
+#endif
 	case OP_STOREI8_MEMBASE_IMM:
 	 	if (!is_long_stack_size (var->type)) {
 			if (cfg->verbose_level > 2) printf ("Incompatible variable of size != 8\n");

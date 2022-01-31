@@ -20,7 +20,7 @@ namespace System.Speech.Internal.Synthesis
         /// </summary>
         internal AudioDeviceOut(int curDevice, IAsyncDispatch asyncDispatch)
         {
-            _delegate = new SafeNativeMethods.WaveOutProc(CallBackProc);
+            _delegate = new Interop.WinMM.WaveOutProc(CallBackProc);
             _asyncDispatch = asyncDispatch;
             _curDevice = curDevice;
         }
@@ -39,7 +39,7 @@ namespace System.Speech.Internal.Synthesis
         {
             if (_deviceOpen && _hwo != IntPtr.Zero)
             {
-                SafeNativeMethods.waveOutClose(_hwo);
+                Interop.WinMM.waveOutClose(_hwo);
                 _deviceOpen = false;
             }
             if (disposing)
@@ -68,21 +68,21 @@ namespace System.Speech.Internal.Synthesis
             // Get the alignments values
             WAVEFORMATEX.AvgBytesPerSec(wfx, out _nAvgBytesPerSec, out _blockAlign);
 
-            MMSYSERR result;
+            Interop.WinMM.MMSYSERR result;
             lock (_noWriteOutLock)
             {
-                result = SafeNativeMethods.waveOutOpen(ref _hwo, _curDevice, wfx, _delegate, IntPtr.Zero, SafeNativeMethods.CALLBACK_FUNCTION);
+                result = Interop.WinMM.waveOutOpen(ref _hwo, _curDevice, wfx, _delegate, IntPtr.Zero, Interop.WinMM.CALLBACK_FUNCTION);
 
-                if (_fPaused && result == MMSYSERR.NOERROR)
+                if (_fPaused && result == Interop.WinMM.MMSYSERR.NOERROR)
                 {
-                    result = SafeNativeMethods.waveOutPause(_hwo);
+                    result = Interop.WinMM.waveOutPause(_hwo);
                 }
                 // set the flags
                 _aborted = false;
                 _deviceOpen = true;
             }
 
-            if (result != MMSYSERR.NOERROR)
+            if (result != Interop.WinMM.MMSYSERR.NOERROR)
             {
                 throw new AudioException(result);
             }
@@ -108,19 +108,17 @@ namespace System.Speech.Internal.Synthesis
             {
                 _deviceOpen = false;
 
-                MMSYSERR result;
-
                 CheckForAbort();
 
                 if (_queueIn.Count != 0)
                 {
-                    SafeNativeMethods.waveOutReset(_hwo);
+                    Interop.WinMM.waveOutReset(_hwo);
                 }
 
                 // Close it; no point in returning errors if this fails
-                result = SafeNativeMethods.waveOutClose(_hwo);
+                Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutClose(_hwo);
 
-                if (result != MMSYSERR.NOERROR)
+                if (result != Interop.WinMM.MMSYSERR.NOERROR)
                 {
                     // This may create a dead lock
                     System.Diagnostics.Debug.Assert(false);
@@ -146,9 +144,9 @@ namespace System.Speech.Internal.Synthesis
 
                 WaveHeader waveHeader = new(buffer);
                 GCHandle waveHdr = waveHeader.WAVEHDR;
-                MMSYSERR result = SafeNativeMethods.waveOutPrepareHeader(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
+                Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutPrepareHeader(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
 
-                if (result != MMSYSERR.NOERROR)
+                if (result != Interop.WinMM.MMSYSERR.NOERROR)
                 {
                     throw new AudioException(result);
                 }
@@ -168,8 +166,8 @@ namespace System.Speech.Internal.Synthesis
                         }
 
                         // Start playback of the first buffer
-                        result = SafeNativeMethods.waveOutWrite(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
-                        if (result != MMSYSERR.NOERROR)
+                        result = Interop.WinMM.waveOutWrite(_hwo, waveHdr.AddrOfPinnedObject(), waveHeader.SizeHDR);
+                        if (result != Interop.WinMM.MMSYSERR.NOERROR)
                         {
                             lock (_queueIn)
                             {
@@ -193,8 +191,8 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (_deviceOpen)
                     {
-                        MMSYSERR result = SafeNativeMethods.waveOutPause(_hwo);
-                        if (result != MMSYSERR.NOERROR)
+                        Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutPause(_hwo);
+                        if (result != Interop.WinMM.MMSYSERR.NOERROR)
                         {
                             System.Diagnostics.Debug.Assert(false, ((int)result).ToString(System.Globalization.CultureInfo.InvariantCulture));
                         }
@@ -215,8 +213,8 @@ namespace System.Speech.Internal.Synthesis
                 {
                     if (_deviceOpen)
                     {
-                        MMSYSERR result = SafeNativeMethods.waveOutRestart(_hwo);
-                        if (result != MMSYSERR.NOERROR)
+                        Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutRestart(_hwo);
+                        if (result != Interop.WinMM.MMSYSERR.NOERROR)
                         {
                             System.Diagnostics.Debug.Assert(false);
                         }
@@ -236,7 +234,7 @@ namespace System.Speech.Internal.Synthesis
                 _aborted = true;
                 if (_queueIn.Count > 0)
                 {
-                    SafeNativeMethods.waveOutReset(_hwo);
+                    Interop.WinMM.waveOutReset(_hwo);
                     _evt.WaitOne();
                 }
             }
@@ -286,7 +284,7 @@ namespace System.Speech.Internal.Synthesis
         /// <returns>Number of output devices</returns>
         internal static int NumDevices()
         {
-            return SafeNativeMethods.waveOutGetNumDevs();
+            return Interop.WinMM.waveOutGetNumDevs();
         }
 
         internal static int GetDevicedId(string name)
@@ -294,7 +292,7 @@ namespace System.Speech.Internal.Synthesis
             for (int iDevice = 0; iDevice < NumDevices(); iDevice++)
             {
                 string device;
-                if (GetDeviceName(iDevice, out device) == MMSYSERR.NOERROR && string.Equals(device, name, StringComparison.OrdinalIgnoreCase))
+                if (GetDeviceName(iDevice, out device) == Interop.WinMM.MMSYSERR.NOERROR && string.Equals(device, name, StringComparison.OrdinalIgnoreCase))
                 {
                     return iDevice;
                 }
@@ -308,20 +306,20 @@ namespace System.Speech.Internal.Synthesis
         /// <param name="deviceId">ID of the device</param>
         /// <param name="prodName">Destination string assigned the name</param>
         /// <returns>MMSYSERR.NOERROR if successful</returns>
-        internal static MMSYSERR GetDeviceName(int deviceId, [MarshalAs(UnmanagedType.LPWStr)] out string prodName)
+        internal static Interop.WinMM.MMSYSERR GetDeviceName(int deviceId, [MarshalAs(UnmanagedType.LPWStr)] out string prodName)
         {
             prodName = string.Empty;
-            SafeNativeMethods.WAVEOUTCAPS caps = new();
+            Interop.WinMM.WAVEOUTCAPS caps = new();
 
-            MMSYSERR result = SafeNativeMethods.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf<SafeNativeMethods.WAVEOUTCAPS>());
-            if (result != MMSYSERR.NOERROR)
+            Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutGetDevCaps((IntPtr)deviceId, ref caps, Marshal.SizeOf<Interop.WinMM.WAVEOUTCAPS>());
+            if (result != Interop.WinMM.MMSYSERR.NOERROR)
             {
                 return result;
             }
 
             prodName = caps.szPname;
 
-            return MMSYSERR.NOERROR;
+            return Interop.WinMM.MMSYSERR.NOERROR;
         }
 
         #endregion
@@ -346,9 +344,9 @@ namespace System.Speech.Internal.Synthesis
 
         #region Private Methods
 
-        private void CallBackProc(IntPtr hwo, MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2)
+        private void CallBackProc(IntPtr hwo, Interop.WinMM.MM_MSG uMsg, IntPtr dwInstance, IntPtr dwParam1, IntPtr dwParam2)
         {
-            if (uMsg == MM_MSG.MM_WOM_DONE)
+            if (uMsg == Interop.WinMM.MM_MSG.MM_WOM_DONE)
             {
                 InItem inItem;
                 lock (_queueIn)
@@ -391,11 +389,9 @@ namespace System.Speech.Internal.Synthesis
             foreach (InItem item in _queueOut)
             {
                 WaveHeader waveHeader = item._waveHeader;
-                MMSYSERR result;
-
-                result = SafeNativeMethods.waveOutUnprepareHeader(
+                Interop.WinMM.MMSYSERR result = Interop.WinMM.waveOutUnprepareHeader(
                             _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject(), waveHeader.SizeHDR);
-                if (result != MMSYSERR.NOERROR)
+                if (result != Interop.WinMM.MMSYSERR.NOERROR)
                 {
                     //System.Diagnostics.Debug.Assert (false);
                 }
@@ -418,7 +414,7 @@ namespace System.Speech.Internal.Synthesis
                         if (inItem._waveHeader != null)
                         {
                             WaveHeader waveHeader = inItem._waveHeader;
-                            SafeNativeMethods.waveOutUnprepareHeader(
+                            Interop.WinMM.waveOutUnprepareHeader(
                                 _hwo, waveHeader.WAVEHDR.AddrOfPinnedObject(), waveHeader.SizeHDR);
                             waveHeader.Dispose();
                         }
@@ -496,7 +492,7 @@ namespace System.Speech.Internal.Synthesis
 
         private ManualResetEvent _evt = new(false);
 
-        private SafeNativeMethods.WaveOutProc _delegate;
+        private Interop.WinMM.WaveOutProc _delegate;
 
         private IAsyncDispatch _asyncDispatch;
 

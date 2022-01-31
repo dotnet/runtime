@@ -16,18 +16,11 @@
 {
   .ver 0:0:0:0
 }
-.assembly legacy library bug
+.assembly legacy library 'tailcallcalli'
 {
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module bug.exe
+.assembly extern xunit.core {}
 // MVID: {643CA244-98FB-40AF-A64C-CDBA1F121F03}
 .imagebase 0x00400000
 .file alignment 0x00000200

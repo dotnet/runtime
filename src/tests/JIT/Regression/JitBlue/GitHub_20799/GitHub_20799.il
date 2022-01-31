@@ -4,14 +4,7 @@
 .assembly extern System.Runtime { }
 .assembly extern System.Console { }
 .assembly GitHub_20799 { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module GitHub_20799.exe
+.assembly extern xunit.core {}
 
 // GitHub 20799: a bug is reproduced when
 // 1) a method requires GSSecurityCookie (e.g. when allocating unsafe buffer using localloc)

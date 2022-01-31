@@ -81,6 +81,10 @@ namespace System.Text.RegularExpressions
         {
         }
 
+        /// <summary>Gets the culture to use based on the specified options.</summary>
+        internal static CultureInfo GetTargetCulture(RegexOptions options) =>
+            (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
             var parser = new RegexParser(pattern, options, culture, stackalloc int[OptionStackDefaultSize]);
@@ -248,10 +252,10 @@ namespace System.Text.RegularExpressions
 
         private RegexNode ScanRegex()
         {
-            char ch = '@'; // nonspecial ch, means at beginning
+            char ch;
             bool isQuantifier = false;
 
-            StartGroup(new RegexNode(RegexNode.Capture, _options, 0, -1));
+            StartGroup(new RegexNode(RegexNodeKind.Capture, _options, 0, -1));
 
             while (CharsRight() > 0)
             {
@@ -319,7 +323,12 @@ namespace System.Text.RegularExpressions
                         goto ContinueOuterScan;
 
                     case '[':
-                        AddUnitSet(ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass(_options));
+                        {
+                            string setString = ScanCharClass(UseOptionI(), scanOnly: false)!.ToStringClass(_options);
+                            _unit = UseOptionI() && RegexCharClass.MakeCaseSensitiveIfPossible(setString, _culture) is string newSetString ?
+                                new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, newSetString) :
+                                new RegexNode(RegexNodeKind.Set, _options, setString);
+                        }
                         break;
 
                     case '(':
@@ -370,22 +379,17 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '^':
-                        AddUnitType(UseOptionM() ? RegexNode.Bol : RegexNode.Beginning);
+                        AddUnitType(UseOptionM() ? RegexNodeKind.Bol : RegexNodeKind.Beginning);
                         break;
 
                     case '$':
-                        AddUnitType(UseOptionM() ? RegexNode.Eol : RegexNode.EndZ);
+                        AddUnitType(UseOptionM() ? RegexNodeKind.Eol : RegexNodeKind.EndZ);
                         break;
 
                     case '.':
-                        if (UseOptionS())
-                        {
-                            AddUnitSet(RegexCharClass.AnyClass);
-                        }
-                        else
-                        {
-                            AddUnitNotone('\n');
-                        }
+                        _unit = UseOptionS() ?
+                            new RegexNode(RegexNodeKind.Set, _options & ~RegexOptions.IgnoreCase, RegexCharClass.AnyClass) :
+                            new RegexNode(RegexNodeKind.Notone, _options & ~RegexOptions.IgnoreCase, '\n');
                         break;
 
                     case '{':
@@ -447,10 +451,7 @@ namespace System.Text.RegularExpressions
                                     if (CharsRight() > 0 && RightChar() == ',')
                                     {
                                         MoveRight();
-                                        if (CharsRight() == 0 || RightChar() == '}')
-                                            max = int.MaxValue;
-                                        else
-                                            max = ScanDecimal();
+                                        max = CharsRight() == 0 || RightChar() == '}' ? int.MaxValue : ScanDecimal();
                                     }
                                 }
 
@@ -507,7 +508,7 @@ namespace System.Text.RegularExpressions
          */
         private RegexNode ScanReplacement()
         {
-            _concatenation = new RegexNode(RegexNode.Concatenate, _options);
+            _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
 
             while (true)
             {
@@ -537,7 +538,7 @@ namespace System.Text.RegularExpressions
                         // groups are unsupported. However, the replacement patterns that refer to the left/right portion
                         // or all of the input as well as referring to group 0 (i.e. the whole match) are supported.
                         if ((_options & RegexOptions.NonBacktracking) != 0 &&
-                            node.Type == RegexNode.Ref &&
+                            node.Kind == RegexNodeKind.Backreference &&
                             node.M is not (0 or RegexReplacement.LeftPortion or RegexReplacement.RightPortion or RegexReplacement.WholeString))
                         {
                             throw new NotSupportedException(SR.NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups);
@@ -559,7 +560,7 @@ namespace System.Text.RegularExpressions
          */
         private RegexCharClass? ScanCharClass(bool caseInsensitive, bool scanOnly)
         {
-            char ch = '\0';
+            char ch;
             char chPrev = '\0';
             bool inRange = false;
             bool firstChar = true;
@@ -734,20 +735,16 @@ namespace System.Text.RegularExpressions
                 {
                     // we aren't in a range, and now there is a subtraction.  Usually this happens
                     // only when a subtraction follows a range, like [a-z-[b]]
+                    MoveRight();
+                    RegexCharClass? rcc = ScanCharClass(caseInsensitive, scanOnly);
                     if (!scanOnly)
                     {
-                        MoveRight(1);
-                        charClass!.AddSubtraction(ScanCharClass(caseInsensitive, scanOnly)!);
+                        charClass!.AddSubtraction(rcc!);
 
                         if (CharsRight() > 0 && RightChar() != ']')
                         {
                             throw MakeException(RegexParseError.ExclusionGroupNotLast, SR.ExclusionGroupNotLast);
                         }
-                    }
-                    else
-                    {
-                        MoveRight(1);
-                        ScanCharClass(caseInsensitive, scanOnly);
                     }
                 }
                 else
@@ -788,11 +785,11 @@ namespace System.Text.RegularExpressions
                 if (UseOptionN() || _ignoreNextParen)
                 {
                     _ignoreNextParen = false;
-                    return new RegexNode(RegexNode.Group, _options);
+                    return new RegexNode(RegexNodeKind.Group, _options);
                 }
                 else
                 {
-                    return new RegexNode(RegexNode.Capture, _options, _autocap++, -1);
+                    return new RegexNode(RegexNodeKind.Capture, _options, _autocap++, -1);
                 }
             }
 
@@ -805,31 +802,31 @@ namespace System.Text.RegularExpressions
                     break;
                 }
 
-                int nodeType;
+                RegexNodeKind nodeType;
                 char close = '>';
                 char ch = RightCharMoveRight();
                 switch (ch)
                 {
                     case ':':
                         // noncapturing group
-                        nodeType = RegexNode.Group;
+                        nodeType = RegexNodeKind.Group;
                         break;
 
                     case '=':
                         // lookahead assertion
                         _options &= ~RegexOptions.RightToLeft;
-                        nodeType = RegexNode.Require;
+                        nodeType = RegexNodeKind.PositiveLookaround;
                         break;
 
                     case '!':
                         // negative lookahead assertion
                         _options &= ~RegexOptions.RightToLeft;
-                        nodeType = RegexNode.Prevent;
+                        nodeType = RegexNodeKind.NegativeLookaround;
                         break;
 
                     case '>':
                         // atomic subexpression
-                        nodeType = RegexNode.Atomic;
+                        nodeType = RegexNodeKind.Atomic;
                         break;
 
                     case '\'':
@@ -852,7 +849,7 @@ namespace System.Text.RegularExpressions
 
                                 // lookbehind assertion
                                 _options |= RegexOptions.RightToLeft;
-                                nodeType = RegexNode.Require;
+                                nodeType = RegexNodeKind.PositiveLookaround;
                                 break;
 
                             case '!':
@@ -863,7 +860,7 @@ namespace System.Text.RegularExpressions
 
                                 // negative lookbehind assertion
                                 _options |= RegexOptions.RightToLeft;
-                                nodeType = RegexNode.Prevent;
+                                nodeType = RegexNodeKind.NegativeLookaround;
                                 break;
 
                             default:
@@ -894,7 +891,7 @@ namespace System.Text.RegularExpressions
                                         throw MakeException(RegexParseError.CaptureGroupOfZero, SR.CaptureGroupOfZero);
                                     }
                                 }
-                                else if (RegexCharClass.IsWordChar(ch))
+                                else if (RegexCharClass.IsBoundaryWordChar(ch))
                                 {
                                     string capname = ScanCapname();
 
@@ -921,7 +918,7 @@ namespace System.Text.RegularExpressions
 
                                 // grab part after - if any
 
-                                if ((capnum != -1 || proceed == true) && CharsRight() > 1 && RightChar() == '-')
+                                if ((capnum != -1 || proceed) && CharsRight() > 1 && RightChar() == '-')
                                 {
                                     MoveRight();
                                     ch = RightChar();
@@ -941,7 +938,7 @@ namespace System.Text.RegularExpressions
                                             throw MakeException(RegexParseError.CaptureGroupNameInvalid, SR.CaptureGroupNameInvalid);
                                         }
                                     }
-                                    else if (RegexCharClass.IsWordChar(ch))
+                                    else if (RegexCharClass.IsBoundaryWordChar(ch))
                                     {
                                         string uncapname = ScanCapname();
 
@@ -971,7 +968,7 @@ namespace System.Text.RegularExpressions
 
                                 if ((capnum != -1 || uncapnum != -1) && CharsRight() > 0 && RightCharMoveRight() == close)
                                 {
-                                    return new RegexNode(RegexNode.Capture, _options, capnum, uncapnum);
+                                    return new RegexNode(RegexNodeKind.Capture, _options, capnum, uncapnum);
                                 }
                                 goto BreakRecognize;
                         }
@@ -993,7 +990,7 @@ namespace System.Text.RegularExpressions
                                 {
                                     if (IsCaptureSlot(capnum))
                                     {
-                                        return new RegexNode(RegexNode.Testref, _options, capnum);
+                                        return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, capnum);
                                     }
 
                                     throw MakeException(RegexParseError.AlternationHasUndefinedReference, SR.Format(SR.AlternationHasUndefinedReference, capnum.ToString()));
@@ -1001,18 +998,18 @@ namespace System.Text.RegularExpressions
 
                                 throw MakeException(RegexParseError.AlternationHasMalformedReference, SR.Format(SR.AlternationHasMalformedReference, capnum.ToString()));
                             }
-                            else if (RegexCharClass.IsWordChar(ch))
+                            else if (RegexCharClass.IsBoundaryWordChar(ch))
                             {
                                 string capname = ScanCapname();
 
                                 if (IsCaptureName(capname) && CharsRight() > 0 && RightCharMoveRight() == ')')
                                 {
-                                    return new RegexNode(RegexNode.Testref, _options, CaptureSlotFromName(capname));
+                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, CaptureSlotFromName(capname));
                                 }
                             }
                         }
                         // not a backref
-                        nodeType = RegexNode.Testgroup;
+                        nodeType = RegexNodeKind.ExpressionConditional;
                         Textto(parenPos - 1);       // jump to the start of the parentheses
                         _ignoreNextParen = true;    // but make sure we don't try to capture the insides
 
@@ -1044,9 +1041,9 @@ namespace System.Text.RegularExpressions
                     default:
                         MoveLeft();
 
-                        nodeType = RegexNode.Group;
+                        nodeType = RegexNodeKind.Group;
                         // Disallow options in the children of a testgroup node
-                        if (_group!.Type != RegexNode.Testgroup)
+                        if (_group!.Kind != RegexNodeKind.ExpressionConditional)
                         {
                             ScanOptions();
                         }
@@ -1173,32 +1170,32 @@ namespace System.Text.RegularExpressions
                 case 'w':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.ECMAWordClass : RegexCharClass.WordClass);
+                        new RegexNode(RegexNodeKind.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.ECMAWordClass : RegexCharClass.WordClass);
 
                 case 'W':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.NotECMAWordClass : RegexCharClass.NotWordClass);
+                        new RegexNode(RegexNodeKind.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.NotECMAWordClass : RegexCharClass.NotWordClass);
 
                 case 's':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.ECMASpaceClass : RegexCharClass.SpaceClass);
+                        new RegexNode(RegexNodeKind.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.ECMASpaceClass : RegexCharClass.SpaceClass);
 
                 case 'S':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.NotECMASpaceClass : RegexCharClass.NotSpaceClass);
+                        new RegexNode(RegexNodeKind.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.NotECMASpaceClass : RegexCharClass.NotSpaceClass);
 
                 case 'd':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.ECMADigitClass : RegexCharClass.DigitClass);
+                        new RegexNode(RegexNodeKind.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.ECMADigitClass : RegexCharClass.DigitClass);
 
                 case 'D':
                     MoveRight();
                     return scanOnly ? null :
-                        new RegexNode(RegexNode.Set, _options, UseOptionE() ? RegexCharClass.NotECMADigitClass : RegexCharClass.NotDigitClass);
+                        new RegexNode(RegexNodeKind.Set, RemoveIgnoreCaseIfNotEcma(_options), UseOptionE() ? RegexCharClass.NotECMADigitClass : RegexCharClass.NotDigitClass);
 
                 case 'p':
                 case 'P':
@@ -1215,10 +1212,26 @@ namespace System.Text.RegularExpressions
                         cc.AddLowercase(_culture);
                     }
 
-                    return new RegexNode(RegexNode.Set, _options, cc.ToStringClass(_options));
+                    return new RegexNode(RegexNodeKind.Set, _options, cc.ToStringClass(_options));
 
                 default:
                     return ScanBasicBackslash(scanOnly);
+            }
+
+            static RegexOptions RemoveIgnoreCaseIfNotEcma(RegexOptions options)
+            {
+                // This function is used for \w, \W, \d, \D, \s, and \S to remove IgnoreCase,
+                // since they already include the notion of casing in their definitions.
+                // However, for compatibility, if ECMAScript is specified, we avoid stripping
+                // out the IgnoreCase.  We should revisit this as part of https://github.com/dotnet/runtime/issues/61048,
+                // as it seems wrong that specifying ECMAScript (which implies non-Unicode) would
+                // then still involve lowercasing potentially Unicode character inputs to match
+                // against these sets.
+                if ((options & RegexOptions.ECMAScript) == 0)
+                {
+                    options &= ~RegexOptions.IgnoreCase;
+                }
+                return options;
             }
         }
 
@@ -1243,7 +1256,7 @@ namespace System.Text.RegularExpressions
                 {
                     MoveRight();
                     ch = RightCharMoveRight();
-                    if (ch == '<' || ch == '\'')
+                    if (ch is '<' or '\'')
                     {
                         angled = true;
                         close = (ch == '\'') ? '\'' : '>';
@@ -1278,7 +1291,7 @@ namespace System.Text.RegularExpressions
                 {
                     return
                         scanOnly ? null :
-                        IsCaptureSlot(capnum) ? new RegexNode(RegexNode.Ref, _options, capnum) :
+                        IsCaptureSlot(capnum) ? new RegexNode(RegexNodeKind.Backreference, _options, capnum) :
                         throw MakeException(RegexParseError.UndefinedNumberedReference, SR.Format(SR.UndefinedNumberedReference, capnum.ToString()));
                 }
             }
@@ -1310,7 +1323,7 @@ namespace System.Text.RegularExpressions
 
                     if (capnum >= 0)
                     {
-                        return scanOnly ? null : new RegexNode(RegexNode.Ref, _options, capnum);
+                        return scanOnly ? null : new RegexNode(RegexNodeKind.Backreference, _options, capnum);
                     }
                 }
                 else
@@ -1324,7 +1337,7 @@ namespace System.Text.RegularExpressions
 
                     if (IsCaptureSlot(capnum))
                     {
-                        return new RegexNode(RegexNode.Ref, _options, capnum);
+                        return new RegexNode(RegexNodeKind.Backreference, _options, capnum);
                     }
 
                     if (capnum <= 9)
@@ -1336,7 +1349,7 @@ namespace System.Text.RegularExpressions
 
             // Try to parse backreference: \<foo>
 
-            else if (angled && RegexCharClass.IsWordChar(ch))
+            else if (angled && RegexCharClass.IsBoundaryWordChar(ch))
             {
                 string capname = ScanCapname();
 
@@ -1344,7 +1357,7 @@ namespace System.Text.RegularExpressions
                 {
                     return
                         scanOnly ? null :
-                        IsCaptureName(capname) ? new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname)) :
+                        IsCaptureName(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, CaptureSlotFromName(capname)) :
                         throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, capname));
                 }
             }
@@ -1354,12 +1367,9 @@ namespace System.Text.RegularExpressions
             Textto(backpos);
             ch = ScanCharEscape();
 
-            if (UseOptionI())
-            {
-                ch = _culture.TextInfo.ToLower(ch);
-            }
-
-            return scanOnly ? null : new RegexNode(RegexNode.One, _options, ch);
+            return !scanOnly ?
+                RegexNode.CreateOneWithCaseConversion(ch, _options, _culture) :
+                null;
         }
 
         /*
@@ -1369,7 +1379,7 @@ namespace System.Text.RegularExpressions
         {
             if (CharsRight() == 0)
             {
-                return new RegexNode(RegexNode.One, _options, '$');
+                return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
             }
 
             char ch = RightChar();
@@ -1427,7 +1437,7 @@ namespace System.Text.RegularExpressions
                     Textto(lastEndPos);
                     if (capnum >= 0)
                     {
-                        return new RegexNode(RegexNode.Ref, _options, capnum);
+                        return new RegexNode(RegexNodeKind.Backreference, _options, capnum);
                     }
                 }
                 else
@@ -1438,12 +1448,12 @@ namespace System.Text.RegularExpressions
                         CheckUnsupportedNonBacktrackingNumericRef(capnum);
                         if (IsCaptureSlot(capnum))
                         {
-                            return new RegexNode(RegexNode.Ref, _options, capnum);
+                            return new RegexNode(RegexNodeKind.Backreference, _options, capnum);
                         }
                     }
                 }
             }
-            else if (angled && RegexCharClass.IsWordChar(ch))
+            else if (angled && RegexCharClass.IsBoundaryWordChar(ch))
             {
                 string capname = ScanCapname();
                 if (CharsRight() > 0 && RightCharMoveRight() == '}')
@@ -1457,7 +1467,7 @@ namespace System.Text.RegularExpressions
 
                     if (IsCaptureName(capname))
                     {
-                        return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
+                        return new RegexNode(RegexNodeKind.Backreference, _options, CaptureSlotFromName(capname));
                     }
                 }
             }
@@ -1469,7 +1479,7 @@ namespace System.Text.RegularExpressions
                 {
                     case '$':
                         MoveRight();
-                        return new RegexNode(RegexNode.One, _options, '$');
+                        return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
 
                     case '&':
                         capnum = 0;
@@ -1495,14 +1505,14 @@ namespace System.Text.RegularExpressions
                 if (capnum != 1)
                 {
                     MoveRight();
-                    return new RegexNode(RegexNode.Ref, _options, capnum);
+                    return new RegexNode(RegexNodeKind.Backreference, _options, capnum);
                 }
             }
 
             // unrecognized $: literalize
 
             Textto(backpos);
-            return new RegexNode(RegexNode.One, _options, '$');
+            return RegexNode.CreateOneWithCaseConversion('$', _options, _culture);
         }
 
         /// <summary>Throws on unsupported capture references for NonBacktracking in replacement patterns.</summary>
@@ -1524,7 +1534,7 @@ namespace System.Text.RegularExpressions
 
             while (CharsRight() > 0)
             {
-                if (!RegexCharClass.IsWordChar(RightCharMoveRight()))
+                if (!RegexCharClass.IsBoundaryWordChar(RightCharMoveRight()))
                 {
                     MoveLeft();
                     break;
@@ -1730,7 +1740,7 @@ namespace System.Text.RegularExpressions
                 case 'c':
                     return ScanControl();
                 default:
-                    if (!UseOptionE() && RegexCharClass.IsWordChar(ch))
+                    if (!UseOptionE() && RegexCharClass.IsBoundaryWordChar(ch))
                     {
                         throw MakeException(RegexParseError.UnrecognizedEscape, SR.Format(SR.UnrecognizedEscape, ch));
                     }
@@ -1756,7 +1766,7 @@ namespace System.Text.RegularExpressions
             while (CharsRight() > 0)
             {
                 ch = RightCharMoveRight();
-                if (!(RegexCharClass.IsWordChar(ch) || ch == '-'))
+                if (!(RegexCharClass.IsBoundaryWordChar(ch) || ch == '-'))
                 {
                     MoveLeft();
                     break;
@@ -1773,41 +1783,30 @@ namespace System.Text.RegularExpressions
             return capname;
         }
 
-        /// <summary>Returns ReNode type for zero-length assertions with a \ code.</summary>
-        private int TypeFromCode(char ch) =>
+        /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>
+        private RegexNodeKind TypeFromCode(char ch) =>
             ch switch
             {
-                'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
-                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.NonBoundary,
-                'A' => RegexNode.Beginning,
-                'G' => RegexNode.Start,
-                'Z' => RegexNode.EndZ,
-                'z' => RegexNode.End,
-                _ => RegexNode.Nothing,
+                'b' => UseOptionE() ? RegexNodeKind.ECMABoundary : RegexNodeKind.Boundary,
+                'B' => UseOptionE() ? RegexNodeKind.NonECMABoundary : RegexNodeKind.NonBoundary,
+                'A' => RegexNodeKind.Beginning,
+                'G' => RegexNodeKind.Start,
+                'Z' => RegexNodeKind.EndZ,
+                'z' => RegexNodeKind.End,
+                _ => RegexNodeKind.Nothing,
             };
 
-        /// <summary>Returns option bit from single-char (?cimsx) code.</summary>
-        private static RegexOptions OptionFromCode(char ch)
-        {
-            // case-insensitive
-            if ((uint)(ch - 'A') <= 'Z' - 'A')
-            {
-                ch += (char)('a' - 'A');
-            }
-
-            return ch switch
+        /// <summary>Returns option bit from single-char (?imnsx) code.</summary>
+        private static RegexOptions OptionFromCode(char ch) =>
+            (char)(ch | 0x20) switch
             {
                 'i' => RegexOptions.IgnoreCase,
                 'm' => RegexOptions.Multiline,
                 'n' => RegexOptions.ExplicitCapture,
                 's' => RegexOptions.Singleline,
                 'x' => RegexOptions.IgnorePatternWhitespace,
-#if DEBUG
-                'd' => RegexOptions.Debug,
-#endif
-                _ => 0,
+                _ => RegexOptions.None,
             };
-        }
 
         /// <summary>
         /// A prescanner for deducing the slots used for captures by doing a partial tokenization of the pattern.
@@ -1872,7 +1871,7 @@ namespace System.Text.RegularExpressions
                                     MoveRight();
                                     ch = RightChar();
 
-                                    if (ch != '0' && RegexCharClass.IsWordChar(ch))
+                                    if (ch != '0' && RegexCharClass.IsBoundaryWordChar(ch))
                                     {
                                         if ((uint)(ch - '1') <= '9' - '1')
                                         {
@@ -2058,6 +2057,17 @@ namespace System.Text.RegularExpressions
             return i >= 0 && i < _capsize;
         }
 
+        /// <summary>
+        /// When generating code on a regex that uses a sparse set
+        /// of capture slots, we hash them to a dense set of indices
+        /// for an array of capture slots. Instead of doing the hash
+        /// at match time, it's done at compile time, here.
+        /// </summary>
+        internal static int MapCaptureNumber(int capnum, Hashtable? caps) =>
+            capnum == -1 ? -1 :
+            caps != null ? (int)caps[capnum]! :
+            capnum;
+
         /// <summary>Looks up the slot number for a given name</summary>
         private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
@@ -2149,58 +2159,34 @@ namespace System.Text.RegularExpressions
         /// <summary>Add a string to the last concatenate.</summary>
         private void AddConcatenate(int pos, int cch, bool isReplacement)
         {
-            if (cch == 0)
+            switch (cch)
             {
-                return;
-            }
+                case 0:
+                    return;
 
-            RegexNode node;
-            if (cch > 1)
-            {
-                string str = UseOptionI() && !isReplacement ?
-#if REGEXGENERATOR
-                    StringExtensions.Create
-#else
-                    string.Create
-#endif
-                        (cch, (_pattern, _culture, pos, cch), static (dest, state) =>
+                case 1:
+                    _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(_pattern[pos], isReplacement ? _options & ~RegexOptions.IgnoreCase : _options, _culture));
+                    break;
+
+                case > 1 when !UseOptionI() || isReplacement || !RegexCharClass.ParticipatesInCaseConversion(_pattern.AsSpan(pos, cch)):
+                    _concatenation!.AddChild(new RegexNode(RegexNodeKind.Multi, _options & ~RegexOptions.IgnoreCase, _pattern.Substring(pos, cch)));
+                    break;
+
+                default:
+                    foreach (char c in _pattern.AsSpan(pos, cch))
                     {
-                        // We do the ToLower character-by character for consistency with the rest of the implementation.
-                        // With surrogate pairs, doing a ToLower on the entire string is more correct linguistically, but
-                        // Regex doesn't support surrogates, and not doing this character-by-character then causes differences
-                        // from matching where characters are lowercased individually.
-                        ReadOnlySpan<char> src = state._pattern.AsSpan(state.pos, state.cch);
-                        TextInfo ti = state._culture.TextInfo;
-                        for (int i = 0; i < dest.Length; i++)
-                        {
-                            dest[i] = ti.ToLower(src[i]);
-                        }
-                    }) :
-                    _pattern.Substring(pos, cch);
-
-                node = new RegexNode(RegexNode.Multi, _options, str);
+                        _concatenation!.AddChild(RegexNode.CreateOneWithCaseConversion(c, _options, _culture));
+                    }
+                    break;
             }
-            else
-            {
-                char ch = _pattern[pos];
-
-                if (UseOptionI() && !isReplacement)
-                {
-                    ch = _culture.TextInfo.ToLower(ch);
-                }
-
-                node = new RegexNode(RegexNode.One, _options, ch);
-            }
-
-            _concatenation!.AddChild(node);
         }
 
         /// <summary>Push the parser state (in response to an open paren)</summary>
         private void PushGroup()
         {
-            _group!.Next = _stack;
-            _alternation!.Next = _group;
-            _concatenation!.Next = _alternation;
+            _group!.Parent = _stack;
+            _alternation!.Parent = _group;
+            _concatenation!.Parent = _alternation;
             _stack = _concatenation;
         }
 
@@ -2208,12 +2194,12 @@ namespace System.Text.RegularExpressions
         private void PopGroup()
         {
             _concatenation = _stack;
-            _alternation = _concatenation!.Next;
-            _group = _alternation!.Next;
-            _stack = _group!.Next;
+            _alternation = _concatenation!.Parent;
+            _group = _alternation!.Parent;
+            _stack = _group!.Parent;
 
             // The first () inside a Testgroup group goes directly to the group
-            if (_group.Type == RegexNode.Testgroup && _group.ChildCount() == 0)
+            if (_group.Kind == RegexNodeKind.ExpressionConditional && _group.ChildCount() == 0)
             {
                 if (_unit == null)
                 {
@@ -2232,8 +2218,8 @@ namespace System.Text.RegularExpressions
         private void StartGroup(RegexNode openGroup)
         {
             _group = openGroup;
-            _alternation = new RegexNode(RegexNode.Alternate, _options);
-            _concatenation = new RegexNode(RegexNode.Concatenate, _options);
+            _alternation = new RegexNode(RegexNodeKind.Alternate, _options);
+            _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
         }
 
         /// <summary>Finish the current concatenation (in response to a |)</summary>
@@ -2241,16 +2227,16 @@ namespace System.Text.RegularExpressions
         {
             // The | parts inside a Testgroup group go directly to the group
 
-            if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
+            if (_group!.Kind is RegexNodeKind.ExpressionConditional or RegexNodeKind.BackreferenceConditional)
             {
-                _group.AddChild(_concatenation!.ReverseLeft());
+                _group.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
             }
             else
             {
-                _alternation!.AddChild(_concatenation!.ReverseLeft());
+                _alternation!.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
             }
 
-            _concatenation = new RegexNode(RegexNode.Concatenate, _options);
+            _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
         }
 
         /// <summary>Finish the current quantifiable (when a quantifier is not found or is not possible)</summary>
@@ -2273,51 +2259,29 @@ namespace System.Text.RegularExpressions
         private RegexNode? Unit() => _unit;
 
         /// <summary>Sets the current unit to a single char node</summary>
-        private void AddUnitOne(char ch)
-        {
-            if (UseOptionI())
-            {
-                ch = _culture.TextInfo.ToLower(ch);
-            }
-
-            _unit = new RegexNode(RegexNode.One, _options, ch);
-        }
-
-        /// <summary>Sets the current unit to a single inverse-char node</summary>
-        private void AddUnitNotone(char ch)
-        {
-            if (UseOptionI())
-            {
-                ch = _culture.TextInfo.ToLower(ch);
-            }
-
-            _unit = new RegexNode(RegexNode.Notone, _options, ch);
-        }
-
-        /// <summary>Sets the current unit to a single set node</summary>
-        private void AddUnitSet(string cc) => _unit = new RegexNode(RegexNode.Set, _options, cc);
+        private void AddUnitOne(char ch) => _unit = RegexNode.CreateOneWithCaseConversion(ch, _options, _culture);
 
         /// <summary>Sets the current unit to a subtree</summary>
         private void AddUnitNode(RegexNode node) => _unit = node;
 
         /// <summary>Sets the current unit to an assertion of the specified type</summary>
-        private void AddUnitType(int type) => _unit = new RegexNode(type, _options);
+        private void AddUnitType(RegexNodeKind type) => _unit = new RegexNode(type, _options);
 
         /// <summary>Finish the current group (in response to a ')' or end)</summary>
         private void AddGroup()
         {
-            if (_group!.Type == RegexNode.Testgroup || _group.Type == RegexNode.Testref)
+            if (_group!.Kind is RegexNodeKind.ExpressionConditional or RegexNodeKind.BackreferenceConditional)
             {
-                _group.AddChild(_concatenation!.ReverseLeft());
+                _group.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
 
-                if (_group.Type == RegexNode.Testref && _group.ChildCount() > 2 || _group.ChildCount() > 3)
+                if (_group.Kind == RegexNodeKind.BackreferenceConditional && _group.ChildCount() > 2 || _group.ChildCount() > 3)
                 {
                     throw MakeException(RegexParseError.AlternationHasTooManyConditions, SR.AlternationHasTooManyConditions);
                 }
             }
             else
             {
-                _alternation!.AddChild(_concatenation!.ReverseLeft());
+                _alternation!.AddChild(_concatenation!.ReverseConcatenationIfRightToLeft());
                 _group.AddChild(_alternation);
             }
 
@@ -2368,5 +2332,27 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Number of characters to the right of the current parsing position.</summary>
         private int CharsRight() => _pattern.Length - _currentPos;
+
+        /// <summary>Gets group name from its number.</summary>
+        internal static string GroupNameFromNumber(Hashtable? caps, string[]? capslist, int capsize, int i)
+        {
+            if (capslist is null)
+            {
+                if ((uint)i < (uint)capsize)
+                {
+                    return ((uint)i).ToString();
+                }
+            }
+            else
+            {
+                if ((caps is null || caps.TryGetValue(i, out i)) &&
+                    (uint)i < (uint)capslist.Length)
+                {
+                    return capslist[i];
+                }
+            }
+
+            return string.Empty;
+        }
     }
 }

@@ -20,6 +20,10 @@
 //      During the merge gtNewTempAssign does not expect the source value of TYP_SIMD16
 //      and the destination value of TYP_STRUCT.
 
+.assembly extern System.Console
+{
+}
+
 .assembly extern System.Runtime
 {
 }
@@ -31,13 +35,7 @@
 .assembly GitHub_26491
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit GitHub_26491 extends [System.Runtime]System.Object
 {
@@ -102,37 +100,68 @@
     IL_0009:  ret
   }
 
-  .method public hidebysig static int32 Main(string[] args) cil managed
+  .method public hidebysig static int32 MultipleReturns() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .entrypoint
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  ldstr      "MultipleReturns"
-    IL_0006:  call       int32 [System.Runtime]System.Array::IndexOf<string>(!!0[], !!0)
-    IL_000b:  ldc.i4.m1
-    IL_000c:  beq.s      IL_001b
-
     IL_000e:  ldc.i4     0x677b
     IL_0013:  call       valuetype GitHub_26491/ReturnType GitHub_26491::MultipleReturns(int32)
     IL_0018:  pop
-    IL_0019:  br.s       IL_0037
+    IL_0037:  ldc.i4.s   100
+    IL_0039:  ret
+  }
 
-    IL_001b:  ldarg.0
-    IL_001c:  ldstr      "SingleReturnSynchronized"
-    IL_0021:  call       int32 [System.Runtime]System.Array::IndexOf<string>(!!0[], !!0)
-    IL_0026:  ldc.i4.m1
-    IL_0027:  beq.s      IL_0031
-
+  .method public hidebysig static int32 SingleReturnSynchronized() cil managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     IL_0029:  call       valuetype GitHub_26491/ReturnType GitHub_26491::SingleReturnSynchronized()
     IL_002e:  pop
-    IL_002f:  br.s       IL_0037
+    IL_0037:  ldc.i4.s   100
+    IL_0039:  ret
+  }
 
+  .method public hidebysig static int32 SingleReturn() cil managed
+  {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     IL_0031:  call       valuetype GitHub_26491/ReturnType GitHub_26491::SingleReturn()
     IL_0036:  pop
     IL_0037:  ldc.i4.s   100
     IL_0039:  ret
+  }
+
+  .method public hidebysig static int32 Main() cil managed
+  {
+    .entrypoint
+    .maxstack  8
+
+    ldstr "MultipleReturns"
+    call void [System.Console]System.Console::WriteLine(string)
+    call int32 GitHub_26491::MultipleReturns()
+    ldc.i4 100
+    bne.un FAIL
+
+    ldstr "SingleReturnSynchronized"
+    call void [System.Console]System.Console::WriteLine(string)
+    call int32 GitHub_26491::SingleReturnSynchronized()
+    ldc.i4 100
+    bne.un FAIL
+
+    ldstr "SingleReturn"
+    call void [System.Console]System.Console::WriteLine(string)
+    call int32 GitHub_26491::SingleReturn()
+    ldc.i4 100
+    bne.un FAIL
+
+    ldc.i4 100
+    ret
+
+  FAIL:
+    ldc.i4 101
+    ret
   }
 }

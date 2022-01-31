@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>annotations</Nullable>
+    <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />

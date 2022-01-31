@@ -5,13 +5,13 @@
 // when we are prevented from inlining something.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly test {}
-.module test.il
 
 .class private auto ansi beforefieldinit Test_test
        extends [mscorlib]System.Object
@@ -70,6 +70,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (class Test_test V_0)
     ldc.i4 10

@@ -12,14 +12,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module nonvirtualcalls_tailcall.exe
+.assembly extern xunit.core {}
 // MVID: {EC3860F1-6469-489C-86D2-A81D88AE196E}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -29,9 +22,10 @@
 // Image base: 0x000000001AB30000
 
 
+.namespace Test_tailcall {
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class public abstract auto ansi beforefieldinit Test_tailcall.Base
+.class public abstract auto ansi beforefieldinit Base
        extends [mscorlib]System.Object
 {
   .method public hidebysig newslot abstract virtual 
@@ -171,7 +165,7 @@
 
 } // end of class Test.Base
 
-.class public auto ansi beforefieldinit Test_tailcall.Child
+.class public auto ansi beforefieldinit Child
        extends Test_tailcall.Base
 {
   .method public hidebysig virtual final 
@@ -354,7 +348,7 @@
 
 } // end of class Test.Child
 
-.class public auto ansi beforefieldinit Test_tailcall.GrandChild
+.class public auto ansi beforefieldinit GrandChild
        extends Test_tailcall.Child
 {
   .method public hidebysig virtual final 
@@ -591,7 +585,7 @@
 
 } // end of class Test.GrandChild
 
-.class public abstract auto ansi sealed beforefieldinit Test_tailcall.Program
+.class public abstract auto ansi sealed beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  CallFromInsideGrandChild() cil managed
@@ -607,7 +601,7 @@
     IL_000e:  ret
   } // end of method Program::CallFromInsideGrandChild
 
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -653,7 +647,7 @@
 
 } // end of class Test.Program
 
-.class public abstract auto ansi sealed beforefieldinit Test_tailcall.Assert
+.class public abstract auto ansi sealed beforefieldinit Assert
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  AreEqual(string left,
@@ -714,9 +708,4 @@
   } // end of method Assert::AreEqual
 
 } // end of class Test.Assert
-
-
-// =============================================================
-
-// *********** DISASSEMBLY COMPLETE ***********************
-// WARNING: Created Win32 resource file nonvirtualcalls_tailcall.res
+}

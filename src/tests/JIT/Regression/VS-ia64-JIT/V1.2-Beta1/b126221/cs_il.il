@@ -7,21 +7,14 @@
 .assembly extern legacy library mscorlib
 {
 }
-.assembly legacy library cs_test_01
+.assembly legacy library 'cs_il'
 {
 
 
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module cs_test_01.exe
+.assembly extern xunit.core {}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200

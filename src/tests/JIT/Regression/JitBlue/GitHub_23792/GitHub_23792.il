@@ -15,14 +15,8 @@
 
 .assembly extern mscorlib{}
 .assembly extern System.Console{}
-.assembly a {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'GitHub_23792' {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit Test_GitHub_23792
        extends [mscorlib]System.Object

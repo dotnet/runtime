@@ -7,14 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x9e05cbcc {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'b86139' {}
+.assembly extern xunit.core {}
 .class ILGEN_0x9e05cbcc {
 .field static	native int field_0x5
 .method static unsigned int8  Method_0xa3eeac4e(unsigned int64 Arg_0x0, unsigned int16 Arg_0x1, int16 Arg_0x2, int8 Arg_0x3, float32 Arg_0x4, unsigned int32 Arg_0x5, float32 Arg_0x6, int32 Arg_0x7) {

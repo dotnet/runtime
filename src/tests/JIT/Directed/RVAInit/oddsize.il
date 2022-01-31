@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly test
+.assembly 'oddsize'
 {
 }
-.module test.exe
 // MVID: {3DA3EDA0-F1A4-42F9-8E0B-F269420E91A5}
 
 .file alignment 512
@@ -34,6 +34,9 @@
   }
   .method private hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals (int32 V_0)

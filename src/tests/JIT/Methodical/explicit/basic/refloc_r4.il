@@ -9,7 +9,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'refloc_f4'// as "refloc_f4"
+.assembly 'refloc_r4'// as "refloc_f4"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -17,14 +17,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'refloc_f4.exe'
+.assembly extern xunit.core {}
 // MVID: {759403EF-2C74-4EEF-AB3C-166B1C468873}
 .namespace Test
 {

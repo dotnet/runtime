@@ -12,17 +12,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly vtret // as "vtret"
+.assembly 'vtret2' // as "vtret"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module vtret.exe
+.assembly extern xunit.core {}
 // MVID: {DAD31C3D-EF49-47EA-945E-72055ACE0D58}
 .namespace MS
 {

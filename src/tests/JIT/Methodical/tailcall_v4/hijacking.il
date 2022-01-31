@@ -33,14 +33,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module hijacking.exe
+.assembly extern xunit.core {}
 // MVID: {7A6D7819-76F7-4311-967C-7CC804775914}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x0000000000400000

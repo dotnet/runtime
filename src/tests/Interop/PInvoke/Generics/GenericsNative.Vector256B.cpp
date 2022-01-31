@@ -55,7 +55,7 @@
 
 static Vector256B Vector256BValue = { };
 
-extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE GetVector256B(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, bool e08, bool e09, bool e10, bool e11, bool e12, bool e13, bool e14, bool e15, bool e16, bool e17, bool e18, bool e19, bool e20, bool e21, bool e22, bool e23, bool e24, bool e25, bool e26, bool e27, bool e28, bool e29, bool e30, bool e31)
+extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE ENABLE_AVX GetVector256B(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, bool e08, bool e09, bool e10, bool e11, bool e12, bool e13, bool e14, bool e15, bool e16, bool e17, bool e18, bool e19, bool e20, bool e21, bool e22, bool e23, bool e24, bool e25, bool e26, bool e27, bool e28, bool e29, bool e30, bool e31)
 {
     union {
         bool value[32];
@@ -98,7 +98,7 @@ extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE GetVector256B(bool e00, bool 
     return result;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256BOut(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, bool e08, bool e09, bool e10, bool e11, bool e12, bool e13, bool e14, bool e15, bool e16, bool e17, bool e18, bool e19, bool e20, bool e21, bool e22, bool e23, bool e24, bool e25, bool e26, bool e27, bool e28, bool e29, bool e30, bool e31, Vector256B* pValue)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ENABLE_AVX GetVector256BOut(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, bool e08, bool e09, bool e10, bool e11, bool e12, bool e13, bool e14, bool e15, bool e16, bool e17, bool e18, bool e19, bool e20, bool e21, bool e22, bool e23, bool e24, bool e25, bool e26, bool e27, bool e28, bool e29, bool e30, bool e31, Vector256B* pValue)
 {
     Vector256B value = GetVector256B(e00, e01, e02, e03, e04, e05, e06, e07, e08, e09, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
 
@@ -110,18 +110,18 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector256BOut(bool e00, bool e01
 #endif
 }
 
-extern "C" DLL_EXPORT const Vector256B* STDMETHODCALLTYPE GetVector256BPtr(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, bool e08, bool e09, bool e10, bool e11, bool e12, bool e13, bool e14, bool e15, bool e16, bool e17, bool e18, bool e19, bool e20, bool e21, bool e22, bool e23, bool e24, bool e25, bool e26, bool e27, bool e28, bool e29, bool e30, bool e31)
+extern "C" DLL_EXPORT const Vector256B* STDMETHODCALLTYPE ENABLE_AVX GetVector256BPtr(bool e00, bool e01, bool e02, bool e03, bool e04, bool e05, bool e06, bool e07, bool e08, bool e09, bool e10, bool e11, bool e12, bool e13, bool e14, bool e15, bool e16, bool e17, bool e18, bool e19, bool e20, bool e21, bool e22, bool e23, bool e24, bool e25, bool e26, bool e27, bool e28, bool e29, bool e30, bool e31)
 {
     GetVector256BOut(e00, e01, e02, e03, e04, e05, e06, e07, e08, e09, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31, &Vector256BValue);
     return &Vector256BValue;
 }
 
-extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE AddVector256B(Vector256B lhs, Vector256B rhs)
+extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE ENABLE_AVX AddVector256B(Vector256B lhs, Vector256B rhs)
 {
     throw "P/Invoke for Vector256<bool> should be unsupported.";
 }
 
-extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE AddVector256Bs(const Vector256B* pValues, uint32_t count)
+extern "C" DLL_EXPORT Vector256B STDMETHODCALLTYPE ENABLE_AVX AddVector256Bs(const Vector256B* pValues, uint32_t count)
 {
     throw "P/Invoke for Vector256<bool> should be unsupported.";
 }

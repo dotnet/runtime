@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module a.exe
+.assembly 'GitHub_9651' {}
+.assembly extern xunit.core {}
 
 // Test case triggers reimportation of a leave,
 // leading to an unreachable callfinally pair.

@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module a.exe
+.assembly 'DevDiv_491206' {}
+.assembly extern xunit.core {}
 
 // This test originally triggered an assert Extra_flags_on_tree, because fgMorphCast did not reset an asignment flag, when
-// its children was optimized in the assertion propogation. 
+// its children was optimized in the assertion propagation.
 
 .class ILGEN_CLASS
 {
@@ -63,7 +56,7 @@
       IL_006a:  conv.i8
       IL_006b:  ret
     } // end of method DoubleToInt64
-    
+
     .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

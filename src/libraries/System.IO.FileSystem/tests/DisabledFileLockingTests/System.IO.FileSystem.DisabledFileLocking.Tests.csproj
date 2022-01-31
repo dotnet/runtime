@@ -20,6 +20,7 @@
     <Compile Include="..\PortedCommon\IOInputs.cs" />
     <Compile Include="..\PortedCommon\IOServices.cs" />
     <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
+    <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs" Link="Common\TestUtilities\System\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Remove="..\**\*.Windows.cs" />

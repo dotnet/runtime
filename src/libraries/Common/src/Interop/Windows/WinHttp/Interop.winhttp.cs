@@ -187,12 +187,15 @@ internal static partial class Interop
         public static partial bool WinHttpGetIEProxyConfigForCurrentUser(
             out WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxyConfig);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpGetProxyForUrl(
-            SafeWinHttpHandle? sessionHandle, string url,
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable structs.
+        [return: MarshalAs(UnmanagedType.Bool)]public static extern bool WinHttpGetProxyForUrl(
+            SafeWinHttpHandle? sessionHandle,
+            string url,
             ref WINHTTP_AUTOPROXY_OPTIONS autoProxyOptions,
             out WINHTTP_PROXY_INFO proxyInfo);
+#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
 
         [GeneratedDllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         public static partial IntPtr WinHttpSetStatusCallback(

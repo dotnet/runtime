@@ -16,6 +16,7 @@
 #include <set>
 #include <functional>
 #include <memory>
+#include <minipal/utils.h>
 
 // Class used to perform specific actions.
 class platform_specific_actions;
@@ -87,15 +88,32 @@ namespace pal
         assert(wrote < needed);
         return { buffer.get() };
     }
+    inline string_utf8_t getenvA(const char* var)
+    {
+        DWORD needed = ::GetEnvironmentVariableA(var, nullptr, 0);
+        if (needed == 0)
+            return {};
+
+        malloc_ptr<char> buffer{ (char*)::malloc(needed * sizeof(char)) };
+        assert(buffer != nullptr);
+        DWORD wrote = ::GetEnvironmentVariableA(var, buffer.get(), needed);
+        assert(wrote < needed);
+        return { buffer.get() };
+    }
     inline void setenv(const char_t* var, string_t value)
     {
         BOOL success = ::SetEnvironmentVariableW(var, value.c_str());
         assert(success);
     }
+    inline void setenvA(const char* var, string_utf8_t value)
+    {
+        BOOL success = ::SetEnvironmentVariableA(var, value.c_str());
+        assert(success);
+    }
     inline string_t get_exe_path()
     {
         char_t file_name[1024];
-        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAYSIZE(file_name));
+        DWORD count = ::GetModuleFileNameW(nullptr, file_name, ARRAY_SIZE(file_name));
         assert(::GetLastError() != ERROR_INSUFFICIENT_BUFFER);
 
         return { file_name };
@@ -176,29 +194,15 @@ namespace pal
 
     inline string_utf8_t convert_to_utf8(const char_t* str)
     {
-        // Compute the needed buffer
-        int bytes_req = ::WideCharToMultiByte(
-            CP_UTF8, 0, // Conversion args
-            str, -1,    // Input string
-            nullptr, 0, // Null to request side
-            nullptr, nullptr);
+        int bytes_req = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
 
         malloc_ptr<char> buffer{ (char*)::malloc(bytes_req) };
         assert(buffer != nullptr);
 
-        int written = ::WideCharToMultiByte(
-            CP_UTF8, 0, // Conversion args
-            str, -1,    // Input string
-            buffer.get(), bytes_req,  // Output buffer
-            nullptr, nullptr);
+        int written = ::WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer.get(), bytes_req, nullptr, nullptr);
         assert(bytes_req == written);
 
         return { buffer.get() };
-    }
-
-    inline string_utf8_t convert_to_utf8(string_t&& str)
-    {
-        return convert_to_utf8(str.c_str());
     }
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)
@@ -310,7 +314,7 @@ public:
 
 // CMake generated
 #include <config.h>
-#include <common/getexepath.h>
+#include <minipal/getexepath.h>
 
 #define MAIN main
 #define W(str) str
@@ -359,10 +363,18 @@ namespace pal
             return {};
         return { val };
     }
+    inline string_utf8_t getenvA(const char* var)
+    {
+        return getenv(var);
+    }
     inline void setenv(const char_t* var, string_t value)
     {
         int error = ::setenv(var, value.c_str(), /* overwrite */ 1);
         assert(error == 0);
+    }
+    inline void setenvA(const char* var, string_utf8_t value)
+    {
+        setenv(var, value.c_str());
     }
 
     inline string_t get_exe_path() { return minipal_getexepath(); }
@@ -472,6 +484,12 @@ namespace pal
             return false;
         }
 
+        // Ignore directories
+        if (S_ISDIR(sb.st_mode))
+        {
+            return false;
+        }
+
         // Verify that the path points to a file
         if (!S_ISREG(sb.st_mode))
         {
@@ -558,11 +576,6 @@ namespace pal
     inline string_utf8_t convert_to_utf8(const char_t* str)
     {
         return { str };
-    }
-
-    inline string_utf8_t convert_to_utf8(string_t&& str)
-    {
-        return std::move(str);
     }
 
     inline bool try_load_hostpolicy(pal::string_t mock_hostpolicy_value)

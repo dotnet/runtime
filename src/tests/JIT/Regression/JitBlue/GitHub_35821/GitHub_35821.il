@@ -11,15 +11,8 @@
   .publickeytoken = (CC 7B 13 FF CD 2D DD 51 )                         // .{...-.Q
   .ver 5:0:0:0
 }
-.assembly projs { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module projs.dll
+.assembly 'GitHub_35821' { }
+.assembly extern xunit.core {}
 // MVID: {379016DB-73C2-41D4-9E5F-5B727BC70E2C}
 .custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000

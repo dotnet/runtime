@@ -12,14 +12,7 @@
 .assembly han3_ctor // as "han3_ctor"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module han3_ctor.exe
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class value private auto ansi sealed Ring

@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly Generated0 {}
-.module Generated0.exe
+.assembly 'dev10_788724' {}
 
 .class public sequential sealed MyStruct0 extends [mscorlib]System.ValueType
 {
@@ -188,6 +188,9 @@
 	}
 	.method public hidebysig static int32  Main() cil managed
 	{
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  10
 		

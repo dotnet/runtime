@@ -5,14 +5,8 @@
 // the IL_0090 shift operand.
 
 .assembly extern System.Runtime { auto }
-.assembly DevDiv_524309 {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'DevDiv_545497' {}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit DevDiv_545497
        extends [System.Runtime]System.Object

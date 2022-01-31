@@ -2,25 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.module extern user32.dll
 .module extern kernel32
 .assembly extern System.Console { auto }
 .assembly extern System.Threading.Thread { auto }
 .assembly extern mscorlib { auto }
 
-.assembly cs1
+.assembly 'b426654'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .module cs1.exe
 .imagebase 0x00400000
 .file alignment 0x00000200

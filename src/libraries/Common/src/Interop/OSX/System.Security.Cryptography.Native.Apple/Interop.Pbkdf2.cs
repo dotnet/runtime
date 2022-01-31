@@ -48,8 +48,8 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern unsafe int AppleCryptoNative_Pbkdf2(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static unsafe partial int AppleCryptoNative_Pbkdf2(
             PAL_HashAlgorithm prfAlgorithm,
             byte* password,
             int passwordLen,

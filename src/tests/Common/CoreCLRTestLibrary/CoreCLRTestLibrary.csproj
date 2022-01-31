@@ -15,6 +15,11 @@
     <Compile Include="Utilities.cs" />
     <Compile Include="HostPolicyMock.cs" />
     <Compile Include="XPlatformUtils.cs" />
+    <Compile Include="CoreClrConfigurationDetection.cs" />
+    <Compile Include="OutOfProcessTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs" Link="CoreclrTestWrapperLib.cs" />
   </ItemGroup>
 
   <ItemGroup>

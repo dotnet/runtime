@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // DESCRIPTION:
 // 
 // This tests that a non-generic struct that implements a generic abstract interface cannot 
@@ -12,7 +13,7 @@
 
 .assembly extern mscorlib {}
 
-.assembly abstract01 {}
+.assembly 'abstract09' {}
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -147,6 +148,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       53 (0x35)
     .maxstack  1

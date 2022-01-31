@@ -11,23 +11,8 @@ public class Vector2_3_4Test
     private const int StartingIntValue = 42;
     private const int NewIntValue = 18;
 
-    public static int Main()
-    {
-        try
-        {
-            RunVector2Tests();
-            RunVector3Tests();
-            RunVector4Tests();
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine(ex);
-            return 101;
-        }
-        return 100;
-    }
-
-    private static void RunVector2Tests()
+    [Fact]
+    public static void RunVector2Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector2Tests)}... ");
         float X = StartingIntValue;
@@ -69,7 +54,8 @@ public class Vector2_3_4Test
         }));
     }
 
-    private static void RunVector3Tests()
+    [Fact]
+    public static void RunVector3Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector3Tests)}... ");
         float X = StartingIntValue;
@@ -111,7 +97,8 @@ public class Vector2_3_4Test
         }));
     }
 
-    private static void RunVector4Tests()
+    [Fact]
+    public static void RunVector4Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector4Tests)}... ");
         float X = StartingIntValue;

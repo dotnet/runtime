@@ -46,6 +46,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestThreadCount()
         {
             int numOfThreads = 10;
@@ -161,6 +162,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestStartAddressProperty()
         {
             using (Process p = Process.GetCurrentProcess())

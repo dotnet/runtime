@@ -8,13 +8,7 @@
 }
 .assembly extern mscorlib{}
 .assembly b410474{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 .class public A{.method static void V1() {.maxstack  50
 ldsfld int8 [b410474]A::a0100
 ldc.i4 0

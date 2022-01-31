@@ -15,17 +15,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'test'
+.assembly 'huge_objref'
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'test.exe'
+.assembly extern xunit.core {}
 .namespace JitTest
 {
   .class private auto ansi sealed TestClass extends [mscorlib]System.Object

@@ -13,16 +13,10 @@
   .ver 2:0:0:0
 }
 
-.assembly nan
+.assembly 'b175679'
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
 .class private abstract auto ansi sealed beforefieldinit NaN
        extends [mscorlib]System.Object

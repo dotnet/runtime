@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-.module 'sin_il_cs.exe'
 
 .assembly extern System.Console
 {
@@ -8,14 +7,8 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib { auto }
-.assembly 'sin_il_cs' {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'sin_cs' {}
+.assembly extern xunit.core {}
 .assembly extern sinlib_cs
 {
 }

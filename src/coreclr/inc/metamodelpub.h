@@ -17,11 +17,6 @@
 #include <cor.h>
 #include "contract.h"
 
-
-#ifndef lengthof
-# define lengthof(x) (sizeof(x)/sizeof((x)[0]))
-#endif
-
 template<class T> inline T Align4(T p)
 {
     LIMITED_METHOD_CONTRACT;

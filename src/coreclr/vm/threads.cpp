@@ -1124,8 +1124,12 @@ extern "C" void *JIT_WriteBarrier_Loc;
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
+
+extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
+
+extern "C" void *JIT_WriteBarrier_Table_Loc;
+void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
 
 #ifdef TARGET_ARM
@@ -1927,7 +1931,7 @@ BOOL Thread::HasStarted()
     {
         BEGIN_PROFILER_CALLBACK(CORProfilerTrackThreads());
         BOOL gcOnTransition = GC_ON_TRANSITIONS(FALSE);     // disable GCStress 2 to avoid the profiler receiving a RuntimeThreadSuspended notification even before the ThreadCreated notification
-        
+
         {
             GCX_PREEMP();
             (&g_profControlBlock)->ThreadCreated((ThreadID) this);
@@ -8278,7 +8282,7 @@ void dbgOnly_IdentifySpecialEEThread()
 
     LONG  ourCount = FastInterlockIncrement(&cnt_SpecialEEThreads);
 
-    _ASSERTE(ourCount < (LONG) NumItems(SpecialEEThreads));
+    _ASSERTE(ourCount < (LONG) ARRAY_SIZE(SpecialEEThreads));
     SpecialEEThreads[ourCount-1] = ::GetCurrentThreadId();
 }
 
@@ -8526,8 +8530,8 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacEnumCodeForStackwalk(callEnd);
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
-        // DebuggerModule's m_pRuntimeDomainFile.  This is the only case that doesn't use the current
-        // vmDomainFile in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
+        // DebuggerModule's m_pRuntimeDomainAssembly.  This is the only case that doesn't use the current
+        // vmDomainAssembly in code:DacDbiInterfaceImpl::EnumerateInternalFrames.  The following
         // code mimics that function.
         // Allow failure, since we want to continue attempting to walk the stack regardless of the outcome.
         EX_TRY

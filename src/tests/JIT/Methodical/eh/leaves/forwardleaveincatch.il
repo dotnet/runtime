@@ -12,20 +12,13 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common{}
-.assembly branchbackwardswithfinally
+.assembly extern eh_common{}
+.assembly 'forwardleaveincatch'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module branchbackwardswithfinally.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -81,7 +74,7 @@
     } 
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -90,7 +83,7 @@
       .maxstack  2
       .locals init (int32 V_0,
 					class [mscorlib]System.IO.StringWriter expectedOut,
-					class [common]TestUtil.TestLog testLog
+					class [eh_common]TestUtil.TestLog testLog
 					)
 	newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
     stloc.s    expectedOut
@@ -113,11 +106,11 @@
     ldstr      "after try"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       ldc.i4.0
       stloc.0
 
@@ -160,9 +153,9 @@
 		ldstr      "after try"
 		call       void [System.Console]System.Console::WriteLine(string)
 		ldloc.s    testLog
-		callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
 		ldloc.s    testLog
-		callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 		ret
     } 
 

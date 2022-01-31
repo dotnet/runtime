@@ -8,12 +8,13 @@
 
 // Metadata version: v1.1.2211
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'try-finally03'
+.assembly 'try-fault03'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -23,7 +24,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module 'try-finally03.exe'
 // MVID: {64D27B72-3BAB-4B06-AC5B-6ECC5A9F3FB9}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -335,6 +335,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       588 (0x24c)
     .maxstack  2

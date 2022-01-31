@@ -8,16 +8,10 @@
 }
 .assembly extern mscorlib { }
 .assembly compat_r8_r4_inl { }
-.assembly extern xunit.core
+.assembly extern xunit.core {}
+.namespace JitTest_compat_r8_r4_inl
 {
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.namespace JitTest
-{
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static 
@@ -33,11 +27,11 @@
     {
       .maxstack  8
       IL_0000:  tail.
-      IL_0002:  call       float64 JitTest.Test::Method1()
+      IL_0002:  call       float64 JitTest_compat_r8_r4_inl.Test::Method1()
       IL_0007:  ret
     } 
 
-    .method private hidebysig static 
+    .method public hidebysig static 
             int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -46,7 +40,7 @@
       .entrypoint
       .maxstack  8
       .locals (int32 V_0)
-      IL_0000:  call       float32 JitTest.Test::Method2()
+      IL_0000:  call       float32 JitTest_compat_r8_r4_inl.Test::Method2()
       IL_0005:  dup
       IL_0006:  ldc.r4     10.
       IL_000b:  beq.s      IL_0016

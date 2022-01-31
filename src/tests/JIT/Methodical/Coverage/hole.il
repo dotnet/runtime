@@ -13,14 +13,7 @@
   .ver 4:0:0:0
 }
 .assembly hole {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module hole.exe
+.assembly extern xunit.core {}
 // MVID: {972ABF67-C385-44E6-B525-571BCCECC13C}
 .imagebase 0x00400000
 .file alignment 0x00000200

@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly legacy library inlbug {}
+.assembly legacy library 'inl001' {}
 
 .class private auto ansi beforefieldinit Test_inl001
        extends [mscorlib]System.Object
@@ -32,6 +33,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       45 (0x2d)
     .maxstack  2

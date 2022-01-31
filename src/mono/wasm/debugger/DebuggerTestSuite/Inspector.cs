@@ -42,7 +42,11 @@ namespace DebuggerTests
             Token = _cancellationTokenSource.Token;
 
             _loggerFactory = LoggerFactory.Create(builder =>
-                    builder.AddSimpleConsole(options => options.SingleLine = true)
+                    builder.AddSimpleConsole(options =>
+                            {
+                                options.SingleLine = true;
+                                options.TimestampFormat = "[HH:mm:ss] ";
+                            })
                            .AddFilter(null, LogLevel.Trace));
 
             Client = new InspectorClient(_loggerFactory.CreateLogger<InspectorClient>());
@@ -175,6 +179,7 @@ namespace DebuggerTests
             }
             else if (fail)
             {
+                args["__forMethod"] = method;
                 FailAllWaiters(new ArgumentException(args.ToString()));
             }
         }
@@ -198,7 +203,7 @@ namespace DebuggerTests
                             break;
 
                         case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
-                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds}"));
+                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
                             break;
 
                         default:
@@ -216,12 +221,12 @@ namespace DebuggerTests
                 while (!_cancellationTokenSource.IsCancellationRequested && init_cmds.Count > 0)
                 {
                     var cmd_tasks = init_cmds.Select(ct => ct.Item2);
-                    Task<Result> t = await Task.WhenAny(cmd_tasks);
+                    Task<Result> completedTask = await Task.WhenAny(cmd_tasks);
 
-                    int cmdIdx = init_cmds.FindIndex(ct => ct.Item2 == t);
+                    int cmdIdx = init_cmds.FindIndex(ct => ct.Item2 == completedTask);
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
-                    if (t.IsCanceled)
+                    if (completedTask.IsCanceled)
                     {
                         throw new TaskCanceledException(
                                     $"Command {cmd_name} timed out during init for the test." +
@@ -229,13 +234,13 @@ namespace DebuggerTests
                                     $"Total time: {(DateTime.Now - start).TotalSeconds}");
                     }
 
-                    if (t.IsFaulted)
+                    if (completedTask.IsFaulted)
                     {
-                        _logger.LogError($"Command {cmd_name} failed with {t.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
-                        throw t.Exception!;
+                        _logger.LogError($"Command {cmd_name} failed with {completedTask.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
+                        throw completedTask.Exception!;
                     }
 
-                    Result res = t.Result;
+                    Result res = completedTask.Result;
                     if (res.IsErr)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 

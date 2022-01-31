@@ -15,8 +15,8 @@ internal static partial class Interop
             internal const int ALL_EVENTS = 0x1fb;
         }
 
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]
-        internal static extern bool SetCommMask(
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial bool SetCommMask(
             SafeFileHandle hFile,
             int dwEvtMask
         );

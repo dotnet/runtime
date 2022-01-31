@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'switch'
+.assembly 'bug2'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -19,14 +19,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module switch.exe
+.assembly extern xunit.core {}
 // MVID: {663074E2-0B73-434A-85B1-7077AA61100B}
 .imagebase 0x00400000
 .subsystem 0x00000003

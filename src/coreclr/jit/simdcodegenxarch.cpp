@@ -222,25 +222,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             result = INS_movaps;
             break;
 
-        case SIMDIntrinsicConvertToSingle:
-            result = INS_cvtdq2ps;
-            break;
-
-        case SIMDIntrinsicConvertToDouble:
-            assert(baseType == TYP_LONG);
-            result = INS_cvtsi2sd;
-            break;
-
-        case SIMDIntrinsicConvertToInt32:
-            assert(baseType == TYP_FLOAT);
-            result = INS_cvttps2dq;
-            break;
-
-        case SIMDIntrinsicConvertToInt64:
-            assert(baseType == TYP_DOUBLE);
-            result = INS_cvttsd2si;
-            break;
-
         case SIMDIntrinsicShiftLeftInternal:
             switch (baseType)
             {
@@ -387,9 +368,9 @@ void CodeGen::genSIMDZero(var_types targetType, var_types baseType, regNumber ta
 //
 void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInit);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInit);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
@@ -501,7 +482,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
             srcReg = targetReg;
         }
 
-        ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+        ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
         GetEmitter()->emitIns_R_R(ins, emitActualTypeSize(targetType), targetReg, srcReg);
     }
     else
@@ -569,7 +550,7 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitN);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicInitN);
 
     // Right now this intrinsic is supported only on TYP_FLOAT vectors
     var_types baseType = simdNode->GetSimdBaseType();
@@ -598,19 +579,17 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
     // We will first consume the list items in execution (left to right) order,
     // and record the registers.
     regNumber operandRegs[SIMD_INTRINSIC_MAX_PARAM_COUNT];
-    unsigned  initCount = 0;
-    for (GenTree* list = simdNode->gtGetOp1(); list != nullptr; list = list->gtGetOp2())
+    size_t    initCount = simdNode->GetOperandCount();
+    for (size_t i = 1; i <= initCount; i++)
     {
-        assert(list->OperGet() == GT_LIST);
-        GenTree* listItem = list->gtGetOp1();
-        assert(listItem->TypeGet() == baseType);
-        assert(!listItem->isContained());
-        regNumber operandReg   = genConsumeReg(listItem);
-        operandRegs[initCount] = operandReg;
-        initCount++;
+        GenTree* operand = simdNode->Op(i);
+        assert(operand->TypeIs(baseType));
+        assert(!operand->isContained());
+
+        operandRegs[i - 1] = genConsumeReg(operand);
     }
 
-    unsigned int offset = 0;
+    unsigned offset = 0;
     for (unsigned i = 0; i < initCount; i++)
     {
         // We will now construct the vector from the list items in reverse order.
@@ -649,439 +628,23 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCast);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicCast);
 
-    GenTree*  op1       = simdNode->gtGetOp1();
+    GenTree*  op1       = simdNode->Op(1);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
     regNumber   op1Reg = genConsumeReg(op1);
-    instruction ins    = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-    if (simdNode->gtSIMDIntrinsicID != SIMDIntrinsicCast)
+    instruction ins    = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
+    if (simdNode->GetSIMDIntrinsicId() != SIMDIntrinsicCast)
     {
         inst_RV_RV(ins, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
     }
     else
     {
         inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
-    }
-    genProduceReg(simdNode);
-}
-
-//----------------------------------------------------------------------------------
-// genSIMDIntrinsic32BitConvert: Generate code for 32-bit SIMD Convert (int/uint <-> float)
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode)
-{
-    SIMDIntrinsicID intrinsicID = simdNode->gtSIMDIntrinsicID;
-    assert((intrinsicID == SIMDIntrinsicConvertToSingle) || (intrinsicID == SIMDIntrinsicConvertToInt32));
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types targetType = simdNode->TypeGet();
-
-    regNumber   op1Reg = genConsumeReg(op1);
-    instruction ins    = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-    if (intrinsicID == SIMDIntrinsicConvertToSingle && baseType == TYP_UINT)
-    {
-        regNumber tmpIntReg = simdNode->GetSingleTempReg(RBM_ALLINT);
-        regNumber tmpReg    = simdNode->ExtractTempReg(RBM_ALLFLOAT);
-        regNumber tmpReg2   = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-        assert(tmpReg != op1Reg && tmpReg2 != op1Reg);
-
-        // We will generate the following:
-        //   vmovdqu  tmpReg2, op1Reg           (copy the src and put it into tmpReg2)
-        //   vmovdqu  targetReg, op1Reg         (copy the src and put it into targetReg)
-        //   vpsrld   targetReg, 16             (get upper 16 bits of src and put it into targetReg)
-        //   vpslld   tmpReg2, 16
-        //   vpsrld   tmpReg2, 16               (get lower 16 bits of src and put it into tmpReg2)
-        //   mov      tmpIntReg, 0x5300000053000000
-        //   vmovd    tmpReg, tmpIntReg
-        //   vpbroadcastd tmpReg, tmpReg        (build mask for converting upper 16 bits of src)
-        //   vorps    targetReg, tmpReg
-        //   vsubps   targetReg, tmpReg         (convert upper 16 bits of src and put it into targetReg)
-        //   vcvtdq2ps tmpReg2, tmpReg2         (convert lower 16 bits of src and put it into tmpReg2)
-        //   vaddps   targetReg, tmpReg2        (add upper 16 bits and lower 16 bits)
-        inst_Mov(targetType, tmpReg2, op1Reg, /* canSkip */ false);
-        inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
-
-        // prepare upper 16 bits
-        GetEmitter()->emitIns_R_I(INS_psrld, emitActualTypeSize(targetType), targetReg, 16);
-
-        // prepare lower 16 bits
-        GetEmitter()->emitIns_R_I(INS_pslld, emitActualTypeSize(targetType), tmpReg2, 16);
-        GetEmitter()->emitIns_R_I(INS_psrld, emitActualTypeSize(targetType), tmpReg2, 16);
-
-// prepare mask
-#ifdef TARGET_AMD64
-        GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X5300000053000000);
-        inst_Mov(targetType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_ULONG));
-#else
-        if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
-        {
-            GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X53000000);
-            inst_Mov(targetType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_UINT));
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X00005300);
-            inst_RV_RV(INS_pxor, tmpReg, tmpReg, targetType, emitActualTypeSize(targetType));
-            GetEmitter()->emitIns_R_R_I(INS_pinsrw, emitTypeSize(TYP_INT), tmpReg, tmpIntReg, 1);
-            GetEmitter()->emitIns_R_R_I(INS_pinsrw, emitTypeSize(TYP_INT), tmpReg, tmpIntReg, 3);
-        }
-#endif
-        if (compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported)
-        {
-            inst_RV_RV(INS_vpbroadcastd, tmpReg, tmpReg, targetType, emitActualTypeSize(targetType));
-        }
-        else
-        {
-            inst_RV_RV(INS_movlhps, tmpReg, tmpReg, targetType, emitActualTypeSize(targetType));
-        }
-
-        // convert upper 16 bits
-        inst_RV_RV(INS_orps, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
-        inst_RV_RV(INS_subps, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
-
-        // convert lower 16 bits
-        inst_RV_RV(ins, tmpReg2, tmpReg2, targetType, emitActualTypeSize(targetType));
-
-        // add lower 16 bits and upper 16 bits
-        inst_RV_RV(INS_addps, targetReg, tmpReg2, targetType, emitActualTypeSize(targetType));
-    }
-    else
-    {
-        inst_RV_RV(ins, targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
-    }
-    genProduceReg(simdNode);
-}
-
-//----------------------------------------------------------------------------------
-// genSIMDLo64BitConvert: Generate code to convert lower-most 64-bit item (long <--> double)
-//
-// Arguments:
-//    intrinsicID      the SIMD intrinsic ID
-//    simdType         the SIMD node type
-//    baseType         the base type of value to be converted
-//    tmpReg           the tmp reg
-//    tmpIntReg        the tmp integer reg
-//    targetReg        the target reg
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
-                                    var_types       simdType,
-                                    var_types       baseType,
-                                    regNumber       tmpReg,
-                                    regNumber       tmpIntReg,
-                                    regNumber       targetReg)
-{
-    instruction ins = getOpForSIMDIntrinsic(intrinsicID, baseType);
-    if (intrinsicID == SIMDIntrinsicConvertToDouble)
-    {
-        inst_Mov(TYP_LONG, tmpIntReg, tmpReg, /* canSkip */ false);
-        inst_RV_RV(ins, targetReg, tmpIntReg, baseType, emitActualTypeSize(baseType));
-    }
-    else
-    {
-        inst_RV_RV(ins, tmpIntReg, tmpReg, baseType, emitActualTypeSize(baseType));
-        inst_Mov(simdType, targetReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_LONG));
-    }
-}
-
-//----------------------------------------------------------------------------------
-// genSIMDIntrinsic64BitConvert: Generate code for 64-bit SIMD Convert (long/ulong <-> double)
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Notes:
-//    There are no instructions for converting to/from 64-bit integers, so for these we
-//    do the conversion an element at a time.
-//
-void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
-{
-    SIMDIntrinsicID intrinsicID = simdNode->gtSIMDIntrinsicID;
-    assert((intrinsicID == SIMDIntrinsicConvertToDouble) || (intrinsicID == SIMDIntrinsicConvertToInt64));
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types simdType  = simdNode->TypeGet();
-    regNumber op1Reg    = genConsumeReg(op1);
-    regNumber tmpIntReg = simdNode->GetSingleTempReg(RBM_ALLINT);
-    regNumber tmpReg;
-    regNumber tmpReg2;
-    regNumber tmpReg3;
-    SIMDLevel level = compiler->getSIMDSupportLevel();
-
-#ifdef TARGET_X86
-    if (baseType == TYP_LONG)
-    {
-        tmpReg  = simdNode->ExtractTempReg(RBM_ALLFLOAT);
-        tmpReg2 = simdNode->ExtractTempReg(RBM_ALLFLOAT);
-        tmpReg3 = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-        assert(tmpReg != op1Reg && tmpReg2 != op1Reg && tmpReg3 != op1Reg);
-    }
-    else
-#endif
-        if (level == SIMD_AVX2_Supported || (baseType == TYP_ULONG))
-    {
-        tmpReg  = simdNode->ExtractTempReg(RBM_ALLFLOAT);
-        tmpReg2 = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-        tmpReg3 = REG_NA;
-        assert(tmpReg != op1Reg && tmpReg2 != op1Reg);
-    }
-    else
-    {
-        tmpReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-        assert(tmpReg != op1Reg);
-        tmpReg2 = REG_NA;
-        tmpReg3 = REG_NA;
-    }
-
-    if ((intrinsicID == SIMDIntrinsicConvertToDouble) && (baseType == TYP_ULONG))
-    {
-        // We will generate the following
-        //   vmovdqu  tmpReg2, op1Reg               (copy the src and put it into tmpReg2)
-        //   vmovdqu  targetReg, op1Reg             (copy the src and put it into targetReg)
-        //   vpsrlq   targetReg, 32                 (get upper 32 bits of src and put it into targetReg)
-        //   vpsllq   tmpReg2, 32
-        //   vpsrlq   tmpReg2, 32                   (get lower 32 bits of src and put it into tmpReg2)
-        //   mov      tmpIntReg, 0x4530000000000000
-        //   vmovd    tmpReg, tmpIntReg
-        //   vpbroadcastq tmpReg, tmpReg            (build mask for upper 32 bits of src)
-        //   vorpd    targetReg, tmpReg
-        //   vsubpd   targetReg, tmpReg             (convert upper 32 bits of src and put it into targetReg)
-        //   mov      tmpIntReg, 0x4330000000000000
-        //   vmovd    tmpReg, tmpIntReg
-        //   vpbroadcastq tmpReg, tmpReg            (build mask for lower 32 bits of src)
-        //   vorpd    tmpReg2, tmpReg
-        //   vsubpd   tmpReg2, tmpReg               (convert lower 32 bits of src and put it into tmpReg2)
-        //   vaddpd   targetReg, tmpReg2            (add upper 32 bits and lower 32 bits together)
-        inst_Mov(simdType, tmpReg2, op1Reg, /* canSkip */ false);
-        inst_Mov(simdType, targetReg, op1Reg, /* canSkip */ true);
-
-        // prepare upper 32 bits
-        GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), targetReg, 32);
-
-        // prepare lower 32 bits
-        GetEmitter()->emitIns_R_I(INS_psllq, emitActualTypeSize(simdType), tmpReg2, 32);
-        GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), tmpReg2, 32);
-
-// prepare mask for converting upper 32 bits
-#ifdef TARGET_AMD64
-        GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4530000000000000);
-        inst_Mov(simdType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_ULONG));
-#else
-        GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X45300000);
-        inst_Mov(simdType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_UINT));
-        GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
-#endif
-        if (level == SIMD_AVX2_Supported)
-        {
-            inst_RV_RV(INS_vpbroadcastq, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-        else
-        {
-            inst_RV_RV(INS_movlhps, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-
-        // convert upper 32 bits
-        inst_RV_RV(INS_orpd, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        inst_RV_RV(INS_subpd, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
-
-// prepare mask for converting lower 32 bits
-#ifdef TARGET_AMD64
-        GetEmitter()->emitIns_R_I(INS_mov, EA_8BYTE, tmpIntReg, (ssize_t)0X4330000000000000);
-        inst_Mov(simdType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_ULONG));
-#else
-        GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X43300000);
-        inst_Mov(simdType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_UINT));
-        GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
-#endif
-        if (level == SIMD_AVX2_Supported)
-        {
-            inst_RV_RV(INS_vpbroadcastq, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-        else
-        {
-            inst_RV_RV(INS_movlhps, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-
-        // convert lower 32 bits
-        inst_RV_RV(INS_orpd, tmpReg2, tmpReg, simdType, emitActualTypeSize(simdType));
-        inst_RV_RV(INS_subpd, tmpReg2, tmpReg, simdType, emitActualTypeSize(simdType));
-
-        // add lower 32 bits and upper 32 bits
-        inst_RV_RV(INS_addpd, targetReg, tmpReg2, simdType, emitActualTypeSize(simdType));
-    }
-    else if ((intrinsicID == SIMDIntrinsicConvertToDouble) && (baseType == TYP_LONG))
-    {
-#ifdef TARGET_AMD64
-        instruction rightShiftIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
-        instruction leftShiftIns  = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
-
-        if (level == SIMD_AVX2_Supported)
-        {
-            // Extract the high 16-bits
-            GetEmitter()->emitIns_R_R_I(INS_vextracti128, EA_32BYTE, tmpReg, op1Reg, 0x01);
-
-            // Put v[3] (the high-order element) in tmpReg2 and convert it.
-            inst_Mov(simdType, tmpReg2, tmpReg, /* canSkip */ false);
-            GetEmitter()->emitIns_R_I(rightShiftIns, emitActualTypeSize(simdType), tmpReg2, 8);
-            genSIMDLo64BitConvert(intrinsicID, simdType, baseType, tmpReg2, tmpIntReg, tmpReg2);
-
-            // Shift the resulting 64-bits left.
-            GetEmitter()->emitIns_R_I(leftShiftIns, emitActualTypeSize(simdType), tmpReg2, 8);
-
-            // Convert v[2], in the lo bits of tmpReg.
-            // For the convert to double, the convert preserves the upper bits in tmpReg2.
-            // For the integer convert, we have to put it in tmpReg and or it in, since movd clears the upper bits.
-            genSIMDLo64BitConvert(intrinsicID, simdType, baseType, tmpReg, tmpIntReg, tmpReg2);
-        }
-
-        // Put v[1] in tmpReg.
-        inst_Mov(simdType, tmpReg, op1Reg, /* canSkip */ false);
-        GetEmitter()->emitIns_R_I(rightShiftIns, emitActualTypeSize(simdType), tmpReg, 8);
-
-        // At this point we have v[1] in the low-order 64-bits of tmpReg. Convert it.
-        genSIMDLo64BitConvert(intrinsicID, simdType, baseType, tmpReg, tmpIntReg, tmpReg);
-
-        // Shift the resulting 64-bits left.
-        GetEmitter()->emitIns_R_I(leftShiftIns, emitActualTypeSize(simdType), tmpReg, 8);
-
-        // Convert the lo 64-bits into targetReg
-        genSIMDLo64BitConvert(intrinsicID, simdType, baseType, op1Reg, tmpIntReg, tmpReg);
-
-        // Merge or copy the results (only at this point are we done with op1Reg).
-        inst_Mov(simdType, targetReg, tmpReg, /* canSkip */ true);
-
-        if (level == SIMD_AVX2_Supported)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_vinsertf128, EA_32BYTE, targetReg, tmpReg2, 0x01);
-        }
-#else
-        // get the sign bit and put it in tmpReg3
-        inst_Mov(simdType, tmpReg3, op1Reg, /* canSkip */ false);
-        GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), tmpReg3, 63);
-        GetEmitter()->emitIns_R_I(INS_psllq, emitActualTypeSize(simdType), tmpReg3, 63);
-
-        // get the absolute value of src and put it into tmpReg2 and targetReg
-        inst_Mov(simdType, tmpReg2, op1Reg, /* canSkip */ false);
-        GetEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(simdType), tmpReg, op1Reg, (int8_t)SHUFFLE_WWYY);
-        GetEmitter()->emitIns_R_I(INS_psrad, emitActualTypeSize(simdType), tmpReg, 32);
-        inst_RV_RV(INS_pxor, tmpReg2, tmpReg, baseType, emitActualTypeSize(simdType));
-        inst_RV_RV(INS_psubq, tmpReg2, tmpReg, baseType, emitActualTypeSize(simdType));
-        inst_Mov(simdType, targetReg, tmpReg2, /* canSkip */ false);
-
-        // prepare upper 32 bits
-        GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), targetReg, 32);
-
-        // prepare lower 32 bits
-        GetEmitter()->emitIns_R_I(INS_psllq, emitActualTypeSize(simdType), tmpReg2, 32);
-        GetEmitter()->emitIns_R_I(INS_psrlq, emitActualTypeSize(simdType), tmpReg2, 32);
-
-        // prepare mask for converting upper 32 bits
-        GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X45300000);
-        inst_Mov(simdType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_UINT));
-        GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
-
-        if (level == SIMD_AVX2_Supported)
-        {
-            inst_RV_RV(INS_vpbroadcastq, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-        else
-        {
-            inst_RV_RV(INS_movlhps, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-
-        // convert upper 32 bits
-        inst_RV_RV(INS_orpd, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        inst_RV_RV(INS_subpd, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
-
-        // prepare mask for converting lower 32 bits
-        GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, tmpIntReg, (ssize_t)0X43300000);
-        inst_Mov(simdType, tmpReg, tmpIntReg, /* canSkip */ false, emitActualTypeSize(TYP_UINT));
-        GetEmitter()->emitIns_R_I(INS_pslldq, EA_16BYTE, tmpReg, 4);
-
-        if (level == SIMD_AVX2_Supported)
-        {
-            inst_RV_RV(INS_vpbroadcastq, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-        else
-        {
-            inst_RV_RV(INS_movlhps, tmpReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-
-        // convert lower 32 bits
-        inst_RV_RV(INS_orpd, tmpReg2, tmpReg, simdType, emitActualTypeSize(simdType));
-        inst_RV_RV(INS_subpd, tmpReg2, tmpReg, simdType, emitActualTypeSize(simdType));
-
-        // add lower 32 bits and upper 32 bits
-        inst_RV_RV(INS_addpd, targetReg, tmpReg2, simdType, emitActualTypeSize(simdType));
-
-        // add sign bit
-        inst_RV_RV(INS_por, targetReg, tmpReg3, simdType, emitActualTypeSize(simdType));
-#endif
-    }
-    else
-    {
-        instruction rightShiftIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
-        instruction leftShiftIns  = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
-
-        if (level == SIMD_AVX2_Supported)
-        {
-            // Extract the high 16-bits
-            GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tmpReg, op1Reg, 0x01);
-
-            // Put v[3] (the high-order element) in tmpReg2 and convert it.
-            inst_Mov(simdType, tmpReg2, tmpReg, /* canSkip */ false);
-            GetEmitter()->emitIns_R_I(rightShiftIns, emitActualTypeSize(simdType), tmpReg2, 8);
-            genSIMDLo64BitConvert(intrinsicID, simdType, baseType, tmpReg2, tmpIntReg, tmpReg2);
-
-            // Shift the resulting 64-bits left.
-            GetEmitter()->emitIns_R_I(leftShiftIns, emitActualTypeSize(simdType), tmpReg2, 8);
-
-            // Convert v[2], in the lo bits of tmpReg.
-            // For the convert to double, the convert preserves the upper bits in tmpReg2.
-            // For the integer convert, we have to put it in tmpReg and or it in, since movd clears the upper bits.
-            genSIMDLo64BitConvert(intrinsicID, simdType, baseType, tmpReg, tmpIntReg, tmpReg);
-            inst_RV_RV(INS_por, tmpReg2, tmpReg, simdType, emitActualTypeSize(simdType));
-        }
-
-        // Put v[1] in tmpReg.
-        inst_Mov(simdType, tmpReg, op1Reg, /* canSkip */ false);
-        GetEmitter()->emitIns_R_I(rightShiftIns, emitActualTypeSize(simdType), tmpReg, 8);
-
-        // At this point we have v[1] in the low-order 64-bits of tmpReg. Convert it.
-        genSIMDLo64BitConvert(intrinsicID, simdType, baseType, tmpReg, tmpIntReg, tmpReg);
-
-        // Shift the resulting 64-bits left.
-        GetEmitter()->emitIns_R_I(leftShiftIns, emitActualTypeSize(simdType), tmpReg, 8);
-
-        // Convert the lo 64-bits into targetReg
-        genSIMDLo64BitConvert(intrinsicID, simdType, baseType, op1Reg, tmpIntReg, targetReg);
-
-        // Merge or copy the results (only at this point are we done with op1Reg).
-        assert(tmpReg != targetReg);
-        inst_RV_RV(INS_por, targetReg, tmpReg, simdType, emitActualTypeSize(simdType));
-        if (level == SIMD_AVX2_Supported)
-        {
-            GetEmitter()->emitIns_R_R_I(INS_vinserti128, EA_32BYTE, targetReg, tmpReg2, 0x01);
-        }
     }
     genProduceReg(simdNode);
 }
@@ -1125,22 +688,23 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
 //
 void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicSub || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseAnd ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicBitwiseOr);
+    assert((simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicSub) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseAnd) ||
+           (simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicBitwiseOr));
 
-    GenTree*  op1       = simdNode->gtGetOp1();
-    GenTree*  op2       = simdNode->gtGetOp2();
+    GenTree*  op1       = simdNode->Op(1);
+    GenTree*  op2       = simdNode->Op(2);
     var_types baseType  = simdNode->GetSimdBaseType();
     regNumber targetReg = simdNode->GetRegNum();
     assert(targetReg != REG_NA);
     var_types targetType = simdNode->TypeGet();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
 
     // Currently AVX doesn't support integer.
     // if the ins is INS_cvtsi2ss or INS_cvtsi2sd, we won't use AVX.
@@ -1178,19 +742,19 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 {
-    GenTree*  op1        = simdNode->gtGetOp1();
-    GenTree*  op2        = simdNode->gtGetOp2();
+    GenTree*  op1        = simdNode->Op(1);
+    GenTree*  op2        = simdNode->Op(2);
     var_types baseType   = simdNode->GetSimdBaseType();
     regNumber targetReg  = simdNode->GetRegNum();
     var_types targetType = simdNode->TypeGet();
     SIMDLevel level      = compiler->getSIMDSupportLevel();
 
-    genConsumeOperands(simdNode);
+    genConsumeMultiOpOperands(simdNode);
     regNumber op1Reg   = op1->GetRegNum();
     regNumber op2Reg   = op2->GetRegNum();
     regNumber otherReg = op2Reg;
 
-    switch (simdNode->gtSIMDIntrinsicID)
+    switch (simdNode->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicEqual:
         {
@@ -1206,7 +770,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 #endif
 
             unsigned    ival = 0;
-            instruction ins  = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
+            instruction ins  = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType, &ival);
 
             // targetReg = op1reg > op2reg
             // Therefore, we can optimize if op1Reg == targetReg
@@ -1215,7 +779,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
             {
                 if (op2Reg == targetReg)
                 {
-                    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicEqual);
+                    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicEqual);
                     otherReg = op1Reg;
                 }
                 else
@@ -1255,11 +819,11 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicShuffleSSE2);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicShuffleSSE2);
     noway_assert(compiler->getSIMDSupportLevel() == SIMD_SSE2_Supported);
 
-    GenTree* op1 = simdNode->gtGetOp1();
-    GenTree* op2 = simdNode->gtGetOp2();
+    GenTree* op1 = simdNode->Op(1);
+    GenTree* op2 = simdNode->Op(2);
     assert(op2->isContained());
     assert(op2->IsCnsIntOrI());
     ssize_t   shuffleControl = op2->AsIntConCommon()->IconValue();
@@ -1271,7 +835,7 @@ void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
     regNumber op1Reg = genConsumeReg(op1);
     inst_Mov(targetType, targetReg, op1Reg, /* canSkip */ true);
 
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
+    instruction ins = getOpForSIMDIntrinsic(simdNode->GetSIMDIntrinsicId(), baseType);
     assert((shuffleControl >= 0) && (shuffleControl <= 255));
     GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(baseType), targetReg, targetReg, (int8_t)shuffleControl);
     genProduceReg(simdNode);
@@ -1525,9 +1089,9 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
 //
 void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperSave);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperSave);
 
-    GenTree* op1 = simdNode->gtGetOp1();
+    GenTree* op1 = simdNode->Op(1);
     assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD32);
     regNumber targetReg = simdNode->GetRegNum();
     regNumber op1Reg    = genConsumeReg(op1);
@@ -1567,9 +1131,9 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 //
 void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 {
-    assert(simdNode->gtSIMDIntrinsicID == SIMDIntrinsicUpperRestore);
+    assert(simdNode->GetSIMDIntrinsicId() == SIMDIntrinsicUpperRestore);
 
-    GenTree* op1 = simdNode->gtGetOp1();
+    GenTree* op1 = simdNode->Op(1);
     assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD32);
     regNumber srcReg    = simdNode->GetRegNum();
     regNumber lclVarReg = genConsumeReg(op1);
@@ -1612,7 +1176,7 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         noway_assert(!"SIMD intrinsic with unsupported base type.");
     }
 
-    switch (simdNode->gtSIMDIntrinsicID)
+    switch (simdNode->GetSIMDIntrinsicId())
     {
         case SIMDIntrinsicInit:
             genSIMDIntrinsicInit(simdNode);
@@ -1624,16 +1188,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 
         case SIMDIntrinsicCast:
             genSIMDIntrinsicUnOp(simdNode);
-            break;
-
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToInt32:
-            genSIMDIntrinsic32BitConvert(simdNode);
-            break;
-
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt64:
-            genSIMDIntrinsic64BitConvert(simdNode);
             break;
 
         case SIMDIntrinsicSub:

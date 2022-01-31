@@ -7,14 +7,8 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
-.assembly bug {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'b59546' {}
+.assembly extern xunit.core {}
 .class public bug
 {
 	.method public static void f1() cil managed

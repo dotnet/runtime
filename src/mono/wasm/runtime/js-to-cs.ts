@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from "./modules";
+import { Module, runtimeHelpers } from "./imports";
 import {
     cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle, get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
@@ -14,8 +14,9 @@ import { wrap_error } from "./method-calls";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { Int32Ptr, JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, wasm_type_symbol } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
+import { Int32Ptr, TypedArray } from "./types/emscripten";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any): MonoObject {

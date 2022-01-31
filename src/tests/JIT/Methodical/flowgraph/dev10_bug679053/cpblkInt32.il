@@ -2,14 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly ILGEN_0xb8816d7d {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'cpblkInt32' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 
 .class ILGEN_0xb8816d7d {

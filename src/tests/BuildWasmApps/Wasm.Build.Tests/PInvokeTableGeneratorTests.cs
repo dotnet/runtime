@@ -123,15 +123,16 @@ namespace Wasm.Build.Tests
                                         extraProperties: "<AllowUnsafeBlocks>true</AllowUnsafeBlocks><_WasmDevel>true</_WasmDevel>");
 
             (_, string output) = BuildProject(buildArgs,
-                                        initProject: () =>
-                                        {
-                                            File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
-                                            File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", filename),
-                                                        Path.Combine(_projectDir!, filename));
-                                        },
-                                        publish: buildArgs.AOT,
                                         id: id,
-                                        dotnetWasmFromRuntimePack: false);
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", filename),
+                                                            Path.Combine(_projectDir!, filename));
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            DotnetWasmFromRuntimePack: false));
 
             return (buildArgs, output);
         }

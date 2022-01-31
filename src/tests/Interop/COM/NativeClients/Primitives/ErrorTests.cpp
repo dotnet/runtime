@@ -20,7 +20,7 @@ namespace
             HRESULT{-1}
         };
 
-        for (int i = 0; i < ARRAYSIZE(hrs); ++i)
+        for (int i = 0; i < ARRAY_SIZE(hrs); ++i)
         {
             HRESULT hr = hrs[i];
             HRESULT hrMaybe = et->Throw_HResult(hr);
@@ -44,7 +44,7 @@ namespace
             HRESULT{2}
         };
 
-        for (int i = 0; i < ARRAYSIZE(hrs); ++i)
+        for (int i = 0; i < ARRAY_SIZE(hrs); ++i)
         {
             HRESULT hr = hrs[i];
             HRESULT hrMaybe = et->Return_As_HResult(hr);
@@ -68,7 +68,7 @@ namespace
             HRESULT{2}
         };
 
-        for (int i = 0; i < ARRAYSIZE(hrs); ++i)
+        for (int i = 0; i < ARRAY_SIZE(hrs); ++i)
         {
             HRESULT hr = hrs[i];
             HRESULT hrMaybe = et->Return_As_HResult_Struct(hr);

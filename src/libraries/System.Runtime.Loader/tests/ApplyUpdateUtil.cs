@@ -12,9 +12,6 @@ namespace System.Reflection.Metadata
         internal const string DotNetModifiableAssembliesSwitch = "DOTNET_MODIFIABLE_ASSEMBLIES";
         internal const string DotNetModifiableAssembliesValue = "debug";
 
-        [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
-        public class NoParallelTests { }
-
         /// Whether ApplyUpdate is supported by the environment, test configuration, and runtime.
         ///
         /// We need:
@@ -50,7 +47,7 @@ namespace System.Reflection.Metadata
         {
             // check that interpreter is enabled, and the build has hot reload capabilities enabled.
             var isInterp = RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled;
-            return isInterp && HasApplyUpdateCapabilities();
+            return isInterp && !PlatformDetection.IsMonoAOT && HasApplyUpdateCapabilities();
         }
 
         internal static bool HasApplyUpdateCapabilities()

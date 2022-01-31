@@ -137,8 +137,6 @@
              Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerUserName.cs"
              Link="Common\Interop\Unix\Interop.GetPeerUserName.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs"
-             Link="Common\Interop\Unix\Interop.MkDir.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs"
              Link="Common\Interop\Unix\Interop.Open.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs"
@@ -166,7 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />  
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

@@ -3,6 +3,7 @@
 
 // NOT Int32 Example in IL
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -15,6 +16,9 @@
 {
 .method public static int32  Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack  2
 .locals init (int32 ReturnValue)

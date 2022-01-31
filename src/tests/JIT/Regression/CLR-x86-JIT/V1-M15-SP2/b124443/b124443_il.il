@@ -10,15 +10,8 @@
 
 .assembly b124443_il
 {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly extern xunit.core {}
 
-.module b124443_il.exe
 
 .class private auto ansi sealed TestDelegate
        extends [mscorlib]System.MulticastDelegate

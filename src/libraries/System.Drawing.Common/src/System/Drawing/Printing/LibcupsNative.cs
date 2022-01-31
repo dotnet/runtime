@@ -6,7 +6,7 @@ using System.Text;
 
 namespace System.Drawing.Printing
 {
-    internal static class LibcupsNative
+    internal static partial class LibcupsNative
     {
         internal const string LibraryName = "libcups";
 
@@ -26,39 +26,39 @@ namespace System.Drawing.Printing
             return lib;
         }
 
-        [DllImport(LibraryName, ExactSpelling = true)]
-        internal static extern int cupsGetDests(ref IntPtr dests);
+        [GeneratedDllImport(LibraryName)]
+        internal static partial int cupsGetDests(ref IntPtr dests);
 
-        [DllImport(LibraryName, ExactSpelling = true)]
-        internal static extern void cupsFreeDests(int num_dests, IntPtr dests);
+        [GeneratedDllImport(LibraryName)]
+        internal static partial void cupsFreeDests(int num_dests, IntPtr dests);
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
+        [DllImport(LibraryName, CharSet = CharSet.Ansi)]
 #pragma warning disable CA1838 // not hot-path enough to worry about the overheads of StringBuilder marshaling
         internal static extern IntPtr cupsTempFd([Out] StringBuilder sb, int len);
 #pragma warning restore CA1838
 
-        [DllImport(LibraryName, ExactSpelling = true)]
-        internal static extern IntPtr cupsGetDefault();
+        [GeneratedDllImport(LibraryName)]
+        internal static partial IntPtr cupsGetDefault();
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern int cupsPrintFile(string printer, string filename, string title, int num_options, IntPtr options);
+        [GeneratedDllImport(LibraryName, CharSet = CharSet.Ansi)]
+        internal static partial int cupsPrintFile(string printer, string filename, string title, int num_options, IntPtr options);
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr cupsGetPPD(string printer);
+        [GeneratedDllImport(LibraryName, CharSet = CharSet.Ansi)]
+        internal static partial IntPtr cupsGetPPD(string printer);
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr ppdOpenFile(string filename);
+        [GeneratedDllImport(LibraryName, CharSet = CharSet.Ansi)]
+        internal static partial IntPtr ppdOpenFile(string filename);
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern IntPtr ppdFindOption(IntPtr ppd_file, string keyword);
+        [GeneratedDllImport(LibraryName, CharSet = CharSet.Ansi)]
+        internal static partial IntPtr ppdFindOption(IntPtr ppd_file, string keyword);
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern void ppdClose(IntPtr ppd);
+        [GeneratedDllImport(LibraryName, CharSet = CharSet.Ansi)]
+        internal static partial void ppdClose(IntPtr ppd);
 
-        [DllImport(LibraryName, ExactSpelling = true, CharSet = CharSet.Ansi)]
-        internal static extern int cupsParseOptions(string arg, int number_of_options, ref IntPtr options);
+        [GeneratedDllImport(LibraryName, CharSet = CharSet.Ansi)]
+        internal static partial int cupsParseOptions(string arg, int number_of_options, ref IntPtr options);
 
-        [DllImport(LibraryName, ExactSpelling = true)]
-        internal static extern void cupsFreeOptions(int number_options, IntPtr options);
+        [GeneratedDllImport(LibraryName)]
+        internal static partial void cupsFreeOptions(int number_options, IntPtr options);
     }
 }

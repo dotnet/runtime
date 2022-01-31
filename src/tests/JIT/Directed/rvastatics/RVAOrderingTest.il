@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 .assembly extern System.Runtime.Extensions { }
 .assembly extern System.Console { }
 .assembly RVAOrderingTest { }
-.module RVAOrderingTest.exe
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -16,6 +16,9 @@
   .method private hidebysig static int32 
           Main(string[] args) cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       106 (0x6a)
     .maxstack  2

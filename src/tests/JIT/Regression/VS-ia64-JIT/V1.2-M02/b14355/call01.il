@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly extern common
+.assembly extern localloc_common
 {
   .ver 0:0:0:0
 }
@@ -24,14 +24,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module call01.exe
+.assembly extern xunit.core {}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -63,27 +56,27 @@
     IL_000d:  add
     IL_000e:  stloc.1
     IL_000f:  ldc.i4.4
-    IL_0010:  ldsfld     int32 [common]LocallocTesting.Global::stackAllocSize
+    IL_0010:  ldsfld     int32 [localloc_common]LocallocTesting.Global::stackAllocSize
     IL_0015:  mul
     IL_0016:  localloc
     IL_0018:  stloc.2
     IL_0019:  ldc.i4.4
-    IL_001a:  ldsfld     int32 [common]LocallocTesting.Global::stackAllocSize
+    IL_001a:  ldsfld     int32 [localloc_common]LocallocTesting.Global::stackAllocSize
     IL_001f:  mul
     IL_0020:  localloc
     IL_0022:  stloc.3
-    IL_0023:  ldsfld     int32 [common]LocallocTesting.Global::stackAllocSize
+    IL_0023:  ldsfld     int32 [localloc_common]LocallocTesting.Global::stackAllocSize
     IL_0028:  stsfld     int32 LocallocTest::locallocSize
     IL_002d:  ldloc.2
     IL_002e:  ldsfld     int32 LocallocTest::locallocSize
     IL_0033:  ldc.i4     0x3e8
-    IL_0038:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_0038:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_003d:  ldloc.3
     IL_003e:  ldsfld     int32 LocallocTest::locallocSize
     IL_0043:  ldc.i4     0x7d0
-    IL_0048:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_0048:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_004d:  ldc.i4.1
@@ -116,7 +109,7 @@
     IL_0069:  ldloc.2
     IL_006a:  ldsfld     int32 LocallocTest::locallocSize
     IL_006f:  ldc.i4     0x3e8
-    IL_0074:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_0074:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -130,7 +123,7 @@
     IL_0085:  ldloc.3
     IL_0086:  ldsfld     int32 LocallocTest::locallocSize
     IL_008b:  ldc.i4     0x7d0
-    IL_0090:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_0090:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -143,7 +136,7 @@
     IL_009c:  ldstr      "local1"
     IL_00a1:  ldloc.0
     IL_00a2:  ldc.i8     0xfedcba9876543210
-    IL_00ab:  call       bool [common]LocallocTesting.Global::verifyLocal(string,
+    IL_00ab:  call       bool [localloc_common]LocallocTesting.Global::verifyLocal(string,
                                                                           uint64,
                                                                           uint64)
     IL_00b0:  brtrue.s   IL_00b7
@@ -155,7 +148,7 @@
     IL_00b7:  ldstr      "local2"
     IL_00bc:  ldloc.1
     IL_00bd:  ldc.i8     0xfedcba9876543211
-    IL_00c6:  call       bool [common]LocallocTesting.Global::verifyLocal(string,
+    IL_00c6:  call       bool [localloc_common]LocallocTesting.Global::verifyLocal(string,
                                                                           uint64,
                                                                           uint64)
     IL_00cb:  brtrue.s   IL_00d2
@@ -224,32 +217,32 @@
     IL_0020:  ldstr      "error\n"
     IL_0025:  call       void [System.Console]System.Console::WriteLine(string)
     IL_002a:  ldc.i4.4
-    IL_002b:  ldsfld     int32 [common]LocallocTesting.Global::stackAllocSize
+    IL_002b:  ldsfld     int32 [localloc_common]LocallocTesting.Global::stackAllocSize
     IL_0030:  mul
     IL_0031:  localloc
     IL_0033:  stloc.0
     IL_0034:  ldc.i4.4
-    IL_0035:  ldsfld     int32 [common]LocallocTesting.Global::stackAllocSize
+    IL_0035:  ldsfld     int32 [localloc_common]LocallocTesting.Global::stackAllocSize
     IL_003a:  mul
     IL_003b:  localloc
     IL_003d:  stloc.1
     IL_003e:  ldloc.0
     IL_003f:  ldsfld     int32 LocallocTest::locallocSize
     IL_0044:  ldc.i4     0xbb8
-    IL_0049:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_0049:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_004e:  ldloc.1
     IL_004f:  ldsfld     int32 LocallocTest::locallocSize
     IL_0054:  ldc.i4     0xfa0
-    IL_0059:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_0059:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_005e:  ldstr      "ar1"
     IL_0063:  ldarg.s    ar1
     IL_0065:  ldsfld     int32 LocallocTest::locallocSize
     IL_006a:  ldc.i4     0x3e8
-    IL_006f:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_006f:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -263,7 +256,7 @@
     IL_007f:  ldarg.s    ar2
     IL_0081:  ldsfld     int32 LocallocTest::locallocSize
     IL_0086:  ldc.i4     0x7d0
-    IL_008b:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_008b:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -277,7 +270,7 @@
     IL_009b:  ldloc.0
     IL_009c:  ldsfld     int32 LocallocTest::locallocSize
     IL_00a1:  ldc.i4     0xbb8
-    IL_00a6:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_00a6:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)
@@ -291,7 +284,7 @@
     IL_00b6:  ldloc.1
     IL_00b7:  ldsfld     int32 LocallocTest::locallocSize
     IL_00bc:  ldc.i4     0xfa0
-    IL_00c1:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_00c1:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)

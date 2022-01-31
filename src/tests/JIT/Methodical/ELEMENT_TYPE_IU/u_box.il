@@ -16,17 +16,10 @@
 .assembly extern mscorlib
 {
 }
-.assembly 'avg'// as "avg"
+.assembly 'u_box'// as "avg"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'avg.exe'
+.assembly extern xunit.core {}
 .namespace BoxTest
 {
   .class private auto ansi Test extends [mscorlib]System.Object

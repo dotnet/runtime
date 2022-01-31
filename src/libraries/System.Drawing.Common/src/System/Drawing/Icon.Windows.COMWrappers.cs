@@ -61,8 +61,8 @@ namespace System.Drawing
             }
         }
 
-        [DllImport(Interop.Libraries.Oleaut32)]
-        private static unsafe extern int OleCreatePictureIndirect(PICTDESC* pictdesc, Guid* refiid, int fOwn, IntPtr* lplpvObj);
+        [GeneratedDllImport(Interop.Libraries.Oleaut32)]
+        private static unsafe partial int OleCreatePictureIndirect(PICTDESC* pictdesc, Guid* refiid, int fOwn, IntPtr* lplpvObj);
 
         [StructLayout(LayoutKind.Sequential)]
         private readonly struct PICTDESC

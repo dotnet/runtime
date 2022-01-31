@@ -543,7 +543,7 @@ extern const BYTE genTypeSizes[TYP_COUNT];
 template <class T>
 inline unsigned genTypeSize(T value)
 {
-    assert((unsigned)TypeGet(value) < _countof(genTypeSizes));
+    assert((unsigned)TypeGet(value) < ArrLen(genTypeSizes));
 
     return genTypeSizes[TypeGet(value)];
 }
@@ -559,7 +559,7 @@ extern const BYTE genTypeStSzs[TYP_COUNT];
 template <class T>
 inline unsigned genTypeStSz(T value)
 {
-    assert((unsigned)TypeGet(value) < _countof(genTypeStSzs));
+    assert((unsigned)TypeGet(value) < ArrLen(genTypeStSzs));
 
     return genTypeStSzs[TypeGet(value)];
 }
@@ -779,9 +779,7 @@ inline GenTree::GenTree(genTreeOps oper, var_types type DEBUGARG(bool largeNode)
     gtDebugFlags = GTF_DEBUG_NONE;
 #endif // DEBUG
     gtCSEnum = NO_CSE;
-#if ASSERTION_PROP
     ClearAssertion();
-#endif
 
     gtNext = nullptr;
     gtPrev = nullptr;
@@ -1080,45 +1078,57 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
     return node;
 }
 
-/*****************************************************************************
- *
- *  A little helper to create a data member reference node.
- */
-
-inline GenTree* Compiler::gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+//------------------------------------------------------------------------
+// gtNewFieldRef: a helper for creating GT_FIELD nodes.
+//
+// Normalizes struct types (for SIMD vectors). Sets GTF_GLOB_REF for fields
+// that may be pointing into globally visible memory.
+//
+// Arguments:
+//    type   - type for the field node
+//    fldHnd - the field handle
+//    obj    - the instance, an address
+//    offset - the field offset
+//
+// Return Value:
+//    The created node.
+//
+inline GenTree* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
-    /* 'GT_FIELD' nodes may later get transformed into 'GT_IND' */
+    // GT_FIELD nodes are transformed into GT_IND nodes.
     assert(GenTree::s_gtNodeSizes[GT_IND] <= GenTree::s_gtNodeSizes[GT_FIELD]);
 
-    if (typ == TYP_STRUCT)
+    if (type == TYP_STRUCT)
     {
-        CORINFO_CLASS_HANDLE fieldClass;
-        (void)info.compCompHnd->getFieldType(fldHnd, &fieldClass);
-        typ = impNormStructType(fieldClass);
+        CORINFO_CLASS_HANDLE structHnd;
+        eeGetFieldType(fldHnd, &structHnd);
+        type = impNormStructType(structHnd);
     }
-    GenTree* tree = new (this, GT_FIELD) GenTreeField(typ, obj, fldHnd, offset);
+
+    GenTree* fieldNode = new (this, GT_FIELD) GenTreeField(type, obj, fldHnd, offset);
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
-    if (obj != nullptr && obj->OperGet() == GT_ADDR && varTypeIsStruct(obj->AsOp()->gtOp1) &&
-        obj->AsOp()->gtOp1->OperGet() == GT_LCL_VAR)
+    if ((obj != nullptr) && obj->OperIs(GT_ADDR) && varTypeIsStruct(obj->AsUnOp()->gtOp1) &&
+        obj->AsUnOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
-        unsigned lclNum                  = obj->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum();
-        lvaTable[lclNum].lvFieldAccessed = 1;
+        LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
+
+        varDsc->lvFieldAccessed = 1;
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
         // These structs are passed by reference; we should probably be able to treat these
         // as non-global refs, but downstream logic expects these to be marked this way.
-        if (lvaTable[lclNum].lvIsParam)
+        if (varDsc->lvIsParam)
         {
-            tree->gtFlags |= GTF_GLOB_REF;
+            fieldNode->gtFlags |= GTF_GLOB_REF;
         }
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
     }
     else
     {
-        tree->gtFlags |= GTF_GLOB_REF;
+        fieldNode->gtFlags |= GTF_GLOB_REF;
     }
 
-    return tree;
+    return fieldNode;
 }
 
 /*****************************************************************************
@@ -1384,6 +1394,10 @@ inline void GenTree::SetOperRaw(genTreeOps oper)
     // Please do not do anything here other than assign to gtOper (debug-only
     // code is OK, but should be kept to a minimum).
     RecordOperBashing(OperGet(), oper); // nop unless NODEBASH_STATS is enabled
+
+    // Bashing to MultiOp nodes is not currently supported.
+    assert(!OperIsMultiOp(oper));
+
     gtOper = oper;
 }
 
@@ -1785,7 +1799,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 
     unsigned lclNum = lvaGrabTemp(shortLifetime DEBUGARG(reason));
 
-    LclVarDsc* varDsc = &lvaTable[lclNum];
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
     // Note the implicit use
     varDsc->lvImplicitlyReferenced = 1;
@@ -1873,7 +1887,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
     {
         // Depending on the promotion type, increment the ref count for the parent struct as well.
         promotionType           = comp->lvaGetParentPromotionType(this);
-        LclVarDsc* parentvarDsc = &comp->lvaTable[lvParentLcl];
+        LclVarDsc* parentvarDsc = comp->lvaGetDesc(lvParentLcl);
         assert(!parentvarDsc->lvRegStruct);
         if (promotionType == Compiler::PROMOTION_TYPE_DEPENDENT)
         {
@@ -1884,9 +1898,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 #ifdef DEBUG
     if (comp->verbose)
     {
-        unsigned varNum = (unsigned)(this - comp->lvaTable);
-        assert(&comp->lvaTable[varNum] == this);
-        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", varNum, lvRefCnt(state),
+        printf("New refCnts for V%02u: refCnt = %2u, refCntWtd = %s\n", comp->lvaGetLclNum(this), lvRefCnt(state),
                refCntWtd2str(lvRefCntWtd(state)));
     }
 #endif
@@ -1900,9 +1912,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
 inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
 {
-    unsigned   varNum;
-    LclVarDsc* varDsc;
-    VARSET_TP  lclMask(VarSetOps::MakeEmpty(this));
+    VARSET_TP lclMask(VarSetOps::MakeEmpty(this));
 
     assert(fgStmtListThreaded);
 
@@ -1913,9 +1923,7 @@ inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(Statement* stmt)
             continue;
         }
 
-        varNum = tree->AsLclVarCommon()->GetLclNum();
-        assert(varNum < lvaCount);
-        varDsc = lvaTable + varNum;
+        const LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
 
         if (!varDsc->lvTracked)
         {
@@ -1978,13 +1986,18 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     // the VM requires us to keep the generics context alive or it is used in a look-up.
     // We keep it alive in the lookup scenario, even when the VM didn't ask us to,
     // because collectible types need the generics context when gc-ing.
+    //
+    // Methoods that can inspire OSR methods must always report context as live
+    //
     if (genericsContextIsThis)
     {
-        const bool mustKeep = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
+        const bool mustKeep      = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_KEEP_ALIVE) != 0;
+        const bool hasPatchpoint = doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints();
 
-        if (lvaGenericsContextInUse || mustKeep)
+        if (lvaGenericsContextInUse || mustKeep || hasPatchpoint)
         {
-            JITDUMP("Reporting this as generic context: %s\n", mustKeep ? "must keep" : "referenced");
+            JITDUMP("Reporting this as generic context: %s\n",
+                    mustKeep ? "must keep" : (hasPatchpoint ? "patchpoints" : "referenced"));
             return true;
         }
     }
@@ -2013,6 +2026,13 @@ inline bool Compiler::lvaReportParamTypeArg()
         // Otherwise, if an exact type parameter is needed in the body, report the generics context.
         // We do this because collectible types needs the generics context when gc-ing.
         if (lvaGenericsContextInUse)
+        {
+            return true;
+        }
+
+        // Methoods that have patchpoints always report context as live
+        //
+        if (doesMethodHavePatchpoints() || doesMethodHavePartialCompilationPatchpoints())
         {
             return true;
         }
@@ -2074,11 +2094,8 @@ inline
     bool fConservative = false;
     if (varNum >= 0)
     {
-        LclVarDsc* varDsc;
-
-        assert((unsigned)varNum < lvaCount);
-        varDsc               = lvaTable + varNum;
-        bool isPrespilledArg = false;
+        LclVarDsc* varDsc          = lvaGetDesc(varNum);
+        bool       isPrespilledArg = false;
 #if defined(TARGET_ARM) && defined(PROFILING_SUPPORTED)
         isPrespilledArg = varDsc->lvIsParam && compIsProfilerHookNeeded() &&
                           lvaIsPreSpilled(varNum, codeGen->regSet.rsMaskPreSpillRegs(false));
@@ -2244,21 +2261,13 @@ inline
 
 inline bool Compiler::lvaIsParameter(unsigned varNum)
 {
-    LclVarDsc* varDsc;
-
-    assert(varNum < lvaCount);
-    varDsc = lvaTable + varNum;
-
+    const LclVarDsc* varDsc = lvaGetDesc(varNum);
     return varDsc->lvIsParam;
 }
 
 inline bool Compiler::lvaIsRegArgument(unsigned varNum)
 {
-    LclVarDsc* varDsc;
-
-    assert(varNum < lvaCount);
-    varDsc = lvaTable + varNum;
-
+    LclVarDsc* varDsc = lvaGetDesc(varNum);
     return varDsc->lvIsRegArg;
 }
 
@@ -2271,7 +2280,7 @@ inline bool Compiler::lvaIsOriginalThisArg(unsigned varNum)
 #ifdef DEBUG
     if (isOriginalThisArg)
     {
-        LclVarDsc* varDsc = lvaTable + varNum;
+        LclVarDsc* varDsc = lvaGetDesc(varNum);
         // Should never write to or take the address of the original 'this' arg
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -2346,29 +2355,29 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
 {
-    assert(ILargNum < info.compILargsCount || tiVerificationNeeded);
+    assert(ILargNum < info.compILargsCount);
 
     // Note that this works because if compRetBuffArg/compTypeCtxtArg/lvVarargsHandleArg are not present
     // they will be BAD_VAR_NUM (MAX_UINT), which is larger than any variable number.
     if (ILargNum >= info.compRetBuffArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
     if (ILargNum >= (unsigned)info.compTypeCtxtArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
     if (ILargNum >= (unsigned)lvaVarargsHandleArg)
     {
         ILargNum++;
-        assert(ILargNum < info.compLocalsCount || tiVerificationNeeded); // compLocals count already adjusted.
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
-    assert(ILargNum < info.compArgsCount || tiVerificationNeeded);
+    assert(ILargNum < info.compArgsCount);
     return (ILargNum);
 }
 
@@ -2687,6 +2696,11 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     }
 
     if (!(block->bbFlags & BBF_INTERNAL) || block->bbJumpKind != BBJ_THROW)
+    {
+        return false;
+    }
+
+    if (!block->IsLIR() && (block->lastStmt() == nullptr))
     {
         return false;
     }
@@ -3232,8 +3246,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
 
-#if LOCAL_ASSERTION_PROP
-
 /*****************************************************************************
  *
  *  The following resets the value assignment table
@@ -3250,7 +3262,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
         AssertionDsc*  curAssertion = optGetAssertion(index);
         optAssertionCount--;
         unsigned lclNum = curAssertion->op1.lcl.lclNum;
-        assert(lclNum < lvaTableCnt);
+        assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3345,16 +3357,15 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
         optAssertionReset(newAssertionCount);
     }
 }
-#endif // LOCAL_ASSERTION_PROP
 
-inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd)
+inline void Compiler::LoopDsc::AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind)
 {
     if (lpFieldsModified == nullptr)
     {
         lpFieldsModified =
             new (comp->getAllocatorLoopHoist()) Compiler::LoopDsc::FieldHandleSet(comp->getAllocatorLoopHoist());
     }
-    lpFieldsModified->Set(fldHnd, true, FieldHandleSet::Overwrite);
+    lpFieldsModified->Set(fldHnd, fieldKind, FieldHandleSet::Overwrite);
 }
 
 inline void Compiler::LoopDsc::AddModifiedElemType(Compiler* comp, CORINFO_CLASS_HANDLE structHnd)
@@ -3570,22 +3581,6 @@ inline bool Compiler::LoopDsc::lpArrLenLimit(Compiler* comp, ArrIndex* index) co
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                Optimization activation rules                              XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-// should we try to replace integer multiplication with lea/add/shift sequences?
-inline bool Compiler::optAvoidIntMult(void)
-{
-    return (compCodeOpt() != SMALL_CODE);
-}
-
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                          EEInterface                                      XX
 XX                      Inline functions                                     XX
 XX                                                                           XX
@@ -3635,9 +3630,8 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
-        helper == CORINFO_HELP_GETSTATICFIELDADDR_CONTEXT || helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS ||
-        helper == CORINFO_HELP_GETGENERICS_GCSTATIC_BASE || helper == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE ||
-        helper == CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE ||
+        helper == CORINFO_HELP_GETSTATICFIELDADDR_TLS || helper == CORINFO_HELP_GETGENERICS_GCSTATIC_BASE ||
+        helper == CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE || helper == CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE ||
         helper == CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE ||
 
         helper == CORINFO_HELP_GETSHARED_GCSTATIC_BASE || helper == CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE ||
@@ -3900,8 +3894,7 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
 
 inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(unsigned varNum)
 {
-    assert(varNum < lvaCount);
-    return lvaGetPromotionType(&lvaTable[varNum]);
+    return lvaGetPromotionType(lvaGetDesc(varNum));
 }
 
 /*****************************************************************************
@@ -3912,7 +3905,6 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(unsigned varNum)
 inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(const LclVarDsc* varDsc)
 {
     assert(varDsc->lvIsStructField);
-    assert(varDsc->lvParentLcl < lvaCount);
 
     lvaPromotionType promotionType = lvaGetPromotionType(varDsc->lvParentLcl);
     assert(promotionType != PROMOTION_TYPE_NONE);
@@ -3926,8 +3918,7 @@ inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(const LclV
 
 inline Compiler::lvaPromotionType Compiler::lvaGetParentPromotionType(unsigned varNum)
 {
-    assert(varNum < lvaCount);
-    return lvaGetParentPromotionType(&lvaTable[varNum]);
+    return lvaGetParentPromotionType(lvaGetDesc(varNum));
 }
 
 /*****************************************************************************
@@ -4250,6 +4241,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_BOX:
         case GT_ALLOCOBJ:
         case GT_INIT_VAL:
+        case GT_RUNTIMELOOKUP:
         case GT_JTRUE:
         case GT_SWITCH:
         case GT_NULLCHECK:
@@ -4266,32 +4258,22 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
 
 // Variadic nodes
-#ifdef FEATURE_SIMD
+#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_SIMD)
         case GT_SIMD:
-            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
-            {
-                assert(this->AsSIMD()->gtOp1 != nullptr);
-                this->AsSIMD()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
-            }
-            return;
-#endif // FEATURE_SIMD
-
-#ifdef FEATURE_HW_INTRINSICS
+#endif
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            if ((this->AsHWIntrinsic()->gtOp1 != nullptr) && this->AsHWIntrinsic()->gtOp1->OperIsList())
+#endif
+            for (GenTree* operand : this->AsMultiOp()->Operands())
             {
-                this->AsHWIntrinsic()->gtOp1->VisitListOperands(visitor);
-            }
-            else
-            {
-                VisitBinOpOperands<TVisitor>(visitor);
+                if (visitor(operand) == VisitResult::Abort)
+                {
+                    break;
+                }
             }
             return;
-#endif // FEATURE_HW_INTRINSICS
+#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
 
         // Special nodes
         case GT_PHI:
@@ -4361,20 +4343,9 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
         }
 
-        case GT_DYN_BLK:
-        {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
-            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(dynBlock->gtDynamicSize);
-            return;
-        }
-
         case GT_STORE_DYN_BLK:
         {
-            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            GenTreeStoreDynBlk* const dynBlock = this->AsStoreDynBlk();
             if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
             {
                 return;
@@ -4435,20 +4406,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             VisitBinOpOperands<TVisitor>(visitor);
             return;
     }
-}
-
-template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitListOperands(TVisitor visitor)
-{
-    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
-    {
-        if (visitor(node->gtOp1) == VisitResult::Abort)
-        {
-            return VisitResult::Abort;
-        }
-    }
-
-    return VisitResult::Continue;
 }
 
 template <typename TVisitor>
@@ -4544,11 +4501,12 @@ inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
     return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
 }
 
-/*****************************************************************************
- * This node should not be referenced by anyone now. Set its values to garbage
- * to catch extra references
- */
-
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of tree to garbage to catch extra references
+//
+// Arguments:
+//    tree: This node should not be referenced by anyone now
+//
 inline void DEBUG_DESTROY_NODE(GenTree* tree)
 {
 #ifdef DEBUG
@@ -4567,6 +4525,19 @@ inline void DEBUG_DESTROY_NODE(GenTree* tree)
     // Don't call SetOper, because GT_COUNT is not a valid value
     tree->gtOper = GT_COUNT;
 #endif
+}
+
+//------------------------------------------------------------------------------
+// DEBUG_DESTROY_NODE: sets value of trees to garbage to catch extra references
+//
+// Arguments:
+//    tree, ...rest: These nodes should not be referenced by anyone now
+//
+template <typename... T>
+void DEBUG_DESTROY_NODE(GenTree* tree, T... rest)
+{
+    DEBUG_DESTROY_NODE(tree);
+    DEBUG_DESTROY_NODE(rest...);
 }
 
 //------------------------------------------------------------------------------
@@ -4715,6 +4686,45 @@ inline void LclVarDsc::setLvRefCntWtd(weight_t newValue, RefCountState state)
 #endif
 
     m_lvRefCntWtd = newValue;
+}
+
+//------------------------------------------------------------------------------
+// compCanHavePatchpoints: return true if patchpoints are supported in this
+//   method.
+//
+// Arguments:
+//    reason - [out, optional] reason why patchpoints are not supported
+//
+// Returns:
+//    True if patchpoints are supported in this method.
+//
+inline bool Compiler::compCanHavePatchpoints(const char** reason)
+{
+    const char* whyNot = nullptr;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    if (compLocallocSeen)
+    {
+        whyNot = "OSR can't handle localloc";
+    }
+    else if (compHasBackwardJumpInHandler)
+    {
+        whyNot = "OSR can't handle loop in handler";
+    }
+    else if (opts.IsReversePInvoke())
+    {
+        whyNot = "OSR can't handle reverse pinvoke";
+    }
+#else
+    whyNot = "OSR feature not defined in build";
+#endif
+
+    if (reason != nullptr)
+    {
+        *reason = whyNot;
+    }
+
+    return whyNot == nullptr;
 }
 
 /*****************************************************************************/

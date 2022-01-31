@@ -107,6 +107,7 @@ CE5b4bVi7nbp+SyaseWurZ0pGmM35N6FveZ6DXK05Vrc8gf3paUiXhU=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public static void ReadWriteDiminishedDPPrivatePkcs1()
         {
             ReadWriteBase64PrivatePkcs1(
@@ -789,6 +790,7 @@ RdMKfFP3he4C+CFyGGslffbxCaJhKebeuOil5xxlvP8aBPVNDtQfSS1HXHd1/Ikq
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public static void ReadEncryptedDiminishedDP_EmptyPassword()
         {
             // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Suppression approved. Unit test key.")]
@@ -1254,6 +1256,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public static void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
@@ -1290,6 +1293,7 @@ gms2YM+honjUS1sXk1zdm/8=");
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public static void ReadWriteRsa2048EncryptedPkcs8_Pbes2HighIterations()
         {
             // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations

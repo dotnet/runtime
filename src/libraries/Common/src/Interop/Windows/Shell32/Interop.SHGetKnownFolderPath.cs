@@ -10,13 +10,16 @@ internal static partial class Interop
     {
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
 
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
         // https://msdn.microsoft.com/en-us/library/windows/desktop/bb762188.aspx
-        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
+        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
+        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = false)]
         internal static extern int SHGetKnownFolderPath(
             [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
             uint dwFlags,
             IntPtr hToken,
             out string ppszPath);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/dd378457.aspx
         internal static class KnownFolders

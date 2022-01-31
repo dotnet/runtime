@@ -20,6 +20,10 @@ namespace System.Text.Json
     {
         internal const int BufferSizeDefault = 16 * 1024;
 
+        // For backward compatibility the default max depth for JsonSerializer is 64,
+        // the minimum of JsonReaderOptions.DefaultMaxDepth and JsonWriterOptions.DefaultMaxDepth.
+        internal const int DefaultMaxDepth = JsonReaderOptions.DefaultMaxDepth;
+
         /// <summary>
         /// Gets a read-only, singleton instance of <see cref="JsonSerializerOptions" /> that uses the default configuration.
         /// </summary>
@@ -429,16 +433,15 @@ namespace System.Text.Json
 
                 if (value < 0)
                 {
-                    throw ThrowHelper.GetArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+                    ThrowHelper.ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
                 }
 
                 _maxDepth = value;
-                EffectiveMaxDepth = (value == 0 ? JsonReaderOptions.DefaultMaxDepth : value);
+                EffectiveMaxDepth = (value == 0 ? DefaultMaxDepth : value);
             }
         }
 
-        // The default is 64 because that is what the reader uses, so re-use the same JsonReaderOptions.DefaultMaxDepth constant.
-        internal int EffectiveMaxDepth { get; private set; } = JsonReaderOptions.DefaultMaxDepth;
+        internal int EffectiveMaxDepth { get; private set; } = DefaultMaxDepth;
 
         /// <summary>
         /// Specifies the policy used to convert a property's name on an object to another format, such as camel-casing.
@@ -699,7 +702,7 @@ namespace System.Text.Json
             {
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = EffectiveMaxDepth
             };
         }
 
@@ -709,6 +712,7 @@ namespace System.Text.Json
             {
                 Encoder = Encoder,
                 Indented = WriteIndented,
+                MaxDepth = EffectiveMaxDepth,
 #if !DEBUG
                 SkipValidation = true
 #endif

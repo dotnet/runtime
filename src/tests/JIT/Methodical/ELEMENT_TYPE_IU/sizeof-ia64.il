@@ -13,17 +13,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'avg'// as "avg"
+.assembly 'sizeof-ia64'// as "avg"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'avg.exe'
+.assembly extern xunit.core {}
 // MVID: {BCA6096F-DF11-4FA3-BF16-EEDA01729535}
 .namespace AvgTest
 {

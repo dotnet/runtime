@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -406,7 +405,6 @@ namespace System.Text.RegularExpressions.Symbolic
             lock (this)
             {
                 state.Id = _stateCache.Count;
-                int k = state.GetHashCode();
                 _stateCache.Add(state);
 
                 Debug.Assert(_statearray is not null);

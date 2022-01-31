@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly base017{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module base017.exe
+.assembly 'test_10'{}
+.assembly extern xunit.core {}
 
 
   .class public sequential ansi sealed beforefieldinit base017

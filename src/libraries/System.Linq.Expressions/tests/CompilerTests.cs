@@ -27,8 +27,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(n, f());
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_NonNullableValueTypes()
         {
             VerifyEmitConstantsToIL((bool)true);
@@ -49,7 +48,7 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((decimal)49.95m);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_NullableValueTypes()
         {
             VerifyEmitConstantsToIL((bool?)null);
@@ -85,14 +84,14 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((DateTime?)null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_ReferenceTypes()
         {
             VerifyEmitConstantsToIL((string)null);
             VerifyEmitConstantsToIL((string)"bar");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_Enums()
         {
             VerifyEmitConstantsToIL(ConstantsEnum.A);
@@ -100,21 +99,21 @@ namespace System.Linq.Expressions.Tests
             VerifyEmitConstantsToIL((ConstantsEnum?)ConstantsEnum.A);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_ShareReferences()
         {
             var o = new object();
             VerifyEmitConstantsToIL(Expression.Equal(Expression.Constant(o), Expression.Constant(o)), 1, true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void EmitConstantsToIL_LiftedToClosure()
         {
             VerifyEmitConstantsToIL(DateTime.Now, 1);
             VerifyEmitConstantsToIL((DateTime?)DateTime.Now, 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VariableBinder_CatchBlock_Filter1()
         {
             // See https://github.com/dotnet/runtime/issues/18676 for reported issue
@@ -128,7 +127,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VariableBinder_CatchBlock_Filter2()
         {
             // See https://github.com/dotnet/runtime/issues/18676 for reported issue
@@ -142,7 +141,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Simple()
         {
@@ -159,7 +158,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Exceptions()
         {
@@ -220,7 +219,7 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure1()
         {
@@ -255,7 +254,7 @@ namespace System.Linq.Expressions.Tests
                 appendInnerLambdas: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure2()
         {
@@ -313,7 +312,7 @@ namespace System.Linq.Expressions.Tests
                 appendInnerLambdas: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_Closure3()
         {
@@ -431,7 +430,6 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<InvalidOperationException>(() => e.Compile());
         }
-#endif
     }
 
     public enum ConstantsEnum

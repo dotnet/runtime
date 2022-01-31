@@ -15,14 +15,7 @@
 .assembly livecall // as "livecall"
 {
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module livecall.exe
+.assembly extern xunit.core {}
 // MVID: {6300FB9B-B24E-45DA-9A61-2556746FEEEF}
 .namespace MS
 {

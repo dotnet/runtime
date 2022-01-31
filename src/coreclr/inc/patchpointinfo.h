@@ -13,8 +13,9 @@
 // --------------------------------------------------------------------------------
 // Describes information needed to make an OSR transition
 //  - location of Il-visible locals and other important state on the 
-//    original (Tier0) method frame
-//  - total size of the original frame, and SP-FP delta
+//    original (Tier0) method frame, with respect to top of frame
+//    (hence these offsets will be negative as stack grows down)
+//  - total size of the original frame
 //
 // Currently the patchpoint info is independent of the IL offset of the patchpoint.
 //
@@ -33,13 +34,28 @@ struct PatchpointInfo
     }
 
     // Initialize
-    void Initialize(unsigned localCount, int fpToSpDelta)
+    void Initialize(unsigned localCount, int totalFrameSize)
     {
-        m_fpToSpDelta             = fpToSpDelta;
+        m_totalFrameSize          = totalFrameSize;
         m_numberOfLocals          = localCount;
         m_genericContextArgOffset = -1;
         m_keptAliveThisOffset     = -1;
         m_securityCookieOffset    = -1;
+        m_monitorAcquiredOffset   = -1;
+    }
+
+    // Copy
+    void Copy(const PatchpointInfo* original)
+    {
+        m_genericContextArgOffset = original->m_genericContextArgOffset;
+        m_keptAliveThisOffset = original->m_keptAliveThisOffset;
+        m_securityCookieOffset = original->m_securityCookieOffset;
+        m_monitorAcquiredOffset = original->m_monitorAcquiredOffset;
+
+        for (unsigned i = 0; i < original->m_numberOfLocals; i++)
+        {
+            m_offsetAndExposureData[i] = original->m_offsetAndExposureData[i];
+        }
     }
 
     // Total size of this patchpoint info record, in bytes
@@ -48,10 +64,10 @@ struct PatchpointInfo
         return ComputeSize(m_numberOfLocals);
     }
 
-    // FP to SP delta of the original method
-    int FpToSpDelta() const
+    // Total frame size of the original method
+    int TotalFrameSize() const
     {
-        return m_fpToSpDelta;
+        return m_totalFrameSize;
     }
 
     // Number of locals in the original method (including special locals)
@@ -108,6 +124,22 @@ struct PatchpointInfo
         m_securityCookieOffset = offset;
     }
 
+    // Original method FP relative offset for monitor acquired flag
+    int MonitorAcquiredOffset() const
+    {
+        return m_monitorAcquiredOffset;
+    }
+
+    bool HasMonitorAcquired() const
+    {
+        return m_monitorAcquiredOffset != -1;
+    }
+
+    void SetMonitorAcquiredOffset(int offset)
+    {
+        m_monitorAcquiredOffset = offset;
+    }
+
     // True if this local was address exposed in the original method
     bool IsExposed(unsigned localNum) const
     {
@@ -137,10 +169,11 @@ private:
     };
 
     unsigned m_numberOfLocals;
-    int      m_fpToSpDelta;
+    int      m_totalFrameSize;
     int      m_genericContextArgOffset;
     int      m_keptAliveThisOffset;
     int      m_securityCookieOffset;
+    int      m_monitorAcquiredOffset;
     int      m_offsetAndExposureData[];
 };
 

@@ -13,7 +13,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly CByte7a
+.assembly 'cbyte7a'
 {
 
 
@@ -30,14 +30,7 @@
   .hash algorithm 0x00008004
   .ver 1:0:585:20133
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module CByte7a.exe
+.assembly extern xunit.core {}
 .imagebase 0x11000000
 .file alignment 0x00000200
 .stackreserve 0x00100000

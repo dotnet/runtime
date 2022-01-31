@@ -142,7 +142,6 @@ stages:
         - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
         jobParameters:
           testGroup: innerloop
-          liveLibrariesBuildConfig: Release
           dependsOn:
           - build_Linux_x64_Checked_
           - build_Linux_x64_Release_
@@ -191,7 +190,7 @@ stages:
         - Linux_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
-          isFullMatrix: false
+          isRollingBuild: false
           isOfficialBuild: false
           testScope: innerloop
           liveRuntimeBuildConfig: Release
@@ -208,7 +207,7 @@ stages:
         - windows_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:
-          isFullMatrix: false
+          isRollingBuild: false
           isOfficialBuild: false
           testScope: innerloop
           liveRuntimeBuildConfig: Release

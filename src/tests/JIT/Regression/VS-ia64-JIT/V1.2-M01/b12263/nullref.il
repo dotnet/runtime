@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly field017{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module field017.exe
+.assembly 'nullref'{}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit MyTest
        extends [mscorlib]System.Object

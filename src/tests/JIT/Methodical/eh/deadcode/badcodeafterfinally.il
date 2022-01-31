@@ -10,19 +10,12 @@
 .assembly extern mscorlib{
   .ver 0:0:0:0
 }
-.assembly extern common{}
-.assembly test
+.assembly extern eh_common{}
+.assembly 'badcodeafterfinally'
 {
   .ver 0:0:0:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module badcodeafterfinally.exe
+.assembly extern xunit.core {}
 
 
 .class public auto ansi beforefieldinit Test_badcodeafterfinally
@@ -73,7 +66,7 @@
     .entrypoint
     .locals init (object V_0,
 	  class [mscorlib]System.IO.StringWriter expectedOut,
-	  class [common]TestUtil.TestLog testLog
+	  class [eh_common]TestUtil.TestLog testLog
     )
     
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
@@ -82,20 +75,20 @@
     ldstr      "pass"
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
     call       object Test_badcodeafterfinally::GetObj()
     call       void [System.Console]System.Console::WriteLine(object)
     
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
     
     ldloc.s    testLog
-    callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+    callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     ret
   }

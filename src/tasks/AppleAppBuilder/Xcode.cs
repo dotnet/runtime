@@ -145,11 +145,12 @@ internal sealed class Xcode
         bool invariantGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
+        bool enableAppSandbox,
         string? diagnosticPorts,
         string? runtimeComponents=null,
         string? nativeMainSource = null)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, diagnosticPorts, runtimeComponents, nativeMainSource);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmLinkFiles, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -201,6 +202,7 @@ internal sealed class Xcode
         bool invariantGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
+        bool enableAppSandbox,
         string? diagnosticPorts,
         string? runtimeComponents=null,
         string? nativeMainSource = null)
@@ -236,13 +238,23 @@ internal sealed class Xcode
         var entitlements = new List<KeyValuePair<string, string>>();
 
         bool hardenedRuntime = false;
-        if (Target == TargetNames.MacCatalyst && !forceAOT) {
+        if (Target == TargetNames.MacCatalyst && !forceAOT)
+        {
             hardenedRuntime = true;
 
             /* for mmmap MAP_JIT */
             entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.allow-jit", "<true/>"));
             /* for loading unsigned dylibs like libicu from outside the bundle or libSystem.Native.dylib from inside */
             entitlements.Add (KeyValuePair.Create ("com.apple.security.cs.disable-library-validation", "<true/>"));
+        }
+
+        if (enableAppSandbox)
+        {
+            hardenedRuntime = true;
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.app-sandbox", "<true/>"));
+
+            // the networking entitlement is necessary to enable communication between the test app and xharness
+            entitlements.Add (KeyValuePair.Create ("com.apple.security.network.client", "<true/>"));
         }
 
         string cmakeLists = Utils.GetEmbeddedResource("CMakeLists.txt.template")

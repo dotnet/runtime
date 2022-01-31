@@ -29,14 +29,7 @@
   .hash algorithm 0x00008004
   .ver 4:0:30513:0
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module VectorForwarder.exe
+.assembly extern xunit.core {}
 // MVID: {040B5898-B7A8-44DE-A50F-3465CCB7870F}
 .imagebase 0x00400000
 .file alignment 0x00000200

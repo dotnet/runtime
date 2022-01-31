@@ -2,40 +2,18 @@
 <!--  Licensed to the .NET Foundation under one or more agreements. -->
 <!-- The .NET Foundation licenses this file to you under the MIT license. -->
 <html>
-  <head>
-    <title>App task</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
-  <body>
-    <h3 id="header">Wasm Browser Sample - App task frame</h3>
-    <span id="out"></span>
-    <script type='text/javascript'>
-      var test_exit = function(exit_code)
-      {
-        /* Set result in a tests_done element, to be read by xharness */
-        var tests_done_elem = document.createElement("label");
-        tests_done_elem.id = "tests_done";
-        tests_done_elem.innerHTML = exit_code.toString();
-        document.body.appendChild(tests_done_elem);
 
-        console.log(`WASM EXIT ${exit_code}`);
-      };
+<head>
+  <title>App task</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
 
-      window.addEventListener("pageshow", event => { window.parent.resolveAppStartEvent(event); })
+<body>
+  <h3 id="header">Wasm Browser Sample - App task frame</h3>
+  <span id="out"></span>
+  <script type="text/javascript" src="dotnet.js"></script>
+  <script type="text/javascript" src="frame-main.js"></script>
+</body>
 
-      var App = {
-        init: function () {
-          INTERNAL.call_static_method("[Wasm.Browser.Bench.Sample] Sample.AppStartTask/ReachManaged:Reached");
-        },
-
-        reached: function() {
-          window.parent.resolveAppStartEvent("reached");
-        }
-      };
-
-    </script>
-    <script type="text/javascript" src="runtime.js"></script>
-    <script defer src="dotnet.js"></script>
-  </body>
 </html>

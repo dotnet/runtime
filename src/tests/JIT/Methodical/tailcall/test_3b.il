@@ -8,33 +8,27 @@
   .ver 4:0:0:0
 }
 .assembly test_3b { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_test_3b
 {
   .class private value sealed ansi beforefieldinit ValueClass
   		extends [mscorlib]System.ValueType
   {
   		.field public float64 m_fld
   }
-  .class private auto ansi beforefieldinit TestClass
+  .class public auto ansi beforefieldinit TestClass
          extends [mscorlib]System.Object
   {
     .method private hidebysig  static 
-            int32 TestFunc2(value class JitTest.ValueClass) il managed
+            int32 TestFunc2(value class JitTest_test_3b.ValueClass) il managed
     {
       // Code size       10 (0xa)
       .maxstack  8
       .locals init (int32 V_0)
-      sizeof value class JitTest.ValueClass
+      sizeof value class JitTest_test_3b.ValueClass
       localloc
       ldarg.0
-      stobj value class JitTest.ValueClass
+      stobj value class JitTest_test_3b.ValueClass
       ldc.i4.0
       ret
     } // end of method TestClass::TestFunc2
@@ -44,17 +38,17 @@
     {
       // Code size       22 (0x16)
       .maxstack  8
-      sizeof value class JitTest.ValueClass
+      sizeof value class JitTest_test_3b.ValueClass
       localloc
       dup
-      initobj value class JitTest.ValueClass
-      ldobj value class JitTest.ValueClass
+      initobj value class JitTest_test_3b.ValueClass
+      ldobj value class JitTest_test_3b.ValueClass
       tail.
-      call int32 JitTest.TestClass::TestFunc2(value class JitTest.ValueClass)
+      call int32 JitTest_test_3b.TestClass::TestFunc2(value class JitTest_test_3b.ValueClass)
       ret
     } // end of method TestClass::TestFunc1
 
-    .method private hidebysig  static 
+    .method public hidebysig  static 
             int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -64,7 +58,7 @@
       // Code size       38 (0x26)
       .maxstack  1
       .locals (int32 V_0)
-      IL_0000:  call       int32 JitTest.TestClass::TestFunc1()
+      IL_0000:  call       int32 JitTest_test_3b.TestClass::TestFunc1()
       IL_0005:  brfalse.s  IL_0015
 
       IL_0007:  ldstr      "failed"

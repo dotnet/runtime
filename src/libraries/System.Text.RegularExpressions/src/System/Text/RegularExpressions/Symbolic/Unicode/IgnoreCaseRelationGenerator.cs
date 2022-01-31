@@ -3,12 +3,14 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 
 namespace System.Text.RegularExpressions.Symbolic.Unicode
 {
 #if DEBUG
+    [ExcludeFromCodeCoverage]
     internal static class IgnoreCaseRelationGenerator
     {
         private const string DefaultCultureName = "en-US";

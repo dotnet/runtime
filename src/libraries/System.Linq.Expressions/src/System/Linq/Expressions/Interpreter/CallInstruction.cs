@@ -16,13 +16,13 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public abstract int ArgumentCount { get; }
 
+        private static bool CanCreateArbitraryDelegates => true;
+
         #region Construction
 
         public override string InstructionName => "Call";
 
-#if FEATURE_DLG_INVOKE
         private static readonly CacheDict<MethodInfo, CallInstruction> s_cache = new CacheDict<MethodInfo, CallInstruction>(256);
-#endif
 
         public static CallInstruction Create(MethodInfo info)
         {
@@ -47,9 +47,9 @@ namespace System.Linq.Expressions.Interpreter
                 return GetArrayAccessor(info, argumentCount);
             }
 
-#if !FEATURE_DLG_INVOKE
-            return new MethodInfoCallInstruction(info, argumentCount);
-#else
+            if (!CanCreateArbitraryDelegates)
+                return new MethodInfoCallInstruction(info, argumentCount);
+
             if (!info.IsStatic && info.DeclaringType!.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
@@ -119,7 +119,6 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             return res;
-#endif
         }
 
         private static CallInstruction GetArrayAccessor(MethodInfo info, int argumentCount)
@@ -171,12 +170,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             array.SetValue(value, index0, index1, index2);
         }
-#if FEATURE_DLG_INVOKE
+
         private static bool ShouldCache(MethodInfo info)
         {
             return true;
         }
-#endif
 
 #if FEATURE_FAST_CREATE
         /// <summary>
@@ -215,7 +213,6 @@ namespace System.Linq.Expressions.Interpreter
         }
 #endif
 
-#if FEATURE_DLG_INVOKE
         /// <summary>
         /// Uses reflection to create new instance of the appropriate ReflectedCaller
         /// </summary>
@@ -243,7 +240,6 @@ namespace System.Linq.Expressions.Interpreter
                 throw ContractUtils.Unreachable;
             }
         }
-#endif
 
         #endregion
 

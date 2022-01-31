@@ -51,7 +51,7 @@ GVAL_DECL(TADDR, g_MiniMetaDataBuffAddress);
 
 EXTERN_C VOID STDCALL NDirectImportThunk();
 
-#define METHOD_TOKEN_REMAINDER_BIT_COUNT 14
+#define METHOD_TOKEN_REMAINDER_BIT_COUNT 13
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
@@ -611,7 +611,6 @@ public:
             || mcArray == GetClassification();
     }
 
-
     inline DWORD IsArray() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -710,8 +709,6 @@ public:
         WRAPPER_NO_CONTRACT;
         return mcFCall == GetClassification();
     }
-
-    BOOL IsFCallOrIntrinsic();
 
     BOOL IsQCall();
 
@@ -1652,8 +1649,6 @@ public:
     VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
     VOID GetFullMethodInfo(SString& fullMethodSigName);
 
-    BOOL HasTypeEquivalentStructParameters();
-
     typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Module *pDefModule, mdToken tkDefToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData);
 
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
@@ -1665,6 +1660,9 @@ public:
             PrepareForUseAsADependencyOfANativeImageWorker();
     }
 
+    void PrepareForUseAsAFunctionPointer();
+
+private:
     void PrepareForUseAsADependencyOfANativeImageWorker();
 
     //================================================================
@@ -1674,13 +1672,12 @@ protected:
     enum {
         // There are flags available for use here (currently 5 flags bits are available); however, new bits are hard to come by, so any new flags bits should
         // have a fairly strong justification for existence.
-        enum_flag3_TokenRemainderMask                       = 0x3FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file
-                                                                      // These are seperate to allow the flags space available and used to be obvious here
-                                                                      // and for the logic that splits the token to be algorithmically generated based on the
-                                                                      // #define
-        // unused                                           = 0x4000,
-        enum_flag3_ValueTypeParametersWalked                = 0x4000, // Indicates that all typeref's in the signature of the method have been resolved to typedefs (or that process failed) (this flag is only valid for non-ngenned methods)
-        enum_flag3_DoesNotHaveEquivalentValuetypeParameters = 0x8000, // Indicates that we have verified that there are no equivalent valuetype parameters for this method
+        enum_flag3_TokenRemainderMask                       = 0x1FFF, // This must equal METHOD_TOKEN_REMAINDER_MASK calculated higher in this file.
+        enum_flag3_ValueTypeParametersWalked                = 0x2000, // Indicates that all typeref's in the signature of the method have been resolved
+                                                                      // to typedefs (or that process failed).
+        enum_flag3_ValueTypeParametersLoaded                = 0x4000, // Indicates if the valuetype parameter types have been loaded.
+        enum_flag3_DoesNotHaveEquivalentValuetypeParameters = 0x8000, // Indicates that we have verified that there are no equivalent valuetype parameters
+                                                                      // for this method.
     };
     UINT16      m_wFlags3AndTokenRemainder;
 
@@ -1694,7 +1691,7 @@ protected:
         enum_flag2_IsUnboxingStub                       = 0x04,
         // unused                                       = 0x08,
 
-        enum_flag2_IsJitIntrinsic                       = 0x10,   // Jit may expand method as an intrinsic
+        enum_flag2_IsIntrinsic                          = 0x10,   // Jit may expand method as an intrinsic
 
         enum_flag2_IsEligibleForTieredCompilation       = 0x20,
 
@@ -1750,16 +1747,16 @@ public:
         m_wFlags |= mdcHasNativeCodeSlot;
     }
 
-    inline BOOL IsJitIntrinsic()
+    inline BOOL IsIntrinsic()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_bFlags2 & enum_flag2_IsJitIntrinsic) != 0;
+        return (m_bFlags2 & enum_flag2_IsIntrinsic) != 0;
     }
 
-    inline void SetIsJitIntrinsic()
+    inline void SetIsIntrinsic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_IsJitIntrinsic;
+        m_bFlags2 |= enum_flag2_IsIntrinsic;
     }
 
     BOOL RequiresCovariantReturnTypeChecking()
@@ -1794,6 +1791,30 @@ public:
 
     WORD InterlockedUpdateFlags3(WORD wMask, BOOL fSet);
 
+    inline BOOL HaveValueTypeParametersBeenWalked()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersWalked) != 0;
+    }
+
+    inline void SetValueTypeParametersWalked()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersWalked, TRUE);
+    }
+
+    inline BOOL HaveValueTypeParametersBeenLoaded()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersLoaded) != 0;
+    }
+
+    inline void SetValueTypeParametersLoaded()
+    {
+        LIMITED_METHOD_CONTRACT;
+        InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersLoaded, TRUE);
+    }
+
 #ifdef FEATURE_TYPEEQUIVALENCE
     inline BOOL DoesNotHaveEquivalentValuetypeParameters()
     {
@@ -1807,18 +1828,6 @@ public:
         InterlockedUpdateFlags3(enum_flag3_DoesNotHaveEquivalentValuetypeParameters, TRUE);
     }
 #endif // FEATURE_TYPEEQUIVALENCE
-
-    inline BOOL HaveValueTypeParametersBeenWalked()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags3AndTokenRemainder & enum_flag3_ValueTypeParametersWalked) != 0;
-    }
-
-    inline void SetValueTypeParametersWalked()
-    {
-        LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags3(enum_flag3_ValueTypeParametersWalked, TRUE);
-    }
 
     //
     // Optional MethodDesc slots appear after the end of base MethodDesc in this order:
@@ -2159,7 +2168,7 @@ class MethodDescChunk
     friend class CheckAsmOffsets;
 
     enum {
-        enum_flag_TokenRangeMask                           = 0x03FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
+        enum_flag_TokenRangeMask                           = 0x07FF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
                                                                      // These are seperate to allow the flags space available and used to be obvious here
                                                                      // and for the logic that splits the token to be algorithmically generated based on the
                                                                      // #define
@@ -2594,7 +2603,7 @@ public:
     bool HasMDContextArg()
     {
         LIMITED_METHOD_CONTRACT;
-        return IsCLRToCOMStub() || IsPInvokeStub();
+        return IsCLRToCOMStub() || (IsPInvokeStub() && !IsDelegateStub());
     }
 
     //
@@ -2629,7 +2638,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        // The ru
         DWORD dwSlot = GetSlot();
         DWORD dwVirtuals = GetMethodTable()->GetNumVirtuals();
         _ASSERTE(dwSlot >= dwVirtuals);
@@ -2638,7 +2646,6 @@ public:
 
     LPCUTF8 GetMethodName();
     DWORD GetAttrs();
-    CorInfoIntrinsics GetIntrinsicID();
 };
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE

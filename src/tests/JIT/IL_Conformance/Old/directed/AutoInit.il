@@ -3,11 +3,21 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly autoinit{}
+.assembly AutoInit {}
+.assembly extern xunit.core
+{
+	.publickeytoken = (
+		8d 05 b1 bb 7a 6f db 6c
+	)
+	.ver 2:4:2:0
+}
 
 .class public auto_init {
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
 .zeroinit
 .entrypoint
 .locals	(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)

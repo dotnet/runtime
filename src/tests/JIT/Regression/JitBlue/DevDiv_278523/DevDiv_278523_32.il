@@ -2,15 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module a.exe
+.assembly 'DevDiv_278523_32' {}
+.assembly extern xunit.core {}
 
 // This test originally triggered an assert when computing the value number for a block assignment. In particular, the
 // VN framework expected any block assignments to a tracked lclVar to have a destination address of the form

@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'fr4'// as "fr4"
+.assembly 'fr8'// as "fr4"
 {
 
   //  .custom instance void ['mscorlib']System.Diagnostics.DebuggableAttribute::.ctor(bool,
@@ -19,14 +19,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'fr4.exe'
+.assembly extern xunit.core {}
 // MVID: {B1A03CB5-0762-4E9F-BA39-E5C10C9A69AE}
 .namespace JitTest
 {

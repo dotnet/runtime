@@ -1,15 +1,9 @@
 // Test localloc with tail call followed by jump
 .assembly extern legacy library mscorlib {}
-.assembly extern common{}
+.assembly extern localloc_common{}
 .assembly extern legacy library mscorlib {}
-.assembly call06{}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'repro'{}
+.assembly extern xunit.core {}
 
 .class private auto ansi beforefieldinit LocallocTest
        extends [mscorlib]System.Object
@@ -34,7 +28,7 @@
     IL_0012:  ldloc.0
     IL_0013:  ldsfld     int32 LocallocTest::locallocSize
     IL_0018:  ldc.i4     1000
-    IL_001d:  call       void [common]LocallocTesting.Global::initializeStack(int32*,
+    IL_001d:  call       void [localloc_common]LocallocTesting.Global::initializeStack(int32*,
                                                                               int32,
                                                                               int32)
     IL_0032:  newobj     instance void LocallocTest::.ctor()
@@ -78,7 +72,7 @@
     IL_0021:  ldarg.s    ar1
     IL_0023:  ldsfld     int32 LocallocTest::locallocSize
     IL_0028:  ldc.i4     1000
-    IL_002d:  call       bool [common]LocallocTesting.Global::verifyStack(string,
+    IL_002d:  call       bool [localloc_common]LocallocTesting.Global::verifyStack(string,
                                                                           int32*,
                                                                           int32,
                                                                           int32)

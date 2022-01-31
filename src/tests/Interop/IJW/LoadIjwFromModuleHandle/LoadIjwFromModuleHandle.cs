@@ -5,11 +5,8 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Internal.Runtime.InteropServices;
 using TestLibrary;
 using Xunit;
-
-using Console = Internal.Console;
 
 namespace LoadIjwFromModuleHandle
 {
@@ -38,7 +35,15 @@ namespace LoadIjwFromModuleHandle
                     string.Empty))
                 fixed (char* path = ijwModulePath)
                 {
-                    InMemoryAssemblyLoader.LoadInMemoryAssembly(ijwNativeHandle, (IntPtr)path);
+                    typeof(object).Assembly
+                        .GetType("Internal.Runtime.InteropServices.InMemoryAssemblyLoader")
+                        .GetMethod("LoadInMemoryAssembly")
+                        .Invoke(
+                            null,
+                            BindingFlags.DoNotWrapExceptions,
+                            binder: null,
+                            new object[] { ijwNativeHandle, (IntPtr)path },
+                            culture: null);
                 }
 
                 NativeEntryPointDelegate nativeEntryPoint = Marshal.GetDelegateForFunctionPointer<NativeEntryPointDelegate>(NativeLibrary.GetExport(ijwNativeHandle, "NativeEntryPoint"));

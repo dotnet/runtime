@@ -150,19 +150,16 @@ namespace System.Text.RegularExpressions.Generator
 
             // Validate the options
             const RegexOptions SupportedOptions =
-                RegexOptions.IgnoreCase |
-                RegexOptions.Multiline |
-                RegexOptions.ExplicitCapture |
                 RegexOptions.Compiled |
-                RegexOptions.Singleline |
-                RegexOptions.IgnorePatternWhitespace |
-                RegexOptions.RightToLeft |
-#if DEBUG
-                RegexOptions.Debug |
-#endif
-                RegexOptions.ECMAScript |
                 RegexOptions.CultureInvariant |
-                RegexOptions.NonBacktracking;
+                RegexOptions.ECMAScript |
+                RegexOptions.ExplicitCapture |
+                RegexOptions.IgnoreCase |
+                RegexOptions.IgnorePatternWhitespace |
+                RegexOptions.Multiline |
+                RegexOptions.NonBacktracking |
+                RegexOptions.RightToLeft |
+                RegexOptions.Singleline;
             if ((regexOptions & ~SupportedOptions) != 0)
             {
                 return Diagnostic.Create(DiagnosticDescriptors.InvalidRegexArguments, methodSyntax.GetLocation(), "options");
@@ -178,7 +175,7 @@ namespace System.Text.RegularExpressions.Generator
             RegexCode code;
             try
             {
-                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture));
+                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture), culture);
             }
             catch (Exception e)
             {
@@ -190,6 +187,7 @@ namespace System.Text.RegularExpressions.Generator
                 SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 
             var regexMethod = new RegexMethod(
+                methodSyntax,
                 regexMethodSymbol.Name,
                 methodSyntax.Modifiers.ToString(),
                 pattern,
@@ -201,8 +199,7 @@ namespace System.Text.RegularExpressions.Generator
                 regexMethod,
                 typeDec is RecordDeclarationSyntax rds ? $"{typeDec.Keyword.ValueText} {rds.ClassOrStructKeyword}" : typeDec.Keyword.ValueText,
                 ns ?? string.Empty,
-                $"{typeDec.Identifier}{typeDec.TypeParameterList}",
-                typeDec.ConstraintClauses.ToString());
+                $"{typeDec.Identifier}{typeDec.TypeParameterList}");
 
             RegexType current = regexType;
             var parent = typeDec.Parent as TypeDeclarationSyntax;
@@ -213,8 +210,7 @@ namespace System.Text.RegularExpressions.Generator
                     null,
                     parent is RecordDeclarationSyntax rds2 ? $"{parent.Keyword.ValueText} {rds2.ClassOrStructKeyword}" : parent.Keyword.ValueText,
                     ns ?? string.Empty,
-                    $"{parent.Identifier}{parent.TypeParameterList}",
-                    parent.ConstraintClauses.ToString());
+                    $"{parent.Identifier}{parent.TypeParameterList}");
 
                 current = current.ParentClass;
                 parent = parent.Parent as TypeDeclarationSyntax;
@@ -231,10 +227,10 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>A regex method.</summary>
-        internal sealed record RegexMethod(string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
+        internal sealed record RegexMethod(MethodDeclarationSyntax MethodSyntax, string MethodName, string Modifiers, string Pattern, RegexOptions Options, int MatchTimeout, RegexCode Code);
 
         /// <summary>A type holding a regex method.</summary>
-        internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name, string Constraints)
+        internal sealed record RegexType(RegexMethod? Method, string Keyword, string Namespace, string Name)
         {
             public RegexType? ParentClass { get; set; }
         }

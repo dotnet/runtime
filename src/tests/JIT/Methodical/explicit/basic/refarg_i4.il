@@ -17,14 +17,7 @@
   
   
 }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.module 'refarg_i4.exe'
+.assembly extern xunit.core {}
 // MVID: {0D4BD404-2598-466F-9449-2F343E513C7B}
 .namespace Test
 {

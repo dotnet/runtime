@@ -20,20 +20,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         }
 
         public ReadOnlySpanMarshaller(ReadOnlySpan<T> managed, int sizeOfNativeElement)
+            :this(managed, Span<byte>.Empty, sizeOfNativeElement)
         {
-            _allocatedMemory = default;
-            _sizeOfNativeElement = sizeOfNativeElement;
-            if (managed.Length == 0)
-            {
-                _managedSpan = default;
-                NativeValueStorage = default;
-                return;
-            }
-            _managedSpan = managed;
-            _sizeOfNativeElement = sizeOfNativeElement;
-            int spaceToAllocate = managed.Length * sizeOfNativeElement;
-            _allocatedMemory = Marshal.AllocCoTaskMem(spaceToAllocate);
-            NativeValueStorage = new Span<byte>((void*)_allocatedMemory, spaceToAllocate);
         }
 
         public ReadOnlySpanMarshaller(ReadOnlySpan<T> managed, Span<byte> stackSpace, int sizeOfNativeElement)
@@ -64,7 +52,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
         /// blow the stack since this is a new optimization in the code-generated interop.
         /// </summary>
-        public const int StackBufferSize = 0x200;
+        public const int BufferSize = 0x200;
+        public const bool RequiresStackBuffer = true;
 
         public Span<T> ManagedValues => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(_managedSpan), _managedSpan.Length);
 
@@ -81,8 +70,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             get
             {
-                Debug.Assert(_managedSpan.IsEmpty || _allocatedMemory != IntPtr.Zero);
-                return (byte*)_allocatedMemory;
+                return (byte*)Unsafe.AsPointer(ref GetPinnableReference());
             }
             set
             {
@@ -133,7 +121,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
         /// blow the stack since this is a new optimization in the code-generated interop.
         /// </summary>
-        public const int StackBufferSize = ReadOnlySpanMarshaller<T>.StackBufferSize;
+        public const int BufferSize = ReadOnlySpanMarshaller<T>.BufferSize;
+        public const bool RequiresStackBuffer = ReadOnlySpanMarshaller<T>.RequiresStackBuffer;
 
         public Span<T> ManagedValues => _inner.ManagedValues;
 
@@ -193,7 +182,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// Number kept small to ensure that P/Invokes with a lot of span parameters doesn't
         /// blow the stack.
         /// </summary>
-        public const int StackBufferSize = SpanMarshaller<T>.StackBufferSize;
+        public const int BufferSize = SpanMarshaller<T>.BufferSize;
 
         public Span<T> ManagedValues => _inner.ManagedValues;
 
@@ -222,7 +211,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             {
                 if (_inner.ManagedValues.Length == 0)
                 {
-                    return (byte*)0x1;
+                    return (byte*)0xa5a5a5a5;
                 }
                 return _inner.Value;
             }
@@ -264,7 +253,8 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// Number kept small to ensure that P/Invokes with a lot of span parameters doesn't
         /// blow the stack.
         /// </summary>
-        public const int StackBufferSize = SpanMarshaller<T>.StackBufferSize;
+        public const int BufferSize = SpanMarshaller<T>.BufferSize;
+        public const bool RequiresStackBuffer = SpanMarshaller<T>.RequiresStackBuffer;
 
         public Span<T> ManagedValues => _inner.ManagedValues;
 
@@ -293,7 +283,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             {
                 if (_inner.ManagedValues.Length == 0)
                 {
-                    return (byte*)0x1;
+                    return (byte*)0xa5a5a5a5;
                 }
                 return _inner.Value;
             }
@@ -350,7 +340,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         /// <summary>
         /// Stack-alloc threshold set to 0 so that the generator can use the constructor that takes a stackSpace to let the marshaller know that the original data span can be used and safely pinned.
         /// </summary>
-        public const int StackBufferSize = 0;
+        public const int BufferSize = 0;
 
         public Span<T> ManagedValues => _data;
 
@@ -369,8 +359,11 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
         {
             get
             {
-                Debug.Assert(_data.IsEmpty || _allocatedMemory != null);
-                return _allocatedMemory;
+                if (_allocatedMemory  != null)
+                {
+                    return _allocatedMemory;
+                }
+                return (T*)Unsafe.AsPointer(ref GetPinnableReference());
             }
             set
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // DESCRIPTION:
 // 
 // This tests that a generic struct that implements a non-generic abstract interface cannot 
@@ -24,7 +25,7 @@
            42 87 88 29 )                                     // B..)
   .ver 1:1:3300:0
 }
-.assembly abstract01
+.assembly 'abstract10'
 {
 
   // --- The following custom attribute is added automatically, do not uncomment -------
@@ -34,7 +35,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module abstract01.exe
 // MVID: {5A88CE82-E7F1-4C78-86E2-8F583AB86D2B}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -177,6 +177,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       113 (0x71)
     .maxstack  1

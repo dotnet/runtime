@@ -165,7 +165,7 @@ namespace System.IO.Compression
         private bool Decode()
         {
             bool eob = false;
-            bool result = false;
+            bool result;
 
             if (Finished())
             {
@@ -689,7 +689,5 @@ namespace System.IO.Compression
             _state = InflaterState.DecodeTop;
             return true;
         }
-
-        public void Dispose() { }
     }
 }

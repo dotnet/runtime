@@ -8,31 +8,25 @@
   .ver 4:0:0:0
 }
 .assembly compat_obj { }
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_compat_obj
 {
   .class public auto ansi beforefieldinit BaseClass
          extends [mscorlib]System.Object
   {
     .method public hidebysig  static 
-            class JitTest.BaseClass  caller(bool which) il managed
+            class JitTest_compat_obj.BaseClass  caller(bool which) il managed
     {
       // Code size       18 (0x12)
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  brfalse.s  IL_000a
 
-      IL_0003:  newobj     instance void JitTest.BaseClass::.ctor()
+      IL_0003:  newobj     instance void JitTest_compat_obj.BaseClass::.ctor()
       IL_0008:  br.s       IL_0011
 
       IL_000a:  tail.
-      IL_000c:  call       class JitTest.DerivedClass JitTest.DerivedClass::callee()
+      IL_000c:  call       class JitTest_compat_obj.DerivedClass JitTest_compat_obj.DerivedClass::callee()
       IL_0011:  ret
     } // end of method BaseClass::caller
 
@@ -49,14 +43,14 @@
   } // end of class BaseClass
 
   .class public auto ansi beforefieldinit DerivedClass
-         extends JitTest.BaseClass
+         extends JitTest_compat_obj.BaseClass
   {
     .method public hidebysig  static 
-            class JitTest.DerivedClass callee() il managed
+            class JitTest_compat_obj.DerivedClass callee() il managed
     {
       // Code size       6 (0x6)
       .maxstack  8
-      IL_0000:  newobj     instance void JitTest.DerivedClass::.ctor()
+      IL_0000:  newobj     instance void JitTest_compat_obj.DerivedClass::.ctor()
       IL_0005:  ret
     } // end of method DerivedClass::callee
 
@@ -71,10 +65,10 @@
       .maxstack  1
       .locals (int32 V_0)
       IL_0000:  ldc.i4.0
-      IL_0001:  call       class JitTest.BaseClass JitTest.BaseClass::caller(bool)
+      IL_0001:  call       class JitTest_compat_obj.BaseClass JitTest_compat_obj.BaseClass::caller(bool)
       IL_0006:  call       void [System.Console]System.Console::WriteLine(class System.Object)
       IL_000b:  ldc.i4.1
-      IL_000c:  call       class JitTest.BaseClass JitTest.BaseClass::caller(bool)
+      IL_000c:  call       class JitTest_compat_obj.BaseClass JitTest_compat_obj.BaseClass::caller(bool)
       IL_0011:  call       void [System.Console]System.Console::WriteLine(class System.Object)
       IL_0016:  ldstr      "passed"
       IL_001b:  call       void [System.Console]System.Console::WriteLine(class System.String)
@@ -92,12 +86,12 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void JitTest.BaseClass::.ctor()
+      IL_0001:  call       instance void JitTest_compat_obj.BaseClass::.ctor()
       IL_0006:  ret
     } // end of method DerivedClass::.ctor
 
   } // end of class DerivedClass
 
-} // end of namespace JitTest
+} // end of namespace JitTest_compat_obj
 
 //*********** DISASSEMBLY COMPLETE ***********************

@@ -7,14 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0xe2ce7565 {}
-.assembly extern xunit.core
-{
-    .publickeytoken = (
-        8d 05 b1 bb 7a 6f db 6c
-     )
-     .ver 2:4:2:0
-}
+.assembly 'b80373' {}
+.assembly extern xunit.core {}
 .class ILGEN_0xe2ce7565 {
 .method static unsigned int8  Method_0xe8a4bb67(int64 Arg_0x0, unsigned int16 Arg_0x1, unsigned int64 Arg_0x2, unsigned int16 Arg_0x3, int32 Arg_0x4) {
 .maxstack	11

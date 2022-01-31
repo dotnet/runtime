@@ -111,6 +111,14 @@ jobs:
         targetFolder: '$(SpmiAsmdiffsLocation)'
       condition: always()
 
+    - task: CopyFiles@2
+      displayName: Copying dasm files of all partitions
+      inputs:
+        sourceFolder: '$(HelixResultLocation)'
+        contents: '**/Asmdiffs_*.zip'
+        targetFolder: '$(SpmiAsmdiffsLocation)'
+      condition: always()
+
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_asmdiffs_summarize.py -diff_summary_dir $(SpmiAsmdiffsLocation) -arch $(archType)
       displayName: ${{ format('Summarize ({0})', parameters.archType) }}
       condition: always()
