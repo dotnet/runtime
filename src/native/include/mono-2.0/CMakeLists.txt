@@ -58,6 +58,6 @@ add_library(monoapi INTERFACE)
 target_link_libraries(monoapi INTERFACE monoapi_utils monoapi_metadata)
 
 if(NOT DISABLE_LIBS)
-  install(TARGETS monoapi_utils PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/utils)
-  install(TARGETS monoapi_metadata PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/metadata)
+  install(TARGETS monoapi_utils PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/utils)
+  install(TARGETS monoapi_metadata PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/mono-2.0/mono/metadata)
 endif()
