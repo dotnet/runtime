@@ -99,7 +99,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return Node._builder.MkState(derivative, nextCharKind);
         }
 
-        internal IEnumerable<(DfaMatchingState<T>, List<DerivativeEffect>)> AntimirovNextWithEffects(T minterm)
+        internal IEnumerable<(DfaMatchingState<T>, List<DerivativeEffect>)> AntimirovEagerNextWithEffects(T minterm)
         {
             ICharAlgebra<T> alg = Node._builder._solver;
             T wordLetterPredicate = Node._builder._wordLetterPredicateForAnchors;
@@ -130,7 +130,8 @@ namespace System.Text.RegularExpressions.Symbolic
             uint context = CharKind.Context(PrevCharKind, nextCharKind);
 
             // Compute the derivative of the node for the given context
-            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects = Node.MkDerivative().TransitionsWithEffects(minterm, context);
+            IEnumerable<(SymbolicRegexNode<T>, List<DerivativeEffect>)> derivativesAndEffects =
+                Node.MkDerivativeWithEffects(context, eager: true).TransitionsWithEffects(minterm, context);
 
             foreach (var (derivative, effects) in derivativesAndEffects)
             {

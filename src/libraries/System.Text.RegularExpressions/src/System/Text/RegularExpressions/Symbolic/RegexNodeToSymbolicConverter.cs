@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,14 +16,16 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexBuilder<BDD> _builder;
         private readonly CultureInfo _culture;
         private readonly Dictionary<(bool, string), BDD> _createConditionFromSet_Cache = new();
+        private readonly Hashtable? _caps;
 
         /// <summary>Constructs a regex to symbolic finite automata converter</summary>
-        public RegexNodeToSymbolicConverter(Unicode.UnicodeCategoryTheory<BDD> categorizer, CultureInfo culture)
+        public RegexNodeToSymbolicConverter(Unicode.UnicodeCategoryTheory<BDD> categorizer, CultureInfo culture, Hashtable? caps = null)
         {
             _categorizer = categorizer;
             _culture = culture;
             Solver = categorizer._solver;
             _builder = new SymbolicRegexBuilder<BDD>(Solver);
+            _caps = caps;
         }
 
         /// <summary>The character solver associated with the regex converter</summary>
@@ -231,7 +234,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _builder._bolAnchor;
 
                 case RegexNodeKind.Capture when node.N == -1:
-                    return _builder.MkCapture(Convert(node.Child(0), topLevel: false), node.M);
+                    int captureNum;
+                    if (_caps == null || !_caps.TryGetValue(node.M, out captureNum))
+                        captureNum = node.M;
+                    return _builder.MkCapture(Convert(node.Child(0), topLevel: false), captureNum);
 
                 case RegexNodeKind.Concatenate:
                     {

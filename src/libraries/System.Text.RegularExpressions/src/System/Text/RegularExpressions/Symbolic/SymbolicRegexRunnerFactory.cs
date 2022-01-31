@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions.Symbolic.Unicode;
@@ -17,7 +18,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly ISymbolicRegexMatcher _matcher;
 
         /// <summary>Initializes the factory.</summary>
-        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture, int capsize)
+        public SymbolicRegexRunnerFactory(RegexCode code, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture, int capsize, Hashtable? caps)
         {
             // RightToLeft and ECMAScript are currently not supported in conjunction with NonBacktracking.
             if ((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) != 0)
@@ -27,7 +28,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         (options & RegexOptions.RightToLeft) != 0 ? nameof(RegexOptions.RightToLeft) : nameof(RegexOptions.ECMAScript)));
             }
 
-            var converter = new RegexNodeToSymbolicConverter(s_unicode, culture);
+            var converter = new RegexNodeToSymbolicConverter(s_unicode, culture, caps);
             var solver = (CharSetSolver)s_unicode._solver;
             SymbolicRegexNode<BDD> root = converter.Convert(code.Tree.Root, topLevel: true);
 

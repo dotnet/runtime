@@ -427,7 +427,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (p is null)
                 {
                     // this is the only place in code where the Next method is called in the matcher
-                    _builder._capturingDelta[offset] = p = new List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>(state.AntimirovNextWithEffects(minterm));
+                    _builder._capturingDelta[offset] = p = new List<(DfaMatchingState<TSetType>, List<DerivativeEffect>)>(state.AntimirovEagerNextWithEffects(minterm));
                 }
 
                 return p;
@@ -502,7 +502,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             int i_end;
-            if (_capsize == 0)
+            if (_capsize == 1)
             {
                 if (watchdog >= 0)
                 {
@@ -616,7 +616,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Empty match exists because the initial state is accepting.
                 i_end = i - 1;
                 endRegisters = initialRegisters.Clone();
-                state.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1));
+                state.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i), CharKind.Context(state.PrevCharKind, GetCharKind(input, i)));
 
                 // Stop here if q is lazy.
                 if (state.IsLazy)
@@ -645,18 +645,10 @@ namespace System.Text.RegularExpressions.Symbolic
                         // Accepting state has been reached. Record the position.
                         i_end = i;
                         endRegisters = registers.Clone();
-                        q.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1));
+                        q.Node.ApplyEffects(effect => endRegisters.ApplyEffect(effect, i + 1), CharKind.Context(q.PrevCharKind, GetCharKind(input, i + 1)));
 
                         // Remove any lower priority states
-                        if (q.IsLazy)
-                        {
-                            // Also remove this state if it is lazy
-                            current.RemoveRange(m, current.Count - m);
-                        }
-                        else
-                        {
-                            current.RemoveRange(m + 1, current.Count - m - 1);
-                        }
+                        current.RemoveRange(m + 1, current.Count - m - 1);
                         break;
                     }
                     else if (q.IsDeadend)

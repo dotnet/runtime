@@ -149,13 +149,13 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TElement>? or = null;
             foreach (SymbolicRegexNode<TElement> elem in regexes)
             {
-                if (elem == _nothing)
+                if (elem.IsNothing)
                     continue;
                 if (or == null)
                     or = elem;
                 else
                     or = SymbolicRegexNode<TElement>.MkOrderedOr(this, or, elem);
-                if (elem == _anyStar)
+                if (elem.IsAnyStar)
                     break; // .* is the absorbing element
             }
             if (or == null)
