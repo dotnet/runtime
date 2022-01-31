@@ -890,15 +890,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.url = url;
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
 
-            this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + url, UriKind.RelativeOrAbsolute);
-            if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
+            this.SourceUri = new Uri(url, UriKind.RelativeOrAbsolute);
+            if (SourceUri.IsFile && (File.Exists(SourceUri.LocalPath) || File.Exists(url)))
             {
                 this.Url = this.SourceUri.ToString();
+                return;
             }
-            else
-            {
-                this.Url = DotNetUrl;
-            }
+            this.Url = DotNetUrl;
         }
 
         internal void AddMethod(MethodInfo mi)
