@@ -928,5 +928,15 @@ namespace DebuggerTests
             );
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
+
+        [Fact]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", "DebuggerTests.CheckSpecialCharactersInPath", "Evaluate", 1);
+            Assert.True(
+                bp.Value["breakpointId"].Value<string>().EndsWith("debugger-test-special-char-in-path-%23%40/test.cs"), 
+                "Failed to set a breakpoint in project with special characters in path."
+                );
+        }
     }
 }
