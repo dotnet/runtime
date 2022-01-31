@@ -34,6 +34,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			TestGenericParameterFlowsToField ();
 			TestGenericParameterFlowsToReturnValue ();
+
+			TestNoWarningsInRUCMethod<TestType> ();
+			TestNoWarningsInRUCType<TestType> ();
 		}
 
 		static void TestSingleGenericParameterOnType ()
@@ -79,6 +82,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (T).RequiresPublicFields ();
 				typeof (T).RequiresPublicMethods ();
 				typeof (T).RequiresNone ();
+			}
+
+			[RequiresUnreferencedCode ("message")]
+			public static void RUCTest ()
+			{
+				typeof (T).RequiresPublicMethods ();
 			}
 
 			[UnrecognizedReflectionAccessPattern (typeof (GenericParameterDataFlow), nameof (FieldRequiresPublicMethods),
@@ -479,6 +488,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			typeof (T).RequiresPublicFields ();
 			typeof (T).RequiresPublicMethods ();
 			typeof (T).RequiresNone ();
+		}
+
+		[RequiresUnreferencedCode ("message")]
+		static void RUCMethodRequiresPublicMethods<
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
+		{
+			typeof (T).RequiresPublicFields ();
 		}
 
 		[UnrecognizedReflectionAccessPattern (typeof (DataFlowTypeExtensions), nameof (DataFlowTypeExtensions.RequiresPublicFields), new Type[] { typeof (Type) }, messageCode: "IL2087")]
@@ -1288,6 +1304,84 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static void RequiresParameterlessConstructor<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> ()
 		{
+		}
+
+		// Warn about calls to static methods:
+		[ExpectedWarning ("IL2026", "TypeRequiresPublicFields<T>.RUCTest()", "message")]
+		[ExpectedWarning ("IL2026", "RUCMethodRequiresPublicMethods<T>()", "message")]
+		// And about type/method generic parameters on the RUC methods:
+		[ExpectedWarning ("IL2091", "TypeRequiresPublicFields<T>")]
+		[ExpectedWarning ("IL2091", "RUCMethodRequiresPublicMethods<T>()")]
+		static void TestNoWarningsInRUCMethod<T> ()
+		{
+			TypeRequiresPublicFields<T>.RUCTest ();
+			RUCMethodRequiresPublicMethods<T> ();
+		}
+
+		// Warn about calls to the static methods and the ctor on the RUC type:
+		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethod", "message")]
+		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>", "message")]
+		[ExpectedWarning ("IL2026", "RUCTypeRequiresPublicFields<T>.RUCTypeRequiresPublicFields", "message")]
+		// And about method generic parameters:
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.InstanceMethodRequiresPublicMethods<U>()")]
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<U>()")]
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>.VirtualMethodRequiresPublicMethods<U>()")]
+		// And about type generic parameters: (one for each reference to the type):
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethod
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // StaticMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // RUCTypeRequiresPublicFields<T> local
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // RUCTypeRequiresPublicFields<T> ctor
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // InstanceMethod
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // InstanceMethodRequiresPublicMethods<T>
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // VirtualMethod
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields<T>")] // VirtualMethodRequiresPublicMethods<T>
+		static void TestNoWarningsInRUCType<T> ()
+		{
+			RUCTypeRequiresPublicFields<T>.StaticMethod ();
+			RUCTypeRequiresPublicFields<T>.StaticMethodRequiresPublicMethods<T> ();
+			var rucType = new RUCTypeRequiresPublicFields<T> ();
+			rucType.InstanceMethod ();
+			rucType.InstanceMethodRequiresPublicMethods<T> ();
+			rucType.VirtualMethod ();
+			rucType.VirtualMethodRequiresPublicMethods<T> ();
+		}
+
+		[RequiresUnreferencedCode ("message")]
+		public class RUCTypeRequiresPublicFields<
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] T>
+		{
+			public static void StaticMethod ()
+			{
+				typeof (T).RequiresPublicMethods ();
+			}
+
+			public static void StaticMethodRequiresPublicMethods<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] U> ()
+			{
+				typeof (U).RequiresPublicFields ();
+			}
+
+			public void InstanceMethod ()
+			{
+				typeof (T).RequiresPublicMethods ();
+			}
+
+			public void InstanceMethodRequiresPublicMethods<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] U> ()
+			{
+				typeof (U).RequiresPublicFields ();
+			}
+
+			public virtual void VirtualMethod ()
+			{
+				typeof (T).RequiresPublicMethods ();
+			}
+
+			public virtual void VirtualMethodRequiresPublicMethods<
+				[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] U> ()
+			{
+				typeof (U).RequiresPublicFields ();
+			}
 		}
 
 		public class TestType
