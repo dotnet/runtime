@@ -896,9 +896,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
             {
                 this.Url = this.SourceUri.ToString();
-                return;
             }
-            this.Url = DotNetUrl;
+            else
+            {
+                this.Url = DotNetUrl;
+            }
         }
 
         private static string EscapeAscii(string path)
