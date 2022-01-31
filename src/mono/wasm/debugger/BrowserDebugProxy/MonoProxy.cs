@@ -1064,8 +1064,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
                         if (request_id == context.BreakpointToDisable)
                         {
-                                context.BreakpointToDisable = -1;
-                                await context.SdbAgent.RemoveBreakpoint(request_id, token);
+                            context.BreakpointToDisable = -1;
+                            await context.SdbAgent.RemoveBreakpoint(request_id, token);
                         }
                         string reason = "other";//other means breakpoint
                         int methodId = 0;
