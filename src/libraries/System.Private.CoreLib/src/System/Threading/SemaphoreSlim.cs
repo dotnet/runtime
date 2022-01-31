@@ -739,15 +739,18 @@ namespace System.Threading
 
         // TODO https://github.com/dotnet/runtime/issues/22144: Replace with official nothrow await solution once available.
         /// <summary>Awaiter used to await a task.ConfigureAwait(false) but without throwing any exceptions for faulted or canceled tasks.</summary>
-        private readonly struct ConfiguredNoThrowAwaiter<T> : ICriticalNotifyCompletion
+        private readonly struct ConfiguredNoThrowAwaiter<T> : ICriticalNotifyCompletion, IConfiguredTaskAwaiter
         {
-            private readonly Task<T> _task;
-            public ConfiguredNoThrowAwaiter(Task<T> task) => _task = task;
+            // WARNING: Unsafe.As is used to access this as a generic ConfiguredTaskAwaiter.
+            // Its layout must remain the same.
+
+            private readonly ConfiguredTaskAwaitable<T>.ConfiguredTaskAwaiter _task;
+            public ConfiguredNoThrowAwaiter(Task<T> task) => _task = task.ConfigureAwait(false).GetAwaiter();
             public ConfiguredNoThrowAwaiter<T> GetAwaiter() => this;
             public bool IsCompleted => _task.IsCompleted;
-            public void GetResult() => _task.MarkExceptionsAsHandled();
-            public void UnsafeOnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().UnsafeOnCompleted(continuation);
-            public void OnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().OnCompleted(continuation);
+            public void GetResult() => _task.m_task.MarkExceptionsAsHandled();
+            public void UnsafeOnCompleted(Action continuation) => _task.UnsafeOnCompleted(continuation);
+            public void OnCompleted(Action continuation) => _task.OnCompleted(continuation);
         }
 
         /// <summary>

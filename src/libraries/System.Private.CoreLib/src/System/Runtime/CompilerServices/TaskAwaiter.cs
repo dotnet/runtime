@@ -498,7 +498,7 @@ namespace System.Runtime.CompilerServices
             // Its layout must remain the same.
 
             /// <summary>The task being awaited.</summary>
-            private readonly Task<TResult> m_task;
+            internal readonly Task<TResult> m_task;
             /// <summary>Whether to attempt marshaling back to the original context.</summary>
             private readonly bool m_continueOnCapturedContext;
 
