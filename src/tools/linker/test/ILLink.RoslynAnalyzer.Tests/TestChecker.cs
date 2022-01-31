@@ -69,6 +69,12 @@ namespace ILLink.RoslynAnalyzer.Tests
 			CheckMember (node);
 		}
 
+		public override void VisitConstructorDeclaration (ConstructorDeclarationSyntax node)
+		{
+			base.VisitConstructorDeclaration (node);
+			CheckMember (node);
+		}
+
 		public override void VisitInterfaceDeclaration (InterfaceDeclarationSyntax node)
 		{
 			base.VisitInterfaceDeclaration (node);
@@ -107,12 +113,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public override void VisitAccessorDeclaration (AccessorDeclarationSyntax node)
 		{
 			base.VisitAccessorDeclaration (node);
-			ValidateDiagnostics (node, node.AttributeLists);
-		}
-
-		public override void VisitConstructorDeclaration (ConstructorDeclarationSyntax node)
-		{
-			base.VisitConstructorDeclaration (node);
 			ValidateDiagnostics (node, node.AttributeLists);
 		}
 

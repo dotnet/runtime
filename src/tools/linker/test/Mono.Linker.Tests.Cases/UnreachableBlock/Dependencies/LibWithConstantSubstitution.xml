@@ -1,4 +1,4 @@
-﻿<linker>
+<linker>
   <type fullname="Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.LibWithConstantSubstitution">
     <method signature="System.Boolean ReturnFalse()" body="stub" value="false" />
   </type>

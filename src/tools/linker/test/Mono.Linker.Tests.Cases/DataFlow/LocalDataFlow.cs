@@ -28,6 +28,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// that we might be able to lift in the future.
 
 			// These are overly conservative (extraneous warnings)
+			// 	 https://github.com/dotnet/linker/issues/2550
 			TestBranchGoto ();
 			TestBranchIf ();
 			TestBranchIfElse ();
@@ -207,7 +208,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			string str = GetWithPublicMethods ();
 			if (String.Empty.Length == 0) {
 				str = GetWithPublicFields (); // dataflow will merge this with the value from the previous basic block
-				str.RequiresPublicFields (); // produces a warning
+				str.RequiresPublicFields (); // produces a warning (technically it should not)
 			}
 		}
 
