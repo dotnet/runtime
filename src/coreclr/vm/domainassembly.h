@@ -65,6 +65,8 @@ enum NotificationStatus
 
 class DomainAssembly final
 {
+    VPTR_BASE_CONCRETE_VTABLE_CLASS(DomainAssembly)
+
 public:
 
     // ------------------------------------------------------------
@@ -72,7 +74,7 @@ public:
     // ------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-    ~DomainAssembly();
+    virtual ~DomainAssembly();
     DomainAssembly() {LIMITED_METHOD_CONTRACT;};
 #endif
 
