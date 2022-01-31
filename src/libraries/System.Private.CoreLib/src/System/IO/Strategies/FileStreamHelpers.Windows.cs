@@ -307,10 +307,18 @@ namespace System.IO.Strategies
         }
 
         /// <summary>Used by AsyncWindowsFileStreamStrategy.CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
-        private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
+        private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
         {
+            private sealed class AsyncStateMachineBoxSentinel : IAsyncStateMachineBox
+            {
+                public Action MoveNextAction => throw NotImplemented.ByDesign;
+                public void ClearStateUponCompletion() => throw NotImplemented.ByDesign;
+                public IAsyncStateMachine GetStateMachineObject() => throw NotImplemented.ByDesign;
+                public void MoveNext() => throw NotImplemented.ByDesign;
+            }
+
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
-            private static readonly Action s_sentinel = () => { };
+            private static readonly AsyncStateMachineBoxSentinel s_sentinel = new();
             /// <summary>Cached delegate to IOCallback.</summary>
             internal static readonly IOCompletionCallback s_callback = IOCallback;
 
@@ -325,7 +333,7 @@ namespace System.IO.Strategies
             /// s_sentinel if the I/O operation completed before the await,
             /// s_callback if it completed after the await yielded.
             /// </summary>
-            internal Action? _continuation;
+            internal IAsyncStateMachineBox? _continuation;
             /// <summary>Last error code from completed operation.</summary>
             internal uint _errorCode;
             /// <summary>Last number of read bytes from completed operation.</summary>
@@ -356,7 +364,7 @@ namespace System.IO.Strategies
                 awaitable._errorCode = errorCode;
                 awaitable._numBytes = numBytes;
 
-                (awaitable._continuation ?? Interlocked.CompareExchange(ref awaitable._continuation, s_sentinel, null))?.Invoke();
+                (awaitable._continuation ?? Interlocked.CompareExchange(ref awaitable._continuation, s_sentinel, null))?.MoveNext();
             }
 
             /// <summary>
@@ -372,14 +380,17 @@ namespace System.IO.Strategies
             public AsyncCopyToAwaitable GetAwaiter() => this;
             public bool IsCompleted => ReferenceEquals(_continuation, s_sentinel);
             public void GetResult() { }
-            public void OnCompleted(Action continuation) => UnsafeOnCompleted(continuation);
-            public void UnsafeOnCompleted(Action continuation)
+            // These objects are only awaited from an async Task method, and the
+            // method builder will call the optimized method below.
+            void INotifyCompletion.OnCompleted(Action continuation) => throw NotImplemented.ByDesign;
+            void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation) => throw NotImplemented.ByDesign;
+            public void AwaitUnsafeOnCompleted(IAsyncStateMachineBox continuation)
             {
                 if (ReferenceEquals(_continuation, s_sentinel) ||
                     Interlocked.CompareExchange(ref _continuation, continuation, null) != null)
                 {
                     Debug.Assert(ReferenceEquals(_continuation, s_sentinel), $"Expected continuation set to s_sentinel, got ${_continuation}");
-                    Task.Run(continuation);
+                    ThreadPool.UnsafeQueueUserWorkItem(ThreadPool.s_invokeAsyncStateMachineBox, continuation, true);
                 }
             }
         }
