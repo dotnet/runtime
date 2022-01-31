@@ -891,7 +891,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.url = url;
             this.DebuggerFileName = url.Replace("\\", "/").Replace(":", "");
 
-            var urlWithSpecialCharCodedHex = EscapeAscii(url.Replace("\\", "/"));
+            var urlWithSpecialCharCodedHex = EscapeAscii(url);
             this.SourceUri = new Uri((Path.IsPathRooted(url) ? "file://" : "") + urlWithSpecialCharCodedHex, UriKind.RelativeOrAbsolute);
             if (SourceUri.IsFile && File.Exists(SourceUri.LocalPath))
             {
