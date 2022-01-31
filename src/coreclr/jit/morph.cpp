@@ -5593,115 +5593,10 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     JITDUMP("fgMorphArrayIndex (before remorph):\n")
     DISPTREE(tree)
 
-    // Currently we morph the tree to perform some folding operations prior
-    // to attaching fieldSeq info and labeling constant array index contributions
-    //
     tree = fgMorphTree(tree);
 
     JITDUMP("fgMorphArrayIndex (after remorph):\n")
     DISPTREE(tree)
-
-    // Ideally we just want to proceed to attaching fieldSeq info and labeling the
-    // constant array index contributions, but the morphing operation may have changed
-    // the 'tree' into something that now unconditionally throws an exception.
-    //
-    // In such case the gtEffectiveVal could be a new tree or it's gtOper could be modified
-    // or it could be left unchanged.  If it is unchanged then we should not return,
-    // instead we should proceed to attaching fieldSeq info, etc...
-    //
-    GenTree* arrElem = tree->gtEffectiveVal();
-
-    if (!arrElem->OperIs(GT_IND) || !arrElem->AsIndir()->Addr()->OperIs(GT_ARR_ADDR))
-    {
-        // This branch is hit if "tree" was folded down to a comma throw.
-        // Just return it, don't try to attach the fieldSeq info, etc..
-        return tree;
-    }
-    else
-    {
-        addr = arrElem->AsIndir()->Addr()->AsArrAddr()->Addr();
-    }
-
-    assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
-    DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED)
-
-    GenTree* cnsOff = nullptr;
-    if (addr->OperIs(GT_ADD))
-    {
-        GenTree* addrOp1 = addr->gtGetOp1();
-        if (groupArrayRefWithElemOffset)
-        {
-            if (addrOp1->OperIs(GT_ADD) && addrOp1->gtGetOp2()->IsCnsIntOrI())
-            {
-                assert(addrOp1->gtGetOp1()->TypeIs(TYP_REF));
-                cnsOff = addrOp1->gtGetOp2();
-                addr   = addr->gtGetOp2();
-                // Label any constant array index contributions with #ConstantIndex and any LclVars with
-                // GTF_VAR_ARR_INDEX
-                addr->LabelIndex(this);
-            }
-            else
-            {
-                assert(addr->gtGetOp2()->IsCnsIntOrI());
-                cnsOff = addr->gtGetOp2();
-                addr   = nullptr;
-            }
-        }
-        else
-        {
-            assert(addr->TypeIs(TYP_BYREF));
-            assert(addr->gtGetOp1()->TypeIs(TYP_REF));
-            addr = addr->gtGetOp2();
-
-            // Look for the constant [#FirstElem] node here, or as the RHS of an ADD.
-            if (addr->IsCnsIntOrI())
-            {
-                cnsOff = addr;
-                addr   = nullptr;
-            }
-            else
-            {
-                if ((addr->OperIs(GT_ADD)) && addr->gtGetOp2()->IsCnsIntOrI())
-                {
-                    cnsOff = addr->gtGetOp2();
-                    addr   = addr->gtGetOp1();
-                }
-                // Label any constant array index contributions with #ConstantIndex and any LclVars with
-                // GTF_VAR_ARR_INDEX
-                addr->LabelIndex(this);
-            }
-        }
-    }
-    else if (addr->IsCnsIntOrI())
-    {
-        cnsOff = addr;
-    }
-
-    FieldSeqNode* firstElemFseq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
-
-    if ((cnsOff != nullptr) && (cnsOff->AsIntCon()->gtIconVal == elemOffs))
-    {
-        // Assign it the [#FirstElem] field sequence
-        //
-        cnsOff->AsIntCon()->gtFieldSeq = firstElemFseq;
-    }
-    else //  We have folded the first element's offset with the index expression
-    {
-        // Build the [#ConstantIndex, #FirstElem] field sequence
-        //
-        FieldSeqNode* constantIndexFseq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::ConstantIndexPseudoField);
-        FieldSeqNode* fieldSeq          = GetFieldSeqStore()->Append(constantIndexFseq, firstElemFseq);
-
-        if (cnsOff == nullptr) // It must have folded into a zero offset
-        {
-            // Record in the general zero-offset map.
-            fgAddFieldSeqForZeroOffset(addr, fieldSeq);
-        }
-        else
-        {
-            cnsOff->AsIntCon()->gtFieldSeq = fieldSeq;
-        }
-    }
 
     return tree;
 }
@@ -13873,11 +13768,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
     if (op2->IsIntegralConst())
     {
-        ssize_t mult            = op2->AsIntConCommon()->IconValue();
-        bool    op2IsConstIndex = op2->OperGet() == GT_CNS_INT && op2->AsIntCon()->gtFieldSeq != nullptr &&
-                               op2->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq();
-
-        assert(!op2IsConstIndex || op2->AsIntCon()->gtFieldSeq->GetNext() == nullptr);
+        ssize_t mult = op2->AsIntConCommon()->IconValue();
 
         if (mult == 0)
         {
@@ -13918,22 +13809,6 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                 fgMorphTreeDone(op1);
             }
 
-            // If "op2" is a constant array index, the other multiplicand must be a constant.
-            // Transfer the annotation to the other one.
-            if (op2->OperGet() == GT_CNS_INT && op2->AsIntCon()->gtFieldSeq != nullptr &&
-                op2->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
-            {
-                assert(op2->AsIntCon()->gtFieldSeq->GetNext() == nullptr);
-                GenTree* otherOp = op1;
-                if (otherOp->OperGet() == GT_NEG)
-                {
-                    otherOp = otherOp->AsOp()->gtOp1;
-                }
-                assert(otherOp->OperGet() == GT_CNS_INT);
-                assert(otherOp->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField());
-                otherOp->AsIntCon()->gtFieldSeq = op2->AsIntCon()->gtFieldSeq;
-            }
-
             if (abs_mult == 1)
             {
                 DEBUG_DESTROY_NODE(op2);
@@ -13960,15 +13835,8 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
                     fgMorphTreeDone(op1);
                 }
 
-                GenTree* factorIcon = gtNewIconNode(factor, mul->TypeGet());
-                if (op2IsConstIndex)
-                {
-                    factorIcon->AsIntCon()->gtFieldSeq =
-                        GetFieldSeqStore()->CreateSingleton(FieldSeqStore::ConstantIndexPseudoField);
-                }
-
                 // change the multiplication into a smaller multiplication (by 3, 5 or 9) and a shift
-                op1        = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, factorIcon);
+                op1        = gtNewOperNode(GT_MUL, mul->TypeGet(), op1, gtNewIconNode(factor, mul->TypeGet()));
                 mul->gtOp1 = op1;
                 fgMorphTreeDone(op1);
 
@@ -14579,16 +14447,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                     // we are reusing the shift amount node here, but the type we want is that of the shift result
                     op2->gtType = op1->gtType;
                     op2->AsIntConCommon()->SetValueTruncating(iadd << ishf);
-
-                    if (cns->gtOper == GT_CNS_INT && cns->AsIntCon()->gtFieldSeq != nullptr &&
-                        cns->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
-                    {
-                        assert(cns->AsIntCon()->gtFieldSeq->GetNext() == nullptr);
-                        op2->AsIntCon()->gtFieldSeq = cns->AsIntCon()->gtFieldSeq;
-                    }
-
                     op1->ChangeOper(GT_LSH);
-
                     cns->AsIntConCommon()->SetIconValue(ishf);
                 }
             }

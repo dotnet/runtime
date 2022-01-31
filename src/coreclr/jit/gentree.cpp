@@ -7428,10 +7428,6 @@ GenTree* Compiler::gtCloneExpr(
                 if (tree->AsLclVarCommon()->GetLclNum() == varNum)
                 {
                     copy = gtNewIconNode(varVal, tree->gtType);
-                    if (tree->gtFlags & GTF_VAR_ARR_INDEX)
-                    {
-                        copy->LabelIndex(this);
-                    }
                 }
                 else
                 {
@@ -9604,12 +9600,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                     --msgLength;
                     break;
                 }
-                if (tree->gtFlags & GTF_VAR_ARR_INDEX)
-                {
-                    printf("i");
-                    --msgLength;
-                    break;
-                }
                 if (tree->gtFlags & GTF_VAR_CONTEXT)
                 {
                     printf("!");
@@ -9697,7 +9687,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         else // !(tree->OperIsBinary() || tree->OperIsMultiOp())
         {
             // the GTF_REVERSE flag only applies to binary operations (which some MultiOp nodes are).
-            flags &= ~GTF_REVERSE_OPS; // we use this value for GTF_VAR_ARR_INDEX above
+            flags &= ~GTF_REVERSE_OPS;
         }
 
         msgLength -= GenTree::gtDispFlags(flags, tree->gtDebugFlags);
@@ -10465,10 +10455,6 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
         if (fldHnd == FieldSeqStore::FirstElemPseudoField)
         {
             printf("#FirstElem");
-        }
-        else if (fldHnd == FieldSeqStore::ConstantIndexPseudoField)
-        {
-            printf("#ConstantIndex");
         }
         else
         {
@@ -13369,13 +13355,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 i1 = (INT32)op1->AsIntCon()->IconValue();
 
-                // If we fold a unary oper, then the folded constant
-                // is considered a ConstantIndexField if op1 was one.
-                if ((op1->AsIntCon()->gtFieldSeq != nullptr) && op1->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
-                {
-                    fieldSeq = op1->AsIntCon()->gtFieldSeq;
-                }
-
                 switch (tree->OperGet())
                 {
                     case GT_NOT:
@@ -13867,22 +13846,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     if (tree->gtOverflow() && CheckedOps::MulOverflows(INT32(i1), INT32(i2), tree->IsUnsigned()))
                     {
                         goto INTEGRAL_OVF;
-                    }
-
-                    // For the very particular case of the "constant array index" pseudo-field, we
-                    // assume that multiplication is by the field width, and preserves that field.
-                    // This could obviously be made more robust by a more complicated set of annotations...
-                    if ((op1->AsIntCon()->gtFieldSeq != nullptr) &&
-                        op1->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
-                    {
-                        assert(op2->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField());
-                        fieldSeq = op1->AsIntCon()->gtFieldSeq;
-                    }
-                    else if ((op2->AsIntCon()->gtFieldSeq != nullptr) &&
-                             op2->AsIntCon()->gtFieldSeq->IsConstantIndexFieldSeq())
-                    {
-                        assert(op1->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField());
-                        fieldSeq = op2->AsIntCon()->gtFieldSeq;
                     }
                     i1 = itemp;
                     break;
@@ -17502,59 +17465,6 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
     return false;
 }
 
-void GenTree::LabelIndex(Compiler* comp, bool isConst)
-{
-    switch (OperGet())
-    {
-        case GT_CNS_INT:
-            // If we got here, this is a contribution to the constant part of the index.
-            if (isConst)
-            {
-                AsIntCon()->gtFieldSeq =
-                    comp->GetFieldSeqStore()->CreateSingleton(FieldSeqStore::ConstantIndexPseudoField);
-            }
-            return;
-
-        case GT_LCL_VAR:
-            gtFlags |= GTF_VAR_ARR_INDEX;
-            return;
-
-        case GT_ADD:
-        case GT_SUB:
-            AsOp()->gtOp1->LabelIndex(comp, isConst);
-            AsOp()->gtOp2->LabelIndex(comp, isConst);
-            break;
-
-        case GT_CAST:
-            AsOp()->gtOp1->LabelIndex(comp, isConst);
-            break;
-
-        case GT_ARR_LENGTH:
-            gtFlags |= GTF_ARRLEN_ARR_IDX;
-            return;
-
-        default:
-            // For all other operators, peel off one constant; and then label the other if it's also a constant.
-            if (OperIsArithmetic() || OperIsCompare())
-            {
-                if (AsOp()->gtOp2->OperGet() == GT_CNS_INT)
-                {
-                    AsOp()->gtOp1->LabelIndex(comp, isConst);
-                    break;
-                }
-                else if (AsOp()->gtOp1->OperGet() == GT_CNS_INT)
-                {
-                    AsOp()->gtOp2->LabelIndex(comp, isConst);
-                    break;
-                }
-                // Otherwise continue downward on both, labeling vars.
-                AsOp()->gtOp1->LabelIndex(comp, false);
-                AsOp()->gtOp2->LabelIndex(comp, false);
-            }
-            break;
-    }
-}
-
 // Note that the value of the below field doesn't matter; it exists only to provide a distinguished address.
 //
 // static
@@ -17599,13 +17509,6 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
     else if (b == NotAField())
     {
         return NotAField();
-        // Extremely special case for ConstantIndex pseudo-fields -- appending consecutive such
-        // together collapse to one.
-    }
-    else if (a->GetNext() == nullptr && a->GetFieldHandleValue() == ConstantIndexPseudoField &&
-             b->GetFieldHandleValue() == ConstantIndexPseudoField)
-    {
-        return b;
     }
     else
     {
@@ -17629,14 +17532,10 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
     }
 }
 
-// Static vars.
 int FieldSeqStore::FirstElemPseudoFieldStruct;
-int FieldSeqStore::ConstantIndexPseudoFieldStruct;
 
 CORINFO_FIELD_HANDLE FieldSeqStore::FirstElemPseudoField =
     (CORINFO_FIELD_HANDLE)&FieldSeqStore::FirstElemPseudoFieldStruct;
-CORINFO_FIELD_HANDLE FieldSeqStore::ConstantIndexPseudoField =
-    (CORINFO_FIELD_HANDLE)&FieldSeqStore::ConstantIndexPseudoFieldStruct;
 
 FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind) : m_next(next)
 {
@@ -17661,15 +17560,9 @@ bool FieldSeqNode::IsFirstElemFieldSeq() const
     return GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField;
 }
 
-bool FieldSeqNode::IsConstantIndexFieldSeq() const
-{
-    return GetFieldHandleValue() == FieldSeqStore::ConstantIndexPseudoField;
-}
-
 bool FieldSeqNode::IsPseudoField() const
 {
-    return (GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField) ||
-           (GetFieldHandleValue() == FieldSeqStore::ConstantIndexPseudoField);
+    return GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField;
 }
 
 #ifdef FEATURE_SIMD

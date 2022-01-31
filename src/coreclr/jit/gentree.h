@@ -266,9 +266,6 @@ public:
     // returns true when this is the pseudo #FirstElem field sequence
     bool IsFirstElemFieldSeq() const;
 
-    // returns true when this is the pseudo #ConstantIndex field sequence
-    bool IsConstantIndexFieldSeq() const;
-
     // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
     bool IsPseudoField() const;
 
@@ -323,7 +320,6 @@ class FieldSeqStore
 
     // Dummy variables to provide the addresses for the "pseudo field handle" statics below.
     static int FirstElemPseudoFieldStruct;
-    static int ConstantIndexPseudoFieldStruct;
 
 public:
     FieldSeqStore(CompAllocator alloc);
@@ -346,20 +342,12 @@ public:
     // are the "NotAField" value, so is the result.
     FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
 
-    // We have a few "pseudo" field handles:
-
-    // This treats the constant offset of the first element of something as if it were a field.
-    // Works for method table offsets of boxed structs, or first elem offset of arrays/strings.
+    // TODO: delete this pseudo-field, it is only used by ObjectAllocator now.
     static CORINFO_FIELD_HANDLE FirstElemPseudoField;
-
-    // If there is a constant index, we make a psuedo field to correspond to the constant added to
-    // offset of the indexed field.  This keeps the field sequence structure "normalized", especially in the
-    // case where the element type is a struct, so we might add a further struct field offset.
-    static CORINFO_FIELD_HANDLE ConstantIndexPseudoField;
 
     static bool IsPseudoField(CORINFO_FIELD_HANDLE hnd)
     {
-        return hnd == FirstElemPseudoField || hnd == ConstantIndexPseudoField;
+        return hnd == FirstElemPseudoField;
     }
 };
 
@@ -500,9 +488,6 @@ enum GenTreeFlags : unsigned int
                                       // on their parents in post-order morph.
                                       // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
-    GTF_VAR_ARR_INDEX   = 0x00000020, // The variable is part of (the index portion of) an array index expression.
-                                      // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
-
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
     GTF_CALL_UNMANAGED          = 0x80000000, // GT_CALL -- direct call to unmanaged code
@@ -615,9 +600,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
 
-    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proved this check is always in-bounds
+    GTF_CHK_INDEX_INBND         = 0x80000000, // GT_BOUNDS_CHECK -- have proven this check is always in-bounds
 
-    GTF_ARRLEN_ARR_IDX          = 0x80000000, // GT_ARR_LENGTH -- Length which feeds into an array index expression
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
@@ -1976,10 +1960,6 @@ public:
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
-
-    // Labels "*this" as an array index expression: label all constants and variables that could contribute, as part of
-    // an affine expression, to the value of the of the index.
-    void LabelIndex(Compiler* comp, bool isConst = true);
 
     // Assumes that "this" occurs in a context where it is being dereferenced as the LHS of an assignment-like
     // statement (assignment, initblk, or copyblk).  The "width" should be the number of bytes copied by the
