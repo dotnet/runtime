@@ -99,7 +99,4 @@
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the path '{0}' is denied.</value>
   </data>
-  <data name="PlatformNotSupported_CompressionZipFile" xml:space="preserve">
-    <value>System.IO.Compression.ZipFile is not supported on this platform.</value>
-  </data>
 </root>
