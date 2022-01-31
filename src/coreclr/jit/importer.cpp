@@ -12216,20 +12216,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 break;
 
             case CEE_LDSTR:
-
-                if (compIsForInlining())
-                {
-                    if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_NO_CALLEE_LDSTR)
-                    {
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_LDSTR_RESTRICTION);
-                        return;
-                    }
-                }
-
                 val = getU4LittleEndian(codeAddr);
                 JITDUMP(" %08X", val);
                 impPushOnStack(gtNewSconNode(val, info.compScopeHnd), tiRetVal);
-
                 break;
 
             case CEE_LDARG:
@@ -19139,7 +19128,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
             }
 
             // check for unsupported inlining restrictions
-            assert((dwRestrictions & ~(INLINE_RESPECT_BOUNDARY | INLINE_NO_CALLEE_LDSTR | INLINE_SAME_THIS)) == 0);
+            assert((dwRestrictions & ~(INLINE_RESPECT_BOUNDARY | INLINE_SAME_THIS)) == 0);
 
             if (dwRestrictions & INLINE_SAME_THIS)
             {

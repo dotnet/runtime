@@ -931,10 +931,6 @@ enum CorInfoInline
 enum CorInfoInlineRestrictions
 {
     INLINE_RESPECT_BOUNDARY = 0x00000001, // You can inline if there are no calls from the method being inlined
-    INLINE_NO_CALLEE_LDSTR  = 0x00000002, // You can inline only if you guarantee that if inlinee does an ldstr
-                                          // inlinee's module will never see that string (by any means).
-                                          // This is due to how we implement the NoStringInterningAttribute
-                                          // (by reusing the fixup table).
     INLINE_SAME_THIS        = 0x00000004, // You can inline only if the callee is on the same this reference as caller
 };
 

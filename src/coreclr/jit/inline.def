@@ -139,7 +139,6 @@ INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix",   
 INLINE_OBSERVATION(GENERIC_DICTIONARY_LOOKUP, bool,   "runtime dictionary lookup",            FATAL,       CALLSITE)
 INLINE_OBSERVATION(HAS_CALL_VIA_LDVIRTFTN,    bool,   "call via ldvirtftn",                   FATAL,       CALLSITE)
 INLINE_OBSERVATION(HAS_COMPLEX_HANDLE,        bool,   "complex handle access",                FATAL,       CALLSITE)
-INLINE_OBSERVATION(HAS_LDSTR_RESTRICTION,     bool,   "has ldstr VM restriction",             FATAL,       CALLSITE)
 INLINE_OBSERVATION(IMPLICIT_REC_TAIL_CALL,    bool,   "implicit recursive tail call",         FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_CALL_TO_HELPER,         bool,   "target is helper",                     FATAL,       CALLSITE)
 INLINE_OBSERVATION(IS_NOT_DIRECT,             bool,   "target not direct",                    FATAL,       CALLSITE)

@@ -7609,23 +7609,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         }
     }
 
-    //
-    // Perform the Cross-Assembly inlining checks
-    //
-    {
-        Module *    pCalleeModule   = pCallee->GetModule();
-
-        // TODO: We can probably be smarter here if the caller is jitted, as we will
-        // know for sure if the inlinee has really no string interning active (currently
-        // it's only on in the ngen case (besides requiring the attribute)), but this is getting
-        // too subtle. Will only do if somebody screams about it, as bugs here are going to
-        // be tough to find
-        if ((pOrigCallerModule != pCalleeModule) &&  pCalleeModule->IsNoStringInterning())
-        {
-            dwRestrictions |= INLINE_NO_CALLEE_LDSTR;
-        }
-    }
-
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerPresent())
     {
@@ -13186,12 +13169,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     return TRUE;
                 }
 
-                // For generic instantiations compiled into the ngen image of some other
-                // client assembly, we need to ensure that we intern the string
-                // in the defining assembly.
-                bool mayNeedToSyncWithFixups = pInfoModule != currentModule;
-
-                result = (size_t) pInfoModule->ResolveStringRef(TokenFromRid(rid, mdtString), currentModule->GetDomain(), mayNeedToSyncWithFixups);
+                result = (size_t) pInfoModule->ResolveStringRef(TokenFromRid(rid, mdtString), currentModule->GetDomain());
             }
         }
         break;
