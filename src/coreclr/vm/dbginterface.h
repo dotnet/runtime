@@ -68,7 +68,7 @@ public:
                             DWORD        dwModuleName,    // number of characters in file name excludign null
                             Assembly *   pAssembly,       // the assembly the module belongs to
                             AppDomain *  pAppDomain,      // the AppDomain the module is being loaded into
-                            DomainFile * pDomainFile,
+                            DomainAssembly * pDomainAssembly,
                             BOOL         fAttaching) = 0; // true if this notification is due to a debugger
                                                           // being attached to the process
 
@@ -242,7 +242,7 @@ public:
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
-    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomainFile, mdTypeDef classToken) = 0;
+    virtual void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomainAssembly, mdTypeDef classToken) = 0;
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     virtual void SendMDANotification(
@@ -263,8 +263,8 @@ public:
 
     virtual void SendLogSwitchSetting (int iLevel,
                                        int iReason,
-                                       __in_z LPCWSTR pLogSwitchName,
-                                       __in_z LPCWSTR pParentSwitchName) = 0;
+                                       _In_z_ LPCWSTR pLogSwitchName,
+                                       _In_z_ LPCWSTR pParentSwitchName) = 0;
 
     virtual bool IsLoggingEnabled (void) = 0;
 
@@ -374,7 +374,7 @@ public:
     virtual DWORD* GetJMCFlagAddr(Module * pModule) = 0;
 
     // notification for SQL fiber debugging support
-    virtual void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName) = 0;
+    virtual void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName) = 0;
     virtual void DestroyConnection(CONNID dwConnectionId) = 0;
     virtual void ChangeConnection(CONNID dwConnectionId) = 0;
 

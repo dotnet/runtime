@@ -485,6 +485,9 @@ static bool emitIns_valid_imm_for_alu(INT64 imm, emitAttr size);
 // true if this 'imm' can be encoded as the offset in a ldr/str instruction
 static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 
+// true if 'imm' can be encoded as an offset in a ldp/stp instruction
+static bool canEncodeLoadOrStorePairOffset(INT64 imm, emitAttr size);
+
 // true if 'imm' can use the left shifted by 12 bits encoding
 static bool canEncodeWithShiftImmBy12(INT64 imm);
 

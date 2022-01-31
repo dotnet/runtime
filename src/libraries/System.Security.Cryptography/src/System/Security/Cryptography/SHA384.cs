@@ -4,6 +4,9 @@
 using Internal.Cryptography;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography
 {
@@ -15,12 +18,19 @@ namespace System.Security.Cryptography
 
     public abstract class SHA384 : HashAlgorithm
     {
-        private const int HashSizeBits = 384;
-        private const int HashSizeBytes = HashSizeBits / 8;
+        /// <summary>
+        /// The hash size produced by the SHA384 algorithm, in bits.
+        /// </summary>
+        public const int HashSizeInBits = 384;
+
+        /// <summary>
+        /// The hash size produced by the SHA384 algorithm, in bytes.
+        /// </summary>
+        public const int HashSizeInBytes = HashSizeInBits / 8;
 
         protected SHA384()
         {
-            HashSizeValue = HashSizeBits;
+            HashSizeValue = HashSizeInBits;
         }
 
         public static new SHA384 Create() => new Implementation();
@@ -51,7 +61,7 @@ namespace System.Security.Cryptography
         /// <returns>The hash of the data.</returns>
         public static byte[] HashData(ReadOnlySpan<byte> source)
         {
-            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeBytes);
+            byte[] buffer = GC.AllocateUninitializedArray<byte>(HashSizeInBytes);
 
             int written = HashData(source, buffer.AsSpan());
             Debug.Assert(written == buffer.Length);
@@ -91,16 +101,138 @@ namespace System.Security.Cryptography
         /// </returns>
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length < HashSizeBytes)
+            if (destination.Length < HashSizeInBytes)
             {
                 bytesWritten = 0;
                 return false;
             }
 
             bytesWritten = HashProviderDispenser.OneShotHashProvider.HashData(HashAlgorithmNames.SHA384, source, destination);
-            Debug.Assert(bytesWritten == HashSizeBytes);
+            Debug.Assert(bytesWritten == HashSizeInBytes);
 
             return true;
+        }
+
+        /// <summary>
+        /// Computes the hash of a stream using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <p>
+        ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        ///   size. The SHA384 algorithm always produces a 384-bit hash, or 48 bytes.
+        ///   </p>
+        ///   <p>-or-</p>
+        ///   <p>
+        ///   <paramref name="source" /> does not support reading.
+        ///   </p>
+        /// </exception>
+        public static int HashData(Stream source, Span<byte> destination)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < HashSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA384, HashSizeInBytes, source, destination);
+        }
+
+        /// <summary>
+        /// Computes the hash of a stream using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> does not support reading.
+        /// </exception>
+        public static byte[] HashData(Stream source)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStream(HashAlgorithmNames.SHA384, HashSizeInBytes, source);
+        }
+
+        /// <summary>
+        /// Asynchronously computes the hash of a stream using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>The hash of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="source" /> does not support reading.
+        /// </exception>
+        public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStreamAsync(HashAlgorithmNames.SHA384, HashSizeInBytes, source, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously computes the hash of a stream using the SHA384 algorithm.
+        /// </summary>
+        /// <param name="source">The stream to hash.</param>
+        /// <param name="destination">The buffer to receive the hash value.</param>
+        /// <param name="cancellationToken">
+        ///   The token to monitor for cancellation requests.
+        ///   The default value is <see cref="System.Threading.CancellationToken.None" />.
+        /// </param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <p>
+        ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        ///   size. The SHA384 algorithm always produces a 384-bit hash, or 48 bytes.
+        ///   </p>
+        ///   <p>-or-</p>
+        ///   <p>
+        ///   <paramref name="source" /> does not support reading.
+        ///   </p>
+        /// </exception>
+        public static ValueTask<int> HashDataAsync(
+            Stream source,
+            Memory<byte> destination,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            if (destination.Length < HashSizeInBytes)
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+
+            if (!source.CanRead)
+                throw new ArgumentException(SR.Argument_StreamNotReadable, nameof(source));
+
+            return LiteHashProvider.HashStreamAsync(
+                HashAlgorithmNames.SHA384,
+                HashSizeInBytes,
+                source,
+                destination,
+                cancellationToken);
         }
 
         private sealed class Implementation : SHA384

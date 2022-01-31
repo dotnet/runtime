@@ -309,16 +309,15 @@ ULONG CMiniMdRW::m_TruncatedEncTables[] =
 ULONG CMiniMdRW::GetTableForToken(      // Table index, or -1.
     mdToken     tkn)                    // Token to find.
 {
-    ULONG       ixTbl;                  // Loop control.
     ULONG       type = TypeFromToken(tkn);
 
     // Get the type -- if a string, no associated table.
     if (type >= mdtString)
         return (ULONG) -1;
     // Table number is same as high-byte of token.
-    ixTbl = type >> 24;
+    ULONG ixTbl = type >> 24;
     // Make sure.
-     _ASSERTE(g_TblIndex[ixTbl].m_Token == type);
+    _ASSERTE(ixTbl < TBL_COUNT);
 
     return ixTbl;
 } // CMiniMdRW::GetTableForToken
@@ -3998,7 +3997,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::Impl_GetStringW(
                              ULONG  ix,
-    __out_ecount (cchBuffer) LPWSTR szOut,
+    _Out_writes_ (cchBuffer) LPWSTR szOut,
                              ULONG  cchBuffer,
                              ULONG *pcchBuffer)
 {
@@ -4116,7 +4115,7 @@ mdToken CMiniMdRW::GetToken(
     if (pColDef->m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = pColDef->m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             tkn = decodeToken(GetCol(ixTbl, ixCol, pvRecord), pCdTkn->m_pTokens, pCdTkn->m_cTokens);
@@ -4399,7 +4398,7 @@ CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
     if (ColDef.m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = ColDef.m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             cdTkn = encodeToken(RidFromToken(tk), TypeFromToken(tk), pCdTkn->m_pTokens, pCdTkn->m_cTokens);

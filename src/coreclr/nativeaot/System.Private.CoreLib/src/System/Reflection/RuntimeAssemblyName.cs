@@ -16,7 +16,7 @@ namespace System.Reflection
     //
     public sealed class RuntimeAssemblyName : IEquatable<RuntimeAssemblyName>
     {
-        public RuntimeAssemblyName(string name, Version version, string cultureName, AssemblyNameFlags flags, byte[] publicKeyOrToken)
+        public RuntimeAssemblyName(string name, Version? version, string? cultureName, AssemblyNameFlags flags, byte[]? publicKeyOrToken)
         {
             Debug.Assert(name != null);
             this.Name = name;
@@ -34,20 +34,26 @@ namespace System.Reflection
             this.PublicKeyOrToken = publicKeyOrToken;
         }
 
+        public static RuntimeAssemblyName Parse(string name)
+        {
+            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(name);
+            return new RuntimeAssemblyName(parts._name, parts._version, parts._cultureName, parts._flags, parts._publicKeyOrToken);
+        }
+
         // Simple name.
         public string Name { get; }
 
         // Optional version.
-        public Version Version { get; }
+        public Version? Version { get; }
 
         // Optional culture name.
-        public string CultureName { get; }
+        public string? CultureName { get; }
 
         // Optional flags (this is actually an OR of the classic flags and the ContentType.)
         public AssemblyNameFlags Flags { get; }
 
         // Optional public key (if Flags.PublicKey == true) or public key token.
-        public byte[] PublicKeyOrToken { get; }
+        public byte[]? PublicKeyOrToken { get; }
 
         // Equality - this compares every bit of data in the RuntimeAssemblyName which is acceptable for use as keys in a cache
         // where semantic duplication is permissible. This method is *not* meant to define ref->def binding rules or
@@ -73,8 +79,8 @@ namespace System.Reflection
             if (this.Flags != other.Flags)
                 return false;
 
-            byte[] thisPK = this.PublicKeyOrToken;
-            byte[] otherPK = other.PublicKeyOrToken;
+            byte[]? thisPK = this.PublicKeyOrToken;
+            byte[]? otherPK = other.PublicKeyOrToken;
             if (thisPK == null)
             {
                 if (otherPK != null)
@@ -139,7 +145,7 @@ namespace System.Reflection
             blank.Flags = this.Flags.ExtractAssemblyNameFlags();
             blank.ContentType = this.Flags.ExtractAssemblyContentType();
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            blank.ProcessorArchitecture = this.Flags.ExtractProcessorArchitecture();
+            blank.ProcessorArchitecture = ExtractProcessorArchitecture(this.Flags);
 #pragma warning restore SYSLIB0037
 
             if (this.PublicKeyOrToken != null)
@@ -162,9 +168,14 @@ namespace System.Reflection
         {
             get
             {
-                byte[] pkt = (0 != (Flags & AssemblyNameFlags.PublicKey)) ? AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrToken) : PublicKeyOrToken;
+                byte[]? pkt = (0 != (Flags & AssemblyNameFlags.PublicKey)) ? AssemblyNameHelpers.ComputePublicKeyToken(PublicKeyOrToken) : PublicKeyOrToken;
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags.ExtractAssemblyNameFlags(), Flags.ExtractAssemblyContentType());
             }
+        }
+
+        internal static ProcessorArchitecture ExtractProcessorArchitecture(AssemblyNameFlags flags)
+        {
+            return (ProcessorArchitecture)((((int)flags) >> 4) & 0x7);
         }
     }
 }

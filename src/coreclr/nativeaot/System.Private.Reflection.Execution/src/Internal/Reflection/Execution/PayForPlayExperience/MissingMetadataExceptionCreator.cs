@@ -109,7 +109,7 @@ namespace Internal.Reflection.Execution.PayForPlayExperience
                 if (pertainant is MethodBase)
                 {
                     MethodBase method = (MethodBase)pertainant;
-                    bool first = true;
+                    bool first;
 
                     // write out generic parameters
                     if (method.IsConstructedGenericMethod)

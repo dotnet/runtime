@@ -1566,35 +1566,7 @@ public:
         JITDUMP("Modified call is now\n");
         DISPTREE(call);
 
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-
         m_instrCount++;
-    }
-};
-
-//------------------------------------------------------------------------
-// SuppressProbesFunctor: functor that resets IR back to the state
-//   it had if there were no class probes.
-//
-class SuppressProbesFunctor
-{
-private:
-    unsigned& m_cleanupCount;
-
-public:
-    SuppressProbesFunctor(unsigned& cleanupCount) : m_cleanupCount(cleanupCount)
-    {
-    }
-
-    void operator()(Compiler* compiler, GenTreeCall* call)
-    {
-        // Restore the stub address on the call
-        //
-        call->gtStubCallStubAddr = call->gtClassProfileCandidateInfo->stubAddr;
-
-        m_cleanupCount++;
     }
 };
 
@@ -1615,7 +1587,6 @@ public:
     void Prepare(bool isPreImport) override;
     void BuildSchemaElements(BasicBlock* block, Schema& schema) override;
     void Instrument(BasicBlock* block, Schema& schema, uint8_t* profileMemory) override;
-    void SuppressProbes() override;
 };
 
 //------------------------------------------------------------------------
@@ -1704,37 +1675,6 @@ void ClassProbeInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8
 }
 
 //------------------------------------------------------------------------
-// ClassProbeInstrumentor::SuppressProbes: clean up if we're not instrumenting
-//
-// Notes:
-//   Currently we're hijacking the gtCallStubAddr of the call node to hold
-//   a pointer to the profile candidate info.
-//
-//   We must undo this, if not instrumenting.
-//
-void ClassProbeInstrumentor::SuppressProbes()
-{
-    unsigned                                 cleanupCount = 0;
-    SuppressProbesFunctor                    suppressProbes(cleanupCount);
-    ClassProbeVisitor<SuppressProbesFunctor> visitor(m_comp, suppressProbes);
-
-    for (BasicBlock* const block : m_comp->Blocks())
-    {
-        if ((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0)
-        {
-            continue;
-        }
-
-        for (Statement* const stmt : block->Statements())
-        {
-            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
-        }
-    }
-
-    assert(cleanupCount == m_comp->info.compClassProbeCount);
-}
-
-//------------------------------------------------------------------------
 // fgPrepareToInstrumentMethod: prepare for instrumentation
 //
 // Notes:
@@ -1781,12 +1721,23 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     // jitting on PGO. If we ever implement a broader pattern of deferral -- say deferring
     // based on static PGO -- we will need to reconsider.
     //
+    // Under OSR stress we may add patchpoints even without backedges. So we also
+    // need to change the PGO instrumetation approach if OSR stress is enabled.
+    //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
+#if defined(DEBUG)
+    const bool mayHaveStressPatchpoints =
+        (JitConfig.JitOffsetOnStackReplacement() >= 0) || (JitConfig.JitRandomOnStackReplacement() > 0);
+#else
+    const bool mayHaveStressPatchpoints = false;
+#endif
+
+    const bool mayHavePatchpoints =
+        (JitConfig.TC_OnStackReplacement() > 0) && (compHasBackwardJump || mayHaveStressPatchpoints);
     const bool prejit               = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
-    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
-                                      (JitConfig.TC_OnStackReplacement() > 0) && compHasBackwardJump;
-    const bool osrMethod       = opts.IsOSR();
+    const bool tier0WithPatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && mayHavePatchpoints;
+    const bool osrMethod            = opts.IsOSR();
     const bool useEdgeProfiles = (JitConfig.JitEdgeProfiling() > 0) && !prejit && !tier0WithPatchpoints && !osrMethod;
 
     if (useEdgeProfiles)
@@ -3477,7 +3428,7 @@ weight_t Compiler::fgComputeMissingBlockWeights()
             // Sum up the weights of all of the return blocks and throw blocks
             // This is used when we have a back-edge into block 1
             //
-            if (bDst->hasProfileWeight() && ((bDst->bbJumpKind == BBJ_RETURN) || (bDst->bbJumpKind == BBJ_THROW)))
+            if (bDst->hasProfileWeight() && bDst->KindIs(BBJ_RETURN, BBJ_THROW))
             {
                 returnWeight += bDst->bbWeight;
             }
@@ -4048,7 +3999,7 @@ void Compiler::fgDebugCheckProfileData()
 
         // Exit blocks
         //
-        if ((block->bbJumpKind == BBJ_RETURN) || (block->bbJumpKind == BBJ_THROW))
+        if (block->KindIs(BBJ_RETURN, BBJ_THROW))
         {
             exitWeight += blockWeight;
             exitProfiled   = true;
@@ -4217,7 +4168,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block)
 
     // We won't check finally or filter returns (for now).
     //
-    if ((block->bbJumpKind == BBJ_EHFINALLYRET) || (block->bbJumpKind == BBJ_EHFILTERRET))
+    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }

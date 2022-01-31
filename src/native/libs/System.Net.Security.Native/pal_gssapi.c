@@ -163,10 +163,10 @@ static void NetSecurityNative_MoveBuffer(gss_buffer_t gssBuffer, PAL_GssBuffer* 
     targetBuffer->data = (uint8_t*)(gssBuffer->value);
 }
 
-static uint32_t NetSecurityNative_AcquireCredSpNego(uint32_t* minorStatus,
-                                                    GssName* desiredName,
-                                                    gss_cred_usage_t credUsage,
-                                                    GssCredId** outputCredHandle)
+static uint32_t AcquireCredSpNego(uint32_t* minorStatus,
+                                  GssName* desiredName,
+                                  gss_cred_usage_t credUsage,
+                                  GssCredId** outputCredHandle)
 {
     assert(minorStatus != NULL);
     assert(desiredName != NULL);
@@ -196,7 +196,7 @@ static uint32_t NetSecurityNative_AcquireCredSpNego(uint32_t* minorStatus,
 uint32_t
 NetSecurityNative_InitiateCredSpNego(uint32_t* minorStatus, GssName* desiredName, GssCredId** outputCredHandle)
 {
-    return NetSecurityNative_AcquireCredSpNego(minorStatus, desiredName, GSS_C_INITIATE, outputCredHandle);
+    return AcquireCredSpNego(minorStatus, desiredName, GSS_C_INITIATE, outputCredHandle);
 }
 
 uint32_t NetSecurityNative_DeleteSecContext(uint32_t* minorStatus, GssCtxId** contextHandle)
@@ -566,13 +566,13 @@ uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
     return majorStatus;
 }
 
-static uint32_t NetSecurityNative_AcquireCredWithPassword(uint32_t* minorStatus,
-                                                          int32_t isNtlm,
-                                                          GssName* desiredName,
-                                                          char* password,
-                                                          uint32_t passwdLen,
-                                                          gss_cred_usage_t credUsage,
-                                                          GssCredId** outputCredHandle)
+static uint32_t AcquireCredWithPassword(uint32_t* minorStatus,
+                                        int32_t isNtlm,
+                                        GssName* desiredName,
+                                        char* password,
+                                        uint32_t passwdLen,
+                                        gss_cred_usage_t credUsage,
+                                        GssCredId** outputCredHandle)
 {
     assert(minorStatus != NULL);
     assert(isNtlm == 1 || isNtlm == 0);
@@ -636,7 +636,7 @@ uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
                                                     uint32_t passwdLen,
                                                     GssCredId** outputCredHandle)
 {
-    return NetSecurityNative_AcquireCredWithPassword(
+    return AcquireCredWithPassword(
         minorStatus, isNtlm, desiredName, password, passwdLen, GSS_C_INITIATE, outputCredHandle);
 }
 

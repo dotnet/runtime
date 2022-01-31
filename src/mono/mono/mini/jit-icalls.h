@@ -21,6 +21,8 @@ ICALL_EXPORT gint64 mono_llmult (gint64 a, gint64 b);
 
 ICALL_EXPORT guint64 mono_llmult_ovf_un (guint64 a, guint64 b);
 
+ICALL_EXPORT guint64 mono_llmult_ovf_un_oom (guint64 a, guint64 b);
+
 ICALL_EXPORT guint64 mono_llmult_ovf (gint64 a, gint64 b);
 
 ICALL_EXPORT gint32 mono_idiv (gint32 a, gint32 b);
@@ -36,6 +38,8 @@ ICALL_EXPORT gint32 mono_imul (gint32 a, gint32 b);
 ICALL_EXPORT gint32 mono_imul_ovf (gint32 a, gint32 b);
 
 ICALL_EXPORT gint32 mono_imul_ovf_un (guint32 a, guint32 b);
+
+ICALL_EXPORT gint32 mono_imul_ovf_un_oom (guint32 a, guint32 b);
 
 ICALL_EXPORT double mono_fdiv (double a, double b);
 

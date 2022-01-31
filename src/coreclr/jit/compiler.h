@@ -422,13 +422,8 @@ public:
         ,
 #endif // FEATURE_MULTIREG_ARGS
         lvClassHnd(NO_CLASS_HANDLE)
-        ,
-#if ASSERTION_PROP
-        lvRefBlks(BlockSetOps::UninitVal())
-        ,
-#endif // ASSERTION_PROP
-        lvPerSsaData()
-
+        , lvRefBlks(BlockSetOps::UninitVal())
+        , lvPerSsaData()
     {
     }
 
@@ -477,9 +472,7 @@ public:
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
 #endif                                   // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-#if OPT_BOOL_OPS
     unsigned char lvIsBoolean : 1; // set if variable is boolean
-#endif
     unsigned char lvSingleDef : 1; // variable has a single def
                                    // before lvaMarkLocalVars: identifies ref type locals that can get type updates
                                    // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
@@ -498,10 +491,8 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-#if ASSERTION_PROP
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
-#endif
 
 #ifndef TARGET_64BIT
     unsigned char lvStructDoubleAlign : 1; // Must we double align this struct?
@@ -1006,11 +997,10 @@ private:
     ClassLayout* m_layout; // layout info for structs
 
 public:
-#if ASSERTION_PROP
     BlockSet   lvRefBlks;          // Set of blocks that contain refs
     Statement* lvDefStmt;          // Pointer to the statement with the single definition
     void       lvaDisqualifyVar(); // Call to disqualify a local variable from use in optAddCopies
-#endif
+
     var_types TypeGet() const
     {
         return (var_types)lvType;
@@ -1745,7 +1735,7 @@ public:
     // In this case, it must be removed by GenTreeCall::ResetArgInfo.
     bool isNonStandardArgAddedLate() const
     {
-        switch (nonStandardArgKind)
+        switch (static_cast<NonStandardArgKind>(nonStandardArgKind))
         {
             case NonStandardArgKind::None:
             case NonStandardArgKind::PInvokeFrame:
@@ -3310,6 +3300,9 @@ public:
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdSumNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdUnOpNode(genTreeOps  op,
                                var_types   type,
                                GenTree*    op1,
@@ -3356,7 +3349,7 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTree* gtNewInlineCandidateReturnExpr(GenTree* inlineCandidate, var_types type, BasicBlockFlags bbFlags);
 
-    GenTree* gtNewFieldRef(var_types typ, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
+    GenTree* gtNewFieldRef(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj = nullptr, DWORD offset = 0);
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
@@ -3584,7 +3577,7 @@ public:
 // Functions to display the trees
 
 #ifdef DEBUG
-    void gtDispNode(GenTree* tree, IndentStack* indentStack, __in_z const char* msg, bool isLIR);
+    void gtDispNode(GenTree* tree, IndentStack* indentStack, _In_z_ const char* msg, bool isLIR);
 
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
@@ -3610,11 +3603,11 @@ public:
     void gtDispChild(GenTree*             child,
                      IndentStack*         indentStack,
                      IndentInfo           arcType,
-                     __in_opt const char* msg     = nullptr,
+                     _In_opt_ const char* msg     = nullptr,
                      bool                 topOnly = false);
     void gtDispTree(GenTree*             tree,
                     IndentStack*         indentStack = nullptr,
-                    __in_opt const char* msg         = nullptr,
+                    _In_opt_ const char* msg         = nullptr,
                     bool                 topOnly     = false,
                     bool                 isLIR       = false);
     void gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, const char** ilNameOut, unsigned* ilNumOut);
@@ -4851,7 +4844,7 @@ private:
     static LONG jitNestingLevel;
 #endif // DEBUG
 
-    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut);
+    static bool impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut = nullptr);
 
     void impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, InlineResult* inlineResult);
 
@@ -5439,7 +5432,7 @@ public:
 
     // Requires that "tree" is a GT_IND marked as an array index, and that its address argument
     // has been parsed to yield the other input arguments.  If evaluation of the address
-    // can raise exceptions, those should be captured in the exception set "excVN."
+    // can raise exceptions, those should be captured in the exception set "addrXvnp".
     // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
     // Marks "tree" with the VN for H[elemTypeEq][arrVN][inx][fldSeq] (for the liberal VN; a new unique
     // VN for the conservative VN.)  Also marks the tree's argument as the address of an array element.
@@ -5450,14 +5443,14 @@ public:
                                       CORINFO_CLASS_HANDLE elemTypeEq,
                                       ValueNum             arrVN,
                                       ValueNum             inxVN,
-                                      ValueNum             excVN,
+                                      ValueNumPair         addrXvnp,
                                       FieldSeqNode*        fldSeq);
 
-    // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvn" to represent the exception set thrown
+    // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvnp" to represent the exception set thrown
     // by evaluating the array index expression "tree".  Returns the value number resulting from
     // dereferencing the array in the current GcHeap state.  If "tree" is non-null, it must be the
     // "GT_IND" that does the dereference, and it is given the returned value number.
-    ValueNum fgValueNumberArrIndexVal(GenTree* tree, struct VNFuncApp* funcApp, ValueNum addrXvn);
+    ValueNum fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* funcApp, ValueNumPair addrXvnp);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -5566,6 +5559,10 @@ public:
 
     // Adds the exception sets for the current tree node
     void fgValueNumberAddExceptionSet(GenTree* tree);
+
+#ifdef DEBUG
+    void fgDebugCheckExceptionSets();
+#endif
 
     // These are the current value number for the memory implicit variables while
     // doing value numbering.  These are the value numbers under the "liberal" interpretation
@@ -5948,7 +5945,7 @@ public:
 
     bool fgReorderBlocks();
 
-    void fgDetermineFirstColdBlock();
+    PhaseStatus fgDetermineFirstColdBlock();
 
     bool fgIsForwardBranch(BasicBlock* bJump, BasicBlock* bSrc = nullptr);
 
@@ -6020,7 +6017,7 @@ public:
 
     void fgDebugCheckFlags(GenTree* tree);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
-    void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags treeFlags, GenTreeFlags chkFlags);
+    void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfileData();
     bool fgDebugCheckIncomingProfileData(BasicBlock* block);
@@ -6407,11 +6404,16 @@ private:
     GenTree* fgMorphGetStructAddr(GenTree** pTree, CORINFO_CLASS_HANDLE clsHnd, bool isRValue = false);
     GenTree* fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd);
     GenTree* fgMorphCopyBlock(GenTree* tree);
+    GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
+    GenTree* fgOptimizeAddition(GenTreeOp* add);
+    GenTree* fgOptimizeMultiply(GenTreeOp* mul);
+    GenTree* fgOptimizeBitwiseAnd(GenTreeOp* andOp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
@@ -6422,7 +6424,7 @@ private:
     bool fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2);
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
-    GenTree* fgMorphCommutative(GenTreeOp* tree);
+    GenTreeOp* fgMorphCommutative(GenTreeOp* tree);
     GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
     GenTree* fgMorphReduceAddOps(GenTree* tree);
@@ -6431,10 +6433,8 @@ public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
 
 private:
-#if LOCAL_ASSERTION_PROP
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-#endif
     void fgMorphTreeDone(GenTree* tree, GenTree* oldTree = nullptr DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
@@ -6740,6 +6740,12 @@ protected:
         CALLINT_ALL,        // kills everything                              (normal method call)
     };
 
+    enum class FieldKindForVN
+    {
+        SimpleStatic,
+        WithBaseAddr
+    };
+
 public:
     // A "LoopDsc" describes a ("natural") loop.  We (currently) require the body of a loop to be a contiguous (in
     // bbNext order) sequence of basic blocks.  (At times, we may require the blocks in a loop to be "properly numbered"
@@ -6794,9 +6800,9 @@ public:
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
 
-        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool> FieldHandleSet;
-        FieldHandleSet* lpFieldsModified; // This has entries (mappings to "true") for all static field and object
-                                          // instance fields modified
+        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
+                        FieldHandleSet;
+        FieldHandleSet* lpFieldsModified; // This has entries for all static field and object instance fields modified
                                           // in the loop.
 
         typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, bool> ClassHandleSet;
@@ -6807,7 +6813,7 @@ public:
         // Adds the variable liveness information for 'blk' to 'this' LoopDsc
         void AddVariableLiveness(Compiler* comp, BasicBlock* blk);
 
-        inline void AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd);
+        inline void AddModifiedField(Compiler* comp, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
         // This doesn't *always* take a class handle -- it can also take primitive types, encoded as class handles
         // (shifted left, with a low-order bit set to distinguish.)
         // Use the {Encode/Decode}ElemType methods to construct/destruct these.
@@ -6925,7 +6931,7 @@ public:
         }
 
 #ifdef DEBUG
-        void lpValidatePreHeader()
+        void lpValidatePreHeader() const
         {
             // If this is called, we expect there to be a pre-header.
             assert(lpFlags & LPFLG_HAS_PREHEAD);
@@ -6985,6 +6991,8 @@ public:
                        BasicBlock*   bottom,
                        BasicBlock*   exit,
                        unsigned char exitCnt);
+
+    void optClearLoopIterInfo();
 
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned lnum, bool printVerbose = false);
@@ -7054,7 +7062,7 @@ protected:
     void AddVariableLivenessAllContainingLoops(unsigned lnum, BasicBlock* blk);
 
     // Adds "fldHnd" to the set of modified fields of "lnum" and any parent loops.
-    void AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd);
+    void AddModifiedFieldAllContainingLoops(unsigned lnum, CORINFO_FIELD_HANDLE fldHnd, FieldKindForVN fieldKind);
 
     // Adds "elemType" to the set of modified array element types of "lnum" and any parent loops.
     void AddModifiedElemTypeAllContainingLoops(unsigned lnum, CORINFO_CLASS_HANDLE elemType);
@@ -7113,12 +7121,6 @@ protected:
     int optIsSetAssgLoop(unsigned lnum, ALLVARSET_VALARG_TP vars, varRefKinds inds = VR_NONE);
 
     bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
-
-    /**************************************************************************
-     *                       Optimization conditions
-     *************************************************************************/
-
-    bool optAvoidIntMult(void);
 
 protected:
     //  The following is the upper limit on how many expressions we'll keep track
@@ -7379,14 +7381,11 @@ public:
     typedef ArrayStack<GenTree*> GenTreePtrStack;
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTreePtrStack*> LclNumToGenTreePtrStack;
 
-    // Kill set to track variables with intervening definitions.
-    VARSET_TP optCopyPropKillSet;
-
     // Copy propagation functions.
-    void optCopyProp(BasicBlock* block, Statement* stmt, GenTree* tree, LclNumToGenTreePtrStack* curSsaName);
+    void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToGenTreePtrStack* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
     void optBlockCopyProp(BasicBlock* block, LclNumToGenTreePtrStack* curSsaName);
-    unsigned optIsSsaLocal(GenTree* tree);
+    unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
     int optCopyProp_LclVarScore(LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc, bool preferOp2);
     void optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName));
@@ -7583,7 +7582,6 @@ public:
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
 
-#if ASSERTION_PROP
     /**************************************************************************
      *               Value/Assertion propagation
      *************************************************************************/
@@ -7838,10 +7836,8 @@ public:
     AssertionDsc* optGetAssertion(AssertionIndex assertIndex);
     void optAssertionInit(bool isLocalProp);
     void optAssertionTraitsInit(AssertionIndex assertionCount);
-#if LOCAL_ASSERTION_PROP
     void optAssertionReset(AssertionIndex limit);
     void optAssertionRemove(AssertionIndex index);
-#endif
 
     // Assertion prop data flow functions.
     void       optAssertionPropMain();
@@ -7935,11 +7931,11 @@ public:
     void optDebugCheckAssertion(AssertionDsc* assertion);
     void optDebugCheckAssertions(AssertionIndex AssertionIndex);
 #endif
+
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
 
     void optAddCopies();
-#endif // ASSERTION_PROP
 
     /**************************************************************************
      *                          Range checks
@@ -8082,7 +8078,6 @@ public:
                        CORINFO_RESOLVED_TOKEN* pConstrainedToken,
                        CORINFO_CALLINFO_FLAGS  flags,
                        CORINFO_CALL_INFO*      pResult);
-    inline CORINFO_CALLINFO_FLAGS addVerifyFlag(CORINFO_CALLINFO_FLAGS flags);
 
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
@@ -8701,7 +8696,7 @@ private:
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        return compOpportunisticallyDependsOn(minimumIsa) && JitConfig.EnableHWIntrinsic();
+        return compOpportunisticallyDependsOn(minimumIsa);
 #else
         return false;
 #endif
@@ -8719,7 +8714,7 @@ private:
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        return compIsaSupportedDebugOnly(minimumIsa) && JitConfig.EnableHWIntrinsic();
+        return compIsaSupportedDebugOnly(minimumIsa);
 #else
         return false;
 #endif // FEATURE_SIMD
@@ -9126,7 +9121,7 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return JitConfig.EnableHWIntrinsic() ? TYP_SIMD32 : TYP_SIMD16;
+            return TYP_SIMD32;
         }
         else
         {
@@ -9167,14 +9162,13 @@ private:
 #if defined(TARGET_XARCH)
         if (getSIMDSupportLevel() == SIMD_AVX2_Supported)
         {
-            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
+            return YMM_REGSIZE_BYTES;
         }
         else
         {
-            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
-
             // Verify and record that AVX2 isn't supported
             compVerifyInstructionSetUnusable(InstructionSet_AVX2);
+            assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
@@ -9197,10 +9191,12 @@ private:
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (compOpportunisticallyDependsOn(InstructionSet_AVX))
         {
-            return JitConfig.EnableHWIntrinsic() ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES;
+            return YMM_REGSIZE_BYTES;
         }
         else
         {
+            // Verify and record that AVX2 isn't supported
+            compVerifyInstructionSetUnusable(InstructionSet_AVX2);
             assert(getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             return XMM_REGSIZE_BYTES;
         }
@@ -10712,12 +10708,6 @@ public:
     */
 
 public:
-    // Set to true if verification cannot be skipped for this method
-    // CoreCLR does not ever run IL verification. Compile out the verifier from the JIT by making this a constant.
-    // TODO: Delete the verifier from the JIT? (https://github.com/dotnet/runtime/issues/32648)
-    // bool tiVerificationNeeded;
-    static const bool tiVerificationNeeded = false;
-
     // Returns true if child is equal to or a subtype of parent for merge purposes
     // This support is necessary to suport attributes that are not described in
     // for example, signatures. For example, the permanent home byref (byref that
@@ -11501,41 +11491,13 @@ public:
                 break;
             }
 
-            case GT_DYN_BLK:
-            {
-                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
-
-                GenTree** op1Use = &dynBlock->gtOp1;
-                GenTree** op2Use = &dynBlock->gtDynamicSize;
-
-                result = WalkTree(op1Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(op2Use, dynBlock);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                break;
-            }
-
             case GT_STORE_DYN_BLK:
             {
-                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
+                GenTreeStoreDynBlk* const dynBlock = node->AsStoreDynBlk();
 
                 GenTree** op1Use = &dynBlock->gtOp1;
                 GenTree** op2Use = &dynBlock->gtOp2;
                 GenTree** op3Use = &dynBlock->gtDynamicSize;
-
-                if (TVisitor::UseExecutionOrder)
-                {
-                    if (dynBlock->IsReverseOp())
-                    {
-                        std::swap(op1Use, op2Use);
-                    }
-                }
 
                 result = WalkTree(op1Use, dynBlock);
                 if (result == fgWalkResult::WALK_ABORT)

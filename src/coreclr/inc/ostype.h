@@ -31,20 +31,6 @@ extern RunningOnStatusEnum gRunningOnStatus;
 
 void InitRunningOnVersionStatus();
 
-#if defined(FEATURE_COMINTEROP) && !defined(FEATURE_CORESYSTEM)
-typedef enum
-{
-    WINRT_STATUS_UNINITED = 0,
-    WINRT_STATUS_UNSUPPORTED,
-    WINRT_STATUS_SUPPORTED
-}
-WinRTStatusEnum;
-
-extern WinRTStatusEnum      gWinRTStatus;
-
-void InitWinRTStatus();
-#endif // FEATURE_COMINTEROP && !FEATURE_CORESYSTEM
-
 //*****************************************************************************
 // Returns true if you are running on Windows 8 or newer.
 //*****************************************************************************
@@ -65,28 +51,10 @@ inline BOOL RunningOnWin8()
 
 #ifdef FEATURE_COMINTEROP
 
-#ifdef FEATURE_CORESYSTEM
-
 inline BOOL WinRTSupported()
 {
     return RunningOnWin8();
 }
-#else
-inline BOOL WinRTSupported()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-
-
-    if (gWinRTStatus == WINRT_STATUS_UNINITED)
-    {
-        InitWinRTStatus();
-    }
-
-    return gWinRTStatus == WINRT_STATUS_SUPPORTED;
-}
-#endif // FEATURE_CORESYSTEM
 
 #endif // FEATURE_COMINTEROP
 

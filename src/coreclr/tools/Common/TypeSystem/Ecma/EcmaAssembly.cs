@@ -67,7 +67,7 @@ namespace Internal.TypeSystem.Ecma
 
         public bool HasAssemblyCustomAttribute(string attributeNamespace, string attributeName)
         {
-            return _metadataReader.GetCustomAttributeHandle(_assemblyDefinition.GetCustomAttributes(),
+            return !_metadataReader.GetCustomAttributeHandle(_assemblyDefinition.GetCustomAttributes(),
                 attributeNamespace, attributeName).IsNil;
         }
     }

@@ -2240,169 +2240,27 @@ void Compiler::compSetProcessor()
 
 #endif // TARGET_X86
 
-    // The VM will set the ISA flags depending on actual hardware support.
-    // We then select which ISAs to leave enabled based on the JIT config.
-    // The exception to this is the dummy Vector64/128/256 ISAs, which must be added explicitly.
+    // The VM will set the ISA flags depending on actual hardware support
+    // and any specified config switches specified by the user. The exception
+    // here is for certain "artificial ISAs" such as Vector64/128/256 where they
+    // don't actually exist. The JIT is in charge of adding those and ensuring
+    // the total sum of flags is still valid.
+
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-    opts.compSupportsISA                            = 0;
-    opts.compSupportsISAReported                    = 0;
-    opts.compSupportsISAExactly                     = 0;
 
-#ifdef TARGET_XARCH
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
-    }
+    opts.compSupportsISA         = 0;
+    opts.compSupportsISAReported = 0;
+    opts.compSupportsISAExactly  = 0;
 
-    if (!JitConfig.EnableSSE())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE2_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAES())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AES);
-    }
-
-    if (!JitConfig.EnablePCLMULQDQ())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
-    }
-
-    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
-    // is a prexisting config flag that controls the SSE3+ ISAs
-    if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE3);
-    }
-
-    if (!JitConfig.EnableSSSE3())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSSE3);
-    }
-
-    if (!JitConfig.EnableSSE41())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE41_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableSSE42())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_SSE42_X64);
-#endif
-    }
-
-    if (!JitConfig.EnablePOPCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_POPCNT_X64);
-#endif
-    }
-
-    if (!JitConfig.EnableAVX())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX);
-    }
-
-    if (!JitConfig.EnableFMA())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_FMA);
-    }
-
-    if (!JitConfig.EnableAVX2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX2);
-    }
-
-    if (!JitConfig.EnableAVXVNNI())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVXVNNI);
-    }
-
-    if (!JitConfig.EnableLZCNT())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_LZCNT_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI1_X64);
-#endif // TARGET_AMD64
-    }
-
-    if (!JitConfig.EnableBMI2())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2);
-#ifdef TARGET_AMD64
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_BMI2_X64);
-#endif // TARGET_AMD64
-    }
-
+#if defined(TARGET_XARCH)
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
 #endif // TARGET_XARCH
+
 #if defined(TARGET_ARM64)
-    if (JitConfig.EnableHWIntrinsic())
-    {
-        // Dummy ISAs for simplifying the JIT code
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
-
-    if (!JitConfig.EnableArm64Aes())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Aes);
-    }
-
-    if (!JitConfig.EnableArm64Atomics())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Atomics);
-    }
-
-    if (!JitConfig.EnableArm64Crc32())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Crc32_Arm64);
-    }
-
-    if (!JitConfig.EnableArm64Sha1())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha1);
-    }
-
-    if (!JitConfig.EnableArm64Sha256())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_Sha256);
-    }
-
-    if (!JitConfig.EnableArm64AdvSimd())
-    {
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd);
-        instructionSetFlags.RemoveInstructionSet(InstructionSet_AdvSimd_Arm64);
-    }
-#endif
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#endif // TARGET_ARM64
 
     instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
     opts.setSupportedISAs(instructionSetFlags);
@@ -2786,15 +2644,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
-    // Optionally suppress dumping some OSR jit requests.
+    // Optionally suppress dumping except for a specific OSR jit request.
     //
-    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
-    {
-        const int desiredOffset = JitConfig.JitDumpAtOSROffset();
+    const int dumpAtOSROffset = JitConfig.JitDumpAtOSROffset();
 
-        if (desiredOffset != -1)
+    if (verboseDump && (dumpAtOSROffset != -1))
+    {
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            verboseDump = (((IL_OFFSET)desiredOffset) == info.compILEntry);
+            verboseDump = (((IL_OFFSET)dumpAtOSROffset) == info.compILEntry);
+        }
+        else
+        {
+            verboseDump = false;
         }
     }
 
@@ -4774,7 +4636,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Run an early flow graph simplification pass
         //
         auto earlyUpdateFlowGraphPhase = [this]() {
-            const bool doTailDup = false;
+            constexpr bool doTailDup = false;
             fgUpdateFlowGraph(doTailDup);
         };
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
@@ -4914,6 +4776,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Unroll loops
         //
         DoPhase(this, PHASE_UNROLL_LOOPS, &Compiler::optUnrollLoops);
+
+        // Clear loop table info that is not used after this point, and might become invalid.
+        //
+        DoPhase(this, PHASE_CLEAR_LOOP_INFO, &Compiler::optClearLoopIterInfo);
     }
 
 #ifdef DEBUG
@@ -5023,7 +4889,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             //
             DoPhase(this, PHASE_OPTIMIZE_VALNUM_CSES, &Compiler::optOptimizeCSEs);
 
-#if ASSERTION_PROP
             if (doAssertionProp)
             {
                 // Assertion propagation
@@ -5042,14 +4907,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 //
                 DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
             }
-#endif // ASSERTION_PROP
 
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 auto optUpdateFlowGraphPhase = [this]() {
-                    const bool doTailDup = false;
+                    constexpr bool doTailDup = false;
                     fgUpdateFlowGraph(doTailDup);
                 };
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
@@ -5106,11 +4970,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_SIMPLE_LOWERING, &Compiler::fgSimpleLowering);
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
-
     // Enable this to gather statistical data such as
     // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
@@ -5160,10 +5019,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Copied from rpPredictRegUse()
     SetFullPtrRegMapRequired(codeGen->GetInterruptible() || !codeGen->isFramePointerUsed());
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
 #if FEATURE_LOOP_ALIGN
     // Place loop alignment instructions
@@ -5770,10 +5625,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Set this before the first 'BADCODE'
     // Skip verification where possible
-    //.tiVerificationNeeded = !compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
     assert(compileFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
-
-    assert(!compIsForInlining() || !tiVerificationNeeded); // Inlinees must have been verified.
 
     /* Setup an error trap */
 
@@ -6204,7 +6056,7 @@ unsigned adler32(unsigned adler, char* buf, unsigned int len)
 }
 #endif
 
-unsigned getMethodBodyChecksum(__in_z char* code, int size)
+unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
 {
 #ifdef PSEUDORANDOM_NOP_INSERTION
     return adler32(0, code, size);
@@ -6301,17 +6153,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
                 eeGetMethodFullName(info.compMethodHnd), dspPtr(impTokenLookupContextHandle)));
     }
 
-    if (tiVerificationNeeded)
-    {
-        JITLOG((LL_INFO10000, "tiVerificationNeeded initially set to true for %s\n", info.compFullName));
-    }
 #endif // DEBUG
 
-    /* Since tiVerificationNeeded can be turned off in the middle of
-       compiling a method, and it might have caused blocks to be queued up
-       for reimporting, impCanReimport can be used to check for reimporting. */
-
-    impCanReimport = (tiVerificationNeeded || compStressCompile(STRESS_CHK_REIMPORT, 15));
+    impCanReimport = compStressCompile(STRESS_CHK_REIMPORT, 15);
 
     /* Initialize set a bunch of global values */
 
@@ -6541,9 +6385,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         // Honor the config setting that tells the jit to
         // always optimize methods with loops.
         //
-        // If that's not set, and OSR is enabled, the jit may still
+        // If neither of those apply, and OSR is enabled, the jit may still
         // decide to optimize, if there's something in the method that
-        // OSR currently cannot handle.
+        // OSR currently cannot handle, or we're optionally suppressing
+        // OSR by method hash.
         //
         const char* reason = nullptr;
 
@@ -6551,35 +6396,42 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
         {
             reason = "tail.call and not BBINSTR";
         }
-        else if ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0)
+        else if (compHasBackwardJump && ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
         {
-            if (compHasBackwardJump)
-            {
-                reason = "loop";
-            }
+            reason = "loop";
         }
-        else if (JitConfig.TC_OnStackReplacement() > 0)
+
+        if (compHasBackwardJump && (reason == nullptr) && (JitConfig.TC_OnStackReplacement() > 0))
         {
-            const bool patchpointsOK = compCanHavePatchpoints(&reason);
-            assert(patchpointsOK || (reason != nullptr));
+            const char* noPatchpointReason = nullptr;
+            bool        canEscapeViaOSR    = compCanHavePatchpoints(&reason);
 
 #ifdef DEBUG
-            // Optionally disable OSR by method hash.
-            //
-            if (patchpointsOK && compHasBackwardJump)
+            if (canEscapeViaOSR)
             {
+                // Optionally disable OSR by method hash. This will force any
+                // method that might otherwise get trapped in Tier0 to be optimized.
+                //
                 static ConfigMethodRange JitEnableOsrRange;
                 JitEnableOsrRange.EnsureInit(JitConfig.JitEnableOsrRange());
                 const unsigned hash = impInlineRoot()->info.compMethodHash();
                 if (!JitEnableOsrRange.Contains(hash))
                 {
-                    JITDUMP("Disabling OSR -- Method hash 0x%08x not within range ", hash);
-                    JITDUMPEXEC(JitEnableOsrRange.Dump());
-                    JITDUMP("\n");
-                    reason = "OSR disabled by JitEnableOsrRange";
+                    canEscapeViaOSR = false;
+                    reason          = "OSR disabled by JitEnableOsrRange";
                 }
             }
 #endif
+
+            if (canEscapeViaOSR)
+            {
+                JITDUMP("\nOSR enabled for this method\n");
+            }
+            else
+            {
+                JITDUMP("\nOSR disabled for this method: %s\n", noPatchpointReason);
+                assert(reason != nullptr);
+            }
         }
 
         if (reason != nullptr)
@@ -9529,7 +9381,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 FALLTHROUGH;
 
             case GT_BLK:
-            case GT_DYN_BLK:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
@@ -9882,7 +9733,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK, GT_DYN_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(TYP_INT);
     block->bbFlags |= BBF_HAS_NULLCHECK;

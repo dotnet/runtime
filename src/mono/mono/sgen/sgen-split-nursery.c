@@ -46,7 +46,7 @@ The Allocator Space takes the botton part of the nursery.
 
 The Survivor spaces are intermingled in the top part of the nursery. It's done
 this way since the required size for the To Space depends on the survivor rate
-of objects from the Allocator Space. 
+of objects from the Allocator Space.
 
 During a collection when the object scan function see a nursery object it must
 determine if the object needs to be evacuated or left in place. Originally, this
