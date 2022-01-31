@@ -1975,23 +1975,6 @@ public:
 
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
-    // Requires "this" to be the address of an array (the operand of a GT_ARR_ADDR).
-    // Sets "pArr" to the node representing the array (either an array object pointer, or perhaps a byref to the some
-    // element).
-    // Sets "*pArrayType" to the class handle for the array type.
-    // Sets "*inxVN" to the value number inferred for the array index.
-    // Sets "*pFldSeq" to the sequence, if any, of struct fields used to index into the array element.
-    void ParseArrayAddress(
-        Compiler* comp, struct ArrayInfo* arrayInfo, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq);
-
-    // Helper method for the above.
-    void ParseArrayAddressWork(Compiler*       comp,
-                               target_ssize_t  inputMul,
-                               GenTree**       pArr,
-                               ValueNum*       pInxVN,
-                               target_ssize_t* pOffset,
-                               FieldSeqNode**  pFldSeq);
-
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
     // Labels "*this" as an array index expression: label all constants and variables that could contribute, as part of
@@ -5884,6 +5867,17 @@ public:
     {
         return m_firstElemOffset;
     }
+
+    void ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq);
+
+private:
+    static void ParseArrayAddressWork(GenTree*        tree,
+                                      Compiler*       comp,
+                                      target_ssize_t  inputMul,
+                                      GenTree**       pArr,
+                                      ValueNum*       pInxVN,
+                                      target_ssize_t* pOffset,
+                                      FieldSeqNode**  pFldSeq);
 };
 
 /* gtArrLen -- array length (GT_ARR_LENGTH)

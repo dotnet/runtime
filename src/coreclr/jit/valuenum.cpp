@@ -9275,30 +9275,23 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 //
 void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
 {
-    GenTree*             addr           = arrAddr->Addr();
-    var_types            elemType       = arrAddr->GetElemType();
-    CORINFO_CLASS_HANDLE elemStructType = arrAddr->GetElemClassHandle();
-    unsigned             elemOffset     = arrAddr->GetFirstElemOffset();
-    unsigned             elemSize       = (elemType == TYP_STRUCT) ? typGetObjLayout(elemStructType)->GetSize()
-                                                                   : genTypeSize(elemType);
-
-    // Try to parse it.
-    ArrayInfo     arrInfo(elemType, elemSize, elemOffset, elemStructType);
     GenTree*      arr         = nullptr;
     ValueNum      inxVN       = ValueNumStore::NoVN;
     FieldSeqNode* fldSeq      = nullptr;
-    addr->ParseArrayAddress(this, &arrInfo, &arr, &inxVN, &fldSeq);
+    arrAddr->ParseArrayAddress(this, &arr, &inxVN, &fldSeq);
 
     if (arr == nullptr)
     {
         JITDUMP("    *** ARR_ADDR -- an unparseable array expression, assigning a new, unique VN\n");
-        arrAddr->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(addr->gtVNPair));
+        arrAddr->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(arrAddr->Addr()->gtVNPair));
         return;
     }
 
     // Get the element type equivalence class representative.
-    CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(elemType, elemStructType);
-    ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+    var_types            elemType       = arrAddr->GetElemType();
+    CORINFO_CLASS_HANDLE elemStructType = arrAddr->GetElemClassHandle();
+    CORINFO_CLASS_HANDLE elemTypeEq     = EncodeElemType(elemType, elemStructType);
+    ValueNum             elemTypeEqVN   = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
     JITDUMP("    VNForHandle(arrElemType: %s) is " FMT_VN "\n",
             (elemType == TYP_STRUCT) ? eeGetClassName(elemStructType) : varTypeName(elemType), elemTypeEqVN);
 
@@ -9306,13 +9299,13 @@ void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
     inxVN          = vnStore->VNNormalValue(inxVN);
 
     // Look up if we have any zero-offset sequences...
-    assert((fldSeq == nullptr) && !GetZeroOffsetFieldMap()->Lookup(addr));
+    assert((fldSeq == nullptr) && !GetZeroOffsetFieldMap()->Lookup(arrAddr->Addr()));
     GetZeroOffsetFieldMap()->Lookup(arrAddr, &fldSeq);
     ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
 
     ValueNum     arrAddrVN  = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN);
     ValueNumPair arrAddrVNP = ValueNumPair(arrAddrVN, arrAddrVN);
-    arrAddr->gtVNPair       = vnStore->VNPWithExc(arrAddrVNP, vnStore->VNPExceptionSet(addr->gtVNPair));
+    arrAddr->gtVNPair       = vnStore->VNPWithExc(arrAddrVNP, vnStore->VNPExceptionSet(arrAddr->Addr()->gtVNPair));
 }
 
 #ifdef FEATURE_SIMD

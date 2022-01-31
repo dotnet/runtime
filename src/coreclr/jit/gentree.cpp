@@ -17246,15 +17246,28 @@ bool Compiler::gtIsStaticGCBaseHelperCall(GenTree* tree)
     return false;
 }
 
-void GenTree::ParseArrayAddress(
-    Compiler* comp, ArrayInfo* arrayInfo, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq)
+
+//------------------------------------------------------------------------
+// ParseArrayAddress: Rehydrate the array and index expression from ARR_ADDR.
+//
+// Arguments:
+//    comp    - The Compiler instance
+//    pArr    - [out] parameter for the tree representing the array instance
+//              (either an array object pointer, or perhaps a byref to the some element)
+//    pInxVN  - [out] parameter for the value number representing the index
+//    pFldSeq - [out] parameter for the struct fields used to index into the array element
+//
+// Return Value:
+//    Will set "*pArr" to "nullptr" if this array address is not parseable.
+//
+void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq)
 {
     *pArr                 = nullptr;
     ValueNum       inxVN  = ValueNumStore::NoVN;
     target_ssize_t offset = 0;
     FieldSeqNode*  fldSeq = nullptr;
 
-    ParseArrayAddressWork(comp, 1, pArr, &inxVN, &offset, &fldSeq);
+    ParseArrayAddressWork(this->Addr(), comp, 1, pArr, &inxVN, &offset, &fldSeq);
 
     // If we didn't find an array reference (perhaps it is the constant null?) we will give up.
     if (*pArr == nullptr)
@@ -17303,17 +17316,21 @@ void GenTree::ParseArrayAddress(
         fldSeqIter = fldSeqIter->GetNext();
     }
 
+    unsigned elemOffset = GetFirstElemOffset();
+    unsigned elemSizeUn = (GetElemType() == TYP_STRUCT) ? comp->typGetObjLayout(GetElemClassHandle())->GetSize()
+                                                        : genTypeSize(GetElemType());
+
     // Is there some portion of the "offset" beyond the first-elem offset and the struct field suffix we just computed?
-    if (!FitsIn<target_ssize_t>(fieldOffsets + arrayInfo->m_elemOffset) ||
-        !FitsIn<target_ssize_t>(arrayInfo->m_elemSize))
+    if (!FitsIn<target_ssize_t>(fieldOffsets + elemOffset) ||
+        !FitsIn<target_ssize_t>(elemSizeUn))
     {
         // This seems unlikely, but no harm in being safe...
         *pInxVN = comp->GetValueNumStore()->VNForExpr(nullptr, TYP_INT);
         return;
     }
     // Otherwise...
-    target_ssize_t offsetAccountedFor = static_cast<target_ssize_t>(fieldOffsets + arrayInfo->m_elemOffset);
-    target_ssize_t elemSize           = static_cast<target_ssize_t>(arrayInfo->m_elemSize);
+    target_ssize_t offsetAccountedFor = static_cast<target_ssize_t>(fieldOffsets + elemOffset);
+    target_ssize_t elemSize           = static_cast<target_ssize_t>(elemSizeUn);
 
     target_ssize_t constIndOffset = offset - offsetAccountedFor;
     // This should be divisible by the element size...
@@ -17385,39 +17402,40 @@ void GenTree::ParseArrayAddress(
     }
 }
 
-void GenTree::ParseArrayAddressWork(Compiler*       comp,
-                                    target_ssize_t  inputMul,
-                                    GenTree**       pArr,
-                                    ValueNum*       pInxVN,
-                                    target_ssize_t* pOffset,
-                                    FieldSeqNode**  pFldSeq)
+/* static */ void GenTreeArrAddr::ParseArrayAddressWork(GenTree*        tree,
+                                                        Compiler*       comp,
+                                                        target_ssize_t  inputMul,
+                                                        GenTree**       pArr,
+                                                        ValueNum*       pInxVN,
+                                                        target_ssize_t* pOffset,
+                                                        FieldSeqNode**  pFldSeq)
 {
-    if (TypeGet() == TYP_REF)
+    if (tree->TypeIs(TYP_REF))
     {
         // This must be the array pointer.
-        *pArr = this;
+        *pArr = tree;
         assert(inputMul == 1); // Can't multiply the array pointer by anything.
     }
     else
     {
-        switch (OperGet())
+        switch (tree->OperGet())
         {
             case GT_CNS_INT:
-                *pFldSeq = comp->GetFieldSeqStore()->Append(*pFldSeq, AsIntCon()->gtFieldSeq);
-                assert(!AsIntCon()->ImmedValNeedsReloc(comp));
+                *pFldSeq = comp->GetFieldSeqStore()->Append(*pFldSeq, tree->AsIntCon()->gtFieldSeq);
+                assert(!tree->AsIntCon()->ImmedValNeedsReloc(comp));
                 // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                 // type.
-                *pOffset += (inputMul * (target_ssize_t)(AsIntCon()->gtIconVal));
+                *pOffset += (inputMul * (target_ssize_t)(tree->AsIntCon()->gtIconVal));
                 return;
 
             case GT_ADD:
             case GT_SUB:
-                AsOp()->gtOp1->ParseArrayAddressWork(comp, inputMul, pArr, pInxVN, pOffset, pFldSeq);
-                if (OperGet() == GT_SUB)
+                ParseArrayAddressWork(tree->AsOp()->gtOp1, comp, inputMul, pArr, pInxVN, pOffset, pFldSeq);
+                if (tree->OperIs(GT_SUB))
                 {
                     inputMul = -inputMul;
                 }
-                AsOp()->gtOp2->ParseArrayAddressWork(comp, inputMul, pArr, pInxVN, pOffset, pFldSeq);
+                ParseArrayAddressWork(tree->AsOp()->gtOp2, comp, inputMul, pArr, pInxVN, pOffset, pFldSeq);
                 return;
 
             case GT_MUL:
@@ -17425,39 +17443,39 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                 // If one op is a constant, continue parsing down.
                 target_ssize_t subMul   = 0;
                 GenTree*       nonConst = nullptr;
-                if (AsOp()->gtOp1->IsCnsIntOrI())
+                if (tree->AsOp()->gtOp1->IsCnsIntOrI())
                 {
                     // If the other arg is an int constant, and is a "not-a-field", choose
                     // that as the multiplier, thus preserving constant index offsets...
-                    if (AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
-                        AsOp()->gtOp2->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField())
+                    if (tree->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
+                        tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == FieldSeqStore::NotAField())
                     {
-                        assert(!AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
+                        assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
                         // target_ssize_t type.
-                        subMul   = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
-                        nonConst = AsOp()->gtOp1;
+                        subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                        nonConst = tree->AsOp()->gtOp1;
                     }
                     else
                     {
-                        assert(!AsOp()->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp));
+                        assert(!tree->AsOp()->gtOp1->AsIntCon()->ImmedValNeedsReloc(comp));
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
                         // target_ssize_t type.
-                        subMul   = (target_ssize_t)AsOp()->gtOp1->AsIntConCommon()->IconValue();
-                        nonConst = AsOp()->gtOp2;
+                        subMul   = (target_ssize_t)tree->AsOp()->gtOp1->AsIntConCommon()->IconValue();
+                        nonConst = tree->AsOp()->gtOp2;
                     }
                 }
-                else if (AsOp()->gtOp2->IsCnsIntOrI())
+                else if (tree->AsOp()->gtOp2->IsCnsIntOrI())
                 {
-                    assert(!AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
+                    assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntConCommon::gtIconVal had
                     // target_ssize_t type.
-                    subMul   = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
-                    nonConst = AsOp()->gtOp1;
+                    subMul   = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    nonConst = tree->AsOp()->gtOp1;
                 }
                 if (nonConst != nullptr)
                 {
-                    nonConst->ParseArrayAddressWork(comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
+                    ParseArrayAddressWork(nonConst, comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;
                 }
                 // Otherwise, exit the switch, treat as a contribution to the index.
@@ -17466,14 +17484,14 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
 
             case GT_LSH:
                 // If one op is a constant, continue parsing down.
-                if (AsOp()->gtOp2->IsCnsIntOrI())
+                if (tree->AsOp()->gtOp2->IsCnsIntOrI())
                 {
-                    assert(!AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
+                    assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));
                     // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t
                     // type.
-                    target_ssize_t shiftVal = (target_ssize_t)AsOp()->gtOp2->AsIntConCommon()->IconValue();
+                    target_ssize_t shiftVal = (target_ssize_t)tree->AsOp()->gtOp2->AsIntConCommon()->IconValue();
                     target_ssize_t subMul   = target_ssize_t{1} << shiftVal;
-                    AsOp()->gtOp1->ParseArrayAddressWork(comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
+                    ParseArrayAddressWork(tree->AsOp()->gtOp1, comp, inputMul * subMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;
                 }
                 // Otherwise, exit the switch, treat as a contribution to the index.
@@ -17481,9 +17499,9 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
 
             case GT_COMMA:
                 // We don't care about exceptions for this purpose.
-                if (AsOp()->gtOp1->OperIs(GT_BOUNDS_CHECK) || AsOp()->gtOp1->IsNothingNode())
+                if (tree->AsOp()->gtOp1->OperIs(GT_BOUNDS_CHECK) || tree->AsOp()->gtOp1->IsNothingNode())
                 {
-                    AsOp()->gtOp2->ParseArrayAddressWork(comp, inputMul, pArr, pInxVN, pOffset, pFldSeq);
+                    ParseArrayAddressWork(tree->AsOp()->gtOp2, comp, inputMul, pArr, pInxVN, pOffset, pFldSeq);
                     return;
                 }
                 break;
@@ -17492,11 +17510,11 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                 break;
         }
         // If we didn't return above, must be a contribution to the non-constant part of the index VN.
-        ValueNum vn = comp->GetValueNumStore()->VNLiberalNormalValue(gtVNPair);
+        ValueNum vn = comp->GetValueNumStore()->VNLiberalNormalValue(tree->gtVNPair);
         if (inputMul != 1)
         {
             ValueNum mulVN = comp->GetValueNumStore()->VNForLongCon(inputMul);
-            vn             = comp->GetValueNumStore()->VNForFunc(TypeGet(), VNFunc(GT_MUL), mulVN, vn);
+            vn             = comp->GetValueNumStore()->VNForFunc(tree->TypeGet(), VNFunc(GT_MUL), mulVN, vn);
         }
         if (*pInxVN == ValueNumStore::NoVN)
         {
@@ -17504,7 +17522,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
         }
         else
         {
-            *pInxVN = comp->GetValueNumStore()->VNForFunc(TypeGet(), VNFunc(GT_ADD), *pInxVN, vn);
+            *pInxVN = comp->GetValueNumStore()->VNForFunc(tree->TypeGet(), VNFunc(GT_ADD), *pInxVN, vn);
         }
     }
 }
