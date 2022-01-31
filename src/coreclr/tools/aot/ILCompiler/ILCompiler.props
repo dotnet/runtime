@@ -23,9 +23,19 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ObjWriterRid Condition="'$(ObjWriterRid)' == '' and '$(RuntimeIdentifier)' == 'osx-x64'">osx.10.12-x64</ObjWriterRid>
-    <ObjWriterRid Condition="'$(ObjWriterRid)' == '' and '$(RuntimeIdentifier)' == 'osx-arm64'">osx.11.0-arm64</ObjWriterRid>
-    <ObjWriterRid Condition="'$(ObjWriterRid)' == ''">$(RuntimeIdentifier)</ObjWriterRid>
+    <!-- Massage the RuntimeIdentifier into an ObjWriter package RID that we can download -->
+    <_objWriterRidPlatformIndex>$(RuntimeIdentifier.LastIndexOf('-'))</_objWriterRidPlatformIndex>
+    <ObjWriterRidWithoutPlatform>$(RuntimeIdentifier.Substring(0, $(_objWriterRidPlatformIndex)))</ObjWriterRidWithoutPlatform>
+    <ObjWriterRidPlatform>$(RuntimeIdentifier.Substring($(_objWriterRidPlatformIndex)).TrimStart('-'))</ObjWriterRidPlatform>
+
+    <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
+    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' != 'win' and '$(ObjWriterRidWithoutPlatform)' != 'osx' and '$(ObjWriterRidWithoutPlatform)' != 'linux-musl'">linux</ObjWriterRidWithoutPlatform>
+
+    <!-- OSX builds have a version -->
+    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' == 'osx' and '$(ObjWriterRidPlatform)' == 'x64'">osx.10.12</ObjWriterRidWithoutPlatform>
+    <ObjWriterRidWithoutPlatform Condition="'$(ObjWriterRidWithoutPlatform)' == 'osx' and '$(ObjWriterRidPlatform)' == 'arm64'">osx.11.0</ObjWriterRidWithoutPlatform>
+
+    <ObjWriterRid Condition="'$(ObjWriterRid)' == ''">$(ObjWriterRidWithoutPlatform)-$(ObjWriterRidPlatform)</ObjWriterRid>
 
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'linux-x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
