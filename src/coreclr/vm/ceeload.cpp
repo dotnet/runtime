@@ -1596,75 +1596,6 @@ InstrumentedILOffsetMapping Module::GetInstrumentedILOffsetMapping(mdMethodDef t
 
 #ifndef DACCESS_COMPILE
 
-
-BOOL Module::IsNoStringInterning()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END
-
-    if (!(m_dwPersistedFlags & COMPUTED_STRING_INTERNING))
-    {
-        // Default is string interning
-        BOOL fNoStringInterning = FALSE;
-
-        HRESULT hr;
-
-        IMDInternalImport *mdImport = GetAssembly()->GetMDImport();
-        _ASSERTE(mdImport);
-
-        mdToken token;
-        IfFailThrow(mdImport->GetAssemblyFromScope(&token));
-
-        const BYTE *pVal;
-        ULONG       cbVal;
-
-        hr = mdImport->GetCustomAttributeByName(token,
-                        COMPILATIONRELAXATIONS_TYPE,
-                        (const void**)&pVal, &cbVal);
-
-        // Parse the attribute
-        if (hr == S_OK)
-        {
-            CustomAttributeParser cap(pVal, cbVal);
-            IfFailThrow(cap.SkipProlog());
-
-            // Get Flags
-            UINT32 flags;
-            IfFailThrow(cap.GetU4(&flags));
-
-            if (flags & CompilationRelaxations_NoStringInterning)
-            {
-                fNoStringInterning = TRUE;
-            }
-        }
-
-#ifdef _DEBUG
-        static ConfigDWORD g_NoStringInterning;
-        DWORD dwOverride = g_NoStringInterning.val(CLRConfig::INTERNAL_NoStringInterning);
-
-        if (dwOverride == 0)
-        {
-            // Disabled
-            fNoStringInterning = FALSE;
-        }
-        else if (dwOverride == 2)
-        {
-            // Always true (testing)
-            fNoStringInterning = TRUE;
-        }
-#endif // _DEBUG
-
-        FastInterlockOr(&m_dwPersistedFlags, COMPUTED_STRING_INTERNING |
-            (fNoStringInterning ? NO_STRING_INTERNING : 0));
-    }
-
-    return !!(m_dwPersistedFlags & NO_STRING_INTERNING);
-}
-
 BOOL Module::HasDefaultDllImportSearchPathsAttribute()
 {
     CONTRACTL
@@ -3102,7 +3033,7 @@ void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickByt
 }
 
 
-OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain, bool bNeedToSyncWithFixups)
+OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain)
 {
     CONTRACTL
     {

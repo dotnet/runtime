@@ -7523,8 +7523,7 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
  *************************************************************/
 
 CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
-                                  CORINFO_METHOD_HANDLE hCallee,
-                                  uint32_t*             pRestrictions)
+                                  CORINFO_METHOD_HANDLE hCallee)
 {
     CONTRACTL {
         THROWS;
@@ -7534,7 +7533,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
     CorInfoInline result = INLINE_PASS;  // By default we pass.
                                          // Do not set pass in the rest of the method.
-    DWORD         dwRestrictions = 0;    // By default, no restrictions
     const char *  szFailReason = NULL;   // for reportInlineDecision
 
     JIT_TO_EE_TRANSITION();
@@ -7606,23 +7604,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             result = INLINE_NEVER;
             szFailReason = "Inlinee is MethodImpl'd by another method within the same type";
             goto exit;
-        }
-    }
-
-    //
-    // Perform the Cross-Assembly inlining checks
-    //
-    {
-        Module *    pCalleeModule   = pCallee->GetModule();
-
-        // TODO: We can probably be smarter here if the caller is jitted, as we will
-        // know for sure if the inlinee has really no string interning active (currently
-        // it's only on in the ngen case (besides requiring the attribute)), but this is getting
-        // too subtle. Will only do if somebody screams about it, as bugs here are going to
-        // be tough to find
-        if ((pOrigCallerModule != pCalleeModule) &&  pCalleeModule->IsNoStringInterning())
-        {
-            dwRestrictions |= INLINE_NO_CALLEE_LDSTR;
         }
     }
 
@@ -7698,28 +7679,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 exit: ;
 
     EE_TO_JIT_TRANSITION();
-
-    if (result == INLINE_PASS && dwRestrictions)
-    {
-        if (pRestrictions)
-        {
-            *pRestrictions = dwRestrictions;
-        }
-        else
-        {
-            // If the jitter didn't want to know about restrictions, it shouldn't be inlining
-            result = INLINE_FAIL;
-            szFailReason = "Inlinee has restrictions the JIT doesn't want";
-        }
-    }
-    else
-    {
-        if (pRestrictions)
-        {
-            // Denied inlining, makes no sense to pass out restrictions,
-            *pRestrictions = 0;
-        }
-    }
 
     if (dontInline(result))
     {
@@ -13186,12 +13145,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     return TRUE;
                 }
 
-                // For generic instantiations compiled into the ngen image of some other
-                // client assembly, we need to ensure that we intern the string
-                // in the defining assembly.
-                bool mayNeedToSyncWithFixups = pInfoModule != currentModule;
-
-                result = (size_t) pInfoModule->ResolveStringRef(TokenFromRid(rid, mdtString), currentModule->GetDomain(), mayNeedToSyncWithFixups);
+                result = (size_t) pInfoModule->ResolveStringRef(TokenFromRid(rid, mdtString), currentModule->GetDomain());
             }
         }
         break;
