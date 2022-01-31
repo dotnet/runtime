@@ -18,7 +18,7 @@ parameters:
   tarCompression: ''
 
 
-#steps:
+steps:
   #- task: DownloadPipelineArtifact@2
   #  displayName: Download runtime packages
   #  inputs:
@@ -111,6 +111,8 @@ parameters:
 
   - script: |
       curl -o dotnet-install.sh 'https://dot.net/v1/dotnet-install.sh'
+      chmod -R a+rx .
+      ls
       ./dotnet-install.sh --channel 6.0.2xx --quality daily --install-dir --verbose
       dotnet --info
       dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/main.json --source https://aka.ms/dotnet6/nuget/index.json
