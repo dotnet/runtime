@@ -200,6 +200,10 @@ public class SetNextIpTests : DebuggerTestBase
             await CheckValueType(locals, "dt0", "System.DateTime", description: "1/1/0001 12:00:00 AM");
         });
         var top_frame = pause_location["callFrames"][0]["functionLocation"];
+
+        await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 88, 20, "MoveNext",
+        expected_error: true);
+        
         await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 79, 16, "MoveNext",
         locals_fn: async (locals) =>
             {
@@ -208,8 +212,5 @@ public class SetNextIpTests : DebuggerTestBase
                 await CheckValueType(locals, "dt0", "System.DateTime", description: "1/1/0001 12:00:00 AM");
             },
         times: 2);
-
-        await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 88, 20, "MoveNext",
-        expected_error: true);
         }
 }
