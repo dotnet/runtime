@@ -27,6 +27,15 @@ namespace System.IO.Pipelines
             base.Dispose(disposing);
         }
 
+        public async override ValueTask DisposeAsync()
+        {
+            if (!LeaveOpen)
+            {
+                await _pipeWriter.CompleteAsync().ConfigureAwait(false);
+            }
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
+
         internal bool LeaveOpen { get; set; }
 
         public override bool CanRead => false;
