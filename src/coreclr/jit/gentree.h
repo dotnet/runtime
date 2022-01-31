@@ -1992,20 +1992,7 @@ public:
                                target_ssize_t* pOffset,
                                FieldSeqNode**  pFldSeq);
 
-    // Requires "this" to be a GT_IND.  Requires the outermost caller to set "*pFldSeq" to nullptr.
-    // Returns true if it is an array index expression, or access to a (sequence of) struct field(s)
-    // within a struct array element.  If it returns true, sets *arrayInfo to the array information, and sets *pFldSeq
-    // to the sequence of struct field accesses.
-    bool ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq);
-
-    // Requires "this" to be the address of a (possible) array element (or struct field within that).
-    // If it is, sets "*arrayInfo" to the array access info, "*pFldSeq" to the sequence of struct fields
-    // accessed within the array element, and returns true.  If not, returns "false".
-    bool ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq);
-
-    // Requires "this" to be an int expression.  If it is a sequence of one or more integer constants added together,
-    // returns true and sets "*pFldSeq" to the sequence of fields with which those constants are annotated.
-    bool ParseOffsetForm(Compiler* comp, FieldSeqNode** pFldSeq);
+    bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
     // Labels "*this" as an array index expression: label all constants and variables that could contribute, as part of
     // an affine expression, to the value of the of the index.

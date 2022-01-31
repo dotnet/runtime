@@ -17509,103 +17509,34 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
     }
 }
 
-bool GenTree::ParseArrayElemForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq)
+//------------------------------------------------------------------------
+// IsArrayAddr: Is "this" an expression for an array address?
+//
+// Recognizes the following patterns:
+//    this: ARR_ADDR
+//    this: ADD(ARR_ADDR, CONST)
+//
+// Arguments:
+//    pArrAddr - [out] parameter for the found ARR_ADDR node
+//
+// Return Value:
+//    Whether "this" matches the pattern denoted above.
+//
+bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 {
-    if (OperIsIndir())
+    GenTree* addr = this;
+    if (addr->OperIs(GT_ADD) && addr->AsOp()->gtGetOp2()->IsCnsIntOrI())
     {
-        return AsIndir()->Addr()->ParseArrayElemAddrForm(comp, arrayInfo, pFldSeq);
+        addr = addr->AsOp()->gtGetOp1();
+    }
+
+    if (addr->OperIs(GT_ARR_ADDR))
+    {
+        *pArrAddr = addr->AsArrAddr();
+        return true;
     }
 
     return false;
-}
-
-bool GenTree::ParseArrayElemAddrForm(Compiler* comp, ArrayInfo* arrayInfo, FieldSeqNode** pFldSeq)
-{
-    switch (OperGet())
-    {
-        case GT_ADD:
-        {
-            GenTree* arrAddr = nullptr;
-            GenTree* offset  = nullptr;
-            if (AsOp()->gtOp1->TypeGet() == TYP_BYREF)
-            {
-                arrAddr = AsOp()->gtOp1;
-                offset  = AsOp()->gtOp2;
-            }
-            else if (AsOp()->gtOp2->TypeGet() == TYP_BYREF)
-            {
-                arrAddr = AsOp()->gtOp2;
-                offset  = AsOp()->gtOp1;
-            }
-            else
-            {
-                return false;
-            }
-            if (!offset->ParseOffsetForm(comp, pFldSeq))
-            {
-                return false;
-            }
-            return arrAddr->ParseArrayElemAddrForm(comp, arrayInfo, pFldSeq);
-        }
-
-        case GT_ADDR:
-        {
-            GenTree* addrArg = AsOp()->gtOp1;
-            if (addrArg->OperGet() != GT_IND)
-            {
-                return false;
-            }
-
-            // The "Addr" node might be annotated with a zero-offset field sequence.
-            FieldSeqNode* zeroOffsetFldSeq = nullptr;
-            if (comp->GetZeroOffsetFieldMap()->Lookup(this, &zeroOffsetFldSeq))
-            {
-                *pFldSeq = comp->GetFieldSeqStore()->Append(*pFldSeq, zeroOffsetFldSeq);
-            }
-
-            return addrArg->ParseArrayElemForm(comp, arrayInfo, pFldSeq);
-        }
-
-        case GT_ARR_ADDR:
-        {
-            GenTreeArrAddr*      arrAddr        = AsArrAddr();
-            var_types            elemType       = arrAddr->GetElemType();
-            CORINFO_CLASS_HANDLE elemStructType = arrAddr->GetElemClassHandle();
-            unsigned             elemOffset     = arrAddr->GetFirstElemOffset();
-            unsigned             elemSize       =
-                (elemType == TYP_STRUCT) ? comp->typGetObjLayout(elemStructType)->GetSize()
-                                         : genTypeSize(elemType);
-
-            *arrayInfo = ArrayInfo(elemType, elemSize, elemOffset, elemStructType);
-            return true;
-        }
-
-        default:
-            return false;
-    }
-}
-
-bool GenTree::ParseOffsetForm(Compiler* comp, FieldSeqNode** pFldSeq)
-{
-    switch (OperGet())
-    {
-        case GT_CNS_INT:
-        {
-            GenTreeIntCon* icon = AsIntCon();
-            *pFldSeq            = comp->GetFieldSeqStore()->Append(*pFldSeq, icon->gtFieldSeq);
-            return true;
-        }
-
-        case GT_ADD:
-            if (!AsOp()->gtOp1->ParseOffsetForm(comp, pFldSeq))
-            {
-                return false;
-            }
-            return AsOp()->gtOp2->ParseOffsetForm(comp, pFldSeq);
-
-        default:
-            return false;
-    }
 }
 
 void GenTree::LabelIndex(Compiler* comp, bool isConst)
