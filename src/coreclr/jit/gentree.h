@@ -3248,7 +3248,7 @@ struct GenTreeStrCon : public GenTree
     // Returns true if this GT_CNS_STR was imported for String.Empty field
     bool IsStringEmptyField()
     {
-        return gtSconCPX == 0;
+        return gtSconCPX == 0 && gtScpHnd == nullptr;
     }
 
     // Because this node can come from an inlined method we need to
