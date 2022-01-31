@@ -22,9 +22,12 @@ namespace System.Drawing
 
             static Gdip()
             {
-                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
+                if (!OperatingSystem.IsWindows())
+                {
+                    throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix);
+                }
 
-                PlatformInitialize();
+                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
 
                 // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
                 // domains are ok, just make sure to pair each w/GdiplusShutdown

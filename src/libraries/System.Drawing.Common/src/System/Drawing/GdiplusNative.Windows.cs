@@ -17,10 +17,6 @@ namespace System.Drawing
         {
             private const string LibraryName = "gdiplus.dll";
 
-            private static void PlatformInitialize()
-            {
-            }
-
             // Imported functions
             [LibraryImport(LibraryName)]
             private static partial int GdiplusStartup(out IntPtr token, in StartupInputEx input, out StartupOutput output);
