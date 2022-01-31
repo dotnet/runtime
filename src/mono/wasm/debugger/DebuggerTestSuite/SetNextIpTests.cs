@@ -27,6 +27,7 @@ public class SetNextIpTests : DebuggerTestBase
         }
         var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 9, 8);
 
+        //calling invoke_add twice to check if the breakpoint continue working after calling SetNextIP
         var pause_location = await EvaluateAndCheck(
             "window.setTimeout(function() { invoke_add(); invoke_add(); }, 1);",
             "dotnet://debugger-test.dll/debugger-test.cs", 9, 8,
