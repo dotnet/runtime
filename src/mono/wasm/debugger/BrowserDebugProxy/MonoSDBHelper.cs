@@ -2690,9 +2690,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(method.DebugId);
             commandParamsWriter.Write((long)ilOffset.Offset);
             using var getDebuggerCmdReader = await SendDebuggerAgentCommand(CmdThread.SetIp, commandParamsWriter, token);
-            if (getDebuggerCmdReader.HasError)
-                return false;
-            return true;
+            return !getDebuggerCmdReader.HasError;
         }
 
         public async Task<int> CreateByteArray(string diff, CancellationToken token)
