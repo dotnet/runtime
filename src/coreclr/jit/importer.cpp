@@ -8645,9 +8645,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                    opcodeNames[opcode], callInfo->kind, varTypeName(callRetTyp), structSize);
         }
 #endif
-        // This should be checked in impImportBlockCode.
-        assert(!compIsForInlining() || !(impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY));
-
         sig = &calliSig;
     }
     else // (opcode != CEE_CALLI)
@@ -8677,14 +8674,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 #endif
         if (compIsForInlining())
         {
-            /* Does this call site have security boundary restrictions? */
-
-            if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
-            {
-                compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
-                return TYP_UNDEF;
-            }
-
             /* Does the inlinee use StackCrawlMark */
 
             if (mflags & CORINFO_FLG_DONT_INLINE_CALLER)
@@ -14449,16 +14438,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
                               combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM), &callInfo);
 
-                if (compIsForInlining())
-                {
-                    if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
-                    {
-                        // Check to see if this call violates the boundary.
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_SECURITY);
-                        return;
-                    }
-                }
-
                 mflags = callInfo.methodFlags;
 
                 if ((mflags & (CORINFO_FLG_STATIC | CORINFO_FLG_ABSTRACT)) != 0)
@@ -14647,16 +14626,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 /* CALLI does not respond to CONSTRAINED */
                 prefixFlags &= ~PREFIX_CONSTRAINED;
-
-                if (compIsForInlining())
-                {
-                    // CALLI doesn't have a method handle, so assume the worst.
-                    if (impInlineInfo->inlineCandidateInfo->dwRestrictions & INLINE_RESPECT_BOUNDARY)
-                    {
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_CROSS_BOUNDARY_CALLI);
-                        return;
-                    }
-                }
 
                 FALLTHROUGH;
 
@@ -19125,21 +19094,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 // Make sure not to report this one.  It was already reported by the VM.
                 pParam->result->SetReported();
                 goto _exit;
-            }
-
-            // check for unsupported inlining restrictions
-            assert((dwRestrictions & ~(INLINE_RESPECT_BOUNDARY | INLINE_SAME_THIS)) == 0);
-
-            if (dwRestrictions & INLINE_SAME_THIS)
-            {
-                GenTree* thisArg = pParam->call->AsCall()->gtCallThisArg->GetNode();
-                assert(thisArg);
-
-                if (!pParam->pThis->impIsThis(thisArg))
-                {
-                    pParam->result->NoteFatal(InlineObservation::CALLSITE_REQUIRES_SAME_THIS);
-                    goto _exit;
-                }
             }
 
             /* Get the method properties */

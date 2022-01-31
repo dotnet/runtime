@@ -928,12 +928,6 @@ enum CorInfoInline
     INLINE_NEVER                = -2,   // This method should never be inlined, regardless of context
 };
 
-enum CorInfoInlineRestrictions
-{
-    INLINE_RESPECT_BOUNDARY = 0x00000001, // You can inline if there are no calls from the method being inlined
-    INLINE_SAME_THIS        = 0x00000004, // You can inline only if the callee is on the same this reference as caller
-};
-
 enum CorInfoInlineTypeCheck
 {
     CORINFO_INLINE_TYPECHECK_NONE       = 0x00000000, // It's not okay to compare type's vtable with a native type handle
