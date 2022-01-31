@@ -18,8 +18,8 @@ namespace System
                 maxBinaryExponent: 1023,
                 exponentBias: 1023,
                 infinityBits: 0x7FF00000_00000000,
-                minDecimalExponent: -342,
-                maxDecimalExponent: 308,
+                minFastFloatDecimalExponent: -342,
+                maxFastFloatDecimalExponent: 308,
                 infinitePower: 0x7FF,
                 minExponentRoundToEven: -4,
                 maxExponentRoundToEven: 23,
@@ -32,8 +32,8 @@ namespace System
                 maxBinaryExponent: 127,
                 exponentBias: 127,
                 infinityBits: 0x7F800000,
-                minDecimalExponent: -65,
-                maxDecimalExponent: 38,
+                minFastFloatDecimalExponent: -65,
+                maxFastFloatDecimalExponent: 38,
                 infinitePower: 0xFF,
                 minExponentRoundToEven: -17,
                 maxExponentRoundToEven: 10,
@@ -45,9 +45,9 @@ namespace System
                 maxBinaryExponent: 15,
                 exponentBias: 15,
                 infinityBits: 0x7C00,
-                minDecimalExponent: -8,
-                maxDecimalExponent: 4,
-                infinitePower: 31,
+                minFastFloatDecimalExponent: -8,
+                maxFastFloatDecimalExponent: 4,
+                infinitePower: 0x1F,
                 minExponentRoundToEven: -21,
                 maxExponentRoundToEven: 5,
                 maxExponentFastPath: 4
@@ -68,18 +68,18 @@ namespace System
             public ushort NormalMantissaBits { get; }
             public ushort DenormalMantissaBits { get; }
 
-            public int MinDecimalExponent { get; }
+            public int MinFastFloatDecimalExponent { get; }
             public int InfinitePower { get; }
             public int MinExponentRoundToEven { get; }
             public int MaxExponentRoundToEven { get; }
 
             public int MaxExponentFastPath { get; }
 
-            public int MaxDecimalExponent { get; }
+            public int MaxFastFloatDecimalExponent { get; }
             public ulong MaxMantissaFastPath { get => 2UL << DenormalMantissaBits; }
             public ushort ExponentBits { get; }
 
-            public FloatingPointInfo(ushort denormalMantissaBits, ushort exponentBits, int maxBinaryExponent, int exponentBias, ulong infinityBits, int minDecimalExponent, int maxDecimalExponent, int infinitePower, int minExponentRoundToEven, int maxExponentRoundToEven, int maxExponentFastPath)
+            public FloatingPointInfo(ushort denormalMantissaBits, ushort exponentBits, int maxBinaryExponent, int exponentBias, ulong infinityBits, int minFastFloatDecimalExponent, int maxFastFloatDecimalExponent, int infinitePower, int minExponentRoundToEven, int maxExponentRoundToEven, int maxExponentFastPath)
             {
                 ExponentBits = exponentBits;
 
@@ -98,8 +98,8 @@ namespace System
                 InfinityBits = infinityBits;
                 ZeroBits = 0;
 
-                MaxDecimalExponent = maxDecimalExponent;
-                MinDecimalExponent = minDecimalExponent;
+                MaxFastFloatDecimalExponent = maxFastFloatDecimalExponent;
+                MinFastFloatDecimalExponent = minFastFloatDecimalExponent;
 
                 InfinitePower = infinitePower;
 
@@ -1524,12 +1524,12 @@ namespace System
             int exponent;
             ulong mantissa = 0;
 
-            if ((w == 0) || (q < info.MinDecimalExponent))
+            if ((w == 0) || (q < info.MinFastFloatDecimalExponent))
             {
                 // result should be zero
                 return default;
             }
-            if (q > info.MaxDecimalExponent)
+            if (q > info.MaxFastFloatDecimalExponent)
             {
                 // we want to get infinity:
                 exponent = info.InfinitePower;
