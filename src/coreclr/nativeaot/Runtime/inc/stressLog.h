@@ -96,22 +96,23 @@ enum LogFacilitiesEnum: unsigned int {
 //          %pK     // The pointer is a code address (used for call stacks or method names)
 //
 
-// STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
-//   in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or
-//   string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.
-//   This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
-//   getting passed in and using va_args would require parsing the format string during the GC
-//
+/*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
+    in ()'s and contain a format string. The arguments must be numbers or string literals.
+    This was done because GC Trace uses dprintf which dosen't contain info on how many arguments are
+    getting passed in and using va_args would require parsing the format string during the GC
+*/
 
-#define STRESS_LOG_VA(msg) do {                                                     \
-            if (StressLog::StressLogOn(LF_GC, LL_ALWAYS))                           \
-                StressLog::LogMsgOL msg;                                            \
+#define _Args(...) __VA_ARGS__
+
+#define STRESS_LOG_VA(dprintfLevel,msg) do {                                                 \
+            if (StressLog::StressLogOn(LF_GC, LL_ALWAYS))                                    \
+                StressLog::LogMsg(LF_ALWAYS|(dprintfLevel<<16)|LF_GC, LL_ALWAYS, _Args msg); \
             } WHILE_0
 
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
                 StressLog::LogMsg(facility, 0, msg);                                \
-            } WHILE_0                                                              \
+            } WHILE_0                                                               \
 
 #define STRESS_LOG1(facility, level, msg, data1) do {                               \
             if (StressLog::StressLogOn(facility, level))                            \
@@ -598,31 +599,9 @@ public:
         return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
     }
 
-    static const char* gcStartMsg()
-    {
-        return "{ =========== BEGINGC %d, (requested generation = %lu, collect_classes = %lu) ==========\n";
-    }
-
-    static const char* gcEndMsg()
-    {
-        return "========== ENDGC %d (gen = %lu, collect_classes = %lu) ===========}\n";
-    }
-
-    static const char* gcRootMsg()
-    {
-        return "    GC Root %p RELOCATED %p -> %p  MT = %pT\n";
-    }
-
-    static const char* gcRootPromoteMsg()
-    {
-        return "    GCHeap::Promote: Promote GC Root *%p = %p MT = %pT\n";
-    }
-
-    static const char* gcPlugMoveMsg()
-    {
-        return "GC_HEAP RELOCATING Objects in heap within range [%p %p) by -0x%x bytes\n";
-    }
-
+    #define STATIC_CONTRACT_LEAF
+    #include "../../../inc/gcmsg.inl"
+    #undef STATIC_CONTRACT_LEAF
 };
 
 
