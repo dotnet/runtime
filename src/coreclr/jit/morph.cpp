@@ -6268,17 +6268,17 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // TODO-CQ: enable this optimization for 32 bit targets.
             bool isStaticReadOnlyInited = false;
 #ifdef TARGET_64BIT
-            bool plsSpeculative = true;
             if (tree->TypeIs(TYP_REF) && !isBoxedStatic)
             {
-                if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &plsSpeculative) != NO_CLASS_HANDLE)
+                bool pIsSpeculative = true;
+                if (info.compCompHnd->getStaticFieldCurrentClass(symHnd, &pIsSpeculative) != NO_CLASS_HANDLE)
                 {
-                    isStaticReadOnlyInited = !plsSpeculative;
+                    isStaticReadOnlyInited = !pIsSpeculative;
                 }
             }
 #endif // TARGET_64BIT
 
-            // Choices made below have mostly historical reasons and
+            // TODO: choices made below have mostly historical reasons and
             // should be unified to always use the IND(<address>) form.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
