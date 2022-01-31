@@ -3958,7 +3958,6 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
     for (FieldSeqNode* field = fieldSeq; field != nullptr; field = field->GetNext())
     {
         assert(field != FieldSeqStore::NotAField());
-        assert(!field->IsPseudoField());
 
         JITDUMP("  VNApplySelectors:\n");
         var_types fieldType;
@@ -4117,7 +4116,6 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
     else
     {
         assert(fieldSeq != FieldSeqStore::NotAField());
-        assert(!fieldSeq->IsPseudoField());
 
         if (fieldSeq->GetNext() == nullptr)
         {
@@ -7943,7 +7941,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 }
                 else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
                 {
-                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) && !fldSeq->IsPseudoField());
+                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 
                     // The value number from the rhs of the assignment
                     ValueNum storeVal  = rhsVNPair.GetLiberal();
@@ -8806,7 +8804,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
                 else if (addr->IsFieldAddr(this, &baseAddr, &fldSeq))
                 {
-                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) && !fldSeq->IsPseudoField());
+                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 
                     // The size of the ultimate value we will select, if it is of a struct type.
                     size_t   structSize = 0;

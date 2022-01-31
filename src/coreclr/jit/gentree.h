@@ -254,7 +254,7 @@ public:
 
     CORINFO_FIELD_HANDLE GetFieldHandle() const
     {
-        assert(!IsPseudoField() && (GetFieldHandleValue() != NO_FIELD_HANDLE));
+        assert(GetFieldHandleValue() != NO_FIELD_HANDLE);
         return GetFieldHandleValue();
     }
 
@@ -263,11 +263,10 @@ public:
         return CORINFO_FIELD_HANDLE(m_fieldHandleAndKind & ~FIELD_KIND_MASK);
     }
 
-    // returns true when this is the pseudo #FirstElem field sequence
-    bool IsFirstElemFieldSeq() const;
-
-    // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
-    bool IsPseudoField() const;
+    FieldSeqNode* GetNext() const
+    {
+        return m_next;
+    }
 
     bool IsStaticField() const
     {
@@ -277,11 +276,6 @@ public:
     bool IsSharedStaticField() const
     {
         return GetKind() == FieldKind::SharedStatic;
-    }
-
-    FieldSeqNode* GetNext() const
-    {
-        return m_next;
     }
 
     FieldSeqNode* GetTail()
@@ -318,9 +312,6 @@ class FieldSeqStore
 
     static FieldSeqNode s_notAField; // No value, just exists to provide an address.
 
-    // Dummy variables to provide the addresses for the "pseudo field handle" statics below.
-    static int FirstElemPseudoFieldStruct;
-
 public:
     FieldSeqStore(CompAllocator alloc);
 
@@ -341,14 +332,6 @@ public:
     // they are the results of CreateSingleton, NotAField, or Append calls.  If either of the arguments
     // are the "NotAField" value, so is the result.
     FieldSeqNode* Append(FieldSeqNode* a, FieldSeqNode* b);
-
-    // TODO: delete this pseudo-field, it is only used by ObjectAllocator now.
-    static CORINFO_FIELD_HANDLE FirstElemPseudoField;
-
-    static bool IsPseudoField(CORINFO_FIELD_HANDLE hnd)
-    {
-        return hnd == FirstElemPseudoField;
-    }
 };
 
 class GenTreeUseEdgeIterator;

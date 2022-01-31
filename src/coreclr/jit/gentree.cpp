@@ -10450,17 +10450,12 @@ void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
     while (pfsn != nullptr)
     {
         assert(pfsn != FieldSeqStore::NotAField()); // Can't exist in a field sequence list except alone
-        CORINFO_FIELD_HANDLE fldHnd = pfsn->GetFieldHandleValue();
-        // First check the "pseudo" field handles...
-        if (fldHnd == FieldSeqStore::FirstElemPseudoField)
-        {
-            printf("#FirstElem");
-        }
-        else
-        {
-            printf("%s", eeGetFieldName(fldHnd));
-        }
+
+        CORINFO_FIELD_HANDLE fldHnd = pfsn->GetFieldHandle();
+        printf("%s", eeGetFieldName(fldHnd));
+
         pfsn = pfsn->GetNext();
+
         if (pfsn != nullptr)
         {
             printf(", ");
@@ -10937,14 +10932,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 
         if (tree->OperIs(GT_FIELD))
         {
-            if (FieldSeqStore::IsPseudoField(tree->AsField()->gtFldHnd))
-            {
-                printf(" #PseudoField:0x%x", tree->AsField()->gtFldOffset);
-            }
-            else
-            {
-                printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
-            }
+            printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
         }
 
         if (tree->gtOper == GT_INTRINSIC)
@@ -16214,7 +16202,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
 
     assert((fldSeq != nullptr) && (baseAddr != nullptr));
 
-    if ((fldSeq == FieldSeqStore::NotAField()) || fldSeq->IsPseudoField())
+    if (fldSeq == FieldSeqStore::NotAField())
     {
         return false;
     }
@@ -17532,11 +17520,6 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
     }
 }
 
-int FieldSeqStore::FirstElemPseudoFieldStruct;
-
-CORINFO_FIELD_HANDLE FieldSeqStore::FirstElemPseudoField =
-    (CORINFO_FIELD_HANDLE)&FieldSeqStore::FirstElemPseudoFieldStruct;
-
 FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind) : m_next(next)
 {
     uintptr_t handleValue = reinterpret_cast<uintptr_t>(fieldHnd);
@@ -17544,25 +17527,15 @@ FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, Fi
     assert((handleValue & FIELD_KIND_MASK) == 0);
     m_fieldHandleAndKind = handleValue | static_cast<uintptr_t>(fieldKind);
 
-    if (!FieldSeqStore::IsPseudoField(fieldHnd) && (fieldHnd != NO_FIELD_HANDLE))
+    if (fieldHnd != NO_FIELD_HANDLE)
     {
         assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
     }
     else
     {
-        // Use the default for pseudo-fields.
+        // Use the default for NotAField.
         assert(fieldKind == FieldKind::Instance);
     }
-}
-
-bool FieldSeqNode::IsFirstElemFieldSeq() const
-{
-    return GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField;
-}
-
-bool FieldSeqNode::IsPseudoField() const
-{
-    return GetFieldHandleValue() == FieldSeqStore::FirstElemPseudoField;
 }
 
 #ifdef FEATURE_SIMD

@@ -7851,8 +7851,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                         else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
                         {
-                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()) &&
-                                   !fldSeq->IsPseudoField());
+                            assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 
                             FieldKindForVN fieldKind =
                                 (baseAddr != nullptr) ? FieldKindForVN::WithBaseAddr : FieldKindForVN::SimpleStatic;
