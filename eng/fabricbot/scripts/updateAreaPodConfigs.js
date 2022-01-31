@@ -1,5 +1,5 @@
 // Generates FabricBot config for all area pod triage/PR boards
-// 
+//
 // Running the script using node will update the `../generated*Configs.json` files with the new configuration.
 // The generated JSON can then be pasted in the `.github/fabricbot.json` file in dotnet/runtime,
 // see https://github.com/dotnet/runtime/blob/main/docs/infra/automation.md for more details.
@@ -93,7 +93,7 @@ let areaPods = [
   },
   {
     "pod": "Michael / Tanner",
-    "enabled": false,
+    "enabled": true,
     "areas": [
       "area-System.Buffers",
       "area-System.Numerics",
@@ -566,7 +566,7 @@ let areaPodConfig = {
 // Generate runtime automation
 let generatedRuntimeTasks = areaPods
   .filter(areaPod => areaPod.enabled)
-  .flatMap(areaPod => 
+  .flatMap(areaPod =>
     [
       areaPodConfig.issueTriageNeedsTriage(areaPod),
       areaPodConfig.issueTriageNeedsFurtherTriage(areaPod),
@@ -583,7 +583,7 @@ console.log(`Written generated tasks to ${generatedRuntimeConfigsFile}`);
 // Generate dotnet-api-docs automation
 let generatedApiDocsTasks = areaPods
   .filter(areaPod => areaPod.enabled)
-  .flatMap(areaPod => 
+  .flatMap(areaPod =>
     [
       areaPodConfig.issueTriageNeedsTriage(areaPod),
       areaPodConfig.issueTriageNeedsFurtherTriage(areaPod),
