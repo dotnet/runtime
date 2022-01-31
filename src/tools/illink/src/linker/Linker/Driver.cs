@@ -832,7 +832,11 @@ namespace Mono.Linker
 				if (File.Exists (assemblyPath)) {
 					// The CLR will return the already-loaded assembly if the same path is requested multiple times
 					// (or even if a different path specifies the "same" assembly, based on the MVID).
+
+					// Ignore warning, since we're just enabling analyzer for dogfooding
+#pragma warning disable IL2026
 					return AssemblyLoadContext.Default.LoadFromAssemblyPath (assemblyPath);
+#pragma warning restore IL2026
 				}
 				Context.LogError (null, DiagnosticId.AssemblyInCustomStepOptionCouldNotBeFound, arg);
 			} else
@@ -992,7 +996,10 @@ namespace Mono.Linker
 
 		Type? ResolveStepType (string type, Assembly assembly)
 		{
+			// Ignore warning, since we're just enabling analyzer for dogfooding
+#pragma warning disable IL2026
 			Type? step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
+#pragma warning restore IL2026
 
 			if (step == null) {
 				Context.LogError (null, DiagnosticId.CustomStepTypeCouldNotBeFound, type);
@@ -1004,7 +1011,10 @@ namespace Mono.Linker
 
 		TStep? ResolveStep<TStep> (string type, Assembly assembly) where TStep : class
 		{
+			// Ignore warning, since we're just enabling analyzer for dogfooding
+#pragma warning disable IL2026
 			Type? step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
+#pragma warning restore IL2026
 
 			if (step == null) {
 				Context.LogError (null, DiagnosticId.CustomStepTypeCouldNotBeFound, type);

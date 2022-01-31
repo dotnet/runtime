@@ -174,8 +174,11 @@ namespace Mono.Linker.Steps
 
 			using (var fs = File.Open (Path.Combine (Context.OutputDirectory, Context.PInvokesListFile), FileMode.Create)) {
 				var values = Context.PInvokes.Distinct ().OrderBy (l => l);
+				// Ignore warning, since we're just enabling analyzer for dogfooding
+#pragma warning disable IL2026
 				var jsonSerializer = new DataContractJsonSerializer (typeof (List<PInvokeInfo>));
 				jsonSerializer.WriteObject (fs, values);
+#pragma warning restore IL2026
 			}
 		}
 

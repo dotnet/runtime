@@ -101,6 +101,11 @@ namespace ILLink.RoslynAnalyzer
 				sb.Append (parameterSymbol.Name);
 				break;
 
+			case IMethodSymbol methodSymbol when methodSymbol.IsStaticConstructor ():
+				sb.Append (symbol.ContainingType.ToDisplayString (ILLinkTypeDisplayFormat));
+				sb.Append ("..cctor()");
+				break;
+
 			case IMethodSymbol methodSymbol:
 				// Format the declaring type with namespace and containing types.
 				if (methodSymbol.ContainingSymbol.Kind == SymbolKind.NamedType) {
