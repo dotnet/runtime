@@ -96,12 +96,12 @@ public:
         m_conservative = vn;
     }
 
-    bool operator==(const ValueNumPair& other)
+    bool operator==(const ValueNumPair& other) const
     {
         return (m_liberal == other.m_liberal) && (m_conservative == other.m_conservative);
     }
 
-    bool operator!=(const ValueNumPair& other)
+    bool operator!=(const ValueNumPair& other) const
     {
         return !(*this == other);
     }
