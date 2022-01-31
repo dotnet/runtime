@@ -27,13 +27,17 @@ namespace System.IO.Pipelines
             base.Dispose(disposing);
         }
 
-        public async override ValueTask DisposeAsync()
+        public override ValueTask DisposeAsync()
         {
-            if (!LeaveOpen)
+            return DisposeAsyncCore();
+            async ValueTask DisposeAsyncCore()
             {
-                await _pipeWriter.CompleteAsync().ConfigureAwait(false);
+                if (!LeaveOpen)
+                {
+                    await _pipeWriter.CompleteAsync().ConfigureAwait(false);
+                }
+                await base.DisposeAsync().ConfigureAwait(false);
             }
-            await base.DisposeAsync().ConfigureAwait(false);
         }
 
         internal bool LeaveOpen { get; set; }
