@@ -37,7 +37,7 @@
     <DefaultSubsets Condition="('$(DotNetBuildFromSource)' == 'true' and '$(PrimaryRuntimeFlavor)' != 'Mono') or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' != 'x86' and '$(TargetArchitecture)' != 'x64')">clr+libs+host+packs</DefaultSubsets>
   </PropertyGroup>
 
-  <!-- Init _subset here in to allow RuntimeFlavor to be set as early as possible -->
+  <!-- Init _subset here to allow RuntimeFlavor to be set as early as possible -->
   <PropertyGroup>
     <_subset Condition="'$(Subset)' != ''">+$(Subset.ToLowerInvariant())+</_subset>
     <_subset Condition="'$(Subset)' == ''">+$(DefaultSubsets)+</_subset>
@@ -101,7 +101,7 @@
 
   <ItemGroup>
     <!-- CoreClr -->
-    <SubsetName Include="Clr" Description="The CoreCLR runtime, LinuxDac, CoreLib (+ native), tools and packages." />
+    <SubsetName Include="Clr" Description="The full CoreCLR runtime: $(DefaultCoreClrSubsets)" />
     <SubsetName Include="Clr.NativePrereqs" Description="Managed tools that support building the native components of the runtime (such as DacTableGen)." />
     <SubsetName Include="Clr.ILTools" Description="The CoreCLR IL tools." />
     <SubsetName Include="Clr.Runtime" Description="The CoreCLR .NET runtime." />
@@ -124,7 +124,7 @@
             Description="Packaging of cross OS DAC. Requires all assets needed to be present at a folder specified by $(CrossDacArtifactsDir). See 'Microsoft.CrossOsDiag.Private.CoreCLR.proj' for details." />
 
     <!-- Mono -->
-    <SubsetName Include="Mono" Description="The Mono runtime and CoreLib." />
+    <SubsetName Include="Mono" Description="The Mono runtime and CoreLib: $(DefaultMonoSubsets)" />
     <SubsetName Include="Mono.Runtime" Description="The Mono .NET runtime." />
     <SubsetName Include="Mono.AotCross" Description="The cross-compiler runtime for Mono AOT." />
     <SubsetName Include="Mono.CoreLib" Description="The managed System.Private.CoreLib library for Mono." />
@@ -134,14 +134,14 @@
     <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
 
     <!-- Host -->
-    <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests." />
+    <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests: $(DefaultHostSubsets)" />
     <SubsetName Include="Host.Native" Description="The .NET hosts." />
     <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
     <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
     <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
 
     <!-- Libs -->
-    <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
+    <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly): $(DefaultLibrariesSubsets)" />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
     <SubsetName Include="Libs.Ref" Description="The managed reference libraries." />
     <SubsetName Include="Libs.Src" Description="The managed implementation libraries." />
@@ -150,7 +150,7 @@
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
 
     <!-- Packs -->
-    <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests." />
+    <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests: $(DefaultPacksSubsets)" />
     <SubsetName Include="Packs.Product" Description="Builds the shared framework packs, archives, bundles, and installers." />
     <SubsetName Include="Packs.Installers" Description="Builds the shared framework bundles and installers." />
     <SubsetName Include="Packs.Tests" Description="The framework pack tests." />
