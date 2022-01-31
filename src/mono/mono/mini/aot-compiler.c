@@ -3671,6 +3671,8 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 		flags |= 0x20;
 	if (sig->explicit_this)
 		flags |= 0x40;
+	if (sig->pinvoke)
+		flags |= 0x80;
 	flags |= (sig->call_convention & 0x0F);
 
 	*p = flags;
@@ -3772,6 +3774,9 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_value (info->d.icall.jit_icall_id, p, &p);
 			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
+			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_INDIRECT) {
+				encode_klass_ref (acfg, info->d.native_func.klass, p, &p);
+				encode_signature (acfg, info->d.native_func.sig, p, &p);
 			} else {
 				g_assert (info->subtype == WRAPPER_SUBTYPE_NONE || info->subtype == WRAPPER_SUBTYPE_PINVOKE);
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);

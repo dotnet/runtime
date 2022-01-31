@@ -17,11 +17,7 @@ namespace System.Security.Cryptography
     {
         public CngAlgorithm(string algorithm)
         {
-            if (algorithm == null)
-                throw new ArgumentNullException(nameof(algorithm));
-            if (algorithm.Length == 0)
-                throw new ArgumentException(SR.Format(SR.Cryptography_InvalidAlgorithmName, algorithm), nameof(algorithm));
-
+            ArgumentException.ThrowIfNullOrEmpty(algorithm);
             _algorithm = algorithm;
         }
 

@@ -47,7 +47,7 @@ namespace System.Net
             if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"Invalid address '{address}'");
-                throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(address)));
+                throw new ArgumentException(SR.net_invalid_ip_addr, nameof(address));
             }
 
             IPHostEntry ipHostEntry = GetHostEntryCore(address, AddressFamily.Unspecified);
@@ -81,7 +81,7 @@ namespace System.Net
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"Invalid address '{address}'");
-                    throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
+                    throw new ArgumentException(SR.net_invalid_ip_addr, nameof(hostNameOrAddress));
                 }
 
                 ipHostEntry = GetHostEntryCore(address, family);
@@ -207,7 +207,7 @@ namespace System.Net
                 if (address.Equals(IPAddress.Any) || address.Equals(IPAddress.IPv6Any))
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"Invalid address '{address}'");
-                    throw new ArgumentException(SR.Format(SR.net_invalid_ip_addr, nameof(hostNameOrAddress)));
+                    throw new ArgumentException(SR.net_invalid_ip_addr, nameof(hostNameOrAddress));
                 }
 
                 addresses = (family == AddressFamily.Unspecified || address.AddressFamily == family) ? new IPAddress[] { address } : Array.Empty<IPAddress>();

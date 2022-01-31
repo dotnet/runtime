@@ -817,15 +817,13 @@ namespace System
                         return DateTimeFormat.TryFormat(GetEquivalentDateTime(), destination, out charsWritten, format, provider);
 
                     default:
-                        charsWritten = 0;
-                        return false;
+                        throw new FormatException(SR.Argument_BadFormatSpecifier);
                 }
             }
 
             if (!DateTimeFormat.IsValidCustomDateFormat(format, throwOnError: false))
             {
-                charsWritten = 0;
-                return false;
+                throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(DateOnly)));
             }
 
             return DateTimeFormat.TryFormat(GetEquivalentDateTime(), destination, out charsWritten, format, provider);

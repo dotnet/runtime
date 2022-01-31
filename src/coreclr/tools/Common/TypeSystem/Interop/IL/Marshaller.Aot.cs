@@ -86,6 +86,8 @@ namespace Internal.TypeSystem.Interop
                     return new OleDateTimeMarshaller();
                 case MarshallerKind.OleCurrency:
                     return new OleCurrencyMarshaller();
+                case MarshallerKind.FailedTypeLoad:
+                    return new FailedTypeLoadMarshaller();
                 case MarshallerKind.Variant:
                     return new VariantMarshaller();
                 default:
@@ -1070,6 +1072,19 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.call, emitter.NewToken(helper));
 
             StoreManagedValue(codeStream);
+        }
+    }
+
+    class FailedTypeLoadMarshaller : Marshaller
+    {
+        protected override void TransformManagedToNative(ILCodeStream codeStream)
+        {
+            ThrowHelper.ThrowTypeLoadException(ManagedType);
+        }
+
+        protected override void TransformNativeToManaged(ILCodeStream codeStream)
+        {
+            ThrowHelper.ThrowTypeLoadException(ManagedType);
         }
     }
 

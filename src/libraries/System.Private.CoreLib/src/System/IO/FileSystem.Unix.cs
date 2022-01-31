@@ -554,51 +554,25 @@ namespace System.IO
         }
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
-        {
-            new FileInfo(fullPath, null).Attributes = attributes;
-        }
+            => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).CreationTimeUtc;
-        }
+            => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.CreationTimeCore = time;
-        }
+            => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastAccessTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastAccessTimeUtc;
-        }
+            => default(FileStatus).GetLastAccessTime(fullPath).UtcDateTime;
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastAccessTimeCore = time;
-        }
+            => default(FileStatus).SetLastAccessTime(fullPath, time, asDirectory);
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
-        {
-            return new FileInfo(fullPath, null).LastWriteTimeUtc;
-        }
+            => default(FileStatus).GetLastWriteTime(fullPath).UtcDateTime;
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            FileSystemInfo info = asDirectory ?
-                (FileSystemInfo)new DirectoryInfo(fullPath, null) :
-                (FileSystemInfo)new FileInfo(fullPath, null);
-
-            info.LastWriteTimeCore = time;
-        }
+            => default(FileStatus).SetLastWriteTime(fullPath, time, asDirectory);
 
         public static string[] GetLogicalDrives()
         {

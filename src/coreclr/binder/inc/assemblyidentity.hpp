@@ -30,12 +30,9 @@ namespace BINDER_SPACE
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN       = 0x004,
             IDENTITY_FLAG_PUBLIC_KEY             = 0x008,
             IDENTITY_FLAG_CULTURE                = 0x010,
-            IDENTITY_FLAG_LANGUAGE               = 0x020,
             IDENTITY_FLAG_PROCESSOR_ARCHITECTURE = 0x040,
             IDENTITY_FLAG_RETARGETABLE           = 0x080,
             IDENTITY_FLAG_PUBLIC_KEY_TOKEN_NULL  = 0x100,
-            IDENTITY_FLAG_CUSTOM                 = 0x200,
-            IDENTITY_FLAG_CUSTOM_NULL            = 0x400,
             IDENTITY_FLAG_CONTENT_TYPE           = 0x800,
             IDENTITY_FLAG_FULL_NAME              = (IDENTITY_FLAG_SIMPLE_NAME |
                                                     IDENTITY_FLAG_VERSION)
@@ -50,7 +47,6 @@ namespace BINDER_SPACE
             // Need to pre-populate SBuffers because of bogus asserts
             static const BYTE byteArr[] = { 0 };
             m_publicKeyOrTokenBLOB.SetImmutable(byteArr, sizeof(byteArr));
-            m_customBLOB.SetImmutable(byteArr, sizeof(byteArr));
         }
         ~AssemblyIdentity()
         {
@@ -83,7 +79,6 @@ namespace BINDER_SPACE
         SBuffer             m_publicKeyOrTokenBLOB;
         PEKIND              m_kProcessorArchitecture;
         AssemblyContentType m_kContentType;
-        SBuffer             m_customBLOB;
         DWORD               m_dwIdentityFlags;
     };
 

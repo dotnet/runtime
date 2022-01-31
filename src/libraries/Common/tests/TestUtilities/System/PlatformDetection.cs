@@ -60,8 +60,14 @@ namespace System
         public static bool IsNotWindows => !IsWindows;
 
         public static bool IsCaseInsensitiveOS => IsWindows || IsOSX || IsMacCatalyst;
-        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
 
+#if NETCOREAPP
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS && !RuntimeInformation.RuntimeIdentifier.StartsWith("iossimulator")
+                                                                     && !RuntimeInformation.RuntimeIdentifier.StartsWith("tvossimulator");
+#else
+        public static bool IsCaseSensitiveOS => !IsCaseInsensitiveOS;
+#endif
+        
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
         public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
@@ -176,6 +182,7 @@ namespace System
 
         // Changed to `true` when linking
         public static bool IsBuiltWithAggressiveTrimming => false;
+        public static bool IsNotBuiltWithAggressiveTrimming => !IsBuiltWithAggressiveTrimming;
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
