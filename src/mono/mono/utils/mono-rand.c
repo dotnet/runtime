@@ -17,7 +17,7 @@
 #include <config.h>
 
 #include "atomic.h"
-#include "mono-error.h"
+#include <mono/utils/mono-error.h>
 #include "mono-error-internals.h"
 #include "mono-rand.h"
 #include "mono-threads.h"
