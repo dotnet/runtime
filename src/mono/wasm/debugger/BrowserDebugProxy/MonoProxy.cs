@@ -501,12 +501,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 // Protocol extensions
                 case "DotnetDebugger.setNextIP":
                     {
-                        if (!SourceId.TryParse(args["location"]?["scriptId"]?.Value<string>(), out SourceId sourceId))
-                            return false;
                         var loc = SourceLocation.Parse(args?["location"] as JObject);
                         if (loc == null)
                             return false;
-                        var ret = await OnSetNextIP(id, sourceId, loc.Line, loc.Column, token);
+                        var ret = await OnSetNextIP(id, loc, token);
                         if (ret == true)
                             SendResponse(id, Result.OkFromObject(new { }), token);
                         else
@@ -1534,14 +1532,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             SendResponse(msg_id, Result.OkFromObject(new { }), token);
         }
 
-        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceId id, int lineNumber, int columnNumber, CancellationToken token)
+        private async Task<bool> OnSetNextIP(MessageId sessionId, SourceLocation location, CancellationToken token)
         {
             DebugStore store = await RuntimeReady(sessionId, token);
             ExecutionContext context = GetContext(sessionId);
             Frame scope = context.CallStack.First<Frame>();
 
             var res = new List<SourceLocation>();
-            var sourceLocation = new SourceLocation(id, lineNumber, columnNumber == 0 ? -1 : columnNumber);
+            var sourceLocation = new SourceLocation(location.Id, location.Line, location.Column == 0 ? -1 : location.Column);
 
             store.AddPossibleBreakpointsInMethodToList(sourceLocation, sourceLocation, res, scope.Method.Info);
             if (res.Count == 0)
