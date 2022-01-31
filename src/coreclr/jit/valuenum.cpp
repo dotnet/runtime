@@ -9275,10 +9275,9 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
 //
 void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
 {
-    GenTree*      arr         = nullptr;
-    ValueNum      inxVN       = ValueNumStore::NoVN;
-    FieldSeqNode* fldSeq      = nullptr;
-    arrAddr->ParseArrayAddress(this, &arr, &inxVN, &fldSeq);
+    GenTree* arr   = nullptr;
+    ValueNum inxVN = ValueNumStore::NoVN;
+    arrAddr->ParseArrayAddress(this, &arr, &inxVN);
 
     if (arr == nullptr)
     {
@@ -9299,7 +9298,9 @@ void Compiler::fgValueNumberArrIndexAddr(GenTreeArrAddr* arrAddr)
     inxVN          = vnStore->VNNormalValue(inxVN);
 
     // Look up if we have any zero-offset sequences...
-    assert((fldSeq == nullptr) && !GetZeroOffsetFieldMap()->Lookup(arrAddr->Addr()));
+    assert(!GetZeroOffsetFieldMap()->Lookup(arrAddr->Addr()));
+
+    FieldSeqNode* fldSeq = nullptr;
     GetZeroOffsetFieldMap()->Lookup(arrAddr, &fldSeq);
     ValueNum fldSeqVN = vnStore->VNForFieldSeq(fldSeq);
 

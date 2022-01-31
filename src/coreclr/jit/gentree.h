@@ -5868,7 +5868,7 @@ public:
         return m_firstElemOffset;
     }
 
-    void ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq);
+    void ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum* pInxVN);
 
 private:
     static void ParseArrayAddressWork(GenTree*        tree,
@@ -5876,8 +5876,7 @@ private:
                                       target_ssize_t  inputMul,
                                       GenTree**       pArr,
                                       ValueNum*       pInxVN,
-                                      target_ssize_t* pOffset,
-                                      FieldSeqNode**  pFldSeq);
+                                      target_ssize_t* pOffset);
 };
 
 /* gtArrLen -- array length (GT_ARR_LENGTH)
