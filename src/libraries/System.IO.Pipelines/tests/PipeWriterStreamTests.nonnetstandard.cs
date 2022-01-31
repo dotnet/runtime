@@ -204,7 +204,10 @@ namespace System.IO.Pipelines.Tests
                 throw new NotImplementedException();
             }
 
-            public override void Complete(Exception exception = null) {}
+            public override void Complete(Exception exception = null)
+            {
+                throw new NotImplementedException();
+            }
 
             public override ValueTask CompleteAsync(Exception exception = null)
             {

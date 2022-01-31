@@ -24,17 +24,16 @@ namespace System.IO.Pipelines
             {
                 _pipeWriter.Complete();
             }
-            base.Dispose(disposing);
         }
 
 #if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-        public async override ValueTask DisposeAsync()
+        public override ValueTask DisposeAsync()
         {
             if (!LeaveOpen)
             {
-                await _pipeWriter.CompleteAsync().ConfigureAwait(false);
+                return _pipeWriter.CompleteAsync();
             }
-            await base.DisposeAsync().ConfigureAwait(false);
+            return default;
         }
 #endif
 
