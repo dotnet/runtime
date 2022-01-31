@@ -10,7 +10,9 @@
           Pack="true" />
   </ItemGroup>
 
-  <Target Name="GenerateNupkgProps">
+  <Target Name="GenerateNupkgProps"
+          Inputs="$(MSBuildThisFileFullPath)"
+          Outputs="$(PropsFilePath)">
     <PropertyGroup>
       <PropsFileContents>
 &lt;Project&gt;

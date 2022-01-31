@@ -575,7 +575,7 @@ mono_wasm_assembly_load (const char *name)
 	return res;
 }
 
-EMSCRIPTEN_KEEPALIVE MonoAssembly* 
+EMSCRIPTEN_KEEPALIVE MonoAssembly*
 mono_wasm_get_corlib ()
 {
 	return mono_image_get_assembly (mono_get_corlib());
@@ -656,7 +656,7 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 	uint32_t entry = mono_image_get_entry_point (image);
 	if (!entry)
 		return NULL;
-	
+
 	mono_domain_ensure_entry_assembly (root_domain, assembly);
 	method = mono_get_method (image, entry, NULL);
 
@@ -784,7 +784,8 @@ mono_wasm_marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType
 		return MARSHAL_TYPE_VOID;
 	case MONO_TYPE_BOOLEAN:
 		return MARSHAL_TYPE_BOOL;
-	case MONO_TYPE_I:	// IntPtr
+	case MONO_TYPE_I: // IntPtr
+	case MONO_TYPE_U: // UIntPtr
 	case MONO_TYPE_PTR:
 		return MARSHAL_TYPE_POINTER;
 	case MONO_TYPE_I1:
@@ -929,7 +930,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 	MonoType *type = mono_class_get_type (klass), *original_type = type;
 	if (!type)
 		return MARSHAL_ERROR_NULL_TYPE_POINTER;
-	
+
 	if ((klass == mono_get_string_class ()) &&
 		mono_string_instance_is_interned ((MonoString *)obj)) {
 		*resultL = 0;
@@ -939,14 +940,14 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 
 	if (mono_class_is_enum (klass))
 		type = mono_type_get_underlying_type (type);
-	
+
 	if (!type)
 		return MARSHAL_ERROR_NULL_TYPE_POINTER;
-	
+
 	int mono_type = mono_type_get_type (type);
-	
+
 	if (mono_type == MONO_TYPE_GENERICINST) {
-		// HACK: While the 'any other type' fallback is valid for classes, it will do the 
+		// HACK: While the 'any other type' fallback is valid for classes, it will do the
 		//  wrong thing for structs, so we need to make sure the valuetype handler is used
 		if (mono_type_generic_inst_is_valuetype (type))
 			mono_type = MONO_TYPE_VALUETYPE;
@@ -994,7 +995,7 @@ mono_wasm_try_unbox_primitive_and_get_type (MonoObject *obj, void *result, int r
 			break;
 		case MONO_TYPE_VALUETYPE:
 			{
-				int obj_size = mono_object_get_size (obj), 
+				int obj_size = mono_object_get_size (obj),
 					required_size = (sizeof (int)) + (sizeof (MonoType *)) + obj_size;
 
 				// Check whether this struct has special-case marshaling
@@ -1104,7 +1105,7 @@ mono_wasm_enable_on_demand_gc (int enable)
 }
 
 EMSCRIPTEN_KEEPALIVE MonoString *
-mono_wasm_intern_string (MonoString *string) 
+mono_wasm_intern_string (MonoString *string)
 {
 	return mono_string_intern (string);
 }
@@ -1156,12 +1157,12 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 	return mono_object_unbox (obj);
 }
 
-EMSCRIPTEN_KEEPALIVE char * 
+EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_name (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
 }
 
-EMSCRIPTEN_KEEPALIVE char * 
+EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_get_type_aqn (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_ASSEMBLY_QUALIFIED);
 }

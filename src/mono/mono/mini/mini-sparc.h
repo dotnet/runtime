@@ -17,7 +17,7 @@
 
 /* Parameters used by the register allocator */
 
-/* 
+/*
  * Use %o0..%o5 as local registers, plus %l7 since we need an extra register for
  * holding the sreg1 in call instructions.
  */
@@ -176,4 +176,4 @@ guint32* mono_sparc_emit_save_lmf (guint32* code, guint32 lmf_offset);
 
 guint32* mono_sparc_emit_restore_lmf (guint32 *code, guint32 lmf_offset);
 
-#endif /* __MONO_MINI_SPARC_H__ */  
+#endif /* __MONO_MINI_SPARC_H__ */

@@ -123,21 +123,6 @@
   <data name="net_securityprotocolnotsupported" xml:space="preserve">
     <value>The requested security protocol is not supported.</value>
   </data>
-  <data name="net_WebSockets_UWPClientCertSupportRequiresWindows10GreaterThan1703" xml:space="preserve">
-    <value>Client certificates in UWP are unsupported in Windows 10 version 1703 and earlier versions. Please upgrade Windows 10 to a later release.</value>
-  </data>
-  <data name="net_WebSockets_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
-    <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
-  </data>
-  <data name="net_WebSockets_RemoteValidationCallbackNotSupported" xml:space="preserve">
-    <value>ClientWebSocketOptions.RemoteCertificateValidationCallback is not supported on this platform.</value>
-  </data>
-  <data name="net_WebSockets_Connection_Aborted" xml:space="preserve">
-    <value>Connection was aborted.</value>
-  </data>
-  <data name="net_WebSockets_Invalid_Binary_Type" xml:space="preserve">
-    <value>WebSocket binary type '{0}' not supported.</value>
-  </data>
   <data name="net_WebSockets_ServerWindowBitsNegotiationFailure" xml:space="preserve">
     <value>The WebSocket failed to negotiate max server window bits. The client requested {0} but the server responded with {1}.</value>
   </data>

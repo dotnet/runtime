@@ -192,7 +192,7 @@ namespace System
         }
 
         private static void ThrowMaxValueMustBeNonNegative() =>
-            throw new ArgumentOutOfRangeException("maxValue", SR.Format(SR.ArgumentOutOfRange_NeedNonNegNum, "maxValue"));
+            throw new ArgumentOutOfRangeException("maxValue", SR.ArgumentOutOfRange_NeedNonNegNum);
 
         private static void ThrowMinMaxValueSwapped() =>
             throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));

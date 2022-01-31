@@ -176,7 +176,7 @@ save_old_signal_handler (int signo, struct sigaction *old_action)
 	}
 	handler_to_save->sa_mask = old_action->sa_mask;
 	handler_to_save->sa_flags = old_action->sa_flags;
-	
+
 	if (!mono_saved_signal_handlers)
 		mono_saved_signal_handlers = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	g_hash_table_insert (mono_saved_signal_handlers, GINT_TO_POINTER (signo), handler_to_save);
@@ -321,7 +321,7 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 #endif
 		sa.sa_flags |= SA_ONSTACK;
 
-		/* 
+		/*
 		 * libgc will crash when trying to do stack marking for threads which are on
 		 * an altstack, so delay the suspend signal after the signal handler has
 		 * executed.
@@ -331,11 +331,11 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 	}
 #endif
 	if (signo == SIGSEGV) {
-		/* 
+		/*
 		 * Delay abort signals while handling SIGSEGVs since they could go unnoticed.
 		 */
 		sigset_t block_mask;
-     
+
 		sigemptyset (&block_mask);
 	}
 #else
@@ -347,7 +347,7 @@ add_signal_handler (int signo, MonoSignalHandler handler, int flags)
 
 	/* if there was already a handler in place for this signal, store it */
 	if (! (previous_sa.sa_flags & SA_SIGINFO) &&
-			(SIG_DFL == previous_sa.sa_handler)) { 
+			(SIG_DFL == previous_sa.sa_handler)) {
 		/* it there is no sa_sigaction function and the sa_handler is default, we can safely ignore this */
 	} else {
 		if (mono_do_signal_chaining)
@@ -958,7 +958,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	const char *argv [10];
 	memset (argv, 0, sizeof (char*) * 10);
 
-	char commands_filename [100]; 
+	char commands_filename [100];
 	commands_filename [0] = '\0';
 	g_snprintf (commands_filename, sizeof (commands_filename), "/tmp/mono-gdb-commands.%d", crashed_pid);
 

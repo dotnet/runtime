@@ -313,15 +313,15 @@ dyn_array_int_merge (DynIntArray *dst, DynIntArray *src)
 
 	for (i = j = 0; i < dyn_array_int_size (dst) || j < dyn_array_int_size (src); ) {
 		if (i < dyn_array_int_size (dst) && j < dyn_array_int_size (src)) {
-			int a = dyn_array_int_get (dst, i); 
-			int b = dyn_array_int_get (src, j); 
+			int a = dyn_array_int_get (dst, i);
+			int b = dyn_array_int_get (src, j);
 			if (a < b) {
 				dyn_array_int_add (&merge_array, a);
 				++i;
 			} else if (a == b) {
 				dyn_array_int_add (&merge_array, a);
 				++i;
-				++j;	
+				++j;
 			} else {
 				dyn_array_int_add (&merge_array, b);
 				++j;

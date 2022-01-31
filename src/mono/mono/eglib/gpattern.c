@@ -176,7 +176,7 @@ match_string (GSList *list, const gchar *str, size_t idx, size_t max)
 			idx += len;
 			list = list->next;
 			if (list) {
-				/* 
+				/*
 				 * When recursing, we need this to avoid returning FALSE
 				 * because 'list' will not be NULL
 				 */

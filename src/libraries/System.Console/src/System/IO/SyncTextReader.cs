@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -95,9 +96,23 @@ namespace System.IO
             return Task.FromResult(ReadLine());
         }
 
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
+        {
+            return cancellationToken.IsCancellationRequested ?
+                ValueTask.FromCanceled<string?>(cancellationToken) :
+                new ValueTask<string?>(ReadLine());
+        }
+
         public override Task<string> ReadToEndAsync()
         {
             return Task.FromResult(ReadToEnd());
+        }
+
+        public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
+        {
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled<string>(cancellationToken) :
+                Task.FromResult(ReadToEnd());
         }
 
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)

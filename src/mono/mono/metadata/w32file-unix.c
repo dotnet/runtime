@@ -298,7 +298,7 @@ static void _wapi_set_last_path_error_from_errno (const gchar *dir,
 		} else {
 			dirname = g_strdup (dir);
 		}
-		
+
 		if (_wapi_access (dirname, F_OK) == 0) {
 			mono_w32error_set_last (ERROR_FILE_NOT_FOUND);
 		} else {
@@ -316,18 +316,18 @@ file_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 {
 	gint ret;
 	MonoThreadInfo *info = mono_thread_info_current ();
-	
+
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
 	}
-	
+
 	if(!(filehandle->fileaccess & GENERIC_WRITE) && !(filehandle->fileaccess & GENERIC_ALL)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d doesn't have GENERIC_WRITE access: %u", __func__, ((MonoFDHandle*) filehandle)->fd, filehandle->fileaccess);
 
 		mono_w32error_set_last (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
-		
+
 	do {
 		MONO_ENTER_GC_SAFE;
 		ret = write (((MonoFDHandle*) filehandle)->fd, buffer, numbytes);
@@ -340,7 +340,7 @@ file_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 			ret = 0;
 		} else {
 			_wapi_set_last_error_from_errno ();
-				
+
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: write of fd %d error: %s", __func__, ((MonoFDHandle*) filehandle)->fd, g_strerror(errno));
 
 			return(FALSE);
@@ -357,18 +357,18 @@ console_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint3
 {
 	gint ret;
 	MonoThreadInfo *info = mono_thread_info_current ();
-	
+
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
 	}
-	
+
 	if(!(filehandle->fileaccess & (GENERIC_WRITE | GENERIC_ALL))) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d doesn't have GENERIC_WRITE access: %u", __func__, ((MonoFDHandle*) filehandle)->fd, filehandle->fileaccess);
 
 		mono_w32error_set_last (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
-	
+
 	do {
 		MONO_ENTER_GC_SAFE;
 		ret = write(((MonoFDHandle*) filehandle)->fd, buffer, numbytes);
@@ -381,7 +381,7 @@ console_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint3
 			ret = 0;
 		} else {
 			_wapi_set_last_error_from_errno ();
-			
+
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: write of fd %d error: %s", __func__, ((MonoFDHandle*) filehandle)->fd, g_strerror(errno));
 
 			return(FALSE);
@@ -390,7 +390,7 @@ console_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint3
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
 	}
-	
+
 	return(TRUE);
 }
 
@@ -399,18 +399,18 @@ pipe_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 {
 	gint ret;
 	MonoThreadInfo *info = mono_thread_info_current ();
-	
+
 	if(byteswritten!=NULL) {
 		*byteswritten=0;
 	}
-	
+
 	if(!(filehandle->fileaccess & (GENERIC_WRITE | GENERIC_ALL))) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: fd %d doesn't have GENERIC_WRITE access: %u", __func__, ((MonoFDHandle*) filehandle)->fd, filehandle->fileaccess);
 
 		mono_w32error_set_last (ERROR_ACCESS_DENIED);
 		return(FALSE);
 	}
-	
+
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: writing up to %" G_GUINT32_FORMAT " bytes to pipe %d", __func__, numbytes, ((MonoFDHandle*) filehandle)->fd);
 
 	do {
@@ -425,7 +425,7 @@ pipe_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 			ret = 0;
 		} else {
 			_wapi_set_last_error_from_errno ();
-			
+
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: write of fd %d error: %s", __func__,((MonoFDHandle*) filehandle)->fd, g_strerror(errno));
 
 			return(FALSE);
@@ -434,14 +434,14 @@ pipe_write (FileHandle *filehandle, gpointer buffer, guint32 numbytes, guint32 *
 	if(byteswritten!=NULL) {
 		*byteswritten=ret;
 	}
-	
+
 	return(TRUE);
 }
 
 static gint convert_flags(guint32 fileaccess, guint32 createmode)
 {
 	gint flags=0;
-	
+
 	switch(fileaccess) {
 	case GENERIC_READ:
 		flags=O_RDONLY;
@@ -478,7 +478,7 @@ static gint convert_flags(guint32 fileaccess, guint32 createmode)
 			  createmode);
 		break;
 	}
-	
+
 	return(flags);
 }
 
@@ -490,7 +490,7 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 	guint32 file_existing_share, file_existing_access;
 
 	file_already_shared = file_share_get (statbuf->st_dev, statbuf->st_ino, sharemode, fileaccess, &file_existing_share, &file_existing_access, share_info);
-	
+
 	if (file_already_shared) {
 		/* The reference to this share info was incremented
 		 * when we looked it up, so be careful to put it back
@@ -502,7 +502,7 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 
 			file_share_release (*share_info);
 			*share_info = NULL;
-			
+
 			return(FALSE);
 		}
 
@@ -515,7 +515,7 @@ static gboolean share_allows_open (struct stat *statbuf, guint32 sharemode,
 
 			file_share_release (*share_info);
 			*share_info = NULL;
-		
+
 			return(FALSE);
 		}
 	} else {
@@ -560,12 +560,12 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 
 	if (attrs & FILE_ATTRIBUTE_TEMPORARY)
 		perms = 0600;
-	
+
 	if (attrs & FILE_ATTRIBUTE_ENCRYPTED){
 		mono_w32error_set_last (ERROR_ENCRYPTION_FAILED);
 		return INVALID_HANDLE_VALUE;
 	}
-	
+
 	if (name == NULL) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: name is NULL", __func__);
 
@@ -581,12 +581,12 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 		mono_w32error_set_last (ERROR_INVALID_NAME);
 		return(INVALID_HANDLE_VALUE);
 	}
-	
+
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: Opening %s with share 0x%" PRIx32 " and access 0x%" PRIx32, __func__,
 		   filename, sharemode, fileaccess);
-	
+
 	fd = _wapi_open (filename, flags, perms);
-    
+
 	/* If we were trying to open a directory with write permissions
 	 * (e.g. O_WRONLY or O_RDWR), this call will fail with
 	 * EISDIR. However, this is a bit bogus because calls to
@@ -600,7 +600,7 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 		/* Try again but don't try to make it writable */
 		fd = _wapi_open (filename, flags & ~(O_RDWR|O_WRONLY), perms);
 	}
-	
+
 	if (fd == -1) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: Error opening file %s: %s", __func__, filename, g_strerror(errno));
 		_wapi_set_last_path_error_from_errno (NULL, filename);
@@ -647,7 +647,7 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 		MONO_ENTER_GC_SAFE;
 		close (((MonoFDHandle*) filehandle)->fd);
 		MONO_EXIT_GC_SAFE;
-		
+
 		mono_fdhandle_unref ((MonoFDHandle*) filehandle);
 		return (INVALID_HANDLE_VALUE);
 	}
@@ -659,7 +659,7 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 		MONO_ENTER_GC_SAFE;
 		close (((MonoFDHandle*) filehandle)->fd);
 		MONO_EXIT_GC_SAFE;
-		
+
 		mono_fdhandle_unref ((MonoFDHandle*) filehandle);
 		return(INVALID_HANDLE_VALUE);
 	}

@@ -3078,6 +3078,15 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 
+#ifdef TARGET_ARM64
+    // Must happen before OperIsHWIntrinsic case,
+    // but this occurs when a vector zero node is marked as contained.
+    if (node->IsVectorZero())
+    {
+        return 0;
+    }
+#endif
+
 #if !defined(TARGET_64BIT)
     if (node->OperIs(GT_LONG))
     {
@@ -3164,6 +3173,14 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     {
         use = BuildUse(node, candidates);
     }
+#ifdef TARGET_ARM64
+    // Must happen before OperIsHWIntrinsic case,
+    // but this occurs when a vector zero node is marked as contained.
+    else if (node->IsVectorZero())
+    {
+        return 0;
+    }
+#endif
 #ifdef FEATURE_HW_INTRINSICS
     else if (node->OperIsHWIntrinsic())
     {
