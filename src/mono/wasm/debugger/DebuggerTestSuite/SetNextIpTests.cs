@@ -110,6 +110,35 @@ public class SetNextIpTests : DebuggerTestBase
     }
 
     [Fact]
+    public async Task SetNextIP_AsyncMethod_SkipAwait()
+    {
+        var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
+
+        await SetBreakpoint(debugger_test_loc, 76, 12);
+        var pause_location = await EvaluateAndCheck(
+        "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
+        debugger_test_loc, 76, 12, "MoveNext",
+        locals_fn: async (locals) =>
+            {
+                Assert.Equal(4, locals.Count());
+                await Task.CompletedTask;
+            });
+        var top_frame = pause_location["callFrames"][0]["functionLocation"];
+        await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 91, 12, "MoveNext",
+        locals_fn: async (locals) =>
+            {
+                Assert.Equal(4, locals.Count());
+                await Task.CompletedTask;
+            });
+        await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 92, 8, "MoveNext",
+        locals_fn: async (locals) =>
+            {
+                Assert.Equal(4, locals.Count());
+                await Task.CompletedTask;
+            });
+    }
+
+    [Fact]
     public async Task SetNextIP_Lambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
