@@ -1377,24 +1377,6 @@ public:
 
 LinearScanInterface* getLinearScanAllocator(Compiler* comp);
 
-// Information about arrays: their element type and size, and the offset of the first element.
-struct ArrayInfo
-{
-    var_types            m_elemType;
-    CORINFO_CLASS_HANDLE m_elemStructType;
-    unsigned             m_elemSize;
-    unsigned             m_elemOffset;
-
-    ArrayInfo() : m_elemType(TYP_UNDEF), m_elemStructType(nullptr), m_elemSize(0), m_elemOffset(0)
-    {
-    }
-
-    ArrayInfo(var_types elemType, unsigned elemSize, unsigned elemOffset, CORINFO_CLASS_HANDLE elemStructType)
-        : m_elemType(elemType), m_elemStructType(elemStructType), m_elemSize(elemSize), m_elemOffset(elemOffset)
-    {
-    }
-};
-
 // This enumeration names the phases into which we divide compilation.  The phases should completely
 // partition a compilation.
 enum Phases

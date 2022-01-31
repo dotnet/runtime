@@ -9791,26 +9791,22 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         printf("<%S, %u>", shortClassName, classSize);
                     }
                 }
-                else if (tree->OperIsIndir())
-                {
-                    ArrayInfo arrInfo;
-                    if (TryGetArrayInfo(tree->AsIndir(), &arrInfo))
-                    {
-                        if (varTypeIsStruct(arrInfo.m_elemType))
-                        {
-                            CORINFO_CLASS_HANDLE clsHnd = arrInfo.m_elemStructType;
-                            // We could create a layout with `typGetObjLayout(asInd->gtStructElemClass)` but we
-                            // don't want to affect the layout table.
-                            const unsigned  classSize      = info.compCompHnd->getClassSize(clsHnd);
-                            const char16_t* shortClassName = eeGetShortClassName(clsHnd);
-                            printf("<%S, %u>", shortClassName, classSize);
-                        }
-                    }
-                }
 
                 if (layout != nullptr)
                 {
                     gtDispClassLayout(layout, tree->TypeGet());
+                }
+            }
+
+            if (tree->OperIs(GT_ARR_ADDR))
+            {
+                if (tree->AsArrAddr()->GetElemClassHandle() != NO_CLASS_HANDLE)
+                {
+                    printf("%S[]", eeGetShortClassName(tree->AsArrAddr()->GetElemClassHandle()));
+                }
+                else
+                {
+                    printf("%s[]", varTypeName(tree->AsArrAddr()->GetElemType()));
                 }
             }
 
