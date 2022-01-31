@@ -1286,27 +1286,6 @@ namespace System
 
                 byte* src = number.GetDigitsPointer();
 
-                if ((totalDigits <= 7) && (fastExponent <= 10))
-                {
-                    // It is only valid to do this optimization for single-precision floating-point
-                    // values since we can lose some of the mantissa bits and would return the
-                    // wrong value when upcasting to double.
-
-                    float result = DigitsToUInt32(src, (int)(totalDigits));
-                    float scale = s_Pow10SingleTable[fastExponent];
-
-                    if (fractionalDigitsPresent != 0)
-                    {
-                        result /= scale;
-                    }
-                    else
-                    {
-                        result *= scale;
-                    }
-
-                    return BitConverter.SingleToUInt32Bits(result);
-                }
-
                 // When the number of significant digits is less than or equal to MaxMantissaFastPath and the
                 // scale is less than or equal to MaxExponentFastPath, we can take some shortcuts and just rely
                 // on floating-point arithmetic to compute the correct result. This is
