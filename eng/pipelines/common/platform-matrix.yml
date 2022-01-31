@@ -372,7 +372,7 @@ jobs:
       targetRid: android-x64
       platform: Android_x64
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -396,7 +396,7 @@ jobs:
       targetRid: android-x86
       platform: Android_x86
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -420,7 +420,7 @@ jobs:
       targetRid: android-arm
       platform: Android_arm
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
@@ -444,7 +444,7 @@ jobs:
       targetRid: android-arm64
       platform: Android_arm64
       container:
-        image: ubuntu-18.04-android-20200422191843-e2c3f83
+        image: ubuntu-18.04-android-20220131172314-3983b4e
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
