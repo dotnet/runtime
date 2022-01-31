@@ -14,7 +14,7 @@ namespace ILLink.Shared.TrimAnalysis
 		public DiagnosticContext (in MessageOrigin origin, bool diagnosticsEnabled, LinkContext context)
 			=> (Origin, DiagnosticsEnabled, _context) = (origin, diagnosticsEnabled, context);
 
-		public partial void ReportDiagnostic (DiagnosticId id, params string[] args)
+		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
 		{
 			if (DiagnosticsEnabled)
 				_context.LogWarning (Origin, id, args);

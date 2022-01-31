@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
@@ -98,47 +96,26 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// TODO: consider not tracking patterns unless the target is something
 			// annotated with DAMT.
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisPattern (source, target, operation),
+				new TrimAnalysisAssignmentPattern (source, target, operation),
 				isReturnValue: false
 			);
 		}
 
-		public override MultiValue HandleMethodCall (IMethodSymbol calledMethod, ValueOfOperation instance, ImmutableArray<ValueOfOperation> arguments, IOperation operation)
+		public override MultiValue HandleMethodCall (IMethodSymbol calledMethod, MultiValue instance, ImmutableArray<MultiValue> arguments, IOperation operation)
 		{
-			var handleCallAction = new HandleCallAction (Context, operation);
-			if (handleCallAction.Invoke (new MethodProxy (calledMethod), instance.Value, arguments.Select (a => a.Value).ToImmutableList (), out MultiValue methodReturnValue))
-				return methodReturnValue;
-
-			// If the intrinsic handling didn't work we have to:
-			//   Handle the instance value
-			//   Handle argument passing
-			//   Construct the return value
-			// Note: this is temporary as eventually the handling of all method calls should be done in the shared code (not just intrinsics)
-			if (!calledMethod.IsStatic) {
-				Debug.Assert (instance.Operation != null);
-				TrimAnalysisPatterns.Add (
-					new TrimAnalysisPattern (
-						instance.Value,
-						new MethodThisParameterValue (calledMethod),
-						instance.Operation!),
-					isReturnValue: false);
+			var handleCallAction = new HandleCallAction (Context.OwningSymbol, operation);
+			if (!handleCallAction.Invoke (new MethodProxy (calledMethod), instance, arguments, out MultiValue methodReturnValue)) {
+				methodReturnValue = calledMethod.ReturnsVoid ? TopValue : new MethodReturnValue (calledMethod);
 			}
 
-			for (int argumentIndex = 0; argumentIndex < arguments.Length; argumentIndex++) {
-				// For __arglist arguments, there may not be a parameter, so skip these as there can't be any annotations on the parameter
-				if (arguments[argumentIndex].Operation is IArgumentOperation argumentOperation &&
-					argumentOperation.Parameter == null)
-					continue;
+			TrimAnalysisPatterns.Add (new TrimAnalysisMethodCallPattern (
+				calledMethod,
+				instance,
+				arguments,
+				operation,
+				Context.OwningSymbol));
 
-				TrimAnalysisPatterns.Add (
-					new TrimAnalysisPattern (
-						arguments[argumentIndex].Value,
-						new MethodParameterValue (calledMethod.Parameters[argumentIndex]),
-						arguments[argumentIndex].Operation!),
-					isReturnValue: false);
-			}
-
-			return calledMethod.ReturnsVoid ? TopValue : new MethodReturnValue (calledMethod);
+			return methodReturnValue;
 		}
 
 		public override void HandleReturnValue (MultiValue returnValue, IOperation operation)
@@ -146,7 +123,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var returnParameter = new MethodReturnValue ((IMethodSymbol) Context.OwningSymbol);
 
 			TrimAnalysisPatterns.Add (
-				new TrimAnalysisPattern (returnValue, returnParameter, operation),
+				new TrimAnalysisAssignmentPattern (returnValue, returnParameter, operation),
 				isReturnValue: true
 			);
 		}

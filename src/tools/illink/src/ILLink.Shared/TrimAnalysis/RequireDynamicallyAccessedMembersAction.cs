@@ -22,7 +22,7 @@ namespace ILLink.Shared.TrimAnalysis
 					var availableMemberTypes = valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes;
 					if (!Annotations.SourceHasRequiredAnnotations (availableMemberTypes, targetValue.DynamicallyAccessedMemberTypes, out var missingMemberTypes)) {
 						(var diagnosticId, var diagnosticArguments) = Annotations.GetDiagnosticForAnnotationMismatch (valueWithDynamicallyAccessedMembers, targetValue, missingMemberTypes);
-						diagnosticContext.ReportDiagnostic (diagnosticId, diagnosticArguments);
+						diagnosticContext.AddDiagnostic (diagnosticId, diagnosticArguments);
 					}
 				} else if (uniqueValue is SystemTypeValue systemTypeValue) {
 					MarkTypeForDynamicallyAccessedMembers (systemTypeValue.GetRepresentedType (), targetValue.DynamicallyAccessedMemberTypes);
@@ -44,7 +44,7 @@ namespace ILLink.Shared.TrimAnalysis
 						_ => throw new NotImplementedException ($"unsupported target value {targetValue}")
 					};
 
-					diagnosticContext.ReportDiagnostic (diagnosticId, targetValue.GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
+					diagnosticContext.AddDiagnostic (diagnosticId, targetValue.GetDiagnosticArgumentsForAnnotationMismatch ().ToArray ());
 				}
 			}
 		}

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using ILLink.RoslynAnalyzer.DataFlow;
 using ILLink.Shared.DataFlow;
@@ -37,7 +36,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			Context = context;
 		}
 
-		public IEnumerable<TrimAnalysisPattern> ComputeTrimAnalysisPatterns ()
+		public TrimAnalysisPatternStore ComputeTrimAnalysisPatterns ()
 		{
 			var visitor = new TrimAnalysisVisitor (Lattice, Context);
 			Fixpoint (ControlFlowGraph, Lattice, visitor);

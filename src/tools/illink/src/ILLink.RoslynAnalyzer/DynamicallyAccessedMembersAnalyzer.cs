@@ -47,9 +47,8 @@ namespace ILLink.RoslynAnalyzer
 					ControlFlowGraph cfg = context.GetControlFlowGraph (operationBlock);
 					TrimDataFlowAnalysis trimDataFlowAnalysis = new (context, cfg);
 
-					foreach (TrimAnalysisPattern trimAnalysisPattern in trimDataFlowAnalysis.ComputeTrimAnalysisPatterns ()) {
-						foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (trimAnalysisPattern.Source, trimAnalysisPattern.Target, trimAnalysisPattern.Operation.Syntax.GetLocation ()))
-							context.ReportDiagnostic (diagnostic);
+					foreach (var diagnostic in trimDataFlowAnalysis.ComputeTrimAnalysisPatterns ().CollectDiagnostics ()) {
+						context.ReportDiagnostic (diagnostic);
 					}
 				}
 			});
@@ -94,22 +93,6 @@ namespace ILLink.RoslynAnalyzer
 				// What about things like ArrayType or PointerType and so on. Linker treats these as "named types" since it can resolve them to concrete type
 				_ => throw new NotImplementedException ()
 			};
-		}
-
-		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (ValueSet<SingleValue> source, ValueSet<SingleValue> target, Location location)
-		{
-			foreach (var targetValue in target) {
-				foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (source, targetValue, location))
-					yield return diagnostic;
-			}
-		}
-
-		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (ValueSet<SingleValue> source, SingleValue target, Location location)
-		{
-			foreach (var sourceValue in source) {
-				foreach (var diagnostic in GetDynamicallyAccessedMembersDiagnostics (sourceValue, target, location))
-					yield return diagnostic;
-			}
 		}
 
 		static IEnumerable<Diagnostic> GetDynamicallyAccessedMembersDiagnostics (SingleValue sourceValue, SingleValue targetValue, Location location)
