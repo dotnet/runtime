@@ -7523,8 +7523,7 @@ bool containsStackCrawlMarkLocal(MethodDesc* ftn)
  *************************************************************/
 
 CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
-                                  CORINFO_METHOD_HANDLE hCallee,
-                                  uint32_t*             pRestrictions)
+                                  CORINFO_METHOD_HANDLE hCallee)
 {
     CONTRACTL {
         THROWS;
@@ -7534,7 +7533,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 
     CorInfoInline result = INLINE_PASS;  // By default we pass.
                                          // Do not set pass in the rest of the method.
-    DWORD         dwRestrictions = 0;    // By default, no restrictions
     const char *  szFailReason = NULL;   // for reportInlineDecision
 
     JIT_TO_EE_TRANSITION();
@@ -7681,28 +7679,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
 exit: ;
 
     EE_TO_JIT_TRANSITION();
-
-    if (result == INLINE_PASS && dwRestrictions)
-    {
-        if (pRestrictions)
-        {
-            *pRestrictions = dwRestrictions;
-        }
-        else
-        {
-            // If the jitter didn't want to know about restrictions, it shouldn't be inlining
-            result = INLINE_FAIL;
-            szFailReason = "Inlinee has restrictions the JIT doesn't want";
-        }
-    }
-    else
-    {
-        if (pRestrictions)
-        {
-            // Denied inlining, makes no sense to pass out restrictions,
-            *pRestrictions = 0;
-        }
-    }
 
     if (dontInline(result))
     {

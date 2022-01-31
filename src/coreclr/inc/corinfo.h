@@ -1987,9 +1987,7 @@ public:
             ) = 0;
 
     // Decides if you have any limitations for inlining. If everything's OK, it will return
-    // INLINE_PASS and will fill out pRestrictions with a mask of restrictions the caller of this
-    // function must respect. If caller passes pRestrictions = NULL, if there are any restrictions
-    // INLINE_FAIL will be returned
+    // INLINE_PASS.
     //
     // The callerHnd must be the immediate caller (i.e. when we have a chain of inlined calls)
     //
@@ -1997,8 +1995,7 @@ public:
 
     virtual CorInfoInline canInline (
             CORINFO_METHOD_HANDLE       callerHnd,                  /* IN  */
-            CORINFO_METHOD_HANDLE       calleeHnd,                  /* IN  */
-            uint32_t*                   pRestrictions               /* OUT */
+            CORINFO_METHOD_HANDLE       calleeHnd                   /* IN  */
             ) = 0;
 
     // Reports whether or not a method can be inlined, and why.  canInline is responsible for reporting all
