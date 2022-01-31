@@ -24,8 +24,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		where TValue : struct, IEquatable<TValue>
 		where TValueLattice : ILattice<TValue>
 	{
-		public record struct ValueOfOperation (TValue Value, IOperation? Operation);
-
 		protected readonly LocalStateLattice<TValue, TValueLattice> LocalStateLattice;
 
 		protected readonly OperationBlockAnalysisContext Context;
@@ -78,7 +76,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		// - Setting a property value - which is treated as a call to the setter
 		// All inputs are already visited and turned into values.
 		// The return value should be a value representing the return value from the called method.
-		public abstract TValue HandleMethodCall (IMethodSymbol calledMethod, ValueOfOperation instance, ImmutableArray<ValueOfOperation> arguments, IOperation operation);
+		public abstract TValue HandleMethodCall (IMethodSymbol calledMethod, TValue instance, ImmutableArray<TValue> arguments, IOperation operation);
 
 		public override TValue VisitLocalReference (ILocalReferenceOperation operation, LocalDataFlowState<TValue, TValueLattice> state)
 		{
@@ -103,7 +101,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// A property assignment is really a call to the property setter.
 				var setMethod = propertyRef.Property.SetMethod!;
 				TValue instanceValue = Visit (propertyRef.Instance, state);
-				return HandleMethodCall (setMethod, new (instanceValue, propertyRef), ImmutableArray.Create (new ValueOfOperation (value, operation.Value)), operation);
+				return HandleMethodCall (
+					setMethod,
+					instanceValue,
+					ImmutableArray.Create (value),
+					operation);
 			// TODO: when setting a property in an attribute, target is an IPropertyReference.
 			case IArrayElementReferenceOperation:
 				// TODO
@@ -143,13 +145,21 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 		{
 			TValue instanceValue = Visit (operation.Instance, state);
 
-			var argumentsBuilder = ImmutableArray.CreateBuilder<ValueOfOperation> ();
-			foreach (var argument in operation.Arguments)
-				argumentsBuilder.Add (new (VisitArgument (argument, state), argument));
+			var argumentsBuilder = ImmutableArray.CreateBuilder<TValue> ();
+			foreach (var argument in operation.Arguments) {
+				// For __arglist argument there might not be any parameter
+				// __arglist is only legal as the last argument to a method and there's also no supported
+				// way for it to carry annotations or participate in data flow in any way, so it's OK to ignore it.
+				// Since it's always last, it's also OK to simply pass a shorter arguments array to the call.
+				if (argument?.Parameter == null)
+					break;
+
+				argumentsBuilder.Add (VisitArgument (argument, state));
+			}
 
 			return HandleMethodCall (
 				operation.TargetMethod,
-				new (instanceValue, operation),
+				instanceValue,
 				argumentsBuilder.ToImmutableArray (),
 				operation);
 		}
@@ -180,7 +190,11 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// Accessing property for reading is really a call to the getter
 				// The setter case is handled in assignment operation since here we don't have access to the value to pass to the setter
 				TValue instanceValue = Visit (operation.Instance, state);
-				return HandleMethodCall (operation.Property.GetMethod!, new ValueOfOperation (instanceValue, operation), ImmutableArray<ValueOfOperation>.Empty, operation);
+				return HandleMethodCall (
+					operation.Property.GetMethod!,
+					instanceValue,
+					ImmutableArray<TValue>.Empty,
+					operation);
 			}
 
 			return TopValue;

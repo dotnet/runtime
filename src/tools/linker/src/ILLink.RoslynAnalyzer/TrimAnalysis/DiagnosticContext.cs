@@ -18,7 +18,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_location = location;
 		}
 
-		public partial void ReportDiagnostic (DiagnosticId id, params string[] args)
+		public partial void AddDiagnostic (DiagnosticId id, params string[] args)
 		{
 			Diagnostics.Add (Diagnostic.Create (DiagnosticDescriptors.GetDiagnosticDescriptor (id), _location, args));
 		}

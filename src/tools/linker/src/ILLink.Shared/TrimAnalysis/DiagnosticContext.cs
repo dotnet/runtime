@@ -5,6 +5,6 @@ namespace ILLink.Shared.TrimAnalysis
 {
 	readonly partial struct DiagnosticContext
 	{
-		public partial void ReportDiagnostic (DiagnosticId id, params string[] args);
+		public partial void AddDiagnostic (DiagnosticId id, params string[] args);
 	}
 }
