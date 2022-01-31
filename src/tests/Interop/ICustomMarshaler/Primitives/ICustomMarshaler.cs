@@ -718,7 +718,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
                 Field_ParentIsStruct_ThrowsTypeLoadException();
                 Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
-                if (SupportsComInterop)
+                if (SupportsExceptionInterop)
                 {
                     // EH interop is not supported for NativeAOT.
                     DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();

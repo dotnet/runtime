@@ -100,7 +100,7 @@ namespace TestLibrary
 #else
         public static bool IsReflectionEmitSupported => true;
 #endif
-        public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
+        public static bool SupportsExceptionInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
 
         public static string ByteArrayToString(byte[] bytes)
         {
