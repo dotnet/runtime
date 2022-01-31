@@ -503,7 +503,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         if (!SourceId.TryParse(args["location"]?["scriptId"]?.Value<string>(), out SourceId sourceId))
                             return false;
-                        var ret = await OnSetNextIP(id, sourceId, args["location"]["lineNumber"].Value<int>(), args["location"]["columnNumber"].Value<int>(), token);
+                        var loc = SourceLocation.Parse(args?["location"] as JObject);
+                        if (loc == null)
+                            return false;
+                        var ret = await OnSetNextIP(id, sourceId, loc.Line, loc.Column, token);
                         if (ret == true)
                             SendResponse(id, Result.OkFromObject(new { }), token);
                         else
