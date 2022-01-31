@@ -538,7 +538,7 @@ namespace System.Threading.Tasks
         internal TaskSchedulerAwaiter GetAwaiter() => new TaskSchedulerAwaiter(this);
 
         /// <summary>Awaiter used to queue a continuation to a specified task scheduler.</summary>
-        internal readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
+        internal readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
         {
             private readonly TaskScheduler _scheduler;
             public TaskSchedulerAwaiter(TaskScheduler scheduler) => _scheduler = scheduler;
@@ -554,6 +554,17 @@ namespace System.Threading.Tasks
                 else
                 {
                     OnCompleted(continuation);
+                }
+            }
+            public void AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
+            {
+                if (ReferenceEquals(_scheduler, Default))
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(ThreadPool.s_invokeAsyncStateMachineBox, box, preferLocal: true);
+                }
+                else
+                {
+                    OnCompleted(box.MoveNextAction);
                 }
             }
         }
