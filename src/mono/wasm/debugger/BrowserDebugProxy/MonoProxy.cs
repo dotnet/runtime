@@ -1065,9 +1065,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case EventKind.Breakpoint:
                     {
                         Breakpoint bp = context.BreakpointRequests.Values.SelectMany(v => v.Locations).FirstOrDefault(b => b.RemoteId == request_id);
-                        if (request_id == context.BreakpointToDisable)
+                        if (request_id == context.TempBreakpointForSetNextIP)
                         {
-                            context.BreakpointToDisable = -1;
+                            context.TempBreakpointForSetNextIP = -1;
                             await context.SdbAgent.RemoveBreakpoint(request_id, token);
                         }
                         string reason = "other";//other means breakpoint
@@ -1555,7 +1555,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
-            context.BreakpointToDisable = breakpointId;
+            context.TempBreakpointForSetNextIP = breakpointId;
             await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
             return true;
         }
