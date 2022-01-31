@@ -181,11 +181,10 @@ namespace Microsoft.Win32.SafeHandles
         }
 
         internal static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
-                                            Interop.Sys.Permissions openPermissions = DefaultOpenPermissions)
+                                            Interop.Sys.Permissions openPermissions = DefaultOpenPermissions,
+                                            Func<Interop.ErrorInfo, Interop.Sys.OpenFlags, string, Exception?>? createOpenException = null)
         {
-            long fileLength;
-            Interop.Sys.Permissions filePermissions;
-            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out fileLength, out filePermissions, createOpenException);
+            return Open(fullPath, mode, access, share, options, preallocationSize, openPermissions, out _, out _, createOpenException);
         }
 
         private static SafeFileHandle Open(string fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize,
