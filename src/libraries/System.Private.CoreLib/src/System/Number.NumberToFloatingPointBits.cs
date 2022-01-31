@@ -110,20 +110,6 @@ namespace System
             }
         }
 
-        private static readonly float[] s_Pow10SingleTable = {
-            1e0f,   // 10^0
-            1e1f,   // 10^1
-            1e2f,   // 10^2
-            1e3f,   // 10^3
-            1e4f,   // 10^4
-            1e5f,   // 10^5
-            1e6f,   // 10^6
-            1e7f,   // 10^7
-            1e8f,   // 10^8
-            1e9f,   // 10^9
-            1e10f,  // 10^10
-        };
-
         private static readonly double[] s_Pow10DoubleTable =  {
             1e0,    // 10^0
             1e1,    // 10^1
