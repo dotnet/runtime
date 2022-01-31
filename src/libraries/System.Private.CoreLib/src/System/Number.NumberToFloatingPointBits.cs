@@ -20,7 +20,7 @@ namespace System
                 infinityBits: 0x7FF00000_00000000,
                 minFastFloatDecimalExponent: -342,
                 maxFastFloatDecimalExponent: 308,
-                infinitePower: 0x7FF,
+                infinityExponent: 0x7FF,
                 minExponentRoundToEven: -4,
                 maxExponentRoundToEven: 23,
                 maxExponentFastPath: 22
@@ -34,7 +34,7 @@ namespace System
                 infinityBits: 0x7F800000,
                 minFastFloatDecimalExponent: -65,
                 maxFastFloatDecimalExponent: 38,
-                infinitePower: 0xFF,
+                infinityExponent: 0xFF,
                 minExponentRoundToEven: -17,
                 maxExponentRoundToEven: 10,
                 maxExponentFastPath: 10
@@ -47,7 +47,7 @@ namespace System
                 infinityBits: 0x7C00,
                 minFastFloatDecimalExponent: -8,
                 maxFastFloatDecimalExponent: 4,
-                infinitePower: 0x1F,
+                infinityExponent: 0x1F,
                 minExponentRoundToEven: -21,
                 maxExponentRoundToEven: 5,
                 maxExponentFastPath: 4
@@ -69,7 +69,7 @@ namespace System
             public ushort DenormalMantissaBits { get; }
 
             public int MinFastFloatDecimalExponent { get; }
-            public int InfinitePower { get; }
+            public int InfinityExponent { get; }
             public int MinExponentRoundToEven { get; }
             public int MaxExponentRoundToEven { get; }
 
@@ -79,7 +79,7 @@ namespace System
             public ulong MaxMantissaFastPath { get => 2UL << DenormalMantissaBits; }
             public ushort ExponentBits { get; }
 
-            public FloatingPointInfo(ushort denormalMantissaBits, ushort exponentBits, int maxBinaryExponent, int exponentBias, ulong infinityBits, int minFastFloatDecimalExponent, int maxFastFloatDecimalExponent, int infinitePower, int minExponentRoundToEven, int maxExponentRoundToEven, int maxExponentFastPath)
+            public FloatingPointInfo(ushort denormalMantissaBits, ushort exponentBits, int maxBinaryExponent, int exponentBias, ulong infinityBits, int minFastFloatDecimalExponent, int maxFastFloatDecimalExponent, int infinityExponent, int minExponentRoundToEven, int maxExponentRoundToEven, int maxExponentFastPath)
             {
                 ExponentBits = exponentBits;
 
@@ -101,7 +101,7 @@ namespace System
                 MaxFastFloatDecimalExponent = maxFastFloatDecimalExponent;
                 MinFastFloatDecimalExponent = minFastFloatDecimalExponent;
 
-                InfinitePower = infinitePower;
+                InfinityExponent = infinityExponent;
 
                 MinExponentRoundToEven = minExponentRoundToEven;
                 MaxExponentRoundToEven = maxExponentRoundToEven;
@@ -877,9 +877,9 @@ namespace System
                     // appropriately, to form a normal number:
                     if (mantissa > info.DenormalMantissaMask)
                     {
-                        // We add one to the denormal_mantissa_shift to account for the
+                        // We add one to the denormalMantissaShift to account for the
                         // hidden mantissa bit (we subtracted one to account for this bit
-                        // when we computed the denormal_mantissa_shift above).
+                        // when we computed the denormalMantissaShift above).
                         exponent = initialExponent - (denormalMantissaShift + 1) - normalMantissaShift;
                     }
                 }
@@ -1313,7 +1313,7 @@ namespace System
             uint fractionalFirstIndex = integerLastIndex;
             uint fractionalLastIndex = totalDigits;
 
-            // First, we accumulate the integer part of the mantissa into a big_integer:
+            // First, we accumulate the integer part of the mantissa into a BigInteger:
             AccumulateDecimalDigitsIntoBigInteger(ref number, IntegerFirstIndex, integerLastIndex, out BigInteger integerValue);
 
             if (integerDigitsMissing > 0)
@@ -1326,7 +1326,7 @@ namespace System
                 integerValue.MultiplyPow10(integerDigitsMissing);
             }
 
-            // At this point, the integer_value contains the value of the integer part
+            // At this point, the integerValue contains the value of the integer part
             // of the mantissa.  If either [1] this number has more than the required
             // number of bits of precision or [2] the mantissa has no fractional part,
             // then we can assemble the result immediately:
@@ -1532,17 +1532,16 @@ namespace System
             if (q > info.MaxFastFloatDecimalExponent)
             {
                 // we want to get infinity:
-                exponent = info.InfinitePower;
+                exponent = info.InfinityExponent;
                 mantissa = 0;
                 return (exponent, mantissa);
             }
-            // At this point in time q is in [smallest_power_of_five, largest_power_of_five].
 
             // We want the most significant bit of i to be 1. Shift if needed.
             int lz = BitOperations.LeadingZeroCount(w);
             w <<= lz;
 
-            // The required precision is mantissa_explicit_bits() + 3 because
+            // The required precision is info.DenormalMantissaBits + 3 because
             // 1. We need the implicit bit
             // 2. We need an extra bit for rounding purposes
             // 3. We might lose a bit due to the "upperbit" routine (result too small, requiring a shift)
@@ -1554,22 +1553,22 @@ namespace System
                 // In some very rare cases, this could happen, in which case we might need a more accurate
                 // computation that what we can provide cheaply. This is very, very unlikely.
                 //
-                bool inside_safe_exponent = (q >= -27) && (q <= 55); // always good because 5**q <2**128 when q>=0,
+                bool insideSafeExponent = (q >= -27) && (q <= 55); // always good because 5**q <2**128 when q>=0,
                                                                      // and otherwise, for q<0, we have 5**-q<2**64 and the 128-bit reciprocal allows for exact computation.
-                if (!inside_safe_exponent)
+                if (!insideSafeExponent)
                 {
                     exponent = -1; // This (a negative value) indicates an error condition.
                     return (exponent, mantissa);
                 }
             }
-            // The "compute_product_approximation" function can be slightly slower than a branchless approach:
-            // but in practice, we can win big with the compute_product_approximation if its additional branch
+            // The "ComputeProductApproximation" function can be slightly slower than a branchless approach:
+            // but in practice, we can win big with the ComputeProductApproximation if its additional branch
             // is easily predicted. Which is best is data specific.
-            int upperbit = (int)(product.high >> 63);
+            int upperBit = (int)(product.high >> 63);
 
-            mantissa = product.high >> (upperbit + 64 - info.DenormalMantissaBits - 3);
+            mantissa = product.high >> (upperBit + 64 - info.DenormalMantissaBits - 3);
 
-            exponent = (int)(CalculatePower((int)(q)) + upperbit - lz - (-info.MaxBinaryExponent));
+            exponent = (int)(CalculatePower((int)(q)) + upperBit - lz - (-info.MaxBinaryExponent));
             if (exponent <= 0)
             {
                 // we have a subnormal?
@@ -1607,9 +1606,9 @@ namespace System
             {
                 // We may fall between two floats!
                 // To be in-between two floats we need that in doing
-                // answer.mantissa = product.high >> (upperbit + 64 - mantissa_explicit_bits() - 3);
+                // answer.mantissa = product.high >> (upperBit + 64 - info.DenormalMantissaBits  - 3);
                 // ... we dropped out only zeroes. But if this happened, then we can go back!!!
-                if ((mantissa << (upperbit + 64 - info.DenormalMantissaBits - 3)) == product.high)
+                if ((mantissa << (upperBit + 64 - info.DenormalMantissaBits - 3)) == product.high)
                 {
                     // flip it so that we do not round up
                     mantissa &= ~1UL;
@@ -1626,10 +1625,10 @@ namespace System
             }
 
             mantissa &= ~(1UL << info.DenormalMantissaBits);
-            if (exponent >= info.InfinitePower)
+            if (exponent >= info.InfinityExponent)
             {
                 // infinity
-                exponent = info.InfinitePower;
+                exponent = info.InfinityExponent;
                 mantissa = 0;
             }
             return (exponent, mantissa);
@@ -1641,8 +1640,8 @@ namespace System
             // For small values of q, e.g., q in [0,27], the answer is always exact because
             // Math.BigMul gives the exact answer.
             ulong high = Math.BigMul(w, s_Pow5128Table[index], out ulong low);
-            ulong precision_mask = (bitPrecision < 64) ? (0xFFFFFFFFFFFFFFFFUL >> bitPrecision) : 0xFFFFFFFFFFFFFFFFUL;
-            if ((high & precision_mask) == precision_mask)
+            ulong precisionMask = (bitPrecision < 64) ? (0xFFFFFFFFFFFFFFFFUL >> bitPrecision) : 0xFFFFFFFFFFFFFFFFUL;
+            if ((high & precisionMask) == precisionMask)
             {
                 // could further guard with  (lower + w < lower)
                 // regarding the second product, we only need secondproduct.high, but our expectation is that the compiler will optimize this extra work away if needed.
